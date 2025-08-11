@@ -32,8 +32,8 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateStaff,
 )
 from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
-from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
-    CreatePersonIdToStaffIdMapping,
+from recidiviz.pipelines.ingest.state.create_root_entity_id_to_staff_id_mapping import (
+    CreateRootEntityIdToStaffIdMapping,
     PersonId,
     StaffExternalIdToIdMap,
     StaffId,
@@ -170,21 +170,14 @@ class NormalizeRootEntities(beam.PTransform):
             2,
         )
 
-        normalized_staff: beam.PCollection[
-            NormalizedStateStaff
-        ] = pre_normalization_staff | "Normalize StateStaff" >> beam.Map(
-            build_normalized_state_staff
-        )
-
         # Map of person_id to dictionary mapping staff external id -> staff_id
         person_id_to_staff_external_ids_map: beam.PCollection[
             tuple[PersonId, StaffExternalIdToIdMap]
         ] = (
-            (
-                normalized_staff,
-                pre_normalization_persons,
-            )
-            | "Create person_id to staff_id mapping" >> CreatePersonIdToStaffIdMapping()
+            pre_normalization_staff,
+            pre_normalization_persons,
+        ) | "Create person_id to staff_id mapping" >> CreateRootEntityIdToStaffIdMapping(
+            root_entity_cls=state_entities.StatePerson
         )
 
         # Normalize persons
@@ -196,6 +189,13 @@ class NormalizeRootEntities(beam.PTransform):
             normalized_root_entity_cls=normalized_entities.NormalizedStatePerson,
             root_entity_normalization_fn=build_normalized_state_person,
             expected_output_entity_classes=self.expected_output_entity_classes,
+        )
+
+        # Normalize staff
+        normalized_staff: beam.PCollection[
+            NormalizedStateStaff
+        ] = pre_normalization_staff | "Normalize StateStaff" >> beam.Map(
+            build_normalized_state_staff
         )
 
         normalized_root_entities: beam.PCollection[RootEntity] = (

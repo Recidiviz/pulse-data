@@ -37,7 +37,7 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 from recidiviz.persistence.entity.state.violation_utils import (
     collect_violation_responses,
 )
-from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
+from recidiviz.pipelines.ingest.state.create_root_entity_id_to_staff_id_mapping import (
     StaffExternalIdToIdMap,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (

@@ -26,42 +26,52 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePerson,
     StatePersonExternalId,
+    StateStaff,
+    StateStaffExternalId,
+    StateStaffSupervisorPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateStaff,
-    NormalizedStateStaffExternalId,
-)
-from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
-    CreatePersonIdToStaffIdMapping,
+from recidiviz.pipelines.ingest.state.create_root_entity_id_to_staff_id_mapping import (
+    CreateRootEntityIdToStaffIdMapping,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 
-STATE_STAFF_1 = NormalizedStateStaff(
+STATE_STAFF_1 = StateStaff(
     staff_id=123,
     state_code=StateCode.US_XX.value,
     external_ids=[
-        NormalizedStateStaffExternalId(
+        StateStaffExternalId(
             staff_external_id_id=1234,
             state_code=StateCode.US_XX.value,
             id_type="US_XX_STAFF_ID_TYPE",
             external_id="A123",
         )
     ],
+    supervisor_periods=[
+        StateStaffSupervisorPeriod(
+            state_code=StateCode.US_XX.value,
+            staff_supervisor_period_id=100,
+            external_id="XXXX",
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2021, 1, 1),
+            supervisor_staff_external_id="A456",
+            supervisor_staff_external_id_type="US_XX_STAFF_ID_TYPE",
+        )
+    ],
 )
-STATE_STAFF_2 = NormalizedStateStaff(
+STATE_STAFF_2 = StateStaff(
     staff_id=456,
     state_code=StateCode.US_XX.value,
     external_ids=[
-        NormalizedStateStaffExternalId(
+        StateStaffExternalId(
             staff_external_id_id=4567,
             state_code=StateCode.US_XX.value,
             id_type="US_XX_STAFF_ID_TYPE",
             external_id="A456",
         ),
-        NormalizedStateStaffExternalId(
+        StateStaffExternalId(
             staff_external_id_id=4568,
             state_code=StateCode.US_XX.value,
             id_type="US_XX_STAFF_ID_TYPE_2",
@@ -70,11 +80,11 @@ STATE_STAFF_2 = NormalizedStateStaff(
     ],
 )
 
-STATE_STAFF_1_CONFLICTING = NormalizedStateStaff(
+STATE_STAFF_1_CONFLICTING = StateStaff(
     staff_id=789,
     state_code=StateCode.US_XX.value,
     external_ids=[
-        NormalizedStateStaffExternalId(
+        StateStaffExternalId(
             staff_external_id_id=1234,
             state_code=StateCode.US_XX.value,
             id_type="US_XX_STAFF_ID_TYPE",
@@ -161,7 +171,7 @@ STATE_PERSON_2 = StatePerson(
 )
 
 
-class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
+class TestCreateRootEntityIdToStaffIdMapping(BigQueryEmulatorTestCase):
     """Tests the CreatePersonIdToStaffIdMapping PTransform."""
 
     def setUp(self) -> None:
@@ -170,42 +180,42 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
 
-    def test_create_person_id_to_staff_id_mapping_empty(self) -> None:
+    def test_create_root_entity_id_to_staff_id_mapping_empty(self) -> None:
         input_state_persons = (
             self.test_pipeline | "Create input StatePerson" >> beam.Create([])
         )
-        input_state_staff = (
-            self.test_pipeline | "Create input NormalizedStateStaff" >> beam.Create([])
+        input_referenced_state_staff = (
+            self.test_pipeline | "Create input referenced StateStaff" >> beam.Create([])
         )
 
         output = (
-            input_state_staff,
+            input_referenced_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping()
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StatePerson)
 
         assert_that(output, equal_to([]))
         self.test_pipeline.run()
 
-    def test_create_person_id_to_staff_id_mapping_no_people(self) -> None:
+    def test_create_root_entity_id_to_staff_id_mapping_no_people(self) -> None:
         input_state_persons = (
             self.test_pipeline | "Create input StatePerson" >> beam.Create([])
         )
-        input_state_staff = (
+        input_referenced_state_staff = (
             self.test_pipeline
-            | "Create input NormalizedStateStaff"
+            | "Create input referenced StateStaff"
             >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
         )
 
         output = (
-            input_state_staff,
+            input_referenced_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping()
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StatePerson)
 
         # Output only is generated if there are people, but nothing crashes
         assert_that(output, equal_to([]))
         self.test_pipeline.run()
 
-    def test_create_person_id_to_staff_id_mapping_one_person(self) -> None:
+    def test_create_root_entity_id_to_staff_id_mapping_one_person(self) -> None:
         expected_output = [
             (
                 # STATE_PERSON_1
@@ -220,21 +230,51 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
             self.test_pipeline
             | "Create input StatePerson" >> beam.Create([STATE_PERSON_1])
         )
-        input_state_staff = (
+        input_referenced_state_staff = (
             self.test_pipeline
-            | "Create input NormalizedStateStaff"
+            | "Create input referenced StateStaff"
             >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
         )
 
         output = (
-            input_state_staff,
+            input_referenced_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping()
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StatePerson)
 
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
-    def test_create_person_id_to_staff_id_mapping_complex(self) -> None:
+    def test_create_root_entity_id_to_staff_id_mapping_for_staff(self) -> None:
+        expected_output = [
+            (
+                # STATE_STAFF_1
+                123,
+                {
+                    # STATE_STAFF_2 external id referenced by STATE_PERSON_1
+                    ("A456", "US_XX_STAFF_ID_TYPE"): 456,
+                },
+            ),
+            # STATE_STAFF_2 missing as it has no supervisor staff references
+        ]
+        input_state_persons = (
+            self.test_pipeline
+            | "Create input StateStaff" >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
+        )
+        input_referenced_state_staff = (
+            self.test_pipeline
+            | "Create input referenced StateStaff"
+            >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
+        )
+
+        output = (
+            input_referenced_state_staff,
+            input_state_persons,
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StateStaff)
+
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_create_root_entity_id_to_staff_id_mapping_complex(self) -> None:
         expected_output = [
             (
                 # STATE_PERSON_1
@@ -262,16 +302,16 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
             | "Create input StatePerson"
             >> beam.Create([STATE_PERSON_1, STATE_PERSON_2])
         )
-        input_state_staff = (
+        input_referenced_state_staff = (
             self.test_pipeline
-            | "Create input NormalizedStateStaff"
+            | "Create input referenced StateStaff"
             >> beam.Create([STATE_STAFF_1, STATE_STAFF_2])
         )
 
         output = (
-            input_state_staff,
+            input_referenced_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping()
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StatePerson)
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
@@ -283,7 +323,7 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
                 STATE_PERSON_2,
             ]
         )
-        input_state_staff = self.test_pipeline | "Create input NormalizedStateStaff" >> beam.Create(
+        input_referenced_state_staff = self.test_pipeline | "Create input referenced StateStaff" >> beam.Create(
             [
                 # STATE_STAFF_2 is missing from this list
                 STATE_STAFF_1,
@@ -291,9 +331,9 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
         )
 
         _ = (
-            input_state_staff,
+            input_referenced_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping()
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StatePerson)
 
         with self.assertRaisesRegex(
             ValueError,
@@ -307,9 +347,9 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
             self.test_pipeline
             | "Create input StatePerson" >> beam.Create([STATE_PERSON_1])
         )
-        input_state_staff = (
+        input_referenced_state_staff = (
             self.test_pipeline
-            | "Create input NormalizedStateStaff"
+            | "Create input referenced StateStaff"
             >> beam.Create(
                 [
                     STATE_STAFF_1,
@@ -319,9 +359,9 @@ class TestCreatePersonIdToStaffIdMapping(BigQueryEmulatorTestCase):
         )
 
         _ = (
-            input_state_staff,
+            input_referenced_state_staff,
             input_state_persons,
-        ) | CreatePersonIdToStaffIdMapping()
+        ) | CreateRootEntityIdToStaffIdMapping(root_entity_cls=StatePerson)
 
         with self.assertRaisesRegex(
             ValueError,

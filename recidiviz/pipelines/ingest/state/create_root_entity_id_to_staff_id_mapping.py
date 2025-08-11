@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A PTransform to collect all staff ids associated with each StatePerson."""
-from typing import Iterable
+"""A PTransform to collect all staff ids associated with each root entity
+(e.g. StatePerson).
+"""
+from typing import Generic, Iterable, Type
 
 import apache_beam as beam
 from more_itertools import one
@@ -25,13 +27,16 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.entities import StateStaff
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
+from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.utils.types import assert_type
 
 PersonId = int
 StaffId = int
+
 StaffExternalId = tuple[
     # String external_id
     str,
@@ -41,55 +46,61 @@ StaffExternalId = tuple[
 StaffExternalIdToIdMap = dict[StaffExternalId, StaffId]
 
 STAFF_IDS_KEY = "staff_ids"
-PERSON_IDS_KEY = "person_ids"
+ROOT_ENTITY_IDS_KEY = "root_entity_ids"
 
 
-class CreatePersonIdToStaffIdMapping(beam.PTransform):
-    """A PTransform to collect all staff ids associated with each StatePerson."""
+class CreateRootEntityIdToStaffIdMapping(beam.PTransform, Generic[RootEntityT]):
+    """A PTransform to collect all staff ids associated with each root entity (e.g.
+    StatePerson).
+    """
+
+    def __init__(self, root_entity_cls: Type[RootEntityT]) -> None:
+        super().__init__()
+        self.root_entity_cls: Type[RootEntityT] = root_entity_cls
 
     def expand(
         self,
         input_or_inputs: tuple[
-            beam.PCollection[NormalizedStateStaff], beam.PCollection[StatePerson]
+            beam.PCollection[StateStaff], beam.PCollection[RootEntityT]
         ],
-    ) -> beam.PCollection[tuple[PersonId, StaffExternalIdToIdMap]]:
-        normalized_staff, pre_normalization_persons = input_or_inputs
+    ) -> beam.PCollection[tuple[RootEntityId, StaffExternalIdToIdMap]]:
+        staff_entities, pre_normalization_root_entities = input_or_inputs
 
         # Produce map of (id_type, external_id) pair to the associated staff_id
         normalized_staff_id_by_staff_external_id: beam.PCollection[
             tuple[StaffExternalId, StaffId]
-        ] = normalized_staff | beam.FlatMap(
+        ] = staff_entities | beam.FlatMap(
             lambda staff: [
                 (e, staff.staff_id)
                 for e in self._extract_staff_external_ids_from_staff(staff)
             ]
         )
 
-        # Produce map of (id_type, external_id) pair to the associated person_id
-        # for all STAFF external ids
-        person_id_by_normalized_staff_external_id: beam.PCollection[
-            tuple[StaffExternalId, PersonId]
-        ] = pre_normalization_persons | beam.FlatMap(
-            lambda person: [
-                (e, person.person_id)
-                for e in self._extract_staff_external_ids_from_person(person)
+        # Produce map of (id_type, external_id) pair to the associated root entity
+        # internal id for all STAFF external ids
+        root_entity_id_by_staff_external_id: beam.PCollection[
+            tuple[StaffExternalId, RootEntityId]
+        ] = pre_normalization_root_entities | beam.FlatMap(
+            lambda root_entity: [
+                (e, root_entity.get_id())
+                for e in self._extract_staff_external_ids_from_root_entity(root_entity)
             ]
         )
 
-        # Return a PCollection of person_id to dictionaries containing
+        # Return a PCollection of root entity internal id to dictionaries containing
         # staff external id -> staff_id mappings for every staff external id referenced
-        # on this person.
+        # on this root entity.
         return (
             {
                 STAFF_IDS_KEY: normalized_staff_id_by_staff_external_id,
-                PERSON_IDS_KEY: person_id_by_normalized_staff_external_id,
+                ROOT_ENTITY_IDS_KEY: root_entity_id_by_staff_external_id,
             }
             | beam.CoGroupByKey()
             | beam.FlatMap(self._map_for_single_external_id)
             | beam.GroupByKey()
             | beam.MapTuple(
-                lambda person_id, staff_external_id_to_staff_id: (
-                    person_id,
+                lambda root_entity_id, staff_external_id_to_staff_id: (
+                    root_entity_id,
                     dict(staff_external_id_to_staff_id),
                 )
             )
@@ -102,12 +113,12 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
         """Extract (external_id, id_type) tuples from the given staff."""
         return [(e.external_id, e.id_type) for e in staff.external_ids]
 
-    def _extract_staff_external_ids_from_person(
+    def _extract_staff_external_ids_from_root_entity(
         self,
-        person: StatePerson,
+        root_entity: RootEntityT,
     ) -> list[StaffExternalId]:
         """Extract (external_id, id_type) tuples for all staff external ids referenced
-        by the given person.
+        by the given root_entity.
         """
 
         def _get_referenced_staff_external_id(
@@ -127,8 +138,8 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
             return None
 
         external_ids = walk_entity_dag(
-            entities_module_context=entities_module_context_for_entity(person),
-            dag_root_entity=person,
+            entities_module_context=entities_module_context_for_entity(root_entity),
+            dag_root_entity=root_entity,
             node_processing_fn=_get_referenced_staff_external_id,
         )
 
@@ -137,13 +148,13 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
     @staticmethod
     def _map_for_single_external_id(
         staff_external_id_to_grouped_ids: tuple[
-            StaffExternalId, dict[str, Iterable[PersonId] | Iterable[StaffId]]
+            StaffExternalId, dict[str, Iterable[RootEntityId] | Iterable[StaffId]]
         ]
-    ) -> list[tuple[PersonId, tuple[StaffExternalId, StaffId]]]:
+    ) -> list[tuple[RootEntityId, tuple[StaffExternalId, StaffId]]]:
         """Given a staff external id and input defining the staff_id for that staff
-        external id and the person_ids associated with that staff external id, returns
-        a list of key value pairs where each key is a person_id and each pair is the
-        (staff external id, staff_id) value.
+        external id and the root_entity_ids associated with that staff external id,
+        returns a list of key value pairs where each key is a root_entity_id and each
+        pair is the (staff external id, staff_id) value.
         """
         staff_external_id = staff_external_id_to_grouped_ids[0]
         grouped_ids = staff_external_id_to_grouped_ids[1]
@@ -163,6 +174,6 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
         )
 
         return [
-            (person_id, (staff_external_id, staff_id))
-            for person_id in grouped_ids[PERSON_IDS_KEY]
+            (root_entity_id, (staff_external_id, staff_id))
+            for root_entity_id in grouped_ids[ROOT_ENTITY_IDS_KEY]
         ]

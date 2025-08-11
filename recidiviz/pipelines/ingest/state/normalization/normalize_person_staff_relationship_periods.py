@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePersonStaffRelationshipPeriod,
 )
-from recidiviz.pipelines.ingest.state.create_person_id_to_staff_id_mapping import (
+from recidiviz.pipelines.ingest.state.create_root_entity_id_to_staff_id_mapping import (
     StaffExternalIdToIdMap,
 )
 from recidiviz.utils.types import assert_type
