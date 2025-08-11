@@ -34,6 +34,7 @@ from recidiviz.common.constants.reasonable_dates import (
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -2243,11 +2244,21 @@ class StateSupervisionContact(
     contact_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
+    contact_datetime: Optional[datetime.datetime] = attr.ib(
+        default=None, validator=attr_validators.is_opt_datetime
+    )
     scheduled_contact_date: Optional[datetime.date] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_reasonable_date(
             min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
             max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
+    )
+    scheduled_contact_datetime: Optional[datetime.datetime] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_datetime(
+            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_datetime_exclusive=STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
         ),
     )
 
@@ -2317,6 +2328,15 @@ class StateSupervisionContact(
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        # Ensure that only one of each pairs is hydrated if any are
+        if (self.scheduled_contact_date or self.scheduled_contact_datetime) and (
+            self.contact_date or self.contact_datetime
+        ):
+            raise ValueError(
+                "Cannot have both scheduled and actual contact date/datetime set."
+            )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:

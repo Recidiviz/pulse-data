@@ -153,6 +153,24 @@ def is_opt_reasonable_date(
     )
 
 
+def is_opt_reasonable_datetime(
+    min_allowed_datetime_inclusive: datetime.datetime,
+    max_allowed_datetime_exclusive: datetime.datetime,
+) -> Callable:
+    """Validator for an optional datetime field that enforces that the datetime is within a
+    reasonable set of bounds, if it is nonnull.
+
+    Args:
+        min_allowed_date_inclusive: The minimum allowed date for this field, inclusive.
+        max_allowed_date_exclusive: The maximum allowed date for this field, exclusive.
+    """
+    return IsReasonableDatetimeValidator(
+        min_allowed_datetime_inclusive=min_allowed_datetime_inclusive,
+        max_allowed_datetime_exclusive=max_allowed_datetime_exclusive,
+        allow_nulls=True,
+    )
+
+
 # TODO(#38869): Extend to allow dates to be some fixed window in the future, perhaps
 #  naming this is_reasonable_past_or_soon_date?
 def is_reasonable_past_date(min_allowed_date_inclusive: datetime.date) -> Callable:

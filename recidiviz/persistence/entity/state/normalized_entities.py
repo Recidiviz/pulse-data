@@ -35,6 +35,7 @@ from recidiviz.common.constants.reasonable_dates import (
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+    STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -2835,11 +2836,21 @@ class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEnti
     contact_date: date | None = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
+    contact_datetime: datetime | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_datetime
+    )
     scheduled_contact_date: date | None = attr.ib(
         default=None,
         validator=attr_validators.is_opt_reasonable_date(
             min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
             max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
+    )
+    scheduled_contact_datetime: datetime | None = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_datetime(
+            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_datetime_exclusive=STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
         ),
     )
 
@@ -2946,6 +2957,30 @@ class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEnti
             if self.contact_date is not None:
                 raise ValueError(
                     "Excepted to have a null contact_date on a contact with a SCHEDULED status"
+                )
+
+            # Enforce that both date and datetime fields are hydrated.
+            if (
+                self.scheduled_contact_date is not None
+                and self.scheduled_contact_datetime is None
+            ):
+                raise ValueError(
+                    "Expected scheduled_contact_datetime to be hydrated when scheduled_contact_date is not None"
+                )
+            if (
+                self.scheduled_contact_datetime is not None
+                and self.scheduled_contact_date is None
+            ):
+                raise ValueError(
+                    "Expected scheduled_contact_date to be hydrated when scheduled_contact_datetime is not None"
+                )
+            if self.contact_date is not None and self.contact_datetime is None:
+                raise ValueError(
+                    "Expected contact_datetime to be hydrated when contact_date is not None"
+                )
+            if self.contact_datetime is not None and self.contact_date is None:
+                raise ValueError(
+                    "Expected contact_date to be hydrated when contact_datetime is not None"
                 )
 
             if (

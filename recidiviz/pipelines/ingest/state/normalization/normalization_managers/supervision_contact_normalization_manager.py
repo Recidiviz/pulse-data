@@ -18,6 +18,7 @@
 normalization of StateSupervisionContact entities in the calculation
 pipelines."""
 from copy import deepcopy
+from datetime import datetime, time
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.persistence.entity.base_entity import Entity
@@ -72,6 +73,10 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
             # TODO(#19965): currently nothing happens here, will eventually hydrate new foreign key fields here
             contacts_for_normalization = deepcopy(self._supervision_contacts)
 
+            contacts_for_normalization = self.normalize_date_attributes(
+                contacts_for_normalization
+            )
+
             self._normalized_supervision_contacts_and_additional_attributes = (
                 contacts_for_normalization,
                 self.additional_attributes_map_for_normalized_scs(
@@ -84,6 +89,67 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateSupervisionContact]
+
+    def normalize_date_attributes(
+        self,
+        supervision_contacts: List[StateSupervisionContact],
+    ) -> List[StateSupervisionContact]:
+        """
+        For the given list of StateSupervisionContact, updates each contact so that:
+            * if either contact_date or contact_datetime is set, then both are set
+            * If either scheduled_contact_date or scheduled_contact_datetime is set, then both are set
+
+        Returns the same list of StateSupervisionContact, each with modified dates.
+        """
+
+        for supervision_contact in supervision_contacts:
+            if not supervision_contact.supervision_contact_id:
+                raise ValueError(
+                    "Expected non-null supervision_contact_id values "
+                    f"at this point. Found {supervision_contact}."
+                )
+            contact_date = supervision_contact.contact_date
+            contact_datetime = supervision_contact.contact_datetime
+            scheduled_date = supervision_contact.scheduled_contact_date
+            scheduled_datetime = supervision_contact.scheduled_contact_datetime
+
+            # Handle contact date/datetime
+            if contact_date and not contact_datetime:
+                # Convert date to datetime at midnight
+                supervision_contact.contact_datetime = datetime.combine(
+                    contact_date, time.min
+                )
+            elif contact_datetime and not contact_date:
+                # Convert datetime to date (drop time)
+                supervision_contact.contact_date = contact_datetime.date()
+            elif (
+                contact_date
+                and contact_datetime
+                and contact_date != contact_datetime.date()
+            ):
+                raise ValueError(
+                    f"For supervision_contact_id {supervision_contact.supervision_contact_id}, "
+                    f"found mismatched contact_date {contact_date} and contact_datetime {contact_datetime}."
+                )
+
+            # Handle scheduled contact date/datetime
+            if scheduled_date and not scheduled_datetime:
+                supervision_contact.scheduled_contact_datetime = datetime.combine(
+                    scheduled_date, time.min
+                )
+            elif scheduled_datetime and not scheduled_date:
+                supervision_contact.scheduled_contact_date = scheduled_datetime.date()
+            elif (
+                scheduled_date
+                and scheduled_datetime
+                and scheduled_date != scheduled_datetime.date()
+            ):
+                raise ValueError(
+                    f"For supervision_contact_id {supervision_contact.supervision_contact_id}, "
+                    f"found mismatched contact_date {contact_date} and contact_datetime {contact_datetime}."
+                )
+
+        return supervision_contacts
 
     def additional_attributes_map_for_normalized_scs(
         self,

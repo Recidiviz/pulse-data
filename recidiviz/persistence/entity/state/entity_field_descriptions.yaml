@@ -604,6 +604,7 @@ state_supervision_case_type_entry:
 state_supervision_contact:
   fields:
     contact_date: The date when this contact happened.
+    contact_datetime: The datetime when this contact happened.
     contact_method: The method used to perform the contact.
     contact_method_raw_text: The raw text value of the contact method.
     contact_reason: The reason why this contact took place.
@@ -622,6 +623,7 @@ state_supervision_contact:
     location_raw_text: The raw text value of the contact location.
     resulted_in_arrest: Whether or not this contact resulted in the person's arrest.
     scheduled_contact_date: The date when a contact is scheduled to occur.
+    scheduled_contact_datetime: The datetime when a contact is scheduled to occur.
     status: The current status of this contact.
     status_raw_text: The raw text value of the contact status.
     supervision_contact_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of this supervision contact.
