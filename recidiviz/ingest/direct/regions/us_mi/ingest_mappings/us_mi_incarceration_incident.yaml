@@ -42,6 +42,22 @@ output:
                   $function: us_mi_custom_parsers.bondable_offenses
                   $args:
                     offense_codes: _offense_code_list
+              CLASS_I:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_class_i
+                  $args:
+                    offense_codes: _offense_code_list
+              CLASS_II:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_class_ii
+                  $args:
+                    offense_codes: _offense_code_list
+              CLASS_III:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_class_iii
+                  $args:
+                    offense_codes: _offense_code_list
+              OFFENSE_CODE_LIST: _offense_code_list
           incarceration_incident_outcomes:
             - $foreach:
                 $iterable:

@@ -268,6 +268,42 @@ def bondable_offenses(offense_codes: str) -> str:
     return ",".join(sorted(set(offense_codes_list) - set(nonbondable_offense_code)))
 
 
+def parse_class_i(offense_codes: str) -> str:
+    """Returns whether the list of offense codes includes a class I offense"""
+
+    offense_codes_list = offense_codes.split("@@")
+
+    for offense_code in offense_codes_list:
+        if offense_code.startswith("0") and offense_code != "049":
+            return "True"
+
+    return "False"
+
+
+def parse_class_ii(offense_codes: str) -> str:
+    """Returns whether the list of offense codes includes a class II offense"""
+
+    offense_codes_list = offense_codes.split("@@")
+
+    for offense_code in offense_codes_list:
+        if offense_code.startswith("4"):
+            return "True"
+
+    return "False"
+
+
+def parse_class_iii(offense_codes: str) -> str:
+    """Returns whether the list of offense codes includes a class III offense"""
+
+    offense_codes_list = offense_codes.split("@@")
+
+    for offense_code in offense_codes_list:
+        if offense_code == "049":
+            return "True"
+
+    return "False"
+
+
 def period_before_COMS_migration(period_start_date: str) -> bool:
     """Returns whether the period start date was before the COMS migration on 8/14/2023"""
     parsedDate = parse_datetime(period_start_date)
