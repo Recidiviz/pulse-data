@@ -171,19 +171,19 @@ class NormalizeRootEntities(beam.PTransform):
         )
 
         # Map of person_id to dictionary mapping staff external id -> staff_id
-        person_id_to_staff_external_ids_map: beam.PCollection[
+        person_id_to_referenced_staff_external_ids_map: beam.PCollection[
             tuple[PersonId, StaffExternalIdToIdMap]
         ] = (
             pre_normalization_staff,
             pre_normalization_persons,
-        ) | "Create person_id to staff_id mapping" >> CreateRootEntityIdToStaffIdMapping(
+        ) | "Create person_id to referenced staff_id mapping" >> CreateRootEntityIdToStaffIdMapping(
             root_entity_cls=state_entities.StatePerson
         )
 
         # Normalize persons
         normalized_persons: beam.PCollection[NormalizedStatePerson] = (
             pre_normalization_persons,
-            person_id_to_staff_external_ids_map,
+            person_id_to_referenced_staff_external_ids_map,
         ) | "Normalize StatePerson" >> _NormalizeRootEntitiesOfType(
             root_entity_cls=state_entities.StatePerson,
             normalized_root_entity_cls=normalized_entities.NormalizedStatePerson,
@@ -191,11 +191,25 @@ class NormalizeRootEntities(beam.PTransform):
             expected_output_entity_classes=self.expected_output_entity_classes,
         )
 
+        # Map of staff_id to dictionary mapping referenced staff external id -> staff_id
+        staff_id_to_referenced_staff_external_ids_map: beam.PCollection[
+            tuple[PersonId, StaffExternalIdToIdMap]
+        ] = (
+            pre_normalization_staff,
+            pre_normalization_staff,
+        ) | "Create staff_id to referenced staff_id mapping" >> CreateRootEntityIdToStaffIdMapping(
+            root_entity_cls=state_entities.StateStaff
+        )
+
         # Normalize staff
-        normalized_staff: beam.PCollection[
-            NormalizedStateStaff
-        ] = pre_normalization_staff | "Normalize StateStaff" >> beam.Map(
-            build_normalized_state_staff
+        normalized_staff: beam.PCollection[NormalizedStateStaff] = (
+            pre_normalization_staff,
+            staff_id_to_referenced_staff_external_ids_map,
+        ) | "Normalize StateStaff" >> _NormalizeRootEntitiesOfType(
+            root_entity_cls=state_entities.StateStaff,
+            normalized_root_entity_cls=normalized_entities.NormalizedStateStaff,
+            root_entity_normalization_fn=build_normalized_state_staff,
+            expected_output_entity_classes=self.expected_output_entity_classes,
         )
 
         normalized_root_entities: beam.PCollection[RootEntity] = (

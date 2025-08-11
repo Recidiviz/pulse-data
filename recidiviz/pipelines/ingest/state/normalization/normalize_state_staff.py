@@ -19,10 +19,14 @@ NormalizedStateStaff.
 """
 from typing import Mapping, Sequence
 
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateStaff
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
+)
+from recidiviz.pipelines.ingest.state.create_root_entity_id_to_staff_id_mapping import (
+    StaffExternalIdToIdMap,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
     StaffRolePeriodNormalizationManager,
@@ -36,7 +40,14 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
 from recidiviz.utils.types import assert_type
 
 
-def build_normalized_state_staff(staff: StateStaff) -> NormalizedStateStaff:
+def build_normalized_state_staff(
+    staff: StateStaff,
+    # TODO(#45401): Actually use these args to normalize supervisor periods and remove
+    #  the pylint ignore
+    # pylint: disable=unused-argument
+    staff_external_id_to_staff_id: StaffExternalIdToIdMap,
+    expected_output_entities: set[type[Entity]],
+) -> NormalizedStateStaff:
     """Normalizes the given StateStaff root entity into a NormalizedStateStaff."""
     staff_role_period_normalization_manager = StaffRolePeriodNormalizationManager(
         staff.role_periods,

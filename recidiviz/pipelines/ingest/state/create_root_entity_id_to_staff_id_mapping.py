@@ -23,15 +23,16 @@ import apache_beam as beam
 from more_itertools import one
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
 from recidiviz.persistence.entity.state.entities import StateStaff
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
+from recidiviz.utils import environment
 from recidiviz.utils.types import assert_type
 
 PersonId = int
@@ -47,6 +48,18 @@ StaffExternalIdToIdMap = dict[StaffExternalId, StaffId]
 
 STAFF_IDS_KEY = "staff_ids"
 ROOT_ENTITY_IDS_KEY = "root_entity_ids"
+
+# These states actually have issues in real ingested data where we are
+# referencing supervisors that are not real. They need to be fixed before we can
+# strictly hydrate supervisor_staff_id on StateStaffSupervisorPeriods
+_STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS: set[StateCode] = {
+    # TODO(#46142): Fix invalid supervisors for US_PA and then remove this exemption.
+    StateCode.US_PA,
+    # TODO(#46144): Fix invalid supervisors for US_TN and then remove this exemption.
+    StateCode.US_TN,
+    # TODO(#46146): Fix invalid supervisors for US_TX and then remove this exemption.
+    StateCode.US_TX,
+}
 
 
 class CreateRootEntityIdToStaffIdMapping(beam.PTransform, Generic[RootEntityT]):
@@ -108,7 +121,7 @@ class CreateRootEntityIdToStaffIdMapping(beam.PTransform, Generic[RootEntityT]):
 
     @staticmethod
     def _extract_staff_external_ids_from_staff(
-        staff: NormalizedStateStaff,
+        staff: StateStaff,
     ) -> list[StaffExternalId]:
         """Extract (external_id, id_type) tuples from the given staff."""
         return [(e.external_id, e.id_type) for e in staff.external_ids]
@@ -120,6 +133,15 @@ class CreateRootEntityIdToStaffIdMapping(beam.PTransform, Generic[RootEntityT]):
         """Extract (external_id, id_type) tuples for all staff external ids referenced
         by the given root_entity.
         """
+        # TODO(#45401): Remove this exemption logic once data for all states has been
+        #  corrected and _STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS is empty.
+        if self.root_entity_cls is StateStaff:
+            if (
+                not environment.in_test()
+                and StateCode(root_entity.state_code)
+                in _STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS
+            ):
+                return []
 
         def _get_referenced_staff_external_id(
             entity: Entity, _dag_edges: list[EntityDagEdge]

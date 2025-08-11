@@ -19,6 +19,7 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.pipelines.ingest.state.normalization import normalize_state_staff
@@ -52,6 +53,10 @@ class TestNormalizeStateStaff(unittest.TestCase):
 
         normalized_staff = build_normalized_state_staff(
             staff=pre_normalization_staff,
+            staff_external_id_to_staff_id={("S1", "SUPERVISOR"): 7890},
+            expected_output_entities=get_all_entity_classes_in_module(
+                normalized_entities
+            ),
         )
 
         self.assertIsInstance(normalized_staff, NormalizedStateStaff)
@@ -116,6 +121,10 @@ class TestNormalizeStateStaff(unittest.TestCase):
 
         normalized_staff = build_normalized_state_staff(
             staff=pre_normalization_staff,
+            staff_external_id_to_staff_id={("S1", "SUPERVISOR"): 7890},
+            expected_output_entities=get_all_entity_classes_in_module(
+                normalized_entities
+            ),
         )
 
         self.assertEqual(expected_normalized_staff, normalized_staff)
