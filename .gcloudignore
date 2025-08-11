@@ -213,3 +213,8 @@ get-pip.py
 *.tfplan
 .decrypted*
 release.out
+
+
+# AI Tools
+.gemini/
+.claude/

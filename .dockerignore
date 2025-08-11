@@ -235,3 +235,8 @@ recidiviz/tools/deploy/terraform/.terraform
 *.tfplan
 .decrypted*
 release.out
+
+
+# AI Tools
+.gemini/
+.claude/
