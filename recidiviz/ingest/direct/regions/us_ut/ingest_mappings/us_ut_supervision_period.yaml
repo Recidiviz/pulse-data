@@ -12,6 +12,7 @@ input_columns:
   lgl_stat_desc: STRING
   body_loc_desc: STRING
   sprvsn_lvl_desc: STRING
+  supervision_site: STRING
   agnt_id: STRING
 unused_columns: []
 output:
@@ -43,7 +44,7 @@ output:
               - $if:
                   $not_null: agnt_id
                 $then: $literal("US_UT_USR_ID")
-          supervision_site: body_loc_desc
+          supervision_site: supervision_site
           admission_reason:
             $enum_mapping:
               $raw_text: start_reason
@@ -342,3 +343,6 @@ output:
                   - SEX OFFENDER II
                   - SEX OFFENDER III
                   - APPEAL
+          supervision_period_metadata:
+            $normalized_values_json_dict:
+              Location: body_loc_desc

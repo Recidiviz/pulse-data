@@ -23,14 +23,6 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.04
     override_reason: |-
       Small bump until #42363 is addressed.
-  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: 0.025
-    override_reason: |-
-      A very small bump to accomodate the failure rate being 0.28% above the default threshold.
-  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
-    hard_max_allowed_error_override: 0.4
-    override_reason: |-
-      Investigation needed. TODO(#42364)
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 15000
