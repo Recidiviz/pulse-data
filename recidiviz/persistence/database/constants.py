@@ -31,3 +31,5 @@ SQLALCHEMY_DB_PASSWORD = "SQLALCHEMY_DB_PASSWORD"
 # original JC instance, and the JC GCP projects will have one set of secrets
 # that point to the new JC instance.
 JUSTICE_COUNTS_DB_SECRET_PREFIX = "justice_counts_v2"  # nosec
+
+RESOURCE_SEARCH_ENABLED_STATES = ["US_AZ", "US_UT", "US_ID"]

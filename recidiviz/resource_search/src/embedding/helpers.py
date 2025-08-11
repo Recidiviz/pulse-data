@@ -25,7 +25,8 @@ import logging
 from typing import List
 
 from recidiviz.persistence.database.schema.resource_search import schema
-from recidiviz.resource_search.src.embedding.openai import make_text_embeddings_batch
+from recidiviz.resource_search.src.embedding.openai import OpenAIEmbedModel
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.resource_search.src.typez.crud.resources import (
     ResourceCandidate,
     ResourceCandidateWithURI,
@@ -79,7 +80,7 @@ def make_candidate_embedding_text(query: str, resource: ResourceCandidate) -> st
 
 
 async def make_embedding_text_batch(
-    query: str, resource_candidates: list[ResourceCandidateWithURI]
+    settings: Settings, query: str, resource_candidates: list[ResourceCandidateWithURI]
 ) -> list[list[float]]:
     """Make text embedding for a list of candidates"""
     texts = []  # For generating batch of embeddings
@@ -91,8 +92,8 @@ async def make_embedding_text_batch(
         texts.append(embedding_text)
 
     logging.debug("Generating embeddings for %s candidates", len(texts))
-
-    embeddings = await make_text_embeddings_batch(texts)
+    open_ai_embed_model = OpenAIEmbedModel(settings=settings)
+    embeddings = await open_ai_embed_model.make_text_embeddings_batch(texts)
     return embeddings
 
 

@@ -28,6 +28,7 @@ from typing import List
 from recidiviz.resource_search.scraper.engine.input import ScraperInput
 from recidiviz.resource_search.scraper.engine.scraper import run_scraper
 from recidiviz.resource_search.src.handlers.helpers import process_and_store_candidates
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.resource_search.src.typez.handlers.text_search import (
     TextSearchBodyParams,
 )
@@ -50,6 +51,7 @@ def parse_input_directory(db_name: str) -> List[ScraperInput]:
 
 async def scrape_resources(db_name: str) -> None:
     inputs = parse_input_directory(db_name=db_name)
+    settings = Settings(db_name=db_name)
     async for resource_candidates in run_scraper(inputs):
         print(f"{'-' * 10}Got new batch; length {len(resource_candidates)}{'-' * 10}")
         try:
@@ -57,11 +59,11 @@ async def scrape_resources(db_name: str) -> None:
                 continue
 
             await process_and_store_candidates(
-                TextSearchBodyParams(
+                body=TextSearchBodyParams(
                     category=resource_candidates[0].category, textSearch=""
                 ),
-                resource_candidates,
-                db_name,
+                resource_candidates=resource_candidates,
+                settings=settings,
             )
         except ValueError as err:
             logging.error("Error while storing resources: %s", err)

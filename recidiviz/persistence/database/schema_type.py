@@ -38,6 +38,7 @@ class SchemaType(enum.Enum):
             SchemaType.PATHWAYS,
             SchemaType.WORKFLOWS,
             SchemaType.INSIGHTS,
+            SchemaType.RESOURCE_SEARCH,
         ]
 
     @property

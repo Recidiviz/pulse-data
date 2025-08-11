@@ -28,21 +28,22 @@ from recidiviz.resource_search.src.constants import (
     EMBEDDING_DIMENSION,
     EMBEDDING_MODEL,
 )
-from recidiviz.resource_search.src.settings import settings
-
-embed_model = OpenAIEmbedding(
-    model=EMBEDDING_MODEL,
-    dimensions=EMBEDDING_DIMENSION,
-    embed_batch_size=EMBED_BATCH_SIZE,
-    api_key=settings.openai_api_key,
-)
+from recidiviz.resource_search.src.settings import Settings
 
 
-async def make_text_embeddings(text: str) -> list[float]:
-    """Make embeddings for a string"""
-    return await embed_model.aget_text_embedding(text)
+class OpenAIEmbedModel:
+    def __init__(self, settings: Settings):
+        self.embed_model = OpenAIEmbedding(
+            model=EMBEDDING_MODEL,
+            dimensions=EMBEDDING_DIMENSION,
+            embed_batch_size=EMBED_BATCH_SIZE,
+            api_key=settings.openai_api_key,
+        )
 
+    async def make_text_embeddings(self, text: str) -> list[float]:
+        """Make embeddings for a string"""
+        return await self.embed_model.aget_text_embedding(text)
 
-async def make_text_embeddings_batch(texts: list[str]) -> list[list[float]]:
-    """Make embeddings for a list of strings"""
-    return await embed_model.aget_text_embedding_batch(texts)
+    async def make_text_embeddings_batch(self, texts: list[str]) -> list[list[float]]:
+        """Make embeddings for a list of strings"""
+        return await self.embed_model.aget_text_embedding_batch(texts)

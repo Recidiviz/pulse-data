@@ -32,7 +32,10 @@ from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states im
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
-from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
+from recidiviz.persistence.database.constants import (
+    JUSTICE_COUNTS_DB_SECRET_PREFIX,
+    RESOURCE_SEARCH_ENABLED_STATES,
+)
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
@@ -78,6 +81,16 @@ def database_keys_for_schema_type(
                 for state_code in get_outliers_enabled_states()
             ]
 
+        case SchemaType.RESOURCE_SEARCH:
+            resource_search_db_manager = StateSegmentedDatabaseManager(
+                enabled_states=RESOURCE_SEARCH_ENABLED_STATES,
+                schema_type=SchemaType.RESOURCE_SEARCH,
+            )
+            return [
+                resource_search_db_manager.database_key_for_state(state_code)
+                for state_code in RESOURCE_SEARCH_ENABLED_STATES
+            ]
+
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")
 
 
@@ -99,6 +112,9 @@ def state_codes_for_schema_type(
 
         case SchemaType.INSIGHTS:
             return get_outliers_enabled_states()
+
+        case SchemaType.RESOURCE_SEARCH:
+            return RESOURCE_SEARCH_ENABLED_STATES
 
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")
 

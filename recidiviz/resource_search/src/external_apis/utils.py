@@ -22,7 +22,7 @@ from typing import AsyncGenerator
 import aiohttp
 from async_googlemaps import AsyncClient  # type: ignore
 
-from recidiviz.resource_search.src.settings import settings
+from recidiviz.resource_search.src.settings import Settings
 
 
 class ResourceApiPluginException(Exception):
@@ -30,7 +30,9 @@ class ResourceApiPluginException(Exception):
 
 
 @asynccontextmanager
-async def async_google_places_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_google_places_client(
+    settings: Settings,
+) -> AsyncGenerator[AsyncClient, None]:
     """
     Context manager for creating a google places client instance
 
@@ -43,7 +45,9 @@ async def async_google_places_client() -> AsyncGenerator[AsyncClient, None]:
 
 
 @asynccontextmanager
-async def async_googlemaps_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_googlemaps_client(
+    settings: Settings,
+) -> AsyncGenerator[AsyncClient, None]:
     """
     Context manager for creating a googlemaps client instance
 

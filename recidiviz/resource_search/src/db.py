@@ -27,6 +27,7 @@ from recidiviz.persistence.database.sqlalchemy_async_engine_manager import (
     SQLAlchemyAsyncEngineManager,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
 from recidiviz.utils.secrets import get_secret_from_local_directory
@@ -40,8 +41,8 @@ async def initialize_global_engine(db_name: str) -> None:
     if _global_engine is None:
         db_url_to_use = (
             SQLAlchemyAsyncEngineManager.get_server_postgres_asyncpg_instance_url(
-                database_key=SQLAlchemyDatabaseKey.for_schema(
-                    SchemaType.RESOURCE_SEARCH
+                database_key=SQLAlchemyDatabaseKey(
+                    schema_type=SchemaType.RESOURCE_SEARCH, db_name=db_name
                 ),
             )
             if in_gcp_staging() or in_gcp_production()
@@ -61,8 +62,8 @@ async def initialize_global_engine(db_name: str) -> None:
         _global_engine = (
             await SQLAlchemyAsyncEngineManager.init_async_engine_for_postgres_instance(
                 db_url=db_url_to_use,
-                database_key=SQLAlchemyDatabaseKey.for_schema(
-                    SchemaType.RESOURCE_SEARCH
+                database_key=SQLAlchemyDatabaseKey(
+                    schema_type=SchemaType.RESOURCE_SEARCH, db_name=db_name
                 ),
             )
         )
@@ -77,11 +78,11 @@ async def dispose_global_engine() -> None:
 
 
 @asynccontextmanager
-async def transaction_session(db_name: str) -> AsyncGenerator[AsyncSession, None]:
+async def transaction_session(settings: Settings) -> AsyncGenerator[AsyncSession, None]:
     """Provide a transactional scope around a series of operations."""
     # Ensure the engine is initialized before creating a session
     if _global_engine is None:
-        await initialize_global_engine(db_name=db_name)
+        await initialize_global_engine(db_name=settings.db_name)
 
     session = AsyncSession(_global_engine)  # Use the global engine
     async with session.begin() as transaction:

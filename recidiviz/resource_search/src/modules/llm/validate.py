@@ -37,7 +37,7 @@ from recidiviz.resource_search.src.models.resource_enums import (
     ResourceSubcategory,
 )
 from recidiviz.resource_search.src.modules.llm.prompts import get_validation_prompts
-from recidiviz.resource_search.src.settings import settings
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.resource_search.src.typez.crud.resources import ResourceCandidateWithURI
 from recidiviz.resource_search.src.typez.modules.llm.validate import (
     LlmInput,
@@ -48,7 +48,7 @@ from recidiviz.resource_search.src.typez.modules.llm.validate import (
 
 MODEL = "gpt-3.5-turbo"
 CONTEXT_LENGTH_LIMIT = 16385
-llm = OpenAI(model=MODEL, api_key=settings.openai_api_key)
+
 model_encoding = tiktoken.encoding_for_model(MODEL)
 
 
@@ -60,7 +60,7 @@ def check_context_limit_exceeded(string: str) -> bool:
 
 
 @traceable(run_type="llm")
-async def llm_completion(prompt: str) -> Optional[CompletionResponse]:
+async def llm_completion(llm: OpenAI, prompt: str) -> Optional[CompletionResponse]:
     if check_context_limit_exceeded(prompt):
         logging.warning("Context length limit exceeded for prompt: %s", prompt)
         return None
@@ -114,14 +114,16 @@ async def run_validation(
     # criteria_prompt: str,
     # rank_prompt: str,
     category: ResourceCategory,
+    settings: Settings,
     subcategory: Optional[ResourceSubcategory] = None,
 ) -> list[ResourceCandidateWithURI]:
     """Validate a list of data"""
+    llm = OpenAI(model=MODEL, api_key=settings.openai_api_key)
     llm_input_results = [map_to_llm_input(result) for result in data]
 
     llm_outputs = await asyncio.gather(
-        ranking_prompt(llm_input_results, category, subcategory),
-        validation_prompt(llm_input_results, category, subcategory),
+        ranking_prompt(llm, llm_input_results, category, subcategory),
+        validation_prompt(llm, llm_input_results, category, subcategory),
     )
 
     # Merge LLM outputs by id
@@ -146,6 +148,7 @@ async def run_validation(
 
 @traceable()
 async def validation_prompt(
+    llm: OpenAI,
     data: list[LlmInput],
     category: ResourceCategory,
     subcategory: Optional[ResourceSubcategory] = None,
@@ -178,7 +181,7 @@ async def validation_prompt(
         ```
     """
 
-    response = await llm_completion(prompt)
+    response = await llm_completion(llm, prompt)
     if not response:
         return None
 
@@ -201,6 +204,7 @@ async def validation_prompt(
 
 @traceable()
 async def ranking_prompt(
+    llm: OpenAI,
     data: list[LlmInput],
     category: ResourceCategory,
     subcategory: Optional[ResourceSubcategory] = None,
@@ -243,7 +247,7 @@ async def ranking_prompt(
         ```
     """
 
-    response = await llm_completion(prompt)
+    response = await llm_completion(llm, prompt)
     if not response:
         return None
 

@@ -32,13 +32,14 @@ from recidiviz.resource_search.src.handlers.helpers import (
     process_and_store_candidates,
     validate_subcategory,
 )
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.resource_search.src.typez.handlers.parameter_search import (
     ParameterSearchBodyParams,
 )
 
 
 async def parameter_search_handler(
-    body: ParameterSearchBodyParams, db_name: str
+    body: ParameterSearchBodyParams, settings: Settings
 ) -> list[schema.Resource]:
     """Search for resources from external APIs"""
     validate_subcategory(body.category, body.subcategory)
@@ -60,7 +61,7 @@ async def parameter_search_handler(
     )
 
     if body.distance:
-        point = await point_from_address(body.address)
+        point = await point_from_address(settings=settings, address=body.address)
 
         # Ensure distance is within the valid range
         distance = min(miles_to_meters(body.distance), 50000)
@@ -85,7 +86,7 @@ async def parameter_search_handler(
     if not resource_candidates:
         return []
     resources = await process_and_store_candidates(
-        body, resource_candidates, db_name=db_name
+        body, resource_candidates, settings=settings
     )
     logging.debug("Saved %s resources candidates", len(resource_candidates))
 
@@ -95,6 +96,7 @@ async def parameter_search_handler(
                 mode=body.mode,
                 origin_address=body.address,
                 resources=resources,
+                settings=settings,
             )
         except Exception as error:
             logging.error("Failed to get distances: %s", error)

@@ -46,6 +46,7 @@ from recidiviz.resource_search.src.models.resource_enums import (
     ResourceSubcategory,
 )
 from recidiviz.resource_search.src.modules.llm.validate import run_validation
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.resource_search.src.typez.crud.resources import (
     ResourceCandidate,
     ResourceCandidateWithURICoord,
@@ -86,24 +87,28 @@ async def get_search_results(
 async def process_and_store_candidates(
     body: Union[TextSearchBodyParams, ParameterSearchBodyParams],
     resource_candidates: list[ResourceCandidate],
-    db_name: str,
+    settings: Settings,
 ) -> list[schema.Resource]:
     """Process and store API search results"""
     resources_with_uris = backfill_resource_uri(resource_candidates)
 
     logging.debug("Validating %s candidates", len(resources_with_uris))
     validated_candidates = await run_validation(
-        resources_with_uris,
-        body.category,
-        body.subcategory,
+        data=resources_with_uris,
+        category=body.category,
+        subcategory=body.subcategory,
+        settings=settings,
     )
 
     embeddings = await make_embedding_text_batch(
-        getattr(body, "textSearch", "") or "", validated_candidates
+        settings=settings,
+        query=getattr(body, "textSearch", "") or "",
+        resource_candidates=validated_candidates,
     )
 
     coordinates_by_id = await get_coordinates_from_addresses_with_ids(
-        [
+        settings=settings,
+        addresses=[
             (
                 candidate.address
                 or f"{candidate.street} {candidate.city} {candidate.state} {candidate.zip}",
@@ -111,7 +116,7 @@ async def process_and_store_candidates(
             )
             for candidate in validated_candidates
             if not candidate.lat or not candidate.lon
-        ]
+        ],
     )
 
     resources_to_create: list[ResourceCreate] = []
@@ -137,7 +142,7 @@ async def process_and_store_candidates(
         else:
             logging.warning("No coordinates found for %s", candidate.uri)
 
-    async with transaction_session(db_name=db_name) as session:
+    async with transaction_session(settings=settings) as session:
         logging.debug("Storing %s resources", len(validated_candidates))
         resources = await upsert_resources(session, resources_to_create)
 

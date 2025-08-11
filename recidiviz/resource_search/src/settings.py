@@ -19,7 +19,7 @@
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings
 
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -38,9 +38,11 @@ PROJECT_ID = "recidiviz-staging" if in_gcp_production() is False else "recidiviz
 class Settings(BaseSettings):
     """
     Application settings for the resource search system.
-
-    This class defines the settings for the resource search system, including the API keys for the Google Maps and OpenAI APIs, as well as the database connection settings.
     """
+
+    # 1. Define all fields as class attributes with type hints and a default value or Field(...).
+    # This is the correct Pydantic pattern.
+    db_name: str = Field(..., description="The name of the database to connect to.")
 
     google_api_key: str = Field(
         default_factory=lambda: secrets.get_secret(
@@ -52,26 +54,26 @@ class Settings(BaseSettings):
     google_geocoding_api_key: str = google_api_key
     google_routes_api_key: str = google_api_key
     schema_type: SchemaType = SchemaType.RESOURCE_SEARCH
-    database_key: SQLAlchemyDatabaseKey = SQLAlchemyDatabaseKey.for_schema(schema_type)
-    postgres_uri: URL = (
-        SQLAlchemyEngineManager.get_server_postgres_instance_url(
-            database_key=database_key,
-        )
-        if in_gcp_staging() or in_gcp_production()
-        else local_postgres_helpers.on_disk_postgres_db_url()
-    )
 
-    # Open AI is used by default by llama index
+    # 2. Use @computed_field for values that are derived from other fields.
+    @computed_field
+    def database_key(self) -> SQLAlchemyDatabaseKey:
+        return SQLAlchemyDatabaseKey(schema_type=self.schema_type, db_name=self.db_name)
+
+    @computed_field
+    def postgres_uri(self) -> URL:
+        if in_gcp_staging() or in_gcp_production():
+            return SQLAlchemyEngineManager.get_server_postgres_instance_url(
+                database_key=self.database_key(),
+            )
+        return local_postgres_helpers.on_disk_postgres_db_url()
+
     openai_api_key: str = Field(
         default_factory=lambda: secrets.get_secret(
             "open_ai_api_key", project_id=PROJECT_ID
         )
         or "open_ai_api_key",
     )
-    # Logger
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO"
     )
-
-
-settings = Settings()

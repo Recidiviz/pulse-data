@@ -29,18 +29,23 @@ from typing import Dict, Tuple
 from shapely import Point  # type: ignore
 
 from recidiviz.resource_search.src.external_apis.utils import async_googlemaps_client
+from recidiviz.resource_search.src.settings import Settings
 
 
-async def point_from_address(address: str) -> Point:
+async def point_from_address(settings: Settings, address: str) -> Point:
     """
     Get a point from a full address string
     """
-    coordinates = await get_coordinates_from_address_str(address)
+    coordinates = await get_coordinates_from_address_str(
+        settings=settings, address=address
+    )
     return Point(*coordinates)
 
 
 # pylint: disable=invalid-name
-async def get_coordinates_from_address_str(address: str) -> Tuple[float, float]:
+async def get_coordinates_from_address_str(
+    settings: Settings, address: str
+) -> Tuple[float, float]:
     """
     Get coordinates of an address
 
@@ -53,7 +58,7 @@ async def get_coordinates_from_address_str(address: str) -> Tuple[float, float]:
     Raises:
         ValueError: If no coordinates found for the address
     """
-    async with async_googlemaps_client() as client:
+    async with async_googlemaps_client(settings=settings) as client:
         geocoding = await client.geocode(address=address)
 
         if not geocoding or len(geocoding) == 0:
@@ -70,6 +75,7 @@ async def get_coordinates_from_address_str(address: str) -> Tuple[float, float]:
 
 
 async def get_coordinates_from_addresses_with_ids(
+    settings: Settings,
     addresses: list[Tuple[str, str]],
 ) -> Dict[str, Tuple[float, float]]:
     """
@@ -92,7 +98,9 @@ async def get_coordinates_from_addresses_with_ids(
         try:
             address, id_str = addr_tuple
 
-            coords = await get_coordinates_from_address_str(address)
+            coords = await get_coordinates_from_address_str(
+                settings=settings, address=address
+            )
 
             return {id_str: (coords[0], coords[1])}
         # pylint: disable=broad-except

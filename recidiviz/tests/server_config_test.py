@@ -64,7 +64,9 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_yy"),
             SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_ww"),
-            SQLAlchemyDatabaseKey(SchemaType.RESOURCE_SEARCH, db_name="postgres"),
+            SQLAlchemyDatabaseKey(SchemaType.RESOURCE_SEARCH, db_name="us_ut"),
+            SQLAlchemyDatabaseKey(SchemaType.RESOURCE_SEARCH, db_name="us_id"),
+            SQLAlchemyDatabaseKey(SchemaType.RESOURCE_SEARCH, db_name="us_az"),
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)

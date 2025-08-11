@@ -242,7 +242,39 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         username="resource_search_db_user_value",
                         password="resource_search_db_password_value",
                         port=5432,
-                        database="postgres",
+                        database="us_ut",
+                        query={
+                            "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="resource_search_db_user_value",
+                        password="resource_search_db_password_value",
+                        port=5432,
+                        database="us_id",
+                        query={
+                            "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="resource_search_db_user_value",
+                        password="resource_search_db_password_value",
+                        port=5432,
+                        database="us_az",
                         query={
                             "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
                         },
@@ -436,7 +468,39 @@ class SQLAlchemyEngineManagerTest(TestCase):
                         username="resource_search_db_user_value",
                         password="resource_search_db_password_value",
                         port=5432,
-                        database="postgres",
+                        database="us_id",
+                        query={
+                            "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="resource_search_db_user_value",
+                        password="resource_search_db_password_value",
+                        port=5432,
+                        database="us_ut",
+                        query={
+                            "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="resource_search_db_user_value",
+                        password="resource_search_db_password_value",
+                        port=5432,
+                        database="us_az",
                         query={
                             "host": "/cloudsql/resource_search_cloudsql_instance_id_value"
                         },

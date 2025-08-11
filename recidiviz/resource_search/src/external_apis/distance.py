@@ -27,7 +27,7 @@ from recidiviz.resource_search.src.external_apis.geocoding import (
     get_coordinates_from_address_str,
 )
 from recidiviz.resource_search.src.models.resource_enums import DistanceMode
-from recidiviz.resource_search.src.settings import settings
+from recidiviz.resource_search.src.settings import Settings
 
 # Status codes from the API
 ROUTE_EXISTS = "ROUTE_EXISTS"
@@ -44,7 +44,9 @@ def _get_travel_mode(mode: DistanceMode) -> str:
     return mode_mapping[mode]
 
 
-async def _get_origin_coordinates(origin_address: str) -> Optional[tuple[float, float]]:
+async def _get_origin_coordinates(
+    settings: Settings, origin_address: str
+) -> Optional[tuple[float, float]]:
     """
     Get coordinates for the origin address.
 
@@ -55,7 +57,9 @@ async def _get_origin_coordinates(origin_address: str) -> Optional[tuple[float, 
         Tuple of (latitude, longitude) if successful, None if geocoding fails
     """
     try:
-        return await get_coordinates_from_address_str(origin_address)
+        return await get_coordinates_from_address_str(
+            settings=settings, address=origin_address
+        )
     except ValueError as e:
         logging.error("Could not geocode origin address: %s, %s", origin_address, e)
         return None
@@ -129,7 +133,7 @@ def _build_request_body(
     return request_body
 
 
-def _get_api_headers() -> dict:
+def _get_api_headers(settings: Settings) -> dict:
     """
     Get headers for the Google Routes API request.
 
@@ -171,6 +175,7 @@ async def _process_batch(
     origin_lat: float,
     origin_lng: float,
     mode: DistanceMode,
+    settings: Settings,
 ) -> list[schema.Resource]:
     """
     Process a batch of resources to add transport information.
@@ -186,7 +191,7 @@ async def _process_batch(
     """
     updated_resources = []
     request_body = _build_request_body(origin_lat, origin_lng, batch, mode)
-    headers = _get_api_headers()
+    headers = _get_api_headers(settings=settings)
 
     try:
         async with httpx.AsyncClient() as client:
@@ -242,6 +247,7 @@ async def add_transport_info_to_resources(
     mode: DistanceMode,
     origin_address: str,
     resources: list[schema.Resource],
+    settings: Settings,
 ) -> list[schema.Resource]:
     """
     Add transport information to resources using their existing lat/lon coordinates
@@ -261,7 +267,9 @@ async def add_transport_info_to_resources(
         return resources
 
     # For origin address, we still need to geocode it
-    origin_coords = await _get_origin_coordinates(origin_address)
+    origin_coords = await _get_origin_coordinates(
+        settings=settings, origin_address=origin_address
+    )
     if not origin_coords:
         return resources
 
@@ -275,7 +283,11 @@ async def add_transport_info_to_resources(
     for i in range(0, len(resources), batch_size):
         batch = resources[i : i + batch_size]
         batch_results = await _process_batch(
-            batch=batch, origin_lat=origin_lat, origin_lng=origin_lng, mode=mode
+            batch=batch,
+            origin_lat=origin_lat,
+            origin_lng=origin_lng,
+            mode=mode,
+            settings=settings,
         )
 
         # Update the resources dictionary with batch results

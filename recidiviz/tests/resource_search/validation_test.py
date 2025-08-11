@@ -25,6 +25,7 @@ LLM prompt processing, and validation result handling.
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from recidiviz.resource_search.src.embedding.openai import OpenAIEmbedModel
 from recidiviz.resource_search.src.models.resource_enums import ResourceCategory
 from recidiviz.resource_search.src.modules.llm.validate import (
     map_llm_output,
@@ -33,6 +34,7 @@ from recidiviz.resource_search.src.modules.llm.validate import (
     run_validation,
     validation_prompt,
 )
+from recidiviz.resource_search.src.settings import Settings
 from recidiviz.resource_search.src.typez.crud.resources import ResourceCandidateWithURI
 from recidiviz.resource_search.src.typez.modules.llm.validate import (
     LlmInput,
@@ -50,6 +52,11 @@ class TestResourceSearchValidation(unittest.IsolatedAsyncioTestCase):
     input/output formats, validation and ranking prompt processing, and
     the integration of LLM responses with resource search results.
     """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.settings = Settings(db_name="us_xx")
+        self.llm = OpenAIEmbedModel(settings=self.settings)
 
     def test_map_to_llm_input(self) -> None:
         """Test mapping ResourceCandidate to LlmInput"""
@@ -113,44 +120,50 @@ class TestResourceSearchValidation(unittest.IsolatedAsyncioTestCase):
         mock_response = MagicMock()
         mock_response.text = '[{"id": "test.com", "valid": true}]'
 
-        with patch(
-            "recidiviz.resource_search.src.modules.llm.validate.llm"
-        ) as mock_llm:
-            mock_llm.acomplete = AsyncMock(return_value=mock_response)
+        mock_llm = AsyncMock()
+        mock_llm.acomplete.return_value = mock_response
 
-            input_data = [LlmInput(id="test.com", name="Test Resource")]
+        input_data = [LlmInput(id="test.com", name="Test Resource")]
 
-            result = (
-                await validation_prompt(input_data, ResourceCategory.BASIC_NEEDS) or []
+        result = (
+            await validation_prompt(
+                llm=mock_llm, data=input_data, category=ResourceCategory.BASIC_NEEDS
             )
+            or []
+        )
 
-            self.assertIsNotNone(result)
-            self.assertEqual(len(result), 1)
-            self.assertIsInstance(result[0], ValidationOutput)
-            self.assertEqual(result[0].id, "test.com")
-            self.assertTrue(result[0].valid)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), 1)
+        self.assertIsInstance(result[0], ValidationOutput)
+        self.assertEqual(result[0].id, "test.com")
+        self.assertTrue(result[0].valid)
 
     async def test_ranking_prompt(self) -> None:
         """Test ranking prompt with LLM"""
+        # Create a mock for the response
         mock_response = MagicMock()
         mock_response.text = '[{"id": "test.com", "rank": 5}]'
 
-        with patch(
-            "recidiviz.resource_search.src.modules.llm.validate.llm"
-        ) as mock_llm:
-            mock_llm.acomplete = AsyncMock(return_value=mock_response)
+        # Create a mock for the LLM itself
+        mock_llm = AsyncMock()
+        # Set the mock's acomplete method to return the mock response
+        mock_llm.acomplete.return_value = mock_response
 
-            input_data = [LlmInput(id="test.com", name="Test Resource")]
+        input_data = [LlmInput(id="test.com", name="Test Resource")]
 
-            result = (
-                await ranking_prompt(input_data, ResourceCategory.BASIC_NEEDS) or []
+        # Pass the mock_llm object directly to the function
+        result = (
+            await ranking_prompt(
+                llm=mock_llm, data=input_data, category=ResourceCategory.BASIC_NEEDS
             )
+            or []
+        )
 
-            self.assertIsNotNone(result)
-            self.assertEqual(len(result), 1)
-            self.assertIsInstance(result[0], RankingOutput)
-            self.assertEqual(result[0].id, "test.com")
-            self.assertEqual(result[0].rank, 5)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), 1)
+        self.assertIsInstance(result[0], RankingOutput)
+        self.assertEqual(result[0].id, "test.com")
+        self.assertEqual(result[0].rank, 5)
 
     async def test_run_validation(self) -> None:
         """Test full validation run"""
@@ -183,7 +196,11 @@ class TestResourceSearchValidation(unittest.IsolatedAsyncioTestCase):
                 ]
 
                 # Test with ranking and validation enabled
-                result = await run_validation(resources, ResourceCategory.BASIC_NEEDS)
+                result = await run_validation(
+                    settings=self.settings,
+                    data=resources,
+                    category=ResourceCategory.BASIC_NEEDS,
+                )
 
                 self.assertEqual(len(result), 1)
                 self.assertEqual(result[0].llm_rank, 5)
