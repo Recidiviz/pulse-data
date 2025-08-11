@@ -182,7 +182,7 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     priority    = "902"
     match {
       expr {
-        expression = "request.path.matches(\"/auth/users\\?state_code=[a-zA-Z_]+\")"
+        expression = "request.path.matches(\"/auth/users\")"
       }
     }
   }
