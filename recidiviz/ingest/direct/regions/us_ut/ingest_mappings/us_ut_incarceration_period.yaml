@@ -11,6 +11,7 @@ input_columns:
   lgl_stat_desc: STRING
   lgl_stat_cd: STRING
   body_loc_desc: STRING
+  custody_level: STRING
   period_id: INTEGER
 unused_columns: []
 output:
@@ -67,6 +68,7 @@ output:
                   - COMMUTATION OF SENTENCE
                   - JAIL RELEASE
                   - REVERSED COURT ORDER
+                  - CUSTODY CLASSIFICATION
                 StateIncarcerationPeriodAdmissionReason.REVOCATION:
                   - PAROLE REVOKED
                   - PAROLE VIOLATOR PROGRAM
@@ -225,6 +227,7 @@ output:
                   - FAILED TO APPEAR AT SENTENCING
                   - PAROLE REVOKED
                   - PROBATION REVOKED
+                  - CUSTODY CLASSIFICATION
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
                   - BODY LOCATION CHANGE
                   - COMPACT IN START
@@ -269,3 +272,18 @@ output:
                     - lgl_stat_desc
                   $separator: "@@"
               $custom_parser: us_ut_custom_enum_parsers.parse_specialized_pfi
+          custody_level:
+            $enum_mapping:
+              $raw_text: custody_level
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.CLOSE:
+                  - "1" # Most serious (death row inmates and others)
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM:
+                  - "2"
+                StateIncarcerationPeriodCustodyLevel.MEDIUM:
+                  - "3"
+                StateIncarcerationPeriodCustodyLevel.MINIMUM:
+                  - "4" # General population
+                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
+                  - "5" # Off property: may leave prison property on approval for home visit or work release. This is no longer used.
+                  - "6" # Housed off property (at CCC). This is no longer used.
