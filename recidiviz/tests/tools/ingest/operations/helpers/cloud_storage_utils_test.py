@@ -265,3 +265,226 @@ class TestGetStorageDirectories(TestCase):
             GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
             # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
         ]
+
+    def test_get_storage_directories_containing_raw_files_glob_filters(self) -> None:
+        # wrong bucket name
+        assert not get_storage_directories_containing_raw_files(
+            self.fs,
+            storage_bucket_path=GcsfsDirectoryPath(
+                bucket_name="bucket-2", relative_path="us-yy"
+            ),
+            upper_bound_date_inclusive=None,
+            lower_bound_date_inclusive=None,
+            file_filter_globs=["*tag[.]*"],
+        )
+
+        # wrong location
+        assert not get_storage_directories_containing_raw_files(
+            self.fs,
+            storage_bucket_path=GcsfsDirectoryPath(
+                bucket_name="bucket", relative_path="us-xx"
+            ),
+            upper_bound_date_inclusive=None,
+            lower_bound_date_inclusive=None,
+            file_filter_globs=["*tag[.]*"],
+        )
+
+        # single star means should include everyone
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                upper_bound_date_inclusive=None,
+                lower_bound_date_inclusive=None,
+            ),
+            key=lambda x: x.uri(),
+        ) == sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=None,
+                upper_bound_date_inclusive=None,
+                file_filter_globs=["*"],
+            ),
+            key=lambda x: x.uri(),
+        )
+
+        # apply single tag filter
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=None,
+                upper_bound_date_inclusive=None,
+                file_filter_globs=["*tag[.]*"],
+            ),
+            key=lambda x: x.uri(),
+        ) == [
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/02"),
+            # only has tag-3
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/02/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
+        ]
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=None,
+                upper_bound_date_inclusive=None,
+                file_filter_globs=["*tag-3[.]*"],
+            ),
+            key=lambda x: x.uri(),
+        ) == [
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/02"),
+            # only dir with tag-3
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/02/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
+        ]
+
+        # apply two filters
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=None,
+                upper_bound_date_inclusive=None,
+                file_filter_globs=["*tag[.]*", "*tag-3[.]*"],  # whole team eats
+            ),
+            key=lambda x: x.uri(),
+        ) == [
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/02"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/02/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
+        ]
+
+    def test_get_storage_directories_containing_raw_files_date_and_glob_filters(
+        self,
+    ) -> None:
+        jan_1_2024 = datetime.date(2024, 1, 1)
+        jan_2_2024 = datetime.date(2024, 1, 2)
+        jan_1_2025 = datetime.date(2025, 1, 1)
+        jan_2_2025 = datetime.date(2025, 1, 2)
+
+        # wrong bucket name
+        assert not get_storage_directories_containing_raw_files(
+            self.fs,
+            storage_bucket_path=GcsfsDirectoryPath(
+                bucket_name="bucket-2", relative_path="us-yy"
+            ),
+            upper_bound_date_inclusive=jan_1_2024,
+            lower_bound_date_inclusive=None,
+            file_filter_globs=["*tag[.]*"],
+        )
+
+        # wrong location
+        assert not get_storage_directories_containing_raw_files(
+            self.fs,
+            storage_bucket_path=GcsfsDirectoryPath(
+                bucket_name="bucket", relative_path="us-xx"
+            ),
+            upper_bound_date_inclusive=jan_1_2024,
+            lower_bound_date_inclusive=None,
+            file_filter_globs=["*tag[.]*"],
+        )
+
+        # inclusive means should include edges
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                upper_bound_date_inclusive=None,
+                lower_bound_date_inclusive=None,
+                file_filter_globs=["*"],
+            ),
+            key=lambda x: x.uri(),
+        ) == sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=jan_1_2024,
+                upper_bound_date_inclusive=jan_2_2025,
+            ),
+            key=lambda x: x.uri(),
+        )
+
+        # apply single day filter on lower with file filter
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=jan_2_2024,
+                upper_bound_date_inclusive=None,
+                file_filter_globs=["*tag[.]*"],
+            ),
+            key=lambda x: x.uri(),
+        ) == [
+            # filtered by date
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/02"),
+            # filtered by file filter
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/02/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
+        ]
+
+        # apply single day filter on upper
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=None,
+                upper_bound_date_inclusive=jan_1_2025,
+                file_filter_globs=["*tag-3[.]*"],
+            ),
+            key=lambda x: x.uri(),
+        ) == [
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/02"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/02/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
+        ]
+
+        # apply single day filter on both sides with file filter
+        assert sorted(
+            get_storage_directories_containing_raw_files(
+                self.fs,
+                storage_bucket_path=GcsfsDirectoryPath(
+                    bucket_name="bucket", relative_path="us-yy"
+                ),
+                lower_bound_date_inclusive=jan_2_2024,
+                upper_bound_date_inclusive=jan_1_2025,
+                file_filter_globs=["*tag-3[.]*"],
+            ),
+            key=lambda x: x.uri(),
+        ) == [
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/01/02"),
+            GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2024/02/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/01"),
+            # GcsfsDirectoryPath.from_dir_and_subdir(self.yy, "2025/01/02"),
+        ]

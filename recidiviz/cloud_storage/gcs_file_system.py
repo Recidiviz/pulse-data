@@ -147,10 +147,15 @@ class GCSFileSystem:
 
     @abc.abstractmethod
     def ls(
-        self, bucket_name: str, *, blob_prefix: str | None = None
+        self,
+        bucket_name: str,
+        *,
+        blob_prefix: str | None = None,
+        match_glob: str | None = None,
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         """Returns absolute paths of objects in the bucket, optionally filtering by
-        |blob_prefix|, if one is provided.
+        |blob_prefix| or |match_glob|, if provided. |match_glob| must adhere to glob
+        formatting standards, see  https://cloud.google.com/storage/docs/json_api/v1/objects/list#list-object-glob.
         """
 
     @abc.abstractmethod

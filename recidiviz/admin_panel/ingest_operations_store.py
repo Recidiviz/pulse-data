@@ -337,6 +337,7 @@ class IngestOperationsStore(AdminPanelStore):
             for p in self.fs.ls(bucket_name=ingest_bucket_path.bucket_name)
             if isinstance(p, GcsfsFilePath)
         ]
+        print(files_in_bucket)
 
         file_tag_counts: Counter[str] = Counter()
         for file_path in files_in_bucket:

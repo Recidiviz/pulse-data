@@ -23,6 +23,7 @@ import shutil
 import threading
 from collections import defaultdict
 from contextlib import contextmanager
+from fnmatch import fnmatch
 from typing import IO, Any, Dict, Iterator, List, Optional, Set, Union
 
 import attr
@@ -294,13 +295,30 @@ class FakeGCSFileSystem(GCSFileSystem):
         self.delete(src_path)
 
     def ls(
-        self, bucket_name: str, *, blob_prefix: str | None = None
+        self,
+        bucket_name: str,
+        *,
+        blob_prefix: str | None = None,
+        match_glob: str | None = None,
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
+        if blob_prefix and match_glob:
+            raise ValueError(
+                "Can only specify at most one of blob_prefix and match_glob"
+            )
+
         prefix = GcsfsPath.from_bucket_and_blob_name(bucket_name, blob_prefix or "")
         with self.mutex:
             results: List[Union[GcsfsDirectoryPath, GcsfsFilePath]] = []
             for abs_path, entry in self.files.items():
-                if abs_path.startswith(prefix.abs_path()):
+                if match_glob:
+                    if fnmatch(
+                        entry.gcs_path.abs_path()
+                        .lstrip(entry.gcs_path.bucket_name)
+                        .lstrip("/"),
+                        match_glob,
+                    ):
+                        results.append(entry.gcs_path)
+                elif abs_path.startswith(prefix.abs_path()):
                     results.append(entry.gcs_path)
 
             return results

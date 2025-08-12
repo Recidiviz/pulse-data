@@ -371,9 +371,15 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def ls(
-        self, bucket_name: str, *, blob_prefix: str | None = None
+        self,
+        bucket_name: str,
+        *,
+        blob_prefix: str | None = None,
+        match_glob: str | None = None,
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
-        blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
+        blobs = self.storage_client.list_blobs(
+            bucket_name, prefix=blob_prefix, match_glob=match_glob
+        )
         return [GcsfsPath.from_blob(blob) for blob in blobs]
 
     def list_directories(self, path: GcsfsDirectoryPath) -> List[GcsfsDirectoryPath]:

@@ -17,11 +17,12 @@
 """Helpers for working with cloud storage buckets in scripts"""
 import datetime
 from enum import Enum, auto
-from functools import lru_cache
+from functools import lru_cache, partial
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.date import is_between_date_strs_inclusive
+from recidiviz.utils.future_executor import map_fn_with_results
 
 
 class _StorageDirectoryLevel(Enum):
@@ -114,8 +115,7 @@ def _filter_candidate_paths_by_dates(
     ]
 
 
-def _get_subdirs_in_date_range(
-    *,
+def _get_subdirs_in_opt_date_range(
     fs: GCSFileSystem,
     storage_bucket_path: GcsfsDirectoryPath,
     lower_bound_date_inclusive: datetime.date | None,
@@ -148,13 +148,57 @@ def _get_subdirs_in_date_range(
     return paths_to_search
 
 
-# TODO(#45991) finish implementation
+def _search_directory(
+    candidate_directory: GcsfsDirectoryPath, *, fs: GCSFileSystem, file_filter_glob: str
+) -> bool:
+    """Searches |candidate_directory| using |file_filter_glob|, returning a boolean
+    for if any results were returned.
+    """
+    match_glob = f"{candidate_directory.relative_path.rstrip('/')}/{file_filter_glob}"
+    return (
+        len(fs.ls(bucket_name=candidate_directory.bucket_name, match_glob=match_glob))
+        > 0
+    )
+
+
 def _get_subdirs_with_file_filters(
-    fs: GCSFileSystem,  # pylint: disable=unused-argument
+    fs: GCSFileSystem,
     candidate_directories: list[GcsfsDirectoryPath],
-    file_filters: list[str],  # pylint: disable=unused-argument
+    file_filter_globs: list[str],
 ) -> list[GcsfsDirectoryPath]:
-    return candidate_directories
+    """Filters out items in |candidate_directories| that don't have at least one match
+    returned by each |file_filter_globs| glob pattern.
+    """
+
+    subdirectories_to_be_searched = candidate_directories
+    subdirs_containing_files: list[GcsfsDirectoryPath] = []
+
+    for file_filter_glob in file_filter_globs:
+        result = map_fn_with_results(
+            work_items=subdirectories_to_be_searched,
+            work_fn=partial(
+                _search_directory, fs=fs, file_filter_glob=file_filter_glob
+            ),
+            overall_timeout_sec=60,  # 1 minute
+            single_work_item_timeout_sec=60 * 60,  # 1 hour
+        )
+
+        if result.exceptions:
+            raise ExceptionGroup(
+                f"Found errors while searching for subdirectories matching [{file_filter_glob}]",
+                [e[1] for e in result.exceptions],
+            )
+
+        subdirectories_to_be_searched = []
+        # if we find a single match for a filter inside of a subdir, we've already marked
+        # it as containing files so we dont need to revisit
+        for subdirectory, found_match in result.successes:
+            if found_match:
+                subdirs_containing_files.append(subdirectory)
+            else:
+                subdirectories_to_be_searched.append(subdirectory)
+
+    return subdirs_containing_files
 
 
 def get_storage_directories_containing_raw_files(
@@ -162,7 +206,7 @@ def get_storage_directories_containing_raw_files(
     storage_bucket_path: GcsfsDirectoryPath,
     lower_bound_date_inclusive: datetime.date | None,
     upper_bound_date_inclusive: datetime.date | None,
-    file_filters: list[str] | None = None,
+    file_filter_globs: list[str] | None = None,
 ) -> list[GcsfsDirectoryPath]:
     """Returns all subdirs containing files in the provided |storage_bucket_path|, which
     we assume conforms to our standard storage directory layout
@@ -175,19 +219,19 @@ def get_storage_directories_containing_raw_files(
         upper_bound_date (date | None): The upper bound date to search for directories,
             inclusive.
         file_filters: A list of filters to search for in the subdirectories. Must adhere
-            to URI wildcard conventions https://cloud.google.com/storage/docs/wildcards.
+            to gcs match glob conventions, see
+            https://cloud.google.com/storage/docs/json_api/v1/objects/list#list-object-glob
     """
 
-    subdirs_in_date_range = _get_subdirs_in_date_range(
+    subdirs_in_date_range = _get_subdirs_in_opt_date_range(
         fs=fs,
         storage_bucket_path=storage_bucket_path,
         lower_bound_date_inclusive=lower_bound_date_inclusive,
         upper_bound_date_inclusive=upper_bound_date_inclusive,
     )
-
-    if file_filters is None:
+    if not file_filter_globs:
         return subdirs_in_date_range
 
     return _get_subdirs_with_file_filters(
-        fs, subdirs_in_date_range, file_filters=file_filters
+        fs, subdirs_in_date_range, file_filter_globs=file_filter_globs
     )

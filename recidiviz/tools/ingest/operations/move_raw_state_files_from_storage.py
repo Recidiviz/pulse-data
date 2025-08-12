@@ -45,8 +45,8 @@ you might want to do this in cases where you are doing a secondary re-import or 
 re-ingesting a specific file in primary and want the files to remain in primary storage 
 for the duration of the re-import.
 """
-
 import argparse
+import datetime
 import logging
 import re
 from typing import List, Optional
@@ -57,6 +57,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
     DirectIngestRawDataResourceLockResource,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.str_field_utils import parse_date
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -74,8 +75,8 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawDataResourceLock,
 )
 from recidiviz.tools.deploy.logging import redirect_logging_to_file
-from recidiviz.tools.gsutil_shell_helpers import (
-    gsutil_get_storage_subdirs_containing_raw_files,
+from recidiviz.tools.ingest.operations.helpers.cloud_storage_utils import (
+    get_storage_directories_containing_raw_files,
 )
 from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directories_controller import (
     IngestFilesOperationType,
@@ -94,9 +95,6 @@ class OperateOnRawStorageFilesController:
     appropriate state ingest bucket.
     """
 
-    FILE_TO_OPERATE_ON_RE = re.compile(
-        r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
-    )
     RESOURCE_LOCKS_REQUIRED = (DirectIngestRawDataResourceLockResource.BUCKET,)
 
     def __init__(
@@ -107,8 +105,8 @@ class OperateOnRawStorageFilesController:
         source_raw_data_instance: DirectIngestInstance,
         destination_raw_data_instance: DirectIngestInstance,
         region: str,
-        start_date_bound: Optional[str],
-        end_date_bound: Optional[str],
+        start_date_bound: datetime.date | None,
+        end_date_bound: datetime.date | None,
         dry_run: bool,
         operation_type: IngestFilesOperationType,
         file_filter: Optional[str],
@@ -150,10 +148,12 @@ class OperateOnRawStorageFilesController:
             with_proxy=True,
         )
 
+        date_string = f"start_bound_{start_date_bound.isoformat() if start_date_bound else None}_end_bound_{end_date_bound.isoformat() if end_date_bound else None}"
+
         self.log_output_path = make_log_output_path(
             operation_name=operation_type.value.lower(),
             region_code=region,
-            date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
+            date_string=date_string,
             dry_run=dry_run,
         )
 
@@ -174,7 +174,12 @@ class OperateOnRawStorageFilesController:
         )
 
         logging.info("Finding files to %s...", self.operation_type.value.lower())
-        date_subdir_paths = self.get_date_subdir_paths()
+        date_subdir_paths = get_storage_directories_containing_raw_files(
+            fs=self.fs,
+            storage_bucket_path=self.source_storage_bucket,
+            upper_bound_date_inclusive=self.end_date_bound,
+            lower_bound_date_inclusive=self.start_date_bound,
+        )
 
         prompt_for_confirmation(
             f"Found [{len(date_subdir_paths)}] dates to {self.operation_type.value.lower()} - continue?",
@@ -220,16 +225,8 @@ class OperateOnRawStorageFilesController:
                 for lock in resource_locks:
                     self.lock_manager.release_lock_by_id(lock.lock_id)
 
-    def get_date_subdir_paths(self) -> List[str]:
-        # TODO(#45991) migrate this to use get_storage_directories_containing_raw_files
-        return gsutil_get_storage_subdirs_containing_raw_files(
-            storage_bucket_path=self.source_storage_bucket,
-            upper_bound_date=self.end_date_bound,
-            lower_bound_date=self.start_date_bound,
-        )
-
     def collect_files_to_operate_on(
-        self, date_subdir_paths: List[str]
+        self, date_subdir_paths: List[GcsfsDirectoryPath]
     ) -> List[GcsfsFilePath]:
         """Searches the given list of directory paths for files directly in those directories
         that should be moved /copied to the ingest directory and returns a list of string
@@ -244,6 +241,11 @@ class OperateOnRawStorageFilesController:
             single_work_item_timeout_sec=60 * 20,  # 20 minute timeout
             overall_timeout_sec=60 * 60 * 4,  # 4 hour timeout
         )
+
+        if result.exceptions:
+            raise ExceptionGroup(
+                "Failed to search subdirectories", [e[1] for e in result.exceptions]
+            )
 
         return [f for _subdir, sublist in result.successes for f in sublist]
 
@@ -278,15 +280,14 @@ class OperateOnRawStorageFilesController:
         self.failed_operations_list.extend(paths for paths, _ in result.exceptions)
 
     def get_files_to_operate_on_from_path(
-        self, gs_dir_path: str
+        self, subdir_path: GcsfsDirectoryPath
     ) -> List[GcsfsFilePath]:
         """Returns files in the provided |gs_dir_path| that should be moved/copied back
         into the ingest bucket.
         """
         result = []
-        dir_path = GcsfsDirectoryPath.from_absolute_path(gs_dir_path)
         for file_path in self.fs.ls(
-            bucket_name=dir_path.bucket_name, blob_prefix=dir_path.relative_path
+            bucket_name=subdir_path.bucket_name, blob_prefix=subdir_path.relative_path
         ):
             if isinstance(file_path, GcsfsDirectoryPath):
                 continue
@@ -420,8 +421,16 @@ def main() -> None:
                 source_raw_data_instance=args.source_raw_data_instance,
                 destination_raw_data_instance=args.destination_raw_data_instance,
                 region=args.region,
-                end_date_bound=args.end_date_bound,
-                start_date_bound=args.start_date_bound,
+                end_date_bound=(
+                    parse_date(args.end_date_bound)
+                    if args.end_date_bound is not None
+                    else None
+                ),
+                start_date_bound=(
+                    parse_date(args.start_date_bound)
+                    if args.start_date_bound is not None
+                    else None
+                ),
                 dry_run=args.dry_run,
                 file_filter=args.file_filter,
                 operation_type=args.operation_type,

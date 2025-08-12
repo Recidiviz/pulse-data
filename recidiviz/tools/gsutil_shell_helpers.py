@@ -240,6 +240,7 @@ def _get_subdirs_in_date_range(
     return output
 
 
+# TODO(#45991) deprecate in favor of get_storage_directories_containing_raw_files
 # TODO(#37517) need to make these date instead of string and then have the callees convert
 # from datetime to date and truncate start_datetime to date and bump end datetime
 # exclusive to next day, if it's not padded with 0s

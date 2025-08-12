@@ -125,3 +125,62 @@ class TestFakeGCSFileSystem(TestCase):
                 bucket_name=bucket, blob_name="dir/subdir/another-valid-subdir/"
             ),
         ]
+
+    def test_ls_glob(self) -> None:
+        bucket = "fake-bucket"
+        fs = FakeGCSFileSystem()
+
+        # no files, no problem
+        assert not fs.ls(bucket_name=bucket)
+        assert not fs.ls(bucket_name=bucket, blob_prefix="aaaa")
+        assert not fs.ls(bucket_name=bucket, match_glob="aaaa")
+
+        with self.assertRaisesRegex(
+            ValueError, "Can only specify at most one of blob_prefix and match_glob"
+        ):
+            fs.ls(bucket_name=bucket, blob_prefix="aaaa", match_glob="aaaa")
+
+        # let's add a file and see how we do
+        simple_path = GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name=bucket, blob_name="dir/subdir/csv.py"
+        )
+        fs.test_add_path(path=simple_path, local_path=None)
+
+        # not matches
+        assert not fs.ls(bucket_name=bucket, match_glob="another-dir/*")
+        assert not fs.ls(bucket_name=bucket, match_glob="dir/subdir-2/*")
+        assert not fs.ls(bucket_name=bucket, match_glob="dir/subdir/csv*python")
+        # matches
+        assert fs.ls(bucket_name=bucket, match_glob="dir/*") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="dir/subdir/*") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="dir/subdir/csv*") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="*.py") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="*csv[.]*") == [simple_path]
+
+        # let's add another file and see how we do
+        simple_path_2 = GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name=bucket, blob_name="dir/subdir/json.py"
+        )
+        fs.test_add_path(path=simple_path_2, local_path=None)
+
+        # not matches
+        assert not fs.ls(bucket_name=bucket, match_glob="another-dir/*")
+        assert not fs.ls(bucket_name=bucket, match_glob="dir/subdir-2/*")
+        assert not fs.ls(bucket_name=bucket, match_glob="dir/subdir/csv*python")
+        # matches
+        assert fs.ls(bucket_name=bucket, match_glob="dir/*") == [
+            simple_path,
+            simple_path_2,
+        ]
+        assert fs.ls(bucket_name=bucket, match_glob="dir/subdir/*") == [
+            simple_path,
+            simple_path_2,
+        ]
+        assert fs.ls(bucket_name=bucket, match_glob="dir/subdir/csv*") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="dir/subdir/csv*") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="*.py") == [
+            simple_path,
+            simple_path_2,
+        ]
+        assert fs.ls(bucket_name=bucket, match_glob="*csv[.]*") == [simple_path]
+        assert fs.ls(bucket_name=bucket, match_glob="*json[.]*") == [simple_path_2]

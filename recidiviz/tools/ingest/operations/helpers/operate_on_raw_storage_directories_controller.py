@@ -209,6 +209,7 @@ class OperateOnRawStorageDirectoriesController:
             )
 
     def _get_subdirs_to_operate_on(self) -> List[str]:
+        # TODO(#45991) deprecate in favor of get_storage_directories_containing_raw_files
         return gsutil_get_storage_subdirs_containing_raw_files(
             storage_bucket_path=self.source_region_storage_dir_path,
             upper_bound_date=self.end_date_bound,
