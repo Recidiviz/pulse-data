@@ -249,13 +249,15 @@ sshtunnel = "==0.4.0"
 scrapy = "*"
 scrapy-playwright = "*"
 usaddress = "*"
-llama_index = "*"
 pydantic = "*"
 langsmith = "*"
 async_googlemaps = "*"
 googlemaps = "*"
 pydantic_settings = "*"
 pymssql = "*"
+# llama_index and openai are tigtly coupled, so we pin them together.
+llama_index = ">=0.13.1"
+openai = ">=1.99.8"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
