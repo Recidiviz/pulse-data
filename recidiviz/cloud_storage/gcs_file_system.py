@@ -154,6 +154,10 @@ class GCSFileSystem:
         """
 
     @abc.abstractmethod
+    def list_directories(self, path: GcsfsDirectoryPath) -> List[GcsfsDirectoryPath]:
+        """Returns the subdirectories, if any exist, in the provided |path|."""
+
+    @abc.abstractmethod
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
         """Allows for the content type of a certain file path to be reset."""
 

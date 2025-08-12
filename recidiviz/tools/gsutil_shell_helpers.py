@@ -240,19 +240,6 @@ def _get_subdirs_in_date_range(
     return output
 
 
-def _get_filters(
-    file_tag_filters: Optional[List[str]],
-    file_tag_regex: Optional[str],
-) -> List[str]:
-    if file_tag_filters and file_tag_regex:
-        raise ValueError("Cannot have both file_tag_filter and file_tag_regex")
-    if file_tag_regex:
-        return [file_tag_regex]
-    if file_tag_filters:
-        return file_tag_filters
-    return []
-
-
 # TODO(#37517) need to make these date instead of string and then have the callees convert
 # from datetime to date and truncate start_datetime to date and bump end datetime
 # exclusive to next day, if it's not padded with 0s

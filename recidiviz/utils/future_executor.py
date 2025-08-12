@@ -80,3 +80,41 @@ def map_fn_with_progress_bar_results(
                 finally:
                     progress_bar.next()
     return ThreadPoolExecutorResult(successes=successes, exceptions=exceptions)
+
+
+def map_fn_with_results(
+    *,
+    work_items: list[T],
+    work_fn: Callable[[T], U],
+    overall_timeout_sec: int,
+    single_work_item_timeout_sec: int,
+    max_workers: int = 32,
+) -> ThreadPoolExecutorResult[T, U]:
+    """Processes all items in |work_items| using the provided |work_fn| in parallel
+
+    Args:
+        work_items: The list of itemps to process, passed as a single arg to |work_fn|
+        work_fn: The function used to process items
+        overall_timeout_sec: The timeout for ALL items to complete
+        single_work_item_timeout_sec: The timeout for any single work item
+        max_workers: The maximum number of ThreadPoolExecutor workers to use
+    """
+    successes = []
+    exceptions = []
+    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_work_item = {
+            executor.submit(
+                structured_logging.with_context(work_fn), work_item
+            ): work_item
+            for work_item in work_items
+        }
+        for future in futures.as_completed(
+            future_to_work_item, timeout=overall_timeout_sec
+        ):
+            work_item = future_to_work_item[future]
+            try:
+                result = future.result(timeout=single_work_item_timeout_sec)
+                successes.append((work_item, result))
+            except Exception as e:
+                exceptions.append((work_item, e))
+    return ThreadPoolExecutorResult(successes=successes, exceptions=exceptions)

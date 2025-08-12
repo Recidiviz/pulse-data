@@ -779,7 +779,7 @@ def is_date_str(potential_date_str: str) -> bool:
         return False
 
 
-# TODO(##37517) deprecate once not used
+# TODO(#37517) deprecate once not used
 def is_between_date_strs_inclusive(
     *,
     upper_bound_date: Optional[str],
@@ -903,7 +903,7 @@ def get_overlapping_date_ranges(
     date_ranges: list[PotentiallyOpenDateRange],
 ) -> set[PotentiallyOpenDateRange]:
     overlaps = set()
-    for (a, b) in itertools.combinations(date_ranges, 2):
+    for a, b in itertools.combinations(date_ranges, 2):
         if (a.lower_bound_inclusive_date in b) or (b.lower_bound_inclusive_date in a):
             overlaps.add(a)
             overlaps.add(b)

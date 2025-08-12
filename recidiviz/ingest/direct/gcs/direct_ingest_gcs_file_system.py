@@ -261,6 +261,9 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         return self.gcs_file_system.ls(bucket_name, blob_prefix=blob_prefix)
 
+    def list_directories(self, path: GcsfsDirectoryPath) -> List[GcsfsDirectoryPath]:
+        return self.gcs_file_system.list_directories(path=path)
+
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
         return self.gcs_file_system.set_content_type(path, content_type)
 

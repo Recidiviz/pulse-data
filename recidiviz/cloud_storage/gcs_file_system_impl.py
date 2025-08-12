@@ -26,6 +26,7 @@ from typing import IO, Any, Dict, Iterator, List, Optional, Union
 from zipfile import ZipFile, is_zipfile
 
 from google.api_core import retry
+from google.api_core.page_iterator import HTTPIterator
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
@@ -374,6 +375,22 @@ class GCSFileSystemImpl(GCSFileSystem):
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
         return [GcsfsPath.from_blob(blob) for blob in blobs]
+
+    def list_directories(self, path: GcsfsDirectoryPath) -> List[GcsfsDirectoryPath]:
+        """Returns the subdirectories, if any exist, in the provided |path|. This
+        implementation uses google's api to not actually have to list all objects
+        recursively in the directory in order to determine the sub-directories.
+        """
+        blob_iterator: HTTPIterator = self.storage_client.list_blobs(
+            bucket_or_name=path.bucket_name, prefix=path.relative_path, delimiter="/"
+        )
+        return [
+            GcsfsDirectoryPath.from_bucket_and_blob_name(
+                bucket_name=path.bucket_name, blob_name=prefix
+            )
+            for page in blob_iterator.pages
+            for prefix in page.prefixes
+        ]
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:

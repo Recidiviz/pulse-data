@@ -221,7 +221,7 @@ class OperateOnRawStorageFilesController:
                     self.lock_manager.release_lock_by_id(lock.lock_id)
 
     def get_date_subdir_paths(self) -> List[str]:
-        # TODO(#45991) migrate this to use GcsFileSystem
+        # TODO(#45991) migrate this to use get_storage_directories_containing_raw_files
         return gsutil_get_storage_subdirs_containing_raw_files(
             storage_bucket_path=self.source_storage_bucket,
             upper_bound_date=self.end_date_bound,

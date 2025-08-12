@@ -305,6 +305,25 @@ class FakeGCSFileSystem(GCSFileSystem):
 
             return results
 
+    def list_directories(self, path: GcsfsDirectoryPath) -> List[GcsfsDirectoryPath]:
+        with self.mutex:
+            results: set[GcsfsDirectoryPath] = set()
+            for abs_path, entry in self.files.items():
+                # if it's a directory, make sure it ends with an '/'
+                abs_path = (
+                    abs_path
+                    if isinstance(entry, GcsfsFilePath)
+                    else f'{abs_path.rstrip("/")}/'
+                )
+                if abs_path.startswith(path.abs_path()):
+                    relative_subpath = os.path.relpath(abs_path, path.abs_path())
+                    top_directory = os.path.dirname(relative_subpath).split("/")[0]
+                    if len(top_directory):
+                        results.add(
+                            GcsfsDirectoryPath.from_dir_and_subdir(path, top_directory)
+                        )
+            return list(results)
+
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
         with self.mutex:
             entry = self.files[path.abs_path()]
