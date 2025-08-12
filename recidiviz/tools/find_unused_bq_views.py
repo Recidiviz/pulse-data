@@ -30,7 +30,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     TraversalDirection,
 )
-from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.calculator.query.experiments_metadata.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
 )
@@ -187,9 +187,6 @@ from recidiviz.persistence.entity.entities_bq_schema import (
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.segment.segment_event_big_query_view_collector import (
     SegmentEventBigQueryViewCollector,
-)
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
 )
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
@@ -568,7 +565,6 @@ def get_unused_across_all_projects_addresses_from_all_views_dag(
         with local_project_id_override(project):
             project_dag_walker = BigQueryViewDagWalker(
                 build_views_to_update(
-                    view_source_table_datasets=get_source_table_datasets(project),
                     candidate_view_builders=deployed_view_builders(),
                     sandbox_context=None,
                 )

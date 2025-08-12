@@ -48,7 +48,7 @@ class TestGroupExceptions(TestCase):
             )
 
         with self.assertRaisesRegex(
-            ValueError,
+            AssertionError,
             r"Expected to find \[IndentationError\] with regex \[a\] in the following exceptions but did not: .*",
         ):
             with assert_group_contains_regex(
@@ -72,7 +72,8 @@ class TestGroupExceptions(TestCase):
 
     def test_strict(self) -> None:
         with self.assertRaisesRegex(
-            ValueError, r"Found the following exceptions that had no match in \[\]:.*"
+            AssertionError,
+            r"Found the following exceptions that had no match in \[\]:.*",
         ):
             with assert_group_contains_regex(r"testing", []):
                 raise ExceptionGroup("testing", [ValueError("a")])

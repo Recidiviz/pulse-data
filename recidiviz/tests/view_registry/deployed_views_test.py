@@ -31,7 +31,7 @@ from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -278,7 +278,6 @@ class DeployedViewsTest(unittest.TestCase):
                 source_table_datasets = get_source_table_datasets(project_id)
 
                 views = build_views_to_update(
-                    view_source_table_datasets=source_table_datasets,
                     candidate_view_builders=candidate_view_builders,
                     sandbox_context=None,
                 )
@@ -314,9 +313,6 @@ class DeployedViewsTest(unittest.TestCase):
         )
 
         views = build_views_to_update(
-            view_source_table_datasets=get_source_table_datasets(
-                project_id=metadata.project_id()
-            ),
             candidate_view_builders=deployed_view_builders(),
             sandbox_context=None,
         )
@@ -344,9 +340,6 @@ class ViewDagInvariantTests(unittest.TestCase):
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456"):
             view_builders = deployed_view_builders()
             views = build_views_to_update(
-                view_source_table_datasets=get_source_table_datasets(
-                    project_id=metadata.project_id()
-                ),
                 candidate_view_builders=view_builders,
                 sandbox_context=None,
             )

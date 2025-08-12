@@ -75,23 +75,23 @@ class _AssertRaisesGroupException:
             raise ValueError(f"Expected a {BaseExceptionGroup} but found none")
 
         if not issubclass(exc_type, BaseExceptionGroup):
-            raise ValueError(
+            raise TypeError(
                 f"Expected [{BaseExceptionGroup.__name__}] but found [{exc_type.__name__}]"
             )
 
         if not isinstance(exc_val, BaseExceptionGroup):
-            raise ValueError(
+            raise TypeError(
                 f"Expected [{BaseExceptionGroup.__name__}] but found [{exc_type.__name__}]"
             )
 
         if not self.message_regex.search(str(exc_val)):
-            raise ValueError(
+            raise AssertionError(
                 f"Expected top-level message to be [{self.message_regex}] but found [{str(exc_val)}]"
             )
 
         actual_sub_exceptions = {e: False for e in exc_val.exceptions}
         if not all(isinstance(e, Exception) for e in actual_sub_exceptions):
-            raise ValueError("Found sub-exception that is not an Exception subclass")
+            raise TypeError("Found sub-exception that is not an Exception subclass")
 
         for (expected_class, expected_regex) in self.included_sub_exceptions:
             found_match = False
@@ -103,7 +103,7 @@ class _AssertRaisesGroupException:
                     found_match = True
 
             if not found_match:
-                raise ValueError(
+                raise AssertionError(
                     f"Expected to find [{expected_class.__name__}] with regex "
                     f"[{expected_regex.pattern}] in the following exceptions but did "
                     f"not: \n {_format_excs(actual_sub_exceptions.keys())}"
@@ -117,7 +117,7 @@ class _AssertRaisesGroupException:
                     if not was_matched
                 ]
             )
-            raise ValueError(
+            raise AssertionError(
                 f"Found the following exceptions that had no match in "
                 f"{self.included_sub_exceptions}: \n {execs_without_match_str}"
             )

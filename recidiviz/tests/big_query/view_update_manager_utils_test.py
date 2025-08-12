@@ -26,11 +26,16 @@ from mock import call, patch
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     delete_unmanaged_views_and_tables_from_dataset,
     get_managed_view_and_materialized_table_addresses_by_dataset,
+    validate_builders_not_in_source_datasets,
 )
+from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
@@ -975,3 +980,120 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
+
+    def test_not_in_datasets(self) -> None:
+        source_datasets = {"source_dataset"}
+        view_dataset = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=True,
+        )
+
+        # no error
+        validate_builders_not_in_source_datasets(
+            source_table_datasets=source_datasets,
+            view_builders=[view_dataset],
+            sandbox_context=None,
+        )
+
+        source_dataset = SimpleBigQueryViewBuilder(
+            dataset_id="source_dataset",
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=True,
+        )
+
+        with assert_group_contains_regex(
+            r"Found the following views in source table-only datasets\:",
+            [
+                (
+                    ValueError,
+                    r"Found view \[test_view\] in source-table-only dataset \[source_dataset\]",
+                )
+            ],
+        ):
+
+            validate_builders_not_in_source_datasets(
+                source_table_datasets=source_datasets,
+                view_builders=[source_dataset],
+                sandbox_context=None,
+            )
+
+        source_materialized_dataset = SimpleBigQueryViewBuilder(
+            dataset_id="not_source_dataset",
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            materialized_address_override=BigQueryAddress(
+                dataset_id="source_dataset", table_id="test_view"
+            ),
+            should_materialize=True,
+        )
+        with assert_group_contains_regex(
+            r"Found the following views in source table-only datasets\:",
+            [
+                (
+                    ValueError,
+                    r"Found view with materialization \[test_view\] in source-table-only dataset \[source_dataset\]",
+                )
+            ],
+        ):
+
+            validate_builders_not_in_source_datasets(
+                source_table_datasets=source_datasets,
+                view_builders=[source_materialized_dataset],
+                sandbox_context=None,
+            )
+
+    def test_not_in_datasets_sandbox(self) -> None:
+        source_datasets = {"source_dataset"}
+        dataset = SimpleBigQueryViewBuilder(
+            dataset_id="dataset",
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=True,
+        )
+
+        # no error
+        validate_builders_not_in_source_datasets(
+            source_table_datasets=source_datasets,
+            view_builders=[dataset],
+            sandbox_context=None,
+        )
+
+        # no error, sour_datasets is different
+        validate_builders_not_in_source_datasets(
+            source_table_datasets=source_datasets,
+            view_builders=[dataset],
+            sandbox_context=BigQueryViewSandboxContext(
+                parent_address_formatter_provider=None,
+                parent_address_overrides=None,
+                output_sandbox_dataset_prefix="sour",
+                state_code_filter=None,
+            ),
+        )
+
+        with assert_group_contains_regex(
+            r"Found the following views in source table-only datasets\:",
+            [
+                (
+                    ValueError,
+                    r"Found view \[test_view\] in source-table-only dataset \[source_dataset\]",
+                )
+            ],
+        ):
+
+            validate_builders_not_in_source_datasets(
+                source_table_datasets=source_datasets,
+                view_builders=[dataset],
+                sandbox_context=BigQueryViewSandboxContext(
+                    parent_address_formatter_provider=None,
+                    parent_address_overrides=None,
+                    output_sandbox_dataset_prefix="source",
+                    state_code_filter=None,
+                ),
+            )

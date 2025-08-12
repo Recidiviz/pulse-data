@@ -32,13 +32,10 @@ import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
-)
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -71,7 +68,6 @@ def main() -> None:
 
     with local_project_id_override(args.project_id):
         views = build_views_to_update(
-            view_source_table_datasets=get_source_table_datasets(args.project_id),
             candidate_view_builders=deployed_view_builders(),
             sandbox_context=None,
         )

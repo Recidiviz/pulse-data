@@ -470,9 +470,6 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             if view_builder.address not in skipped_views
         ]
         create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets={
-                a.dataset_id for a in self._source_table_addresses
-            },
             view_builders_to_update=view_builders_to_update,
             view_update_sandbox_context=None,
             # This script does not do any clean up of previously managed views

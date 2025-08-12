@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helper for building a set of views from view builders."""
+"""Utils for working with views and view builders."""
 import logging
-from typing import Dict, Sequence, Set
+from typing import Dict, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
@@ -25,24 +25,16 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 
 
 def build_views_to_update(
-    view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     sandbox_context: BigQueryViewSandboxContext | None,
 ) -> Dict[BigQueryView, BigQueryViewBuilder]:
-    """
-    Returns a map associating view builders to the views that should be updated,
-    built from builders in the |candidate_view_builders| list.
+    """Returns a map associating view builders to the views that should be updated,
+    built from builders in |candidate_view_builders|.
     """
 
     logging.info("Building [%s] views...", len(candidate_view_builders))
     views_to_builders = {}
     for view_builder in candidate_view_builders:
-        # TODO(#45650): move this check out of the view update into a test
-        if view_builder.dataset_id in view_source_table_datasets:
-            raise ValueError(
-                f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
-            )
-
         try:
             view = view_builder.build(sandbox_context=sandbox_context)
         except Exception as e:

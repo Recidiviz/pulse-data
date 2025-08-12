@@ -18,15 +18,12 @@
 import logging
 from concurrent import futures
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Sequence, Set
+from typing import Dict, Iterable, List, Optional, Sequence
 
 import attr
 from google.cloud import exceptions
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address_formatter import (
-    BigQueryAddressFormatterProvider,
-)
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClient,
@@ -42,7 +39,10 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
-from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.big_query.big_query_view_update_sandbox_context import (
+    BigQueryViewUpdateSandboxContext,
+)
+from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_config import (
     get_deployed_view_dag_update_perf_config,
@@ -52,7 +52,6 @@ from recidiviz.big_query.view_update_manager_utils import (
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import CounterInstrumentKey
 from recidiviz.utils import structured_logging
@@ -69,37 +68,6 @@ MAX_WORKERS = 10
 
 # The number of slowest-to-process views to print at the end of processing the full DAG.
 NUM_SLOW_VIEWS_TO_LOG = 25
-
-
-@attr.define(kw_only=True)
-class BigQueryViewUpdateSandboxContext:
-    """Object that provides a set of address overrides for a *collection of views* that
-    will be loaded into a sandbox.
-    """
-
-    # The state code that this sandbox should return results for. When set,
-    # UnionAllBigQueryViewBuilder views will filter to just parents that are either a)
-    # state agnostic views or b) state-specific views for this state.
-    state_code_filter: StateCode | None = attr.ib(
-        validator=attr_validators.is_opt(StateCode)
-    )
-
-    # Address overrides for any parent source tables views in this view update may
-    # query. May be empty (BigQueryAddressOverrides.empty()) if the update should read
-    # from only deployed source tables.
-    input_source_table_overrides: BigQueryAddressOverrides = attr.ib(
-        validator=attr.validators.instance_of(BigQueryAddressOverrides)
-    )
-
-    # The prefix to append to the output dataset for any views loaded by this view
-    # update.
-    output_sandbox_dataset_prefix: str = attr.ib(validator=attr_validators.is_str)
-
-    # If given, this will give us a formatter that can be used to apply additional
-    #  formatting on each parent address of views loaded by this view update.
-    parent_address_formatter_provider: BigQueryAddressFormatterProvider | None = (
-        attr.ib(validator=attr_validators.is_opt(BigQueryAddressFormatterProvider))
-    )
 
 
 class CreateOrUpdateViewStatus(Enum):
@@ -134,7 +102,6 @@ class CreateOrUpdateViewResult:
 
 def create_managed_dataset_and_deploy_views_for_view_builders(
     *,
-    view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     historically_managed_datasets_to_clean: set[str] | None,
     rematerialize_changed_views_only: bool,
@@ -149,10 +116,6 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     provided view builder list.
 
     Args:
-        view_source_table_datasets (set[str]): The set of source table datasets that
-            serve as containers for all data that will be materialized into the provided
-            view builders; used to make sure we do not have any candidate views that
-            will be created in source table-only datasets.
         views_to_update (sequence[BigQueryViewBuilder]): A list of view builders to be
             created or updated.
         historically_managed_datasets_to_clean(set[str] | None): Set of datasets that have
@@ -211,7 +174,6 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
 
     try:
         views_to_update = build_views_to_update(
-            view_source_table_datasets=view_source_table_datasets,
             candidate_view_builders=view_builders_to_update,
             sandbox_context=sandbox_context,
         )

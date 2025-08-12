@@ -133,13 +133,18 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
-from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.big_query.big_query_view_update_sandbox_context import (
+    BigQueryViewUpdateSandboxContext,
+)
+from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.big_query.view_update_manager import (
-    BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
+)
+from recidiviz.big_query.view_update_manager_utils import (
+    validate_builders_not_in_current_source_datasets,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
@@ -881,7 +886,6 @@ def collect_changed_views_and_descendants_to_load(
     logging.info("Constructing DAG with all known views...")
     view_builders_in_full_dag = deployed_view_builders()
     all_views = build_views_to_update(
-        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         candidate_view_builders=view_builders_in_full_dag,
         sandbox_context=None,
     )
@@ -1097,8 +1101,11 @@ def load_collected_views_to_sandbox(
             state_code_filter=state_code_filter,
         )
     try:
+        # protect against prefix + dataset name collisions with source table dataset names
+        validate_builders_not_in_current_source_datasets(
+            collected_builders, sandbox_context=view_update_sandbox_context
+        )
         create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
             view_builders_to_update=collected_builders,
             view_update_sandbox_context=view_update_sandbox_context,
             # Don't clean up datasets when running a sandbox script

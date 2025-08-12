@@ -28,9 +28,11 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalkerProcessingFailureMode,
 )
+from recidiviz.big_query.big_query_view_update_sandbox_context import (
+    BigQueryViewUpdateSandboxContext,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import (
-    BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
@@ -142,7 +144,6 @@ def _federated_bq_regional_dataset_refresh(
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=set(),
         view_builders_to_update=view_builders,
         view_update_sandbox_context=view_update_sandbox_context,
         bq_region_override=bq_region_override,

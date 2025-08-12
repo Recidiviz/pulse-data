@@ -29,9 +29,6 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
-)
 from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
     build_source_table_repository_for_yaml_managed_tables,
 )
@@ -132,7 +129,6 @@ def execute_update_all_managed_views() -> None:
         update_views_result,
         dag_walker,
     ) = create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         view_update_sandbox_context=None,

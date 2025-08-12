@@ -34,8 +34,10 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
+from recidiviz.big_query.big_query_view_update_sandbox_context import (
+    BigQueryViewUpdateSandboxContext,
+)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-from recidiviz.big_query.view_update_manager import BigQueryViewUpdateSandboxContext
 from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
@@ -130,7 +132,6 @@ class ViewManagerTest(unittest.TestCase):
         ]
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
@@ -234,7 +235,6 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
@@ -360,7 +360,6 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
@@ -453,7 +452,6 @@ class ViewManagerTest(unittest.TestCase):
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
-            view_source_table_datasets=self.view_source_table_datasets,
             historically_managed_datasets_to_clean=None,
             rematerialize_changed_views_only=True,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
@@ -557,7 +555,6 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             view_update_sandbox_context=BigQueryViewUpdateSandboxContext(
                 output_sandbox_dataset_prefix="test_prefix",
@@ -814,7 +811,6 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_exists.return_value = True
 
         view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=historically_managed_datasets,
             rematerialize_changed_views_only=True,
