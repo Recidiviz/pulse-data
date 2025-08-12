@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Generates LookML files using all available LookML generators. Results are saved to recidiviz/tools/looker/generated/
+Generates LookML files using all available LookML generators. Results are saved to recidiviz/tools/looker/__generated__/
 
 Usage:
     python -m recidiviz.tools.looker.generate_all_lookml [<modified_files>...] [--force-all]
