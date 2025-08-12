@@ -210,10 +210,11 @@ def adjust_any_is_sex_offense(cohort_df_row: pd.Series) -> bool:
 
 
 def adjust_ncic_category(cohort_df_row: pd.Series) -> str:
-    """Adjust the adjust_ncic_category value for a given row.
+    """Adjust the most_severe_ncic_category_uniform value for a given row.
 
     There are some offenses that have incorrect NCIC categories. While we're not addressing this systematically, here
-    we at least override the known cases of some sex offenses being miscategorized as Bribery.
+    we at least override the known cases of some sex offenses being miscategorized as Bribery. We also correct a known
+    typo of "Sexual Assualt" -> "Sexual Assault".
 
     Specifically, offenses containing:
      * "SEXUAL ABUSE", "SEXUAL BATTERY", "SEXUAL CONTACT" are overridden to be "Sexual Assault"
@@ -231,6 +232,8 @@ def adjust_ncic_category(cohort_df_row: pd.Series) -> str:
         or "SEXUAL EXPLOITATION" in cohort_df_row.most_severe_description.upper()
     ):
         return "Commercial Sex"
+    if cohort_df_row.most_severe_ncic_category_uniform == "Sexual Assualt":
+        return "Sexual Assault"
     return cohort_df_row.most_severe_ncic_category_uniform
 
 

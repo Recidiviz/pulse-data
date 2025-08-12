@@ -379,6 +379,15 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
         self.assertEqual("Commercial Sex", ncic_category)
 
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "Sexual Assualt",
+                "most_severe_description": "SEXUAL IMPOSITION",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("Sexual Assault", ncic_category)
+
     def test_get_combined_offense_category(self) -> None:
         input_row = pd.Series(
             {
