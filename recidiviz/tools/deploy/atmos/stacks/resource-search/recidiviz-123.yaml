@@ -20,3 +20,12 @@ components:
         big_query_instance_name: "resource_search_production"
         big_query_instance_friendly_name: "Resource Search Data (Production)"
         big_query_instance_description: "Production dataset for Recidiviz Resource Search application data."
+        service_account_id: "resource-search-prod"
+        tables:
+          - "resource"
+          - "resource_score"
+        postgresql:
+          databases:
+            - us_id
+            - us_az
+            - us_ut

@@ -21,3 +21,12 @@ components:
         big_query_instance_name: "resource_search_staging"
         big_query_instance_friendly_name: "Resource Search Data (Staging)"
         big_query_instance_description: "Staging dataset for Recidiviz Resource Search application data. Used for testing and development purposes. Do NOT use for production queries or applications."
+        service_account_id: "resource-search-staging"
+        tables:
+          - "resource"
+          - "resource_score"
+        postgresql:
+          databases:
+            - us_id
+            - us_az
+            - us_ut
