@@ -438,7 +438,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
             GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
         },
-        publish_success_pubsub_message=False,
+        publish_success_pubsub_message=True,
     ),
 ]
 
