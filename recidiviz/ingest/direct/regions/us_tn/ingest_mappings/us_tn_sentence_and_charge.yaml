@@ -32,13 +32,8 @@ input_columns:
   SexOffenderFlag: STRING
   OffenseDescription: STRING
 
-# TODO(#41686) Understand why some consecutive sentences do not exist.
 unused_columns:
-  - ConsecutiveConvictionCounty
-  - ConsecutiveCaseYear
-  - ConsecutiveCaseNumber
-  - ConsecutiveCountNumber
-    # TODO(#44222) This breaks normalization because of early completed statuses
+  # TODO(#44222) This breaks normalization because of early completed statuses
   - SentenceEffectiveDate
 variables:
   - sentence_external_id:
@@ -86,21 +81,19 @@ output:
             $equal:
               - LifeDeathHabitual
               - $literal("D")
-          # TODO(#41686) Understand why some consecutive sentences do not exist.
-          # Uncomment this to include them when we do!
-          # parent_sentence_external_id_array:
-          # # $conditional:
-          # #   - $if:
-          # #       $not_null: ConsecutiveCaseNumber
-          # #     $then:
-          # #       $concat:
-          # #         $separator: "@@"
-          # #         $values:
-          # #           - OffenderID
-          # #           - ConsecutiveConvictionCounty
-          # #           - ConsecutiveCaseYear
-          # #           - ConsecutiveCaseNumber
-          # #           - ConsecutiveCountNumber
+          parent_sentence_external_id_array:
+            $conditional:
+              - $if:
+                  $not_null: ConsecutiveCaseNumber
+                $then:
+                  $concat:
+                    $separator: "@@"
+                    $values:
+                      - OffenderID
+                      - ConsecutiveConvictionCounty
+                      - ConsecutiveCaseYear
+                      - ConsecutiveCaseNumber
+                      - ConsecutiveCountNumber
           charges:
             - StateChargeV2:
                 external_id: $variable(sentence_external_id)
