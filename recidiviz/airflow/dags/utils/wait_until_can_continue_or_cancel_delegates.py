@@ -18,6 +18,7 @@
 from typing import List
 
 from airflow.models import DagRun
+from airflow.serialization.pydantic.dag_run import DagRunPydantic
 
 from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
     WaitUntilCanContinueOrCancelDelegate,
@@ -41,7 +42,7 @@ class StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
     """
 
     def this_dag_run_can_continue(
-        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
     ) -> bool:
         """Returns True if this dag run can continue. If |dag_run| is a
         state-agnostic DagRun, it will continue iff it is the first DagRun in the queue
@@ -81,7 +82,7 @@ class StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(
         )
 
     def this_dag_run_should_be_canceled(
-        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
     ) -> bool:
         """Returns True if this dag run should be canceled. If |dag_run| is a
         state-agnostic DagRun, it will cancel iff it is not the first or last DagRun
@@ -176,7 +177,7 @@ class NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(
     """
 
     def this_dag_run_can_continue(
-        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
     ) -> bool:
         """Returns True if this dag run can continue. Will continue if it is the first
         dag run in the queue.
@@ -184,7 +185,7 @@ class NoConcurrentDagsWaitUntilCanContinueOrCancelDelegate(
         return all_active_dag_runs[0].run_id == dag_run.run_id
 
     def this_dag_run_should_be_canceled(
-        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
     ) -> bool:
         """Returns True if this dag run should be canceled. Will cancel if it is a
         is not the first or last dag run in the queue.

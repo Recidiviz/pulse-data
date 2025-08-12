@@ -19,12 +19,12 @@ from typing import List, Tuple
 
 from airflow.decorators import task
 from airflow.models import BaseOperator
+from airflow.models.taskmixin import DAGNode
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_START_TASK_NAME,
-    TaskGroupOrOperator,
     create_branch_end,
     get_branch_leaf_tasks,
     get_branch_root_tasks,
@@ -36,8 +36,8 @@ from recidiviz.airflow.dags.utils.branch_utils import (
 
 def create_branch_by_bool(
     *,
-    branch_if_true: List[TaskGroupOrOperator] | TaskGroupOrOperator,
-    branch_if_false: List[TaskGroupOrOperator] | TaskGroupOrOperator,
+    branch_if_true: List[DAGNode] | DAGNode,
+    branch_if_false: List[DAGNode] | DAGNode,
     bool_value: bool,
     start_trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
 ) -> Tuple[BaseOperator, BaseOperator]:

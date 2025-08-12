@@ -21,7 +21,7 @@
 import contextlib
 import datetime
 import os
-from typing import Any, Dict, Generator, List
+from typing import Any, Generator, List
 from unittest import TestCase
 from unittest.mock import call, patch
 
@@ -52,7 +52,7 @@ DAG_RUN_METADATA_TABLE_PATH = os.path.join(
 )
 
 
-def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
+def dummy_dag_run(dag: DAG, date: str, *, state: DagRunState | None = None) -> DagRun:
     try:
         execution_date = datetime.datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
@@ -66,7 +66,7 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
         run_type="manual",
         start_date=execution_date,
         execution_date=execution_date,
-        **kwargs,
+        state=state,
     )
 
 

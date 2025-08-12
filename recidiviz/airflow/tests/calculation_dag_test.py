@@ -33,6 +33,9 @@ from sqlalchemy.orm import Session
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    RecidivizKubernetesPodOperator,
+)
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failing_operator_constructor,
@@ -50,6 +53,7 @@ from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.metrics.export import fixtures as metric_export_fixtures
 from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Need to import calculation_dag inside test suite so environment variables are set before importing,
@@ -149,6 +153,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
                     task_group_container
                 ].topological_sort()
                 if isinstance(maybe_group, TaskGroup)
+                and maybe_group.group_id is not None
             ]
 
             assert branching_topological_sorted_groups == list(
@@ -207,10 +212,8 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        metric_exports_group: TaskGroup = dag.task_group_dict["metric_exports"]
-        view_materialization: BaseOperator = dag.get_task(
-            _UPDATE_ALL_MANAGED_VIEWS_TASK_ID
-        )
+        metric_exports_group = dag.task_group_dict["metric_exports"]
+        view_materialization = dag.get_task(_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
         self.assertIn(
             view_materialization.task_id, metric_exports_group.upstream_task_ids
         )
@@ -223,10 +226,8 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        validations_start: BaseOperator = dag.get_task(_VALIDATIONS_BRANCH_START)
-        view_materialization: BaseOperator = dag.get_task(
-            _UPDATE_ALL_MANAGED_VIEWS_TASK_ID
-        )
+        validations_start = dag.get_task(_VALIDATIONS_BRANCH_START)
+        view_materialization = dag.get_task(_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
 
         self.assertIn(
             validations_start.task_id, view_materialization.downstream_task_ids
@@ -400,7 +401,10 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        task = dag.get_task(_REFRESH_OPERATIONS_BQ_DATASET_TASK_ID)
+        task = assert_type(
+            dag.get_task(_REFRESH_OPERATIONS_BQ_DATASET_TASK_ID),
+            RecidivizKubernetesPodOperator,
+        )
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(
@@ -416,7 +420,9 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        task = dag.get_task("update_managed_views_all")
+        task = assert_type(
+            dag.get_task("update_managed_views_all"), RecidivizKubernetesPodOperator
+        )
         task.render_template_fields(
             {"dag_run": DagRun(conf={**SECONDARY_DAG_RUN.conf, "sandbox_prefix": None})}
         )
@@ -429,7 +435,9 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             ],
         )
 
-        task = dag.get_task("update_managed_views_all")
+        task = assert_type(
+            dag.get_task("update_managed_views_all"), RecidivizKubernetesPodOperator
+        )
         task.render_template_fields(
             {"dag_run": DagRun(conf={**SECONDARY_DAG_RUN.conf, "sandbox_prefix": ""})}
         )

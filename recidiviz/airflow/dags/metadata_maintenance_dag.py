@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Periodically cleans the Airflow database to keep size down; important during upgrades"""
-from datetime import datetime, timedelta, timezone
+"""Periodically cleans the Airflow database to keep size down; important during upgrades"""
+from datetime import timedelta
 
 import pendulum
 import psycopg2
@@ -51,9 +51,7 @@ email = pagerduty_service.service_integration_email
 @task
 def cleanup_task() -> None:
     """Cleans the Airflow database and runs a vacuum"""
-    today = datetime.now(timezone.utc).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    today = pendulum.today("UTC").replace(hour=0, minute=0, second=0, microsecond=0)
 
     run_cleanup(
         clean_before_timestamp=today - timedelta(days=MAX_DB_ENTRY_AGE_IN_DAYS),

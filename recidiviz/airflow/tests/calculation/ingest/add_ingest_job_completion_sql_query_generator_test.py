@@ -16,9 +16,11 @@
 # =============================================================================
 """Unit tests for AddIngestJobCompletionSqlQueryGenerator"""
 import unittest
+from typing import Any
 from unittest.mock import Mock, create_autospec
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
@@ -56,7 +58,14 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
         dag_run.conf = {"ingest_instance": "PRIMARY"}
         dag_run.dag_id = "test_dag"
         dag_run.run_id = "test_run"
-        mock_context = {"dag_run": dag_run}
+
+        mock_context = create_autospec(Context)
+        mock_context_dict = {"dag_run": dag_run}
+
+        def _context_get(key: str) -> Any:
+            return mock_context_dict[key]
+
+        mock_context.__getitem__.side_effect = _context_get
 
         mock_operator.xcom_pull.return_value = {"id": "test_job_id"}
 

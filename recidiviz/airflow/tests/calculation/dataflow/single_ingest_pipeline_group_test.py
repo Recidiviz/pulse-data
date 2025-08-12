@@ -24,6 +24,7 @@ from unittest.mock import MagicMock, patch
 
 import pytz
 import yaml
+from airflow.models import BaseOperator
 from airflow.models.dag import DAG, dag
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
@@ -52,6 +53,7 @@ from recidiviz.pipelines.ingest.pipeline_utils import (
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.types import assert_type
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -421,15 +423,15 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag = _create_test_single_ingest_pipeline_group_dag(
                     StateCode.US_XX
                 )
-                task = test_dag.get_task(task_id)
+                task = assert_type(test_dag.get_task(task_id), BaseOperator)
                 old_execute_function = task.execute
-                task.execute = _fake_failure_execute
+                task.execute = _fake_failure_execute  # type: ignore
                 result = self.run_dag_test(
                     test_dag,
                     session,
                     skip_checking_task_statuses=True,
                 )
-                task.execute = old_execute_function
+                task.execute = old_execute_function  # type: ignore
                 self.assertEqual(
                     DagRunState.FAILED,
                     result.dag_run_state,

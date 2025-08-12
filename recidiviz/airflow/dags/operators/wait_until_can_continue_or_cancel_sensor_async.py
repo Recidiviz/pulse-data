@@ -18,11 +18,12 @@
 import abc
 import logging
 from datetime import timedelta
-from typing import Any, List, Set
+from typing import Any, List
 
 from airflow.exceptions import TaskDeferred
 from airflow.models import DagRun
 from airflow.sensors.base import BaseSensorOperator
+from airflow.serialization.pydantic.dag_run import DagRunPydantic
 from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
@@ -33,24 +34,24 @@ from recidiviz.airflow.dags.utils.config_utils import QueuingActionType
 class WaitUntilCanContinueOrCancelDelegate:
     @abc.abstractmethod
     def this_dag_run_can_continue(
-        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
     ) -> bool:
         """Returns True if this dag run can continue."""
 
     @abc.abstractmethod
     def this_dag_run_should_be_canceled(
-        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+        self, dag_run: DagRun | DagRunPydantic, all_active_dag_runs: List[DagRun]
     ) -> bool:
         """Returns True if this dag run should be canceled."""
 
 
 def _get_all_active_dag_runs(dag_id: str) -> List[DagRun]:
     """Returns all active dag runs for the given dag run."""
-    running_dags: Set[DagRun] = DagRun.find(dag_id=dag_id, state=DagRunState.RUNNING)
+    running_dags: list[DagRun] = DagRun.find(dag_id=dag_id, state=DagRunState.RUNNING)
     return sorted(running_dags, key=lambda dag_run: dag_run.execution_date)
 
 
-def _get_pretty_dag_run_identifier(dag_run: DagRun) -> str:
+def _get_pretty_dag_run_identifier(dag_run: DagRun | DagRunPydantic) -> str:
     """Returns a pretty string representation of a dag run."""
     return f"<{dag_run.run_id} {dag_run.conf}>"
 

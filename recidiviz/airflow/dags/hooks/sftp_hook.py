@@ -23,6 +23,8 @@ import paramiko
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from paramiko.transport import Transport
 
+from recidiviz.utils.types import assert_type
+
 # Timeout set on the SFTPClient's socket (paramiko.Channel class). This timeout is used
 # each time the underlying socket is reading or writing a single packet (which is, at most,
 # 2^15 bytes, or 0.03 mb), not for the entire file. This is set as a backstop against
@@ -35,12 +37,12 @@ class RecidivizSFTPHook(SFTPHook):
 
     def __init__(
         self,
+        *,
         ssh_conn_id: str,
         transport_kwargs: Dict[str, Any],
-        *args: Any,
         **kwargs: Dict[str, Any],
     ) -> None:
-        super().__init__(ssh_conn_id=ssh_conn_id, ssh_hook=None, *args, **kwargs)
+        super().__init__(ssh_conn_id=ssh_conn_id, ssh_hook=None, **kwargs)
         self.conn: Optional[paramiko.SFTPClient] = None
         self._transport_kwargs = transport_kwargs
 
@@ -55,11 +57,12 @@ class RecidivizSFTPHook(SFTPHook):
         for logger in paramiko_loggers:
             logger.setLevel(logging.DEBUG)
 
-    def get_conn(self) -> paramiko.SFTPClient:
+    def get_conn(self) -> paramiko.SFTPClient:  # type: ignore[override]
         """Retrieves the SFTP connection. This is overridden from the base class in order
-        to support private key and password two-factor authentication."""
+        to support private key and password two-factor authentication.
+        """
         if self.conn is None:
-            connection = self.get_connection(self.ssh_conn_id)
+            connection = self.get_connection(assert_type(self.ssh_conn_id, str))
             raw_private_key = connection.extra_dejson.get("private_key", None)
             private_key = (
                 None

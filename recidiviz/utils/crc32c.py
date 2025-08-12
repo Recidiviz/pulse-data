@@ -25,7 +25,7 @@ MAX_CRC32C_ZERO_ARRAY_SIZE = 4 * 1024 * 1024
 
 # TODO(#29093): replace with package implementation for crc32c_combine
 def digest_ordered_checksum_and_size_pairs(
-    checksum_and_size_pairs: List[Tuple[int, int]]
+    checksum_and_size_pairs: List[Tuple[int, int]],
 ) -> bytes:
     """THIS FUNCTION WAS COPY-PASTED FROM:
     google.cloud.storage.transfer_manager._digest_ordered_checksum_and_size_pairs
@@ -40,7 +40,7 @@ def digest_ordered_checksum_and_size_pairs(
     base_crc = None
     zeroes = bytes(MAX_CRC32C_ZERO_ARRAY_SIZE)
     for part_crc, size in checksum_and_size_pairs:
-        if not base_crc:
+        if base_crc is None:
             base_crc = part_crc
         else:
             base_crc ^= 0xFFFFFFFF  # precondition

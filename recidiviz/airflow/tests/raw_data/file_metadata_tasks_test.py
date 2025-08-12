@@ -537,7 +537,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
             serialized_load_prep_results=[],
             serialized_append_batches={
                 SKIPPED_FILE_ERRORS: [],
-                HAS_FILE_IMPORT_ERRORS: False,
                 APPEND_READY_FILE_BATCHES: [],
             },
             serialized_append_result=[],
@@ -1163,8 +1162,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
         )
 
         assert result[HAS_FILE_IMPORT_ERRORS] is True
-        assert len(result[FILE_IMPORTS]) == len(bq_metadata)
-        summaries = [RawFileImport.deserialize(s) for s in result[FILE_IMPORTS]]
+        file_imports = result[FILE_IMPORTS]
+        assert isinstance(file_imports, list)
+        assert len(file_imports) == len(bq_metadata)
+        summaries = [RawFileImport.deserialize(s) for s in file_imports]
         assert summaries[0].file_id == 3
         assert summaries[0].historical_diffs_active is True
         assert (

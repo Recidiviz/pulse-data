@@ -22,6 +22,7 @@ from typing import List, Optional
 
 from airflow.decorators import dag, task_group
 from airflow.exceptions import AirflowFailException
+from airflow.models.taskmixin import DAGNode
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
@@ -33,7 +34,6 @@ from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_START_TASK_NAME,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import (
-    TaskGroupOrOperator,
     create_branching_by_key,
     select_all_branches,
     select_state_code_parameter_branch,
@@ -226,7 +226,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
             operator2 = EmptyOperator(task_id="US_ZZ_2")
             operator1 >> operator2
 
-        def build_branch(code: str) -> List[TaskGroupOrOperator]:
+        def build_branch(code: str) -> List[DAGNode]:
             with TaskGroup(f"{code}_group") as group:
                 operator1 = PythonOperator(
                     task_id=f"{code}_1", python_callable=raise_task_failure
@@ -242,7 +242,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
 
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
         def create_test_dag() -> None:
-            state_codes = {
+            state_codes: dict[str, DAGNode | list[DAGNode]] = {
                 "US_WW": build_branch("US_WW"),
                 "US_XX": build_branch("US_XX"),
                 "US_YY": EmptyOperator(task_id="US_YY"),

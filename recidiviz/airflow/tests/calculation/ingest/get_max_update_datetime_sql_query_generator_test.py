@@ -17,11 +17,13 @@
 """Unit tests for GetMaxUpdateDateTimeSqlQueryGenerator"""
 import datetime
 import unittest
+from typing import Any
 from unittest.mock import Mock, create_autospec
 
 import freezegun
 import pandas as pd
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.calculation.ingest.get_max_update_datetime_sql_query_generator import (
     GetMaxUpdateDateTimeSqlQueryGenerator,
@@ -62,7 +64,14 @@ GROUP BY file_tag;
         dag_run.conf = {"ingest_instance": "PRIMARY"}
         dag_run.dag_id = "test_dag"
         dag_run.run_id = "test_run"
-        mock_context = {"dag_run": dag_run}
+
+        mock_context = create_autospec(Context)
+        mock_context_dict = {"dag_run": dag_run}
+
+        def _context_get(key: str) -> Any:
+            return mock_context_dict[key]
+
+        mock_context.__getitem__.side_effect = _context_get
 
         sample_data = {
             "test_file_tag": "2023-01-26 00:00:00.000000",

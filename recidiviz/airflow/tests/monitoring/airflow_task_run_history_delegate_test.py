@@ -20,13 +20,14 @@
 # pylint: disable=W0104 pointless-statement
 import contextlib
 import datetime
-from typing import Any, Dict, Generator, List
+from typing import Any, Generator, List
 from unittest.mock import MagicMock, patch
 
 from airflow import DAG
 from airflow.models import DagRun, TaskInstance
 from airflow.models.taskinstancehistory import TaskInstanceHistory
 from airflow.operators.python import PythonOperator
+from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.airflow_task_run_history_delegate import (
@@ -71,7 +72,9 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
     }
 
 
-def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
+def dummy_dag_run(
+    dag: DAG, date: str, *, conf: Any | None = None, state: DagRunState | None = None
+) -> DagRun:
     try:
         execution_date = datetime.datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
@@ -85,7 +88,8 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
         run_type="manual",
         start_date=execution_date,
         execution_date=execution_date,
-        **kwargs,
+        conf=conf,
+        state=state,
     )
 
 

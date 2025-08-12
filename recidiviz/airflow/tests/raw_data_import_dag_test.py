@@ -156,7 +156,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             for maybe_group in dag.task_group.get_task_group_dict()[
                 RAW_DATA_BRANCHING
             ].topological_sort()
-            if isinstance(maybe_group, TaskGroup)
+            if isinstance(maybe_group, TaskGroup) and maybe_group.group_id is not None
         ]
 
         assert branching_topological_sorted_groups == list(

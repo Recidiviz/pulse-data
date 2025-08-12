@@ -528,4 +528,4 @@ def sftp_dag() -> None:
         rm_dags >> state_specific_task_group >> end_sftp
 
 
-dag = sftp_dag()
+sftp_dag_ = sftp_dag()

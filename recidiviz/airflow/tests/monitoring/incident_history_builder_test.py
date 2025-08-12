@@ -19,7 +19,7 @@
 # pylint: disable=W0104 pointless-statement
 import contextlib
 import datetime
-from typing import Any, Dict, Generator, List
+from typing import Any, Generator, List
 from unittest.mock import MagicMock, patch
 
 from airflow import DAG
@@ -100,7 +100,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
     }
 
 
-def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
+def dummy_dag_run(dag: DAG, date: str, *, conf: Any | None = None) -> DagRun:
     try:
         execution_date = datetime.datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
@@ -109,12 +109,12 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
     execution_date = execution_date.replace(tzinfo=datetime.timezone.utc)
 
     return DagRun(
-        dag_id=kwargs.pop("dag_id", None) or dag.dag_id,
+        dag_id=dag.dag_id,
         run_id=execution_date.strftime("%Y-%m-%d-%H:%M"),
         run_type="manual",
         start_date=execution_date,
         execution_date=execution_date,
-        **kwargs,
+        conf=conf,
     )
 
 

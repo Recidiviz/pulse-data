@@ -20,19 +20,18 @@ from typing import Any, List, Optional, Union
 from airflow.decorators import task
 from airflow.exceptions import AirflowFailException
 from airflow.models import BaseOperator, DagRun
+from airflow.models.taskmixin import DAGNode
 from airflow.utils.state import TaskInstanceState
-from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
+
+from recidiviz.utils.types import assert_type
 
 BRANCH_START_TASK_NAME = "branch_start"
 BRANCH_END_TASK_NAME = "branch_end"
 
 
-TaskGroupOrOperator = Union[BaseOperator, TaskGroup]
-
-
 def get_branch_root_tasks(
-    branch_root_nodes: Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]
+    branch_root_nodes: Union[DAGNode, List[DAGNode]],
 ) -> List[BaseOperator]:
     """Builds a list of branch root tasks by expanding any TaskGroups in |branch_root_nodes|
     into a list of their root tasks (or tasks that are defined as not having any
@@ -48,12 +47,14 @@ def get_branch_root_tasks(
         if isinstance(branch_root_node, BaseOperator):
             branch_root_tasks.append(branch_root_node)
         else:
-            branch_root_tasks.extend(branch_root_node.roots)
+            branch_root_tasks.extend(
+                [assert_type(root, BaseOperator) for root in branch_root_node.roots]
+            )
     return branch_root_tasks
 
 
 def get_branch_leaf_tasks(
-    branch_leaf_nodes: Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]
+    branch_leaf_nodes: Union[DAGNode, List[DAGNode]],
 ) -> List[BaseOperator]:
     """Builds a list of branch leaf tasks by expanding any TaskGroups in |branch_leaf_nodes|
     into a list of their leaf tasks (or tasks that are defined as not having any
@@ -69,7 +70,9 @@ def get_branch_leaf_tasks(
         if isinstance(branch_leaf_node, BaseOperator):
             branch_leaf_tasks.append(branch_leaf_node)
         else:
-            branch_leaf_tasks.extend(branch_leaf_node.leaves)
+            branch_leaf_tasks.extend(
+                [assert_type(root, BaseOperator) for root in branch_leaf_node.leaves]
+            )
     return branch_leaf_tasks
 
 

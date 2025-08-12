@@ -23,6 +23,7 @@ from typing import Optional
 
 from airflow.decorators import task
 from airflow.models import DagRun
+from airflow.serialization.pydantic.dag_run import DagRunPydantic
 from airflow.utils.trigger_rule import TriggerRule
 
 
@@ -78,11 +79,11 @@ def handle_queueing_result(action_type: Optional[str]) -> bool:
     return action_type_enum == QueuingActionType.CONTINUE
 
 
-def get_ingest_instance(dag_run: DagRun) -> Optional[str]:
+def get_ingest_instance(dag_run: DagRun | DagRunPydantic) -> Optional[str]:
     ingest_instance = dag_run.conf.get(INGEST_INSTANCE)
     return ingest_instance.upper() if ingest_instance else None
 
 
-def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
+def get_state_code_filter(dag_run: DagRun | DagRunPydantic) -> Optional[str]:
     state_code_filter = dag_run.conf.get(STATE_CODE_FILTER)
     return state_code_filter.upper() if state_code_filter else None

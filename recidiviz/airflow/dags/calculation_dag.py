@@ -14,19 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-The DAG configuration to run the calculation pipelines in Dataflow simultaneously.
+"""The DAG configuration to run the calculation pipelines in Dataflow simultaneously.
 This file is uploaded to GCS on deploy.
 """
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional
 
 from airflow.decorators import dag
+from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
-from requests import Response
 
 from recidiviz.airflow.dags.calculation.constants import (
     STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID,
@@ -154,9 +153,9 @@ def trigger_metric_view_data_operator(
 
 def create_metric_view_data_export_nodes(
     relevant_product_exports: List[ProductExportConfig],
-) -> List[TaskGroup]:
+) -> List[BaseOperator]:
     """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
-    metric_view_data_triggers: List[TaskGroup] = []
+    metric_view_data_triggers: List[BaseOperator] = []
     for export in relevant_product_exports:
         export_job_name = export["export_job_name"]
         state_code = export["state_code"]
@@ -167,12 +166,6 @@ def create_metric_view_data_export_nodes(
         metric_view_data_triggers.append(export_metric_view_data)
 
     return metric_view_data_triggers
-
-
-def response_can_refresh_proceed_check(response: Response) -> bool:
-    """Checks whether the refresh lock can proceed is true."""
-    data = response.text
-    return data.lower() == "true"
 
 
 def create_pipeline_configs_by_state(
@@ -236,7 +229,7 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
 
 def validation_branches_by_state_code(
     states_to_validate: Iterable[str],
-) -> Dict[str, TaskGroup]:
+) -> Dict[str, RecidivizKubernetesPodOperator]:
     branches_by_state_code = {}
     for state_code in states_to_validate:
         branches_by_state_code[state_code] = execute_validations_operator(state_code)

@@ -55,7 +55,7 @@ _PROJECT_ID = "recidiviz-testing"
 )
 def _create_test_initialize_dag() -> None:
     @task(task_id=_WAIT_SECONDS_TASK_ID)
-    def wait_seconds(dag_run: DagRun = None) -> None:
+    def wait_seconds(dag_run: DagRun | None = None) -> None:
         if not dag_run:
             raise ValueError("Dag run not passed to task")
         time.sleep(dag_run.conf.get("wait_seconds", 0))

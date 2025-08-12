@@ -81,7 +81,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
     """
     group_id = group_id or f"{task_id}_group"
 
-    @task_group(group_id=group_id)
+    @task_group(group_id=group_id)  # type: ignore[type-var]
     def kpo_mapped_task_with_output(
         task_id: str,
         expand_arguments: List[List[str]],
@@ -107,7 +107,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
 
         return task_output
 
-    return kpo_mapped_task_with_output(
+    return kpo_mapped_task_with_output(  # type: ignore[return-value]
         task_id=task_id,
         expand_arguments=expand_arguments,
         container_name=container_name,
@@ -133,7 +133,7 @@ def kubernetes_pod_operator_task_with_output(
     """
     group_id = group_id or f"{task_id}_group"
 
-    @task_group(group_id=group_id)
+    @task_group(group_id=group_id)  # type: ignore[type-var]
     def kpo_task_with_output(
         task_id: str,
         arguments: List[str],
@@ -155,7 +155,7 @@ def kubernetes_pod_operator_task_with_output(
 
         return task_output
 
-    return kpo_task_with_output(
+    return kpo_task_with_output(  # type: ignore[return-value]
         task_id=task_id,
         arguments=arguments,
         container_name=container_name,

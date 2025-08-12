@@ -60,6 +60,8 @@ recidiviz/ingest/us_**
 recidiviz/tests/ingest/us_**
 recidiviz/ingest/vendors/**
 recidiviz/tests/ingest/vendors/**
+# TODO(#46214) re mirror -- airflow mypy, dont mirror for now
+recidiviz/airflow/mypy/**
 # even older paths
 us_**
 scraper/us_**

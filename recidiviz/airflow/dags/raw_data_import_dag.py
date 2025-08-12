@@ -121,7 +121,7 @@ from recidiviz.airflow.dags.raw_data.write_import_completions_query_generator im
     WriteImportCompletionsSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import (
-    TaskGroupOrOperator,
+    DAGNode,
     create_branching_by_key,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
@@ -147,7 +147,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 def create_single_state_code_ingest_instance_raw_data_import_branch(
     state_code: StateCode,
     raw_data_instance: DirectIngestInstance,
-) -> List[TaskGroupOrOperator]:
+) -> List[DAGNode]:
     """Given a |state_code| and |raw_data_instance|, creates a task group that
     executes the necessary steps to import all relevant files in the ingest bucket into
     BigQuery.
