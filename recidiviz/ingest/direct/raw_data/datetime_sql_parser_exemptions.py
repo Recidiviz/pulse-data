@@ -878,7 +878,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "LastModificationDate",
         ],
         "Staff": [
-            "BirthDate",
             "CertificationDate",
             "PersonalQuestionnaireDate",
             "SecurityStatusDate",

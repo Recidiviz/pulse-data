@@ -305,10 +305,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "special_conditions_aggregation",
             "special_conditions_date_grouping",
         ],
-        "Staff": [
-            "most_recent_staff_email_information",
-            "most_recent_staff_information",
-        ],
         "StaffRoleLocationPeriods": [
             "construct_periods",
             "create_unique_rows",
