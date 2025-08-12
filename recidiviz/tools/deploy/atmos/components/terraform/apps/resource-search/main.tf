@@ -47,6 +47,10 @@ module "postgresql" {
   database_version            = "POSTGRES_13"
   tier                        = "db-custom-1-3840"
 
+  ip_configuration = {
+    private_network = "projects/${var.project_id}/global/networks/default"
+  }
+
   enable_default_user         = true
   user_name                   = data.google_secret_manager_secret_version.db_user.secret_data
   user_password               = data.google_secret_manager_secret_version.db_password.secret_data
@@ -303,7 +307,7 @@ resource "google_bigquery_table" "resource_score" {
 
 resource "google_compute_network_attachment" "transfer_attachment" {
   connection_preference = "ACCEPT_MANUAL"
-  name                  = "postgres-bq-data-transfer-attachment"
+  name                  = "postgres-bq-data-transfer-attachment-resource-search"
   subnetworks           = ["default"]
   region                = var.location
 
