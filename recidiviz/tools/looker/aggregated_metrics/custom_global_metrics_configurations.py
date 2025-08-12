@@ -42,18 +42,6 @@ GLOBAL_ASSIGNMENT_NAMES_TO_TYPES = {
         MetricPopulationType.JUSTICE_INVOLVED,
         MetricUnitOfAnalysisType.STATE_CODE,
     ),
-    "JUSTICE_INVOLVED_STATE_AND_PRODUCT_ACCESS": (
-        MetricPopulationType.JUSTICE_INVOLVED,
-        MetricUnitOfAnalysisType.PRODUCT_ACCESS,
-    ),
-    "SUPERVISION_STATE_AND_PRODUCT_ACCESS": (
-        MetricPopulationType.SUPERVISION,
-        MetricUnitOfAnalysisType.PRODUCT_ACCESS,
-    ),
-    "INCARCERATION_STATE_AND_PRODUCT_ACCESS": (
-        MetricPopulationType.INCARCERATION,
-        MetricUnitOfAnalysisType.PRODUCT_ACCESS,
-    ),
     "SUPERVISION_DISTRICT": (
         MetricPopulationType.SUPERVISION,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
