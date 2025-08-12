@@ -146,6 +146,15 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         """
         return supervision_periods
 
+    def normalize_subsequent_absconsion_periods(
+        self,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+    ) -> List[StateSupervisionPeriod]:
+        """States may have specific logic to override all supervision types following
+        an absconsion until returned or supervision is ended.
+        """
+        return sorted_supervision_periods
+
 
 class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     """Handles the normalization of StateSupervisionPeriods for use in calculations."""
@@ -224,6 +233,12 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
 
             mid_processing_periods = self.delegate.infer_additional_periods(
                 self._person_id, mid_processing_periods
+            )
+
+            mid_processing_periods = (
+                self.delegate.normalize_subsequent_absconsion_periods(
+                    mid_processing_periods
+                )
             )
 
             mid_processing_periods = (
