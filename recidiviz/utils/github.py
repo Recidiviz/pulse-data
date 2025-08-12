@@ -45,6 +45,25 @@ def github_helperbot_client() -> Github:
     return __gh_helperbot_client
 
 
+def get_pr_if_exists(
+    github_client: Github,
+    head_branch_name: str,
+    base_branch_name: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
+) -> str | None:
+    """Returns the URL of the pull request if it exists, otherwise returns None."""
+    repo_obj = github_client.get_repo(repo)
+    existing_prs = repo_obj.get_pulls(
+        state="open",
+        head=f"{RECIDIVIZ_GITHUB_ORGANIZATION}:{head_branch_name}",
+        base=base_branch_name,
+    )
+    if existing_prs and existing_prs.totalCount > 0:
+        existing_pr = one(existing_prs)
+        return existing_pr.html_url
+    return None
+
+
 def open_pr_if_not_exists(
     github_client: Github,
     title: str,
@@ -63,20 +82,16 @@ def open_pr_if_not_exists(
         repo,
     )
     repo_obj = github_client.get_repo(repo)
-    existing_prs = repo_obj.get_pulls(
-        state="open",
-        head=f"{RECIDIVIZ_GITHUB_ORGANIZATION}:{head_branch_name}",
-        base=base_branch_name,
+
+    existing_pr_url = get_pr_if_exists(
+        github_client=github_client,
+        head_branch_name=head_branch_name,
+        base_branch_name=base_branch_name,
+        repo=repo,
     )
-    if existing_prs and existing_prs.totalCount > 0:
-        existing_pr = one(existing_prs)
-        pr_url = existing_pr.html_url
-        logging.info(
-            "Found existing PR [%s] with [%s] commits - returning",
-            pr_url,
-            existing_pr.commits,
-        )
-        return pr_url
+    if existing_pr_url:
+        logging.info("Pull request already exists at [%s] - returning", existing_pr_url)
+        return existing_pr_url
 
     body_length_safe = truncate_string_if_necessary(
         body, max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH

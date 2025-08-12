@@ -55,8 +55,23 @@ class LookerGitManager:
             )
         return self._looker_repo_root
 
-    def clone_and_checkout_branch(self) -> None:
-        """Clone the Looker repository and checkout a new branch."""
+    def delete_remote_branch(self) -> None:
+        """Delete the remote branch with the name |self.looker_branch_name|."""
+        if not self.remote_branch_exists(self.looker_branch_name):
+            raise ValueError(
+                f"Cannot delete remote branch [{self.looker_branch_name}] - "
+                "branch does not exist."
+            )
+        self._run_in_looker_repo(f"git push origin --delete {self.looker_branch_name}")
+
+    def delete_local_branch(self) -> None:
+        """Delete the local branch with the name |self.looker_branch_name|."""
+        self._run_in_looker_repo(f"git branch -D {self.looker_branch_name}")
+
+    def clone_and_checkout_branch(self, delete_existing_branch: bool = False) -> None:
+        """Clone the Looker repository and checkout |self.looker_branch_name|. Creates a new branch if it
+        does not exist, or checks out an existing one. If |delete_existing_branch| is True, any existing
+        branch with the same name will be deleted and recreated."""
 
         looker_repo_url = (
             f"https://{self.github_token}@github.com/{LOOKER_REPO_NAME}.git"
@@ -72,7 +87,20 @@ class LookerGitManager:
 
         run_command(f"git clone {looker_repo_url} {self.looker_repo_root}")
 
-        if self.remote_branch_exists(self.looker_branch_name):
+        if delete_existing_branch and self.remote_branch_exists(
+            self.looker_branch_name
+        ):
+            logging.info(
+                "Branch [%s] already exists on remote, but |delete_existing_branch| is True. "
+                "Deleting existing remote and local branches.",
+                self.looker_branch_name,
+            )
+            self.delete_remote_branch()
+            self.delete_local_branch()
+
+        if not delete_existing_branch and self.remote_branch_exists(
+            self.looker_branch_name
+        ):
             logging.info(
                 "Checking out branch [%s] which already exists on remote.",
                 self.looker_branch_name,
