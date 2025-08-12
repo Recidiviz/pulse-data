@@ -206,6 +206,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.management_level_greater_than_confinement_level import (
     VIEW_BUILDER as US_MI_MANAGEMENT_LEVEL_GREATER_THAN_CONFINEMENT_LEVEL,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_mi.management_level_within_six_points_of_lower_level import (
+    VIEW_BUILDER as US_MI_MANAGEMENT_LEVEL_WITHIN_SIX_POINTS_OF_LOWER_LEVEL,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mo.completed_12_months_outside_clearance import (
     VIEW_BUILDER as US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE,
 )
@@ -414,6 +417,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
+    ),
+    US_MI_MANAGEMENT_LEVEL_WITHIN_SIX_POINTS_OF_LOWER_LEVEL.address: (
+        "Criterion will be used for CLD tool currently being built (Maggie Taylor, 8/7/2025)"
     ),
     SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
         "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"
