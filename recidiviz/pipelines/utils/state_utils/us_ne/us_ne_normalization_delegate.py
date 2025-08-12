@@ -87,7 +87,10 @@ class UsNeNormalizationDelegate(StateSpecificNormalizationDelegate):
             ids_marked_as_stable = [
                 pei for pei in person_external_ids_of_type if pei.is_stable_id_for_type
             ]
-            # Choose the most recently active id
+            # TODO(#46208): We choose the most recently active id for legacy reasons but
+            #  should change this to select the value at index 0 (choose the least
+            #  recent id) when we are ready to migrate US_NE stable ids to be actually
+            #  stable.
             return self._sort_external_ids_by_recency(ids_marked_as_stable)[-1]
 
         raise ValueError(
