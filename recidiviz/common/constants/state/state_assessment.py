@@ -133,6 +133,7 @@ class StateAssessmentType(StateEntityEnum):
     MO_CLASSIFICATION_P = state_enum_strings.state_assessment_type_mo_classification_p
     MO_1270 = state_enum_strings.state_assessment_type_mo_1270
     MI_SECURITY_CLASS = state_enum_strings.state_assessment_type_mi_security_class
+    UT_SECURITY_ASSESS = state_enum_strings.state_assessment_type_ut_security_assess
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -213,6 +214,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.MO_CLASSIFICATION_P: "Missouri “P” (Public Risk) Assessment",
     StateAssessmentType.MO_1270: "Missouri Gang/STG Affiliation Assessment",
     StateAssessmentType.MI_SECURITY_CLASS: "Michigan Security Classification Screen",
+    StateAssessmentType.UT_SECURITY_ASSESS: "Utah Security Assessment",
 }
 
 

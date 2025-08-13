@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_security_assessment` to
+# corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  assess_id: STRING
+  ofndr_num: STRING
+  security_score: STRING
+  custody_level: STRING
+  assess_dt: DATE
+  staff_id: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - assess_id
+                - $literal("SECURITY")
+          assessment_date: assess_dt
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.UT_SECURITY_ASSESS)
+          conducting_staff_external_id: staff_id
+          conducting_staff_external_id_type: $literal("US_UT_USR_ID")
+          assessment_level:
+            $enum_mapping:
+              $raw_text: custody_level
+              $mappings:
+                StateAssessmentLevel.VERY_HIGH:
+                  - "1" # Most serious (death row inmates and others)
+                StateAssessmentLevel.HIGH:
+                  - "2"
+                StateAssessmentLevel.MEDIUM:
+                  - "3"
+                StateAssessmentLevel.LOW:
+                  - "4" # General population
+                StateAssessmentLevel.MINIMUM:
+                  - "5" # Off property: may leave prison property on approval for home visit or work release. This is no longer used.
+                  - "6" # Housed off property (at CCC). This is no longer used.
+          assessment_metadata:
+            $normalized_values_json_dict:
+              security_score: security_score
