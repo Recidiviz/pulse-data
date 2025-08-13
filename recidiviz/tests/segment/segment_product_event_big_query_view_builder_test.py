@@ -17,8 +17,12 @@
 """Tests for segment_product_event_big_query_view_builder.py"""
 import unittest
 
-from recidiviz.segment.segment_event_big_query_view_collector import (
-    SegmentEventBigQueryViewCollector,
+from recidiviz.segment.product_type import ProductType
+from recidiviz.segment.segment_event_config import (
+    SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS,
+)
+from recidiviz.segment.segment_product_event_big_query_view_collector import (
+    SegmentProductEventBigQueryViewCollector,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_addresses,
@@ -26,9 +30,13 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 
 
 class SegmentProductEventBigQueryViewBuilderTest(unittest.TestCase):
+    """Tests for segment_product_event_big_query_view_builder.py"""
+
     def test_segment_event_source_table_is_valid_source_table_address(self) -> None:
         """Test that the segment_event_source_table is a valid source table address for all segment event builders."""
-        for builder in SegmentEventBigQueryViewCollector().collect_view_builders():
+        for (
+            builder
+        ) in SegmentProductEventBigQueryViewCollector().collect_view_builders():
             if builder.segment_table_sql_source not in get_all_source_table_addresses():
                 raise ValueError(
                     f"Invalid source table `{builder.segment_table_sql_source.to_str()}` "
@@ -38,11 +46,51 @@ class SegmentProductEventBigQueryViewBuilderTest(unittest.TestCase):
 
     def test_segment_event_source_dataset_is_segment_dataset(self) -> None:
         """Test that the segment_event_source_table references a *segment_metrics dataset."""
-        for builder in SegmentEventBigQueryViewCollector().collect_view_builders():
+        for (
+            builder
+        ) in SegmentProductEventBigQueryViewCollector().collect_view_builders():
             if not builder.segment_table_sql_source.dataset_id.endswith(
                 "_segment_metrics"
             ):
                 raise ValueError(
                     f"Invalid segment_event_source_table `{builder.segment_table_sql_source.to_str()}`, "
                     f"expected *_segment_metrics dataset, found `{builder.segment_table_sql_source.dataset_id}`.",
+                )
+
+    # TODO(#46240): Delete this test once product X event views are directly derived
+    #   from SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS.
+    def test_matches_segment_event_name_to_relevant_products(self) -> None:
+        """Test that every view builder is aligned with the correct product types as
+        designated in SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS."""
+        configured_segment_events_to_products: dict[str, list[ProductType]] = {}
+        for (
+            builder
+        ) in SegmentProductEventBigQueryViewCollector().collect_view_builders():
+            # assemble dictionary mapping segment event names to relevant products
+            if builder.segment_event_name not in configured_segment_events_to_products:
+                configured_segment_events_to_products[builder.segment_event_name] = []
+            configured_segment_events_to_products[builder.segment_event_name].append(
+                builder.product_type
+            )
+
+        # cross-check configured_segment_events_to_products with SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS
+        if set(configured_segment_events_to_products) != set(
+            SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS
+        ):
+            raise ValueError(
+                f"Mismatch between configured segment event names {set(configured_segment_events_to_products)} "
+                f"and SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS {set(SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS)}."
+            )
+        for (
+            event_name,
+            relevant_products,
+        ) in configured_segment_events_to_products.items():
+            expected_relevant_products = (
+                SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS.get(event_name) or []
+            )
+            if set(relevant_products) != set(expected_relevant_products):
+                raise ValueError(
+                    f"Mismatch for segment event name `{event_name}`: "
+                    f"configured products in SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS {relevant_products} do not match "
+                    f"view builders configured for these products: {expected_relevant_products}.",
                 )

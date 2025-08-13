@@ -64,6 +64,9 @@ from recidiviz.ingest.views.dataset_config import (
     STATE_BASE_VIEWS_DATASET,
 )
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.observations.views.events.global_provisioned_user.global_user_active_usage_event import (
+    VIEW_BUILDER as GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER,
+)
 from recidiviz.observations.views.events.person.task_completed import (
     VIEW_BUILDER as TASK_COMPLETED_OBSERVATIONS_VIEW_BUILDER,
 )
@@ -396,6 +399,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             ),
             # Funnel analysis requires referencing all unioned segment events.
             INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
+            GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
         }
 
         allowed_union_all_datasets_to_query_from = {

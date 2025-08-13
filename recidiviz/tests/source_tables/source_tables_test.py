@@ -73,11 +73,6 @@ COMMON_VESTIGES = [
     # As of 7/23/25 this is unused, but we may still want to reference Day Zero info in
     # the future.
     "static_reference_tables.day_zero_reports",
-    # As of 7/28/25 these segment metrics are not used in any of our view graphs but we
-    # may want to use them for impact tracking work in the future
-    "pulse_dashboard_segment_metrics.frontend_milestones_congratulated_another_way",
-    "pulse_dashboard_segment_metrics.frontend_milestones_side_panel_opened",
-    "pulse_dashboard_segment_metrics.frontend_profile_viewed",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

@@ -14,79 +14,71 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View builder that can be used to encode events tracked in Segment for a specific product type.
+"""View builder that can be used to encode events tracked in Segment
 """
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
     build_segment_event_view_query_template,
 )
 
 
-class SegmentProductEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
-    """View builder that can be used to encode events tracked in Segment for a specific product type."""
+class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
+    """View builder that can be used to encode events tracked in Segment"""
 
     def __init__(
         self,
         # Description of the segment view
         description: str,
-        # The product type associated with the segment events
-        product_type: ProductType,
-        # The source table of the segment events
-        segment_table_sql_source: BigQueryAddress,
-        # The ID column(s) if they exist in the sql source indicating the anonymized ID of the justice involved person
-        # Multiple ID columns may be present in event tables where the name of column changed over time,
-        # and some events may have no JII-identifying ID column.
-        # If JII ID columns are specified, only events with non-null ID's will be included.
-        segment_table_jii_pseudonymized_id_columns: list[str] | None = None,
+        # The address of the source table of the segment events
+        segment_events_source_table_address: BigQueryAddress,
+        # The ID column(s) if they exist in the sql source indicating the
+        # anonymized (external_id, id_type) of the justice involved person. Multiple ID
+        # columns may be present in event tables where the name of column changed over
+        # time, and some events may have no JII-identifying ID column. If JII ID columns
+        # are specified, only events with non-null ID's will be included.
+        segment_table_jii_pseudonymized_id_columns: list[str],
         # Any additional attribute columns that should be included in the view
-        additional_attribute_cols: list[str] | None = None,
+        additional_attribute_cols: list[str],
     ) -> None:
-        self.product_type = product_type
-        self.product_name = product_type.pretty_name
-        self.segment_table_sql_source = segment_table_sql_source
+        self.segment_table_sql_source = segment_events_source_table_address
         self.segment_table_jii_pseudonymized_id_columns = (
             segment_table_jii_pseudonymized_id_columns
         )
         self.additional_attribute_cols = additional_attribute_cols
-        self.segment_event_name = segment_table_sql_source.table_id
+        self.segment_event_name = segment_events_source_table_address.table_id
 
-        address = self.view_address(product_type, segment_table_sql_source)
+        address = self.view_address(segment_events_source_table_address)
         super().__init__(
             dataset_id=address.dataset_id,
             view_id=address.table_id,
             description=description,
             view_query_template=self._build_query_template(
-                product_type=product_type,
-                segment_table_sql_source=segment_table_sql_source,
+                segment_table_sql_source=segment_events_source_table_address,
                 segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
                 additional_attribute_cols=additional_attribute_cols,
             ),
             should_materialize=True,
-            clustering_fields=["state_code", "person_id"],
+            clustering_fields=["state_code", "user_id"],
         )
 
     @classmethod
-    def view_address(
-        cls, product_type: ProductType, segment_table_sql_source: BigQueryAddress
-    ) -> BigQueryAddress:
+    def view_address(cls, segment_table_sql_source: BigQueryAddress) -> BigQueryAddress:
         """Returns the BigQueryAddress for the view based on the product type and
         segment table SQL source.
         """
         return BigQueryAddress(
-            dataset_id=product_type.segment_dataset_name,
+            dataset_id="segment_events",
             table_id=segment_table_sql_source.table_id,
         )
 
     @classmethod
     def _build_query_template(
         cls,
-        product_type: ProductType,
         segment_table_sql_source: BigQueryAddress,
-        segment_table_jii_pseudonymized_id_columns: list[str] | None = None,
-        additional_attribute_cols: list[str] | None = None,
+        segment_table_jii_pseudonymized_id_columns: list[str],
+        additional_attribute_cols: list[str],
     ) -> str:
         """Builds the SQL query template for the Segment event view for a single product type
         by transforming hashed user and client id's into internal id's and pulling any additonal
@@ -94,9 +86,7 @@ class SegmentProductEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
         return build_segment_event_view_query_template(
             segment_table_sql_source=segment_table_sql_source,
-            product_type_filter=product_type,
-            segment_table_jii_pseudonymized_id_columns=(
-                segment_table_jii_pseudonymized_id_columns or []
-            ),
-            additional_attribute_cols=(additional_attribute_cols or []),
+            segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
+            additional_attribute_cols=additional_attribute_cols,
+            product_type_filter=None,
         )

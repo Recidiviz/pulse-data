@@ -18,9 +18,11 @@
 SegmentProductEventBigQueryViewBuilder.
 """
 import itertools
+from collections import defaultdict
 from types import ModuleType
 from typing import Callable
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import (
     BigQueryViewCollector,
@@ -34,7 +36,7 @@ from recidiviz.segment.segment_product_event_big_query_view_builder import (
 from recidiviz.utils.types import assert_type_list
 
 
-class SegmentEventBigQueryViewCollector(
+class SegmentProductEventBigQueryViewCollector(
     BigQueryViewCollector[SegmentProductEventBigQueryViewBuilder]
 ):
     """A class that can be used to collect view builders of types
@@ -46,11 +48,11 @@ class SegmentEventBigQueryViewCollector(
     ) -> list[SegmentProductEventBigQueryViewBuilder]:
         return list(
             itertools.chain.from_iterable(
-                self.collect_segment_event_view_builders_by_product().values()
+                self.collect_segment_product_event_view_builders_by_product().values()
             )
         )
 
-    def collect_segment_event_view_builders_by_product(
+    def collect_segment_product_event_view_builders_by_product(
         self,
     ) -> dict[ProductType, list[SegmentProductEventBigQueryViewBuilder]]:
 
@@ -70,6 +72,19 @@ class SegmentEventBigQueryViewCollector(
 
             builders_by_unit[product_type] = list(builders)
         return builders_by_unit
+
+    def collect_segment_product_event_view_builders_by_event_source_table_address(
+        self,
+    ) -> dict[BigQueryAddress, list[SegmentProductEventBigQueryViewBuilder]]:
+        """Collects product types by segment table SQL source."""
+        product_event_builders_by_event_source_table_address: dict[
+            BigQueryAddress, list[SegmentProductEventBigQueryViewBuilder]
+        ] = defaultdict(list)
+        for builder in self.collect_view_builders():
+            product_event_builders_by_event_source_table_address[
+                builder.segment_table_sql_source
+            ].append(builder)
+        return product_event_builders_by_event_source_table_address
 
     def _product_type_from_module(self, product_module: ModuleType) -> ProductType:
         product_type_str = product_module.__name__.split(".")[-1]
@@ -112,5 +127,5 @@ class SegmentEventBigQueryViewCollector(
 
 if __name__ == "__main__":
     # Collect and print the view builders
-    collector = SegmentEventBigQueryViewCollector()
-    collector.collect_segment_event_view_builders_by_product()
+    collector = SegmentProductEventBigQueryViewCollector()
+    collector.collect_segment_product_event_view_builders_by_product()

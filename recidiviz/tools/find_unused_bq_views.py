@@ -185,8 +185,8 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.segment.segment_event_big_query_view_collector import (
-    SegmentEventBigQueryViewCollector,
+from recidiviz.segment.segment_product_event_big_query_view_collector import (
+    SegmentProductEventBigQueryViewCollector,
 )
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
@@ -464,10 +464,10 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     ],
     # Views in segment event datasets will be used to generate observations that will be
     # referenced by Looker
-    *[
-        product_type.segment_dataset_name
-        for product_type in SegmentEventBigQueryViewCollector().collect_segment_event_view_builders_by_product()
-    ],
+    *{
+        builder.dataset_id
+        for builder in SegmentProductEventBigQueryViewCollector().collect_view_builders()
+    },
 }
 
 
