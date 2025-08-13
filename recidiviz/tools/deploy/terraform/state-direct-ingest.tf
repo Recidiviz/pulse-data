@@ -15,6 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# Creates an "ingest bucket" for each state and instance, which serve as the 
+# initial depository for data that is sent to Recidiviz (through SFTP or directly pushing).
+# The raw data DAG will import these files' contents into BigQuery and then move the files to 
+# the "storage bucket" defined by the module "direct-ingest-state-storage" in cloud-storage.tf
+
+# Note that var.direct_ingest_region is a GCP region not to be confused with 
+# a "direct ingest region" comprised of a state code and instance elsewhere in the codebase.
+
 # TODO(#6160): Rename this module to better reflect what it actually is doing for us.
 module "state_direct_ingest_buckets_and_accounts" {
   for_each = toset(keys(local.direct_ingest_region_manifests_to_deploy))

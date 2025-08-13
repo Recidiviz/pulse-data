@@ -33,6 +33,10 @@ module "justice-counts-ingest" {
   name_suffix = "justice-counts-ingest"
 }
 
+# This "storage bucket" for raw data holds processed and deprecated
+# data for each state in the "PRIMARY" instance.
+# Note that var.direct_ingest_region is a GCP region not to be confused with 
+# a "direct ingest region" comprised of a state code and instance elsewhere in the codebase.
 module "direct-ingest-state-storage" {
   source = "./modules/cloud-storage-bucket"
 
@@ -42,6 +46,10 @@ module "direct-ingest-state-storage" {
   name_suffix   = "direct-ingest-state-storage"
 }
 
+# This "storage bucket" for raw data holds processed and deprecated
+# data for each state in the "SECONDARY" instance.
+# Note that var.direct_ingest_region is a GCP region not to be confused with 
+# a "direct ingest region" comprised of a state code and instance elsewhere in the codebase.
 module "direct-ingest-state-storage-secondary" {
   source = "./modules/cloud-storage-bucket"
 

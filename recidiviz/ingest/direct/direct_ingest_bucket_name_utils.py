@@ -68,6 +68,14 @@ def is_secondary_ingest_bucket(ingest_bucket_name: str) -> bool:
 
 
 def build_ingest_bucket_name(*, project_id: str, region_code: str, suffix: str) -> str:
+    """
+    This function returns the bucket name for the GCS bucket
+    that initially receives raw data from a state, either through
+    SFTP or direct upload.
+
+    Files can be dumped into this bucket with the format <file_tag>.csv and a process
+    will rename them to the expected format of unprocessed_<timestamp>_raw_<file_tag>.csv
+    """
     normalized_region_code = region_code.lower().replace("_", "-")
     bucket_name = f"{project_id}-direct-ingest-state-{normalized_region_code}{suffix}"
     if not re.match(_DIRECT_INGEST_BUCKET_REGEX, bucket_name):
@@ -78,6 +86,17 @@ def build_ingest_bucket_name(*, project_id: str, region_code: str, suffix: str) 
 
 
 def build_ingest_storage_bucket_name(*, project_id: str, suffix: str) -> str:
+    """
+    This function returns the bucket name for the GCS bucket
+    that stores processed raw data for a state and instance.
+
+    It has a subdirectory for each state, which each have
+    subdirectores of "raw" and "deprecated". For example, US_TN has
+
+    us_tn/
+      - us_tn/raw/
+      - us_tn/deprecated/
+    """
     bucket_name = f"{project_id}-direct-ingest-state-storage{suffix}"
     if not re.match(_DIRECT_INGEST_STORAGE_BUCKET_REGEX, bucket_name):
         raise ValueError(

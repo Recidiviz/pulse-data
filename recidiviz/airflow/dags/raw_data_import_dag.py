@@ -188,6 +188,8 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             resources_needed=RESOURCE_LOCKS_NEEDED,
         )
 
+        # Lists all unprocessed files for the given state and instance
+        # that we received through SFTP or direct upload.
         list_normalized_unprocessed_gcs_file_paths = (
             DirectIngestListNormalizedUnprocessedFilesOperator(
                 task_id="list_normalized_unprocessed_gcs_file_paths",
@@ -430,6 +432,11 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 ),
             )
 
+            # Moves successfully imported files from the "ingest bucket"
+            # to the "storage bucket" for the given state and instance.
+            # Recall that each state and instance has an "ingest bucket"
+            # while each instance has a "storage bucket" with a subdir
+            # for each state.
             renamed_imported_paths = move_successfully_imported_paths_to_storage(
                 state_code.value,
                 raw_data_instance,
