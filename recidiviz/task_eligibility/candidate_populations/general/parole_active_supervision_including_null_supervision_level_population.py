@@ -30,7 +30,9 @@ from recidiviz.task_eligibility.utils.candidate_population_query_fragments impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "PAROLE_ACTIVE_SUPERVISION_POPULATION"
+_POPULATION_NAME = (
+    "PAROLE_ACTIVE_SUPERVISION_INCLUDING_NULL_SUPERVISION_LEVEL_POPULATION"
+)
 
 _DESCRIPTION = """Defines a candidate population view containing all people who are on parole supervision
 and are actively supervised as defined by excluding certain compartments and supervision 
@@ -42,7 +44,8 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
         additional_filters=active_supervision_population_additional_filters(
-            included_compartment_level_2="('PAROLE')"
+            included_compartment_level_2="('PAROLE')",
+            allow_null_correctional_level=True,
         ),
         compartment_level_1=["SUPERVISION"],
     )
