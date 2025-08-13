@@ -26,8 +26,11 @@ from recidiviz.task_eligibility.completion_events.general import (
     granted_institutional_worker_status,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_within_60_months_of_projected_full_term_completion_date_min,
     not_on_institutional_worker_status,
+    within_60_months_of_projected_full_term_release_date_min,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+    within_60_months_of_earliest_established_release_date_itim,
 )
 from recidiviz.task_eligibility.eligibility_spans.us_mo.work_release import (
     WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
@@ -35,8 +38,32 @@ from recidiviz.task_eligibility.eligibility_spans.us_mo.work_release import (
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+# If someone is within 60 months of their earliest release date (either according to
+# ingested data or to the data we'd see in the ITIM screen), then we'll consider them to
+# be within 60 months of release.
+# TODO(#46222): Revisit this logic and see if we want to adjust how we're handling the
+# dates in MO.
+WITHIN_60_MONTHS_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_MO_WITHIN_60_MONTHS_OF_EARLIEST_RELEASE_DATE",
+    sub_criteria_list=[
+        within_60_months_of_projected_full_term_release_date_min.VIEW_BUILDER,
+        within_60_months_of_earliest_established_release_date_itim.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[
+        "earliest_release_date",
+    ],
+    reasons_aggregate_function_override={
+        "earliest_release_date": "MIN",
+    },
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
@@ -46,9 +73,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
-        # TODO(#45994): Do we need to update this criterion to consider the right set of
-        # release dates in MO? What date(s) are we using right now for this criterion?
-        incarceration_within_60_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
+        WITHIN_60_MONTHS_CRITERIA_GROUP,
         # TODO(#45980): This criterion currently only captures people who have approved
         # outside-clearance requests, but since not every facility records
         # approvals/denials via the requests table, can we find another way to try to

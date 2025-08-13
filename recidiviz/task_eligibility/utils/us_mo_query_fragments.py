@@ -16,6 +16,22 @@
 # =============================================================================
 """Create constants and helper SQL query fragments for Missouri."""
 
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
+
 # The following charge codes can be used to identify first-degree-assault offenses in
 # Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
 # category (`BE_NC2`) 13 (assault) and reviewing their respective
@@ -214,3 +230,137 @@ def latest_d1_sanction_spans_cte() -> str:
             )
         )
     """
+
+
+def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    date_leading_interval: int,
+    date_part: str,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a state-specific criterion view builder identifying when someone in MO is
+    within some minimum period of time (e.g., 60 months) of their earliest established
+    release date from incarceration.
+
+    Args:
+        criteria_name (str): The name of the criterion view.
+        description (str): A brief description of the criterion view.
+        date_leading_interval (int): Number of <date_part> representing the amount of
+            time in advance of the earliest established release date that a person will
+            become eligible.
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
+    Returns:
+        StateSpecificTaskCriteriaBigQueryViewBuilder: View builder for spans of time
+            when someone sufficiently close to their earliest established release date.
+    """
+
+    # TODO(#46222): Can we make this historically accurate and not just a snapshot of
+    # current eligibility?
+    criterion_query = f"""
+        WITH most_recent_cycle AS (
+            /* TODO(#46134): Should we set up a pre-processed view for cycle data so
+            we're not having to pull directly from the raw data here in addition to in
+            several other places? */
+            /* Pull most recent cycle for each person in MO. Note that this will not
+            necessarily be an active cycle for all people in MO data, but for residents
+            currently incarcerated, the most recent cycle should be the current one. */
+            SELECT
+                pei.state_code,
+                pei.person_id,
+                tak040.DQ_CYC AS cycle_number,
+                SAFE.PARSE_DATE('%Y%m%d', tak040.DQ_CD) AS cycle_start_date,
+                SAFE.PARSE_DATE('%Y%m%d', tak040.DQ_FD) AS cycle_end_date,
+            FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK040_latest` tak040
+            INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+                ON pei.state_code = 'US_MO'
+                AND pei.id_type = 'US_MO_DOC'
+                AND tak040.DQ_DOC = pei.external_id
+            -- keep cycle with highest cycle number (which should be the most recent)
+            QUALIFY ROW_NUMBER() OVER (
+                PARTITION BY pei.state_code, pei.person_id
+                ORDER BY tak040.DQ_CYC DESC
+            ) = 1
+        ),
+        release_dates AS (
+            -- pull release dates for currently active, most recent cycles
+            SELECT
+                rdp.state_code,
+                rdp.person_id,
+                mrc.cycle_start_date,
+                mrc.cycle_end_date,
+                rdp.maximum_release_date,
+                rdp.mandatory_release_date,
+                rdp.conditional_release_date,
+                /* Null out PPDs from the past (which seem to have often been from
+                legitimate releases to parole that ended in revocation, such that the
+                PPD was a true PPD at one point but is no longer. */
+                /* TODO(#45890): Can we handle this upstream anywhere, particularly if
+                we're going to be using this date for eligibility logic? Do we still
+                want to null it out here if so? Is this the right logic for identifying
+                when a date is no longer valid? */
+                IF(
+                    rdp.presumptive_parole_date < CURRENT_DATE('US/Eastern'),
+                    CAST(NULL AS DATE),
+                    rdp.presumptive_parole_date
+                ) AS presumptive_parole_date,
+            FROM `{{project_id}}.{{analyst_dataset}}.us_mo_release_dates_preprocessed_materialized` rdp
+            INNER JOIN most_recent_cycle mrc
+                ON rdp.state_code = mrc.state_code
+                AND rdp.person_id = mrc.person_id
+                AND rdp.cycle_number = mrc.cycle_number
+                -- restrict to cycles that are currently active
+                AND CURRENT_DATE('US/Eastern') BETWEEN mrc.cycle_start_date AND {nonnull_end_date_clause('mrc.cycle_end_date')}
+        ),
+        earliest_release_dates AS (
+            /* Note that if a person has no non-null release dates coming out of the above
+            CTE, then there will be no rows coming from this CTE for them. */
+            SELECT
+                state_code,
+                person_id,
+                cycle_start_date AS start_datetime,
+                cycle_end_date AS end_datetime,
+                MIN(release_date) AS critical_date,
+            FROM release_dates
+            UNPIVOT(release_date FOR release_date_type IN (maximum_release_date, mandatory_release_date, conditional_release_date, presumptive_parole_date))
+            GROUP BY 1, 2, 3, 4
+        ),
+        {critical_date_has_passed_spans_cte(
+            meets_criteria_leading_window_time=date_leading_interval,
+            date_part=date_part,
+            table_name='earliest_release_dates',
+        )}
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            critical_date_has_passed AS meets_criteria,
+            TO_JSON(STRUCT(
+                critical_date AS earliest_release_date
+            )) AS reason,
+            critical_date AS earliest_release_date,
+        FROM critical_date_has_passed_spans
+    """
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_MO,
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criterion_query,
+        meets_criteria_default=False,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MO,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="earliest_release_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Earliest established release date",
+            ),
+        ],
+    )

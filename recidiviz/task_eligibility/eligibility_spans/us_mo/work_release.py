@@ -24,10 +24,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.general import (
-    incarceration_within_24_months_of_projected_full_term_completion_date_min,
-    incarceration_within_48_months_of_projected_full_term_completion_date_min,
     no_contraband_incarceration_incident_within_2_years,
     not_in_work_release,
+    within_24_months_of_projected_full_term_release_date_min,
+    within_48_months_of_projected_full_term_release_date_min,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,
     educational_score_1,
@@ -38,6 +38,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # comple
     no_escape_in_10_years_or_current_sentence,
     not_has_first_degree_arson_or_robbery_offenses,
     not_on_work_release_assignment,
+    within_24_months_of_earliest_established_release_date_itim,
+    within_48_months_of_earliest_established_release_date_itim,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -52,12 +54,52 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# If someone is within 48 months of their earliest release date (either according to
+# ingested data or to the data we'd see in the ITIM screen), then we'll consider them to
+# be within 48 months of release.
+# TODO(#46222): Revisit this logic and see if we want to adjust how we're handling the
+# dates in MO.
+WITHIN_48_MONTHS_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_MO_WITHIN_48_MONTHS_OF_EARLIEST_RELEASE_DATE",
+    sub_criteria_list=[
+        within_48_months_of_projected_full_term_release_date_min.VIEW_BUILDER,
+        within_48_months_of_earliest_established_release_date_itim.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[
+        "earliest_release_date",
+    ],
+    reasons_aggregate_function_override={
+        "earliest_release_date": "MIN",
+    },
+)
+
+# If someone is within 24 months of their earliest release date (either according to
+# ingested data or to the data we'd see in the ITIM screen), then we'll consider them to
+# be within 24 months of release.
+# TODO(#46222): Revisit this logic and see if we want to adjust how we're handling the
+# dates in MO.
+WITHIN_24_MONTHS_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_MO_WITHIN_24_MONTHS_OF_EARLIEST_RELEASE_DATE",
+    sub_criteria_list=[
+        within_24_months_of_projected_full_term_release_date_min.VIEW_BUILDER,
+        within_24_months_of_earliest_established_release_date_itim.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[
+        "earliest_release_date",
+    ],
+    reasons_aggregate_function_override={
+        "earliest_release_date": "MIN",
+    },
+)
+
 NO_PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
-    criteria_name="US_MO_INCARCERATION_WITHIN_48_MONTHS_OF_PROJECTED_FULL_TERM_COMPLETION_DATE_MIN_AND_NOT_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
+    criteria_name="US_MO_WITHIN_48_MONTHS_OF_EARLIEST_RELEASE_DATE_AND_NOT_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
     sub_criteria_list=[
         not_has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
-        incarceration_within_48_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
+        WITHIN_48_MONTHS_CRITERIA_GROUP,
     ],
     allowed_duplicate_reasons_keys=[],
 )
@@ -65,10 +107,10 @@ NO_PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskC
 PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     # TODO(#45499): Rename this subcriterion once OC completion is finished
-    criteria_name="US_MO_INCARCERATION_WITHIN_24_MONTHS_OF_PROJECTED_FULL_TERM_COMPLETION_DATE_MIN_AND_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
+    criteria_name="US_MO_WITHIN_24_MONTHS_OF_EARLIEST_RELEASE_DATE_AND_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
     sub_criteria_list=[
         has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
-        incarceration_within_24_months_of_projected_full_term_completion_date_min.VIEW_BUILDER,
+        WITHIN_24_MONTHS_CRITERIA_GROUP,
         # completed_12_months_outside_clearance.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
@@ -84,7 +126,7 @@ MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP = StateSpecificTaskCriteriaGrou
     allowed_duplicate_reasons_keys=[
         "offense_dates",
         "offense_statutes",
-        "projected_earliest_release_date_min",
+        "earliest_release_date",
     ],
     # TODO(#45236): Revisit this aggregation
     reasons_aggregate_function_override={
@@ -141,7 +183,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         educational_score_1.VIEW_BUILDER,
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
-        # TODO(#45994): Do we need to update the criteria going into this group to
+        # TODO(#46222): Do we need to update the criteria going into this group to
         # consider the right set of release dates in MO? What date(s) are we using right
         # now for the sub-criteria in this group?
         MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP,

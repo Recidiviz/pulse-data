@@ -1081,6 +1081,8 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
     )
 
 
+# TODO(#46236): Revisit how this builder handles sentences of different types depending
+# on the `compartment_level_1_filter` parameter.
 def is_past_completion_date_criteria_builder(
     *,
     criteria_name: str,
