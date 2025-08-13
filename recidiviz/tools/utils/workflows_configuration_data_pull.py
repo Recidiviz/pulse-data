@@ -665,10 +665,9 @@ def main() -> None:
     # grab state codes where workflows are enabled
     state_codes = get_workflows_enabled_states()
 
-    # Set up logging to a file named 'app.log' in the current directory
-    # In production, this might be changed to have the logs go wherever they usually go in production
+    # Set up logging to use the default handler, which sends the logs to standard output.
+    # Cloud Run will then capture these logs and they will be visible in the Google Cloud console.
     logging.basicConfig(
-        filename="logs/app.log",
         level=logging.INFO,
         format="%(asctime)s %(levelname)s:%(message)s",
     )
