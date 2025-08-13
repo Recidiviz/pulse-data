@@ -3943,8 +3943,9 @@ class NormalizedStateStaff(
     # Attributes
     #   - What
     full_name: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
-    # TODO(#29072): Add is_opt_valid_email validator once all states have valid emails
-    email: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    email: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_valid_email
+    )
 
     # Primary key
     staff_id: int = attr.ib(validator=attr_validators.is_int)
