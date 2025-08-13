@@ -139,6 +139,7 @@ def write_data_to_spreadsheet(
     overwrite_sheets: Optional[bool] = False,
     value_input_option: Optional[str] = "RAW",
     create_new_sheet: Optional[bool] = True,
+    start_write_range: Optional[str] = "A1",
 ) -> int:
     """Writes data to the spreadsheet specified by the spreadsheet_id and
     returns sheet_id where the data was written.
@@ -184,7 +185,7 @@ def write_data_to_spreadsheet(
         data_to_write.extend(df.astype(str).values.tolist())
 
     body = {"values": data_to_write}
-    range_name = f"{new_sheet_title}!A1"
+    range_name = f"{new_sheet_title}!{start_write_range}"
     spreadsheet_service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
         range=range_name,
