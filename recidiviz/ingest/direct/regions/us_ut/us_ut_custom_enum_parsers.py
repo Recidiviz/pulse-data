@@ -46,6 +46,29 @@ from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_code_constants im
     SUPERVISION_LEGAL_STATUS_CODES_SET,
 )
 
+_INCARCERATED_SUPERVISION_LOCATIONS = [
+    "ATF CUSTODY",
+    "CUCF ASPEN",
+    "CUCF BIRCH",
+    "CUCF CEDAR",
+    "CUCF DOGWOOD",
+    "CUCF ELM",
+    "CUCF FIR",
+    "CUCF GALE",
+    "FEDERAL CUSTODY",
+    "ICE CUSTODY",
+    "OTHER COUNTRY CUSTODY",
+    "USCF B1 1-3 FRONT",
+    "USCF B4 1-3 FRONT",
+    "USCF B4 4-5 MIDDLE",
+    "USCF D LOW SIDE",
+    "USCF F HIGH SIDE",
+    "USCF F LOW SIDE",
+    "USCF G LOW SIDE",
+    "USP DRAPER",
+    "USP USCF",
+]
+
 
 def parse_employment_status(
     raw_text: str,
@@ -115,13 +138,8 @@ def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
 
 def parse_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
     if raw_text:
-        lgl_stat_desc, start_reason, body_loc_desc = raw_text.split("|")
-        if (
-            start_reason in ("ABSCOND", "WALKAWAY", "ESCAPE", "AWOL", "FUGITIVE")
-            or "FUGITIVE" in body_loc_desc
-            or "-FUG-" in body_loc_desc
-            or body_loc_desc in ("A.W.O.L.", "ABSCOND", "WALKAWAY")
-        ):
+        lgl_stat_desc, start_reason = raw_text.split("|")
+        if start_reason in ("ABSCOND", "WALKAWAY", "ESCAPE", "AWOL", "FUGITIVE"):
             return StateSupervisionPeriodSupervisionType.ABSCONSION
         if "PROBATION" in lgl_stat_desc:
             return StateSupervisionPeriodSupervisionType.PROBATION
@@ -173,8 +191,18 @@ def parse_specialized_pfi(raw_text: str) -> StateSpecializedPurposeForIncarcerat
 
 
 def parse_supervision_level(raw_text: str) -> StateSupervisionLevel:
+    """Parse supervision level first by checking if a person is incarcerated, and then
+    by using the raw supervision level value from raw data."""
     if raw_text:
         level = raw_text.split("-")[0]
+        location = raw_text.split("-")[2]
+        if (
+            "JAIL" in location
+            or "ZINCARCERATED" in location
+            or "INCARCERATED" in level
+            or location in _INCARCERATED_SUPERVISION_LOCATIONS
+        ):
+            return StateSupervisionLevel.IN_CUSTODY
         if level == "COMPACT OUT":
             return StateSupervisionLevel.INTERSTATE_COMPACT
         if "FUGITIVE" in level:
@@ -193,7 +221,7 @@ def parse_supervision_level(raw_text: str) -> StateSupervisionLevel:
             return StateSupervisionLevel.UNSUPERVISED
         if "INTENSIVE" in level or "ISP" in level or level == "HIGH":
             return StateSupervisionLevel.HIGH
-        if "RESIDENTIAL" in level or "INCARCERATED" in level:
+        if "RESIDENTIAL" in level:
             return StateSupervisionLevel.RESIDENTIAL_PROGRAM
         if level == "UNKNOWN":
             return StateSupervisionLevel.EXTERNAL_UNKNOWN
