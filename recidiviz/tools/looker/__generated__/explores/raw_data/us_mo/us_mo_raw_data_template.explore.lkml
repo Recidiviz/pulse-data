@@ -73,6 +73,20 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK026"
   }
 
+  join: us_mo_LBAKRDTA_TAK158 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK158.F1_DOC};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_mo_LBAKRDTA_TAK158"
+  }
+
+  join: us_mo_LBAKRDTA_TAK065 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK065.CS_DOC};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_mo_LBAKRDTA_TAK065"
+  }
+
   join: us_mo_LBAKRDTA_TAK028 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK028.BY_DOC};;
     type: full_outer
@@ -108,13 +122,6 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK044"
   }
 
-  join: us_mo_LBAKRDTA_TAK065 {
-    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK065.CS_DOC};;
-    type: full_outer
-    relationship: many_to_many
-    view_label: "us_mo_LBAKRDTA_TAK065"
-  }
-
   join: us_mo_LBAKRDTA_TAK076 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK076.CZ_DOC};;
     type: full_outer
@@ -127,13 +134,6 @@ explore: us_mo_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mo_LBAKRDTA_TAK142"
-  }
-
-  join: us_mo_LBAKRDTA_TAK158 {
-    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK158.F1_DOC};;
-    type: full_outer
-    relationship: many_to_many
-    view_label: "us_mo_LBAKRDTA_TAK158"
   }
 
   join: us_mo_LBAKRDTA_TAK233 {

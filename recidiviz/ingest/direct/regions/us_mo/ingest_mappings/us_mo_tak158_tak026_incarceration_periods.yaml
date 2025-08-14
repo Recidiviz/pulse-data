@@ -8,10 +8,12 @@ input_columns:
   PFI: STRING
   END_STATUS_CODE: STRING
   END_STATUS_SUBTYPE: STRING
-  START_DATE: STRING
-  END_DATE: STRING
+  START_DATE: DATETIME
+  END_DATE: DATETIME
   FACILITY: STRING
+  UNIT: STRING
   HOUSING_TYPE: STRING
+  HOUSING_TEMP_PERM: STRING
   SQN: INTEGER
   START_SCD_CODES: STRING
   END_SCD_CODES: STRING
@@ -23,6 +25,12 @@ variables:
           - DOC
           - CYC
           - SQN
+  - housing_type_detail:
+      $custom:
+        $function: us_mo_custom_parsers.get_housing_type_detail
+        $args:
+          housing_type: HOUSING_TYPE
+          housing_temp_perm: HOUSING_TEMP_PERM
 output:
   StatePerson:
     external_ids:
@@ -38,6 +46,7 @@ output:
               $raw_text: START_SCD_CODES
               $custom_parser: us_mo_custom_enum_parsers.parse_incarceration_period_admission_reason
           facility: FACILITY
+          housing_unit: UNIT
           incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
           release_date: END_DATE
           release_reason:
@@ -88,10 +97,12 @@ output:
                   - "TAS" # Temporary Administrative Segregation
           housing_unit_type:
             $enum_mapping:
-              $raw_text: HOUSING_TYPE
+              $raw_text: $variable(housing_type_detail)
               $mappings:
                 StateIncarcerationPeriodHousingUnitType.GENERAL: "GNP"
-                StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT: "DIS"
+                StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
+                  - "DIS"
+                  - "ADS-T" # The ADS housing type is disciplinary, not administrative, if it's flagged as temporary.
                 StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY: "PRC"
                 StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "TAS"
                 StateIncarcerationPeriodHousingUnitType.HOSPITAL:

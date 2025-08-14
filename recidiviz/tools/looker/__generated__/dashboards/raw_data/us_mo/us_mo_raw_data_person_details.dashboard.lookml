@@ -245,8 +245,8 @@
       us_mo_LBAKRDTA_TAK017.BN_DOC,
       us_mo_LBAKRDTA_TAK017.BN_CYC,
       us_mo_LBAKRDTA_TAK017.BN_OR0,
-      us_mo_LBAKRDTA_TAK017.BN_HE,
-      us_mo_LBAKRDTA_TAK017.BN_HS,
+      us_mo_LBAKRDTA_TAK017.BN_HE__raw,
+      us_mo_LBAKRDTA_TAK017.BN_HS__raw,
       us_mo_LBAKRDTA_TAK017.BN_TCR,
       us_mo_LBAKRDTA_TAK017.BN_DCR,
       us_mo_LBAKRDTA_TAK017.BN_PIN,
@@ -262,7 +262,7 @@
       us_mo_LBAKRDTA_TAK017.BN_TLU,
       us_mo_LBAKRDTA_TAK017.file_id,
       us_mo_LBAKRDTA_TAK017.is_deleted]
-    sorts: [us_mo_LBAKRDTA_TAK017.BN_DOC, us_mo_LBAKRDTA_TAK017.BN_CYC, us_mo_LBAKRDTA_TAK017.BN_HS, us_mo_LBAKRDTA_TAK017.BN_DCR, us_mo_LBAKRDTA_TAK017.BN_TCR, us_mo_LBAKRDTA_TAK017.BN_LOC, us_mo_LBAKRDTA_TAK017.BN_PLN, us_mo_LBAKRDTA_TAK017.BN_HPT, us_mo_LBAKRDTA_TAK017.BN_LRU, us_mo_LBAKRDTA_TAK017.BN_COM, us_mo_LBAKRDTA_TAK017.BN_LRM, us_mo_LBAKRDTA_TAK017.BN_LBD, us_mo_LBAKRDTA_TAK017.BN_HDS]
+    sorts: [us_mo_LBAKRDTA_TAK017.BN_HE__raw]
     note_display: hover
     note_text: "Housing Details. Column prefix: BN. # TODO(#13474) Fill in definition with more details."
     listen: 
@@ -525,7 +525,7 @@
       us_mo_LBAKRDTA_TAK026.BW_CYC,
       us_mo_LBAKRDTA_TAK026.BW_SSO,
       us_mo_LBAKRDTA_TAK026.BW_SCD,
-      us_mo_LBAKRDTA_TAK026.BW_SY,
+      us_mo_LBAKRDTA_TAK026.BW_SY__raw,
       us_mo_LBAKRDTA_TAK026.BW_SM,
       us_mo_LBAKRDTA_TAK026.BW_CSC,
       us_mo_LBAKRDTA_TAK026.BW_DCR,
@@ -534,7 +534,7 @@
       us_mo_LBAKRDTA_TAK026.BW_TLU,
       us_mo_LBAKRDTA_TAK026.file_id,
       us_mo_LBAKRDTA_TAK026.is_deleted]
-    sorts: []
+    sorts: [us_mo_LBAKRDTA_TAK026.BW_SY__raw]
     note_display: hover
     note_text: "Status. Column prefix: BW."
     listen: 
@@ -544,6 +544,89 @@
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
     row: 54
+    col: 0
+    width: 24
+    height: 6
+
+  - name: LBAKRDTA_TAK158
+    title: LBAKRDTA_TAK158
+    explore: us_mo_raw_data
+    model: "@{project_id}"
+    type: looker_grid
+    fields: [us_mo_LBAKRDTA_TAK158.primary_key,
+      us_mo_LBAKRDTA_TAK158.F1_DOC,
+      us_mo_LBAKRDTA_TAK158.F1_CYC,
+      us_mo_LBAKRDTA_TAK158.F1_SQN,
+      us_mo_LBAKRDTA_TAK158.F1_SST,
+      us_mo_LBAKRDTA_TAK158.F1_CD__raw,
+      us_mo_LBAKRDTA_TAK158.F1_ORC,
+      us_mo_LBAKRDTA_TAK158.F1_CTO,
+      us_mo_LBAKRDTA_TAK158.F1_OPT,
+      us_mo_LBAKRDTA_TAK158.F1_CTC,
+      us_mo_LBAKRDTA_TAK158.F1_SY__raw,
+      us_mo_LBAKRDTA_TAK158.F1_CTP,
+      us_mo_LBAKRDTA_TAK158.F1_ARC,
+      us_mo_LBAKRDTA_TAK158.F1_PFI,
+      us_mo_LBAKRDTA_TAK158.F1_OR0,
+      us_mo_LBAKRDTA_TAK158.F1_WW,
+      us_mo_LBAKRDTA_TAK158.F1_MSO,
+      us_mo_LBAKRDTA_TAK158.F1_SEO,
+      us_mo_LBAKRDTA_TAK158.F1_DCR,
+      us_mo_LBAKRDTA_TAK158.F1_TCR,
+      us_mo_LBAKRDTA_TAK158.file_id,
+      us_mo_LBAKRDTA_TAK158.is_deleted]
+    sorts: [us_mo_LBAKRDTA_TAK158.F1_CD__raw]
+    note_display: hover
+    note_text: "Body Status. Column prefix: F1."
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 60
+    col: 0
+    width: 24
+    height: 6
+
+  - name: LBAKRDTA_TAK065
+    title: LBAKRDTA_TAK065
+    explore: us_mo_raw_data
+    model: "@{project_id}"
+    type: looker_grid
+    fields: [us_mo_LBAKRDTA_TAK065.primary_key,
+      us_mo_LBAKRDTA_TAK065.CS_DOC,
+      us_mo_LBAKRDTA_TAK065.CS_CYC,
+      us_mo_LBAKRDTA_TAK065.CS_OLC,
+      us_mo_LBAKRDTA_TAK065.CS_OLA,
+      us_mo_LBAKRDTA_TAK065.CS_PLC,
+      us_mo_LBAKRDTA_TAK065.CS_PLA,
+      us_mo_LBAKRDTA_TAK065.CS_FLC,
+      us_mo_LBAKRDTA_TAK065.CS_FLA,
+      us_mo_LBAKRDTA_TAK065.CS_LTR,
+      us_mo_LBAKRDTA_TAK065.CS_REA,
+      us_mo_LBAKRDTA_TAK065.CS_AV,
+      us_mo_LBAKRDTA_TAK065.CS_NM__raw,
+      us_mo_LBAKRDTA_TAK065.CS_DD__raw,
+      us_mo_LBAKRDTA_TAK065.CS_TAT,
+      us_mo_LBAKRDTA_TAK065.CS_TDT,
+      us_mo_LBAKRDTA_TAK065.CS_DCR,
+      us_mo_LBAKRDTA_TAK065.CS_TCR,
+      us_mo_LBAKRDTA_TAK065.CS_DLU,
+      us_mo_LBAKRDTA_TAK065.CS_TLU,
+      us_mo_LBAKRDTA_TAK065.CS_UID,
+      us_mo_LBAKRDTA_TAK065.file_id,
+      us_mo_LBAKRDTA_TAK065.is_deleted]
+    sorts: [us_mo_LBAKRDTA_TAK065.CS_NM__raw]
+    note_display: hover
+    note_text: "Institution History. Column prefix: CS."
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 66
     col: 0
     width: 24
     height: 6
@@ -595,7 +678,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 60
+    row: 72
     col: 0
     width: 24
     height: 6
@@ -608,9 +691,9 @@
     fields: [us_mo_LBAKRDTA_TAK034.primary_key,
       us_mo_LBAKRDTA_TAK034.CE_DOC,
       us_mo_LBAKRDTA_TAK034.CE_CYC,
-      us_mo_LBAKRDTA_TAK034.CE_HF,
+      us_mo_LBAKRDTA_TAK034.CE_HF__raw,
       us_mo_LBAKRDTA_TAK034.CE_OR0,
-      us_mo_LBAKRDTA_TAK034.CE_EH,
+      us_mo_LBAKRDTA_TAK034.CE_EH__raw,
       us_mo_LBAKRDTA_TAK034.CE_PIN,
       us_mo_LBAKRDTA_TAK034.CE_PLN,
       us_mo_LBAKRDTA_TAK034.CE_PON,
@@ -620,7 +703,7 @@
       us_mo_LBAKRDTA_TAK034.CE_TLU,
       us_mo_LBAKRDTA_TAK034.file_id,
       us_mo_LBAKRDTA_TAK034.is_deleted]
-    sorts: [us_mo_LBAKRDTA_TAK034.CE_DOC, us_mo_LBAKRDTA_TAK034.CE_CYC, us_mo_LBAKRDTA_TAK034.CE_OR0, us_mo_LBAKRDTA_TAK034.CE_EH, us_mo_LBAKRDTA_TAK034.CE_DCR, us_mo_LBAKRDTA_TAK034.CE_TCR]
+    sorts: [us_mo_LBAKRDTA_TAK034.CE_HF__raw]
     note_display: hover
     note_text: "Field Assignments. Column prefix: CE."
     listen: 
@@ -629,7 +712,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 66
+    row: 78
     col: 0
     width: 24
     height: 6
@@ -647,7 +730,7 @@
       us_mo_LBAKRDTA_TAK039.DN_PLN,
       us_mo_LBAKRDTA_TAK039.DN_PON,
       us_mo_LBAKRDTA_TAK039.DN_NED,
-      us_mo_LBAKRDTA_TAK039.DN_RC,
+      us_mo_LBAKRDTA_TAK039.DN_RC__raw,
       us_mo_LBAKRDTA_TAK039.DN_NSV,
       us_mo_LBAKRDTA_TAK039.DN_DA,
       us_mo_LBAKRDTA_TAK039.DN_DP,
@@ -687,7 +770,7 @@
       us_mo_LBAKRDTA_TAK039.DN_TLU,
       us_mo_LBAKRDTA_TAK039.file_id,
       us_mo_LBAKRDTA_TAK039.is_deleted]
-    sorts: [us_mo_LBAKRDTA_TAK039.DN_DOC, us_mo_LBAKRDTA_TAK039.DN_CYC, us_mo_LBAKRDTA_TAK039.DN_NSN]
+    sorts: [us_mo_LBAKRDTA_TAK039.DN_RC__raw]
     note_display: hover
     note_text: "Supervision Type Assessments. Column prefix: DN."
     listen: 
@@ -696,7 +779,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 72
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -728,7 +811,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 78
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -771,49 +854,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 84
-    col: 0
-    width: 24
-    height: 6
-
-  - name: LBAKRDTA_TAK065
-    title: LBAKRDTA_TAK065
-    explore: us_mo_raw_data
-    model: "@{project_id}"
-    type: looker_grid
-    fields: [us_mo_LBAKRDTA_TAK065.primary_key,
-      us_mo_LBAKRDTA_TAK065.CS_DOC,
-      us_mo_LBAKRDTA_TAK065.CS_CYC,
-      us_mo_LBAKRDTA_TAK065.CS_OLC,
-      us_mo_LBAKRDTA_TAK065.CS_OLA,
-      us_mo_LBAKRDTA_TAK065.CS_PLC,
-      us_mo_LBAKRDTA_TAK065.CS_PLA,
-      us_mo_LBAKRDTA_TAK065.CS_FLC,
-      us_mo_LBAKRDTA_TAK065.CS_FLA,
-      us_mo_LBAKRDTA_TAK065.CS_LTR,
-      us_mo_LBAKRDTA_TAK065.CS_REA,
-      us_mo_LBAKRDTA_TAK065.CS_AV,
-      us_mo_LBAKRDTA_TAK065.CS_NM,
-      us_mo_LBAKRDTA_TAK065.CS_DD,
-      us_mo_LBAKRDTA_TAK065.CS_TAT,
-      us_mo_LBAKRDTA_TAK065.CS_TDT,
-      us_mo_LBAKRDTA_TAK065.CS_DCR,
-      us_mo_LBAKRDTA_TAK065.CS_TCR,
-      us_mo_LBAKRDTA_TAK065.CS_DLU,
-      us_mo_LBAKRDTA_TAK065.CS_TLU,
-      us_mo_LBAKRDTA_TAK065.CS_UID,
-      us_mo_LBAKRDTA_TAK065.file_id,
-      us_mo_LBAKRDTA_TAK065.is_deleted]
-    sorts: []
-    note_display: hover
-    note_text: "Institution History. Column prefix: CS."
-    listen: 
-      View Type: us_mo_LBAKRDTA_TAK001.view_type
-      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
-      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
-      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
-      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 90
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -844,7 +885,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 96
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -873,47 +914,6 @@
     sorts: [us_mo_LBAKRDTA_TAK142.E6_DOC, us_mo_LBAKRDTA_TAK142.E6_CYC, us_mo_LBAKRDTA_TAK142.E6_DSN]
     note_display: hover
     note_text: "Finally Formed Documents. Column prefix: E6."
-    listen: 
-      View Type: us_mo_LBAKRDTA_TAK001.view_type
-      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
-      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
-      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
-      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 102
-    col: 0
-    width: 24
-    height: 6
-
-  - name: LBAKRDTA_TAK158
-    title: LBAKRDTA_TAK158
-    explore: us_mo_raw_data
-    model: "@{project_id}"
-    type: looker_grid
-    fields: [us_mo_LBAKRDTA_TAK158.primary_key,
-      us_mo_LBAKRDTA_TAK158.F1_DOC,
-      us_mo_LBAKRDTA_TAK158.F1_CYC,
-      us_mo_LBAKRDTA_TAK158.F1_SQN,
-      us_mo_LBAKRDTA_TAK158.F1_SST,
-      us_mo_LBAKRDTA_TAK158.F1_CD,
-      us_mo_LBAKRDTA_TAK158.F1_ORC,
-      us_mo_LBAKRDTA_TAK158.F1_CTO,
-      us_mo_LBAKRDTA_TAK158.F1_OPT,
-      us_mo_LBAKRDTA_TAK158.F1_CTC,
-      us_mo_LBAKRDTA_TAK158.F1_SY,
-      us_mo_LBAKRDTA_TAK158.F1_CTP,
-      us_mo_LBAKRDTA_TAK158.F1_ARC,
-      us_mo_LBAKRDTA_TAK158.F1_PFI,
-      us_mo_LBAKRDTA_TAK158.F1_OR0,
-      us_mo_LBAKRDTA_TAK158.F1_WW,
-      us_mo_LBAKRDTA_TAK158.F1_MSO,
-      us_mo_LBAKRDTA_TAK158.F1_SEO,
-      us_mo_LBAKRDTA_TAK158.F1_DCR,
-      us_mo_LBAKRDTA_TAK158.F1_TCR,
-      us_mo_LBAKRDTA_TAK158.file_id,
-      us_mo_LBAKRDTA_TAK158.is_deleted]
-    sorts: [us_mo_LBAKRDTA_TAK158.F1_DOC, us_mo_LBAKRDTA_TAK158.F1_CYC, us_mo_LBAKRDTA_TAK158.F1_SQN]
-    note_display: hover
-    note_text: "Body Status. Column prefix: F1."
     listen: 
       View Type: us_mo_LBAKRDTA_TAK001.view_type
       US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
@@ -1207,9 +1207,9 @@
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.DOC_ID,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.CYCLE_NO,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.OFNDR_CYCLE_REF_ID,
-      us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.ACTUAL_START_DT,
+      us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.ACTUAL_START_DT__raw,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.PROJECTED_STOP_DT,
-      us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.ACTUAL_STOP_DT,
+      us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.ACTUAL_STOP_DT__raw,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.SUPERVSN_ENH_TYPE_CD,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.SUPERVSN_ENH_TYPE_DESC,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.SUPERVSN_COUNTY_CD,
@@ -1223,7 +1223,7 @@
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.SUPERVSN_ENH_REF_ID,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.file_id,
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.is_deleted]
-    sorts: [us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.SUPERVSN_ENH_REF_ID]
+    sorts: [us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.ACTUAL_START_DT__raw]
     note_display: hover
     note_text: "Supervision Enhancements."
     listen: 

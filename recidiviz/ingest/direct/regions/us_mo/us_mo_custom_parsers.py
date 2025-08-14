@@ -56,6 +56,18 @@ NCIC_SEX_OFFENSE_CATEGORIES = [
 ]
 
 
+def get_housing_type_detail(housing_type: str, housing_temp_perm: str) -> Optional[str]:
+    """The ADS housing type indicates disciplinary solitary confinement if it
+    shows up alongside a 'temporary' flag, and is administrative otherwise. This parser
+    adds a T flag to the housing type for temporary ADS periods so that they can be distinguished
+    from other ADS periods.
+    """
+    if housing_type and housing_temp_perm:
+        if housing_type == "ADS" and housing_temp_perm == "T":
+            return "ADS-T"
+    return housing_type
+
+
 def normalize_county_code(county_code: str) -> str:
     """Takes in a MO raw county code and returns
     a Recidiviz-normalized county code in US_XX_YYYYY format.
