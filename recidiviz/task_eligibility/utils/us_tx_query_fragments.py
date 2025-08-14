@@ -402,7 +402,7 @@ def contact_compliance_builder_type_agnostic(
             cca.contact_types_accepted,
             pia.start_date,
             pia.end_date,
-            DATE_TRUNC(start_date, MONTH) AS month_start,
+            DATE_TRUNC(start_date, MONTH) AS level_type_start_month,
             CAST(frequency_in_months AS INT64) AS frequency_in_months,
             DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1 AS total_months,
             FLOOR ((DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1)/CAST(cca.frequency_in_months AS INT64)) as num_periods 
@@ -421,7 +421,7 @@ def contact_compliance_builder_type_agnostic(
         SELECT
             *
         FROM person_info_with_contact_types_accepted
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, month_start, contact_types_accepted ORDER BY start_date DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, level_type_start_month, contact_types_accepted ORDER BY start_date DESC) = 1
     ),
     -- Creates sets of empty periods that are the duration of the contact frequency
     empty_periods AS (
@@ -430,13 +430,13 @@ def contact_compliance_builder_type_agnostic(
             contact_types_accepted,
             supervision_level,
             case_type,
-            start_date,
-            end_date,
+            start_date as level_type_start_date,
+            end_date as level_type_end_date,
             frequency_in_months,
             -- For each span, calculate the starting month and ending month
-            month_start + INTERVAL period_index * frequency_in_months MONTH AS month_start,
+            level_type_start_month + INTERVAL period_index * frequency_in_months MONTH AS contact_period_start,
             -- Calculate the end of the span (last day of the month)
-            LAST_DAY(month_start + INTERVAL (period_index + 1) * frequency_in_months - 1 MONTH) AS month_end
+            level_type_start_month + INTERVAL (period_index + 1) * frequency_in_months MONTH AS contact_period_end_exclusive
         from single_contacts_compliance,
         UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS period_index
     ),
@@ -448,7 +448,7 @@ def contact_compliance_builder_type_agnostic(
         SELECT
             *
         FROM empty_periods
-        WHERE end_date IS NULL OR month_end < end_date
+        WHERE level_type_end_date IS NULL OR contact_period_end_exclusive < level_type_end_date
     ),
     -- Looks back to connect contacts to a given contact period they were completed in
     lookback_cte AS
@@ -460,23 +460,24 @@ def contact_compliance_builder_type_agnostic(
             p.contact_types_accepted,
             p.supervision_level,
             ci.contact_date,
-            month_start,
-            month_end,
+            contact_period_start,
+            contact_period_end_exclusive,
             ci.contact_type,
         FROM clean_empty_periods p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
             AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
-            AND ci.contact_date BETWEEN p.month_start and p.month_end 
+            AND ci.contact_date >= p.contact_period_start
+            AND ci.contact_date < p.contact_period_end_exclusive
     ),
     -- Union all critical dates (start date, end date, contact dates)
     critical_dates as (
        SELECT 
             person_id,
             contact_types_accepted,
-            month_start,
-            month_end,
-            month_start as critical_date,
+            contact_period_start,
+            contact_period_end_exclusive,
+            contact_period_start as critical_date,
             case_type,
             frequency_in_months,
             supervision_level,
@@ -485,9 +486,9 @@ def contact_compliance_builder_type_agnostic(
         SELECT 
             person_id,
             contact_types_accepted,
-            month_start,
-            month_end,
-            month_end as critical_date,
+            contact_period_start,
+            contact_period_end_exclusive,
+            contact_period_end_exclusive as critical_date,
             case_type,
             frequency_in_months,
             supervision_level,
@@ -496,8 +497,8 @@ def contact_compliance_builder_type_agnostic(
         SELECT 
             person_id,
             contact_types_accepted,
-            month_start,
-            month_end,
+            contact_period_start,
+            contact_period_end_exclusive,
             contact_date as critical_date,
             case_type,
             frequency_in_months,
@@ -508,12 +509,12 @@ def contact_compliance_builder_type_agnostic(
     -- Creates smaller periods divided by contact dates.
     divided_periods AS (
         SELECT
-            month_start,
-            month_end,
+            contact_period_start,
+            contact_period_end_exclusive,
             person_id,
             contact_types_accepted,
             critical_date as period_start,
-            LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date) AS period_end,
+            LEAD (critical_date) OVER(PARTITION BY contact_period_start,person_id ORDER BY critical_date) AS period_end,
             case_type,
             frequency_in_months,
             supervision_level,
@@ -525,9 +526,9 @@ def contact_compliance_builder_type_agnostic(
             p.person_id,
             period_start,
             period_end,
-            month_start,
+            contact_period_start,
             ci.contact_type,
-            month_end,
+            contact_period_end_exclusive,
             case_type,
             frequency_in_months,
             supervision_level,
@@ -535,7 +536,8 @@ def contact_compliance_builder_type_agnostic(
         FROM divided_periods p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
-            AND ci.contact_date BETWEEN p.month_start and DATE_SUB(p.period_end, INTERVAL 1 DAY)
+            AND ci.contact_date >= p.contact_period_start
+            AND ci.contact_date < p.period_end
             AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
         WHERE period_end IS NOT NULL
     ),
@@ -543,12 +545,12 @@ def contact_compliance_builder_type_agnostic(
     contact_count AS (
         SELECT
             *,
-            SUM (case when contact_type = "SCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_home_count,
-            SUM (case when contact_type = "SCHEDULED OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_office_count,
-            SUM (case when contact_type = "SCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_field_count,
-            SUM (case when contact_type = "UNSCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as unscheduled_home_count,
-            SUM (case when contact_type = "SCHEDULED VIRTUAL OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_virtual_office_count,
-            SUM (case when contact_type = "UNSCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as unscheduled_field_count,
+            SUM (case when contact_type = "SCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_home_count,
+            SUM (case when contact_type = "SCHEDULED OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_office_count,
+            SUM (case when contact_type = "SCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_field_count,
+            SUM (case when contact_type = "UNSCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_home_count,
+            SUM (case when contact_type = "SCHEDULED VIRTUAL OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_virtual_office_count,
+            SUM (case when contact_type = "UNSCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_field_count,
         FROM divided_periods_with_contacts
     ),
     -- Check for compliance based on contact standards for that given supervision level and case type
@@ -558,8 +560,8 @@ def contact_compliance_builder_type_agnostic(
             person_id,
             period_start as start_date,
             period_end as end_date,
-            month_start,
-            month_end as contact_due_date,
+            contact_period_start,
+            DATE_SUB(contact_period_end_exclusive, INTERVAL 1 DAY) as contact_due_date,
             supervision_level,
             case_type,
             CASE
@@ -588,9 +590,9 @@ def contact_compliance_builder_type_agnostic(
             types_and_amounts_due,
             contact_required.contact_types_accepted,
             CASE 
-                WHEN period_start = month_start
+                WHEN period_start = contact_period_start
                     THEN "START"
-                WHEN period_end =  month_end
+                WHEN period_end =  contact_period_end_exclusive
                     THEN "END"
                 ELSE
                  "CONTACT"
