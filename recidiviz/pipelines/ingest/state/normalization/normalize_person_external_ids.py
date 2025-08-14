@@ -125,5 +125,5 @@ def _convert_person_external_id_strict(
         ),
         is_stable_id_for_type=assert_type(pei.is_stable_id_for_type, bool),
         id_active_from_datetime=pei.id_active_from_datetime,
-        id_active_to_datetime=pei.id_active_from_datetime,
+        id_active_to_datetime=pei.id_active_to_datetime,
     )

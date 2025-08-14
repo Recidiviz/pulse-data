@@ -88,8 +88,8 @@ class TestNormalizeStatePerson(unittest.TestCase):
                     external_id="ELITE_ID_123",
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=None,
-                    id_active_from_datetime=None,
-                    id_active_to_datetime=None,
+                    id_active_from_datetime=datetime.datetime(2020, 1, 1),
+                    id_active_to_datetime=datetime.datetime(2020, 2, 2),
                 )
             ],
             supervision_contacts=[
@@ -130,8 +130,8 @@ class TestNormalizeStatePerson(unittest.TestCase):
                     id_type="US_XX_ID_TYPE",
                     is_current_display_id_for_type=True,
                     is_stable_id_for_type=True,
-                    id_active_from_datetime=None,
-                    id_active_to_datetime=None,
+                    id_active_from_datetime=datetime.datetime(2020, 1, 1),
+                    id_active_to_datetime=datetime.datetime(2020, 2, 2),
                 )
             ],
             supervision_contacts=[
