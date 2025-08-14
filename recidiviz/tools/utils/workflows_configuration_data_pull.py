@@ -28,6 +28,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import google.auth
 from google.oauth2 import service_account
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import Resource, build
@@ -67,9 +68,15 @@ def get_google_credentials(credentials_path: str) -> Credentials:
     """Returns credentials for accessing the Workflows Configuration Google Sheet."""
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    credentials = service_account.Credentials.from_service_account_file(
-        credentials_path, scopes=SCOPES
-    )
+    if not credentials_path:
+        # When running via Cloud Run Job, google.auth.default()
+        # will use the service account assigned to the Cloud Run Job.
+        # The service account has access to the spreadsheet with editor permissions.
+        credentials, _ = google.auth.default()
+    else:
+        credentials = service_account.Credentials.from_service_account_file(
+            credentials_path, scopes=SCOPES
+        )
 
     return credentials
 
