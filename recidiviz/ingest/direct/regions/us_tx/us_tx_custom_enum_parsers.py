@@ -92,6 +92,7 @@ def parse_supervision_level(
         case_type,
         status,
         assessment_level,
+        special_conditions,
     ) = raw_text.split("@@")
 
     if status in WARRANT_STATUSES:
@@ -105,6 +106,9 @@ def parse_supervision_level(
 
     if case_type == "NON-REPORTING":
         return StateSupervisionLevel.UNSUPERVISED
+
+    if "L" in special_conditions or "T" in special_conditions:
+        return StateSupervisionLevel.MAXIMUM
 
     if case_type in {
         "SUBSTANCE ABUSE - PHASE 1",

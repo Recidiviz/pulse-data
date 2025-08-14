@@ -12,6 +12,7 @@ input_columns:
   start_date: DATE
   end_date: DATE
   assessment_level: STRING
+  special_conditions: STRING
   rn: INTEGER
 unused_columns: []
 output:
@@ -33,6 +34,7 @@ output:
           supervision_period_metadata:
             $normalized_values_json_dict:
               status: status
+              special_conditions: special_conditions
           supervision_site: supervision_site
           supervising_officer_staff_external_id: supervision_officer
           supervising_officer_staff_external_id_type:
@@ -50,6 +52,7 @@ output:
                     - case_type
                     - status
                     - assessment_level
+                    - special_conditions
               $custom_parser: us_tx_custom_enum_parsers.parse_supervision_level
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
