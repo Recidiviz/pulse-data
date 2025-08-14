@@ -96,6 +96,7 @@ output:
                   - SUPV LEVEL ASSESSMENT
                   - OFFICER CHANGE
                   - START - INTERSTATE COMPACT # This only appears once due to a data entry error.
+                  - START - INTERSTATE COMPACT PROBATION # This only appears twice due to data entry errors
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - Release ISC
                   - Deport 1/2 Term
