@@ -230,6 +230,38 @@ WHERE
         AND is_primary_user
 """,
     (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+        AND is_registered
+        AND is_primary_user
+""",
+    (
         MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
         MetricUnitOfAnalysisType.FACILITY,
     ): """SELECT
@@ -458,6 +490,38 @@ WHERE
     WHERE
         is_registered
         AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+        AND is_registered
+        AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
 """,
     (
         MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
@@ -814,6 +878,38 @@ FROM
 """,
     (
         MetricUnitOfObservationType.TASKS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.tasks_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.TASKS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
+    FROM
+        `{project_id}.analyst_data.tasks_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+        AND is_registered
+        AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.TASKS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.LOCATION,
     ): """SELECT
     state_code,
@@ -884,6 +980,21 @@ FROM
         start_date,
         end_date_exclusive,
         location_id AS district,
+    FROM
+        `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+        state_code,
+        email_address,
+        start_date,
+        end_date_exclusive,
+        state_staff_supervision_district AS district,
+        state_staff_supervision_office AS office,
     FROM
         `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
     WHERE
