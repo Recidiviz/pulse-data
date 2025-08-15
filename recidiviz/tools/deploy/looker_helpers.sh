@@ -3,10 +3,6 @@
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../script_base.sh"
-# shellcheck source=recidiviz/tools/postgres/script_helpers.sh
-source "${BASH_SOURCE_DIR}/../postgres/script_helpers.sh"
-# shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
-source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 
 TEMP_LOOKER_DIR="/tmp/looker"
 LOOKER_REPO_URL="https://github.com/Recidiviz/looker.git"
@@ -83,15 +79,12 @@ function deploy_looker_staging_version {
 function create_looker_release_branch {
   # Creates a new release branch based on the provided commit hash in the Looker repo, updates the manifest
   # and model files to the prod looker project, and tags the commit.
-  if [[ $# -ne 3 ]]; then
-    echo "Usage: create_looker_release_branch <NEW_RELEASE_BRANCH> <RELEASE_VERSION_TAG> <COMMIT_HASH>"
+  if [[ $# -ne 2 ]]; then
+    echo "Usage: create_looker_release_branch <NEW_RELEASE_BRANCH> <RELEASE_VERSION_TAG>"
     exit 1
   fi
   NEW_RELEASE_BRANCH=$1
   RELEASE_VERSION_TAG=$2
-  COMMIT_HASH=$3
-
-  verify_hash "$COMMIT_HASH" "$TEMP_LOOKER_DIR"
 
   if git -C "$TEMP_LOOKER_DIR" rev-parse --verify origin/"${NEW_RELEASE_BRANCH}" >/dev/null 2>&1; then
     echo "Error: Branch ${NEW_RELEASE_BRANCH} already exists on origin."
@@ -141,4 +134,20 @@ function create_looker_release_branch {
 
   looker_git push --set-upstream origin "${NEW_RELEASE_BRANCH}"
   looker_git push origin --tags
+}
+
+function verify_looker_repo_credentials {
+  if git ls-remote "$LOOKER_REPO_URL" &>/dev/null; then
+    echo "You can pull the Looker repo."
+  else
+    echo "Your Git credentials are not set up properly to pull the Looker repo."
+    echo ""
+    echo "To fix:"
+    echo "1. Create a GitHub personal access token (PAT) with read and write access to the Looker repo."
+    echo " https://github.com/settings/tokens"
+    echo "2. Run git clone $LOOKER_REPO_URL $LOOKER_REPO_DIR to verify your credentials are set up correctly."
+    echo "When prompted for a username, use your GitHub username."
+    echo "When prompted for a password, use the PAT you just created."
+    exit 1
+  fi
 }

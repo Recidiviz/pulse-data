@@ -5,6 +5,8 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 source "${BASH_SOURCE_DIR}/../script_base.sh"
 # shellcheck source=recidiviz/tools/postgres/script_helpers.sh
 source "${BASH_SOURCE_DIR}/../postgres/script_helpers.sh"
+# shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
+source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 
 VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
 SLACK_CHANNEL_ENG="GJDCVR2AY"
@@ -306,6 +308,9 @@ function verify_can_deploy {
       --project_id "${PROJECT_ID}" \
       --commit_ref "${COMMIT_HASH}" \
       --prompt
+
+    echo "Verifying Looker repo credentials"
+    run_cmd verify_looker_repo_credentials
 
     exit_on_fail
 }
