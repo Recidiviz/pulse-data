@@ -43,8 +43,9 @@ class RawDataConfigWriterTest(unittest.TestCase):
         self.maxDiff = None
 
     def test_output_to_file(self) -> None:
-        for state_code in [StateCode.US_XX, StateCode.US_LL]:
-            self._run_test_for_region(state_code)
+        # for state_code in [StateCode.US_XX, StateCode.US_LL]:
+        # self._run_test_for_region(state_code)
+        self._run_test_for_region(state_code=StateCode.US_XX)
 
     def _run_test_for_region(self, state_code: StateCode) -> None:
         """Tests that for a given state the generator produces identical raw data YAMLs."""

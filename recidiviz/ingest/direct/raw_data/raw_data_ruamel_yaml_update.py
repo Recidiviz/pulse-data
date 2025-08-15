@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Module to manage and upgrade YAML configurations, preserving original formatting and comments"""
+from enum import Enum
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -44,6 +45,33 @@ def load_ruaml_yaml(file_path: str | Path) -> CommentedMap:
         return yaml.load(f)
 
 
+def yaml_value_serializer(_instance: Any, _attribute: Any, value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: yaml_value_serializer(None, None, value)
+            for key, value in value.items()
+        }
+    if isinstance(value, list):
+        return [yaml_value_serializer(None, None, item) for item in value]
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, tuple):
+        raise RuntimeError("tuple not supported")
+    if isinstance(value, set):
+        raise RuntimeError("set not supported")
+    return value
+
+
+def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
+    """Saves a YAML configuration object back to a file."""
+    yaml = YAML()
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.preserve_quotes = True
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(file_path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f)
+
+
 def convert_raw_file_config_to_dict(
     file_config: DirectIngestRawFileConfig,
     default_region_config: DirectIngestRawFileDefaultConfig,
@@ -55,12 +83,13 @@ def convert_raw_file_config_to_dict(
         filter=partial(
             raw_data_yaml_attribute_filter, default_region_config=default_region_config
         ),
+        value_serializer=yaml_value_serializer,
     )
 
     # _columns attribute is private to avoid accidentally referencing deleted columns
     # but all columns including deleted columns are found in the raw file config yaml
     # with the key `columns`, so the key needs to be updated here
-    filtered[COLUMNS_YAML_KEY] = filtered.pop(COLUMNS_ATTRIBUTE_NAME)
+    filtered[COLUMNS_YAML_KEY] = filtered.pop(COLUMNS_ATTRIBUTE_NAME, [])
 
     return filtered
 

@@ -1,0 +1,5 @@
+file_tag: newDataSource
+file_description: New data source file.
+data_classification: source
+export_lookback_window: FULL_HISTORICAL_LOOKBACK
+columns: []
