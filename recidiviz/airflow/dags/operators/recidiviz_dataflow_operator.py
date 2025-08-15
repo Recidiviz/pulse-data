@@ -45,6 +45,7 @@ timestamp >= "{job_creation_time}"
 """
 
 ZONAL_RESOURCES_EXHAUSTED = "ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS"
+QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
 
 
 def _collect_log_messages(
@@ -144,7 +145,8 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
                     logging.info(message)
 
                 if any(
-                    ZONAL_RESOURCES_EXHAUSTED in message for message in log_messages
+                    (ZONAL_RESOURCES_EXHAUSTED in message or QUOTA_EXCEEDED in message)
+                    for message in log_messages
                 ):
                     logging.info(
                         "Retrying once more in 5 minutes due to zonal resource exhaustion"
