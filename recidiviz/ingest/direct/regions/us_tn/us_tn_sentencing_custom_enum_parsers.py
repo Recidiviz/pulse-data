@@ -66,17 +66,22 @@ def infer_imposed_sentence_type_from_raw_text(raw_text: str) -> StateSentenceTyp
     """
     Infers the imposed sentence type from the raw text.
 
+    See types of release associated with a sentence here:
+    https://www.tn.gov/correction/cs/types-of-release.html
+
     The raw text is a string with the following format:
-    "<initial_status_str>@@<sentenced_to_str>@@<suspended_to_probation_str>"
+    "<initial_status_str>@@<sentenced_to_str>@@<split_confinement_str>@@<suspended_to_probation_str>"
 
     Where:
         - initial_status_str: The initial status of the sentence. (changes over time)
         - initial_sentenced_to_str: The intitial modality of the the sentence. (changes over time)
+        - split_confinement_str: A string indicating the type of split confinement (does not change over time).
         - suspended_to_probation_str: A string indicating if the sentence is suspended to probation (does not change over time).
     """
     (
         inital_status_str,
         initial_sentenced_to_str,
+        split_confinement_str,
         suspended_to_probation_str,
     ) = raw_text.split("@@")
 
@@ -86,8 +91,14 @@ def infer_imposed_sentence_type_from_raw_text(raw_text: str) -> StateSentenceTyp
         initial_sentenced_to_str
     )
     suspended_to_probation: bool = suspended_to_probation_str == "S"
+    split_confinement: bool = split_confinement_str in {"PB", "CC"}
 
     # The ordering of this logic reflects our level of confidence in the data.
+    # Data from Judgement Orders tend to be more reliable.
+
+    if split_confinement:
+        return StateSentenceType.SPLIT
+
     # We're more confident in supsended_to_probation than sentenced_to
     # and initial status given how they change over time.
 
@@ -111,11 +122,17 @@ def infer_imposed_sentence_type_from_raw_text(raw_text: str) -> StateSentenceTyp
     # The only remaining option is to have an "INACTIVE" earliest known status and an earliest known SentencedTo
     # value was jail or workhouse. This is most likely due to an individual completing their sentence before we
     # began ingesting data in TN.
-    if initial_status == TnSentenceStatus.INACTIVE and initial_sentenced_to in {
+
+    # Read about being sentenced to labor in a county workhouse:
+    #     - https://www.ctas.tennessee.edu/eli/sentence-county-workhouse
+    # Read about situations where a person may be sentenced to or residing in a jail:
+    #     - https://www.ctas.tennessee.edu/eli/persons-confined-jail
+    #     - Tenn. Code Ann. § 40-20-109
+    if initial_sentenced_to in {
         TnSentencedTo.LOCAL_JAIL,
         TnSentencedTo.WORKHOUSE,
     }:
-        return StateSentenceType.INTERNAL_UNKNOWN
+        return StateSentenceType.COUNTY_JAIL
 
     raise ValueError(
         f"Could not determine initial sentence type from : {initial_status=}, "
