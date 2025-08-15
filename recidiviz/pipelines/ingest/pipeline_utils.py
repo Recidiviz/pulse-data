@@ -61,6 +61,7 @@ DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_AZ: "us-central1",
     StateCode.US_MA: "us-central1",
     StateCode.US_MI: "us-central1",
+    StateCode.US_NY: "us-central1",
     StateCode.US_TX: "us-central1",
     # us-west1 (2 zones w/ c4a-highcpu-32)
     StateCode.US_MO: "us-west1",

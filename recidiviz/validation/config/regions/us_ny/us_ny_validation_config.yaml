@@ -1,0 +1,8 @@
+# Configuration for which validations to run for region US_NY.
+
+region_code: US_NY
+# TODO(#46303): Enable validations for US_NY.
+dev_mode: True
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []

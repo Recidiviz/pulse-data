@@ -61,6 +61,9 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_raw_data_import_delegate import
 from recidiviz.ingest.direct.regions.us_ne.us_ne_raw_data_import_delegate import (
     UsNeRawDataImportDelegate,
 )
+from recidiviz.ingest.direct.regions.us_ny.us_ny_raw_data_import_delegate import (
+    UsNyRawDataImportDelegate,
+)
 from recidiviz.ingest.direct.regions.us_or.us_or_raw_data_import_delegate import (
     UsOrRawDataImportDelegate,
 )
@@ -116,6 +119,8 @@ class RawDataImportDelegateFactory:
             return UsNdRawDataImportDelegate()
         if region_code == StateCode.US_NE.value:
             return UsNeRawDataImportDelegate()
+        if region_code == StateCode.US_NY.value:
+            return UsNyRawDataImportDelegate()
         if region_code == StateCode.US_OR.value:
             return UsOrRawDataImportDelegate()
         if region_code == StateCode.US_OZ.value:
