@@ -176,8 +176,8 @@ products:
       - REENTRY
     states:
       - state_code: US_AZ
-        environment: staging
+        environment: production
       - state_code: US_IX
-        environment: staging
+        environment: production
       - state_code: US_UT
-        environment: staging
+        environment: production
