@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_ar_raw_data
     field: us_ar_OFFENDERPROFILE.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_ar_raw_data
     field: us_ar_OFFENDERPROFILE.OFFENDERID
 
@@ -38,7 +38,7 @@
   - name: OFFENDERPROFILE
     title: OFFENDERPROFILE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_OFFENDERPROFILE.primary_key,
       us_ar_OFFENDERPROFILE.OFFENDERID,
@@ -74,7 +74,7 @@
   - name: ADMISSIONSUMMARY
     title: ADMISSIONSUMMARY
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_ADMISSIONSUMMARY.primary_key,
       us_ar_ADMISSIONSUMMARY.OFFENDERID,
@@ -129,7 +129,7 @@
   - name: BEDASSIGNMENT
     title: BEDASSIGNMENT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_BEDASSIGNMENT.primary_key,
       us_ar_BEDASSIGNMENT.OFFENDERID,
@@ -164,7 +164,7 @@
   - name: BOARDHEARING
     title: BOARDHEARING
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_BOARDHEARING.primary_key,
       us_ar_BOARDHEARING.OFFENDERID,
@@ -257,7 +257,7 @@
   - name: CLIENTPROFILE
     title: CLIENTPROFILE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_CLIENTPROFILE.primary_key,
       us_ar_CLIENTPROFILE.OFFENDERID,
@@ -340,7 +340,7 @@
   - name: COMMITMENTSUMMARY
     title: COMMITMENTSUMMARY
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_COMMITMENTSUMMARY.primary_key,
       us_ar_COMMITMENTSUMMARY.OFFENDERID,
@@ -407,7 +407,7 @@
   - name: CUSTODYCLASS
     title: CUSTODYCLASS
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_CUSTODYCLASS.primary_key,
       us_ar_CUSTODYCLASS.OFFENDERID,
@@ -482,7 +482,7 @@
   - name: DEADTIME
     title: DEADTIME
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_DEADTIME.primary_key,
       us_ar_DEADTIME.OFFENDERID,
@@ -511,7 +511,7 @@
   - name: DEADTIMEPENALTY
     title: DEADTIMEPENALTY
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_DEADTIMEPENALTY.primary_key,
       us_ar_DEADTIMEPENALTY.OFFENDERID,
@@ -538,7 +538,7 @@
   - name: DEMOGRAPHICPROFILE
     title: DEMOGRAPHICPROFILE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_DEMOGRAPHICPROFILE.primary_key,
       us_ar_DEMOGRAPHICPROFILE.OFFENDERID,
@@ -607,7 +607,7 @@
   - name: DETAINERNOTIFY
     title: DETAINERNOTIFY
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_DETAINERNOTIFY.primary_key,
       us_ar_DETAINERNOTIFY.OFFENDERID,
@@ -637,7 +637,7 @@
   - name: DISCIPLINARYVIOLAT
     title: DISCIPLINARYVIOLAT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_DISCIPLINARYVIOLAT.primary_key,
       us_ar_DISCIPLINARYVIOLAT.OFFENDERID,
@@ -768,7 +768,7 @@
   - name: EDUCATIONRECORD
     title: EDUCATIONRECORD
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_EDUCATIONRECORD.primary_key,
       us_ar_EDUCATIONRECORD.OFFENDERID,
@@ -802,7 +802,7 @@
   - name: EMPLOYMENTHISTORY
     title: EMPLOYMENTHISTORY
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_EMPLOYMENTHISTORY.primary_key,
       us_ar_EMPLOYMENTHISTORY.OFFENDERID,
@@ -843,7 +843,7 @@
   - name: EXTERNALMOVEMENT
     title: EXTERNALMOVEMENT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_EXTERNALMOVEMENT.primary_key,
       us_ar_EXTERNALMOVEMENT.OFFENDERID,
@@ -873,7 +873,7 @@
   - name: INMATEPROFILE
     title: INMATEPROFILE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_INMATEPROFILE.primary_key,
       us_ar_INMATEPROFILE.OFFENDERID,
@@ -990,7 +990,7 @@
   - name: INTERVENTOFFENSE
     title: INTERVENTOFFENSE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_INTERVENTOFFENSE.primary_key,
       us_ar_INTERVENTOFFENSE.OFFENDERID,
@@ -1021,7 +1021,7 @@
   - name: INTERVENTSANCTION
     title: INTERVENTSANCTION
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_INTERVENTSANCTION.primary_key,
       us_ar_INTERVENTSANCTION.OFFENDERID,
@@ -1053,7 +1053,7 @@
   - name: INTERVENTTYPE
     title: INTERVENTTYPE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_INTERVENTTYPE.primary_key,
       us_ar_INTERVENTTYPE.OFFENDERID,
@@ -1080,7 +1080,7 @@
   - name: JOBPROGRAMASGMT
     title: JOBPROGRAMASGMT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_JOBPROGRAMASGMT.primary_key,
       us_ar_JOBPROGRAMASGMT.OFFENDERID,
@@ -1123,7 +1123,7 @@
   - name: OFFENDERNAMEALIAS
     title: OFFENDERNAMEALIAS
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_OFFENDERNAMEALIAS.primary_key,
       us_ar_OFFENDERNAMEALIAS.OFFENDERID,
@@ -1159,7 +1159,7 @@
   - name: OFFNSTANDARDFORM
     title: OFFNSTANDARDFORM
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_OFFNSTANDARDFORM.primary_key,
       us_ar_OFFNSTANDARDFORM.STDFORMCONTENT,
@@ -1194,7 +1194,7 @@
   - name: OFNRELATEDADDRESS
     title: OFNRELATEDADDRESS
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_OFNRELATEDADDRESS.primary_key,
       us_ar_OFNRELATEDADDRESS.OFFENDERID,
@@ -1228,7 +1228,7 @@
   - name: PAROLERISKASMNT
     title: PAROLERISKASMNT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_PAROLERISKASMNT.primary_key,
       us_ar_PAROLERISKASMNT.OFFENDERID,
@@ -1269,7 +1269,7 @@
   - name: PAROLERISKASMTTOOL
     title: PAROLERISKASMTTOOL
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_PAROLERISKASMTTOOL.primary_key,
       us_ar_PAROLERISKASMTTOOL.OFFENDERID,
@@ -1323,7 +1323,7 @@
   - name: PROGRAMACHIEVEMENT
     title: PROGRAMACHIEVEMENT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_PROGRAMACHIEVEMENT.primary_key,
       us_ar_PROGRAMACHIEVEMENT.OFFENDERID,
@@ -1352,7 +1352,7 @@
   - name: RELASSOCRELATION
     title: RELASSOCRELATION
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_RELASSOCRELATION.primary_key,
       us_ar_RELASSOCRELATION.OFFENDERID,
@@ -1395,7 +1395,7 @@
   - name: RELEASEDATECHANGE
     title: RELEASEDATECHANGE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_RELEASEDATECHANGE.primary_key,
       us_ar_RELEASEDATECHANGE.OFFENDERID,
@@ -1505,7 +1505,7 @@
   - name: RISKNEEDCLASS
     title: RISKNEEDCLASS
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_RISKNEEDCLASS.primary_key,
       us_ar_RISKNEEDCLASS.OFFENDERID,
@@ -1602,7 +1602,7 @@
   - name: SENTENCECOMPONENT
     title: SENTENCECOMPONENT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SENTENCECOMPONENT.primary_key,
       us_ar_SENTENCECOMPONENT.OFFENDERID,
@@ -1702,7 +1702,7 @@
   - name: SENTENCECOMPUTE
     title: SENTENCECOMPUTE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SENTENCECOMPUTE.primary_key,
       us_ar_SENTENCECOMPUTE.OFFENDERID,
@@ -1812,7 +1812,7 @@
   - name: SENTENCECREDITDBT
     title: SENTENCECREDITDBT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SENTENCECREDITDBT.primary_key,
       us_ar_SENTENCECREDITDBT.OFFENDERID,
@@ -1847,7 +1847,7 @@
   - name: SPECIALCONDITION
     title: SPECIALCONDITION
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SPECIALCONDITION.primary_key,
       us_ar_SPECIALCONDITION.OFFENDERID,
@@ -1889,7 +1889,7 @@
   - name: SUPERVISIONCONTACT
     title: SUPERVISIONCONTACT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SUPERVISIONCONTACT.primary_key,
       us_ar_SUPERVISIONCONTACT.OFFENDERID,
@@ -1922,7 +1922,7 @@
   - name: SUPERVISIONEVENT
     title: SUPERVISIONEVENT
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SUPERVISIONEVENT.primary_key,
       us_ar_SUPERVISIONEVENT.OFFENDERID,
@@ -1961,7 +1961,7 @@
   - name: SUPVINCENTIVE
     title: SUPVINCENTIVE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SUPVINCENTIVE.primary_key,
       us_ar_SUPVINCENTIVE.OFFENDERID,
@@ -1994,7 +1994,7 @@
   - name: SUPVINTERVENTION
     title: SUPVINTERVENTION
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SUPVINTERVENTION.primary_key,
       us_ar_SUPVINTERVENTION.OFFENDERID,
@@ -2025,7 +2025,7 @@
   - name: SUPVTIMELINE
     title: SUPVTIMELINE
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_SUPVTIMELINE.primary_key,
       us_ar_SUPVTIMELINE.OFFENDERID,
@@ -2071,7 +2071,7 @@
   - name: VISITATIONSTATUS
     title: VISITATIONSTATUS
     explore: us_ar_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ar_VISITATIONSTATUS.primary_key,
       us_ar_VISITATIONSTATUS.OFFENDERID,

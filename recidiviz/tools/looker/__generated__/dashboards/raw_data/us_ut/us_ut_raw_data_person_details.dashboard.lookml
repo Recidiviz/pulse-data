@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_ut_raw_data
     field: us_ut_ofndr.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_ut_raw_data
     field: us_ut_ofndr.ofndr_num
 
@@ -38,7 +38,7 @@
   - name: ofndr
     title: ofndr
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr.primary_key,
       us_ut_ofndr.ofndr_num,
@@ -81,7 +81,7 @@
   - name: cap
     title: cap
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_cap.primary_key,
       us_ut_cap.cap_id,
@@ -110,7 +110,7 @@
   - name: ofndr_addr_arch
     title: ofndr_addr_arch
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_addr_arch.primary_key,
       us_ut_ofndr_addr_arch.ofndr_addr_id,
@@ -162,7 +162,7 @@
   - name: ofndr_agnt
     title: ofndr_agnt
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_agnt.primary_key,
       us_ut_ofndr_agnt.ofndr_num,
@@ -191,7 +191,7 @@
   - name: ofndr_cap_actvty
     title: ofndr_cap_actvty
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_cap_actvty.primary_key,
       us_ut_ofndr_cap_actvty.ofndr_cap_actvty_id,
@@ -227,7 +227,7 @@
   - name: ofndr_dio_prog
     title: ofndr_dio_prog
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_dio_prog.primary_key,
       us_ut_ofndr_dio_prog.ofndr_num,
@@ -255,7 +255,7 @@
   - name: ofndr_dob
     title: ofndr_dob
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_dob.primary_key,
       us_ut_ofndr_dob.ofndr_dob_id,
@@ -283,7 +283,7 @@
   - name: ofndr_email
     title: ofndr_email
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_email.primary_key,
       us_ut_ofndr_email.id,
@@ -310,7 +310,7 @@
   - name: ofndr_lgl_stat
     title: ofndr_lgl_stat
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_lgl_stat.primary_key,
       us_ut_ofndr_lgl_stat.ofndr_num,
@@ -338,7 +338,7 @@
   - name: ofndr_loc_hist
     title: ofndr_loc_hist
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_loc_hist.primary_key,
       us_ut_ofndr_loc_hist.ofndr_num,
@@ -365,7 +365,7 @@
   - name: ofndr_name
     title: ofndr_name
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_name.primary_key,
       us_ut_ofndr_name.ofndr_name_id,
@@ -395,7 +395,7 @@
   - name: ofndr_norm
     title: ofndr_norm
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_norm.primary_key,
       us_ut_ofndr_norm.ofndr_num,
@@ -432,7 +432,7 @@
   - name: ofndr_oth_num
     title: ofndr_oth_num
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_oth_num.primary_key,
       us_ut_ofndr_oth_num.ofndr_oth_num_id,
@@ -458,7 +458,7 @@
   - name: ofndr_phone
     title: ofndr_phone
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_phone.primary_key,
       us_ut_ofndr_phone.id,
@@ -487,7 +487,7 @@
   - name: ofndr_prgrmng
     title: ofndr_prgrmng
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_prgrmng.primary_key,
       us_ut_ofndr_prgrmng.ofndr_prgrmng_id,
@@ -523,7 +523,7 @@
   - name: ofndr_sec_assess
     title: ofndr_sec_assess
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_sec_assess.primary_key,
       us_ut_ofndr_sec_assess.assess_id,
@@ -558,7 +558,7 @@
   - name: ofndr_spcl_sprvsn
     title: ofndr_spcl_sprvsn
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_spcl_sprvsn.primary_key,
       us_ut_ofndr_spcl_sprvsn.ofndr_spcl_sprvsn_id,
@@ -585,7 +585,7 @@
   - name: ofndr_sprvsn
     title: ofndr_sprvsn
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_sprvsn.primary_key,
       us_ut_ofndr_sprvsn.ofndr_sprvsn_id,
@@ -612,7 +612,7 @@
   - name: ofndr_tst
     title: ofndr_tst
     explore: us_ut_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ut_ofndr_tst.primary_key,
       us_ut_ofndr_tst.ofndr_tst_id,

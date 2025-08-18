@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_me_raw_data
     field: us_me_CIS_100_CLIENT.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_me_raw_data
     field: us_me_CIS_100_CLIENT.Client_Id
 
@@ -38,7 +38,7 @@
   - name: CIS_100_CLIENT
     title: CIS_100_CLIENT
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_100_CLIENT.primary_key,
       us_me_CIS_100_CLIENT.Adult_Ind,
@@ -146,7 +146,7 @@
   - name: CIS_102_ALERT_HISTORY
     title: CIS_102_ALERT_HISTORY
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_102_ALERT_HISTORY.primary_key,
       us_me_CIS_102_ALERT_HISTORY.ALERT_HISTORY_ID,
@@ -177,7 +177,7 @@
   - name: CIS_106_ADDRESS
     title: CIS_106_ADDRESS
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_106_ADDRESS.primary_key,
       us_me_CIS_106_ADDRESS.Address_Id,
@@ -233,7 +233,7 @@
   - name: CIS_112_CUSTODY_LEVEL
     title: CIS_112_CUSTODY_LEVEL
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_112_CUSTODY_LEVEL.primary_key,
       us_me_CIS_112_CUSTODY_LEVEL.LEVEL_ID,
@@ -264,7 +264,7 @@
   - name: CIS_116_LSI_HISTORY
     title: CIS_116_LSI_HISTORY
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_116_LSI_HISTORY.primary_key,
       us_me_CIS_116_LSI_HISTORY.Cis_100_Client_Id,
@@ -311,7 +311,7 @@
   - name: CIS_124_SUPERVISION_HISTORY
     title: CIS_124_SUPERVISION_HISTORY
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_124_SUPERVISION_HISTORY.primary_key,
       us_me_CIS_124_SUPERVISION_HISTORY.Assignment_Date__raw,
@@ -344,7 +344,7 @@
   - name: CIS_125_CURRENT_STATUS_HIST
     title: CIS_125_CURRENT_STATUS_HIST
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_125_CURRENT_STATUS_HIST.primary_key,
       us_me_CIS_125_CURRENT_STATUS_HIST.Cis_100_Client_Id,
@@ -389,7 +389,7 @@
   - name: CIS_128_EMPLOYMENT_HISTORY
     title: CIS_128_EMPLOYMENT_HISTORY
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_128_EMPLOYMENT_HISTORY.primary_key,
       us_me_CIS_128_EMPLOYMENT_HISTORY.EMPLOYMENT_HISTORY_ID,
@@ -424,7 +424,7 @@
   - name: CIS_130_INVESTIGATION
     title: CIS_130_INVESTIGATION
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_130_INVESTIGATION.primary_key,
       us_me_CIS_130_INVESTIGATION.Cis_100_Client_Id,
@@ -461,7 +461,7 @@
   - name: CIS_140_CLASSIFICATION_REVIEW
     title: CIS_140_CLASSIFICATION_REVIEW
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_140_CLASSIFICATION_REVIEW.primary_key,
       us_me_CIS_140_CLASSIFICATION_REVIEW.CLASSIFICATION_ID,
@@ -505,7 +505,7 @@
   - name: CIS_160_DRUG_SCREENING
     title: CIS_160_DRUG_SCREENING
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_160_DRUG_SCREENING.primary_key,
       us_me_CIS_160_DRUG_SCREENING.DRUG_SCREENING_ID,
@@ -546,7 +546,7 @@
   - name: CIS_200_CASE_PLAN
     title: CIS_200_CASE_PLAN
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_200_CASE_PLAN.primary_key,
       us_me_CIS_200_CASE_PLAN.Cis_100_Client_Id,
@@ -582,7 +582,7 @@
   - name: CIS_201_GOALS
     title: CIS_201_GOALS
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_201_GOALS.primary_key,
       us_me_CIS_201_GOALS.Cis_200_Cis_100_Client_Id,
@@ -616,7 +616,7 @@
   - name: CIS_204_GEN_NOTE
     title: CIS_204_GEN_NOTE
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_204_GEN_NOTE.primary_key,
       us_me_CIS_204_GEN_NOTE.Cis_100_Client_Id,
@@ -657,7 +657,7 @@
   - name: CIS_210_JOB_ASSIGN
     title: CIS_210_JOB_ASSIGN
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_210_JOB_ASSIGN.primary_key,
       us_me_CIS_210_JOB_ASSIGN.ASSIGN_ID,
@@ -704,7 +704,7 @@
   - name: CIS_215_SEX_OFFENDER_ASSESS
     title: CIS_215_SEX_OFFENDER_ASSESS
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_215_SEX_OFFENDER_ASSESS.primary_key,
       us_me_CIS_215_SEX_OFFENDER_ASSESS.Assessment_Date__raw,
@@ -740,7 +740,7 @@
   - name: CIS_300_Personal_Property
     title: CIS_300_Personal_Property
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_300_Personal_Property.primary_key,
       us_me_CIS_300_Personal_Property.PP_ID,
@@ -777,7 +777,7 @@
   - name: CIS_309_MOVEMENT
     title: CIS_309_MOVEMENT
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_309_MOVEMENT.primary_key,
       us_me_CIS_309_MOVEMENT.Actual_Time,
@@ -817,7 +817,7 @@
   - name: CIS_314_TRANSFER
     title: CIS_314_TRANSFER
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_314_TRANSFER.primary_key,
       us_me_CIS_314_TRANSFER.Cancelled_Ind,
@@ -863,7 +863,7 @@
   - name: CIS_319_TERM
     title: CIS_319_TERM
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_319_TERM.primary_key,
       us_me_CIS_319_TERM.Cis_100_Client_Id,
@@ -903,7 +903,7 @@
   - name: CIS_324_AWOL
     title: CIS_324_AWOL
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_324_AWOL.primary_key,
       us_me_CIS_324_AWOL.AWOL_ID,
@@ -941,7 +941,7 @@
   - name: CIS_400_CHARGE
     title: CIS_400_CHARGE
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_400_CHARGE.primary_key,
       us_me_CIS_400_CHARGE.Atn_Tx,
@@ -1003,7 +1003,7 @@
   - name: CIS_401_CRT_ORDER_HDR
     title: CIS_401_CRT_ORDER_HDR
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_401_CRT_ORDER_HDR.primary_key,
       us_me_CIS_401_CRT_ORDER_HDR.Adj_Days_Earned_Num,
@@ -1134,7 +1134,7 @@
   - name: CIS_425_MAIN_PROG
     title: CIS_425_MAIN_PROG
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_425_MAIN_PROG.primary_key,
       us_me_CIS_425_MAIN_PROG.ENROLL_ID,
@@ -1175,7 +1175,7 @@
   - name: CIS_430_ASSESSMENT
     title: CIS_430_ASSESSMENT
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_430_ASSESSMENT.primary_key,
       us_me_CIS_430_ASSESSMENT.Assess_Id,
@@ -1226,7 +1226,7 @@
   - name: CIS_462_CLIENTS_INVOLVED
     title: CIS_462_CLIENTS_INVOLVED
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_462_CLIENTS_INVOLVED.primary_key,
       us_me_CIS_462_CLIENTS_INVOLVED.Cis_100_Client_Id,
@@ -1265,7 +1265,7 @@
   - name: CIS_480_VIOLATION
     title: CIS_480_VIOLATION
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_480_VIOLATION.primary_key,
       us_me_CIS_480_VIOLATION.Arrested_Warr_Date__raw,
@@ -1315,7 +1315,7 @@
   - name: CIS_573_CLIENT_CASE_DETAIL
     title: CIS_573_CLIENT_CASE_DETAIL
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_573_CLIENT_CASE_DETAIL.primary_key,
       us_me_CIS_573_CLIENT_CASE_DETAIL.cis_100_client_id,
@@ -1349,7 +1349,7 @@
   - name: CIS_916_ASSIGN_BED
     title: CIS_916_ASSIGN_BED
     explore: us_me_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_me_CIS_916_ASSIGN_BED.primary_key,
       us_me_CIS_916_ASSIGN_BED.Assign_Id,

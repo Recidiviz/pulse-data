@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_or_raw_data
     field: us_or_RCDVZ_PRDDTA_OP970P.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_or_raw_data
     field: us_or_RCDVZ_PRDDTA_OP970P.RECORD_KEY
 
@@ -38,7 +38,7 @@
   - name: RCDVZ_PRDDTA_OP970P
     title: RCDVZ_PRDDTA_OP970P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP970P.primary_key,
       us_or_RCDVZ_PRDDTA_OP970P.RECORD_KEY,
@@ -121,7 +121,7 @@
   - name: RCDVZ_CISPRDDTA_CLOVER
     title: RCDVZ_CISPRDDTA_CLOVER
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CLOVER.primary_key,
       us_or_RCDVZ_CISPRDDTA_CLOVER.RECORD_KEY,
@@ -148,7 +148,7 @@
   - name: RCDVZ_CISPRDDTA_CMCROH
     title: RCDVZ_CISPRDDTA_CMCROH
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CMCROH.primary_key,
       us_or_RCDVZ_CISPRDDTA_CMCROH.CASELOAD,
@@ -179,7 +179,7 @@
   - name: RCDVZ_CISPRDDTA_CMOFFT
     title: RCDVZ_CISPRDDTA_CMOFFT
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CMOFFT.primary_key,
       us_or_RCDVZ_CISPRDDTA_CMOFFT.RECORD_KEY,
@@ -210,7 +210,7 @@
   - name: RCDVZ_CISPRDDTA_CMOFRH
     title: RCDVZ_CISPRDDTA_CMOFRH
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CMOFRH.primary_key,
       us_or_RCDVZ_CISPRDDTA_CMOFRH.RECORD_KEY,
@@ -248,7 +248,7 @@
   - name: RCDVZ_CISPRDDTA_CMSACN
     title: RCDVZ_CISPRDDTA_CMSACN
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CMSACN.primary_key,
       us_or_RCDVZ_CISPRDDTA_CMSACN.SANC_DATE__raw,
@@ -275,7 +275,7 @@
   - name: RCDVZ_CISPRDDTA_CMSACO
     title: RCDVZ_CISPRDDTA_CMSACO
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CMSACO.primary_key,
       us_or_RCDVZ_CISPRDDTA_CMSACO.RECORD_KEY,
@@ -314,7 +314,7 @@
   - name: RCDVZ_CISPRDDTA_CMSAIM
     title: RCDVZ_CISPRDDTA_CMSAIM
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_CMSAIM.primary_key,
       us_or_RCDVZ_CISPRDDTA_CMSAIM.CUSTODY_BEGIN_DATE__raw,
@@ -364,7 +364,7 @@
   - name: RCDVZ_CISPRDDTA_MTOFDR
     title: RCDVZ_CISPRDDTA_MTOFDR
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_MTOFDR.primary_key,
       us_or_RCDVZ_CISPRDDTA_MTOFDR.RECORD_KEY,
@@ -422,7 +422,7 @@
   - name: RCDVZ_CISPRDDTA_MTRULE
     title: RCDVZ_CISPRDDTA_MTRULE
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_MTRULE.primary_key,
       us_or_RCDVZ_CISPRDDTA_MTRULE.RECORD_KEY,
@@ -454,7 +454,7 @@
   - name: RCDVZ_CISPRDDTA_MTSANC
     title: RCDVZ_CISPRDDTA_MTSANC
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_MTSANC.primary_key,
       us_or_RCDVZ_CISPRDDTA_MTSANC.RECORD_KEY,
@@ -491,7 +491,7 @@
   - name: RCDVZ_CISPRDDTA_OPCOND
     title: RCDVZ_CISPRDDTA_OPCOND
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_OPCOND.primary_key,
       us_or_RCDVZ_CISPRDDTA_OPCOND.CONDITION_TYPE,
@@ -530,7 +530,7 @@
   - name: RCDVZ_CISPRDDTA_OPCONE
     title: RCDVZ_CISPRDDTA_OPCONE
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDTA_OPCONE.primary_key,
       us_or_RCDVZ_CISPRDDTA_OPCONE.RECORD_KEY,
@@ -570,7 +570,7 @@
   - name: RCDVZ_CISPRDDT_CLCLHD
     title: RCDVZ_CISPRDDT_CLCLHD
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_CISPRDDT_CLCLHD.primary_key,
       us_or_RCDVZ_CISPRDDT_CLCLHD.RECORD_KEY,
@@ -603,7 +603,7 @@
   - name: RCDVZ_PRDDTA_OP007P
     title: RCDVZ_PRDDTA_OP007P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP007P.primary_key,
       us_or_RCDVZ_PRDDTA_OP007P.RECORD_KEY,
@@ -656,7 +656,7 @@
   - name: RCDVZ_PRDDTA_OP008P
     title: RCDVZ_PRDDTA_OP008P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP008P.primary_key,
       us_or_RCDVZ_PRDDTA_OP008P.RECORD_KEY,
@@ -682,7 +682,7 @@
   - name: RCDVZ_PRDDTA_OP009P
     title: RCDVZ_PRDDTA_OP009P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP009P.primary_key,
       us_or_RCDVZ_PRDDTA_OP009P.RECORD_KEY,
@@ -715,7 +715,7 @@
   - name: RCDVZ_PRDDTA_OP010P
     title: RCDVZ_PRDDTA_OP010P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP010P.primary_key,
       us_or_RCDVZ_PRDDTA_OP010P.RECORD_KEY,
@@ -745,7 +745,7 @@
   - name: RCDVZ_PRDDTA_OP011P
     title: RCDVZ_PRDDTA_OP011P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP011P.primary_key,
       us_or_RCDVZ_PRDDTA_OP011P.RECORD_KEY,
@@ -781,7 +781,7 @@
   - name: RCDVZ_PRDDTA_OP013P
     title: RCDVZ_PRDDTA_OP013P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP013P.primary_key,
       us_or_RCDVZ_PRDDTA_OP013P.RECORD_KEY,
@@ -850,7 +850,7 @@
   - name: RCDVZ_PRDDTA_OP053P
     title: RCDVZ_PRDDTA_OP053P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP053P.primary_key,
       us_or_RCDVZ_PRDDTA_OP053P.NEXT_NUMBER,
@@ -903,7 +903,7 @@
   - name: RCDVZ_PRDDTA_OP054P
     title: RCDVZ_PRDDTA_OP054P
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OP054P.primary_key,
       us_or_RCDVZ_PRDDTA_OP054P.NEXT_NUMBER,
@@ -994,7 +994,7 @@
   - name: RCDVZ_PRDDTA_OPCOUR
     title: RCDVZ_PRDDTA_OPCOUR
     explore: us_or_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_or_RCDVZ_PRDDTA_OPCOUR.primary_key,
       us_or_RCDVZ_PRDDTA_OPCOUR.RECORD_KEY,

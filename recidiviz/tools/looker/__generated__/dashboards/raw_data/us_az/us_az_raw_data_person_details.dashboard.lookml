@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_az_raw_data
     field: us_az_PERSON.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_az_raw_data
     field: us_az_PERSON.PERSON_ID
 
@@ -38,7 +38,7 @@
   - name: PERSON
     title: PERSON
     explore: us_az_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_az_PERSON.primary_key,
       us_az_PERSON.PERSON_ID,
@@ -85,7 +85,7 @@
   - name: DEMOGRAPHICS
     title: DEMOGRAPHICS
     explore: us_az_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_az_DEMOGRAPHICS.primary_key,
       us_az_DEMOGRAPHICS.DEMOGRAPHIC_ID,
@@ -150,7 +150,7 @@
   - name: OCCUPANCY
     title: OCCUPANCY
     explore: us_az_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_az_OCCUPANCY.primary_key,
       us_az_OCCUPANCY.OCCUPANCY_TYPE_ID,
@@ -187,7 +187,7 @@
   - name: DPP_EPISODE
     title: DPP_EPISODE
     explore: us_az_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_az_DPP_EPISODE.primary_key,
       us_az_DPP_EPISODE.DPP_ID,
@@ -237,7 +237,7 @@
   - name: DOC_EPISODE
     title: DOC_EPISODE
     explore: us_az_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_az_DOC_EPISODE.primary_key,
       us_az_DOC_EPISODE.DOC_ID,
@@ -303,7 +303,7 @@
   - name: LOOKUPS
     title: LOOKUPS
     explore: us_az_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_az_LOOKUPS.primary_key,
       us_az_LOOKUPS.LOOKUP_ID,

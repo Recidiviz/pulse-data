@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_pa_raw_data
     field: us_pa_dbo_tblSearchInmateInfo.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_pa_raw_data
     field: us_pa_dbo_tblSearchInmateInfo.inmate_number
 
@@ -43,7 +43,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_pa_raw_data
     field: us_pa_dbo_tblSearchInmateInfo.control_number
 
@@ -56,7 +56,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_pa_raw_data
     field: us_pa_dbo_tblSearchInmateInfo.parole_board_num
 
@@ -64,7 +64,7 @@
   - name: dbo_tblSearchInmateInfo
     title: dbo_tblSearchInmateInfo
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_tblSearchInmateInfo.primary_key,
       us_pa_dbo_tblSearchInmateInfo.inmate_number,
@@ -171,7 +171,7 @@
   - name: RECIDIVIZ_REFERENCE_control_number_linking_ids
     title: RECIDIVIZ_REFERENCE_control_number_linking_ids
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_RECIDIVIZ_REFERENCE_control_number_linking_ids.primary_key,
       us_pa_RECIDIVIZ_REFERENCE_control_number_linking_ids.control_number,
@@ -194,7 +194,7 @@
   - name: dbo_BoardAction
     title: dbo_BoardAction
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_BoardAction.primary_key,
       us_pa_dbo_BoardAction.ParoleNumber,
@@ -239,7 +239,7 @@
   - name: dbo_ConditionCode
     title: dbo_ConditionCode
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_ConditionCode.primary_key,
       us_pa_dbo_ConditionCode.ParoleNumber,
@@ -265,7 +265,7 @@
   - name: dbo_ConditionCodeDescription
     title: dbo_ConditionCodeDescription
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_ConditionCodeDescription.primary_key,
       us_pa_dbo_ConditionCodeDescription.ParoleNumber,
@@ -293,7 +293,7 @@
   - name: dbo_DOB
     title: dbo_DOB
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_DOB.primary_key,
       us_pa_dbo_DOB.ParoleNumber,
@@ -320,7 +320,7 @@
   - name: dbo_DeActivateParoleNumber
     title: dbo_DeActivateParoleNumber
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_DeActivateParoleNumber.primary_key,
       us_pa_dbo_DeActivateParoleNumber.ParoleNumber,
@@ -343,7 +343,7 @@
   - name: dbo_Hist_Parolee
     title: dbo_Hist_Parolee
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Hist_Parolee.primary_key,
       us_pa_dbo_Hist_Parolee.ParoleNumber,
@@ -378,7 +378,7 @@
   - name: dbo_Hist_Release
     title: dbo_Hist_Release
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Hist_Release.primary_key,
       us_pa_dbo_Hist_Release.ParoleNumber,
@@ -463,7 +463,7 @@
   - name: dbo_Hist_SanctionTracking
     title: dbo_Hist_SanctionTracking
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Hist_SanctionTracking.primary_key,
       us_pa_dbo_Hist_SanctionTracking.ParoleNumber,
@@ -495,7 +495,7 @@
   - name: dbo_Hist_Treatment
     title: dbo_Hist_Treatment
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Hist_Treatment.primary_key,
       us_pa_dbo_Hist_Treatment.ParoleNumber,
@@ -536,7 +536,7 @@
   - name: dbo_LSIHistory
     title: dbo_LSIHistory
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_LSIHistory.primary_key,
       us_pa_dbo_LSIHistory.ParoleNumber,
@@ -630,7 +630,7 @@
   - name: dbo_LSIR
     title: dbo_LSIR
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_LSIR.primary_key,
       us_pa_dbo_LSIR.ParoleNumber,
@@ -656,7 +656,7 @@
   - name: dbo_Miscon
     title: dbo_Miscon
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Miscon.primary_key,
       us_pa_dbo_Miscon.institution,
@@ -720,7 +720,7 @@
   - name: dbo_Movrec
     title: dbo_Movrec
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Movrec.primary_key,
       us_pa_dbo_Movrec.mov_cnt_num,
@@ -766,7 +766,7 @@
   - name: dbo_Offender
     title: dbo_Offender
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Offender.primary_key,
       us_pa_dbo_Offender.ParoleNumber,
@@ -820,7 +820,7 @@
   - name: dbo_ParoleCount
     title: dbo_ParoleCount
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_ParoleCount.primary_key,
       us_pa_dbo_ParoleCount.ParoleNumber,
@@ -843,7 +843,7 @@
   - name: dbo_Parolee
     title: dbo_Parolee
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Parolee.primary_key,
       us_pa_dbo_Parolee.ParoleNumber,
@@ -916,7 +916,7 @@
   - name: dbo_Perrec
     title: dbo_Perrec
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Perrec.primary_key,
       us_pa_dbo_Perrec.control_number,
@@ -1173,7 +1173,7 @@
   - name: dbo_RelAgentHistory
     title: dbo_RelAgentHistory
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_RelAgentHistory.primary_key,
       us_pa_dbo_RelAgentHistory.ParoleNumber,
@@ -1202,7 +1202,7 @@
   - name: dbo_RelEmployment
     title: dbo_RelEmployment
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_RelEmployment.primary_key,
       us_pa_dbo_RelEmployment.ParoleNumber,
@@ -1229,7 +1229,7 @@
   - name: dbo_Release
     title: dbo_Release
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Release.primary_key,
       us_pa_dbo_Release.ParoleNumber,
@@ -1268,7 +1268,7 @@
   - name: dbo_ReleaseInfo
     title: dbo_ReleaseInfo
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_ReleaseInfo.primary_key,
       us_pa_dbo_ReleaseInfo.ParoleNumber,
@@ -1344,7 +1344,7 @@
   - name: dbo_SanctionTracking
     title: dbo_SanctionTracking
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_SanctionTracking.primary_key,
       us_pa_dbo_SanctionTracking.ParoleNumber,
@@ -1376,7 +1376,7 @@
   - name: dbo_Senrec
     title: dbo_Senrec
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Senrec.primary_key,
       us_pa_dbo_Senrec.curr_inmate_num,
@@ -1449,7 +1449,7 @@
   - name: dbo_Sentence
     title: dbo_Sentence
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Sentence.primary_key,
       us_pa_dbo_Sentence.ParoleNumber,
@@ -1495,7 +1495,7 @@
   - name: dbo_SentenceGroup
     title: dbo_SentenceGroup
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_SentenceGroup.primary_key,
       us_pa_dbo_SentenceGroup.ParoleNumber,
@@ -1551,7 +1551,7 @@
   - name: dbo_Treatment
     title: dbo_Treatment
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_Treatment.primary_key,
       us_pa_dbo_Treatment.ParoleNumber,
@@ -1596,7 +1596,7 @@
   - name: dbo_tblInmTestScore
     title: dbo_tblInmTestScore
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_tblInmTestScore.primary_key,
       us_pa_dbo_tblInmTestScore.Test_Id,
@@ -1629,7 +1629,7 @@
   - name: dbo_tblInmTestScoreHist
     title: dbo_tblInmTestScoreHist
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_tblInmTestScoreHist.primary_key,
       us_pa_dbo_tblInmTestScoreHist.Test_Id,
@@ -1663,7 +1663,7 @@
   - name: dbo_vwCCISAllMvmt
     title: dbo_vwCCISAllMvmt
     explore: us_pa_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_pa_dbo_vwCCISAllMvmt.primary_key,
       us_pa_dbo_vwCCISAllMvmt.CCISMvmt_ID,

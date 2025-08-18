@@ -17,7 +17,7 @@
     ui_config: 
       type: dropdown_menu
       display: inline
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_ll_raw_data
     field: us_ll_basicData.view_type
 
@@ -30,7 +30,7 @@
     ui_config: 
       type: tag_list
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: us_ll_raw_data
     field: us_ll_basicData.COL1
 
@@ -38,7 +38,7 @@
   - name: basicData
     title: basicData
     explore: us_ll_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ll_basicData.primary_key,
       us_ll_basicData.COL1,
@@ -60,7 +60,7 @@
   - name: manyPrimaryKeys
     title: manyPrimaryKeys
     explore: us_ll_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ll_manyPrimaryKeys.primary_key,
       us_ll_manyPrimaryKeys.col_name_1a,
@@ -82,7 +82,7 @@
   - name: datetimeNoParsers
     title: datetimeNoParsers
     explore: us_ll_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ll_datetimeNoParsers.primary_key,
       us_ll_datetimeNoParsers.COL1,
@@ -103,7 +103,7 @@
   - name: noValidPrimaryKeys
     title: noValidPrimaryKeys
     explore: us_ll_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ll_noValidPrimaryKeys.primary_key,
       us_ll_noValidPrimaryKeys.col_name_1a,
@@ -125,7 +125,7 @@
   - name: customDatetimeSql
     title: customDatetimeSql
     explore: us_ll_raw_data
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [us_ll_customDatetimeSql.primary_key,
       us_ll_customDatetimeSql.COL1,

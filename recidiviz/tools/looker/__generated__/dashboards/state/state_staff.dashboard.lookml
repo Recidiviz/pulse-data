@@ -15,7 +15,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: state_staff
     field: state_staff.staff_id
 
@@ -27,7 +27,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: state_staff
     field: state_staff.state_code
 
@@ -39,7 +39,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: state_staff
     field: state_staff_external_id.external_id
 
@@ -51,7 +51,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: state_staff
     field: state_staff_external_id.id_type
 
@@ -59,7 +59,7 @@
   - name: State Staff
     title: State Staff
     explore: state_staff
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [state_staff.email,
       state_staff.full_name,
@@ -79,7 +79,7 @@
   - name: State Staff Caseload Type Period
     title: State Staff Caseload Type Period
     explore: state_staff
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [state_staff_caseload_type_period.caseload_type,
       state_staff_caseload_type_period.caseload_type_raw_text,
@@ -102,7 +102,7 @@
   - name: State Staff External Id
     title: State Staff External Id
     explore: state_staff
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [state_staff_external_id.external_id,
       state_staff_external_id.id_type,
@@ -122,7 +122,7 @@
   - name: State Staff Location Period
     title: State Staff Location Period
     explore: state_staff
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [state_staff_location_period.end_date,
       state_staff_location_period.external_id,
@@ -144,7 +144,7 @@
   - name: State Staff Role Period
     title: State Staff Role Period
     explore: state_staff
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [state_staff_role_period.end_date,
       state_staff_role_period.external_id,
@@ -169,7 +169,7 @@
   - name: State Staff Supervisor Period
     title: State Staff Supervisor Period
     explore: state_staff
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [state_staff_supervisor_period.end_date,
       state_staff_supervisor_period.external_id,

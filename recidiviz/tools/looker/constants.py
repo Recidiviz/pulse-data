@@ -33,5 +33,5 @@ GENERATED_SUBDIR_NAME = "__generated__"
 LOOKML_TOOLS_ROOT_PATH = os.path.join(RECIDIVIZ_ROOT, LOOKER_TOOLS_ROOT)
 GENERATED_LOOKML_ROOT_PATH = os.path.join(LOOKML_TOOLS_ROOT_PATH, GENERATED_SUBDIR_NAME)
 
-# Reference to project_id variable defined in looker manifest.yml
-PROJECT_ID_VAR_STRING = '"@{project_id}"'
+# Reference to model_name constant defined in looker manifest.yml
+MODEL_NAME_VAR_STRING = '"@{model_name}"'

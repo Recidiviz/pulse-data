@@ -47,7 +47,7 @@ from recidiviz.looker.lookml_dashboard_parameter import (
 from recidiviz.looker.lookml_explore import LookMLExplore
 from recidiviz.looker.lookml_explore_parameter import ExploreParameterJoin
 from recidiviz.looker.lookml_view import LookMLView
-from recidiviz.tools.looker.constants import PROJECT_ID_VAR_STRING
+from recidiviz.tools.looker.constants import MODEL_NAME_VAR_STRING
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     RAW_DATA_UP_TO_DATE_VIEWS_OPTION,
     VIEW_TYPE_PARAM_NAME,
@@ -128,7 +128,7 @@ def _generate_filters_for_state(
         LookMLDashboardFilter(
             name=VIEW_TYPE_FILTER_NAME,
             title=VIEW_TYPE_FILTER_NAME,
-            model=PROJECT_ID_VAR_STRING,
+            model=MODEL_NAME_VAR_STRING,
             type=LookMLFilterType.FIELD_FILTER,
             default_value=RAW_DATA_UP_TO_DATE_VIEWS_OPTION.replace("_", "^_"),
             allow_multiple_values=False,
@@ -162,7 +162,7 @@ def _generate_filters_for_state(
                 LookMLDashboardFilter(
                     name=name,
                     title=name,
-                    model=PROJECT_ID_VAR_STRING,
+                    model=MODEL_NAME_VAR_STRING,
                     type=LookMLFilterType.FIELD_FILTER,
                     default_value='""',
                     allow_multiple_values=True,
@@ -275,7 +275,7 @@ def _generate_elements_for_state(
                 name=file_config.file_tag,
                 title=file_config.file_tag,
                 explore=explore.non_template_name,
-                model=PROJECT_ID_VAR_STRING,
+                model=MODEL_NAME_VAR_STRING,
                 type=LookMLElementType.LOOKER_GRID,
                 note_display=LookMLNoteDisplayType.HOVER,
                 note_text=f'"{note_text}"',

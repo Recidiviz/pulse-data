@@ -141,7 +141,7 @@ class EntityLookMLFieldFactory(LookMLFieldFactory):
       }}
     </style>
       <a
-        href="/dashboards/@{{project_id}}::{opposite_root_entity_name}?Person+ID={{{{ _filters['{root_entity_name}.person_id'] }}}}&State+Code={{{{ _filters['{root_entity_name}.state_code'] }}}}&External+ID={{{{ _filters['{external_id_entity_name}.external_id'] }}}}&ID+Type={{{{ _filters['{external_id_entity_name}.id_type'] }}}}"
+        href="/dashboards/@{{model_name}}::{opposite_root_entity_name}?Person+ID={{{{ _filters['{root_entity_name}.person_id'] }}}}&State+Code={{{{ _filters['{root_entity_name}.state_code'] }}}}&External+ID={{{{ _filters['{external_id_entity_name}.external_id'] }}}}&ID+Type={{{{ _filters['{external_id_entity_name}.id_type'] }}}}"
         style="
           position: relative;
           display: inline-block;

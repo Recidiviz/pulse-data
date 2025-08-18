@@ -15,7 +15,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: normalized_state_person
     field: normalized_state_person.person_id
 
@@ -27,7 +27,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: normalized_state_person
     field: normalized_state_person.state_code
 
@@ -39,7 +39,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: normalized_state_person
     field: normalized_state_person_external_id.external_id
 
@@ -51,7 +51,7 @@
     ui_config: 
       type: advanced
       display: popover
-    model: "@{project_id}"
+    model: "@{model_name}"
     explore: normalized_state_person
     field: normalized_state_person_external_id.id_type
 
@@ -68,7 +68,7 @@
   - name: actions
     title: Actions
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: single_value
     fields: [normalized_state_person.actions]
     listen: 
@@ -84,7 +84,7 @@
   - name: periods_timeline
     title: Periods Timeline
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_timeline
     fields: [normalized_state_person.person_id,
       normalized_state_person_periods.period_type,
@@ -109,7 +109,7 @@
   - name: Normalized State Assessment
     title: Normalized State Assessment
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_assessment.assessment_class,
       normalized_state_assessment.assessment_class_raw_text,
@@ -142,7 +142,7 @@
   - name: Normalized State Charge
     title: Normalized State Charge
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_charge.attempted,
       normalized_state_charge.charge_id,
@@ -186,7 +186,7 @@
   - name: Normalized State Charge V2
     title: Normalized State Charge V2
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_charge_v2.attempted,
       normalized_state_charge_v2.charge_notes,
@@ -234,7 +234,7 @@
   - name: Normalized State Drug Screen
     title: Normalized State Drug Screen
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_drug_screen.drug_screen_date,
       normalized_state_drug_screen.drug_screen_id,
@@ -259,7 +259,7 @@
   - name: Normalized State Early Discharge
     title: Normalized State Early Discharge
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_early_discharge.county_code,
       normalized_state_early_discharge.deciding_body_type,
@@ -291,7 +291,7 @@
   - name: Normalized State Employment Period
     title: Normalized State Employment Period
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_employment_period.employer_address,
       normalized_state_employment_period.employer_name,
@@ -320,7 +320,7 @@
   - name: Normalized State Incarceration Incident
     title: Normalized State Incarceration Incident
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_incarceration_incident.external_id,
       normalized_state_incarceration_incident.facility,
@@ -348,7 +348,7 @@
   - name: Normalized State Incarceration Incident Outcome
     title: Normalized State Incarceration Incident Outcome
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_incarceration_incident_outcome.date_effective_date,
       normalized_state_incarceration_incident_outcome.external_id,
@@ -377,7 +377,7 @@
   - name: Normalized State Incarceration Period
     title: Normalized State Incarceration Period
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_incarceration_period.admission_date,
       normalized_state_incarceration_period.admission_reason,
@@ -421,7 +421,7 @@
   - name: Normalized State Incarceration Sentence
     title: Normalized State Incarceration Sentence
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_incarceration_sentence.completion_date,
       normalized_state_incarceration_sentence.conditions,
@@ -461,7 +461,7 @@
   - name: Normalized State Person
     title: Normalized State Person
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_person.birthdate_date,
       normalized_state_person.current_address,
@@ -491,7 +491,7 @@
   - name: Normalized State Person Address Period
     title: Normalized State Person Address Period
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_person_address_period.address_city,
       normalized_state_person_address_period.address_country,
@@ -523,7 +523,7 @@
   - name: Normalized State Person Alias
     title: Normalized State Person Alias
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_person_alias.alias_type,
       normalized_state_person_alias.alias_type_raw_text,
@@ -544,7 +544,7 @@
   - name: Normalized State Person External Id
     title: Normalized State Person External Id
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_person_external_id.external_id,
       normalized_state_person_external_id.external_id_with_type,
@@ -569,7 +569,7 @@
   - name: Normalized State Person Housing Status Period
     title: Normalized State Person Housing Status Period
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_person_housing_status_period.housing_status_end_date,
       normalized_state_person_housing_status_period.housing_status_start_date,
@@ -591,7 +591,7 @@
   - name: Normalized State Person Staff Relationship Period
     title: Normalized State Person Staff Relationship Period
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_person_staff_relationship_period.associated_staff_external_id,
       normalized_state_person_staff_relationship_period.associated_staff_external_id_type,
@@ -620,7 +620,7 @@
   - name: Normalized State Program Assignment
     title: Normalized State Program Assignment
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_program_assignment.discharge_date,
       normalized_state_program_assignment.external_id,
@@ -651,7 +651,7 @@
   - name: Normalized State Sentence
     title: Normalized State Sentence
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence.conditions,
       normalized_state_sentence.county_code,
@@ -688,7 +688,7 @@
   - name: Normalized State Sentence Group
     title: Normalized State Sentence Group
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence_group.external_id,
       normalized_state_sentence_group.sentence_group_id,
@@ -708,7 +708,7 @@
   - name: Normalized State Sentence Group Length
     title: Normalized State Sentence Group Length
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence_group_length.group_update_datetime_date,
       normalized_state_sentence_group_length.parole_eligibility_date_external_date,
@@ -733,7 +733,7 @@
   - name: Normalized State Sentence Imposed Group
     title: Normalized State Sentence Imposed Group
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence_imposed_group.external_id,
       normalized_state_sentence_imposed_group.imposed_date,
@@ -756,7 +756,7 @@
   - name: Normalized State Sentence Inferred Group
     title: Normalized State Sentence Inferred Group
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence_inferred_group.external_id,
       normalized_state_sentence_inferred_group.sentence_inferred_group_id,
@@ -775,7 +775,7 @@
   - name: Normalized State Sentence Length
     title: Normalized State Sentence Length
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence_length.earned_time_days,
       normalized_state_sentence_length.good_time_days,
@@ -804,7 +804,7 @@
   - name: Normalized State Sentence Status Snapshot
     title: Normalized State Sentence Status Snapshot
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_sentence_status_snapshot.sentence_id,
       normalized_state_sentence_status_snapshot.sentence_status_snapshot_id,
@@ -828,7 +828,7 @@
   - name: Normalized State Supervision Contact
     title: Normalized State Supervision Contact
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_supervision_contact.contact_date,
       normalized_state_supervision_contact.contact_datetime_date,
@@ -867,7 +867,7 @@
   - name: Normalized State Supervision Period
     title: Normalized State Supervision Period
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_supervision_case_type_entry.count,
       normalized_state_supervision_period.admission_reason,
@@ -908,7 +908,7 @@
   - name: Normalized State Supervision Sentence
     title: Normalized State Supervision Sentence
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_supervision_sentence.completion_date,
       normalized_state_supervision_sentence.conditions,
@@ -941,7 +941,7 @@
   - name: Normalized State Supervision Violation
     title: Normalized State Supervision Violation
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_supervision_violated_condition_entry.count,
       normalized_state_supervision_violation.external_id,
@@ -968,7 +968,7 @@
   - name: Normalized State Supervision Violation Response
     title: Normalized State Supervision Violation Response
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_supervision_violation_response.deciding_body_type,
       normalized_state_supervision_violation_response.deciding_body_type_raw_text,
@@ -1003,7 +1003,7 @@
   - name: Normalized State Task Deadline
     title: Normalized State Task Deadline
     explore: normalized_state_person
-    model: "@{project_id}"
+    model: "@{model_name}"
     type: looker_grid
     fields: [normalized_state_task_deadline.due_date,
       normalized_state_task_deadline.eligible_date,
