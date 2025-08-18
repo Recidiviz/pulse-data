@@ -164,6 +164,16 @@ class UsNeSqlServerConnectionManager:
                 if not rows:
                     break
                 yield rows
+        except pymssql.ProgrammingError as e:
+            if "Invalid object name" in str(e):
+                logging.error(
+                    "Table not found in [%s] for query: %s", self.db_name.value, query
+                )
+                logging.error(
+                    "We query for tables in DCS_WEB by default."
+                    " If this table exists in DCS_MVS, please add it to `DCS_MVS_FILE_TAGS` list."
+                )
+            raise e
         finally:
             if cursor:
                 cursor.close()
