@@ -20,8 +20,11 @@ For each state with active workflows, it creates a new empty sheet/tab in the ta
 It then populates this sheet with available opportunities in that state, alongside 
 Opportunity information such as System Type, Homepage Position, and Completion Event.
 
-To run the script, navigate to the root directory and use the following command:
-python -m recidiviz.tools.utils.workflows_configuration_data_pull --credentials=path=<path>
+To run the script using the recidiviz-staging database, use the following command:
+python -m recidiviz.tools.utils.workflows_configuration_data_pull --project-id="recidiviz-staging" --credentials=path=<path>
+
+To run the script using the recidiviz-123 database, use this command:
+python -m recidiviz.tools.utils.workflows_configuration_data_pull --project-id="recidiviz-123" --credentials=path=<path>
 """
 import argparse
 import logging
@@ -43,7 +46,11 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    in_gcp,
+)
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
 from recidiviz.workflows.types import FullOpportunityConfig, FullOpportunityInfo
@@ -60,6 +67,12 @@ def create_parser() -> argparse.ArgumentParser:
         "--credentials-path",
         help="Used to point to path of JSON file with Google Cloud credentials.",
         required=False,
+    )
+    parser.add_argument(
+        "--project-id",
+        help="Which database we use in the script. Can either be 'recidiviz-staging' or 'recidiviz-123'.",
+        required=True,
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
     )
     return parser
 
@@ -384,7 +397,7 @@ def get_opportunity_data(
 
 
 def get_state_code_opportunities(
-    state_code: str, schema_type: SchemaType
+    state_code: str, schema_type: SchemaType, use_proxy: bool
 ) -> List[List[List[str]]]:
     """
     Helper for write_to_workflows_sheet. Returns all opportunity information
@@ -401,7 +414,7 @@ def get_state_code_opportunities(
     Querier = WorkflowsQuerier(
         refine_state_code(state_code),
         database_manager=StateSegmentedDatabaseManager(
-            get_workflows_enabled_states(), schema_type, using_proxy=True
+            get_workflows_enabled_states(), schema_type, using_proxy=use_proxy
         ),
     )
     opportunities = Querier.get_opportunities()
@@ -496,6 +509,7 @@ def write_to_workflows_sheet(
     credentials: Credentials,
     logger: logging.Logger,
     state_codes: List,
+    use_proxy: bool,
 ) -> Tuple[Dict[str, List[int]], Dict[str, int]]:
     """
     Writes opportunity info for each workflows-enabled state into the Workflows
@@ -541,7 +555,7 @@ def write_to_workflows_sheet(
         existing_sheet = bool(state_code_to_sheet_id.get(state_code))
         # 1. Get the data grouped in blocks
         opportunity_blocks = get_state_code_opportunities(
-            state_code, SchemaType.WORKFLOWS
+            state_code, SchemaType.WORKFLOWS, use_proxy
         )
 
         if not opportunity_blocks:
@@ -685,24 +699,42 @@ def main() -> None:
     args = create_parser().parse_args()
     credentials_path = args.credentials_path
     google_credentials = get_google_credentials(credentials_path)
-
+    project_id = args.project_id
     schema_type = SchemaType.WORKFLOWS
 
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        with cloudsql_proxy_control.connection(schema_type=schema_type):
-            border_data, state_to_new_row_count = write_to_workflows_sheet(
-                WORKFLOWS_CONFIGURATION_SPREADSHEET_ID,
-                google_credentials,
-                logger,
-                state_codes,
-            )
-            format_workflows_spreadsheet(
-                google_credentials,
-                WORKFLOWS_CONFIGURATION_SPREADSHEET_ID,
-                logger,
-                border_data,
-                state_to_new_row_count,
-            )
+    if in_gcp():
+        border_data, state_to_new_row_count = write_to_workflows_sheet(
+            WORKFLOWS_CONFIGURATION_SPREADSHEET_ID,
+            google_credentials,
+            logger,
+            state_codes,
+            use_proxy=False,
+        )
+        format_workflows_spreadsheet(
+            google_credentials,
+            WORKFLOWS_CONFIGURATION_SPREADSHEET_ID,
+            logger,
+            border_data,
+            state_to_new_row_count,
+        )
+
+    else:
+        with local_project_id_override(project_id):
+            with cloudsql_proxy_control.connection(schema_type=schema_type):
+                border_data, state_to_new_row_count = write_to_workflows_sheet(
+                    WORKFLOWS_CONFIGURATION_SPREADSHEET_ID,
+                    google_credentials,
+                    logger,
+                    state_codes,
+                    use_proxy=True,
+                )
+                format_workflows_spreadsheet(
+                    google_credentials,
+                    WORKFLOWS_CONFIGURATION_SPREADSHEET_ID,
+                    logger,
+                    border_data,
+                    state_to_new_row_count,
+                )
 
 
 if __name__ == "__main__":
