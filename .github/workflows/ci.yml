@@ -70,9 +70,8 @@ jobs:
 
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
-    # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
     # The tmpfs extra speeds up the pull and run of the emulator
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
+    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=16/extras=s3-cache+tmpfs
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
@@ -101,8 +100,8 @@ jobs:
 
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
-    # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
     # The tmpfs extra speeds up the pull and run of the emulator
+    # This test struggles on arm64 (encountering EOF errors during BigQuery requests), so we run on x64
     runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
       - name: Harden the runner (Audit all outbound calls)
