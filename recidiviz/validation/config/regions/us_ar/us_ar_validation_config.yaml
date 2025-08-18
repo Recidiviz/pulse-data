@@ -5,6 +5,18 @@ exclusions:
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+  - validation_name: person_caseload_location_sessions_caseload
+    exclusion_type: BROKEN
+    exclusion_reason:
+      Validation is not working properly for the INCARCERATION compartment and
+      is expected to fail for almost all rows until fixed.
+      # TODO(#46520): Remove this exclusion once this validation has been fixed.
+  - validation_name: person_caseload_location_sessions_location
+    exclusion_type: BROKEN
+    exclusion_reason:
+      Validation is not working properly for the INCARCERATION compartment and
+      is expected to fail for almost all rows until fixed.
+      # TODO(#46520): Remove this exclusion once this validation has been fixed.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: location_metadata_missing_staff_location_period_locations

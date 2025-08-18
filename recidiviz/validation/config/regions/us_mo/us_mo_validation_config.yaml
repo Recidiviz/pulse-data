@@ -11,6 +11,18 @@ exclusions:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: MO has not provided us with person-level validation data for supervising officers
+  - validation_name: person_caseload_location_sessions_caseload
+    exclusion_type: BROKEN
+    exclusion_reason:
+      Validation is not working properly for the INCARCERATION compartment and
+      is expected to fail for almost all rows until fixed.
+      # TODO(#46520): Remove this exclusion once this validation has been fixed.
+  - validation_name: person_caseload_location_sessions_location
+    exclusion_type: BROKEN
+    exclusion_reason:
+      Validation is not working properly for the INCARCERATION compartment and
+      is expected to fail for almost all rows until fixed.
+      # TODO(#46520): Remove this exclusion once this validation has been fixed.
 max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_start_date_stable_counts
     hard_max_allowed_error_override: 0.26
