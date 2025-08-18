@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  offender_booking_id: STRING
+  offender_sentence_id: STRING
+  sentence_type_id: STRING
+  sentenced_date: DATE
+  order_type_id: STRING
+  expiration_date: DATE
+  county: STRING
+  min_length_days: STRING
+  min_length_months: STRING
+  min_length_years: STRING
+  max_length_days: STRING
+  max_length_months: STRING
+  max_length_years: STRING
+  special_condition_id_list: STRING
+  attempted_id: STRING
+  offense_code: STRING
+  min_life_flag: STRING
+  max_life_flag: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    sentences:
+      - StateSentence:
+          external_id: offender_sentence_id
+          sentencing_authority:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: order_type_id
+                    $options:
+                      - $literal("1719") # Interstate Compact Parole
+                      - $literal("1720") # Interstate Compact Probation
+                      - $literal("3162") # Other State's Prison
+                $then: $literal_enum(StateSentencingAuthority.OTHER_STATE)
+              - $else: $literal_enum(StateSentencingAuthority.COUNTY)
+          county_code: county
+          is_life:
+            $or:
+              # So technically for a sentence, the only possible combinations for a life sentence should be that
+              # either both flags equal 0, both flags equal 1, or min_life_flag=0 but max_life_flag=1 (which means
+              # the maximum sentence length possible is a life sentence but it's possible it doesn't end up being
+              # a life sentence). When the min or max life flags are set as 1, the corresponding days columns
+              # should be null. However, MI data systems also do a thing where they set these flag not just for
+              # the sentence it's attached to, but for related sentences as well in the same sentencing. So if
+              # sentence A for charge A is a life sentence (min_life_flag and max_life_flag are both 1), but
+              # sentence A came with sentence B for charge B since it was on the same set of charges, then even
+              # if sentence B is not a life sentence (and has valued days fields), the system will overwrite
+              # sentence B's min_life_flag and max_life_flag to match sentence A (the controlling sentence).
+              # Therefore, MI told me that the best way to identify actual life sentences it to look for cases
+              # where both life flags are set to 1 and all days fields are null.
+              - $and:
+                  - $is_null: min_length_days
+                  - $is_null: min_length_months
+                  - $is_null: min_length_years
+                  - $is_null: max_length_days
+                  - $is_null: max_length_months
+                  - $is_null: max_length_years
+                  - $equal:
+                      - min_life_flag
+                      - $literal("1")
+                  - $equal:
+                      - max_life_flag
+                      - $literal("1")
+              # Let's also set it to true if we see an end date of 2999-12-31 (which we see a high count of in the data)
+              - $equal:
+                  - expiration_date
+                  - $literal("2999-12-31")
+              # Let's also set it to true if we see an end date of 9999-12-31 (which we see some cases of in the data)
+              - $equal:
+                  - expiration_date
+                  - $literal("9999-12-31")
+          parole_possible:
+            $conditional:
+              - $if:
+                  $not_null: offense_code
+                $then:
+                  $custom:
+                    $function: us_mi_custom_parsers.parole_possible
+                    $args:
+                      min_life: min_life_flag
+                      attempt: attempted_id
+                      mcl: offense_code
+          imposed_date: sentenced_date
+          conditions: special_condition_id_list
+          # TODO(#45846): Add PAROLE 'sentences' and other sentence types.
+          # ADH_LEGAL_ORDER has a field "order_type_id" may be useful in hydrating this field.
+          sentence_type:
+            $enum_mapping:
+              $raw_text: sentence_type_id
+              $mappings:
+                StateSentenceType.STATE_PRISON:
+                  - "430" # Prison
+                StateSentenceType.PROBATION:
+                  - "431" # Probation

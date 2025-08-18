@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  offender_booking_id: STRING
+  offender_charge_id: STRING
+  offense_date: DATE
+  ncic_code: STRING
+  offense_code: STRING
+  description: STRING
+  attempted_id: STRING
+  offense_type_ids: STRING
+  offense_type_description: STRING
+  counts: STRING
+  controlling_sent_code_id: STRING
+  county: STRING
+  judge_id: STRING
+  first_name: STRING
+  last_name: STRING
+  middle_name: STRING
+  name_suffix: STRING
+  circuit_description: STRING
+  StatRpt_term: STRING
+  offender_sentence_id: STRING
+unused_columns: []
+variables:
+  - charge:
+      StateChargeV2:
+        external_id: offender_charge_id
+        # MI only gets charge data from PSI forward, so all cases in their data were at some point convicted.
+        # Note there are some cases where sentences are eventually reversed/vacated/dropped
+        status: $literal_enum(StateChargeV2Status.CONVICTED)
+        offense_date: offense_date
+        ncic_code: ncic_code
+        statute: offense_code
+        offense_type: offense_type_description
+        county_code: county
+        attempted:
+          $in:
+            $value: attempted_id
+            $options:
+              - $literal("1933") # Attempt
+              - $literal("11781") # Attempt Cont. Sub. Violation
+              - $literal("5646") # Both Attempt and Conspiracy
+              - $literal("7469") # Both Attempt and Solicitation
+        # We're going to pull classification type from the field StatRpt_term from a report MI makes internally called the MCL crosswalk
+        # Not an entirely reliable field, so use with caution
+        # According to MI research, the data in their system only includes charges that start out as felony charges.  If they're marked
+        # misdemeanors in the MCL crosswalk, it's only because they were downgraded from a felony to a misdemeanor.
+        classification_type:
+          $conditional:
+            - $if:
+                $not_null: StatRpt_term
+              $then:
+                $conditional:
+                  - $if:
+                      $equal:
+                        - $literal("MISD")
+                        - StatRpt_term
+                    $then: $literal_enum(StateChargeV2ClassificationType.MISDEMEANOR)
+                  - $else_if:
+                      $in:
+                        $value: StatRpt_term
+                        $options:
+                          - $literal("VAR")
+                          - $literal("LIFE")
+                          - $literal("None")
+                    $then: $literal_enum(StateChargeV2ClassificationType.INTERNAL_UNKNOWN)
+                  - $else: $literal_enum(StateChargeV2ClassificationType.FELONY) # All other value options are for felonies
+        # We're going to pull classification subtype (degrees) from the description field; if it isn't contained in the description,
+        # then we'll return None but that doesn't necessarily mean there isn't a subclass
+        classification_subtype:
+          $custom:
+            $function: us_mi_custom_parsers.parse_charge_subclass
+            $args:
+              description: description
+        is_violent:
+          $conditional:
+            - $if:
+                $not_null: offense_type_ids
+              $then:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_offense_type_ids
+                  $args:
+                    offense_type_ids: offense_type_ids
+                    result_field: $literal("is_violent")
+        is_sex_offense:
+          $conditional:
+            - $if:
+                $not_null: offense_type_ids
+              $then:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_offense_type_ids
+                  $args:
+                    offense_type_ids: offense_type_ids
+                    result_field: $literal("is_sex_offense")
+        counts: counts
+        # MI doesn't have data on charge notes on charging entity
+        # MI's defines controlling by whether the sentence "stacks" onto the minimum or maximum sentence length of an existing sentence.
+        # For example: sentence A = (min 1 year, max 4 years)
+        #              sentence B = (min 2 years, max 4 years)
+        #              sentence C = (min 1 year, max 5 years)
+        # If sentence B was stacked on sentence A, then the resulting term would be (min 2 years, max 4 years)
+        # and sentence B would be considered a "Controlling Minimum Sentence".
+        # If sentence C was stacked on sentence A, then the resulting term would be (max 1 year, max 5 years)
+        # and sentence C would be the "Controlling Maximum Sentence"
+        is_controlling:
+          $in:
+            $value: controlling_sent_code_id
+            $options:
+              - $literal("9854") # Controlling Minimum Sentence
+              - $literal("9857") # Controlling Minimum and Maximum
+              - $literal("9853") # Controlling Maximum Sentence
+        judge_full_name:
+          $person_name:
+            $given_names: first_name
+            $middle_names: middle_name
+            $surname: last_name
+            $name_suffix: name_suffix
+        judge_external_id: judge_id
+        judicial_district_code: circuit_description
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    sentences:
+      - StateSentence:
+          external_id: offender_sentence_id
+          charges:
+            - $variable(charge)
