@@ -10,7 +10,7 @@ source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 # shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
 source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 
-LOOKER_PROJECT_ID="recidiviz-looker-123"
+LOOKER_PROJECT_ID="recidiviz-looker"
 
 if [[ "$1" == "" ]]; then
     echo_error "usage: $0 <version_tag>"
