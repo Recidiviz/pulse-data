@@ -24,12 +24,11 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
 from recidiviz.task_eligibility.criteria.general import (
-    no_contraband_incarceration_incident_within_2_years,
     not_in_work_release,
     within_24_months_of_projected_full_term_release_date_min,
     within_48_months_of_projected_full_term_release_date_min,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,; no_drug_contraband_introduction_incident_within_2_years,
     educational_score_1,
     has_first_degree_arson_or_robbery_offenses,
     institutional_risk_score_1_while_incarcerated,
@@ -158,7 +157,8 @@ NOT_ALREADY_ON_WORK_RELEASE_CRITERIA_GROUP = (
 WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     TaskCriteriaBigQueryViewBuilder
 ] = [
-    no_contraband_incarceration_incident_within_2_years.VIEW_BUILDER,
+    # TODO(#45993): Uncomment no_contraband_incarceration_incident_within_2_years once we hear back from MO DOC about disqualifying contraband violations.
+    # no_drug_contraband_introduction_incident_within_2_years.VIEW_BUILDER,
     institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
     mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
     no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
