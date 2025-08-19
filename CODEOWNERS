@@ -26,6 +26,8 @@ recidiviz/ingest/direct/raw_data/datetime_sql_parser_exemptions.py @Recidiviz/do
 recidiviz/persistence/** @Recidiviz/doppler
 recidiviz/pipelines/** @Recidiviz/doppler
 recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Recidiviz/doppler
+# TODO(#41554): Once all exemptions have been removed from this test file, we can remove Doppler ownership
+recidiviz/tests/calculator/query/state/views/reference/workflows_opportunity_configs_test.py @Recidiviz/doppler
 recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
