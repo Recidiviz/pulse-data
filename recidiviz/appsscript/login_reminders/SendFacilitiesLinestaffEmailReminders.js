@@ -16,7 +16,7 @@
 // =============================================================================
 /* Apps Script for sending email reminders to facilities line staff. */
 
-const FACILITIES_LINESTAFF_INCLUDED_STATES = ["US_AZ"];
+const FACILITIES_LINESTAFF_INCLUDED_STATES = ["US_AZ", "US_TN"];
 
 // =============================================================================
 
