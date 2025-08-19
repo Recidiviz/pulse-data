@@ -31,6 +31,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.raw_data.validations.datetime_parsers_column_validation import (
     DatetimeParsersColumnValidation,
 )
+from recidiviz.ingest.direct.raw_data.validations.import_blocking_validations_query_runner import (
+    RawDataImportBlockingValidationQueryRunner,
+)
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
     RawDataImportBlockingValidationFailure,
@@ -89,6 +92,9 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
                 datetime_sql_parsers=[],
                 null_values=[],
                 state_code=StateCode.US_XX,
+                query_runner=RawDataImportBlockingValidationQueryRunner(
+                    bq_client=self.bq_client
+                ),
             )
 
     def test_validation_success(self) -> None:

@@ -42,6 +42,9 @@ from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_case import (
     ColumnValidationTestCase,
 )
+from recidiviz.tests.ingest.direct.raw_data.validations.datetime_parsers_column_validation_test import (
+    RawDataImportBlockingValidationQueryRunner,
+)
 
 
 class TestKnownValuesColumnValidation(ColumnValidationTestCase):
@@ -100,6 +103,9 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
                 known_values=[],
                 null_values=None,
                 state_code=StateCode.US_XX,
+                query_runner=RawDataImportBlockingValidationQueryRunner(
+                    bq_client=self.bq_client
+                ),
             )
 
     def test_validation_success(self) -> None:
@@ -198,6 +204,7 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             temp_table_address=self.temp_table_address,
             file_upload_datetime=datetime.datetime.now(),
             column=happy_col,
+            bq_client=self.bq_client,
         )
         expected_query = r"""
 SELECT DISTINCT happy_col
@@ -220,6 +227,7 @@ WHERE happy_col IS NOT NULL
             temp_table_address=self.temp_table_address,
             file_upload_datetime=datetime.datetime.now(),
             column=happy_col,
+            bq_client=self.bq_client,
         )
         expected_query = r"""
 SELECT DISTINCT happy_col

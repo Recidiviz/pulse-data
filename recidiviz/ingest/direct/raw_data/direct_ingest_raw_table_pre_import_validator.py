@@ -19,16 +19,9 @@ from concurrent import futures
 from datetime import datetime, timezone
 from typing import List, Type
 
-from google.api_core import retry
-
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
-from recidiviz.cloud_resources.platform_resource_labels import (
-    RawDataImportStepResourceLabel,
-)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.retry_predicate import rate_limit_retry_predicate
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -56,9 +49,6 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 )
 
 MAX_THREADS = 4
-DEFAULT_INITIAL_DELAY = 15.0  # 15 seconds
-DEFAULT_MAXIMUM_DELAY = 60.0 * 2  # 2 minutes, in seconds
-DEFAULT_TOTAL_TIMEOUT = 60.0 * 8  # 8 minutes, in seconds
 
 COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
     NonNullValuesColumnValidation,
@@ -116,6 +106,7 @@ class DirectIngestRawTablePreImportValidator:
                     state_code=state_code,
                     raw_data_instance=self.raw_data_instance,
                     file_update_datetime=file_update_datetime,
+                    bq_client=self.big_query_client,
                 )
             )
 
@@ -137,6 +128,7 @@ class DirectIngestRawTablePreImportValidator:
                             temp_table_address=temp_table_address,
                             file_upload_datetime=file_update_datetime,
                             column=column,
+                            bq_client=self.big_query_client,
                         )
                     )
 
@@ -146,41 +138,19 @@ class DirectIngestRawTablePreImportValidator:
         self, validations_to_run: List[RawDataImportBlockingValidation]
     ) -> List[RawDataImportBlockingValidationFailure]:
         """Executes |validations_to_run| concurrently, returning any errors we encounter."""
-        job_to_validation = {
-            self.big_query_client.run_query_async(
-                query_str=validation.query,
-                use_query_cache=True,
-                job_labels=[
-                    RawDataImportStepResourceLabel.RAW_DATA_PRE_IMPORT_VALIDATIONS.value
-                ],
-            ): validation
-            for validation in validations_to_run
-        }
-
-        rate_limit_retry_policy = retry.Retry(
-            initial=DEFAULT_INITIAL_DELAY,
-            maximum=DEFAULT_MAXIMUM_DELAY,
-            timeout=DEFAULT_TOTAL_TIMEOUT,
-            predicate=rate_limit_retry_predicate,
-        )
-
-        errors = []
+        validation_failures = []
         with futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-            job_futures = {
-                executor.submit(
-                    job.result, retry=rate_limit_retry_policy
-                ): validation_info
-                for job, validation_info in job_to_validation.items()
-            }
-            for f in futures.as_completed(job_futures):
-                validation_info: RawDataImportBlockingValidation = job_futures[f]
+            job_futures = [
+                executor.submit(validation.run_validation)
+                for validation in validations_to_run
+            ]
 
-                error = validation_info.get_error_from_results(
-                    bq_query_job_result_to_list_of_row_dicts(f.result())
-                )
-                if error:
-                    errors.append(error)
-        return errors
+            for future in futures.as_completed(job_futures):
+                validation_failure = future.result()
+                if validation_failure:
+                    validation_failures.append(validation_failure)
+
+        return validation_failures
 
     def run_raw_data_temp_table_validations(
         self,

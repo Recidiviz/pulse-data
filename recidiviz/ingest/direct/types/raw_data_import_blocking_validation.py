@@ -17,15 +17,19 @@
 """Classes for raw table validations."""
 import abc
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.raw_data.validations.import_blocking_validations_query_runner import (
+    RawDataImportBlockingValidationQueryRunner,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
@@ -57,10 +61,7 @@ class RawDataImportBlockingValidation:
     file_tag: str
     project_id: str
     temp_table_address: BigQueryAddress
-    query: str = attr.ib(init=False)
-
-    def __attrs_post_init__(self) -> None:
-        self.query = self.build_query()
+    query_runner: RawDataImportBlockingValidationQueryRunner
 
     @staticmethod
     @abc.abstractmethod
@@ -68,16 +69,10 @@ class RawDataImportBlockingValidation:
         """Each subclass must define its own validation type."""
 
     @abc.abstractmethod
-    def get_error_from_results(
-        self, results: List[Dict[str, Any]]
+    def run_validation(
+        self,
     ) -> RawDataImportBlockingValidationFailure | None:
-        """Implemented by subclasses to determine if the query results should produce
-        an error.
-        """
-
-    @abc.abstractmethod
-    def build_query(self) -> str:
-        """Implemented by subclasses to build the query to run on the temporary table"""
+        """Runs the validation query and returns an error if the validation fails."""
 
 
 @attr.define
@@ -85,8 +80,13 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
     """Interface for a validation to be run on a per-column basis."""
 
     column_name: str
+    query: str = attr.ib(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        self.query = self.build_query()
 
     @classmethod
+    @abc.abstractmethod
     def create_column_validation(
         cls,
         *,
@@ -96,20 +96,13 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime.datetime,
         column: RawTableColumnInfo,
+        bq_client: BigQueryClient,
     ) -> "RawDataColumnImportBlockingValidation":
         """Factory method to create a column validation."""
-        if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
-            raise ValueError(
-                f"Column [{column.name}] does not exist at datetime [{file_upload_datetime}]"
-            )
 
-        return cls(
-            project_id=project_id,
-            temp_table_address=temp_table_address,
-            column_name=temp_table_col_name,
-            file_tag=file_tag,
-            state_code=state_code,
-        )
+    @abc.abstractmethod
+    def build_query(self) -> str:
+        """Implemented by subclasses to build the query to run on the temporary table"""
 
     @staticmethod
     @abc.abstractmethod
@@ -141,6 +134,7 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
     file_update_datetime: datetime.datetime
 
     @classmethod
+    @abc.abstractmethod
     def create_table_validation(
         cls,
         *,
@@ -150,16 +144,9 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
         state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
         file_update_datetime: datetime.datetime,
+        bq_client: BigQueryClient,
     ) -> "RawDataTableImportBlockingValidation":
         """Factory method to create a table validation."""
-        return cls(
-            project_id=project_id,
-            temp_table_address=temp_table_address,
-            file_tag=file_tag,
-            state_code=state_code,
-            raw_data_instance=raw_data_instance,
-            file_update_datetime=file_update_datetime,
-        )
 
     @staticmethod
     @abc.abstractmethod

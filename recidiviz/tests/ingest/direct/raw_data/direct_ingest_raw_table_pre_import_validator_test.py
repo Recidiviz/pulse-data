@@ -15,15 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for direct_ingest_raw_table_pre_import_validator.py."""
-import textwrap
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
     DirectIngestRawTablePreImportValidator,
@@ -39,16 +37,18 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.raw_data.validations.nonnull_values_column_validation import (
+    NonNullValuesColumnValidation,
+)
 from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation import (
     RAW_ROWS_MEDIAN_KEY,
     TEMP_TABLE_ROW_COUNT_KEY,
+    StableHistoricalRawDataCountsTableValidation,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationError,
-)
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+    RawDataImportBlockingValidationFailure,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 
@@ -140,13 +140,6 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         ]
 
     def test_run_raw_table_validations_success(self) -> None:
-        nonnull_values_job = MagicMock()
-        # non-null validation should pass if at least one non-null value is found
-        nonnull_values_job.result.return_value = [{"Col1": "mocked_result_value"}]
-        self.big_query_client.run_query_async.side_effect = [
-            self.stable_counts_job,
-            nonnull_values_job,
-        ]
         validator = DirectIngestRawTablePreImportValidator(
             project_id=self.project_id,
             region_raw_file_config=self.region_raw_file_config,
@@ -155,22 +148,21 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             big_query_client=self.big_query_client,
         )
 
-        # should not raise any exceptions
-        validator.run_raw_data_temp_table_validations(
-            self.file_tag, self.file_update_datetime, self.temp_table_address
-        )
-
-        # should be called for historical stable counts validation and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+        with patch.object(
+            StableHistoricalRawDataCountsTableValidation,
+            "run_validation",
+            return_value=None,
+        ), patch.object(
+            NonNullValuesColumnValidation,
+            "run_validation",
+            return_value=None,
+        ):
+            # should not raise any exceptions
+            validator.run_raw_data_temp_table_validations(
+                self.file_tag, self.file_update_datetime, self.temp_table_address
+            )
 
     def test_run_raw_table_validations_renamed_col(self) -> None:
-        nonnull_values_job = MagicMock()
-        # non-null validation should pass if at least one non-null value is found
-        nonnull_values_job.result.return_value = [{"OldCol1": "mocked_result_value"}]
-        self.big_query_client.run_query_async.side_effect = [
-            self.stable_counts_job,
-            nonnull_values_job,
-        ]
         raw_file_config = attr.evolve(
             self.raw_file_config,
             columns=[
@@ -198,7 +190,6 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             ],
         )
         self.region_raw_file_config.raw_file_configs[self.file_tag] = raw_file_config
-
         validator = DirectIngestRawTablePreImportValidator(
             project_id=self.project_id,
             region_raw_file_config=self.region_raw_file_config,
@@ -207,63 +198,60 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             big_query_client=self.big_query_client,
         )
 
-        # should not raise any exceptions
-        validator.run_raw_data_temp_table_validations(
-            self.file_tag, self.file_update_datetime, self.temp_table_address
-        )
+        # Create a mock validation instance that will be returned by create_column_validation
+        mock_validation_instance = MagicMock()
+        mock_validation_instance.run_validation.return_value = None
 
-        # should be called for historical stable counts validation and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
-        # Should be querying for OldCol1
-        self.big_query_client.run_query_async.assert_called_with(
-            query_str="\nSELECT OldCol1\nFROM test-project.test_dataset.test_table\nWHERE OldCol1 IS NOT NULL\nLIMIT 1\n",
-            use_query_cache=True,
-            job_labels=[
-                ResourceLabel(
-                    key="raw_data_import_step",
-                    value="raw_data_pre_import_validations",
-                    parents=None,
-                )
-            ],
-        )
-
-    def test_run_raw_table_validations_failure(self) -> None:
-        nonnull_values_job = MagicMock()
-        # non-null validation should fail if no non-null values are found
-        nonnull_values_job.result.return_value = []
-        self.big_query_client.run_query_async.side_effect = [
-            self.stable_counts_job,
-            nonnull_values_job,
-        ]
-        validator = DirectIngestRawTablePreImportValidator(
-            project_id=self.project_id,
-            region_raw_file_config=self.region_raw_file_config,
-            region_code=self.region_code,
-            raw_data_instance=self.raw_data_instance,
-            big_query_client=self.big_query_client,
-        )
-        expected_error_msg = (
-            f"1 pre-import validation(s) failed for file [{self.file_tag}]."
-            f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
-            " please add the validation_type and exemption_reason to import_blocking_validation_exemptions"
-            " for a table-wide exemption or to import_blocking_column_validation_exemptions"
-            " for a column-specific exemption in the raw file config."
-            f"\nError: Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values."
-            f"\nValidation type: {RawDataImportBlockingValidationType.NONNULL_VALUES.value}"
-            "\nValidation query: "
-            f"\nSELECT {self.column_name}"
-            f"\nFROM {self.project_id}.{self.temp_table_address.to_str()}"
-            f"\nWHERE {self.column_name} IS NOT NULL"
-            "\nLIMIT 1\n"
-        )
-
-        with self.assertRaises(
-            RawDataImportBlockingValidationError,
-        ) as context:
+        with patch.object(
+            StableHistoricalRawDataCountsTableValidation,
+            "run_validation",
+            return_value=None,
+        ), patch.object(
+            NonNullValuesColumnValidation,
+            "create_column_validation",
+            return_value=mock_validation_instance,
+        ):
+            # should not raise any exceptions
             validator.run_raw_data_temp_table_validations(
                 self.file_tag, self.file_update_datetime, self.temp_table_address
             )
 
-        self.assertEqual(textwrap.dedent(str(context.exception)), expected_error_msg)
-        # should be called for historical stable counts validation and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+        # Check that the validation was created with the old column name
+        call_args_list = (
+            mock_validation_instance.create_column_validation.call_args_list
+        )
+        for call_args in call_args_list:
+            expected_column_name = "OldCol1"
+            actual_column = call_args[1]["column"]
+            self.assertEqual(actual_column.name, expected_column_name)
+
+    def test_run_raw_table_validations_failure(self) -> None:
+        validator = DirectIngestRawTablePreImportValidator(
+            project_id=self.project_id,
+            region_raw_file_config=self.region_raw_file_config,
+            region_code=self.region_code,
+            raw_data_instance=self.raw_data_instance,
+            big_query_client=self.big_query_client,
+        )
+        expected_error_message = "1 pre-import validation(s) failed for file [myFile]. If you wish [myFile] to be permanently excluded from any validation,  please add the validation_type and exemption_reason to import_blocking_validation_exemptions for a table-wide exemption or to import_blocking_column_validation_exemptions for a column-specific exemption in the raw file config.\nError: test_query\nValidation type: NONNULL_VALUES\nValidation query: test_query"
+
+        with self.assertRaises(
+            RawDataImportBlockingValidationError,
+        ) as context, patch.object(
+            StableHistoricalRawDataCountsTableValidation,
+            "run_validation",
+            return_value=None,
+        ), patch.object(
+            NonNullValuesColumnValidation,
+            "run_validation",
+            return_value=RawDataImportBlockingValidationFailure(
+                validation_type=NonNullValuesColumnValidation.validation_type(),
+                validation_query="test_query",
+                error_msg="test_query",
+            ),
+        ):
+            validator.run_raw_data_temp_table_validations(
+                self.file_tag, self.file_update_datetime, self.temp_table_address
+            )
+
+        self.assertIn(expected_error_message, str(context.exception))

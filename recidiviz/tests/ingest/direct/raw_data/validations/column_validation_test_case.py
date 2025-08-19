@@ -75,6 +75,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
             temp_table_address=self.temp_table_address,
             column=column,
             file_upload_datetime=datetime.now(tz=timezone.utc),
+            bq_client=self.bq_client,
         )
 
     @abc.abstractmethod
@@ -104,8 +105,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         validation = self.create_validation(self.sad_col)
         self.load_data()
 
-        results = self.query(validation.query)
-        error = validation.get_error_from_results(results.to_dict("records"))
+        error = validation.run_validation()
 
         if not error:
             self.fail("Expected error not found")
@@ -120,7 +120,6 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         validation = self.create_validation(self.happy_col)
         self.load_data()
 
-        results = self.query(validation.query)
-        error = validation.get_error_from_results(results.to_dict("records"))
+        error = validation.run_validation()
 
         self.assertIsNone(error)
