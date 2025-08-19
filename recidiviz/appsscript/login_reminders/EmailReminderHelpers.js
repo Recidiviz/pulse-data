@@ -641,13 +641,12 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
   const { IS_TESTING } = settings;
 
   console.log(`Getting list of all ${userType} from BigQuery...`);
-  const queryResult = RecidivizHelpers.runQuery(query);
-  if (!queryResult) {
+  const data = RecidivizHelpers.runQuery(query);
+  if (!data) {
     console.log(`Failed to send emails: found no ${userType} to email.`);
     return;
   }
-  console.log(`Found ${queryResult.length} ${userType}.`);
-  const data = IS_TESTING ? queryResult.slice(0, 300) : queryResult;
+  console.log(`Found ${data.length} ${userType}.`);
 
   // Make the sheet to log sent emails in if it doesn't already exist, and extract any
   // addresses we already sent to so that we don't re-email anyone
@@ -720,15 +719,27 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
 
   console.log("Sending emails...");
 
+  let emailsSentByState = Object.fromEntries(
+    stateCodes.map((stateCode) => [stateCode, 0])
+  );
+
   for (const [email, lastLogin] of Object.entries(userLoginInfo)) {
     if (!IS_TESTING && emailsAlreadySent.includes(email)) {
       console.log("Skipping person we already emailed:", email);
       continue;
     }
+
     const emailInfo = {
       ...dataByEmail[email],
       lastLogin,
     };
+
+    if (
+      IS_TESTING &&
+      emailsSentByState[emailInfo.stateCode] >= TEST_EMAIL_LIMIT_PER_STATE
+    )
+      continue;
+
     const shouldCheckOutliers =
       isSupervisors && hasOutliersTextConfigured[emailInfo.stateCode];
     if (
@@ -741,6 +752,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
     ) {
       const body = buildLoginReminderBody(emailInfo, userType, settings);
       sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
+      emailsSentByState[emailInfo.stateCode]++;
     }
   }
 

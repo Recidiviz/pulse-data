@@ -49,7 +49,8 @@ const SUPERVISION_LINESTAFF_QUERY = `SELECT
 FROM
   \`recidiviz-123.user_metrics.workflows_supervision_user_available_actions_materialized\`
 WHERE
-  state_code IN (${supervisionLinestaffStatesForQuery})`;
+  state_code IN (${supervisionLinestaffStatesForQuery})
+ORDER BY state_code`;
 
 function sendSupervisionLinestaffEmailReminders_() {
   sendAllLoginReminders(

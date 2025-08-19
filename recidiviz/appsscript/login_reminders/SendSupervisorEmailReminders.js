@@ -42,7 +42,9 @@ FROM
   \`recidiviz-123.user_metrics.insights_user_available_actions_materialized\`
 
 WHERE
-  state_code IN ( ${supervisorStatesForQuery} )`;
+  state_code IN ( ${supervisorStatesForQuery} )
+
+ORDER BY state_code`;
 
 function sendSupervisorEmailReminders_() {
   sendAllLoginReminders(

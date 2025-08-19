@@ -27,8 +27,8 @@
  * The testing functions:
  * - testReal[*]Emails: Runs the script to send emails to real users, but instead of
  *    actually sending the emails, writes the email text to the connected spreadsheet.
- *    These functions only take the first 100 people returned by the query so that
- *    they stop in a reasonable amount of time.
+ *    These functions will go through all real users returned by the query but will only
+ *    write up to TEST_EMAIL_LIMIT_PER_STATE emails per state
  *    You can use this function to test that the script works end-to-end and to check
  *    what emails will be sent to real users.
  * - testSend[*]Emails: Sends emails with fake testing data to the currently logged-in user.
@@ -42,6 +42,8 @@
  * */
 
 const TEST_DESTINATION_EMAIL = Session.getActiveUser().getEmail();
+
+const TEST_EMAIL_LIMIT_PER_STATE = 15;
 
 const TESTING_NAME = "Firstname Lastname";
 const TESTING_DISTRICT = "Fake District";

@@ -40,7 +40,9 @@ FROM
   \`recidiviz-123.user_metrics.workflows_facilities_user_available_actions_materialized\`
 
 WHERE
-  state_code IN (${facilitiesLinestaffStatesForQuery})`;
+  state_code IN (${facilitiesLinestaffStatesForQuery})
+
+ORDER BY state_code`;
 
 function sendFacilitiesLinestaffEmailReminders_() {
   sendAllLoginReminders(
