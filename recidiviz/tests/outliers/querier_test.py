@@ -928,12 +928,12 @@ class TestOutliersQuerier(InsightsDbTestCase):
         self.assertTrue(metadata.has_dismissed_data_unavailable_note)  # type: ignore
         self.assertTrue(metadata.has_dismissed_rate_over_100_percent_note)  # type: ignore
 
-    def test_get_user_info_success(self) -> None:
+    def test_get_user_info_supervision_officer_supervisor_success(self) -> None:
         pid = "hash1"
         querier = OutliersQuerier(
             StateCode.US_XX, self.test_user_context.feature_variants
         )
-        result = querier.get_user_info(pid)
+        result = querier.get_supervisor_user_info(pid)
 
         self.assertIsNotNone(result.entity)
         self.assertEqual(result.entity.external_id, "101")  # type: ignore
@@ -942,12 +942,30 @@ class TestOutliersQuerier(InsightsDbTestCase):
         self.assertTrue(result.has_dismissed_data_unavailable_note)
         self.assertTrue(result.has_dismissed_rate_over_100_percent_note)
 
+    def test_get_user_info_supervision_officer_success(self) -> None:
+        pid = "officerhash1"
+        querier = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        )
+        workflows_info = True
+        category_type_to_compare = InsightsCaseloadCategoryType.ALL
+        result = querier.get_officer_user_info(
+            pid, workflows_info, category_type_to_compare
+        )
+
+        self.assertIsNotNone(result.entity)
+        self.assertEqual(result.entity.external_id, "OFFICER1")  # type: ignore
+        self.assertEqual(result.role, "supervision_officer")
+        self.assertTrue(result.has_seen_onboarding)
+        self.assertFalse(result.has_dismissed_data_unavailable_note)
+        self.assertFalse(result.has_dismissed_rate_over_100_percent_note)
+
     def test_get_user_info_default_onboarding(self) -> None:
         pid = "hash2"
         querier = OutliersQuerier(
             StateCode.US_XX, self.test_user_context.feature_variants
         )
-        result = querier.get_user_info(pid)
+        result = querier.get_supervisor_user_info(pid)
 
         self.assertIsNotNone(result.entity)
         self.assertEqual(result.entity.external_id, "102")  # type: ignore
@@ -960,7 +978,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         querier = OutliersQuerier(
             StateCode.US_XX, self.test_user_context.feature_variants
         )
-        result = querier.get_user_info("leadership-hash")
+        result = querier.get_supervisor_user_info("leadership-hash")
 
         self.assertEqual(
             result,

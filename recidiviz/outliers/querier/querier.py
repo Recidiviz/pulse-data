@@ -1743,7 +1743,7 @@ class OutliersQuerier:
             session.execute(upsert_stmt)
             session.commit()
 
-    def get_user_info(self, pseudonymized_id: str) -> UserInfo:
+    def get_supervisor_user_info(self, pseudonymized_id: str) -> UserInfo:
         """
         Composes the UserInfo entity given the pseudonymized_id by reading a relevant supervisor
         entity (if one exists) and user metadata.
@@ -1769,6 +1769,31 @@ class OutliersQuerier:
                 if user_metadata
                 else False
             ),
+        )
+
+    def get_officer_user_info(
+        self,
+        pseudonymized_id: str,
+        include_workflows_info: bool,
+        category_type_to_compare: InsightsCaseloadCategoryType,
+    ) -> UserInfo:
+        """
+        Composes the UserInfo entity given the pseudonymized_id by reading a relevant officer
+        entity (if one exists) and user metadata.
+        """
+        officer_entity = self.get_supervision_officer_entity(
+            pseudonymized_id,
+            category_type_to_compare=category_type_to_compare,
+            include_workflows_info=include_workflows_info,
+            num_lookback_periods=0,
+        )
+
+        return UserInfo(
+            entity=officer_entity,
+            role="supervision_officer",
+            has_seen_onboarding=True,
+            has_dismissed_data_unavailable_note=False,
+            has_dismissed_rate_over_100_percent_note=False,
         )
 
     def get_configuration_for_user(

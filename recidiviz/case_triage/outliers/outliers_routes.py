@@ -680,13 +680,25 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        user_info = querier.get_user_info(pseudonymized_id)
+        user_info = None
+        if querier.supervisor_exists_with_external_id(
+            user_external_id
+        ) or user_external_id in ["RECIDIVIZ", "CSG"]:
+            user_info = querier.get_supervisor_user_info(pseudonymized_id)
+        else:
+            user_info = querier.get_officer_user_info(
+                pseudonymized_id,
+                user_context.can_access_supervision_workflows,
+                querier.get_product_configuration(user_context).primary_category_type,
+            )
+
         user_info_json = convert_nested_dictionary_keys(
             user_info.to_json(),
             snake_to_camel,
         )
         return jsonify(user_info_json)
 
+    # TODO(#46300): Add a check to patch for officers and supervisors.
     @api.patch("/<state>/user-info/<pseudonymized_id>")
     def patch_user_info(state: str, pseudonymized_id: str) -> Response:
         state_code = StateCode(state.upper())
@@ -726,7 +738,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         querier.update_user_metadata(pseudonymized_id, request_json)
 
         # Return updated user info
-        user_info = querier.get_user_info(pseudonymized_id)
+        user_info = querier.get_supervisor_user_info(pseudonymized_id)
         user_info_json = convert_nested_dictionary_keys(
             user_info.to_json(),
             snake_to_camel,

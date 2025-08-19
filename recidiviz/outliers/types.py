@@ -18,7 +18,7 @@
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import attr
 import cattrs
@@ -594,7 +594,9 @@ class SupervisionOfficerSupervisorEntity:
 
 @attr.s
 class UserInfo:
-    entity: Optional[SupervisionOfficerSupervisorEntity] = attr.ib()
+    entity: Optional[
+        Union[SupervisionOfficerSupervisorEntity, SupervisionOfficerEntity]
+    ] = attr.ib()
     role: Optional[str] = attr.ib()
     has_seen_onboarding: bool = attr.ib()
     has_dismissed_data_unavailable_note: bool = attr.ib()
