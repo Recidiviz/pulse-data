@@ -43,8 +43,9 @@ from recidiviz.tests.test_setup_utils import (
 # TODO(#20786): Migrate back to the goccy version by removing the comment about PAT and replacing recidiviz with
 #  goccy below.
 EMULATOR_IMAGE_REPOSITORY = "ghcr.io/recidiviz/bigquery-emulator"
-EMULATOR_VERSION = "0.4.4-recidiviz.22"
-EMULATOR_IMAGE = f"{EMULATOR_IMAGE_REPOSITORY}:{EMULATOR_VERSION}"
+EMULATOR_TAG = "0.4.4-recidiviz.21.3"
+EMULATOR_IMAGE = f"{EMULATOR_IMAGE_REPOSITORY}:{EMULATOR_TAG}"
+EMULATOR_PLATFORM = "linux/amd64"
 
 EMULATOR_ENTRYPOINT = "/bin/bigquery-emulator"
 
@@ -80,7 +81,9 @@ class BigQueryEmulatorControl:
         try:
             self.docker_client.images.get(EMULATOR_IMAGE)
         except errors.APIError:
-            self.docker_client.images.pull(EMULATOR_IMAGE_REPOSITORY, EMULATOR_VERSION)
+            self.docker_client.images.pull(
+                EMULATOR_IMAGE_REPOSITORY, EMULATOR_TAG, platform=EMULATOR_PLATFORM
+            )
 
     def start_emulator(self, input_schema_json_path: str | None = None) -> None:
         """Starts the emulator container. Optionally mounts source tables volume"""
@@ -105,6 +108,7 @@ class BigQueryEmulatorControl:
             ports={self.port: self.port},
             detach=True,
             volumes=volumes,
+            platform=EMULATOR_PLATFORM,
         )
 
         start_time = time.perf_counter()
