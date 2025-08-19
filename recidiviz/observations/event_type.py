@@ -26,6 +26,7 @@ class EventType(Enum):
     """Category of event-shaped data"""
 
     ABSCONSION_BENCH_WARRANT = "ABSCONSION_BENCH_WARRANT"
+    ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT = "ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT"
     COMPARTMENT_LEVEL_2_START = "COMPARTMENT_LEVEL_2_START"
     CUSTODY_LEVEL_CHANGE = "CUSTODY_LEVEL_CHANGE"
     DRUG_SCREEN = "DRUG_SCREEN"
@@ -152,6 +153,7 @@ class EventType(Enum):
             EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
             EventType.WORKFLOWS_USER_LOGIN,
             EventType.WORKFLOWS_USER_SNOOZE_ACTION,
+            EventType.ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER
         if self in [

@@ -3498,3 +3498,13 @@ DISTINCT_REGISTERED_USERS_INCARCERATION = SpanDistinctUnitCountMetric(
         span_conditions_dict={"system_type": ["INCARCERATION"]},
     ),
 )
+
+DISTINCT_ACTIVE_WORKFLOWS_PRIMARY_USERS_ALL_TOOLS = EventDistinctUnitCountMetric(
+    name="distinct_active_workflows_primary_users_all_tools",
+    display_name="Distinct Active Line Staff (Workflows Primary Users) Across All Tools",
+    description="Number of distinct line staff users (equivalent of Workflows primary users) having at least one active usage event across all tools during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)
