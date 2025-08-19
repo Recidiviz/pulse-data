@@ -10,6 +10,7 @@ input_columns:
   tot_score: STRING
   eval_desc: STRING
   assess_cat_desc: STRING
+  LSRNR_comment: STRING
   LSRNR_Q28: STRING
   LSRNR_Q29: STRING
   LSRNR_Q30: STRING
@@ -217,6 +218,7 @@ output:
           # These are only populated for LS/RNR assessments.
           assessment_metadata:
             $normalized_values_json_dict:
+              LSRNR_SUMMARY_COMMENT: LSRNR_comment
               LSRNR_Q28: LSRNR_Q28
               LSRNR_Q29: LSRNR_Q29
               LSRNR_Q30: LSRNR_Q30
