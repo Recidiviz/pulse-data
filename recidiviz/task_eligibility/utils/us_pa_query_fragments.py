@@ -28,98 +28,6 @@ def case_when_special_case() -> str:
         OR supervision_type_raw_text LIKE '%04%'"""
 
 
-def violations_helper() -> str:
-    """pulls all violations within the last 12 months"""
-    # note - we ended up removing this from sidebar due to concerns about carceral impact, but leaving helper here
-    # in case we want to add back in
-    return """
-        SELECT pei.external_id,
-            'Violations in the last 12 months' AS criteria,
-            COALESCE(violation_type_raw_text, 'None') AS note_title,
-            CASE WHEN violation_type_raw_text IS NULL THEN ''
-              WHEN violation_type_raw_text = 'H06' THEN 'Failure to report upon release'
-              WHEN violation_type_raw_text = 'H09' THEN 'Absconding'
-              WHEN violation_type_raw_text = 'H04' THEN 'Pending criminal charges (UCV) Detained/Not detained'
-              WHEN violation_type_raw_text = 'M20' THEN 'Conviction of Misdemeanor Offense'
-              WHEN violation_type_raw_text = 'M13' THEN 'Conviction of a summary offense (a minor criminal, not civil offense)'
-              WHEN violation_type_raw_text = 'M04' THEN 'Travel violations'
-              WHEN violation_type_raw_text = 'H01' THEN 'Changing residence without permission'
-              WHEN violation_type_raw_text = 'M02' THEN 'Failure to report as instructed'
-              WHEN violation_type_raw_text = 'M19' THEN 'Failure to notify agent of arrest or citation within 72 hrs'
-              WHEN violation_type_raw_text = 'L07' THEN 'Failure to notify agent of change in status/employment'
-              WHEN violation_type_raw_text = 'M01' THEN 'Failure to notify agent of change in status/employment'
-              WHEN violation_type_raw_text = 'L08' THEN 'Positive urine, drugs'
-              WHEN violation_type_raw_text = 'M03' THEN 'Positive urine, drugs'
-              WHEN violation_type_raw_text = 'H12' THEN 'Positive urine, drugs'
-              WHEN violation_type_raw_text = 'H10' THEN 'Possession of offense weapon'
-              WHEN violation_type_raw_text = 'H11' THEN 'Possession of firearm'
-              WHEN violation_type_raw_text = 'H08' THEN 'Assaultive behavior'
-              WHEN violation_type_raw_text = 'L06' THEN 'Failure to pay court ordered fees, restitution'
-              WHEN violation_type_raw_text = 'L01' THEN 'Failure to participate in community service'
-              WHEN violation_type_raw_text = 'L03' THEN 'Failure to pay supervision fees'
-              WHEN violation_type_raw_text = 'L04' THEN 'Failure to pay urinalysis fees'
-              WHEN violation_type_raw_text = 'L05' THEN 'Failure to support dependents'
-              WHEN violation_type_raw_text = 'M05' THEN 'Possession of contraband, cell phones, etc.'
-              WHEN violation_type_raw_text = 'M06' THEN 'Failure to take medications as prescribed'
-              WHEN violation_type_raw_text = 'M07' THEN 'Failure to maintain employment'
-              WHEN violation_type_raw_text = 'M08' THEN 'Failure to participate or maintain treatment'
-              WHEN violation_type_raw_text = 'M09' THEN 'Entering prohibited establishments'
-              WHEN violation_type_raw_text = 'M10' THEN 'Associating with gang members, co-defendants, etc'
-              WHEN violation_type_raw_text = 'M11' THEN 'Failure to abide by written instructions'
-              WHEN violation_type_raw_text = 'M12' THEN 'Failure to abide by field imposed special conditions'
-              WHEN violation_type_raw_text = 'L02' THEN 'Positive urine, alcohol (Previous History)'
-              WHEN violation_type_raw_text = 'M14' THEN 'Positive urine, alcohol (Previous History)'
-              WHEN violation_type_raw_text = 'H03' THEN 'Positive urine, alcohol (Previous History)'
-              WHEN violation_type_raw_text = 'M15' THEN 'Violating curfew'
-              WHEN violation_type_raw_text = 'M16' THEN 'Violating electronic monitoring'
-              WHEN violation_type_raw_text = 'M17' THEN 'Failure to provide urine'
-              WHEN violation_type_raw_text = 'M18' THEN 'Failure to complete treatment'
-              WHEN violation_type_raw_text = 'H02' THEN 'Associating with crime victims'
-              WHEN violation_type_raw_text = 'H05' THEN 'Failure to abide by Board Imposed Special Conditions'
-              WHEN violation_type_raw_text = 'H07' THEN 'Removal from Treatment/CCC Failure'
-              ELSE 'Other' END AS note_body,
-            violation_date AS event_date 
-        FROM `{project_id}.{normalized_state_dataset}.state_supervision_violation` v
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violation_type_entry` vt
-            ON v.person_id = vt.person_id
-            AND v.supervision_violation_id = vt.supervision_violation_id
-            AND vt.state_code = 'US_PA'
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-            ON v.person_id = pei.person_id
-            AND pei.id_type = 'US_PA_PBPP'
-        WHERE v.state_code = 'US_PA'
-            AND v.violation_date IS NOT NULL
-            AND v.violation_date >= DATE_ADD(CURRENT_DATE("US/Pacific"), INTERVAL -1 YEAR)
-        """
-
-
-def statute_is_conspiracy_or_attempt() -> str:
-    return """(statute LIKE '%C0901%' -- criminal attempt
-              OR statute LIKE '%C0903%' -- criminal conspiracy
-              OR statute LIKE '%18.901%'
-              OR statute LIKE '%18.903%'
-              OR statute LIKE '0901%' 
-              OR statute LIKE '0903%' 
-              OR statute LIKE '18901%' 
-              OR statute LIKE '18903%'               
-              OR statute LIKE '%CC901%' 
-              OR statute LIKE '%CC903%'    
-              OR statute LIKE '%CS0901%' 
-              OR statute LIKE '%CS0903%'
-              OR statute LIKE '%1001%')
-              """
-
-
-def statute_is_solicitation() -> str:
-    return """(statute LIKE '%C0902%'
-              OR statute LIKE '%18.902%'
-              OR statute LIKE '0902%' 
-              OR statute LIKE '18902%'               
-              OR statute LIKE '%CC902%' 
-              OR statute LIKE '%CS0902%') 
-              """
-
-
 def description_refers_to_assault() -> str:
     return """(description LIKE '%ASLT%'
                 OR description LIKE '%AS\\'LT%'
@@ -675,20 +583,15 @@ def case_notes_helper() -> str:
     WITH conditions AS (
       SELECT DISTINCT sup.state_code, 
         sup.person_id,
-        pei.external_id,
         sup.start_date,
         sup.termination_date,
         condition
-      FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON sup.person_id = pei.person_id
-        AND sup.state_code = pei.state_code
-        AND id_type = 'US_PA_PBPP',
+      FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup,
       UNNEST(SPLIT(conditions, '##')) condition
     ), 
     agg_conditions AS (
       -- this aggregates spans so that you can see the entire time that a certain condition applies 
-      {aggregate_adjacent_spans(table_name='conditions', index_columns=['state_code', 'person_id', 'external_id'], attribute='condition', end_date_field_name='termination_date')}
+      {aggregate_adjacent_spans(table_name='conditions', index_columns=['state_code', 'person_id'], attribute='condition', end_date_field_name='termination_date')}
     ),
     prev_conditions_apply AS (
       -- pulls all clients who currently have a special condition that specifies that previous special conditions should apply 
@@ -698,7 +601,7 @@ def case_notes_helper() -> str:
         AND condition LIKE '%PREVIOUS%'
         AND termination_date IS NULL
     )    
-    SELECT DISTINCT external_id,
+    SELECT DISTINCT person_id,
       'Special Conditions rel. to Treatment/Evaluation' AS criteria,
       CASE WHEN condition LIKE '%PREVIOUS%' THEN 'PREVIOUS CONDITIONS APPLY'
         WHEN termination_date IS NOT NULL THEN 'PREVIOUS CONDITION'
@@ -729,7 +632,7 @@ def case_notes_helper() -> str:
     )
     
     SELECT DISTINCT
-      pei.external_id,
+      person_id,
       'Treatments' AS criteria,
       JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") AS note_title,
       CASE WHEN participation_status_raw_text IN ('ASSIGNED')
@@ -759,11 +662,7 @@ def case_notes_helper() -> str:
         END AS event_date,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` tre
     LEFT JOIN supervision_starts sup 
-      ON sup.person_id = tre.person_id
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON tre.person_id = pei.person_id
-      AND tre.state_code = pei.state_code
-      AND id_type = 'US_PA_PBPP'
+    USING(person_id)
     WHERE (COALESCE(tre.discharge_date, tre.start_date, tre.referral_date) >= sup.start_date -- only display treatments during current supervision period 
             OR tre.person_id IN (SELECT person_id FROM prev_conditions_apply)) -- UNLESS special conditions from a previous term apply, then we display all past treatments 
     ) 
@@ -772,7 +671,7 @@ def case_notes_helper() -> str:
     
     /* pull all currently open employment periods */ 
     SELECT DISTINCT
-      pei.external_id,
+      person_id,
       'Employment' AS criteria,
       CASE WHEN employment_status = 'EMPLOYED_FULL_TIME' THEN 'EMPLOYED - FULL-TIME'
         WHEN employment_status = 'EMPLOYED_PART_TIME' THEN 'EMPLOYED - PART-TIME'
@@ -783,13 +682,8 @@ def case_notes_helper() -> str:
         ELSE 'EMPLOYED' END AS note_title,
       CASE WHEN employment_status IN ('EMPLOYED_FULL_TIME', 'EMPLOYED_PART_TIME') THEN COALESCE(employer_name, 'Unknown Employer') ELSE '' END AS note_body,
       start_date AS event_date,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` emp
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON emp.person_id = pei.person_id
-      AND emp.state_code = pei.state_code
-      AND id_type = 'US_PA_PBPP'
-    WHERE emp.state_code = 'US_PA'
-      AND end_date IS NULL
+    FROM `{{project_id}}.us_pa_normalized_state.state_employment_period` emp
+    WHERE end_date IS NULL
     """
 
 
@@ -819,23 +713,18 @@ def adm_case_notes_helper() -> str:
     ), sentences_clean AS (
         {clean_and_split_statute('sentences')}
     )
-    SELECT DISTINCT pei.external_id,
+    SELECT DISTINCT person_id,
       'Potential Barriers to Eligibility' AS criteria,
       'DUI' AS note_title,
       'This reentrant has a DUI charge on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' AS note_body,
       sc.date_imposed AS event_date,
     FROM sentences_clean sc
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON sc.person_id = pei.person_id
-      AND sc.state_code = pei.state_code
-      AND id_type = 'US_PA_PBPP'
-    WHERE sc.state_code = 'US_PA' 
-      AND {dui_indicator()}
+    WHERE {dui_indicator()}
     )
 
     UNION ALL 
 
-    SELECT DISTINCT pei.external_id,
+    SELECT DISTINCT person_id,
       'Potential Barriers to Eligibility' AS criteria,
       'DRUG' AS note_title,
       CASE WHEN form_information_statute_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.' 
@@ -844,10 +733,6 @@ def adm_case_notes_helper() -> str:
         END AS note_body,
       date_imposed AS event_date,
     FROM ({adm_form_information_helper()}) form
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON form.person_id = pei.person_id
-      AND pei.state_code = 'US_PA'
-      AND id_type = 'US_PA_PBPP'
     WHERE (form.form_information_statute_14
       OR form.form_information_statute_30
       OR form.form_information_statute_37)
@@ -859,19 +744,22 @@ def adm_case_notes_helper() -> str:
     (
     WITH pending_charges AS (
     /* pull all pending charges */
-        SELECT Parole_No AS external_id,
+        SELECT person_id,
           UPPER(code) AS statute,
           UPPER(description) AS description,
           'Pending' AS status,
           DATE(Disposition_Date) AS event_date,
           CAST(NULL AS STRING) AS classification_type,
           Grade AS classification_subtype,
-        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr    
+        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
+        INNER JOIN `{{project_id}}.us_pa_normalized_state.state_person_external_id` pei
+            ON cr.Parole_No = pei.external_id
+            AND id_type = 'US_PA_PBPP'
         WHERE Disposition = 'Active Case'
     ), pending_charges_clean AS (
     /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
         which offenses are admin-ineligible later */ 
-        SELECT external_id,
+        SELECT person_id,
             statute,
             description,
             status,
@@ -889,7 +777,7 @@ def adm_case_notes_helper() -> str:
         FROM pending_charges_clean
     )
     SELECT DISTINCT
-      pc.external_id,
+      person_id,
       'Potential Barriers to Eligibility' AS criteria,
       'PENDING CHARGE' AS note_title,
       CASE WHEN is_admin_ineligible THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
@@ -897,12 +785,8 @@ def adm_case_notes_helper() -> str:
         END AS note_body,
       event_date,
     FROM pending_charges_with_admin_indicator pc
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON pc.external_id = pei.external_id
-      AND pei.state_code = 'US_PA'
-      AND id_type = 'US_PA_PBPP'
     LEFT JOIN ({us_pa_supervision_super_sessions()}) ss
-      ON ss.person_id = pei.person_id
+        USING(person_id)
     WHERE is_admin_ineligible
       OR event_date >= release_date -- only include admin ineligible charges OR newly incurred charges while on supervision
     )
@@ -921,27 +805,33 @@ def spc_case_notes_helper() -> str:
     (
     WITH pending_charges AS (
         /* pull all pending charges */
-        SELECT Parole_No AS external_id,
-          UPPER(code) AS statute,
-          UPPER(description) AS description,
+        SELECT person_id,
+          UPPER(active_cases.Code) AS statute,
+          UPPER(active_cases.Description) AS description,
           'Pending' AS status,
-          DATE(Disposition_Date) AS event_date,
+          DATE(active_cases.Disposition_Date) AS event_date,
           CAST(NULL AS STRING) AS classification_type,
-          Grade AS classification_subtype,
+          active_cases.Grade AS classification_subtype,
           JSON_EXTRACT_SCALAR(crit.reason, "$.case_type") AS case_type, -- pull whether they are currently considered a violent or non-violent case according to SPC criteria 
-        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
-        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-          ON cr.Parole_No = pei.external_id
-          AND id_type = 'US_PA_PBPP'
-        INNER JOIN `{{project_id}}.{{criteria_dataset}}.meets_special_circumstances_criteria_for_time_served_materialized` crit
-          ON pei.person_id = crit.person_id
-          AND pei.state_code = crit.state_code 
-          AND CURRENT_DATE('US/Eastern') BETWEEN crit.start_date AND {nonnull_end_date_exclusive_clause('crit.end_date')} 
-        WHERE Disposition = 'Active Case'
+        FROM (
+            SELECT person_id, cr.* EXCEPT(Parole_No)
+            FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
+            INNER JOIN `{{project_id}}.us_pa_normalized_state.state_person_external_id` pei
+                ON cr.Parole_No = pei.external_id
+                AND id_type = 'US_PA_PBPP'
+            WHERE Disposition = 'Active Case'
+        ) active_cases
+        INNER JOIN (
+            -- Select current criteria periods
+            SELECT *
+            FROM `{{project_id}}.{{criteria_dataset}}.meets_special_circumstances_criteria_for_time_served_materialized` crit
+            WHERE CURRENT_DATE('US/Eastern') BETWEEN crit.start_date AND {nonnull_end_date_exclusive_clause('crit.end_date')}
+        ) crit
+        USING (person_id)
     ), pending_charges_clean AS (
         /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
         which offenses are violent later */ 
-        SELECT external_id,
+        SELECT person_id,
             statute,
             description,
             status,
@@ -955,7 +845,7 @@ def spc_case_notes_helper() -> str:
         FROM ({clean_and_split_statute('pending_charges')})
     ) 
     SELECT DISTINCT
-      external_id,
+      person_id,
       'Potential Barriers to Eligibility' AS criteria,
       'PENDING CHARGE' AS note_title,
       CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If the reentrant is found guilty of this offense, they could be considered a violent case and must serve 5 years rather than 3 years on supervision before being eligible for special circumstances.') AS note_body,
