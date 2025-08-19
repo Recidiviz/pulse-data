@@ -19,7 +19,13 @@ from tabulate import tabulate
 
 # NOTE: If you change the model, you may need to change update the token limit!
 MODEL_NAME = "gemini-2.5-flash"
-MODEL_INPUT_TOKEN_LIMIT = 1_048_576
+MODEL_INPUT_TOKEN_LIMIT = 2_097_152
+
+
+def estimate_tokens_from_chars(text: str) -> int:
+    """Estimate token count using Google's 1 token ≈ 4 characters guideline."""
+    return len(text) // 4
+
 
 FIND_PII_GEMINI_PROMPT = """
 Review the following code changes for Personally Identifiable Information (PII). For each potential piece of PII found, determine:
@@ -244,11 +250,14 @@ def generate_prompts(
     prompt = copy(FIND_PII_GEMINI_PROMPT)
     for file_path, diff in changed_file_to_diff.items():
         this_diff = f"\n# File: {file_path}\n{diff}"
-        if len(this_diff) > MODEL_INPUT_TOKEN_LIMIT:
+        if estimate_tokens_from_chars(this_diff) > MODEL_INPUT_TOKEN_LIMIT:
             raise ValueError(
                 f"Diff for {file_path} exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens."
             )
-        if len(prompt) + len(this_diff) > MODEL_INPUT_TOKEN_LIMIT:
+        if (
+            estimate_tokens_from_chars(prompt) + estimate_tokens_from_chars(this_diff)
+            > MODEL_INPUT_TOKEN_LIMIT
+        ):
             yield prompt
             prompt = copy(FIND_PII_GEMINI_PROMPT)
         else:
@@ -266,9 +275,10 @@ def run_prompt_and_collect_findings(
     Retries on transient errors with exponential backoff.
     """
     if len(prompt) > MODEL_INPUT_TOKEN_LIMIT:
-        raise ValueError(
-            f"Prompt exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens."
+        print(
+            f"::warning::Prompt exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens. Skipping this batch."
         )
+        return []
 
     # Retry with exponential backoff for transient errors
     max_attempts = 3
