@@ -108,6 +108,10 @@ PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskCrit
     # TODO(#45499): Rename this subcriterion once OC completion is finished
     criteria_name="US_MO_WITHIN_24_MONTHS_OF_EARLIEST_RELEASE_DATE_AND_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
     sub_criteria_list=[
+        # NB: The below criterion identifies people who have first-degree arson or
+        # robbery offenses we can positively identify, but it is not expected to catch
+        # all such offenses. In the tool, we will still instruct users to check a
+        # resident's offense history for these offenses when screening for work release.
         has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
         WITHIN_24_MONTHS_CRITERIA_GROUP,
         # completed_12_months_outside_clearance.VIEW_BUILDER,
@@ -123,14 +127,16 @@ MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP = StateSpecificTaskCriteriaGrou
         PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP,
     ],
     allowed_duplicate_reasons_keys=[
-        "offense_dates",
-        "offense_statutes",
+        "disqualifying_offenses",
+        "disqualifying_dates",
         "earliest_release_date",
     ],
-    # TODO(#45236): Revisit this aggregation
     reasons_aggregate_function_override={
-        "offense_dates": "ARRAY_CONCAT_AGG",
-        "offense_statutes": "ARRAY_CONCAT_AGG",
+        # The reasons blobs should be identical in each of these cases (since the two
+        # underlying sub-criteria are just inversions of each other), so we can use
+        # ANY_VALUE here to just pick one.
+        "disqualifying_offenses": "ANY_VALUE",
+        "disqualifying_dates": "ANY_VALUE",
     },
 )
 
@@ -182,6 +188,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         educational_score_1.VIEW_BUILDER,
+        # NB: The below criterion identifies people who have excluded offenses we can
+        # positively identify, but it is not expected to catch all excluded offenses. In
+        # the tool, we will still instruct users to check a resident's offense history
+        # for excluded offenses when screening for work release.
         no_current_or_prior_excluded_offenses_work_release.VIEW_BUILDER,
         # TODO(#46222): Do we need to update the criteria going into this group to
         # consider the right set of release dates in MO? What date(s) are we using right

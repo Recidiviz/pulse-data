@@ -32,26 +32,51 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
 
+# The following lists of charge codes come from the field `BE_CD1` in `LBAKRCOD_TAK112`.
+# `BE_CD1` is a five-digit field, with two digits that correspond with the NCIC major
+# category followed by three digits that are the "unique identifier" for the charge in
+# MO.
+
+# The following charge codes can be used to identify rape offenses in Missouri that are
+# not captured in NCIC category 11 (according to the NCIC category MO attaches to the
+# charge code). These codes were identified by looking at offenses in `LBAKRCOD_TAK112`
+# with `BE_SHD` (short description) containing 'RAPE' that are not in NCIC category
+# (`BE_NC2`) 11.
+MO_CHARGE_CODES_RAPE_NOT_NCIC_11 = [
+    "36ABM",
+]
+
 # The following charge codes can be used to identify first-degree-assault offenses in
 # Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
 # category (`BE_NC2`) 13 (assault) and reviewing their respective
 # descriptions.
-# The codes come from the field `BE_CD1` in that view, which is a five-digit field with
-# two digits that correspond with the NCIC major category followed by three digits that
-# are the "unique identifier" for the charge in MO.
 MO_CHARGE_CODES_ASSAULT_FIRST_DEGREE = [
     # These codes are for offenses corresponding with RSMo 565.050, which covers first-
     # degree assault in general.
-    "13020",
-    "13ACJ",
-    "13011",
     "13010",
+    "13011",
+    "13020",
     "13ACH",
+    "13ACJ",
     # These codes are for offenses corresponding with RSMo 565.081 (repealed by S.B.
     # 491, 2014), which covered first-degree assault of emergency personnel, public-
     # safety officials, highway workers, etc. (although that statute evolved over time).
-    "13105",
     "13100",
+    "13105",
+    # TODO(#43387): Should domestic assault offenses be considered disqualifying "first-
+    # degree assault" offenses? Confirm with MO and then add them in if so.
+    # These codes are for first-degree domestic assault.
+    # "13009",
+    # "13015",
+    # "13016",
+    # "13018",
+    # "13021",
+    # "13025",
+    # "13027",
+    # "13AAU",
+    # "13AAV",
+    # "13ACG",
+    # "13ACI",
 ]
 
 # The following charge codes can be used to identify first-degree-murder offenses in
@@ -60,8 +85,8 @@ MO_CHARGE_CODES_ASSAULT_FIRST_DEGREE = [
 MO_CHARGE_CODES_MURDER_FIRST_DEGREE = [
     # These codes correspond with now-repealed/-modified statutes that, when they
     # existed, defined first-degree murder.
-    "10022",
     "10020",
+    "10022",
     # These codes are for offenses covered by RSMo 565.020, which (as of June 2025) now
     # defines first-degree murder.
     "09AAG",
@@ -86,33 +111,29 @@ MO_CHARGE_CODES_MURDER_SECOND_DEGREE = [
     "10036",
 ]
 
-# The following charge codes can be used to identify first degree arson offenses in
+# The following charge codes can be used to identify first-degree-arson offenses in
 # Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
-# category (`BE_NC2`) 20 (arson) and (`BE_CLA`) A or B (first degree arson can be class A or B felonies).
+# category (`BE_NC2`) 20 (arson).
 MO_CHARGE_CODES_ARSON_FIRST_DEGREE = [
-    "20AAM",
-    # Not sure why there are some NCI categories of 17, since these
-    # were surfaced by ensuring BC_NC2 = 20
-    "17012",
     "17010",
-    "20AAK",
+    "17012",
     "17015",
+    "20AAK",
     "20AAL",
+    "20AAM",
 ]
 
-# The following charge codes can be used to identify first degree arson offenses in
+# The following charge codes can be used to identify first-degree-robbery offenses in
 # Missouri and were identified by looking at offenses in `LBAKRCOD_TAK112` in NCIC
-# category (`BE_NC2`) 12 (robbery) and (`BE_CLA`) A (first degree robbery is a class A felony).
+# category (`BE_NC2`) 12 (robbery).
 MO_CHARGE_CODES_ROBBERY_FIRST_DEGREE = [
-    "12030",
-    "12AAE",
-    "12AAA",
-    "12AAC",
-    "12035",
     "12010",
-    # These have `BE_CLA` = U (Unclassified)
     "12011",
     "12012",
+    "12030",
+    "12035",
+    "12AAA",
+    "12AAC",
 ]
 
 # TODO(#45993): Update this list once we hear back from MO DOC about disqualifying contraband violations.
