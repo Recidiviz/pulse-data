@@ -118,7 +118,12 @@ output:
                 offense_date: offenseCommittedDate
                 county_code: county_name
                 statute: statute
-                description: convictedDescription
+                description:
+                  $conditional:
+                    - $if:
+                        $not_null: convictedDescription
+                      $then: convictedDescription
+                    - $else: arrest_code
                 offense_type: arrest_code
                 classification_type:
                   $enum_mapping:
