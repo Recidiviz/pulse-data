@@ -92,7 +92,7 @@ function stateSpecificOpportunities(stateCode) {
       };
     case "US_PA":
       return {
-        TRANSFER_TO_ADMINISTRATIVE_SUPERVISION: "Administrative Supervision",
+        TRANSFER_TO_ADMINISTRATIVE_SUPERVISION: "Admin Supervision",
         TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION:
           "Special Circumstances Supervision",
       };
@@ -301,6 +301,7 @@ function stateSpecificText(
         timeZone: "America/Boise",
         supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} potential ${opps.pluralNoun} for clients under your supervision to receive a supervision level change, early discharge, or other milestone.`,
         supervisionOpportunitySpecificText,
+        supervisionSupervisorText: `There ${opps.is} ${totalOpportunities} potential ${opps.pluralNoun} for clients under your officers' supervision to receive a supervision level change, early discharge, or other milestone.`,
         outliersText: `${totalOutliers} of your officers ${officers.has} been flagged as having very high absconsion or incarceration rates.`,
       };
     case "US_ME":
@@ -315,6 +316,7 @@ function stateSpecificText(
         supervisionToolName: "Recidiviz",
         timeZone: "America/Detroit",
         supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your supervision, such as early discharge or classification review.`,
+        supervisionSupervisorText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your agents' supervision, such as early discharge or classification review.`,
         supervisionOpportunitySpecificText,
         outliersText: `${totalOutliers} of your agents ${officers.has} been flagged as having very high absconder warrant or incarceration rates.`,
       };
@@ -335,7 +337,8 @@ function stateSpecificText(
       return {
         supervisionToolName: "the Recidiviz Supervision Assistant",
         timeZone: "America/New_York",
-        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision eligible for Admin Supervision or Special Circumstances Supervision.`,
+        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision who may be eligible for Admin Supervision or Special Circumstances Supervision.`,
+        supervisionSupervisorText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your agents' supervision who may be eligible for Admin Supervision or Special Circumstances Supervision.`,
         supervisionOpportunitySpecificText,
       };
     case "US_TN":
@@ -345,6 +348,7 @@ function stateSpecificText(
         timeZone: "America/Chicago",
         facilitiesOpportunitiesText: `There ${opps.is} ${totalOpportunities} ${residents.pluralNoun} on your caseload who may be eligible for opportunities such as annual reclassification, custody level downgrade, or initial classification. Log into Recidiviz now to see what actions you can take to prepare for their release!`,
         supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your supervision, such as compliant reporting or supervision level downgrade.`,
+        supervisionSupervisorText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your officers' supervision, such as compliant reporting or supervision level downgrade.`,
         supervisionOpportunitySpecificText,
       };
     case "US_AZ":
@@ -418,6 +422,7 @@ function buildLoginReminderBody(info, userType, settings) {
     facilitiesToolName,
     timeZone,
     supervisionOpportunitiesText,
+    supervisionSupervisorText,
     facilitiesOpportunitiesText,
     outliersText,
     supervisionOpportunitySpecificText,
@@ -473,8 +478,11 @@ function buildLoginReminderBody(info, userType, settings) {
         const urgent = pluralize(urgentOpportunities);
         additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities, and ${urgentOpportunities} ${urgent.has} been unviewed for 30+ days.<br><br>`;
       } else {
-        const almost = pluralize(almostEligibleOpportunities);
-        additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.is} almost eligible for opportunities.<br><br>`;
+        // We only need a summary if there was more than one opportunity type
+        if (supervisionOpportunitySpecificText.length > 1) {
+          const almost = pluralize(almostEligibleOpportunities);
+          additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.is} almost eligible for opportunities.<br><br>`;
+        }
       }
     }
   } else if (userType === FACILITIES_LINESTAFF) {
@@ -497,8 +505,8 @@ function buildLoginReminderBody(info, userType, settings) {
     const outliersBulletPoint =
       outliersText && outliers > 0 ? `<li>${outliersText}</li>` : "";
     const supervisionBulletPoint =
-      supervisionOpportunitiesText && totalOpportunities > 0
-        ? `<li>${supervisionOpportunitiesText}</li>`
+      supervisionSupervisorText && totalOpportunities > 0
+        ? `<li>${supervisionSupervisorText}</li>`
         : "";
     bulletPoints = outliersBulletPoint + supervisionBulletPoint;
   }
@@ -669,7 +677,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
       "Email Sent At",
     ];
     if (IS_TESTING) {
-      headerRow.push(...["Email Subject, Email Body"]);
+      headerRow.push(...["Email Subject", "Email Body"]);
     }
     sentEmailsSheet.appendRow(headerRow);
   }

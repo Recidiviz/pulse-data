@@ -30,7 +30,7 @@ const FACILITIES_LINESTAFF_QUERY = `SELECT
   state_code,
   facility_counselor_id,
   facility_counselor_name,
-  workflows_user_email_address,
+  email_address,
   location_name,
   total_opportunities,
   eligible_opportunities,

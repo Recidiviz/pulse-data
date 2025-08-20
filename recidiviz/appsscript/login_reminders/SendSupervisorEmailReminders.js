@@ -16,7 +16,7 @@
 // =============================================================================
 /* Apps Script for sending email reminders to supervisors. */
 
-const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
+const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_PA", "US_TN"];
 
 // =============================================================================
 
@@ -31,7 +31,7 @@ const SUPERVISOR_QUERY = `SELECT
   state_code,
   staff_external_id,
   unit_supervisor_name,
-  insights_user_email_address,
+  email_address,
   location_name,
   total_opportunities,
   eligible_opportunities,

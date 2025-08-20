@@ -38,7 +38,7 @@ const SUPERVISION_LINESTAFF_QUERY = `SELECT
   state_code,
   officer_id,
   officer_name,
-  workflows_user_email_address,
+  email_address,
   location_name,
   total_opportunities,
   eligible_opportunities,
