@@ -70,7 +70,6 @@ jobs:
 
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
-    # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
     # The tmpfs extra speeds up the pull and run of the emulator
     runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
@@ -101,7 +100,6 @@ jobs:
 
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
-    # The BigQuery emulator does not publish arm64 runners yet. Running this job on x64
     # The tmpfs extra speeds up the pull and run of the emulator
     runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
     steps:
