@@ -186,19 +186,15 @@ def us_az_sentences_preprocessed_query_template() -> str:
 def home_plan_information_for_side_panel_notes() -> str:
     return """
     SELECT
-        peid.external_id,
+        -- US_AZ_PERSON_ID
+        hp.person_id AS external_id,
         "Home Plan Information" AS criteria,
         plan_status AS note_title,
         IF(is_homeless_request = 'Y', "Request to release as homeless", "") AS note_body,
-        -- We use update_date to capture the latest change, the start_date
-        -- refers to the start of compartment_sessions.
-        SAFE_CAST(LEFT(update_date, 10) AS DATE) AS event_date,
+        -- Capture the date of the latest change
+        SAFE_CAST(start_date AS DATE) AS event_date,
     FROM `{project_id}.analyst_data.us_az_home_plan_preprocessed_materialized` hp
-    LEFT JOIN `{project_id}.normalized_state.state_person_external_id` peid
-    ON peid.person_id = hp.person_id
-        AND peid.state_code = 'US_AZ'
-        AND peid.id_type = 'US_AZ_PERSON_ID'
-    WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date_exclusive, '9999-12-31')"""
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date, '9999-12-31')"""
 
 
 def functional_literacy_enrollment_side_panel_notes() -> str:
