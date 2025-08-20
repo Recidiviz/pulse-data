@@ -17,6 +17,7 @@ input_columns:
   SANCTION_DAYS: STRING
   SANCTION_SEQ: STRING
   RESULT_OIC_OFFENCE_CATEGORY: STRING
+  OIC_HEARING_TYPE_DESC: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -218,3 +219,7 @@ output:
                                   StateIncarcerationIncidentOutcomeType.WARNING:
                                     - WAR
                                     - NS
+                      outcome_metadata:
+                        $normalized_values_json_dict:
+                          Finding: FINDING_DESCRIPTION
+                          Hearing_type: OIC_HEARING_TYPE_DESC
