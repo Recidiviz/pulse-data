@@ -1320,13 +1320,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         ],
         "IA_DOC_FieldRuleViolationBCs": ["EnteredDt"],
         "IA_DOC_Housing": ["EnteredDt", "HousingEndDt", "HousingStartDt"],
-        "IA_DOC_Housing_PrivilegeLevels": [
-            "EnteredDt",
-            "PrivilegeLevelEndDt",
-            "PrivilegeLevelReleaseDt",
-            "PrivilegeLevelReviewDt",
-            "PrivilegeLevelStartDt",
-        ],
         "IA_DOC_ISORA": ["AssessedDt", "EnteredDt", "SubmittedDt"],
         "IA_DOC_IVVI": [
             "AssessedDt",

@@ -10,6 +10,8 @@ input_columns:
   next_movement: STRING
   SupervisionStatus: STRING
   SupervisionModifier: STRING
+  housing_type: STRING
+  custody_level: STRING
   period_seq_num: INTEGER
 unused_columns: []
 output:
@@ -170,6 +172,8 @@ output:
                   - Special Sentence Granted
                   - Release Transportation Holdover
                   - Released to OWI Continuum
+                  - HOUSING CHANGE
+                  - CUSTODY LEVEL CHANGE
                 StateIncarcerationPeriodAdmissionReason.REVOCATION:
                   - Parole Revocation
                   - Shock Probation Revocation
@@ -496,6 +500,8 @@ output:
                   - Court Ordered Safekeeper
                   - New Court Commitment
                   - Resentence by Court
+                  - HOUSING CHANGE
+                  - CUSTODY LEVEL CHANGE
                 StateIncarcerationPeriodReleaseReason.DEATH:
                   - Death
                   - Death, Unknown Causes
@@ -590,3 +596,112 @@ output:
                         - OWI Prison
                       StateCustodialAuthority.COUNTY:
                         - Jail (Designated Site)
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: housing_type
+              $mappings:
+                # Note for future: Map some of these to other enums if needed
+                StateIncarcerationPeriodHousingUnitType.GENERAL:
+                  - General Population
+                  - Privilege Level 0
+                  - Privilege Level 1
+                  - Privilege Level 2
+                  - Privilege Level 3
+                  - Privilege Level 4
+                  - Privilege Level 5
+                  - Privilege Level 6
+                  - Privilege Level 7
+                  - Reception
+                  - Interchange Freedom Initiative
+                  - Federal Pre-Trial
+                  - Parole Holds
+                  - Violator Program
+                  - Offender Health Services
+                  - Mental Health Services
+                  - Youthful Offender
+                  - Medical Care Observation
+                  - Mental Health Observation
+                  - Suicide Self Injury Prevention
+                StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
+                  - Administrative Segregation
+                  - Administrative Segregation 1
+                  - Administrative Segregation 2
+                  - Administrative Segregation 3
+                  - Administrative Segregation 4
+                  - Administrative Segregation 5
+                  - Administrative Segregation 6
+                  - Administrative Segregation 7
+                  - Administrative Segregation 8
+                  - Administrative Segregation 9
+                StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
+                  - Disciplinary Detention
+                StateIncarcerationPeriodHousingUnitType.HOSPITAL:
+                  - Patient
+                StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
+                  - Long Term Restrictive Housing
+                StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY:
+                  - Protective Custody Non-Voluntary
+                  - Protective Custody Voluntary
+                  - General Population - Protective Custody
+                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                  - Investigative Segregation
+                StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT:
+                  - Sexually Violent Predator
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: housing_type
+              $mappings:
+                StateIncarcerationPeriodHousingUnitCategory.GENERAL:
+                  - General Population
+                  - Privilege Level 0
+                  - Privilege Level 1
+                  - Privilege Level 2
+                  - Privilege Level 3
+                  - Privilege Level 4
+                  - Privilege Level 5
+                  - Privilege Level 6
+                  - Privilege Level 7
+                  - Reception
+                  - Interchange Freedom Initiative
+                  - Federal Pre-Trial
+                  - Parole Holds
+                  - Violator Program
+                  - Offender Health Services
+                  - Mental Health Services
+                  - Youthful Offender
+                  - Patient
+                  - Medical Care Observation
+                  - Suicide Self Injury Prevention
+                  - Mental Health Observation
+                StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
+                  - Administrative Segregation
+                  - Administrative Segregation 1
+                  - Administrative Segregation 2
+                  - Administrative Segregation 3
+                  - Administrative Segregation 4
+                  - Administrative Segregation 5
+                  - Administrative Segregation 6
+                  - Administrative Segregation 7
+                  - Administrative Segregation 8
+                  - Administrative Segregation 9
+                  - Disciplinary Detention
+                  - Long Term Restrictive Housing
+                  - Protective Custody Non-Voluntary
+                  - Protective Custody Voluntary
+                  - General Population - Protective Custody
+                  - Investigative Segregation
+                  - Sexually Violent Predator
+          custody_level:
+            $enum_mapping:
+              $raw_text: custody_level
+              $mappings: # Note for future: Remap these if needed
+                StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN:
+                  - None
+                StateIncarcerationPeriodCustodyLevel.MINIMUM:
+                  - Minimum Live-out # sufficiently stable to reside in an opened non-secured environment
+                  - Minimum Work Out # allowed to work outside the secure perimeter, have off grounds work assignments, or participate in furloughs
+                  - Minimum Custody
+                StateIncarcerationPeriodCustodyLevel.MEDIUM:
+                  - Medium Custody
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM:
+                  - Maximum Custody
