@@ -29,6 +29,10 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
 
+# Attribute columns that we assume should be interpreted as integer values and serialized
+# to JSON as such.
+_INFERRED_INTEGER_ATTRIBUTE_COLS = ["person_id"]
+
 
 class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """View builder that can be used to encode a collection of point-in-time
@@ -117,6 +121,8 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         attribute_cols: list[str],
         event_date_col: str,
     ) -> str:
+        """Builds and returns the query template for this event view."""
+
         if isinstance(sql_source, BigQueryAddress):
             source_query_fragment = f"`{{project_id}}.{sql_source.to_str()}`"
         else:
@@ -131,7 +137,14 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         column_clauses = [
             *unit_of_observation.primary_key_columns_ordered,
             f"DATE({event_date_col}) AS {cls.EVENT_DATE_OUTPUT_COL_NAME}",
-            *[f"CAST({col} AS STRING) AS {col}" for col in attribute_cols],
+            *[
+                (
+                    f"CAST({col} AS INT64) AS {col}"
+                    if col in _INFERRED_INTEGER_ATTRIBUTE_COLS
+                    else f"CAST({col} AS STRING) AS {col}"
+                )
+                for col in attribute_cols
+            ],
         ]
         columns_str = ",\n".join(column_clauses)
 
