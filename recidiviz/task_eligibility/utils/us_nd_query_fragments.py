@@ -370,29 +370,55 @@ def get_infractions_as_case_notes() -> str:
             end_date_column="end_date")}"""
 
 
-MINIMUM_HOUSING_REFERRAL_QUERY = f"""SELECT
-        {reformat_ids('OFFENDER_BOOK_ID')} AS external_id,
-        SAFE_CAST(REGEXP_REPLACE(ASSESSMENT_TYPE_ID, r',', '')  AS NUMERIC) AS assess_type,
-        rea.DESCRIPTION AS assess_type_desc,
-        CASE 
-            WHEN EVALUATION_RESULT_CODE = 'APP' THEN 'Approved'
-            WHEN EVALUATION_RESULT_CODE = 'RESCIND' THEN 'Rescinded'
-            WHEN EVALUATION_RESULT_CODE = 'REFER' THEN 'Referred'
-            WHEN EVALUATION_RESULT_CODE = 'NOTAPP' THEN 'Not Approved'
-            WHEN EVALUATION_RESULT_CODE = 'NOREF' THEN 'Not Referred'
-            WHEN EVALUATION_RESULT_CODE = 'DEFERRED' THEN 'Deferred'
-            ELSE 'Unknown'
-        END AS evaluation_result,
-        reoa.ASSESS_COMMENT_TEXT AS assess_comment_text,
-        reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
-        SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
-        SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
-        reoa.REVIEW_PLACE_AGY_LOC_ID AS referral_facility,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` rea
-    ON reoa.ASSESSMENT_TYPE_ID = rea.ASSESSMENT_ID
-    -- We only care about MINIMUM HOUSING REQUESTS
-    WHERE rea.DESCRIPTION = '{'MINIMUM HOUSING REQUEST'}'"""
+MINIMUM_HOUSING_REFERRAL_QUERY = f"""
+    SELECT DISTINCT
+    {reformat_ids('reoa.OFFENDER_BOOK_ID')} AS external_id,
+    SAFE_CAST(REGEXP_REPLACE(assess3.parent_assessment_id, r',', '')  AS NUMERIC) AS assess_type,
+    assess4.description as assess_type_desc,
+    CASE 
+        WHEN EVALUATION_RESULT_CODE = 'APP' THEN 'Approved'
+        WHEN EVALUATION_RESULT_CODE = 'RESCIND' THEN 'Rescinded'
+        WHEN EVALUATION_RESULT_CODE = 'REFER' THEN 'Referred'
+        WHEN EVALUATION_RESULT_CODE = 'NOTAPP' THEN 'Not Approved'
+        WHEN EVALUATION_RESULT_CODE = 'NOREF' THEN 'Not Referred'
+        WHEN EVALUATION_RESULT_CODE = 'DEFERRED' THEN 'Deferred'
+        ELSE 'Unknown'
+    END AS evaluation_result,
+    reoa.ASSESS_COMMENT_TEXT AS assess_comment_text,
+    reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
+    SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
+    SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
+    -- When there is a final reviewed facility, use that. When there is not, use the facility
+    -- included in the initial request.
+    COALESCE(reoa.REVIEW_PLACE_AGY_LOC_ID, assess1.ASSESSMENT_CODE) AS referral_facility,
+FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderAssessmentItems_latest` items
+-- The elite_OffenderAssessmentItems table includes an entry with a description that is only the referral facility. 
+-- To deduce that the facility listed in that description is the target of a minimum housing request, we have to trace
+-- back through PARENT_ASSESSMENT_ID values to the ultimate "MINIMUM HOUSING REQUEST" parent assessment.
+-- This requires stepping back through 4 parent assessments with the following descriptions, to be absolutely sure
+-- this is the type of minimum housing request we want to track: 
+-- "[Facility Name]" -> "Facility Referral" -> "Minimum Housing Request" -> "Minimum Housing Request". 
+JOIN (
+    SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
+    -- These are the only facilities that can be referred. This filters out other items
+    -- related to this assessment and keeps only the referral facility, where there is one.
+    WHERE ASSESSMENT_CODE IN ('MTP', 'MRCC', 'JRMU')) assess1
+    ON(items.assessment_id = assess1.assessment_id)
+JOIN (
+    SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
+    WHERE description = 'Facility Referral') assess2
+    ON(assess1.parent_assessment_id = assess2.assessment_id )
+JOIN (
+    SELECT * FROM  `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
+    WHERE description = '{'MINIMUM HOUSING REQUEST'}') assess3
+    ON(assess2.parent_assessment_id = assess3.assessment_id)
+JOIN (
+    SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
+    WHERE description = '{'MINIMUM HOUSING REQUEST'}') assess4
+    ON(assess3.parent_assessment_id = assess4.assessment_id)
+JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
+    ON(reoa.ASSESSMENT_TYPE_ID = assess4.ASSESSMENT_ID AND items.OFFENDER_BOOK_ID = reoa.OFFENDER_BOOK_ID)
+"""
 
 
 def get_minimum_housing_referals_query(
