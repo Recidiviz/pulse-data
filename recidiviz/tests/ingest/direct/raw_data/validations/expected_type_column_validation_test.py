@@ -41,9 +41,6 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 from recidiviz.tests.ingest.direct.raw_data.validations.column_validation_test_case import (
     ColumnValidationTestCase,
 )
-from recidiviz.tests.ingest.direct.raw_data.validations.datetime_parsers_column_validation_test import (
-    RawDataImportBlockingValidationQueryRunner,
-)
 
 
 class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
@@ -96,9 +93,6 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
                     column_name=self.sad_col_name,
                     column_type=column_type,
                     null_values=None,
-                    query_runner=RawDataImportBlockingValidationQueryRunner(
-                        bq_client=self.bq_client
-                    ),
                 )
             self.assertEqual(
                 str(context_manager.exception),

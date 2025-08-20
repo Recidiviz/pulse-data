@@ -15,20 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validation to check if a column has only null values"""
-import datetime
 from typing import Any, Dict, List
 
 import attr
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
-)
-from recidiviz.ingest.direct.raw_data.validations.import_blocking_validations_query_runner import (
-    RawDataImportBlockingValidationQueryRunner,
 )
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
@@ -48,35 +41,6 @@ LIMIT 1
 @attr.define
 class NonNullValuesColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation to check if a column has only null values, runs on all columns unless explicitly exempt."""
-
-    @classmethod
-    def create_column_validation(
-        cls,
-        *,
-        file_tag: str,
-        project_id: str,
-        state_code: StateCode,
-        temp_table_address: BigQueryAddress,
-        file_upload_datetime: datetime.datetime,
-        column: RawTableColumnInfo,
-        bq_client: BigQueryClient,
-    ) -> "RawDataColumnImportBlockingValidation":
-        """Factory method to create a column validation."""
-        if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
-            raise ValueError(
-                f"Column [{column.name}] does not exist at datetime [{file_upload_datetime}]"
-            )
-
-        return cls(
-            project_id=project_id,
-            temp_table_address=temp_table_address,
-            column_name=temp_table_col_name,
-            file_tag=file_tag,
-            state_code=state_code,
-            query_runner=RawDataImportBlockingValidationQueryRunner(
-                bq_client=bq_client
-            ),
-        )
 
     @staticmethod
     def validation_type() -> RawDataImportBlockingValidationType:
@@ -112,10 +76,3 @@ class NonNullValuesColumnValidation(RawDataColumnImportBlockingValidation):
             validation_query=self.query,
             error_msg=f"Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values.",
         )
-
-    def run_validation(
-        self,
-    ) -> RawDataImportBlockingValidationFailure | None:
-        """Runs the validation query and returns an error if any non-null values are found."""
-        results = self.query_runner.run_query(self.query)
-        return self.get_error_from_results(results)

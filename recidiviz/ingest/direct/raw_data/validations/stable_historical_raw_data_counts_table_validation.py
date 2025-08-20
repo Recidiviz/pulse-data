@@ -17,47 +17,38 @@
 """Validation to check if the current raw data row count is within an acceptable range of the historical median for that file tag."""
 import datetime
 import logging
-from typing import List
+from typing import Any, Dict, List
 
 import attr
 from more_itertools import one
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
-from recidiviz.ingest.direct.raw_data.validations.import_blocking_validations_query_runner import (
-    RawDataImportBlockingValidationQueryRunner,
-)
 from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation_config import (
     STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML,
     StableHistoricalCountsDateRangeExclusion,
     StableHistoricalRawDataCountsTableValidationConfig,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationFailure,
     RawDataImportBlockingValidationType,
     RawDataTableImportBlockingValidation,
 )
 from recidiviz.utils.string import StrictStringFormatter
-from recidiviz.utils.types import assert_type
-
-CLOUDSQL_CONNECTION_REGION = "us-east1"
 
 RAW_ROWS_MEDIAN_KEY = "raw_rows_median"
 TEMP_TABLE_ROW_COUNT_KEY = "temp_table_row_count"
 
-HISTORICAL_MEDIAN_QUERY = """
+HISTORICAL_STABLE_COUNTS_QUERY = """
 WITH historical_data AS (
     SELECT 
         raw_rows
     FROM 
-        `{project_id}.operations_v2_cloudsql_connection.direct_ingest_raw_file_import`
+        `{project_id}.operations.direct_ingest_raw_file_import`
     WHERE 
         file_id IN (
             SELECT file_id 
-            FROM `{project_id}.operations_v2_cloudsql_connection.direct_ingest_raw_big_query_file_metadata`
+            FROM `{project_id}.operations.direct_ingest_raw_big_query_file_metadata`
             WHERE file_tag = '{file_tag}'
             AND is_invalidated = False
             AND region_code = '{region_code}'
@@ -65,20 +56,20 @@ WITH historical_data AS (
             {datetime_filter}
         )
     AND import_status = 'SUCCEEDED'
+),
+median_data AS (
+    SELECT
+        APPROX_QUANTILES(raw_rows, 2)[OFFSET(1)] AS {RAW_ROWS_MEDIAN_KEY},
+    FROM 
+        historical_data
 )
-SELECT
-    APPROX_QUANTILES(raw_rows, 2)[OFFSET(1)] AS {RAW_ROWS_MEDIAN_KEY},
+
+SELECT 
+    (SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`) AS {TEMP_TABLE_ROW_COUNT_KEY},
+    {RAW_ROWS_MEDIAN_KEY},
 FROM 
-    historical_data;
+    median_data;
 """
-
-RAW_ROW_COUNTS_QUERY = """
-SELECT
-    COUNT(*)  AS {TEMP_TABLE_ROW_COUNT_KEY}
-FROM
-    `{project_id}.{dataset_id}.{table_id}`;
-"""
-
 _TIME_WINDOW_TEMPLATE = " AND update_datetime > TIMESTAMP_SUB(CAST('{file_update_timestamp}' AS TIMESTAMP), INTERVAL {time_window_lookback_days} DAY)"
 _DATE_EXCLUSION_TEMPLATE = " AND update_datetime NOT BETWEEN PARSE_TIMESTAMP('%FT%T', '{datetime_start_inclusive}') AND PARSE_TIMESTAMP('%FT%T', '{datetime_end_exclusive}')"
 
@@ -110,31 +101,7 @@ class StableHistoricalRawDataCountsTableValidation(
         self.time_window_lookback_days = (
             self.validation_config.get_time_window_lookback_days()
         )
-
-    @classmethod
-    def create_table_validation(
-        cls,
-        *,
-        file_tag: str,
-        project_id: str,
-        temp_table_address: BigQueryAddress,
-        state_code: StateCode,
-        raw_data_instance: DirectIngestInstance,
-        file_update_datetime: datetime.datetime,
-        bq_client: BigQueryClient,
-    ) -> "RawDataTableImportBlockingValidation":
-        """Factory method to create a table validation."""
-        return cls(
-            project_id=project_id,
-            temp_table_address=temp_table_address,
-            file_tag=file_tag,
-            state_code=state_code,
-            raw_data_instance=raw_data_instance,
-            file_update_datetime=file_update_datetime,
-            query_runner=RawDataImportBlockingValidationQueryRunner(
-                bq_client=bq_client
-            ),
-        )
+        super().__attrs_post_init__()
 
     @staticmethod
     def validation_type() -> RawDataImportBlockingValidationType:
@@ -195,59 +162,49 @@ class StableHistoricalRawDataCountsTableValidation(
             ]
         )
 
-    def build_historical_median_query(self) -> str:
+    def build_query(self) -> str:
         return StrictStringFormatter().format(
-            HISTORICAL_MEDIAN_QUERY,
+            HISTORICAL_STABLE_COUNTS_QUERY,
             project_id=self.project_id,
             file_tag=self.file_tag,
-            region_code=self.state_code.value,
-            raw_data_instance=self.raw_data_instance.value,
-            datetime_filter=self._build_datetime_filter(),
-            RAW_ROWS_MEDIAN_KEY=RAW_ROWS_MEDIAN_KEY,
-        )
-
-    def build_temp_table_row_count_query(self) -> str:
-        return StrictStringFormatter().format(
-            RAW_ROW_COUNTS_QUERY,
-            project_id=self.project_id,
             dataset_id=self.temp_table_address.dataset_id,
             table_id=self.temp_table_address.table_id,
+            region_code=self.state_code.value,
+            raw_data_instance=self.raw_data_instance.value,
+            RAW_ROWS_MEDIAN_KEY=RAW_ROWS_MEDIAN_KEY,
             TEMP_TABLE_ROW_COUNT_KEY=TEMP_TABLE_ROW_COUNT_KEY,
+            datetime_filter=self._build_datetime_filter(),
         )
 
-    def run_validation(
-        self,
+    def get_error_from_results(
+        self, results: List[Dict[str, Any]]
     ) -> RawDataImportBlockingValidationFailure | None:
-        """Runs the validation query and returns an error if the validation fails."""
-        historical_counts_query = self.build_historical_median_query()
-        median_results = self.query_runner.run_query_in_region(
-            query=historical_counts_query, region=CLOUDSQL_CONNECTION_REGION
-        )
-        median = one(median_results).get(RAW_ROWS_MEDIAN_KEY)
-        if not bool(median):
+        if not results:
+            raise RuntimeError(
+                "No results found for stable historical counts validation."
+                f"\nFile tag: [{self.file_tag}]."
+                f"\nValidation query: {self.query}"
+            )
+
+        stats = one(results)
+
+        median = stats[RAW_ROWS_MEDIAN_KEY]
+        if not median:
             logging.info(
                 "No historical data found for [%s] in running stable historical counts validation. "
                 "Treating as a success.",
                 self.file_tag,
             )
             return None
-        median = assert_type(median, int)
 
-        temp_table_row_count_results = self.query_runner.run_query(
-            query=self.build_temp_table_row_count_query()
-        )
-        temp_table_row_count = one(temp_table_row_count_results).get(
-            TEMP_TABLE_ROW_COUNT_KEY
-        )
-        temp_table_row_count = assert_type(temp_table_row_count, int)
-
+        temp_table_row_count = stats[TEMP_TABLE_ROW_COUNT_KEY]
         if (
             abs(median - temp_table_row_count) / float(median)
             > self.row_count_percent_change_tolerance
         ):
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
-                validation_query=historical_counts_query,
+                validation_query=self.query,
                 error_msg=(
                     f"Median historical raw rows count [{median}] is more than [{self.row_count_percent_change_tolerance}]"
                     f" different than the current count [{temp_table_row_count}] for file [{self.file_tag}]."

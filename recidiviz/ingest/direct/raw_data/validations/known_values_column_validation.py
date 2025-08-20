@@ -21,15 +21,11 @@ from typing import Any, Dict, List, Optional
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
-)
-from recidiviz.ingest.direct.raw_data.validations.import_blocking_validations_query_runner import (
-    RawDataImportBlockingValidationQueryRunner,
 )
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
@@ -73,7 +69,6 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime,
         column: RawTableColumnInfo,
-        bq_client: BigQueryClient,
     ) -> "KnownValuesColumnValidation":
         if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
             raise ValueError(
@@ -96,9 +91,6 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
                 else None
             ),
             state_code=state_code,
-            query_runner=RawDataImportBlockingValidationQueryRunner(
-                bq_client=bq_client
-            ),
         )
 
     @staticmethod
@@ -188,10 +180,3 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             )
         # All rows have values in the known_values set
         return None
-
-    def run_validation(
-        self,
-    ) -> RawDataImportBlockingValidationFailure | None:
-        """Runs the validation query and returns an error if any values are not in the known_values set."""
-        results = self.query_runner.run_query(self.query)
-        return self.get_error_from_results(results)

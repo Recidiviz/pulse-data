@@ -22,15 +22,11 @@ import attr
 from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldType
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnFieldType,
     RawTableColumnInfo,
-)
-from recidiviz.ingest.direct.raw_data.validations.import_blocking_validations_query_runner import (
-    RawDataImportBlockingValidationQueryRunner,
 )
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
@@ -76,7 +72,6 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
         temp_table_address: BigQueryAddress,
         file_upload_datetime: datetime,
         column: RawTableColumnInfo,
-        bq_client: BigQueryClient,
     ) -> "ExpectedTypeColumnValidation":
         if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
             raise ValueError(
@@ -94,9 +89,6 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
                 else None
             ),
             state_code=state_code,
-            query_runner=RawDataImportBlockingValidationQueryRunner(
-                bq_client=bq_client
-            ),
         )
 
     @staticmethod
@@ -164,10 +156,3 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
             )
         # All rows can be cast to the expected type
         return None
-
-    def run_validation(
-        self,
-    ) -> RawDataImportBlockingValidationFailure | None:
-        """Runs the validation query and returns an error if any values can't be cast to the expected type."""
-        results = self.query_runner.run_query(self.query)
-        return self.get_error_from_results(results)
