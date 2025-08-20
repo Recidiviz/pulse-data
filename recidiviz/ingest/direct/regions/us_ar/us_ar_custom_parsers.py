@@ -97,27 +97,6 @@ def parse_offense_types(
     return "@@".join(statutes)
 
 
-def parse_program_type(
-    program_id: str,
-) -> Optional[str]:
-    """Maps WORKPGMASSIGNMENTCODE values to their human-readable name using decodes from the
-    AR code value reference sheet. Currently only used to specify 3 program types that are
-    relevant for AR criteria queries.
-    """
-    # TODO(#33239): The program codes for these 3 programs have been pulled from the code
-    # value reference sheet. Once this sheet has been uploaded as a reference table, we can
-    # join against it in the ingest view itself, allowing us to add a program title column
-    # that has data for every program assignment, rather than just these 3. For now, it
-    # makes the most sense to manually identify the relevant programs.
-    if program_id == "75.00":
-        return "WORK_RELEASE"
-    if program_id == "47.65":
-        return "THINK_LEGACY"
-    if program_id == "02.97":
-        return "PATHWAY_TO_FREEDOM"
-    return "UNCATEGORIZED"
-
-
 def is_known_staff_id(staff_id: str) -> bool:
     """Some staff IDs returned in ingest views don't have a matching ID in the source
     table used for state_staff, resulting in invalid staff IDs making it through ingest.

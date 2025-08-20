@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   OFFENDERID: STRING
-  WORKPGMASSIGNMENTCODE: STRING
+  WORKPGMASSIGNMENT: STRING
   JOBPGMASSIGNMENTLOC: STRING
   JOBPGMASSIGNMENTSTATUS: STRING
   PADATETIME: DATETIME
@@ -32,7 +32,7 @@ output:
               $values:
                 - OFFENDERID
                 - PADATETIME
-          program_id: WORKPGMASSIGNMENTCODE
+          program_id: WORKPGMASSIGNMENT
           program_location_id: JOBPGMASSIGNMENTLOC
           participation_status:
             $enum_mapping:
@@ -81,10 +81,3 @@ output:
             $conditional:
               - $if: $variable(is_valid_id)
                 $then: $literal("US_AR_PARTYID")
-          referral_metadata:
-            $normalized_values_json_dict:
-              PROGRAM_TYPE:
-                $custom:
-                  $function: us_ar_custom_parsers.parse_program_type
-                  $args:
-                    program_id: WORKPGMASSIGNMENTCODE
