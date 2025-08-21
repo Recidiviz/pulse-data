@@ -78,14 +78,17 @@ variables:
 output:
   StatePerson:
     external_ids:
-      - StatePersonExternalId:
-          external_id: $variable(charge_external_id)
-          id_type:
-            $conditional:
-              - $if:
-                  $not_null: Inmate_No
-                $then: $literal("US_PA_INMATE")
-              - $else: $literal("US_PA_PBPP")
+      - $conditional:
+          - $if:
+              $not_null: Inmate_No
+            $then:
+              StatePersonExternalId:
+                external_id: $variable(charge_external_id)
+                id_type: $literal("US_PA_INMATE")
+          - $else:
+              StatePersonExternalId:
+                external_id: $variable(charge_external_id)
+                id_type: $literal("US_PA_PBPP")
     incarceration_sentences:
       - $conditional:
           - $if:
