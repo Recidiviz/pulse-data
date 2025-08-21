@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_within_15_months,
     on_supervision_at_least_15_months,
+    oras_community_supervision_completed,
     supervision_level_is_not_limited,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
@@ -144,9 +145,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         oras_has_substance_use_issues.VIEW_BUILDER,
         # Not in a Halfway House or New Freedom (in service of 1.4)
         not_in_halfway_house_or_new_freedom.VIEW_BUILDER,
+        # Internal Criteria, created solely for configuring Maybe Eligible accurately
+        oras_community_supervision_completed.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
+        # We need to necessarily include all 3 criteria below to ensure that 1) someone does not have an ORAS but also
+        # note that when they do not have an ORAS, they are necessarily ineligible for all ORAS-criteria
+        # so, therefore, if all 3 must necessarily be False when ORAS_completed is False, we must necessarily
+        # include all 3 in our almost eligible condition lest we not correctly surface everyone who has no ORAS.
         sub_conditions_list=[
             NotEligibleCriteriaCondition(
                 criteria=oras_employed_disabled_retired_or_student.VIEW_BUILDER,
@@ -156,8 +163,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 criteria=oras_has_substance_use_issues.VIEW_BUILDER,
                 description="Missing ORAS-assessed substance use criteria",
             ),
+            NotEligibleCriteriaCondition(
+                criteria=oras_community_supervision_completed.VIEW_BUILDER,
+                description="Does not have an active ORAS supervision assessment",
+            ),
         ],
-        at_least_n_conditions_true=1,
+        at_least_n_conditions_true=3,
     ),
 )
 
