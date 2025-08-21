@@ -2568,6 +2568,31 @@ LOGINS_GLOBAL_USER = EventCountMetric(
         event_conditions_dict={},
     ),
 )
+DISTINCT_ACTIVE_GLOBAL_USER_ALL_TOOLS = EventDistinctUnitCountMetric(
+    name="distinct_active_global_users_all_tools",
+    display_name="Distinct Active Global Users: All Tools",
+    description="Number of distinct users having at least one usage event in any tool",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)
+
+ACTIVE_USAGE_EVENTS_GLOBAL_USER = EventCountMetric(
+    name="global_user_active_usage_events",
+    display_name="Total Active Usage Events, All Users",
+    description="Total number of actions by all users",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=[
+        "event",
+        "product_type",
+        "context_page_path",
+        "person_id",
+    ],
+)
 
 # Outcome metrics
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
