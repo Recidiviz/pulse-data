@@ -105,6 +105,7 @@ output:
                         - "056" # Unknown
                         - "057" # Unknown
                         - "058" # Unknown
+                        - "059" # Unknown
                         - "060" # Unknown
                         - "061" # Unknown
                       StateSupervisionViolationType.EXTERNAL_UNKNOWN:
