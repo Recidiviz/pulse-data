@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_level_downgrade_within_6_months,
     no_supervision_violation_report_within_6_months_using_response_date,
+    not_serving_a_life_sentence_on_supervision,
     supervision_case_type_is_not_sex_offense,
     supervision_level_is_medium_or_minimum,
     supervision_level_is_not_residential_program,
@@ -80,7 +81,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_residential_program.VIEW_BUILDER,
         no_supervision_level_downgrade_within_6_months.VIEW_BUILDER,
         us_ia_not_eligible_or_marked_ineligible_for_early_discharge_view_builder,
-        # TODO(#46145) Determine whether life sentences should be eligible for SLD
+        not_serving_a_life_sentence_on_supervision.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade_from_medium_or_minimum.VIEW_BUILDER,
     almost_eligible_condition=NotEligibleCriteriaCondition(

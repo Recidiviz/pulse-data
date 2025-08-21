@@ -16,16 +16,16 @@
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which clients have
     not experienced a supervision level downgrade within the past 6 months"""
-# TODO(#46093) Create criterion for 6 months since downgrade
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,10 +34,37 @@ _CRITERIA_NAME = "NO_SUPERVISION_LEVEL_DOWNGRADE_WITHIN_6_MONTHS"
 
 _DESCRIPTION = __doc__
 
+_QUERY = f"""
+WITH sld_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        DATE_ADD(start_date, INTERVAL 6 MONTH) AS end_date,
+        start_date AS supervision_level_downgrade_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
+    WHERE supervision_downgrade = 1
+),
+{create_sub_sessions_with_attributes('sld_sessions')}
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    FALSE AS meets_criteria,
+    TO_JSON(STRUCT(MAX(supervision_level_downgrade_date) AS supervision_level_downgrade_date)) AS reason,
+    MAX(supervision_level_downgrade_date) AS supervision_level_downgrade_date,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4
+"""
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
+        criteria_spans_query_template=_QUERY,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(
                 name="supervision_level_downgrade_date",
