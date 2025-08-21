@@ -218,9 +218,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.management_level_w
 from recidiviz.task_eligibility.criteria.state_specific.us_mo.completed_12_months_outside_clearance import (
     VIEW_BUILDER as US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo.no_drug_contraband_introduction_incident_within_2_years import (
-    VIEW_BUILDER as US_MO_NO_DRUG_CONTRABAND_INTRODUCTION_INCIDENT_WITHIN_2_YEARS,
-)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.configured_validations import get_all_validations
@@ -448,10 +445,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MI_MANAGEMENT_LEVEL_GREATER_THAN_CONFINEMENT_LEVEL.address: (
         "Criterion will be used for CLD tool currently being built (Maggie Taylor, 8/6/2025)"
-    ),
-    # TODO(#45993): Uncomment no_contraband_incarceration_incident_within_2_years once we hear back from MO DOC about disqualifying contraband violations.
-    US_MO_NO_DRUG_CONTRABAND_INTRODUCTION_INCIDENT_WITHIN_2_YEARS.address: (
-        "Will be used for work-release eligibility in MO once we gain clarity on disqualifying violations. (Akhil Ghanta, 8/12/2025)"
     ),
 }
 

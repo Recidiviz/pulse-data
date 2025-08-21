@@ -749,7 +749,7 @@ def supervision_violations_within_time_interval_criteria_builder(
     of time (e.g., within the past 6 months).
     Args:
         criteria_name (str): Name of the criterion.
-        state_code (StateCode): The state code for this criteria, if it contains
+        state_code (StateCode): The state code for this criterion, if it contains
             state-specific logic.
         description (str): Description of the criterion.
         date_interval (int): Number of <date_part> when the violation will be counted as
@@ -855,12 +855,16 @@ def supervision_violations_within_time_interval_criteria_builder(
 def incarceration_incidents_within_time_interval_criteria_builder(
     *,
     criteria_name: str,
+    state_code: Optional[StateCode] = None,
     description: str,
     date_interval: int,
     date_part: str,
     where_clause_addition: Optional[str] = None,
     incident_date_name_in_reason_blob: str = "latest_incidents",
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+) -> (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder
+    | StateSpecificTaskCriteriaBigQueryViewBuilder
+):
     """
     Returns a TES criterion view builder that has spans of time where incidents that
     meet certain conditions set by the user have occurred within some specified window
@@ -868,6 +872,8 @@ def incarceration_incidents_within_time_interval_criteria_builder(
 
     Args:
         criteria_name (str): Name of the criterion.
+        state_code (StateCode): The state code for this criterion, if it contains state-
+            specific logic.
         description (str): Description of the criterion.
         date_interval (int): Number of <date_part> when the incident will be counted as
             valid.
@@ -880,12 +886,11 @@ def incarceration_incidents_within_time_interval_criteria_builder(
             field in the reason blob. Defaults to "latest_incidents".
 
     Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: View builder for a state-agnostic
-            TES criterion view that shows the spans of time where the incidents that
-            meet any condition(s) set by the user (<where_clause_addition>) occurred.
-            The span of time for the validity of each incident starts at `incident_date`
-            and ends after a period specified by the user (<date_interval> and
-            <date_part>).
+        Either a state-specific or state-agnostic TES criterion view builder that shows
+        the spans of time where the incidents that meet any condition(s) set by the user
+        (<where_clause_addition>) occurred. The span of time for the validity of each
+        incident starts at `incident_date` and ends after a period specified by the user
+        (<date_interval> and <date_part>).
     """
 
     # check validity of input
@@ -922,7 +927,7 @@ def incarceration_incidents_within_time_interval_criteria_builder(
         behavior; as such, we don't want these to count as disqualifying incidents in
         this criterion. */
         WHERE COALESCE(sii.incident_type, 'NO_INCIDENT_TYPE') NOT IN ('POSITIVE')
-            {where_clause_addition if where_clause_addition else ""}
+            {where_clause_addition if where_clause_addition is not None else ""}
         /* Group by incident, so that we get one row per incident coming out of this
         CTE. */
         GROUP BY 1, 2, 3, 4
@@ -967,18 +972,30 @@ def incarceration_incidents_within_time_interval_criteria_builder(
     GROUP BY 1, 2, 3, 4
     """
 
+    reasons_fields = [
+        ReasonsField(
+            name=incident_date_name_in_reason_blob,
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Date(s) when the incident(s) occurred",
+        ),
+    ]
+
+    if state_code:
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            criteria_name=criteria_name,
+            state_code=state_code,
+            description=description,
+            criteria_spans_query_template=criteria_query,
+            meets_criteria_default=True,
+            reasons_fields=reasons_fields,
+        )
+
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
         description=description,
         criteria_spans_query_template=criteria_query,
         meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name=incident_date_name_in_reason_blob,
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Date(s) when the incident(s) occurred",
-            ),
-        ],
+        reasons_fields=reasons_fields,
     )
 
 

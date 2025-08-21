@@ -25,12 +25,13 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _CRITERIA_NAME = "NO_NONVIOLENT_INCARCERATION_VIOLATION_WITHIN_6_MONTHS"
 
 _INCIDENT_TYPE_CLAUSE = """AND COALESCE(sii.incident_type, 'NO_INCIDENT_TYPE') NOT IN ('VIOLENCE', 'MINOR_OFFENSE')"""
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = assert_type(
     incarceration_incidents_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
@@ -38,7 +39,8 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         date_part="MONTH",
         where_clause_addition=_INCIDENT_TYPE_CLAUSE,
         incident_date_name_in_reason_blob="latest_violations",
-    )
+    ),
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 
 if __name__ == "__main__":

@@ -28,11 +28,12 @@ from recidiviz.task_eligibility.criteria.general import (
     within_24_months_of_projected_full_term_release_date_min,
     within_48_months_of_projected_full_term_release_date_min,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,; no_drug_contraband_introduction_incident_within_2_years,
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,
     educational_score_1,
     has_first_degree_arson_or_robbery_offenses,
     institutional_risk_score_1_while_incarcerated,
     mental_health_score_3_or_below_while_incarcerated,
+    no_11_2_incarceration_incident_within_2_years,
     no_current_or_prior_excluded_offenses_work_release,
     no_escape_in_10_years_or_current_sentence,
     not_has_first_degree_arson_or_robbery_offenses,
@@ -163,10 +164,15 @@ NOT_ALREADY_ON_WORK_RELEASE_CRITERIA_GROUP = (
 WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     TaskCriteriaBigQueryViewBuilder
 ] = [
-    # TODO(#45993): Uncomment no_contraband_incarceration_incident_within_2_years once we hear back from MO DOC about disqualifying contraband violations.
-    # no_drug_contraband_introduction_incident_within_2_years.VIEW_BUILDER,
     institutional_risk_score_1_while_incarcerated.VIEW_BUILDER,
     mental_health_score_3_or_below_while_incarcerated.VIEW_BUILDER,
+    # NB: The below criterion identifies people who have 11.2 incidents, which are
+    # definitively disqualifying for 2 years. It's possible that other incidents have
+    # been disqualifying for any given resident as well, but other incident types are
+    # considered on a case-by-case basis, while this one is always disqualifying. In the
+    # tool, we will still instruct users to check a resident's incident history when
+    # screening for work release and/or outside clearance.
+    no_11_2_incarceration_incident_within_2_years.VIEW_BUILDER,
     no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
     # For outside clearance, we check that someone is not eligible for work release,
     # because if eligible, they should show up in the work-release opportunity instead

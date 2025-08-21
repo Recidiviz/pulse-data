@@ -136,26 +136,6 @@ MO_CHARGE_CODES_ROBBERY_FIRST_DEGREE = [
     "12AAC",
 ]
 
-# TODO(#45993): Update this list once we hear back from MO DOC about disqualifying contraband violations.
-# THE following violation codes from the MO offender handbook
-# (https://doc.mo.gov/sites/doc/files/2018-01/offender-rulebook-9-12-14.pdf)
-# are considered disqualifying for WR/OC eligibility.
-# These codes were verified as disqualifying by the MO DOC.
-MO_DRUG_CONTRABAND_INTRODUCTION_INCIDENT_TYPES = [
-    # These are drug related violations.
-    "11.1",
-    "11.2",
-    "11.3",
-    "11.4",
-    "11.5",
-    "11.6",
-    "11.7",
-    "11.8",
-    "11.9",
-    # Contraband violations.
-    "3.1",
-]
-
 
 def classes_cte() -> str:
     """Helper method that returns a CTE getting
