@@ -53,6 +53,7 @@ def case_notes_helper() -> str:
     return """
     -- All active warrants/detainers 
     SELECT DISTINCT pei.external_id,
+        pei.person_id,
         'Active Warrants & Detainers' AS criteria,
         UPPER(ReleaseNotificationType) AS note_title,
         COALESCE(ContactAgency, JurisdictionType) AS note_body,
@@ -68,6 +69,7 @@ def case_notes_helper() -> str:
     
     -- All open interventions
     SELECT DISTINCT pei.external_id,
+        pa.person_id,
         'Open Interventions' AS criteria,
         CASE WHEN pa.external_id LIKE '%PROGRAM%' AND pa.external_id LIKE '%INTERVENTION%' 
             THEN SPLIT(program_id, '##')[OFFSET(1)]
@@ -90,6 +92,7 @@ def case_notes_helper() -> str:
     -- List of violation incidents that occurred in the last six months that don't have an associated report
     (WITH violations AS (
         SELECT pei.external_id,
+            svr.person_id,
             NULLIF(SPLIT(c.condition_raw_text, "@@")[OFFSET(1)], "NONE") AS condition_description, -- description is sometimes unavailable and in those cases I had hydrated it as a placeholder "NONE" in ingest
             CASE WHEN c.condition = 'SUBSTANCE' THEN 'DRUG VIOLATION'
                 WHEN c.condition = 'EMPLOYMENT' THEN 'EMPLOYMENT VIOLATION'
@@ -111,6 +114,7 @@ def case_notes_helper() -> str:
             AND violation_date BETWEEN DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) AND CURRENT_DATE('US/Eastern')
         )
     SELECT DISTINCT external_id,
+        person_id,
         'Violation Incidents Dated Within the Past 6 Months',
         COALESCE(condition_description, violation_type, 'NO CONDITION PROVIDED') AS note_title,
         COALESCE(ViolationComments, 'NO DESCRIPTION PROVIDED') AS note_body,

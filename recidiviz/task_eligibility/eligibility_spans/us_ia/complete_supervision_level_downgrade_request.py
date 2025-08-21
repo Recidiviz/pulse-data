@@ -14,66 +14,80 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in IA is eligible for early discharge from supervision."""
+"""Shows the spans of time during which someone in IA is eligible for a supervision level downgrade."""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    active_supervision_and_supervision_out_of_state_population,
+    active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.state_specific.us_ia import (
-    early_discharge,
+from recidiviz.task_eligibility.completion_events.general import (
+    supervision_level_downgrade_from_medium_or_minimum,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    no_supervision_level_downgrade_within_6_months,
     no_supervision_violation_report_within_6_months_using_response_date,
-    not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state,
     supervision_case_type_is_not_sex_offense,
+    supervision_level_is_medium_or_minimum,
     supervision_level_is_not_residential_program,
-    supervision_past_full_term_completion_date_or_upcoming_30_days,
     supervision_type_is_not_investigation,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
+    marked_ineligible_for_early_discharge,
     no_open_supervision_modifiers,
-    not_excluded_from_early_discharge_by_parole_condition,
+    not_eligible_for_early_discharge,
     not_serving_ineligible_offense_for_early_discharge,
     serving_supervision_case_at_least_90_days,
-    supervision_fees_paid,
-    supervision_level_is_0_not_available_1_2_or_3,
 )
-from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
+from recidiviz.task_eligibility.eligibility_spans.us_ia.complete_early_discharge_form import (
+    not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in IA is eligible for early discharge from
-supervision."""
-
-not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=supervision_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER
+us_ia_not_eligible_or_marked_ineligible_for_early_discharge_view_builder = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
+        criteria_name="US_IA_NOT_ELIGIBLE_OR_MARKED_INELIGIBLE_FOR_EARLY_DISCHARGE",
+        sub_criteria_list=[
+            not_eligible_for_early_discharge.VIEW_BUILDER,
+            marked_ineligible_for_early_discharge.VIEW_BUILDER,
+        ],
+    )
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IA,
-    task_name="COMPLETE_EARLY_DISCHARGE_FORM",
-    description=_DESCRIPTION,
-    candidate_population_view_builder=active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
+    task_name="COMPLETE_SUPERVISION_LEVEL_DOWNGRADE_REQUEST",
+    description=__doc__,
+    candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_level_is_0_not_available_1_2_or_3.VIEW_BUILDER,
+        supervision_level_is_medium_or_minimum.VIEW_BUILDER,
         no_supervision_violation_report_within_6_months_using_response_date.VIEW_BUILDER,
         no_open_supervision_modifiers.VIEW_BUILDER,
         supervision_case_type_is_not_sex_offense.VIEW_BUILDER,
-        supervision_fees_paid.VIEW_BUILDER,
         not_serving_ineligible_offense_for_early_discharge.VIEW_BUILDER,
         not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder,
-        not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state.VIEW_BUILDER,
         supervision_type_is_not_investigation.VIEW_BUILDER,
         serving_supervision_case_at_least_90_days.VIEW_BUILDER,
-        not_excluded_from_early_discharge_by_parole_condition.VIEW_BUILDER,
         supervision_level_is_not_residential_program.VIEW_BUILDER,
+        no_supervision_level_downgrade_within_6_months.VIEW_BUILDER,
+        us_ia_not_eligible_or_marked_ineligible_for_early_discharge_view_builder,
+        # TODO(#46145) Determine whether life sentences should be eligible for SLD
     ],
-    completion_event_builder=early_discharge.VIEW_BUILDER,
+    completion_event_builder=supervision_level_downgrade_from_medium_or_minimum.VIEW_BUILDER,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=us_ia_not_eligible_or_marked_ineligible_for_early_discharge_view_builder,
+        description="If eligible for early discharge, mark as almost eligible for supervision level downgrade."
+        "This will be used to populate a pending eligibility tab.",
+    ),
 )
 
 if __name__ == "__main__":

@@ -118,6 +118,9 @@ class TaskCompletionEventType(Enum):
         "OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION"
     )
     OVERRIDE_TO_LOW_SUPERVISION = "OVERRIDE_TO_LOW_SUPERVISION"
+    SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM = (
+        "SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM"
+    )
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -164,6 +167,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
         ]:
             return WorkflowsSystemType.SUPERVISION
         raise ValueError(
@@ -236,6 +240,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
         ]:
             return DecarceralImpactType.DOWNGRADE_SUPERVISION_LEVEL
         if self in [
@@ -300,6 +305,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
         ]:
             return True
         if self in [
@@ -366,6 +372,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
         ]:
             return False
         raise ValueError(
