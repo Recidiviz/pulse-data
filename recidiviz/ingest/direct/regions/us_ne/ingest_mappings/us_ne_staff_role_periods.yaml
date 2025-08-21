@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  paroleOfficerId: STRING
+  email: STRING
+  statusChangeOrder: INTEGER
+  startDate: DATETIME
+  endDate: DATETIME
+  roleType: STRING
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: paroleOfficerId
+          id_type: $literal("US_NE_PAROLE_STAFF_ID")
+      - $conditional:
+          - $if:
+              $not_null: email
+            $then:
+              StateStaffExternalId:
+                external_id: email
+                id_type: $literal("US_NE_STAFF_EMAIL")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - paroleOfficerId
+                - statusChangeOrder
+          start_date: startDate
+          end_date: endDate
+          role_type:
+            $enum_mapping:
+              $raw_text: roleType
+              $mappings:
+                StateStaffRoleType.INTERNAL_UNKNOWN:
+                  - SUPERVISOR
+                  - REENTRY_OFFICER
+                  - SUPPORT_STAFF
+                  - PAROLE_PROGRAM_DIRECTOR
+                StateStaffRoleType.SUPERVISION_OFFICER:
+                  - OFFICER
+          role_subtype:
+            $enum_mapping:
+              $raw_text: roleType
+              $mappings:
+                StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                  - OFFICER
+                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                  - SUPERVISOR
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                  - REENTRY_OFFICER
+                  - SUPPORT_STAFF
+                  - PAROLE_PROGRAM_DIRECTOR
