@@ -54,6 +54,9 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ne.us_ne_sentence_dates_preprocessed import (
+    US_NE_SENTENCE_DATES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
@@ -167,6 +170,9 @@ from recidiviz.calculator.query.state.views.user_metrics.workflows_supervision_u
 )
 from recidiviz.calculator.query.state.views.workflows.person_record import (
     PERSON_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_ne.resident_metadata import (
+    US_NE_RESIDENT_METADATA_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -313,6 +319,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"
+    ),
+    US_NE_SENTENCE_DATES_PREPROCESSED_VIEW_BUILDER.address: (
+        "Will be incorporated in resident record, to be used for JII app (dallen 8/21/25)"
+    ),
+    US_NE_RESIDENT_METADATA_VIEW_BUILDER.address: (
+        "Will be incorporated in resident record, to be used for JII app (dallen 8/21/25)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,

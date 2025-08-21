@@ -170,6 +170,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "docstars_offensestable": ["LAST_UPDATE"],
     },
     StateCode.US_NE: {
+        "AggregateSentence": ["projectedReleaseDate", "tentativeReleaseDate"],
         "CodeValue": ["codeEndDate", "codeStartDate", "createdDate", "modifiedDate"],
         "PIMSSpecialCondition": [
             "beginDate",
@@ -660,7 +661,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "elite_offenders": ["ModifyDate"],
     },
     StateCode.US_NE: {
-        "AggregateSentence": ["projectedReleaseDate", "tentativeReleaseDate"],
         "ORASClientRiskLevelAndNeeds": [
             "assessmentDate",
             "assessmentDueDate",
