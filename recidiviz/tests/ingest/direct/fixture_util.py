@@ -30,10 +30,8 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewRawFileDependency,
 )
+from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    DEFAULT_UPDATE_DATETIME,
-)
 
 FIXTURE_ENCODING = "utf-8"
 DIRECT_INGEST_FIXTURES_ROOT = os.path.dirname(direct_ingest_fixtures.__file__)

@@ -40,12 +40,10 @@ from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fake_regions.us_dd.ingest_views import view_ingest12
 from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    DEFAULT_UPDATE_DATETIME,
-)
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )

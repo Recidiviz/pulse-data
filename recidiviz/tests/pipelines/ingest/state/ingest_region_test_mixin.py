@@ -44,12 +44,10 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.ingest.direct.legacy_fixture_path import (
     DirectIngestTestFixturePath,
-)
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    DEFAULT_UPDATE_DATETIME,
 )
 
 
@@ -99,7 +97,7 @@ class IngestRegionTestMixin(abc.ABC):
             cls.launchable_ingest_views(),
         )
 
-    # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
+    # TODO(#36159): Delete this when all tests are based on real data and ingest view results
     # TODO(#22059): Remove this method and replace with the implementation on
     # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
     def read_legacy_extract_and_merge_fixture(

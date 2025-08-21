@@ -113,7 +113,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         """
         return set()
 
-    # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
+    # TODO(#36159): Delete this when all tests are based on real data and ingest view results
     def legacy_generate_ingest_view_results_for_one_date(
         self,
         ingest_view_builder: DirectIngestViewQueryBuilder,
@@ -186,7 +186,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
             ingest_view_results.to_dict("records"),
         )
 
-    # TODO(#38321): Delete this when all ingest view and mapping tests are migrated.
+    # TODO(#36159): Delete this when all tests are based on real data and ingest view results
     # TODO(#22059): Remove this method and replace with the implementation on
     # StateIngestPipelineTestCase when fixture formats and data loading is standardized.
     def run_legacy_test_state_pipeline_from_deprecated_fixtures(

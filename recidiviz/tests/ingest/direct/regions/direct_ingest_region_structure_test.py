@@ -23,7 +23,7 @@ import unittest
 from collections import defaultdict
 from datetime import datetime
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import pytest
 import yaml
@@ -89,15 +89,8 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     fixture_path_for_raw_data_dependency,
     ingest_mapping_output_fixture_path,
 )
-from recidiviz.tests.ingest.direct.legacy_fixture_path import (
-    DirectIngestTestFixturePath,
-)
 from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
-    LegacyIngestViewEmulatorQueryTestCase,
     StateIngestViewAndMappingTestCase,
-)
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    LegacyStateIngestViewParserTestBase,
 )
 from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
     PIPELINE_INTEGRATION_TEST_NAME,
@@ -648,109 +641,38 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     )
 
 
-def get_all_ingest_tests_for_state(
-    state_code: StateCode,
-) -> tuple[
-    dict[
-        str,
-        type[LegacyIngestViewEmulatorQueryTestCase]
-        | type[StateIngestViewAndMappingTestCase],
-    ],
-    dict[
-        str,
-        type[LegacyStateIngestViewParserTestBase]
-        | type[StateIngestViewAndMappingTestCase],
-    ],
-]:
-    """
-    This helper function gathers all ingest view and mapping tests for the given state code.
-    """
+IngestViewTestsByName = dict[str, type[StateIngestViewAndMappingTestCase]]
 
-    def _test_class_from_module(module: ModuleType, parent_class: Any) -> Any | None:
-        """Pulls the single given test class for the given module."""
+
+def get_all_ingest_tests_for_state(state_code: StateCode) -> IngestViewTestsByName:
+    """This helper function gathers all ingest view and mapping tests for the given state code."""
+
+    ingest_view_tests_by_name: IngestViewTestsByName = {}
+
+    for test_module in ModuleCollectorMixin.get_submodules(
+        ModuleCollectorMixin.get_relative_module(
+            regions_tests_module, [state_code.value.lower(), "ingest_views"]
+        ),
+        submodule_name_prefix_filter=None,
+    ):
         try:
-            return one(
+            test_class = one(
                 test_class
-                for _cls_name, test_class in inspect.getmembers(module, inspect.isclass)
-                if issubclass(test_class, parent_class)
-                and _cls_name != parent_class.__name__
+                for _cls_name, test_class in inspect.getmembers(
+                    test_module, inspect.isclass
+                )
+                if issubclass(test_class, StateIngestViewAndMappingTestCase)
+                and _cls_name != StateIngestViewAndMappingTestCase.__name__
             )
-        except ValueError:
-            return None
-
-    state_test_module = ModuleCollectorMixin.get_relative_module(
-        regions_tests_module, [state_code.value.lower()]
-    )
-    ingest_view_test_module = ModuleCollectorMixin.get_relative_module(
-        state_test_module, ["ingest_views"]
-    )
-    ingest_view_tests: dict[
-        str,
-        type[LegacyIngestViewEmulatorQueryTestCase]
-        | type[StateIngestViewAndMappingTestCase],
-    ] = {}
-    ingest_mapping_tests: dict[
-        str,
-        type[LegacyStateIngestViewParserTestBase]
-        | type[StateIngestViewAndMappingTestCase],
-    ] = {}
-    for ingest_view_test_file_module in ModuleCollectorMixin.get_submodules(
-        ingest_view_test_module, submodule_name_prefix_filter=None
-    ):
-        # TODO(#38322) Drop v1 entirely
-        v1_test_class = _test_class_from_module(
-            ingest_view_test_file_module, LegacyIngestViewEmulatorQueryTestCase
-        )
-        v2_test_class = _test_class_from_module(
-            ingest_view_test_file_module, StateIngestViewAndMappingTestCase
-        )
-        if not (v1_test_class or v2_test_class):
+        except Exception as e:
             raise ValueError(
-                f"{ingest_view_test_file_module} should have either an LegacyIngestViewEmulatorQueryTestCase or StateIngestViewTestCase"
-            )
-        if v1_test_class and v2_test_class:
-            raise ValueError(
-                f"{ingest_view_test_file_module} should NOT have both an LegacyIngestViewEmulatorQueryTestCase and StateIngestViewTestCase"
-            )
+                f"{test_module} should have a StateIngestViewTestCase"
+            ) from e
 
-        if v1_test_class:
-            ingest_view_tests[
-                assert_type(v1_test_class.ingest_view_name(), str)
-            ] = v1_test_class
-        if v2_test_class:
-            view_name = assert_type(
-                v2_test_class.ingest_view_builder().ingest_view_name, str
-            )
-            ingest_view_tests[view_name] = v2_test_class
-            ingest_mapping_tests[view_name] = v2_test_class
+        view_name = assert_type(test_class.ingest_view_builder().ingest_view_name, str)
+        ingest_view_tests_by_name[view_name] = test_class
 
-    # TODO(#38321) Remove v1 mapping tests
-    try:
-        v1_mapping_test = _test_class_from_module(
-            ModuleCollectorMixin.get_relative_module(
-                state_test_module,
-                [
-                    f"{state_code.value.lower()}_ingest_view_parser_test",
-                ],
-            ),
-            LegacyStateIngestViewParserTestBase,
-        )
-    except ModuleNotFoundError:
-        v1_mapping_test = None
-    if v1_mapping_test and issubclass(
-        v1_mapping_test, LegacyStateIngestViewParserTestBase
-    ):
-        for method in dir(v1_mapping_test):
-            if method.startswith("test_parse"):
-                view_name = method.removeprefix("test_parse_")
-                if view_name in ingest_mapping_tests:
-                    raise ValueError(
-                        f"{view_name} has BOTH a v1 and v2 ingest mapping / parser test! "
-                        f"Please remove the v1 test. {method} in {v1_mapping_test}"
-                    )
-                ingest_mapping_tests[view_name] = v1_mapping_test
-
-    return (ingest_view_tests, ingest_mapping_tests)
+    return ingest_view_tests_by_name
 
 
 def get_all_ingest_view_fixtures_for_state(
@@ -764,31 +686,23 @@ def get_all_ingest_view_fixtures_for_state(
     all_raw_data_fixture_paths = set()
     for path, _, file_names in raw_data_fixture_paths:
         for file_name in file_names:
-            if file_name in ("__init__.py", f"{PIPELINE_INTEGRATION_TEST_NAME}.csv"):
-                continue
             fixture_path = os.path.join(path, file_name)
             if is_valid_code_path(fixture_path):
                 all_raw_data_fixture_paths.add(fixture_path)
 
-    ### TODO(#38322) Drop v1 entirely
-    v1_result_fixture_paths = os.walk(
-        os.path.join(
-            DIRECT_INGEST_FIXTURES_ROOT, state_code.value.lower(), "ingest_view"
-        )
-    )
-    v2_result_fixture_paths = os.walk(
-        os.path.join(
-            DIRECT_INGEST_FIXTURES_ROOT,
-            state_code.value.lower(),
-            f"{state_code.value.lower()}_ingest_view_results",
+    result_fixture_paths = list(
+        os.walk(
+            os.path.join(
+                DIRECT_INGEST_FIXTURES_ROOT,
+                state_code.value.lower(),
+                f"{state_code.value.lower()}_ingest_view_results",
+            )
         )
     )
 
     ### SETUP: Gather all ingest view results fixtures
     all_ingest_view_result_fixture_paths = set()
-    for path, _, file_names in list(v1_result_fixture_paths) + list(
-        v2_result_fixture_paths
-    ):
+    for path, _, file_names in result_fixture_paths:
         for file_name in file_names:
             if file_name in ("__init__.py", f"{PIPELINE_INTEGRATION_TEST_NAME}.csv"):
                 continue
@@ -801,17 +715,12 @@ def get_all_ingest_view_fixtures_for_state(
 
 def get_fixtures_used_by_ingest_view_tests(
     state_code: StateCode,
-    ### TODO(#38322) Remove this argument when we remove v1 tests
-    view_collector: DirectIngestViewQueryBuilderCollector,
-    ingest_view_tests: list[
-        type[LegacyIngestViewEmulatorQueryTestCase]
-        | type[StateIngestViewAndMappingTestCase]
-    ],
+    ingest_view_tests: IngestViewTestsByName,
 ) -> tuple[set[str], set[str]]:
     """Returns the raw data and ingest view results fixtures used by tests in the given state."""
     used_raw_data_fixture_paths = set()
     used_ingest_view_result_fixture_paths = set()
-    for ingest_view_test in ingest_view_tests:
+    for ingest_view_test in ingest_view_tests.values():
         for method in dir(ingest_view_test):
             if not method.startswith("test_"):
                 continue
@@ -819,39 +728,20 @@ def get_fixtures_used_by_ingest_view_tests(
             if method == "test_validate_view_output_schema":
                 continue
 
-            ### TODO(#38322) Drop v1 entirely
-            if issubclass(ingest_view_test, LegacyIngestViewEmulatorQueryTestCase):
-                characteristic = method.removeprefix("test_")
-                result_fixture_path = (
-                    DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                        region_code=state_code.value.lower(),
-                        ingest_view_name=ingest_view_test.ingest_view_name(),
-                        file_name=characteristic + ".csv",
-                    ).full_path()
-                )
-                view_builder = view_collector.get_query_builder_by_view_name(
-                    ingest_view_test.ingest_view_name()
-                )
-            elif issubclass(ingest_view_test, StateIngestViewAndMappingTestCase):
-                (
-                    iv_name,
-                    characteristic,
-                ) = ingest_view_test.get_ingest_view_name_and_characteristic(method)
+            (
+                iv_name,
+                characteristic,
+            ) = ingest_view_test.get_ingest_view_name_and_characteristic(method)
 
-                result_fixture_path = fixture_path_for_address(
-                    state_code,
-                    BigQueryAddress(
-                        dataset_id=f"{state_code.value.lower()}_ingest_view_results",
-                        table_id=iv_name,
-                    ),
-                    characteristic,
-                )
-                view_builder = ingest_view_test.ingest_view_builder()
-            else:
-                raise ValueError(
-                    "Received unexpected ingest view test class. We expect either LegacyIngestViewEmulatorQueryTestCase or StateIngestViewTestCase. "
-                    f"Received: {ingest_view_test.__mro__}"
-                )
+            result_fixture_path = fixture_path_for_address(
+                state_code,
+                BigQueryAddress(
+                    dataset_id=f"{state_code.value.lower()}_ingest_view_results",
+                    table_id=iv_name,
+                ),
+                characteristic,
+            )
+            view_builder = ingest_view_test.ingest_view_builder()
             used_ingest_view_result_fixture_paths.add(result_fixture_path)
             for raw_dep_config in view_builder.raw_table_dependency_configs:
                 used_raw_data_fixture_paths.add(
@@ -903,8 +793,8 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
             f"Found ingest mappings in {state_code} with no ingest view (candidates for cleanup): {mappings_w_no_view}"
         )
 
-    ### SETUP: Get all ingest view and mapping tests
-    ingest_view_tests, ingest_mapping_tests = get_all_ingest_tests_for_state(state_code)
+    ### SETUP: Get all ingest view/mapping tests
+    ingest_view_tests = get_all_ingest_tests_for_state(state_code)
 
     exemptions = UNTESTED_INGEST_VIEWS.get(state_code, set())
 
@@ -921,19 +811,10 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
             "these can now be removed from UNTESTED_INGEST_VIEWS exemption list."
         )
 
-    # TODO(#38321) Remove this check when we remove v1 tests, as all v2 tests are both view and mapping tests
-    ### TEST: An ingest mapping exists if and only if there are corresponding ingest mapping test(s)
-    if untested := all_ingest_view_names - set(ingest_mapping_tests) - exemptions:
-        raise ValueError(
-            f"Found ingest views/mappings in [{state_code.value}] with no ingest mapping test {untested}"
-        )
-
     (
         used_raw_data_fixture_paths,
         used_ingest_view_result_fixture_paths,
-    ) = get_fixtures_used_by_ingest_view_tests(
-        state_code, view_collector, list(ingest_view_tests.values())
-    )
+    ) = get_fixtures_used_by_ingest_view_tests(state_code, ingest_view_tests)
 
     (
         all_raw_data_fixture_paths,
@@ -975,23 +856,22 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
                 all_ingest_mapping_output_fixtures.add(fixture_path)
 
     expected_ingest_mapping_output_fixtures = set()
-    for mapping_test in ingest_mapping_tests.values():
-        if issubclass(mapping_test, StateIngestViewAndMappingTestCase):
-            for method in dir(mapping_test):
-                if (
-                    not method.startswith("test_")
-                    or method == "test_validate_view_output_schema"
-                ):
-                    continue
-                (
-                    view_name,
-                    characteristic,
-                ) = mapping_test.get_ingest_view_name_and_characteristic(method)
-                expected_ingest_mapping_output_fixtures.add(
-                    ingest_mapping_output_fixture_path(
-                        state_code, view_name, characteristic
-                    )
+    for mapping_test in ingest_view_tests.values():
+        for method in dir(mapping_test):
+            if (
+                not method.startswith("test_")
+                or method == "test_validate_view_output_schema"
+            ):
+                continue
+            (
+                view_name,
+                characteristic,
+            ) = mapping_test.get_ingest_view_name_and_characteristic(method)
+            expected_ingest_mapping_output_fixtures.add(
+                ingest_mapping_output_fixture_path(
+                    state_code, view_name, characteristic
                 )
+            )
 
     if (
         unused_fixtures := all_ingest_mapping_output_fixtures
