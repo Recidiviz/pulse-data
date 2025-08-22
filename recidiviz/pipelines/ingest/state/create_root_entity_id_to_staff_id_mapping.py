@@ -53,8 +53,6 @@ ROOT_ENTITY_IDS_KEY = "root_entity_ids"
 # referencing supervisors that are not real. They need to be fixed before we can
 # strictly hydrate supervisor_staff_id on StateStaffSupervisorPeriods
 _STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS: set[StateCode] = {
-    # TODO(#46142): Fix invalid supervisors for US_PA and then remove this exemption.
-    StateCode.US_PA,
     # TODO(#46144): Fix invalid supervisors for US_TN and then remove this exemption.
     StateCode.US_TN,
     # TODO(#46146): Fix invalid supervisors for US_TX and then remove this exemption.
