@@ -26,7 +26,26 @@ from recidiviz.segment.segment_event_config import get_segment_event_types_by_pr
 FIRST_IX_EXPORT_DATE = "2023-01-17"
 
 
-def _get_product_type_case_when_statement() -> str:
+def _get_product_type_case_when_statement_pages() -> str:
+    """Loops through products that can be attributed to a pages event, and uses
+    context page to assign the correct product"""
+    product_type_conditionals = [
+        f"""WHEN {product_type.context_page_filter_query_fragment(context_page_url_col_name='context_page_url')}
+  THEN '{product_type.value}'
+"""
+        for product_type in ProductType
+        if product_type.is_primary_pages_product_type()
+    ]
+    product_type_conditionals.append('ELSE "UNKNOWN_PRODUCT_TYPE"')
+    product_type_query_fragment = (
+        "CASE " + "\n".join(product_type_conditionals) + " END AS product_type,"
+    )
+    return product_type_query_fragment
+
+
+def _get_product_type_case_when_statement_usage_event() -> str:
+    """Loops through products having segment usage events and uses a combination of
+    context page and event type to assign the correct product."""
     product_type_conditionals = [
         f"""WHEN {product_type.context_page_filter_query_fragment(context_page_url_col_name='context_page_url')}
     AND event in ({list_to_query_string(events, quoted=True)})
@@ -66,16 +85,16 @@ def build_segment_event_view_query_template(
         # If JII ID columns are specified, only include events with non-null ID's
         person_id_join_type = "INNER"
 
-    product_type_clause = _get_product_type_case_when_statement()
-
+    product_type_clause = _get_product_type_case_when_statement_usage_event()
+    if segment_table_sql_source.table_id == "pages":
+        product_type_clause = _get_product_type_case_when_statement_pages()
     template = f"""
 SELECT
     state_code,
     user_id,
-    LOWER(rdu.email) AS email,
+    LOWER(rdu.email) AS email_address,
     DATETIME(timestamp, "US/Eastern") AS event_ts,
-    person_id,
-    session_id,
+    {"" if segment_table_sql_source.table_id == "pages" else "person_id, session_id,"}
     context_page_path,
     context_page_url,
     {product_type_clause if product_type_clause else ""}
@@ -89,7 +108,7 @@ FROM (
             else "CAST(NULL AS STRING)"
         } AS pseudonymized_id,
         timestamp,
-        session_id,
+    {"" if segment_table_sql_source.table_id == "pages" else "session_id,"}
         user_id,
         context_page_path,
         context_page_url,

@@ -27,6 +27,7 @@ from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.dataset_config import (
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
+from recidiviz.segment.all_segment_pages import ALL_SEGMENT_PAGES_VIEW_BUILDER
 from recidiviz.segment.segment_event_big_query_view_builder import (
     SegmentEventBigQueryViewBuilder,
 )
@@ -69,7 +70,7 @@ def _get_unioned_segment_event_builders() -> list[UnionAllBigQueryViewBuilder]:
         return f"""
 SELECT
     state_code,
-    email,
+    email_address,
     "{vb.segment_event_name}" AS event,
     event_ts,
     person_id,
@@ -117,6 +118,7 @@ def _get_segment_event_view_builders() -> Sequence[SegmentEventBigQueryViewBuild
     event_view_builders = []
 
     for event_source_table_address in segment_event_source_table_addresses:
+        # TODO(#46788): Remove this exemption once `identifies` and `pages` use standard view builders
         if event_source_table_address.table_id not in ["identifies", "pages"]:
             product_event_builders = product_event_builders_by_source_table_address[
                 event_source_table_address
@@ -154,11 +156,11 @@ def _get_unioned_segment_event_view_builder() -> UnionAllBigQueryViewBuilder:
         view_id="all_segment_events",
         description="Union of all segment events across products.",
         parents=_get_segment_event_view_builders(),
-        clustering_fields=["state_code", "email"],
+        clustering_fields=["state_code", "email_address"],
         parent_to_select_statement=lambda vb: f"""
 SELECT
     state_code,
-    email,
+    email_address,
     "{vb.segment_event_name}" AS event,
     event_ts,
     person_id,
@@ -178,4 +180,5 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         *_get_unioned_segment_event_builders(),
         *_get_segment_event_view_builders(),
         _get_unioned_segment_event_view_builder(),
+        ALL_SEGMENT_PAGES_VIEW_BUILDER,
     ]

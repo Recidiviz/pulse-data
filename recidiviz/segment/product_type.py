@@ -44,6 +44,7 @@ class ProductType(Enum):
     CASE_NOTE_SEARCH = "CASE_NOTE_SEARCH"
     CLIENT_PAGE = "CLIENT_PAGE"
     MILESTONES = "MILESTONES"
+    PATHWAYS = "PATHWAYS"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
     SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE = "SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE"
     SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE = (
@@ -62,6 +63,35 @@ class ProductType(Enum):
     def display_name(self) -> str:
         return snake_to_title(self.value)
 
+    def is_primary_pages_product_type(self) -> bool:
+        """Returns True if `pages` page view events based on context page filtering
+        should be attributable to this product type. For example, if a page view occurs
+        on the `/workflows` context page, we want to attribute this to the WORKFLOWS
+        tool rather than the CASE_NOTE_SEARCH tool.
+        If more than one of the products in the list that returns True have overlapping
+        regex, then pages will be attributed to the first product in the conditional
+        returned by `context_page_filter_query_fragment`."""
+        if self in [
+            ProductType.CLIENT_PAGE,
+            ProductType.MILESTONES,
+            ProductType.PATHWAYS,
+            ProductType.PSI_CASE_INSIGHTS,
+            ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+            ProductType.TASKS,
+            ProductType.WORKFLOWS,
+            ProductType.VITALS,
+        ]:
+            return True
+        if self in [
+            ProductType.CASE_NOTE_SEARCH,
+            ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE,
+            ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE,
+        ]:
+            return False
+        raise ValueError(
+            f"No configuration for `is_primary_pages_product_type` for product type: {self}"
+        )
+
     def context_page_filter_query_fragment(
         self, context_page_url_col_name: str = "context_page_path"
     ) -> str:
@@ -76,6 +106,8 @@ class ProductType(Enum):
             return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/clients|/workflows/residents')"
         if self == ProductType.MILESTONES:
             return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
+        if self == ProductType.PATHWAYS:
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system')"
         if self == ProductType.PSI_CASE_INSIGHTS:
             return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
@@ -136,6 +168,15 @@ class ProductType(Enum):
             ]
         if self == ProductType.MILESTONES:
             return ["workflows", "workflows_supervision"]
+        if self == ProductType.PATHWAYS:
+            return [
+                "system_liberty_to_prison",
+                "system_prison",
+                "system_prison_to_supervision",
+                "system_supervision",
+                "system_supervision_to_prison",
+                "system_supervision_to_liberty",
+            ]
         if self == ProductType.PSI_CASE_INSIGHTS:
             return ["psi"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:

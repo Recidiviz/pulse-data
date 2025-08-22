@@ -82,8 +82,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
         for address_str in [
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
-            # This source table is not currently used as an active usage event, but may be used for other analysis in the future
-            "pulse_dashboard_segment_metrics.pages",
             # Daily archives of the case_insights_record export for sentencing
             # TODO(#42347): remove from this list once we use this has downstream view graph references
             "sentencing_views.case_insights_record_archive_flattened",
@@ -103,8 +101,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
         for address_str in [
             # This source table is not currently in use for measuring logins, but may be used again in the future
             "pulse_dashboard_segment_metrics.identifies",
-            # This source table is not currently used as an active usage event, but may be used for other analysis in the future
-            "pulse_dashboard_segment_metrics.pages",
             # Daily archives of the case_insights_record export for sentencing
             # TODO(#42347): remove from this list once we use this has downstream view graph references
             "sentencing_views.case_insights_record_archive_flattened",
