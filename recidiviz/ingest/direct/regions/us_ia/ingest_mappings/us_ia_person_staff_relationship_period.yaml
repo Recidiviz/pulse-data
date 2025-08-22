@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_case_manager_assignment` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  CaseManagerStaffId: STRING
+  start_date: DATE
+  end_date: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          system_type: $literal_enum(StateSystemType.INCARCERATION)
+          relationship_type: $literal_enum(StatePersonStaffRelationshipType.CASE_MANAGER)
+          relationship_start_date: start_date
+          relationship_end_date_exclusive: end_date
+          associated_staff_external_id: CaseManagerStaffId
+          associated_staff_external_id_type: $literal("US_IA_STAFFID")

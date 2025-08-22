@@ -457,6 +457,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_co_state.state_task_deadline",
     "us_ia_ingest_view_results.custody_assessment",
     "us_ia_ingest_view_results.incarceration_periods",
+    "us_ia_ingest_view_results.person_staff_relationship_period",
     "us_ia_ingest_view_results.program_assignment",
     "us_ia_ingest_view_results.sentence_group_lengths",
     "us_ia_ingest_view_results.sentence_lengths",
