@@ -35,7 +35,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # comple
     mental_health_score_3_or_below_while_incarcerated,
     no_11_2_incarceration_incident_within_2_years,
     no_current_or_prior_excluded_offenses_work_release,
-    no_escape_in_10_years_or_current_sentence,
+    no_escape_in_10_years_or_current_cycle,
     not_has_first_degree_arson_or_robbery_offenses,
     not_on_work_release_assignment,
     within_24_months_of_earliest_established_release_date_itim,
@@ -173,7 +173,7 @@ WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA: list[
     # tool, we will still instruct users to check a resident's incident history when
     # screening for work release and/or outside clearance.
     no_11_2_incarceration_incident_within_2_years.VIEW_BUILDER,
-    no_escape_in_10_years_or_current_sentence.VIEW_BUILDER,
+    no_escape_in_10_years_or_current_cycle.VIEW_BUILDER,
     # For outside clearance, we check that someone is not eligible for work release,
     # because if eligible, they should show up in the work-release opportunity instead
     # of outside clearance. We include `NOT_IN_WORK_RELEASE` as a shared criterion with
