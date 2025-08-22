@@ -971,6 +971,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_ingest_view_results.incarceration_periods_v3",
     "us_mi_ingest_view_results.person_external_ids",
     "us_mi_ingest_view_results.security_classification_assessments",
+    "us_mi_ingest_view_results.sentence_status_snapshot",
     "us_mi_ingest_view_results.sentences",
     "us_mi_ingest_view_results.state_charge",
     "us_mi_ingest_view_results.state_drug_screen",

@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_status_snapshot` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  offender_booking_id: STRING
+  offender_sentence_id: STRING
+  effective_date: DATE
+  closing_date: DATE
+  closing_reason_code: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    sentences:
+      - StateSentence:
+          external_id: offender_sentence_id
+          sentence_status_snapshots:
+            - $conditional:
+                - $if:
+                    $not_null: effective_date
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      sequence_num: $literal("1")
+                      status_update_datetime: effective_date
+                      status: $literal_enum(StateSentenceStatus.SERVING)
+              # TODO(#46842) - handle cases where effective_date > closing_date
+
+            - $conditional:
+                - $if:
+                    $not_null: closing_reason_code
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      sequence_num: $literal("2")
+                      status_update_datetime: closing_date
+                      status: $literal_enum(StateSentenceStatus.COMPLETED)
