@@ -197,18 +197,15 @@ def get_positive_behavior_reports_as_case_notes() -> str:
     """
     return """
     SELECT 
-        peid.external_id,
+        person_id,
         "Positive Behavior Reports (in the past year)" AS criteria,
         facility AS note_title, 
         incident_details AS note_body,
         sic.incident_date AS event_date,
-    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_incident` sic
-    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
-        USING (person_id)
-    WHERE sic.state_code= 'US_ND'
-        AND sic.incident_type = 'POSITIVE'
+    FROM `{project_id}.us_nd_normalized_state.state_incarceration_incident` sic
+    WHERE sic.incident_type = 'POSITIVE'
         AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)
-        AND peid.id_type = 'US_ND_ELITE'"""
+    """
 
 
 TRAINING_PROGRAMMING_NOTE_TEXT_REGEX_FOR_CRITERIA = "|".join(
@@ -279,7 +276,7 @@ def get_program_assignments_as_case_notes(
 
     base_query = f"""
     SELECT 
-        peid.external_id,
+        spa.person_id,
         '{criteria}' AS criteria,
         CASE 
             WHEN spa.participation_status = 'IN_PROGRESS' THEN 'In Progress'
@@ -301,9 +298,7 @@ def get_program_assignments_as_case_notes(
             SPLIT(spa.program_id, '@@')[SAFE_OFFSET(1)]
         ) AS note_body,
         COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) AS event_date
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` spa
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        USING (person_id)
+    FROM `{{project_id}}.us_nd_normalized_state.state_program_assignment` spa
     -- Only include program assignments from the current incarceration span
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
         ON spa.state_code = iss.state_code
@@ -314,8 +309,7 @@ def get_program_assignments_as_case_notes(
             start_date_column="iss.start_date",
             end_date_column="iss.end_date"
         )}
-    WHERE spa.state_code = 'US_ND'
-        AND spa.program_id IS NOT NULL
+    WHERE spa.program_id IS NOT NULL
         AND spa.participation_status IN ('IN_PROGRESS', 
                                             'PENDING', 
                                             'DISCHARGED', 
@@ -327,7 +321,6 @@ def get_program_assignments_as_case_notes(
                                             'DECEASED')
         -- Don't surface case manager assignments
         AND NOT REGEXP_CONTAINS(spa.program_id, r'ASSIGNED CASE MANAGER')
-        AND peid.id_type = 'US_ND_ELITE'
     """
 
     if additional_where_clause:
@@ -349,7 +342,7 @@ def get_infractions_as_case_notes() -> str:
     return f"""
     WITH infractions AS (
     SELECT
-        peid.external_id,
+        peid.person_id,
         "Infractions (in the past 6 months)" AS criteria,
         SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date,
         DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL 6 MONTH) AS end_date,
@@ -357,7 +350,7 @@ def get_infractions_as_case_notes() -> str:
         CONCAT(e.FINDING_DESCRIPTION, ' - ', e.INCIDENT_DETAILS) AS note_body,
         SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS event_date,
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest` e
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
         ON peid.external_id = e.ROOT_OFFENDER_ID
         AND peid.id_type = 'US_ND_ELITE'
     WHERE FINDING_DESCRIPTION = 'GUILTY'
@@ -372,7 +365,8 @@ def get_infractions_as_case_notes() -> str:
 
 MINIMUM_HOUSING_REFERRAL_QUERY = f"""
     SELECT DISTINCT
-    {reformat_ids('reoa.OFFENDER_BOOK_ID')} AS external_id,
+    'US_ND' AS state_code,
+    peid.person_id,
     SAFE_CAST(REGEXP_REPLACE(assess3.parent_assessment_id, r',', '')  AS NUMERIC) AS assess_type,
     assess4.description as assess_type_desc,
     CASE 
@@ -418,6 +412,9 @@ JOIN (
     ON(assess3.parent_assessment_id = assess4.assessment_id)
 JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
     ON(reoa.ASSESSMENT_TYPE_ID = assess4.ASSESSMENT_ID AND items.OFFENDER_BOOK_ID = reoa.OFFENDER_BOOK_ID)
+JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
+ON {reformat_ids('reoa.OFFENDER_BOOK_ID')} = peid.external_id
+    AND peid.id_type = 'US_ND_ELITE_BOOKING'
 """
 
 
@@ -446,7 +443,7 @@ def get_minimum_housing_referals_query(
             FROM `{{project_id}}.{{us_nd_task_eligibility_completion_events_dataset}}.transfer_to_minimum_facility_materialized`
         ),
 
-        min_referrals_with_external_id_and_ce AS (
+        min_referrals_filtered_with_ce AS (
             # We join the referrals with the closest completion event date for those who were approved
             SELECT 
                 mr.person_id,
@@ -469,7 +466,7 @@ def get_minimum_housing_referals_query(
                         -- after the evaluation/start date
                         ELSE DATE_ADD(mr.start_date, INTERVAL 6 MONTH)
                     END) AS end_date
-            FROM min_referrals_with_external_id mr
+            FROM min_referrals_filtered mr
             LEFT JOIN completion_events ce
                 ON mr.person_id = ce.person_id
                     AND mr.start_date <= ce.completion_event_date
@@ -482,11 +479,10 @@ def get_minimum_housing_referals_query(
     {MINIMUM_HOUSING_REFERRAL_QUERY}
 ),
 
-min_referrals_with_external_id AS (
-    # We join the referrals with the external id
+min_referrals_filtered AS (
     SELECT 
-        peid.person_id,
-        peid.state_code,
+        mr.person_id,
+        mr.state_code,
         mr.assess_type,
         mr.assess_type_desc,
         mr.evaluation_result,
@@ -497,10 +493,6 @@ min_referrals_with_external_id AS (
         mr.next_review_date,
         mr.referral_facility,
     FROM min_referrals mr
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        ON mr.external_id = peid.external_id
-            AND peid.state_code = 'US_ND'
-            AND peid.id_type = 'US_ND_ELITE_BOOKING'
     {"QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1" if keep_latest_referral_only else ''}
 )
 {_COMPLETION_EVENTS_JOIN_QUERY if join_with_completion_events else ''}"""
@@ -540,7 +532,7 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
     return f"""
     recent_referrals AS (
         SELECT *
-        FROM min_referrals_with_external_id
+        FROM min_referrals_filtered
         WHERE evaluation_result = '{evaluation_result}'
     )
 
@@ -611,28 +603,29 @@ def get_offender_case_notes(
 
     return f"""
     SELECT 
-        peid2.external_id,
+        person_id,
         "{criteria}" AS criteria,
         ocn.CASE_NOTE_TYPE AS note_title,
         ocn.CASE_NOTE_TEXT AS note_body,
         EXTRACT(DATE FROM CAST(CONTACT_TIME AS DATETIME)) AS event_date,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderCaseNotes_latest` ocn
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        ON SAFE_CAST(REGEXP_REPLACE(ocn.OFFENDER_BOOK_ID, r',|.00', '') AS STRING) = peid.external_id
-            AND peid.state_code = 'US_ND'
-            AND peid.id_type = 'US_ND_ELITE_BOOKING'
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
-        ON peid.person_id = peid2.person_id
-            AND peid.state_code = peid2.state_code
-            AND peid2.id_type = 'US_ND_ELITE'
+    FROM (
+        SELECT person_id, CASE_NOTE_TYPE, CASE_NOTE_TEXT, CONTACT_TIME
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderCaseNotes_latest` ocn
+        INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
+            ON SAFE_CAST(REGEXP_REPLACE(ocn.OFFENDER_BOOK_ID, r',|.00', '') AS STRING) = peid.external_id
+                AND peid.state_code = 'US_ND'
+                AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    ) ocn
     -- Only include case notes from the current incarceration span
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
-        ON iss.state_code='US_ND'
-        AND peid.person_id = iss.person_id
-        AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
+    INNER JOIN (
+        SELECT person_id, start_date, end_date
+        FROM `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
             start_date_column="iss.start_date",
             end_date_column="iss.end_date"
-        )}
+        )} AND iss.state_code='US_ND'
+    ) iss
+    USING (person_id)
     {additional_where_clause}
     """
 
@@ -643,7 +636,7 @@ def get_ids_as_case_notes() -> str:
     """
     return f"""
 SELECT 
-    peid2.external_id,
+    person_id,
     "Available IDs" AS criteria,
     CASE 
         WHEN CHECK_LIST_CODE = 'BC' THEN 'Birth Certificate'
@@ -661,23 +654,27 @@ SELECT
     END AS note_title,
     'Confirmed' AS note_body,
     SAFE_CAST(LEFT(MODIFY_DATETIME, 10) AS DATE) AS event_date,
-FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_chk_list_details_latest` chk
-INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+FROM (
+    SELECT person_id, CHECK_LIST_CODE, CHECK_LIST_CATEGORY, CONFIRMED_FLAG, MODIFY_DATETIME
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_chk_list_details_latest` chk
+    INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
     ON peid.external_id = chk.OFFENDER_BOOK_ID
         AND peid.id_type ='US_ND_ELITE_BOOKING'
         AND peid.state_code = 'US_ND'
-INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
-    USING(person_id, state_code)
-INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
-    ON iss.state_code='US_ND'
-    AND peid.person_id = iss.person_id
+) chk
+-- Filter to currently incarcerated people
+INNER JOIN (
+    SELECT person_id
+    FROM `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+    WHERE iss.state_code='US_ND'
     AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
         start_date_column="iss.start_date",
         end_date_column="iss.end_date"
     )}
+)
+USING (person_id)
 WHERE chk.CHECK_LIST_CATEGORY IN ("ID'S")
     AND chk.CONFIRMED_FLAG = 'Y'
-    AND peid2.id_type = 'US_ND_ELITE'
 """
 
 
@@ -712,11 +709,14 @@ def eligible_and_almost_eligible_minus_referrals(
             ELSE NULL
         END AS metadata_tab_name,
     FROM eligible_and_almost_eligible eae
-    LEFT JOIN `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_recent_referrals_to_minimum_housing_materialized` nrr
-        ON eae.person_id = nrr.person_id
-            AND eae.state_code = nrr.state_code
-            AND CURRENT_DATE("US/Pacific") BETWEEN nrr.start_date AND {nonnull_end_date_exclusive_clause('nrr.end_date')}
-    {'WHERE IFNULL(nrr.meets_criteria, True)' if remove_recent_referrals else ''}"""
+    LEFT JOIN (
+        SELECT * 
+        FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_recent_referrals_to_minimum_housing_materialized`
+        WHERE CURRENT_DATE("US/Pacific") BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
+    ) nrr
+    USING (person_id, state_code)
+    {'WHERE IFNULL(nrr.meets_criteria, True)' if remove_recent_referrals else ''}
+    """
 
 
 def get_warrants_and_detainers_query(
