@@ -179,9 +179,6 @@ def _correct_and_create_serving_statuses_from_watermark(
     For that example, if the watermark_datetime was 2024-01-08, we would not have
     made a new StateSentenceStatusSnapshot.
     """
-    if not all_snapshots:
-        return []
-
     snapshots_to_return: list[StateSentenceStatusSnapshot] = []
 
     serving_snapshot_exists_at_watermark = False
@@ -233,11 +230,11 @@ def _correct_and_create_serving_statuses_from_watermark(
     if not serving_snapshot_exists_at_watermark:
         snapshots_to_return.append(
             StateSentenceStatusSnapshot(
-                state_code=all_snapshots[0].state_code,
+                state_code=sentence.state_code,
                 status=StateSentenceStatus.SERVING,
                 status_raw_text=raw_text_for_new_serving_status,
                 status_update_datetime=serving_watermark_datetime,
-                sentence=all_snapshots[0].sentence,
+                sentence=sentence,
                 sequence_num=len(snapshots_to_return) + 1,
             )
         )
@@ -258,6 +255,8 @@ def _validate_terminating_statuses(
     COMPLETED and not other terminating statuses (accessed via status.is_terminating_status).
     For example, if a DEATH status is not the final status, we fail.
     """
+    if not sorted_snapshots:
+        return []
     *initial_snapshots, final_snapshot = sorted_snapshots
     for snapshot in initial_snapshots:
         if snapshot.status.is_terminating_status:
@@ -288,9 +287,6 @@ def normalize_snapshots_for_single_sentence(
       - designate NON_CREDIT_SERVING statuses
       - TODO(#44525) change statuses to IMPOSED_PENDING_SERVING
     """
-    if not sentence.sentence_status_snapshots:
-        return []
-
     all_snapshots = sorted(
         sentence.sentence_status_snapshots, key=lambda s: s.partition_key
     )

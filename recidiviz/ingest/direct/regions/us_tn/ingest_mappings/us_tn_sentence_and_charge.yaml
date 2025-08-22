@@ -23,6 +23,7 @@ input_columns:
   ConsecutiveCaseNumber: STRING
   ConsecutiveCountNumber: STRING
   SentenceEffectiveDate: DATE
+  terminating_status_date: DATE
 
   # StateChargeV2 information
   OffenseDate: DATE
@@ -33,9 +34,7 @@ input_columns:
   SexOffenderFlag: STRING
   OffenseDescription: STRING
 
-unused_columns:
-  # TODO(#44222) This breaks normalization because of early completed statuses
-  - SentenceEffectiveDate
+unused_columns: []
 variables:
   - sentence_external_id:
       $concat:
@@ -67,8 +66,7 @@ output:
                     - SuspendedToProbation
               $custom_parser: us_tn_sentencing_custom_enum_parsers.infer_imposed_sentence_type_from_raw_text
           imposed_date: SentenceImposedDate
-          # TODO(#44222) This breaks normalization because of early completed statuses
-          # current_state_provided_start_date: SentenceEffectiveDate
+          current_state_provided_start_date: SentenceEffectiveDate
           county_code: ConvictionCounty
           sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
           conditions: ConditionsText
@@ -96,6 +94,14 @@ output:
                       - ConsecutiveCaseYear
                       - ConsecutiveCaseNumber
                       - ConsecutiveCountNumber
+          sentence_status_snapshots:
+            - $conditional:
+                - $if:
+                    $not_null: terminating_status_date
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      status_update_datetime: terminating_status_date
+                      status: $literal_enum(StateSentenceStatus.COMPLETED)
           charges:
             - StateChargeV2:
                 external_id: $variable(sentence_external_id)
