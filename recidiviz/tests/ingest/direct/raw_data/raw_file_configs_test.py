@@ -1792,10 +1792,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             default_config.default_separator,
         )
         self.assertEqual(
-            simple_file_config.export_lookback_window,
-            default_config.default_export_lookback_window,
-        )
-        self.assertEqual(
             simple_file_config.no_valid_primary_keys,
             default_config.default_no_valid_primary_keys,
         )

@@ -13,3 +13,4 @@ columns:
     description: |-
       value column description
 ignore_quotes: True
+export_lookback_window: FULL_HISTORICAL_LOOKBACK

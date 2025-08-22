@@ -1,0 +1,5 @@
+col_name_1a,col_name_1b,undocumented_column,file_id,update_datetime,is_deleted
+id1_1,id1_2,blue,1,2023-01-01T00:00:00.000000,false
+id2_1,id2_2,grey,1,2023-01-01T00:00:00.000000,false
+id3_1,id3_2,purple,2,2023-02-02T00:00:00.000000,false
+id1_1,id1_2,yellow,3,2023-03-03T00:00:00.000000,false

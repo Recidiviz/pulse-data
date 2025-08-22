@@ -1,3 +1,4 @@
 primary_key_1,primary_key_2,primary_key_3,value,file_id,update_datetime,is_deleted
 id1_1,id1_2,id1_3,blue,5,2023-05-05,False
 id2_1,id2_2,id2_3,grey,5,2023-05-05,True
+id4_1,id4_2,id4_3,green,5,2023-05-05,False
