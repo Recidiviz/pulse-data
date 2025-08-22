@@ -37,6 +37,7 @@ FIXTURE_ENCODING = "utf-8"
 DIRECT_INGEST_FIXTURES_ROOT = os.path.dirname(direct_ingest_fixtures.__file__)
 ENUM_PARSING_FIXTURE_SUBDIR = "__enum_parsing_test_fixtures__"
 INGEST_MAPPING_OUTPUT_SUBDIR = "__ingest_mapping_output_fixtures__"
+LEGACY_INTEGRATION_INPUT_SUBDIR = "__legacy_integration_input_fixtures__"
 
 
 def enum_parsing_fixture_path(state_code: StateCode, file_tag: str) -> str:

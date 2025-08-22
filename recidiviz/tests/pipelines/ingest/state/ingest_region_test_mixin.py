@@ -18,6 +18,7 @@
 associated test fixture files.
 """
 import abc
+import os
 from datetime import datetime
 from types import ModuleType
 from typing import Any, Dict, Iterable, Optional
@@ -45,9 +46,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
-from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
-from recidiviz.tests.ingest.direct.legacy_fixture_path import (
-    DirectIngestTestFixturePath,
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DIRECT_INGEST_FIXTURES_ROOT,
+    LEGACY_INTEGRATION_INPUT_SUBDIR,
+    load_dataframe_from_path,
 )
 
 
@@ -115,10 +117,13 @@ class IngestRegionTestMixin(abc.ABC):
             .ingest_view_to_manifest[ingest_view_name]
             .input_columns
         )
-        fixture_path = DirectIngestTestFixturePath.for_extract_and_merge_fixture(
-            region_code=self.state_code().value,
-            file_name=f"{test_name}.csv",
-        ).full_path()
+        fixture_path = os.path.join(
+            DIRECT_INGEST_FIXTURES_ROOT,
+            self.state_code().value.lower(),
+            LEGACY_INTEGRATION_INPUT_SUBDIR,
+            f"{test_name}.csv",
+        )
+
         try:
             df = load_dataframe_from_path(
                 fixture_path,

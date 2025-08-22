@@ -85,6 +85,7 @@ from recidiviz.tests.ingest.direct import regions as regions_tests_module
 from recidiviz.tests.ingest.direct.fixture_util import (
     DIRECT_INGEST_FIXTURES_ROOT,
     INGEST_MAPPING_OUTPUT_SUBDIR,
+    LEGACY_INTEGRATION_INPUT_SUBDIR,
     fixture_path_for_address,
     fixture_path_for_raw_data_dependency,
     ingest_mapping_output_fixture_path,
@@ -903,12 +904,16 @@ def test_ingest_pipeline_integration_test_fixture_structure(
     fixtures_directory = os.path.join(
         os.path.dirname(direct_ingest_fixtures.__file__),
         state_code.value.lower(),
+        LEGACY_INTEGRATION_INPUT_SUBDIR,
     )
-    ingest_views_w_legacy_integration_input_fixture = set(
-        os.path.splitext(fixture_file)[0]
-        for fixture_file in os.listdir(fixtures_directory)
-        if fixture_file.endswith(".csv")
-    )
+    if os.path.exists(fixtures_directory):
+        ingest_views_w_legacy_integration_input_fixture = set(
+            os.path.splitext(fixture_file)[0]
+            for fixture_file in os.listdir(fixtures_directory)
+            if fixture_file.endswith(".csv")
+        )
+    else:
+        ingest_views_w_legacy_integration_input_fixture = set()
 
     ingest_view_names = set(
         ingest_view_manifest_collector.ingest_view_to_manifest.keys()
