@@ -239,6 +239,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.ACUTE,
                 StateAssessmentType.MI_SECURITY_CLASS,
                 StateAssessmentType.UT_SECURITY_ASSESS,
+                StateAssessmentType.IA_CUSTODY_CLASS,
             ]:
                 logging.warning(
                     "Cannot determine assessment score bucket - assessment type %s is unsupported.",

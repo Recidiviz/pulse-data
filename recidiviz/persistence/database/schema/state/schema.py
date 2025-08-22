@@ -167,6 +167,7 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_mo_1270,
     state_enum_strings.state_assessment_type_mi_security_class,
     state_enum_strings.state_assessment_type_ut_security_assess,
+    state_enum_strings.state_assessment_type_ia_custody_class,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_assessment_type",

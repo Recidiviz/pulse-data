@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_scustody_assessment` to corresponding
+# ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  assess_id: STRING
+  OffenderCd: STRING
+  CalculatedScore: STRING
+  CalculatedCustodyLevel: STRING
+  FinalCustodyLevel: STRING
+  assess_date: DATE
+  staff_id: STRING
+  assessment_type: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - assess_id
+                - $literal("CUSTODY")
+          assessment_date: assess_date
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.IA_CUSTODY_CLASS)
+          assessment_score: CalculatedScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text: FinalCustodyLevel
+              $mappings:
+                StateAssessmentLevel.HIGH:
+                  - Maximum Custody
+                StateAssessmentLevel.MEDIUM:
+                  - Medium Custody
+                StateAssessmentLevel.LOW:
+                  - Minimum Custody
+                StateAssessmentLevel.MINIMUM:
+                  - Minimum Live-out # Indicates when someone is sufficiently stable to reside in an opened non-secured environment.
+                  - Minimum Work Out # Indicates when means someone is allowed to work outside the secure perimeter, have off grounds work assignments, or participate in furloughs.
+          conducting_staff_external_id: staff_id
+          conducting_staff_external_id_type: $literal("US_IA_STAFFID")
+          assessment_metadata:
+            $normalized_values_json_dict:
+              Calculated_level: CalculatedCustodyLevel
+              Final_level: FinalCustodyLevel
+              Classification_type: assessment_type # INITIAL or RECLASSIFICATION
