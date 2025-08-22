@@ -226,32 +226,38 @@ output:
                               $json: $iter_item
                           description:
                             $json_extract:
-                              $key: Offense
+                              $key: offense
                               $json: $iter_item
                           classification_type:
                             $enum_mapping:
                               $raw_text:
                                 $json_extract:
-                                  $key: grade_category
+                                  $key: grade
                                   $json: $iter_item
                               $mappings:
                                 StateChargeClassificationType.FELONY:
-                                  - Felony
+                                  # Felony
                                   - F
                                   - F1
                                   - F2
                                   - F3
-                                  - H
+                                  # Homicide
                                   - H1
                                   - H2
-                                  - H3
                                 StateChargeClassificationType.MISDEMEANOR:
-                                  - Misdemeanor
+                                  # Misdemeanor
                                   - M
                                   - M1
                                   - M2
                                   - M3
+                                  # Summary
                                   - S
+                                  - S1
+                                StateChargeClassificationType.INTERNAL_UNKNOWN:
+                                  # Interstate Compact?
+                                  - IC
+                                  # No grade
+                                  - NOGRD
                           classification_subtype:
                             $json_extract:
                               $key: grade

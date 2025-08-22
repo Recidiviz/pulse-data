@@ -75,6 +75,19 @@ variables:
               StateChargeClassificationType.INTERNAL_UNKNOWN:
                 - IC
                 - NOGRD
+        classification_subtype:
+          $conditional:
+            - $if:
+                $not_in:
+                  $value: Grade
+                  $options:
+                    - $literal("F")
+                    - $literal("H")
+                    - $literal("M")
+                    - $literal("S")
+                    - $literal("IC")
+                    - $literal("NOGRD")
+              $then: Grade
 output:
   StatePerson:
     external_ids:

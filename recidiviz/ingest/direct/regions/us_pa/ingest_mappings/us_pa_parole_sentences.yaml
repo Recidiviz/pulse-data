@@ -98,21 +98,6 @@ output:
                             $json_extract:
                               $key: offense_description
                               $json: $iter_item
-                          classification_type:
-                            $enum_mapping:
-                              $raw_text:
-                                $json_extract:
-                                  $key: grade_category
-                                  $json: $iter_item
-                              $mappings:
-                                StateChargeClassificationType.FELONY:
-                                  - Felony
-                                StateChargeClassificationType.MISDEMEANOR:
-                                  - Misdemeanor
-                          classification_subtype:
-                            $json_extract:
-                              $key: grade
-                              $json: $iter_item
                           is_violent:
                             $conditional:
                               - $if:
