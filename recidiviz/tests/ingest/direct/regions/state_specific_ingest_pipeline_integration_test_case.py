@@ -175,6 +175,8 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
                 )
                 for fixture_name in os.listdir(view_dir)
                 if fixture_name.endswith(".csv")
+                # But don't include this test's own output fixture file!
+                and fixture_name != PIPELINE_INTEGRATION_TEST_NAME + ".csv"
             ],
             axis=0,  # stack data
         )

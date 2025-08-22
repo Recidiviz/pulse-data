@@ -51,9 +51,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,
 )
-from recidiviz.tests.ingest.direct.legacy_fixture_path import (
-    DirectIngestTestFixturePath,
-)
+from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_address
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQueryWithEmulator,
     FakeWriteToBigQueryEmulator,
@@ -207,43 +205,6 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
             test_case=self,
         )
 
-    def _fixture_path_for_pipeline_output_address(
-        self, address: BigQueryAddress, test_name: str
-    ) -> str:
-        """Returns the file path that contains expected results for test |test_name|
-        for the table at |address|.
-        """
-        file_name = f"{test_name}.csv"
-        if address.dataset_id == self.expected_ingest_view_dataset():
-            fixture_path = (
-                DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                    region_code=self.state_code().value,
-                    ingest_view_name=address.table_id,
-                    file_name=file_name,
-                )
-            )
-        elif address.dataset_id == self.expected_state_dataset():
-            fixture_path = DirectIngestTestFixturePath.for_state_data_fixture(
-                region_code=self.state_code().value,
-                table_id=address.table_id,
-                file_name=file_name,
-            )
-        elif address.dataset_id == self.expected_normalized_state_dataset():
-            fixture_path = (
-                DirectIngestTestFixturePath.for_normalized_state_data_fixture(
-                    region_code=self.state_code().value,
-                    table_id=address.table_id,
-                    file_name=file_name,
-                )
-            )
-        else:
-            raise ValueError(
-                f"Unexpected dataset [{address.dataset_id}] for pipeline output "
-                f"address [{address.to_str()}]"
-            )
-
-        return fixture_path.full_path()
-
     def run_test_ingest_pipeline(
         self,
         test_name: str,
@@ -280,9 +241,19 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
         )
 
         for collection in self.expected_output_collections():
-            for address, source_table in collection.source_tables_by_address.items():
-                fixture_path = self._fixture_path_for_pipeline_output_address(
-                    address, test_name
+            for (
+                address,
+                source_table,
+            ) in collection.source_tables_by_address.items():
+                # We run everything as a sandbox, so we remove the sandbox prefix for fixture purposes
+                fixture_address = BigQueryAddress(
+                    dataset_id=address.dataset_id.lstrip(
+                        DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX + "_"
+                    ),
+                    table_id=address.table_id,
+                )
+                fixture_path = fixture_path_for_address(
+                    self.state_code(), fixture_address, test_name
                 )
                 columns = [field.name for field in source_table.schema_fields]
 
