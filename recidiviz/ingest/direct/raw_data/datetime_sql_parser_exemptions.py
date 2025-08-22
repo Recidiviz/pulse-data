@@ -1135,6 +1135,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
         "recidiviz_elite_Assessments": ["CREATE_DATE"],
     },
     StateCode.US_NE: {
+        "LKViolation": ["createdDate", "endDate", "modifiedDate", "startDate"],
         "PIMSCasePlan": [
             "assessmentDueDate",
             "casePlanDate",
@@ -1606,7 +1607,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "recidiviz_docstars_LSI_SUPERPLAN": ["INACTIVEDATE", "RECDATE"],
     },
     StateCode.US_NE: {
-        "LKViolation": ["createdDate", "endDate", "modifiedDate", "startDate"],
         "MRRSAppealBoard": [
             "createdDate",
             "finalDecisionDate",
