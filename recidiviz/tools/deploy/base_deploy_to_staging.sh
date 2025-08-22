@@ -10,6 +10,8 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 source "${BASH_SOURCE_DIR}/../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
+# shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
+source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 
 VERSION_TAG=''
 COMMIT_HASH=''
@@ -18,6 +20,7 @@ DEBUG_BUILD_NAME=''
 PROMOTE=''
 NO_PROMOTE=''
 PROJECT_ID='recidiviz-staging'
+LOOKER_PROJECT_ID='recidiviz-looker-staging'
 
 function print_usage {
     echo_error "usage: $0 -v VERSION -c COMMIT_SHA [-p -n -d DEBUG_BUILD_NAME -r PROJECT_ID]"
@@ -93,7 +96,16 @@ update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMI
 
 LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "${BRANCH_NAME}") || exit_on_fail
 if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${VERSION_TAG}"; then
-    echo_error "Deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
+    echo_error "Recidiviz/pulse-data deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
+    run_cmd exit 1
+fi
+
+clone_looker_repo_to_temp_dir
+run_cmd safe_git_checkout_remote_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR"
+LOOKER_COMMIT_HASH=$(git -C "$TEMP_LOOKER_DIR" rev-parse HEAD) || exit_on_fail
+LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR") || exit_on_fail
+if ! version_less_than "$LAST_DEPLOYED_GIT_VERSION_TAG" "$VERSION_TAG"; then
+    echo_error "Recidiviz/looker deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1
 fi
 
@@ -233,7 +245,11 @@ FLAGS=""
 [ "$NO_PROMOTE" = "true" ] && FLAGS+="-n"
 [ -n "$DEBUG_BUILD_NAME" ] && FLAGS+=" -d $DEBUG_BUILD_NAME"
 
-"${BASH_SOURCE_DIR}/base_deploy_looker_staging.sh" -v "${VERSION_TAG}" -c "${COMMIT_HASH}" -b "${BRANCH_NAME}" "${FLAGS}" || exit_on_fail
+if [[ -n ${PROMOTE} ]]; then
+  echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
+  deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
+  echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."
+fi
 
 if [[ -n ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."
@@ -244,12 +260,19 @@ else
 fi
 
 if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-  echo "Deploy succeeded - creating local tag ${VERSION_TAG}"
+  echo "Deploy succeeded - creating local Recidiviz/pulse-data tag ${VERSION_TAG}"
   verify_hash "${COMMIT_HASH}"
   run_cmd git tag -m "Version $VERSION_TAG release - $(date +'%Y-%m-%d %H:%M:%S')" "${VERSION_TAG}"
 
   echo "Pushing tags to remote"
   run_cmd git push origin --tags
+
+  echo "Creating local Recidiviz/looker tag $VERSION_TAG"
+  verify_hash "$LOOKER_COMMIT_HASH" "$TEMP_LOOKER_DIR"
+  looker_git tag -m "Version $VERSION_TAG release - $(date +'%Y-%m-%d %H:%M:%S')" "$VERSION_TAG"
+
+  echo "Pushing tags to remote"
+  looker_git push origin --tags
 fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"

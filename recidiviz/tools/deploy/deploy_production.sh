@@ -8,12 +8,15 @@
 SECONDS=0
 
 PROJECT="recidiviz-123"
+LOOKER_PROJECT_ID="recidiviz-looker"
 
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
+# shellcheck source=recidiviz/tools/deploy/looker_helpers.sh
+source "${BASH_SOURCE_DIR}/looker_helpers.sh"
 
 if [[ "$1" == "" ]]; then
     echo_error "usage: $0 <version_tag>"
@@ -40,6 +43,11 @@ if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${GIT_VERSION_TAG}"; 
     echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1
 fi
+
+clone_looker_repo_to_temp_dir
+echo "Fetching all Recidiviz/looker tags"
+looker_git fetch --all --tags --prune --prune-tags --force
+validate_release_branch_changes_since_tag "$GIT_VERSION_TAG" "$TEMP_LOOKER_DIR"
 
 echo "Beginning deploy of version [$GIT_VERSION_TAG] to production. Last deployed version: [$LAST_DEPLOYED_GIT_VERSION_TAG]."
 script_prompt "Do you want to continue?"
@@ -90,7 +98,9 @@ pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_C
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
 
-"${BASH_SOURCE_DIR}/deploy_looker_production.sh" "$GIT_VERSION_TAG" || exit_on_fail
+echo "Deploying Looker version [$GIT_VERSION_TAG] to project [$LOOKER_PROJECT_ID]."
+deploy_looker_prod_version "$GIT_VERSION_TAG" "$LOOKER_PROJECT_ID"
+echo "Deployed Looker version [$GIT_VERSION_TAG] to project [$LOOKER_PROJECT_ID]."
 
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 
