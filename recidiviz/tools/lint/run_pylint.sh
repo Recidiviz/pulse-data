@@ -29,11 +29,13 @@ current_head_hash=$(git rev-parse HEAD)|| exit_on_fail
 current_head_branch_name=$(git rev-parse --abbrev-ref HEAD)|| exit_on_fail
 
 # Returns all files with updates that are not deletions.
-changed_files_cmd="git diff --diff-filter=d --name-only $(git merge-base HEAD origin/main)" || exit_on_fail
+get_changed_files() {
+    git diff --diff-filter=d --name-only "$(git merge-base HEAD origin/main)" | grep --invert-match -e '/nbautoexports/' -e '/migrated_notebooks/'
+}
 
 # Look for changes in Pipfile.lock and .pylintrc - changes in these files could mean that python files that have not
 # been touched now have new lint errors.
-pylint_config_files_in_change_list=$(${changed_files_cmd} | grep -e Pipfile.lock -e .pylintrc -e run_pylint.sh)
+pylint_config_files_in_change_list=$(get_changed_files | grep -e Pipfile.lock -e .pylintrc -e run_pylint.sh)
 
 if ! pip show pylint; then
   pip install "pylint"
@@ -80,7 +82,7 @@ then
 else
 
     declare -a changed_python_files
-    read -r -a changed_python_files < <(${changed_files_cmd} | grep '.*\.py$' | tr '\n' ' ')
+    read -r -a changed_python_files < <(get_changed_files | grep '.*\.py$' | tr '\n' ' ')
 
     if [[ -z "${changed_python_files+x}" ]]
     then
@@ -102,15 +104,18 @@ echo "Checking for TODO format"
 # - Skips `find*todos.py/yml`, `issue_references.py`, `bandit-baseline.json`, `run_pylint.sh`, `.pylintrc`, or any templates as they can have 'TODO' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'TODO' (and including the line number in the output via -n)
 # - Filters to only the lines that don't contain 'TODO' with the correct format
-invalid_lines=$(${changed_files_cmd} \
+invalid_lines=$(get_changed_files \
     | grep --invert-match -e 'find-\(closed\|linked\)-todos.yml' \
     | grep --invert-match -e 'find_todos.py' \
     | grep --invert-match -e 'issue_references.py' \
+    | grep --invert-match -e 'issue_references_test.py' \
     | grep --invert-match -e 'bandit-baseline.json' \
     | grep --invert-match -e 'recidiviz/tools/deploy/atmos/components/terraform/vendor' \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e '\.pylintrc' \
     | grep --invert-match -e '/templates/' \
+    | grep --invert-match -e '/nbautoexports/' \
+    | grep --invert-match -e '/migrated_notebooks/' \
     | xargs grep -n -e '[^A-Za-z]TODO' \
     | grep --invert-match -e 'TODO(\(\(.*#[0-9]\+\)\|\(http.*\)\))')
 
@@ -130,9 +135,11 @@ echo "Checking CURRENT_DATE format"
 # - List all files with updates that are not deletions
 # - Skips 'run_pylint.sh', `bandit-baseline.json` as it is allowed to have 'CURRENT_DATE' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'CURRENT_DATE()' (and including the line number in the output via -n)
-invalid_lines=$(${changed_files_cmd} \
+invalid_lines=$(get_changed_files \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e 'bandit-baseline.json' \
+    | grep --invert-match -e '/nbautoexports/' \
+    | grep --invert-match -e '/migrated_notebooks/' \
     | xargs grep -n -e 'CURRENT_DATE()')
 
 if [[ -n ${invalid_lines} ]]
@@ -150,7 +157,7 @@ echo "Checking no attr.evolve in entity normalization"
 # - List all files with updates that are not deletions
 # - Filters to just files that perform entity normalization
 # - Runs grep for each relevant updated file, getting all lines that contain calls to attr.evolve()
-invalid_lines=$(${changed_files_cmd} \
+invalid_lines=$(get_changed_files \
     | grep -e 'recidiviz/pipelines/' \
     | grep -e 'normalization' \
     | xargs grep -n -e 'attr.evolve(')
@@ -170,7 +177,7 @@ echo "Checking no id() in entity normalization"
 # - List all files with updates that are not deletions
 # - Filters to just files that perform entity normalization
 # - Runs grep for each relevant updated file, getting all lines that contain calls to id()
-invalid_lines=$(${changed_files_cmd} \
+invalid_lines=$(get_changed_files \
     | grep -e 'recidiviz/pipelines/' \
     | grep -e 'normalization' \
     | grep --invert-match -e 'normalized_entities_utils.py' \
