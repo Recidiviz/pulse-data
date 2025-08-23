@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for WorkflowsResidentETLDelegate to parse json rows."""
+import json
 import os
 from datetime import datetime, timezone
 from unittest import TestCase
@@ -268,6 +269,31 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                 },
                 row,
             )
+
+    def test_transform_row_with_missing_gender(self) -> None:
+        """Test that the transform_row method handles missing gender gracefully."""
+        # Create test data with missing gender
+        test_data = {
+            "person_external_id": "TEST123",
+            "pseudonymized_id": "pTEST123",
+            "display_id": "dTEST123",
+            "state_code": "US_TN",
+            "person_name": '{"given_names":"TEST","middle_names":"","name_suffix":"","surname":"USER"}',
+            "officer_id": "OFFICER123",
+            "facility_id": "FACILITY123",
+            "unit_id": "UNIT123",
+            "facility_unit_id": "FACILITY123-_-UNIT123",
+            "admission_date": "2023-01-01",
+            "release_date": "2024-01-01",
+            "all_eligible_opportunities": [],
+            # Explicitly omitting gender field to simulate null/missing value
+        }
+
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
+        doc_id, row = delegate.transform_row(json.dumps(test_data))
+
+        self.assertEqual(doc_id, "TEST123")
+        self.assertIsNone(row["gender"])
 
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
     @patch("google.cloud.firestore_v1.Client")

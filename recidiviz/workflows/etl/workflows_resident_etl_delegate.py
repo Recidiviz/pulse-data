@@ -46,7 +46,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "personExternalId": data["person_external_id"],
             "displayId": data["display_id"],
             "stateCode": data["state_code"],
-            "gender": data["gender"],
+            "gender": data.get("gender"),
             "personName": {
                 snake_to_camel(k): person_name_case(v)
                 for k, v in json.loads(data["person_name"]).items()
