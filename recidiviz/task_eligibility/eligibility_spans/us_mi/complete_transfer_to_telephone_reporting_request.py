@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision,
-    not_required_to_register_under_sora,
+    no_sora_conditions,
     not_serving_ineligible_offenses_for_telephone_reporting,
     supervision_and_assessment_level_eligible_for_telephone_reporting,
     supervision_level_is_not_modified,
@@ -59,13 +59,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         not_serving_ineligible_offenses_for_telephone_reporting.VIEW_BUILDER,
-        not_required_to_register_under_sora.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
         on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
         supervision_and_assessment_level_eligible_for_telephone_reporting.VIEW_BUILDER,
         supervision_specialty_is_not_rposn.VIEW_BUILDER,
         if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision.VIEW_BUILDER,
         supervision_level_is_not_modified.VIEW_BUILDER,
+        no_sora_conditions.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     # Clients are almost eligible for telephone reporting if they are within 30 days from being fully eligible,

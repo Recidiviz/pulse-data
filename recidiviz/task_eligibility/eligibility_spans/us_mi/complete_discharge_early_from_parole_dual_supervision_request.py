@@ -32,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     no_active_ppo,
+    no_conditions_blocking_early_discharge,
     no_new_ineligible_offenses_for_early_discharge_from_supervision,
     no_owi_violation_on_parole_dual_supervision,
     no_pending_detainer,
@@ -76,6 +77,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_or_supervision_out_of_state_level_is_not_high.VIEW_BUILDER,
         custodial_authority_is_supervision_authority_or_other_state.VIEW_BUILDER,
         supervision_level_is_not_modified.VIEW_BUILDER,
+        no_conditions_blocking_early_discharge.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
     # Clients are almost eligible for early discharge from parole if they are within 30 days from being fully eligible,

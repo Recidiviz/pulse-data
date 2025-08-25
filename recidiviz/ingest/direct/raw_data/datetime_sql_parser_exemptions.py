@@ -1542,7 +1542,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         ],
     },
     StateCode.US_MI: {
-        "COMS_Conditions": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Program_Recommendations": [
             "Create_Date",
             "End_Date",
