@@ -203,12 +203,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mi.management_level_greater_than_confinement_level import (
-    VIEW_BUILDER as US_MI_MANAGEMENT_LEVEL_GREATER_THAN_CONFINEMENT_LEVEL,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_mi.management_level_within_six_points_of_lower_level import (
-    VIEW_BUILDER as US_MI_MANAGEMENT_LEVEL_WITHIN_SIX_POINTS_OF_LOWER_LEVEL,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_mo.completed_12_months_outside_clearance import (
     VIEW_BUILDER as US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE,
 )
@@ -418,9 +412,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
     ),
-    US_MI_MANAGEMENT_LEVEL_WITHIN_SIX_POINTS_OF_LOWER_LEVEL.address: (
-        "Criterion will be used for CLD tool currently being built (Maggie Taylor, 8/7/2025)"
-    ),
     SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
         "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"
     ),
@@ -430,9 +421,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     # TODO(#45499): Delete this once OC completion event is finished
     US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE.address: (
         "Will be used for work-release eligibility in MO once we make more progress on validation for outside clearance (Akhil Ghanta, 7/18/2025)"
-    ),
-    US_MI_MANAGEMENT_LEVEL_GREATER_THAN_CONFINEMENT_LEVEL.address: (
-        "Criterion will be used for CLD tool currently being built (Maggie Taylor, 8/6/2025)"
     ),
 }
 
