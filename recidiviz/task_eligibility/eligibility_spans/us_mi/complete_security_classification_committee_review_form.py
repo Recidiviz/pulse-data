@@ -50,7 +50,7 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in MI is eligible for
                     a security classification committee review"""
 
-_PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE",
     sub_criteria_list=[
@@ -70,7 +70,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        _PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
+        US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_other_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_disciplinary_solitary_confinement.VIEW_BUILDER,
@@ -79,7 +79,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
-        criteria=_PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
+        criteria=US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         reasons_date_field="next_scc_date",
         interval_length=7,
         interval_date_part=BigQueryDateInterval.DAY,

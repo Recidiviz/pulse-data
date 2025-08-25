@@ -25,79 +25,78 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
-    array_agg_case_notes_by_external_id,
-    join_current_task_eligibility_spans_with_external_id,
+    TaskEligibilitySpansSubsetType,
+    array_agg_case_notes_by_person_id,
+    select_relevant_task_eligibility_spans_for_record,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    TaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
+from recidiviz.utils.string_formatting import fix_indent
 
 
-def scc_form(
+def generate_sccp_form_opportunity_record_view_builder(
     description: str,
     view_id: str,
-    task_name: str,
+    tes_view_builder: SingleTaskEligibilitySpansBigQueryViewBuilder,
+    latest_scc_review_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
+    latest_scc_review_date_reasons_field: str,
 ) -> SimpleBigQueryViewBuilder:
     """
     Creates a big query view builder that generates the opportunity record query needed for all
     security classification committee review opportunities.
 
     Args:
-        task_name (str): Task name from task_eligibility_spans
-        description (str): form descriptions
-        view_id (str): view_builder name
+        description (str): The description for the returned opportunity record view
+        view_id (str): The view_id / table_id for the opportunity record view
+        tes_view_builder (SingleTaskEligibilitySpansBigQueryViewBuilder): The view
+            builder object for the task eligibility spans that will be used for this
+            opportunity record view.
+        latest_scc_review_date_criteria_builder (TaskCriteriaBigQueryViewBuilder): The
+            view builder for the criteria that will be used to hydrate the
+            latest_scc_review_date column.
+        latest_scc_review_date_reasons_field (str): The name of the field in the reasons
+            blob for latest_scc_review_date_criteria_builder that we should use to pull
+            the latest_scc_review_date value.
 
     Returns:
         SimpleBigQueryViewBuilder
     """
-
-    if (
-        task_name
-        == "complete_security_classification_committee_review_form_materialized"
-    ):
-        reasons_blob = "latest_scc_review_date"
-        criteria_name = "US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE"
-    elif (
-        task_name
-        == "complete_warden_in_person_security_classification_committee_review_form_materialized"
-    ):
-        reasons_blob = "latest_warden_in_person_scc_review_date"
-        criteria_name = "US_MI_PAST_WARDEN_IN_PERSON_REVIEW_FOR_SCC_DATE"
-    elif (
-        task_name
-        == "complete_add_in_person_security_classification_committee_review_form_materialized"
-    ):
-        reasons_blob = "latest_add_in_person_scc_review_date"
-        criteria_name = "US_MI_PAST_ADD_IN_PERSON_REVIEW_FOR_SCC_DATE"
-    else:
-        raise ValueError("Incorrect input for task_name")
+    filtered_tes_query = select_relevant_task_eligibility_spans_for_record(
+        tes_view_builder=tes_view_builder,
+        spans_subset_type=TaskEligibilitySpansSubsetType.ELIGIBILE_AND_ALMOST_ELIGIBLE_ONLY,
+        include_eligible_date=False,
+        include_reasons_v2=False,
+    )
 
     query_template = f"""
-    WITH eligible_and_almost_eligible AS (
-{join_current_task_eligibility_spans_with_external_id(
-    state_code=StateCode.US_MI,
-    tes_task_query_view=task_name,
-    id_type="'US_MI_DOC'",
-    additional_columns='tes.start_date',
-    eligible_and_almost_eligible_only=True,
-)}
+WITH eligible_and_almost_eligible AS (
+{fix_indent(filtered_tes_query, indent_level=4)}
 ),
 release_dates AS (
 /* Queries raw data for the min and max release dates */ 
-    SELECT 
-        LPAD(offender_number, 7, "0") AS offender_number,
+    SELECT
+        person_id,
         MAX(pmi_sgt_min_date) AS pmi_sgt_min_date, 
         MAX(pmx_sgt_max_date) AS pmx_sgt_max_date,
     FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_OFFENDER_SENTENCE_latest`
     INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_OFFENDER_latest` 
         USING(offender_id)
+    INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
+        ON LPAD(offender_number, 7, "0") = pei.external_id 
+            AND id_type = 'US_MI_DOC'
     WHERE sentence_type_id = '430' -- sentence is a prison sentence
         AND closing_date is NULL --sentence is open 
-    GROUP BY 1
+    GROUP BY person_id
 ),
 bondable_codes AS (
 /* Queries all bondable codes for misconduct reports in the last 6 months */
@@ -105,7 +104,7 @@ bondable_codes AS (
         person_id,
         incident_date,
         SPLIT(JSON_EXTRACT_SCALAR(incident_metadata, '$.BONDABLE_OFFENSES'), ',') AS bondable_offenses
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident`
+    FROM `{{project_id}}.us_mi_normalized_state.state_incarceration_incident`
     WHERE 
         state_code = "US_MI"
         AND DATE_ADD(incident_date, INTERVAL 6 MONTH) >= CURRENT_DATE('US/Eastern')
@@ -117,7 +116,7 @@ nonbondable_codes AS (
         person_id,
         incident_date,
         SPLIT(JSON_EXTRACT_SCALAR(incident_metadata, '$.NONBONDABLE_OFFENSES'), ',') AS nonbondable_offenses
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident`
+    FROM `{{project_id}}.us_mi_normalized_state.state_incarceration_incident`
     WHERE 
         state_code = "US_MI"
         AND DATE_ADD(incident_date, INTERVAL 1 YEAR) >= CURRENT_DATE('US/Eastern')
@@ -127,7 +126,7 @@ form_misconduct_codes AS (
 /* Queries bondable and nonbondable codes to include on the scc form. 
 For bondable codes, the resident can remain in their current cell. 
 For nonbondable code, the resident must be moved to segregation until ticket is heard. */
-    SELECT 
+    SELECT
         COALESCE(b.person_id, n.person_id) AS person_id,
         CONCAT('(', 
             STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(b.incident_date))),
@@ -207,25 +206,36 @@ FROM (
         CONCAT(JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES'), ",", 
         JSON_EXTRACT_SCALAR(i.incident_metadata, '$.BONDABLE_OFFENSES')),
         JSON_EXTRACT_SCALAR(i.incident_metadata, '$.BONDABLE_OFFENSES')), "") AS offenses
-  FROM 
-    `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h
+  FROM (
+    SELECT * 
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized`
+    WHERE state_code = 'US_MI'
+      AND housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+      --only join previous (closed) ad seg stays 
+      AND end_date_exclusive IS NOT NULL
+      --only select stays greater than one month 
+      AND DATE_DIFF(end_date_exclusive, start_date, DAY) >= 30
+      --only select stays within the last 3 years
+      AND DATE_ADD(start_date, INTERVAL 3 YEAR) >= CURRENT_DATE('US/Eastern')
+  ) h
   LEFT JOIN 
-    `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` i
+    `{{project_id}}.us_mi_normalized_state.state_incarceration_incident` i
   ON 
     h.state_code = i.state_code
     AND h.person_id = i.person_id 
     --only join incidents that happen within 2 months of the segregation stay 
     AND DATE_DIFF(start_date, incident_date, DAY) < 60
     AND i.incident_date <= h.start_date
-  WHERE housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
-  --only join previous (closed) ad seg stays 
-    AND h.end_date_exclusive IS NOT NULL
-    --only select stays greater than one month 
-    AND DATE_DIFF(h.end_date_exclusive, h.start_date, DAY) >= 30
-    --only select stays within the last 3 years
-    AND DATE_ADD(h.start_date, INTERVAL 3 YEAR) >= CURRENT_DATE('US/Eastern')
-    --choose the most recent incident report within the last 2 months and prioritize the incident with the bondable code
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY h.person_id, h.start_date ORDER BY JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES') = "", incident_date DESC) = 1
+  --choose the most recent incident report within the last 2 months and prioritize the incident with the bondable code
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY h.person_id, h.start_date 
+    ORDER BY 
+        JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES') = "", 
+        incident_date DESC,
+        -- In the case when there are multiple NONBONDABLE_OFFENSES on the same date,
+        -- pick one arbitrarily
+        JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES')
+  ) = 1
 )
 GROUP BY person_id
 ),
@@ -235,7 +245,7 @@ reasons_for_eligibility AS (
         person_id,
         {extract_object_from_json(
             json_column="criteria_reason",
-            object_column=f"reason.{reasons_blob}",
+            object_column=f"reason.{latest_scc_review_date_reasons_field}",
             object_type="DATE",
         )} AS latest_scc_review_date,
         {extract_object_from_json(
@@ -250,68 +260,87 @@ reasons_for_eligibility AS (
             json_column="criteria_reason",
             object_column="criteria_name",
             object_type="STRING",
-        )} = "{criteria_name}"
+        )} = "{latest_scc_review_date_criteria_builder.criteria_name}"
 ),
 SMI AS (
-  select OffenderCode, MMD
-  from `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Mental_Health_Problems_latest`
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderCode ORDER BY CAST(StatusDate AS DATETIME) DESC) = 1
+  SELECT person_id, MMD
+  FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Mental_Health_Problems_latest`
+  INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
+      ON OffenderCode = pei.external_id 
+          AND id_type = 'US_MI_DOC'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(StatusDate AS DATETIME) DESC) = 1
 ),
 OPT AS (
-  select OffenderCode, OPTLevelOfCare
-  from `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Level_Of_Care_latest`
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderCode ORDER BY CAST(AdmissionDate AS DATETIME) DESC) = 1
+  SELECT person_id, OPTLevelOfCare
+  FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Level_Of_Care_latest`
+  INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
+      ON OffenderCode = pei.external_id 
+          AND id_type = 'US_MI_DOC'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(AdmissionDate AS DATETIME) DESC) = 1
 ),
 stg_information AS (
     SELECT 
-        offender_number,
+        pei.person_id,
         STG_Level
     FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Threat_Group_Involvement_latest`
+    INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
+        ON Offender_Number = pei.external_id 
+            AND id_type = 'US_MI_DOC'
     -- there are a small number of times where a single person appears wih two distinct STG levels in the table
     -- in those cases, let's pick the STG level that was most recently entered
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY offender_number ORDER BY CAST(Start_Date AS DATETIME) DESC, STG_LEVEL DESC) = 1
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(Start_Date AS DATETIME) DESC, STG_LEVEL DESC) = 1
 ),
 assessment_information AS (
     SELECT 
-        offender_number,
+        pei.person_id,
         Management_Level_Assessment_Result,
         Confinement_Level_Assessment_Result,
         Actual_Placement_Level_Assessment_Result,
     FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest`
+    INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
+        ON Offender_Number = pei.external_id 
+            AND id_type = 'US_MI_DOC'
 ),
 case_notes_cte AS (
     SELECT
-        pei.external_id,
-        Activity AS criteria,
+        person_id,
+        cn.Activity AS criteria,
         NULL AS note_title,
         cn.Note AS note_body,
         DATE(cn.Note_Date) AS event_date
-    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Notes_latest` cn 
-    INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Schedule_Activities_latest` 
-        USING(Offender_Number, Case_Note_Id)
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON cn.Offender_Number = pei.external_id 
-        AND id_type = 'US_MI_DOC'
-    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` s
-        ON s.person_id = pei.person_id 
-        AND CURRENT_DATE BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
+    FROM (
+        SELECT pei.person_id, Note, Note_Date, Activity
+        FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Notes_latest`
+        INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Schedule_Activities_latest` 
+            USING(Offender_Number, Case_Note_Id)
+        INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
+            ON Offender_Number = pei.external_id 
+                AND id_type = 'US_MI_DOC'
+    ) cn
+    LEFT JOIN (
+        SELECT person_id, start_date, end_date_exclusive 
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` s
+        WHERE state_code = "US_MI" AND CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+    ) s
+    USING (person_id)
     WHERE Activity in ('SCC - Security Classification Committee','SCC – ADD – 12 Month Review','SCC – Warden – 6 Month Review','In Person Contact')
-    AND DATE(cn.Note_Date) BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
+        -- Filter to notes for the current super session
+        AND DATE(cn.Note_Date) BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date_exclusive')}
 ),
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id()}
+{array_agg_case_notes_by_person_id()}
 )
 SELECT 
-    tes.person_id,
-    tes.state_code,
-    tes.external_id AS external_id,
+    person_id,
+    state_code,
+    stable_person_external_id AS external_id,
     tes.reasons,
     tes.is_eligible,
     tes.is_almost_eligible,
     tes.ineligible_criteria,
     IF(tes.is_eligible,DATE_DIFF(CURRENT_DATE("US/Eastern"), e.next_scc_date, DAY)>=7, False) AS is_overdue,
     --form information
-    tes.external_id AS form_information_prisoner_number,
+    display_person_external_id AS form_information_prisoner_number,
     INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.given_names'))
             || " " 
             || INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.surname')) AS form_information_prisoner_name,
@@ -355,39 +384,62 @@ SELECT
     assessment.Actual_Placement_Level_Assessment_Result AS metadata_actual_security_level,
     a.case_notes 
 FROM eligible_and_almost_eligible tes
-LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
-    ON tes.state_code = sp.state_code
-    AND tes.person_id = sp.person_id
-LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` si
-    ON tes.state_code = si.state_code
-    AND tes.person_id = si.person_id
-    AND CURRENT_DATE('US/Eastern') BETWEEN si.admission_date AND {nonnull_end_date_clause('si.release_date')}
+LEFT JOIN `{{project_id}}.us_mi_normalized_state.state_person` sp
+    USING (state_code, person_id)
+# TODO(#45179): Once the frontend does not read from the external_id column anymore, 
+# remove this join / the external_id column.
+LEFT JOIN (
+    SELECT state_code, person_id, stable_person_external_id
+    FROM `{{project_id}}.reference_views.product_stable_person_external_ids_materialized`
+    WHERE system_type = "INCARCERATION"
+)
+USING
+    (state_code, person_id)
+LEFT JOIN (
+    SELECT state_code, person_id, display_person_external_id
+    FROM `{{project_id}}.reference_views.product_display_person_external_ids_materialized`
+    WHERE system_type = "INCARCERATION"
+)
+USING
+    (state_code, person_id)
+LEFT JOIN (
+    SELECT state_code, person_id, facility, housing_unit
+    FROM `{{project_id}}.us_mi_normalized_state.state_incarceration_period`
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN admission_date AND {nonnull_end_date_clause('release_date')}
+) si
+USING (state_code, person_id)
 LEFT JOIN release_dates sgt
-    ON sgt.offender_number = tes.external_id 
+    USING (person_id)
 LEFT JOIN form_misconduct_codes m
-    ON tes.person_id = m.person_id
+    USING (person_id)
 LEFT JOIN recent_misconduct_codes rm
-    ON tes.person_id = rm.person_id
+    USING (person_id)
 LEFT JOIN previous_ad_seg_stays p
-    ON tes.person_id = p.person_id
-LEFT JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h
-    ON h.person_id = tes.person_id 
-    AND CURRENT_DATE('US/Eastern') BETWEEN h.start_date AND {nonnull_end_date_exclusive_clause('h.end_date_exclusive')}
-LEFT JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_non_protective_custody_solitary_sessions_materialized` hc
-    ON hc.person_id = tes.person_id 
-    AND CURRENT_DATE('US/Eastern') BETWEEN hc.start_date AND {nonnull_end_date_exclusive_clause('hc.end_date_exclusive')}
+    USING (person_id)
+LEFT JOIN (
+    SELECT state_code, person_id, housing_unit_type, start_date
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized`
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+) h
+    USING (state_code, person_id)
+LEFT JOIN (
+    SELECT state_code, person_id, start_date
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_non_protective_custody_solitary_sessions_materialized`
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+) hc
+    USING (state_code, person_id)
 LEFT JOIN reasons_for_eligibility e
-    ON tes.person_id = e.person_id
+    USING (person_id)
 LEFT JOIN assessment_information assessment
-    ON tes.external_id = assessment.offender_number
+    USING (person_id)
 LEFT JOIN OPT opt
-    ON tes.external_id = OPT.OffenderCode
+    USING (person_id)
 LEFT JOIN SMI smi
-    ON tes.external_id = smi.OffenderCode
+    USING (person_id)
 LEFT JOIN stg_information stg
-    ON tes.external_id = stg.offender_number
+    USING (person_id)
 LEFT JOIN array_case_notes_cte a 
-    ON a.external_id = tes.external_id
+    USING (person_id)
 
     """
     return SimpleBigQueryViewBuilder(
@@ -395,7 +447,6 @@ LEFT JOIN array_case_notes_cte a
         view_id=view_id,
         view_query_template=query_template,
         description=description,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
         us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
