@@ -55,8 +55,6 @@ ROOT_ENTITY_IDS_KEY = "root_entity_ids"
 _STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS: set[StateCode] = {
     # TODO(#46144): Fix invalid supervisors for US_TN and then remove this exemption.
     StateCode.US_TN,
-    # TODO(#46146): Fix invalid supervisors for US_TX and then remove this exemption.
-    StateCode.US_TX,
 }
 
 
