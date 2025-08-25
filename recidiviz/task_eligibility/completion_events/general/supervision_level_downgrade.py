@@ -19,7 +19,6 @@ for any person, across all states. This does not include transfers to limited
 supervision, which are captured by the transfer_to_limited_supervision view.
 """
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
@@ -48,7 +47,6 @@ VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
-        states_to_exclude=[StateCode.US_TN],
     )
 )
 
