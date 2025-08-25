@@ -47,6 +47,7 @@ class EventType(Enum):
     INSIGHTS_ACTIVE_USAGE_EVENT = "INSIGHTS_ACTIVE_USAGE_EVENT"
     INSIGHTS_USER_LOGIN = "INSIGHTS_USER_LOGIN"
     IMPACT_TRANSITION = "IMPACT_TRANSITION"
+    JII_TABLET_APP_USER_LOGIN = "JII_TABLET_APP_USER_LOGIN"
     PAROLE_HEARING = "PAROLE_HEARING"
     PENDING_CUSTODY_START = "PENDING_CUSTODY_START"
     RISK_SCORE_ASSESSMENT = "RISK_SCORE_ASSESSMENT"
@@ -175,6 +176,8 @@ class EventType(Enum):
             EventType.GLOBAL_USER_PAGE_VIEW,
         ]:
             return MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER
+        if self in [EventType.JII_TABLET_APP_USER_LOGIN]:
+            return MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"

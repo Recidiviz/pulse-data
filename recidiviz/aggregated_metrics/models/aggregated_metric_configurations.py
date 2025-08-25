@@ -2618,6 +2618,46 @@ DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetr
 )
 
 
+DISTINCT_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_jii_tablet_app_provisioned_users",
+    display_name="Distinct JII Tablet App Provisioned Users",
+    description="Number of distinct users who are provisioned to have tool access to the JII tablet app",
+    span_selector=SpanSelector(
+        span_type=SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_jii_tablet_app_provisioned_users",
+    display_name="Distinct Registered JII Tablet App Provisioned Users",
+    description=(
+        "Number of distinct users who are provisioned to have tool access to the JII tablet app "
+        "who have signed up/logged into the tablet app at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+DISTINCT_LOGGED_IN_JII_TABLET_APP_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_jii_tablet_app_users",
+    display_name="Distinct Logged In JII Tablet App Users",
+    description="Number of distinct users who logged into the JII tablet app",
+    event_selector=EventSelector(
+        event_type=EventType.JII_TABLET_APP_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+LOGINS_JII_TABLET_APP_USER = EventCountMetric(
+    name="logins_jii_tablet_app_user",
+    display_name="Logins, JII Tablet App Users",
+    description="Number of logins performed by users of the JII tablet app",
+    event_selector=EventSelector(
+        event_type=EventType.JII_TABLET_APP_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+
 # Outcome metrics
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",
