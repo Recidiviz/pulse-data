@@ -209,6 +209,13 @@ class ExportViewCollectionConfig:
 
         configs = []
         for vb in self.view_builders_to_export:
+            if (
+                (view_state_code := vb.address.state_code_for_address())
+                and state_code_filter
+                and view_state_code.value != state_code_filter
+            ):
+                continue
+
             view = vb.build(sandbox_context=view_sandbox_context)
 
             optional_args = {}

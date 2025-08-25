@@ -20,6 +20,7 @@ from unittest import mock
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
     ExportValidationType,
@@ -383,6 +384,112 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             ),
             view_config_to_export.output_directory,
         )
+
+    def test_export_configs_skips_non_matching_state_views(self) -> None:
+        """Tests that when state_code_filter is provided, only views whose address
+        state code matches the filter are included, preventing empty JSON files for other states."""
+
+        # Create view builders with different state codes in their addresses
+        us_mo_view_builder = SimpleBigQueryViewBuilder(
+            dataset_id="us_mo_dataset",
+            view_id="us_mo_test_view",
+            description="Missouri specific view",
+            view_query_template="SELECT * FROM us_mo_table",
+        )
+
+        us_ca_view_builder = SimpleBigQueryViewBuilder(
+            dataset_id="us_ca_dataset",
+            view_id="us_ca_view",
+            description="California specific view",
+            view_query_template="SELECT * FROM us_ca_table",
+        )
+
+        # Create export config with mixed state-specific views
+        export_config = ExportViewCollectionConfig(
+            view_builders_to_export=[us_mo_view_builder, us_ca_view_builder],
+            output_directory_uri_template="gs://{project_id}-test-bucket",
+            export_name="MIXED_STATE_EXPORT",
+        )
+
+        # Test that when filtering for US_MO, only the US_MO view is processed
+        # The US_CA view should be skipped to prevent empty JSON files
+        view_configs = export_config.export_configs_for_views_to_export(
+            state_code_filter="US_MO"
+        )
+
+        # Verify only the matching view is included in export configs
+        self.assertEqual(len(view_configs), 1)
+
+        # Verify the included config has the proper WHERE clause filter
+        config = view_configs[0]
+        self.assertEqual(config.view_filter_clause, " WHERE state_code = 'US_MO'")
+        self.assertIn("US_MO", config.intermediate_table_name)
+        self.assertEqual(config.output_directory.relative_path, "US_MO/")
+
+        # Verify only the US_MO view is included (US_CA view was skipped)
+        self.assertEqual(config.view.view_id, "us_mo_test_view")
+
+        # Verify that exported file names begin with down-cased state code
+        json_file_path = config.output_path("json")
+        metric_file_path = config.output_path("txt")
+
+        expected_file_prefix = "us_mo_"
+        self.assertTrue(json_file_path.file_name.startswith(expected_file_prefix))
+        self.assertTrue(metric_file_path.file_name.startswith(expected_file_prefix))
+
+    def test_export_configs_us_ix_atlas_file_naming(self) -> None:
+        """Tests that US_IX (Idaho ATLAS) views export with 'us_ix' file prefixes.
+
+        This tests the legacy system where Idaho views internally use US_IX state code,
+        resulting in file names with 'us_ix_' prefixes, while the export system can
+        map them to US_ID directories via export_override_state_codes.
+        """
+
+        # Create view builder with US_IX state code (legacy internal representation)
+        us_ix_view_builder = SimpleBigQueryViewBuilder(
+            dataset_id="us_ix_dataset",
+            view_id="us_ix_test_view",
+            description="Idaho specific view with legacy naming",
+            view_query_template="SELECT * FROM us_ix_table",
+        )
+
+        # Create export config with US_IX view and the ATLAS->ID mapping
+        export_config = ExportViewCollectionConfig(
+            view_builders_to_export=[us_ix_view_builder],
+            output_directory_uri_template="gs://{project_id}-test-bucket",
+            export_name="US_ID_EXPORT",
+            export_override_state_codes={
+                "US_IX": "US_ID"
+            },  # Maps US_IX views to US_ID exports
+        )
+
+        # Test that when filtering for US_IX, the system finds the US_IX view
+        # but exports to US_ID directory due to override mapping
+        view_configs = export_config.export_configs_for_views_to_export(
+            state_code_filter="US_IX"
+        )
+
+        # Verify the config is created
+        self.assertEqual(len(view_configs), 1)
+        config = view_configs[0]
+
+        # Verify the config has proper WHERE clause and metadata
+        self.assertEqual(config.view_filter_clause, " WHERE state_code = 'US_IX'")
+        self.assertIn(
+            "US_ID", config.intermediate_table_name
+        )  # Should use override state code
+        self.assertEqual(
+            config.output_directory.relative_path, "US_ID/"
+        )  # Should export to US_ID directory
+        self.assertEqual(config.view.view_id, "us_ix_test_view")
+
+        # Verify that exported file names begin with legacy 'us_ix_' prefix
+        json_file_path = config.output_path("json")
+        metric_file_path = config.output_path("txt")
+
+        expected_file_prefix = "us_ix_"
+        self.assertTrue(json_file_path.file_name.startswith(expected_file_prefix))
+        self.assertTrue(metric_file_path.file_name.startswith(expected_file_prefix))
 
 
 class TestExportViewCollectionConfigOutputProjectDict(unittest.TestCase):
