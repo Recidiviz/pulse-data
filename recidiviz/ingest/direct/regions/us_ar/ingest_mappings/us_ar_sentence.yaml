@@ -30,6 +30,7 @@ input_columns:
   prob_plus_imposed_date: STRING
   sentence_category: STRING
   CS_ID_ARRAY: STRING
+  STATUTE1_description: STRING
 unused_columns: []
 variables:
   - sentence_external_id:
@@ -166,6 +167,7 @@ output:
                             - STATUTE3
                             - STATUTE4
                           $include_nulls: False
+                      description: STATUTE1_description
                       classification_type:
                         $conditional:
                           - $if:
