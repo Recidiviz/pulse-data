@@ -2594,6 +2594,30 @@ ACTIVE_USAGE_EVENTS_GLOBAL_USER = EventCountMetric(
     ],
 )
 
+
+DISTINCT_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_jii_tablet_app_provisioned_users",
+    display_name="Distinct JII Tablet App Provisioned Users",
+    description="Number of distinct users who are provisioned to have tool access to the JII tablet app",
+    span_selector=SpanSelector(
+        span_type=SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_jii_tablet_app_provisioned_users",
+    display_name="Distinct Registered JII Tablet App Provisioned Users",
+    description=(
+        "Number of distinct users who are provisioned to have tool access to the JII tablet app "
+        "who have signed up/logged into the tablet app at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+
+
 # Outcome metrics
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",

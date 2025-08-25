@@ -162,6 +162,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__tasks_provisioned_user_span",
     "observations__global_provisioned_user_span",
     "observations__global_provisioned_user_event",
+    "observations__jii_tablet_app_provisioned_user_span",
     "reentry",
     "segment_events",
     "segment_events__case_note_search",

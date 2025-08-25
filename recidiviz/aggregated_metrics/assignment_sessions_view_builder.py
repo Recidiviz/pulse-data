@@ -49,6 +49,14 @@ from recidiviz.segment.product_type import ProductType
 _UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: dict[
     tuple[MetricUnitOfObservationType, MetricUnitOfAnalysisType], str
 ] = {
+    **{
+        # Experiment variant assignments
+        (
+            metric_unit_of_observation_type,
+            MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+        ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{metric_unit_of_observation_type.short_name}_materialized`"
+        for metric_unit_of_observation_type in MetricUnitOfObservationType
+    },
     (
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.PERSON_ID,
@@ -598,46 +606,6 @@ FROM
         `{project_id}.analyst_data.supervisor_homepage_outcomes_module_provisioned_user_registration_sessions_materialized`
 """,
     (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.PERSON_ID.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.SUPERVISION_OFFICER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.TASKS_PROVISIONED_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.TASKS_PROVISIONED_USER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.TASKS_PRIMARY_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.TASKS_PRIMARY_USER.short_name}_materialized`",
-    (
-        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
-        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
-    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER.short_name}_materialized`",
-    (
         MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
     ): """SELECT
@@ -1091,6 +1059,23 @@ FROM
     {list_to_query_string([f"is_primary_user_{product_type.pretty_name}" for product_type in ProductType])},
 FROM
     `{{project_id}}.analyst_data.global_provisioned_user_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): "SELECT * FROM `{project_id}.analyst_data.jii_tablet_app_provisioned_user_registration_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.FACILITY,
+    ): """
+SELECT state_code, person_id, start_date, end_date_exclusive, location_id AS facility 
+FROM `{project_id}.analyst_data.jii_tablet_app_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ): """
+SELECT *, TRUE AS in_signed_state FROM `{project_id}.analyst_data.jii_tablet_app_provisioned_user_registration_sessions_materialized`
 """,
 }
 

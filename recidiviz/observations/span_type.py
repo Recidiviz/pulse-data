@@ -54,6 +54,7 @@ class SpanType(Enum):
         "INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION"
     )
     INSIGHTS_PROVISIONED_USER_SESSION = "INSIGHTS_PROVISIONED_USER_SESSION"
+    JII_TABLET_APP_PROVISIONED_USER_SESSION = "JII_TABLET_APP_PROVISIONED_USER_SESSION"
     JUSTICE_IMPACT_SESSION = "JUSTICE_IMPACT_SESSION"
     LOCATION_TYPE_SESSION = "LOCATION_TYPE_SESSION"
     PERSON_DEMOGRAPHICS = "PERSON_DEMOGRAPHICS"
@@ -149,5 +150,7 @@ class SpanType(Enum):
             return MetricUnitOfObservationType.TASKS_PROVISIONED_USER
         if self in [SpanType.GLOBAL_PROVISIONED_USER_SESSION]:
             return MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER
+        if self in [SpanType.JII_TABLET_APP_PROVISIONED_USER_SESSION]:
+            return MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER
 
         raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")

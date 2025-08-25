@@ -68,6 +68,8 @@ class MetricUnitOfObservation:
                 return frozenset(["state_code", "email_address"])
             case MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER:
                 return frozenset(["state_code", "email_address"])
+            case MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER:
+                return frozenset(["state_code", "person_id"])
 
     @property
     def primary_key_columns_ordered(self) -> list[str]:

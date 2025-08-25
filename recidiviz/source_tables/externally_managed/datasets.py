@@ -22,6 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
     EXPORT_ARCHIVES_DATASET,
+    JII_AUTH0_PROD_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -90,4 +91,5 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     ALL_BILLING_DATA_DATASET: "Stores information about our GCP cloud costs",
     TWILIO_WEBHOOK_REQUESTS_DATASET_ID: "Stores requests from Twilio made to internal webhooks",
+    JII_AUTH0_PROD_SEGMENT_DATASET: "Stores auth0 events logged from JII Tablet App via Segment",
 }
