@@ -34,6 +34,9 @@ from recidiviz.calculator.query.externally_shared_views.view_config import (
 from recidiviz.calculator.query.state.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
 )
+from recidiviz.datasets.static_data.views.view_config import (
+    get_static_data_view_builders,
+)
 from recidiviz.ingest.direct.views.view_config import (
     get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
 )
@@ -82,6 +85,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             build_validation_metadata_view_builders(),
             get_platform_kpi_views_to_update(),
             get_transitions_view_builders(),
+            get_static_data_view_builders(),
         )
     )
 
@@ -183,6 +187,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "spark_public_output_data_most_recent",
     "state",
     "state_views",
+    "static_reference_data_views",
     "shared_metric_views",
     "tasks_views",
     "task_eligibility",

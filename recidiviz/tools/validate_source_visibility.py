@@ -786,6 +786,7 @@ def main() -> int:
                 # view code
                 "recidiviz.aggregated_metrics",
                 "recidiviz.calculator.query",
+                "recidiviz.datasets.static_data.views",
                 "recidiviz.ingest.views",
                 "recidiviz.ingest.direct",
                 "recidiviz.monitoring.platform_kpis",

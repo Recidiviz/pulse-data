@@ -422,6 +422,51 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_MO_COMPLETED_12_MONTHS_OUTSIDE_CLEARANCE.address: (
         "Will be used for work-release eligibility in MO once we make more progress on validation for outside clearance (Akhil Ghanta, 7/18/2025)"
     ),
+    BigQueryAddress.from_str(
+        "static_reference_data_views.county_fips"
+    ): "This is currently unused but could be a useful reference table so we're keeping it for now (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_co_incarceration_facility_map"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_co_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_id_incarceration_facility_map"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_id_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_id_supervision_district_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_id_supervision_unit_to_district_map"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_me_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_mi_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_mo_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_nd_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_tn_incarceration_facility_map"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_tn_incarceration_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_tn_supervision_facility_names"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_tn_supervision_locations"
+    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

@@ -35,6 +35,9 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     ProcessDagPerfConfig,
     TraversalDirection,
 )
+from recidiviz.datasets.static_data.views.dataset_config import (
+    STATIC_REFERENCE_DATA_VIEWS_DATASET_ID,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -1270,6 +1273,13 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             ),
         }
         if node.view.address in known_empty_parent_view_addresss:
+            return
+
+        if node.view.dataset_id in {
+            # These view queries are all generated via static data from a CSV and will
+            # never have parent tables
+            STATIC_REFERENCE_DATA_VIEWS_DATASET_ID
+        }:
             return
 
         if "FROM EXTERNAL_QUERY" in node.view.view_query:

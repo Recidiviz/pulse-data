@@ -25,6 +25,10 @@ BQ_TABLE_COLUMN_NAME_MAX_LENGTH = 300
 # Maximum length for any column description on any column.
 BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
 
+# Maximum length for any view query, including comments and whitespace. See
+# https://cloud.google.com/bigquery/quotas#standard_view_limits.
+BQ_VIEW_QUERY_MAX_LENGTH = 256000
+
 # MOST external tables have the _FILE_NAME psudeocolumn available for query, see:
 # https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column
 EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN = "_FILE_NAME"

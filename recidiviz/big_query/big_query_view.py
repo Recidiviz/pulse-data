@@ -28,6 +28,7 @@ from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
+from recidiviz.big_query.constants import BQ_VIEW_QUERY_MAX_LENGTH
 from recidiviz.utils import metadata
 
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
@@ -110,6 +111,13 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
             )
         except ValueError as e:
             raise ValueError(f"Unable to format view query for {self.address}") from e
+
+        if len(self._view_query) > BQ_VIEW_QUERY_MAX_LENGTH:
+            raise ValueError(
+                f"Query for view [{dataset_id}.{view_id}] is [{len(self._view_query)}] "
+                f"chars long which is more than the max allowed limit of "
+                f"{BQ_VIEW_QUERY_MAX_LENGTH} chars."
+            )
 
         self._view_query_signature: str | None = None
 
