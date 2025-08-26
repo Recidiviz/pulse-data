@@ -263,15 +263,17 @@ def prune_raw_data_for_state_and_project(
                 results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
 
-            if raw_file_configs[file_tag].is_exempt_from_raw_data_pruning():
+            if raw_file_configs[
+                file_tag
+            ].is_exempt_from_legacy_manual_raw_data_pruning():
                 logging.info(
-                    "[%s][Skipping] `is_exempt_from_raw_data_pruning()` is True.",
+                    "[%s][Skipping] `is_exempt_from_legacy_manual_raw_data_pruning()` is True.",
                     file_tag,
                 )
                 results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
             logging.info(
-                "[%s] `is_exempt_from_raw_data_pruning()` is False. Moving forward with raw data pruning.",
+                "[%s] `is_exempt_from_legacy_manual_raw_data_pruning()` is False. Moving forward with raw data pruning.",
                 file_tag,
             )
 

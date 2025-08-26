@@ -677,7 +677,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual([], config.current_datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertTrue(config.is_undocumented)
-        self.assertFalse(config.is_exempt_from_raw_data_pruning())
+        self.assertFalse(config.is_exempt_from_legacy_manual_raw_data_pruning())
 
     def test_column_types(self) -> None:
         """Tests a config with columns of various types / documentation levels."""
@@ -729,7 +729,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         )
         self.assertFalse(config.has_enums)
         self.assertFalse(config.is_undocumented)
-        self.assertFalse(config.is_exempt_from_raw_data_pruning())
+        self.assertFalse(config.is_exempt_from_legacy_manual_raw_data_pruning())
 
         # Now add an enum column and verify that column-related properties change
         # accordingly.
@@ -819,7 +819,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.UNKNOWN_INCREMENTAL_LOOKBACK,
         )
 
-        self.assertTrue(config.is_exempt_from_raw_data_pruning())
+        self.assertTrue(config.is_exempt_from_legacy_manual_raw_data_pruning())
 
     def test_raw_data_pruning_exempt_for_file_tag_in_state_no_valid_primary_keys_always_historical(
         self,
@@ -842,7 +842,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
 
-        self.assertTrue(config.is_exempt_from_raw_data_pruning())
+        self.assertTrue(config.is_exempt_from_legacy_manual_raw_data_pruning())
 
     def test_raw_data_pruning_exempt_for_file_tag_in_state_valid_primary_keys_always_historical(
         self,
@@ -866,7 +866,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
 
-        self.assertFalse(config.is_exempt_from_raw_data_pruning())
+        self.assertFalse(config.is_exempt_from_legacy_manual_raw_data_pruning())
 
     def test_raw_data_pruning_exempt_for_file_tag_in_state_valid_primary_keys_not_historical(
         self,
@@ -891,7 +891,36 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
         )
 
-        self.assertTrue(config.is_exempt_from_raw_data_pruning())
+        self.assertTrue(config.is_exempt_from_legacy_manual_raw_data_pruning())
+
+    def test_exempt_from_automatic_raw_data_pruning(self) -> None:
+        """Assert that the config is exempt from automatic raw data pruning."""
+        historical_config = self.sparse_config
+        incremental_config = attr.evolve(
+            historical_config,
+            columns=[
+                RawTableColumnInfo(
+                    name="Col1",
+                    state_code=StateCode.US_XX,
+                    file_tag=historical_config.file_tag,
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                )
+            ],
+            primary_key_cols=["Col1"],
+            no_valid_primary_keys=False,
+            export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
+        )
+        no_valid_pks_config = attr.evolve(
+            incremental_config,
+            primary_key_cols=[],
+            no_valid_primary_keys=True,
+        )
+
+        self.assertFalse(historical_config.is_exempt_from_automatic_raw_data_pruning())
+        self.assertFalse(incremental_config.is_exempt_from_automatic_raw_data_pruning())
+        self.assertTrue(no_valid_pks_config.is_exempt_from_automatic_raw_data_pruning())
 
     def test_default_always_historical(self) -> None:
         """Assert that if the file sets always historical to False that is used, even

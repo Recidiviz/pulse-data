@@ -1173,13 +1173,13 @@ class CoalesceResultsAndErrorsTest(TestCase):
             == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
         assert summaries[1].file_id == 2
-        assert summaries[1].historical_diffs_active is False
+        assert summaries[1].historical_diffs_active is True
         assert (
             summaries[1].import_status
             == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
         assert summaries[2].file_id == 1
-        assert summaries[2].historical_diffs_active is False
+        assert summaries[2].historical_diffs_active is True
         assert (
             summaries[2].import_status
             == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP

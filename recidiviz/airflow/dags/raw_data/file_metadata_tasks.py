@@ -451,13 +451,13 @@ def _reconcile_file_imports_and_bq_metadata(
     return missing_file_ids
 
 
-# TODO(#12390): Delete once raw data pruning is live.
 def _historical_diffs_active_for_tag(
     raw_region_config: DirectIngestRegionRawFileConfig,
     raw_data_instance: DirectIngestInstance,
     file_tag: str,
 ) -> bool:
     """Boolean return for if the raw file_tag will have historical diffs active"""
+    # TODO(#12390): Delete once raw data pruning is live.
     raw_data_pruning_enabled = (
         automatic_raw_data_pruning_enabled_for_state_and_instance(
             StateCode(raw_region_config.region_code.upper()), raw_data_instance
@@ -468,7 +468,7 @@ def _historical_diffs_active_for_tag(
 
     return not raw_region_config.raw_file_configs[
         file_tag
-    ].is_exempt_from_raw_data_pruning()
+    ].is_exempt_from_automatic_raw_data_pruning()
 
 
 def _build_file_imports_for_errors(

@@ -410,7 +410,9 @@ class DirectIngestRawFileLoadManager:
             return False
 
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
-        is_exempt_from_raw_data_pruning = file_config.is_exempt_from_raw_data_pruning()
+        is_exempt_from_raw_data_pruning = (
+            file_config.is_exempt_from_automatic_raw_data_pruning()
+        )
         return not is_exempt_from_raw_data_pruning
 
     def _append_data_to_raw_table(

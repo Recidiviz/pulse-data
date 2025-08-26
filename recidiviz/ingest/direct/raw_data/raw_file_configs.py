@@ -840,7 +840,7 @@ class DirectIngestRawFileConfig:
             == RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK
         )
 
-    def is_exempt_from_raw_data_pruning(self) -> bool:
+    def is_exempt_from_legacy_manual_raw_data_pruning(self) -> bool:
         """Returns True if this file is exempt from raw data pruning."""
 
         if self.file_tag in FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE.get(
@@ -848,10 +848,14 @@ class DirectIngestRawFileConfig:
         ):
             return True
 
-        # We currently only conduct raw data pruning on raw files that are always historical.
+        # We currently only conduct manual raw data pruning on raw files that are always historical.
         if not self.always_historical_export:
             return True
 
+        return self.no_valid_primary_keys
+
+    def is_exempt_from_automatic_raw_data_pruning(self) -> bool:
+        """Returns True if this file is exempt from automatic raw data pruning."""
         return self.no_valid_primary_keys
 
     def has_regularly_updated_data(self) -> bool:
@@ -919,7 +923,7 @@ class DirectIngestRawFileConfig:
             ).title(),
             "isCodeFile": self.is_code_file,
             "isChunkedFile": self.is_chunked_file,
-            "manuallyPruned": not self.is_exempt_from_raw_data_pruning(),
+            "manuallyPruned": not self.is_exempt_from_legacy_manual_raw_data_pruning(),
             "inferColumns": self.infer_columns_from_config,
         }
 
