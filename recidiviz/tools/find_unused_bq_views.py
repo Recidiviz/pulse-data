@@ -432,18 +432,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "static_reference_data_views.us_co_incarceration_facility_names"
     ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(
-        "static_reference_data_views.us_id_incarceration_facility_map"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_id_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_id_supervision_district_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_id_supervision_unit_to_district_map"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
         "static_reference_data_views.us_me_incarceration_facility_names"
     ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(

@@ -16,26 +16,6 @@ us_co_incarceration_facility_names:
   columns:
     facility_code: "TODO(#46196): Hydrate description"
     facility_name: "TODO(#46196): Hydrate description"
-us_id_incarceration_facility_map:
-  description: TODO(#46196)
-  columns:
-    level_1_incarceration_location_external_id: "TODO(#46196): Hydrate description"
-    level_2_incarceration_location_external_id: "TODO(#46196): Hydrate description"
-us_id_incarceration_facility_names:
-  description: TODO(#46196)
-  columns:
-    facility_code: "TODO(#46196): Hydrate description"
-    facility_name: "TODO(#46196): Hydrate description"
-us_id_supervision_district_names:
-  description: TODO(#46196)
-  columns:
-    level_2_supervision_location_external_id: "TODO(#46196): Hydrate description"
-    level_2_supervision_location_name: "TODO(#46196): Hydrate description"
-us_id_supervision_unit_to_district_map:
-  description: TODO(#46196)
-  columns:
-    level_1_supervision_location_external_id: "TODO(#46196): Hydrate description"
-    level_2_supervision_location_external_id: "TODO(#46196): Hydrate description"
 us_me_incarceration_facility_names:
   description: TODO(#46196)
   columns:

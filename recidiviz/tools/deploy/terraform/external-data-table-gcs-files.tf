@@ -72,54 +72,6 @@ module "us_tn_supervision_facility_names_table" {
 
 # TODO(#46196): Delete this table and it's source table YAML definition and replace usages with the new view in
 #  static_reference_data_views
-module "us_id_supervision_unit_to_district_map_table" {
-  source = "./modules/local-csv-backed-gcs-file"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  recidiviz_root = local.recidiviz_root
-
-  file_name = "us_id_supervision_unit_to_district_map.csv"
-}
-
-# TODO(#46196): Delete this table and it's source table YAML definition and replace usages with the new view in
-#  static_reference_data_views
-module "us_id_supervision_district_names_table" {
-  source = "./modules/local-csv-backed-gcs-file"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  recidiviz_root = local.recidiviz_root
-
-  file_name = "us_id_supervision_district_names.csv"
-}
-
-# TODO(#46196): Delete this table and it's source table YAML definition and replace usages with the new view in
-#  static_reference_data_views
-module "us_id_incarceration_facility_names_table" {
-  source = "./modules/local-csv-backed-gcs-file"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  recidiviz_root = local.recidiviz_root
-
-  file_name = "us_id_incarceration_facility_names.csv"
-}
-
-# TODO(#46196): Delete this table and it's source table YAML definition and replace usages with the new view in
-#  static_reference_data_views
-module "us_id_incarceration_facility_map_table" {
-  source = "./modules/local-csv-backed-gcs-file"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  recidiviz_root = local.recidiviz_root
-
-  file_name = "us_id_incarceration_facility_map.csv"
-}
-
-# TODO(#46196): Delete this table and it's source table YAML definition and replace usages with the new view in
-#  static_reference_data_views
 module "us_tn_incarceration_facility_names_table" {
   source = "./modules/local-csv-backed-gcs-file"
 
