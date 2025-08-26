@@ -21,9 +21,6 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -270,39 +267,29 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
         date_leading_interval (int): Number of <date_part> representing the amount of
             time in advance of the earliest established release date that a person will
             become eligible.
-        date_part (str): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
+        date_part (str): Supports any of the BigQuery date_part values: "DAY", "WEEK",
+            "MONTH", "QUARTER", "YEAR".
     Returns:
         StateSpecificTaskCriteriaBigQueryViewBuilder: View builder for spans of time
-            when someone sufficiently close to their earliest established release date.
+            when someone is sufficiently close to their earliest established release
+            date.
     """
 
     # TODO(#46222): Can we make this historically accurate and not just a snapshot of
     # current eligibility?
     criterion_query = f"""
         WITH most_recent_cycle AS (
-            /* TODO(#46134): Should we set up a pre-processed view for cycle data so
-            we're not having to pull directly from the raw data here in addition to in
-            several other places? */
             /* Pull most recent cycle for each person in MO. Note that this will not
             necessarily be an active cycle for all people in MO data, but for residents
             currently incarcerated, the most recent cycle should be the current one. */
             SELECT
-                pei.state_code,
-                pei.person_id,
-                tak040.DQ_CYC AS cycle_number,
-                SAFE.PARSE_DATE('%Y%m%d', tak040.DQ_CD) AS cycle_start_date,
-                SAFE.PARSE_DATE('%Y%m%d', tak040.DQ_FD) AS cycle_end_date,
-            FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK040_latest` tak040
-            INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-                ON pei.state_code = 'US_MO'
-                AND pei.id_type = 'US_MO_DOC'
-                AND tak040.DQ_DOC = pei.external_id
-            -- keep cycle with highest cycle number (which should be the most recent)
-            QUALIFY ROW_NUMBER() OVER (
-                PARTITION BY pei.state_code, pei.person_id
-                ORDER BY tak040.DQ_CYC DESC
-            ) = 1
+                state_code,
+                person_id,
+                cycle_number,
+                cycle_start_date,
+                cycle_end_date,
+            FROM `{{project_id}}.{{analyst_dataset}}.us_mo_cycles_preprocessed_materialized`
+            WHERE is_most_recent_cycle
         ),
         release_dates AS (
             -- pull release dates for currently active, most recent cycles
@@ -371,11 +358,6 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
         description=description,
         criteria_spans_query_template=criterion_query,
         meets_criteria_default=False,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MO,
-            instance=DirectIngestInstance.PRIMARY,
-        ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         reasons_fields=[
             ReasonsField(

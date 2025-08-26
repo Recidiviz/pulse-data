@@ -190,7 +190,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     # TODO(#43388): Ensure that this is the correct candidate population.
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
-    # TODO(#42982): Finish adding in criteria and filling in stubs.
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         educational_score_1.VIEW_BUILDER,
