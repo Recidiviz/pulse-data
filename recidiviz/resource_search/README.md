@@ -38,7 +38,7 @@ docker build . -f Dockerfile.recidiviz-base -t us-docker.pkg.dev/recidiviz-stagi
 
 2. Build the resource search DB
 ```
-docker compose build resource_search_db
+docker compose -f docker-compose.resource-search.yaml build resource_search_db
 ```
 
 3. Start the local PostgreSQL database:
@@ -64,7 +64,7 @@ If you encounter PostgreSQL version conflicts or connection issues:
 
 1. **Clean up existing containers and volumes**:
 ```bash
-docker compose down -v
+docker compose -f docker-compose.resource-search.yaml down -v
 ```
 
 2. **Restart the database**:
