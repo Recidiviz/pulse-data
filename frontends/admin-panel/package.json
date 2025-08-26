@@ -26,7 +26,7 @@
     "react-dom": "^17.0.0",
     "react-draggable": "^4.5.0",
     "react-markdown": "^8.0.0",
-    "react-router-dom": "^5.2.0",
+    "react-router-dom": "^7.8.2",
     "semiotic": "^2.0.3",
     "styled-components": "^5.2.1",
     "zod": "^3.25.74"
