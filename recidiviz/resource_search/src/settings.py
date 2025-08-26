@@ -14,8 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""
+Application settings for the resource search system.
 
-"""Application settings for the resource search system."""
+To use, import Settings and instantiate it. It inherits
+other settings for our database and external API handling.
+"""
 
 from typing import Literal
 
@@ -34,28 +38,15 @@ from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
 
 PROJECT_ID = "recidiviz-staging" if in_gcp_production() is False else "recidiviz-123"
 
+# For classes w/ Pydantic, define all fields as class attributes with type hints
+# and a either a default value or Field(...).
+# Note: Use @computed_field for values that are derived from other fields.
 
-class Settings(BaseSettings):
-    """
-    Application settings for the resource search system.
-    """
 
-    # 1. Define all fields as class attributes with type hints and a default value or Field(...).
-    # This is the correct Pydantic pattern.
+class DatabaseSettings(BaseSettings):
     db_name: str = Field(..., description="The name of the database to connect to.")
-
-    google_api_key: str = Field(
-        default_factory=lambda: secrets.get_secret(
-            "google_maps_api_key", project_id=PROJECT_ID
-        )
-        or "google_maps_api_key"
-    )
-    google_places_api_key: str = google_api_key
-    google_geocoding_api_key: str = google_api_key
-    google_routes_api_key: str = google_api_key
     schema_type: SchemaType = SchemaType.RESOURCE_SEARCH
 
-    # 2. Use @computed_field for values that are derived from other fields.
     @computed_field
     def database_key(self) -> SQLAlchemyDatabaseKey:
         return SQLAlchemyDatabaseKey(schema_type=self.schema_type, db_name=self.db_name)
@@ -68,12 +59,26 @@ class Settings(BaseSettings):
             )
         return local_postgres_helpers.on_disk_postgres_db_url()
 
-    openai_api_key: str = Field(
-        default_factory=lambda: secrets.get_secret(
-            "open_ai_api_key", project_id=PROJECT_ID
-        )
-        or "open_ai_api_key",
-    )
+
+# TODO(#46942): Secrets will need to be accessed from recidiviz-rnd-planner or copied to recidiviz-staging
+SecretApiKey = lambda key: Field(  # pylint: disable=C3001
+    default_factory=lambda: secrets.get_secret(key, project_id=PROJECT_ID) or key
+)
+
+
+# TODO(#46942): Ensure these secrets exist for staging for each API and ensure
+# We have appropriate action for testing.
+class ExternalAPISettings(BaseSettings):
+    google_api_key: str = SecretApiKey("google_maps_api_key")
+    google_places_api_key: str = google_api_key
+    google_geocoding_api_key: str = google_api_key
+    google_routes_api_key: str = google_api_key
+    openai_api_key: str = SecretApiKey("open_ai_api_key")
+
+
+class Settings(DatabaseSettings, ExternalAPISettings):
+    """Application settings for the resource search system."""
+
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
-        default="INFO"
+        default="INFO" if in_gcp_staging() or in_gcp_production() else "DEBUG"
     )
