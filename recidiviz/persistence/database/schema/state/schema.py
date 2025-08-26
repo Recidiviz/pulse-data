@@ -225,6 +225,7 @@ state_supervision_case_type = Enum(
     state_enum_strings.state_supervision_case_type_drug_court,
     state_enum_strings.state_supervision_case_type_family_court,
     state_enum_strings.state_supervision_case_type_general,
+    state_enum_strings.state_supervision_case_type_lifetime_supervision,
     state_enum_strings.state_supervision_case_type_mental_health_court,
     state_enum_strings.state_supervision_case_type_serious_mental_illness_or_disability,
     state_enum_strings.state_supervision_case_type_sex_offense,

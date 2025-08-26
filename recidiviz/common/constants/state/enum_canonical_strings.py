@@ -478,6 +478,7 @@ state_supervision_case_type_domestic_violence = "DOMESTIC_VIOLENCE"
 state_supervision_case_type_drug_court = "DRUG_COURT"
 state_supervision_case_type_family_court = "FAMILY_COURT"
 state_supervision_case_type_general = "GENERAL"
+state_supervision_case_type_lifetime_supervision = "LIFETIME_SUPERVISION"
 state_supervision_case_type_mental_health_court = "MENTAL_HEALTH_COURT"
 state_supervision_case_type_serious_mental_illness_or_disability = (
     "SERIOUS_MENTAL_ILLNESS_OR_DISABILITY"

@@ -33,6 +33,9 @@ class StateSupervisionCaseType(StateEntityEnum):
     DRUG_COURT = state_enum_strings.state_supervision_case_type_drug_court
     FAMILY_COURT = state_enum_strings.state_supervision_case_type_family_court
     GENERAL = state_enum_strings.state_supervision_case_type_general
+    LIFETIME_SUPERVISION = (
+        state_enum_strings.state_supervision_case_type_lifetime_supervision
+    )
     MENTAL_HEALTH_COURT = (
         state_enum_strings.state_supervision_case_type_mental_health_court
     )
@@ -78,6 +81,13 @@ _STATE_SUPERVISION_CASE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "program.",
     StateSupervisionCaseType.GENERAL: "Used on a period of supervision that does not "
     "have any special classification.",
+    StateSupervisionCaseType.LIFETIME_SUPERVISION: "Describes a type of supervision "
+    "that someone is assigned to be on for life, it can be specific like a lifetime"
+    "sex offense supervision or general as some kind of supervision intended to last for "
+    "life. This is generally a type of supervision used in cases where someone has "
+    "completed their initial sentence, then been sentenced to a term of lifetime "
+    "supervision afterwards where the contact requirements are often different than "
+    "those while they were serving their original sentence.",
     StateSupervisionCaseType.MENTAL_HEALTH_COURT: "Describes a period of supervision "
     "that someone is on as a participation requirement of a Mental Health Court "
     "diversionary program.",

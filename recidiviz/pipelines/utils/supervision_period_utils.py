@@ -57,6 +57,7 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.DAY_REPORTING,
     StateSupervisionCaseType.PHYSICAL_ILLNESS_OR_DISABILITY,
     StateSupervisionCaseType.INTENSE_SUPERVISION,
+    StateSupervisionCaseType.LIFETIME_SUPERVISION,
     # Diversionary courts
     StateSupervisionCaseType.DRUG_COURT,
     StateSupervisionCaseType.MENTAL_HEALTH_COURT,
