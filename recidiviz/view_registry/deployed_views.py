@@ -267,6 +267,8 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "us_nc_raw_data_up_to_date_views_secondary",
     "us_nd_raw_data_up_to_date_views",
     "us_nd_raw_data_up_to_date_views_secondary",
+    "us_ny_raw_data_up_to_date_views",
+    "us_ny_raw_data_up_to_date_views_secondary",
     "us_pa_raw_data_up_to_date_views",
     "us_pa_raw_data_up_to_date_views_secondary",
     "us_tn_raw_data_up_to_date_views",

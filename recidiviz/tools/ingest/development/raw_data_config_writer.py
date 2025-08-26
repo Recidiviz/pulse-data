@@ -17,6 +17,7 @@
 
 """Functionality for generating raw data config YAML contents."""
 import os
+import textwrap
 from typing import List, Optional
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -65,8 +66,8 @@ class RawDataConfigWriter:
         """Generates a string for a single column in the yaml file."""
         column_string = f"  - name: {column.name}"
         if column.description:
-            column_description_string = "\n      ".join(column.description.splitlines())
-            column_string += f"\n    description: |-\n      {column_description_string}"
+            indented_desc = textwrap.indent(column.description, "      ")
+            column_string += f"\n    description: |-\n{indented_desc}"
 
         if column.field_type != RawTableColumnFieldType.STRING:
             column_string += f"\n    field_type: {column.field_type.value}"

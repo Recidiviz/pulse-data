@@ -91,6 +91,8 @@ US_ND_DOCSTARS_EMAIL = "US_ND_DOCSTARS_EMAIL"
 # ND Elite Employee ID - tracks employees who work in facilities
 US_ND_ELITE_OFFICER = "US_ND_ELITE_OFFICER"
 
+# NY State ID
+US_NY_SID = "US_NY_SID"
 
 # OR ID_NUMBER
 US_OR_ID = "US_OR_ID"
