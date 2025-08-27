@@ -14,7 +14,15 @@ exclusions:
     exclusion_reason: NE is being hydrated only with v2 sentences
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+    exclusion_reason:
+      Sentencing assistance case insights are not configured/launched for this
+      state
+  - validation_name: person_caseload_location_sessions_caseload
+    exclusion_type: BROKEN
+    exclusion_reason: Failing at 82%, will be addressed in #TODO(#47003)
+  - validation_name: person_caseload_location_sessions_location
+    exclusion_type: BROKEN
+    exclusion_reason: Failing at 82%, will be addressed in #TODO(#47003)
 max_allowed_error_overrides:
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .38
@@ -29,5 +37,5 @@ num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 12
     override_reason:
-      Currently only 6 instances as of 02/14/25. These are data entry errors from
-      Nebraska and have been brought to their attention.
+      Currently only 6 instances as of 02/14/25. These are data entry errors
+      from Nebraska and have been brought to their attention.

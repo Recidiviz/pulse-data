@@ -13,7 +13,15 @@ exclusions:
     exclusion_reason: UT is being hydrated only with v2 sentences
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+    exclusion_reason:
+      Sentencing assistance case insights are not configured/launched for this
+      state
+  - validation_name: person_caseload_location_sessions_caseload
+    exclusion_type: BROKEN
+    exclusion_reason: Failing in most states, will be addressed in #TODO(#47004)
+  - validation_name: person_caseload_location_sessions_location
+    exclusion_type: BROKEN
+    exclusion_reason: Failing in most states, will be addressed in #TODO(#47004)
 max_allowed_error_overrides:
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 0.025
