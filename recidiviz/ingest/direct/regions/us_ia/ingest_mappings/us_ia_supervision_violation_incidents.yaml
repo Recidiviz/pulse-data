@@ -55,3 +55,6 @@ output:
                                   $json: $iter_item
                             $separator: "@@"
                         $custom_parser: us_ia_custom_enum_parsers.map_violated_condition_type_with_extra_raw_text
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN)

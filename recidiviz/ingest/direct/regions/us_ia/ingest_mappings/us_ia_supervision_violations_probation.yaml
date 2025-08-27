@@ -57,6 +57,9 @@ output:
           violation_metadata:
             $json_dict:
               ViolationComments: ViolationComments
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN)
           supervision_violation_responses:
             - $conditional:
                 - $if:
