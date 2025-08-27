@@ -25,5 +25,5 @@ resource "google_storage_bucket_object" "gcs_csv_file" {
   # the local file to GCS.
   name   = "${var.file_name}"
   bucket = var.bucket_name
-  source = "${var.recidiviz_root}/datasets/static_data/${var.file_name}"
+  source = "${var.recidiviz_root}/datasets/static_data/terraform_managed/${var.file_name}"
 }
