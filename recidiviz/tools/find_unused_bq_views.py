@@ -426,35 +426,14 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "static_reference_data_views.county_fips"
     ): "This is currently unused but could be a useful reference table so we're keeping it for now (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(
-        "static_reference_data_views.us_co_incarceration_facility_map"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_co_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_me_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_mi_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_mo_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_nd_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_tn_incarceration_facility_map"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incarceration_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_supervision_facility_names"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_supervision_locations"
-    ): "TODO(#46196): This will soon be used in favor of the legacy source table with the same name (Anna Geiduschek, 8/26/2025)",
+    ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
