@@ -1,0 +1,32 @@
+# Environments
+.env
+.env.*
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.firebase/
+.runtimeconfig.json
+service_account.json
+
+
+# Terraform
+.atmos
+.decrypted*
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+# Used to store temporary files
+**/.tfout/*
+
+# Local emulator files
+recidiviz/local/**/*
+
+# Local Case Triage files
+recidiviz/case_triage/local/**/*
+
+# Local Justice Counts files
+recidiviz/justice_counts/control_panel/local/**/*
