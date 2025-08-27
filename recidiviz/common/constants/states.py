@@ -144,6 +144,28 @@ ALTERNATE_INGEST_US_ID_STATE_INFO = {
     ),
 }
 
+# The states package doesn't have an entry for the Midway Islands but there are
+#  valid fips codes.
+US_MINOR_OUTLYING_ISLANDS_TERRITORY_INFO = {
+    "US_UM": us.states.State(
+        **{
+            "fips": "74",
+            "name": "U.S. Minor Outlying Islands",
+            "abbr": "UM",
+            "is_territory": True,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": False,
+            "statehood_year": None,
+            "capital": "Midway Atoll",
+            "capital_tz": "Pacific/Midway",
+            "ap_abbr": "Midway Is.",
+            "time_zones": ["Pacific/Midway"],
+            "name_metaphone": "MTW",
+        }
+    ),
+}
+
 
 class _RealStateCode(_SharedStateCode):
     """Code for every state in the US"""
@@ -198,6 +220,7 @@ class _RealStateCode(_SharedStateCode):
     US_SD = "US_SD"
     US_TN = "US_TN"
     US_TX = "US_TX"
+    US_UM = "US_UM"  # U.S. Minor Outlying Islands
     US_UT = "US_UT"
     US_VA = "US_VA"
     US_VI = "US_VI"  # U.S. Virgin Islands
@@ -221,6 +244,7 @@ class _RealStateCode(_SharedStateCode):
             getattr(us.states, state_abbrev, None)
             or PLAYGROUND_STATE_INFO.get(state_code)
             or ALTERNATE_INGEST_US_ID_STATE_INFO.get(state_code)
+            or US_MINOR_OUTLYING_ISLANDS_TERRITORY_INFO.get(state_code)
         )
 
 
@@ -384,6 +408,7 @@ class _FakeStateCode(_SharedStateCode):
     US_SD = "US_SD"
     US_TN = "US_TN"
     US_TX = "US_TX"
+    US_UM = "US_UM"  # U.S. Minor Outlying Islands
     US_UT = "US_UT"
     US_VA = "US_VA"
     US_VI = "US_VI"  # U.S. Virgin Islands
@@ -485,6 +510,7 @@ if typing.TYPE_CHECKING:
         US_SD = "US_SD"
         US_TN = "US_TN"
         US_TX = "US_TX"
+        US_UM = "US_UM"  # U.S. Minor Outlying Islands
         US_UT = "US_UT"
         US_VA = "US_VA"
         US_VI = "US_VI"  # U.S. Virgin Islands

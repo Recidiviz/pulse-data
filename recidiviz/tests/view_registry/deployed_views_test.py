@@ -29,6 +29,9 @@ from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
     AggregatedMetricsBigQueryViewBuilder,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_sqlglot_helpers import (
+    get_state_code_literal_references,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_utils import build_views_to_update
@@ -983,6 +986,20 @@ class ViewQueryFormatTest(unittest.TestCase):
                         view.address
                     ),
                 )
+            except ValueError as e:
+                exceptions.append(e)
+            return exceptions
+
+        self._run_query_format_test(_get_view_errors)
+
+    def test_view_query_format__can_get_state_code_literal_references(self) -> None:
+        def _get_view_errors(
+            view: BigQueryView,  # pylint: disable=unused-argument
+            query_expression: sqlglot.exp.Query,
+        ) -> list[ValueError]:
+            exceptions = []
+            try:
+                get_state_code_literal_references(query_expression)
             except ValueError as e:
                 exceptions.append(e)
             return exceptions

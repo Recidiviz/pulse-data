@@ -45,9 +45,10 @@ class TestStates(unittest.TestCase):
 
         # There are 58 states included because we count US_DC, U.S. territories
         # (US_AS - American Samoa, US_GU - Guam, US_MP - Northern Mariana Islands,
-        # US_VI - U.S. Virgin Islands), a playground region (US_OZ), and an alternate
-        # ingest code for Idaho (US_IX for US_ID).
-        self.assertEqual(58, len(states.StateCode))
+        # US_UM - U.S. Minor Outlying Islands, US_VI - U.S. Virgin Islands), a
+        # playground region (US_OZ), and an alternate ingest code for Idaho (US_IX for
+        # US_ID).
+        self.assertEqual(59, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-3].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-2].value)
@@ -59,7 +60,7 @@ class TestStates(unittest.TestCase):
 
         # There are 63 states because we are in tests, so we add US_DD, US_LL,
         # US_WW, US_XX, and US_YY as valid values.
-        self.assertEqual(63, len(states.StateCode))
+        self.assertEqual(64, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-8].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-7].value)
