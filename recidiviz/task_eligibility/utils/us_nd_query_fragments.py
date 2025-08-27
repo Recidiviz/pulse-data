@@ -538,7 +538,7 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
 
     SELECT 
         rr.state_code,
-        rr.person_external_id AS elite_no,
+        elite_nos.elite_no,
         CONCAT(
             JSON_EXTRACT_SCALAR(rr.person_name, '$.given_names'), ' ',
             JSON_EXTRACT_SCALAR(rr.person_name, '$.surname')
@@ -548,9 +548,7 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
         rr.release_date,
         DATE_DIFF(CURRENT_DATE("US/Pacific"), sp.birthdate, YEAR) AS age_in_years,
         rr.custody_level,
-        CONCAT(
-            sr.given_names, ' ', sr.surname
-        ) AS officer_name,
+        sr.officer_name,
         r_ref.start_date AS referral_date, 
         r_ref.referral_facility
     FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_to_minimum_facility_form_materialized` tes
@@ -558,11 +556,21 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
         USING(person_id, state_code)
     LEFT JOIN `{{project_id}}.workflows_views.resident_record_materialized` rr
         USING(person_id, state_code)
-    LEFT JOIN `{{project_id}}.workflows_views.incarceration_staff_record_materialized` sr
-        ON sr.id = rr.officer_id
-            AND sr.state_code = 'US_ND'
+    LEFT JOIN (
+        SELECT id AS officer_external_id, CONCAT(sr.given_names, ' ', sr.surname) AS officer_name
+        FROM `{{project_id}}.workflows_views.incarceration_staff_record_materialized` sr
+        WHERE state_code = 'US_ND'
+    ) sr
+        ON sr.officer_external_id = rr.officer_id
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
-        USING(person_id)
+        USING(state_code, person_id)
+    LEFT JOIN (
+        SELECT person_id, external_id AS elite_no
+        FROM `{{project_id}}.us_nd_normalized_state.state_person_external_id`
+        WHERE id_type = 'US_ND_ELITE' AND state_code = 'US_ND'
+            AND is_current_display_id_for_type
+    ) elite_nos
+        USING (person_id)
     WHERE CURRENT_DATE("US/Pacific") BETWEEN tes.start_date AND IFNULL(tes.end_date, '9999-12-31')
         -- Not in a minimum security facility
         AND JSON_EXTRACT_SCALAR(
