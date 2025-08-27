@@ -36,9 +36,8 @@ will look something like:
 # pylint: disable=C0411  # wrong-import-order
 # pylint: disable=C0413  # wrong-import-position
 
-
 # imports for notebooks
-import datetime
+import datetime  # noqa
 import os
 import re
 import sys
@@ -67,11 +66,11 @@ sys.path.append(recidiviz_data_path)
 # imports from pulse-data
 from recidiviz.tools.analyst.plots import (  # isort:skip
     RECIDIVIZ_COLORS,
-    add_legend,
-    line_labels,
     group_into_other,
     adjust_plot_scale,
     plot_settings,
+    add_legend,
+    line_labels,
 )
 
 # IPython magics - only run if in notebook environment
@@ -175,3 +174,35 @@ class DummySyntax:
 
 
 syntax = DummySyntax()
+
+
+def freq_table(
+    df: pd.DataFrame, column: str, decimals: int = 2, sort_index: bool = True
+) -> pd.DataFrame:
+    """
+    Returns a DataFrame with frequency counts and percentages for a given column.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        Input DataFrame
+    column : str
+        Column name to analyze
+    decimals : int, default=2
+        Number of decimal places for percentages
+    sort_index : bool, default=True
+        Whether to sort by index (categories)
+
+    Returns:
+    --------
+    pandas.DataFrame
+        Table with counts and percentages
+    """
+    counts = df[column].value_counts(dropna=False)
+    percents = df[column].value_counts(normalize=True, dropna=False) * 100
+
+    if sort_index:
+        counts = counts.sort_index()
+        percents = percents.sort_index()
+
+    return pd.DataFrame({"count": counts, "percent": percents.round(decimals)})
