@@ -21,6 +21,12 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.task_eligibility import task_eligiblity_spans
+from recidiviz.task_eligibility.almost_eligible_task_spans_big_query_view_collector import (
+    AlmostEligibleSpansBigQueryViewCollector,
+)
+from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_collector import (
+    BasicSingleTaskEligibilitySpansBigQueryViewCollector,
+)
 from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
     build_collapsed_task_eligibility_spans_view_for_tes_builder,
 )
@@ -43,6 +49,12 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     eligibility (i.e. views in task_eligibility* datasets).
     """
     tes_builders = SingleTaskEligibilityBigQueryViewCollector().collect_view_builders()
+    basic_tes_builders = BasicSingleTaskEligibilitySpansBigQueryViewCollector(
+        tes_builders
+    ).collect_view_builders()
+    almost_eligible_tes_builders = AlmostEligibleSpansBigQueryViewCollector(
+        basic_tes_builders, tes_builders
+    ).collect_view_builders()
     collapsed_tes_builders = [
         build_collapsed_task_eligibility_spans_view_for_tes_builder(tes_builder)
         for tes_builder in tes_builders
@@ -54,6 +66,8 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
                 TaskCriteriaBigQueryViewCollector().collect_view_builders(),
                 TaskCandidatePopulationBigQueryViewCollector().collect_view_builders(),
                 TaskCompletionEventBigQueryViewCollector().collect_view_builders(),
+                basic_tes_builders,
+                almost_eligible_tes_builders,
                 tes_builders,
                 collapsed_tes_builders,
                 task_eligiblity_spans.get_unioned_view_builders(),

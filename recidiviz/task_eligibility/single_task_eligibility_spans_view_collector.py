@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 )
 
 
+# TODO(#46985): Move this object to a Workflows specific module
 class SingleTaskEligibilityBigQueryViewCollector(
     BigQueryViewCollector[SingleTaskEligibilitySpansBigQueryViewBuilder]
 ):

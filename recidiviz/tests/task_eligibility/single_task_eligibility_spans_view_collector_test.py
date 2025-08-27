@@ -47,7 +47,7 @@ class TestSingleTaskEligibilityBigQueryViewCollector(unittest.TestCase):
         for builder in all_task_eligibility_builders:
             if not isinstance(builder, SingleTaskEligibilitySpansBigQueryViewBuilder):
                 raise ValueError(
-                    f"Found unexpected task eligiblity view builder type "
+                    f"Found unexpected task eligibility view builder type "
                     f"[{type(builder)}]: {builder}"
                 )
 

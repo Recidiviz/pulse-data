@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.workflows.types import WorkflowsSystemType
 
 
+# TODO(#46985): Rename this object and move it to a Workflows specific module
 class TaskCompletionEventType(Enum):
     """Enum describing the type of task completion event"""
 

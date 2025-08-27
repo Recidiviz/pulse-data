@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 )
 
 
+# TODO(#46985): Move this collector to a Workflows specific module
 class TaskCompletionEventBigQueryViewCollector(
     BigQueryViewCollector[TaskCompletionEventBigQueryViewBuilder]
 ):

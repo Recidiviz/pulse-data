@@ -16,55 +16,46 @@
 # =============================================================================
 """Tests for the SingleTaskEligibilitySpansBigQueryViewBuilder."""
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_utils import (
-    BigQueryDateInterval,
-    schema_field_for_type,
-)
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.almost_eligible_spans_big_query_view_builder import (
+    AlmostEligibleSpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
+    BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.criteria_condition import (
-    EligibleCriteriaCondition,
-    LessThanOrEqualCriteriaCondition,
     NotEligibleCriteriaCondition,
-    PickNCompositeCriteriaCondition,
-    ReasonDateInCalendarWeekCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
-    get_critical_date_parsing_fragments_by_criteria,
-)
-from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
-    StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-    TaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.utils import metadata
-from recidiviz.utils.string import StrictStringFormatter
-
-TEST_POPULATION_BUILDER = StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
-    population_name="SIMPLE_POPULATION",
-    population_spans_query_template="SELECT * FROM `{project_id}.test_dataset.foo`;",
-    description="Simple population description",
+from recidiviz.tests.task_eligibility.task_eligibility_big_query_emulator_utils import (
+    TEST_COMPLETION_EVENT_BUILDER,
+    TEST_POPULATION_BUILDER,
+    load_data_for_almost_eligible_span_view,
+    load_data_for_basic_task_eligibility_span_view,
+    load_data_for_candidate_population_view,
+    load_data_for_task_completion_event_view,
+    load_data_for_task_criteria_view,
+    load_empty_task_completion_event_view,
 )
 
 TEST_CRITERIA_BUILDER_1 = StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -121,12 +112,6 @@ TEST_CRITERIA_BUILDER_4 = StateSpecificTaskCriteriaBigQueryViewBuilder(
     ],
 )
 
-TEST_COMPLETION_EVENT_BUILDER = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
-    completion_event_type=TaskCompletionEventType.EARLY_DISCHARGE,
-    completion_event_query_template="SELECT * FROM `{project_id}.test_dataset.foo`;",
-    description="Simple event description",
-)
-
 TES_QUERY_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_XX,
     task_name="my_task_name",
@@ -141,91 +126,6 @@ TES_QUERY_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
 
 class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase):
     """Tests for the SingleTaskEligibilitySpansBigQueryViewBuilder."""
-
-    def _load_data_for_criteria_view(
-        self,
-        criteria_view_builder: TaskCriteriaBigQueryViewBuilder,
-        criteria_data: List[Dict[str, Any]],
-    ) -> None:
-        self.create_mock_table(
-            address=criteria_view_builder.table_for_query,
-            schema=[
-                schema_field_for_type("state_code", str),
-                schema_field_for_type("person_id", int),
-                schema_field_for_type("start_date", date),
-                schema_field_for_type("end_date", date),
-                schema_field_for_type("meets_criteria", bool),
-                bigquery.SchemaField(
-                    "reason",
-                    field_type=bigquery.enums.StandardSqlTypeNames.JSON.value,
-                    mode="NULLABLE",
-                ),
-                bigquery.SchemaField(
-                    "reason_v2",
-                    field_type=bigquery.enums.StandardSqlTypeNames.JSON.value,
-                    mode="NULLABLE",
-                ),
-            ],
-        )
-        self.load_rows_into_table(
-            address=criteria_view_builder.table_for_query,
-            data=criteria_data,
-        )
-
-    def _load_data_for_candidate_population_view(
-        self,
-        population_date_spans: List[Tuple[date, Optional[date]]],
-        test_person_id: int = 12345,
-        create_table: bool = True,
-    ) -> None:
-        """Helper method for loading the mock candidate population view for the test person from state US_XX"""
-        if create_table:
-            self.create_mock_table(
-                address=TEST_POPULATION_BUILDER.table_for_query,
-                schema=[
-                    schema_field_for_type("state_code", str),
-                    schema_field_for_type("person_id", int),
-                    schema_field_for_type("start_date", date),
-                    schema_field_for_type("end_date", date),
-                ],
-            )
-        self.load_rows_into_table(
-            address=TEST_POPULATION_BUILDER.table_for_query,
-            data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": test_person_id,
-                    "start_date": date_span[0],
-                    "end_date": date_span[1],
-                }
-                for date_span in population_date_spans
-            ],
-        )
-
-    def _load_data_for_completion_event_view(
-        self,
-        completion_event_view_builder: StateAgnosticTaskCompletionEventBigQueryViewBuilder,
-        task_completion_data: List[Dict[str, Any]],
-    ) -> None:
-        self.create_mock_table(
-            address=completion_event_view_builder.table_for_query,
-            schema=[
-                schema_field_for_type("state_code", str),
-                schema_field_for_type("person_id", int),
-                schema_field_for_type("completion_event_date", date),
-            ],
-        )
-        self.load_rows_into_table(
-            address=completion_event_view_builder.table_for_query,
-            data=task_completion_data,
-        )
-
-    def _load_empty_completion_event_view(self) -> None:
-        """Helper method for loading the mock task completion event view with no rows"""
-        self._load_data_for_completion_event_view(
-            completion_event_view_builder=TEST_COMPLETION_EVENT_BUILDER,
-            task_completion_data=[],
-        )
 
     def test_materialized_table_for_task_name(self) -> None:
         self.assertEqual(
@@ -247,11 +147,15 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
             ),
         )
 
-    def test_almost_eligible_condition_nested_in_criteria_list(self) -> None:
-        """
-        Verify an error is raised if the almost eligible condition is applied to a criteria that is not in the
-        top-level criteria list
-        """
+    def test_mismatched_state_codes(self) -> None:
+        """Verify an error is raised if the task state code does not match the completion event"""
+
+        us_yy_completion_event = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+            state_code=StateCode.US_YY,
+            completion_event_type=TaskCompletionEventType.EARLY_DISCHARGE,
+            completion_event_query_template="SELECT * FROM `{project_id}.test_dataset.foo`;",
+            description="Simple event description",
+        )
         with self.assertRaises(ValueError):
             SingleTaskEligibilitySpansBigQueryViewBuilder(
                 state_code=StateCode.US_XX,
@@ -259,21 +163,9 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 description="my_task_description",
                 candidate_population_view_builder=TEST_POPULATION_BUILDER,
                 criteria_spans_view_builders=[
-                    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
-                        logic_type=TaskCriteriaGroupLogicType.AND,
-                        sub_criteria_list=[
-                            TEST_CRITERIA_BUILDER_1,
-                            TEST_CRITERIA_BUILDER_2,
-                        ],
-                        criteria_name="AND_TASK_CRITERIA_GROUP",
-                        allowed_duplicate_reasons_keys=[],
-                    ),
+                    TEST_CRITERIA_BUILDER_1,
                 ],
-                completion_event_builder=TEST_COMPLETION_EVENT_BUILDER,
-                almost_eligible_condition=NotEligibleCriteriaCondition(
-                    criteria=TEST_CRITERIA_BUILDER_1,
-                    description="Criteria 1 is not met",
-                ),
+                completion_event_builder=us_yy_completion_event,
             )
 
     def test_simple_tes_query(self) -> None:
@@ -281,7 +173,8 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
         Verify that the Task Eligibility Spans view can properly handle a client that goes from ineligible to eligible
         for a single criteria
         """
-        self._load_data_for_criteria_view(
+        load_data_for_task_criteria_view(
+            emulator=self,
             criteria_view_builder=TEST_CRITERIA_BUILDER_1,
             criteria_data=[
                 {
@@ -313,10 +206,11 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 },
             ],
         )
-        self._load_data_for_candidate_population_view(
-            [(date(2024, 1, 1), date(2024, 4, 8))]
+        load_data_for_candidate_population_view(
+            emulator=self, population_date_spans=[(date(2024, 1, 1), date(2024, 4, 8))]
         )
-        self._load_data_for_completion_event_view(
+        load_data_for_task_completion_event_view(
+            emulator=self,
             completion_event_view_builder=TEST_COMPLETION_EVENT_BUILDER,
             task_completion_data=[
                 {
@@ -408,7 +302,8 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
     def test_tes_query_no_task_completion_event(self) -> None:
         """Test that the TES spans end with 'LEFT_CANDIDATE_POPULATION' when there is no completion event"""
 
-        self._load_data_for_criteria_view(
+        load_data_for_task_criteria_view(
+            emulator=self,
             criteria_view_builder=TEST_CRITERIA_BUILDER_1,
             criteria_data=[
                 {
@@ -442,19 +337,29 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                     "state_code": "US_XX",
                     "person_id": 12345,
                     "start_date": date(2024, 3, 28),
-                    "end_date": date(2024, 4, 8),
+                    "end_date": date(2024, 4, 4),
                     "meets_criteria": True,
+                    "reason": {"test_reason": "new_eligible_reason"},
+                    "reason_v2": {"test_reason": "new_eligible_reason"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 4, 4),
+                    "end_date": date(2024, 4, 8),
+                    "meets_criteria": False,
                     "reason": {"test_reason": "new_eligible_reason"},
                     "reason_v2": {"test_reason": "new_eligible_reason"},
                 },
             ],
         )
-        self._load_data_for_candidate_population_view(
-            [
+        load_data_for_candidate_population_view(
+            emulator=self,
+            population_date_spans=[
                 (date(2024, 1, 1), date(2024, 4, 8)),
-            ]
+            ],
         )
-        self._load_empty_completion_event_view()
+        load_empty_task_completion_event_view(emulator=self)
         self.run_query_test(
             query_str=TES_QUERY_BUILDER.build().view_query,
             expected_result=[
@@ -536,7 +441,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                     "task_name": TES_QUERY_BUILDER.task_name,
                     "task_eligibility_span_id": 4,
                     "start_date": date(2024, 3, 28),
-                    "end_date": date(2024, 4, 8),
+                    "end_date": date(2024, 4, 4),
                     "is_eligible": True,
                     "is_almost_eligible": False,
                     "reasons": [
@@ -552,6 +457,30 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                         }
                     ],
                     "ineligible_criteria": [],
+                    "end_reason": "BECAME_INELIGIBLE",
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_eligibility_span_id": 5,
+                    "start_date": date(2024, 4, 4),
+                    "end_date": date(2024, 4, 8),
+                    "is_eligible": False,
+                    "is_almost_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "new_eligible_reason"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "new_eligible_reason"},
+                        }
+                    ],
+                    "ineligible_criteria": ["SIMPLE_CRITERIA"],
                     "end_reason": "LEFT_CANDIDATE_POPULATION",
                 },
             ],
@@ -561,7 +490,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
         """Test that the TES spans cover the full candidate population time period:
         - The eligibility span does not start before the candidate population start date
         - The criteria default is used for periods during the population span when the criteria span is missing
-        - The spans are marked as almost eligible when the criterion is not met (NotEligibleCriteriaCondition)
+        - The spans are split when the almost eligible flag changes
         """
 
         meets_criteria_default_true_view_builder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -592,44 +521,154 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
             ),
         )
 
-        self._load_data_for_criteria_view(
-            criteria_view_builder=meets_criteria_default_true_view_builder,
-            criteria_data=[
+        basic_eligibility_address = BasicSingleTaskEligibilitySpansBigQueryViewBuilder.materialized_table_for_task_name(
+            state_code=tes_view_builder.state_code,
+            task_name=tes_view_builder.task_name,
+        )
+
+        load_data_for_basic_task_eligibility_span_view(
+            emulator=self,
+            basic_eligibility_address=basic_eligibility_address,
+            basic_eligibility_data=[
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "start_date": date(2023, 12, 1),
+                    "start_date": date(2024, 1, 1),
                     "end_date": date(2024, 2, 6),
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_text"},
-                    "reason_v2": {"test_reason": "reason_text"},
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": {"test_reason": "reason_text"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": {"test_reason": "reason_text"},
+                        }
+                    ],
+                    "ineligible_criteria": [
+                        meets_criteria_default_true_view_builder.criteria_name
+                    ],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 6),
+                    "end_date": date(2024, 3, 1),
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": None,
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": None,
+                        }
+                    ],
+                    "ineligible_criteria": [],
                 },
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
                     "start_date": date(2024, 3, 1),
-                    "end_date": date(2024, 3, 18),
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_change"},
-                    "reason_v2": {"test_reason": "reason_change"},
+                    "end_date": date(2024, 3, 6),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": {"test_reason": "reason_change"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": {"test_reason": "reason_change"},
+                        }
+                    ],
+                    "ineligible_criteria": [
+                        meets_criteria_default_true_view_builder.criteria_name
+                    ],
                 },
             ],
         )
-        self._load_data_for_candidate_population_view(
-            [
-                (date(2024, 1, 1), date(2024, 3, 6)),
-            ]
+        load_data_for_almost_eligible_span_view(
+            emulator=self,
+            almost_eligible_address=AlmostEligibleSpansBigQueryViewBuilder.materialized_table_for_task_name(
+                tes_view_builder.state_code,
+                tes_view_builder.task_name,
+            ),
+            almost_eligible_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 28),
+                    "is_almost_eligible": False,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 28),
+                    "end_date": date(2024, 2, 6),
+                    "is_almost_eligible": True,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 6),
+                    "end_date": date(2024, 3, 1),
+                    "is_almost_eligible": False,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 3, 6),
+                    "is_almost_eligible": True,
+                },
+            ],
         )
-        self._load_empty_completion_event_view()
+        load_empty_task_completion_event_view(emulator=self)
         self.run_query_test(
             query_str=tes_view_builder.build().view_query,
             expected_result=[
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_name": tes_view_builder.task_name,
                     "task_eligibility_span_id": 1,
                     "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 28),
+                    "is_eligible": False,
+                    "is_almost_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": {"test_reason": "reason_text"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": meets_criteria_default_true_view_builder.criteria_name,
+                            "reason": {"test_reason": "reason_text"},
+                        }
+                    ],
+                    "ineligible_criteria": [
+                        meets_criteria_default_true_view_builder.criteria_name
+                    ],
+                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "task_name": tes_view_builder.task_name,
+                    "task_eligibility_span_id": 2,
+                    "start_date": date(2024, 1, 28),
                     "end_date": date(2024, 2, 6),
                     "is_eligible": False,
                     "is_almost_eligible": True,
@@ -653,8 +692,8 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 2,
+                    "task_name": tes_view_builder.task_name,
+                    "task_eligibility_span_id": 3,
                     "start_date": date(2024, 2, 6),
                     "end_date": date(2024, 3, 1),
                     "is_eligible": True,
@@ -677,8 +716,8 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 3,
+                    "task_name": tes_view_builder.task_name,
+                    "task_eligibility_span_id": 4,
                     "start_date": date(2024, 3, 1),
                     "end_date": date(2024, 3, 6),
                     "is_eligible": False,
@@ -706,70 +745,10 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
     def test_tes_query_final_open_span(self) -> None:
         """
         Test the Task Eligibility Spans view for a client with an open eligibility span
-        (end_date and end_reason are NULL) and two eligibility criteria with one almost eligible criteria condition
+        (end_date and end_reason are NULL) and two eligibility criteria with one time dependent
+        almost eligible criteria condition that splits ineligible spans.
         """
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 6),
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_text"},
-                    "reason_v2": {"test_reason": "reason_text"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 6),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason": "eligible_reason"},
-                    "reason_v2": {"test_reason": "eligible_reason"},
-                },
-            ],
-        )
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_4,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 10),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_date": None},
-                    "reason_v2": {"test_reason_date": None},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 10),
-                    "end_date": date(2024, 3, 18),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_date": "2024-03-18"},
-                    "reason_v2": {"test_reason_date": "2024-03-18"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 18),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason_date": "2024-03-18"},
-                    "reason_v2": {"test_reason_date": "2024-03-18"},
-                },
-            ],
-        )
-        self._load_data_for_candidate_population_view(
-            [
-                (date(2024, 1, 1), None),
-            ]
-        )
-        self._load_empty_completion_event_view()
-        tes_query_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
+        tes_view_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
             state_code=StateCode.US_XX,
             task_name="my_task_name",
             description="my_task_description",
@@ -787,13 +766,186 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 description="Time dependent criteria condition",
             ),
         )
-        self.run_query_test(
-            query_str=tes_query_builder.build().view_query,
-            expected_result=[
+        load_data_for_basic_task_eligibility_span_view(
+            emulator=self,
+            basic_eligibility_address=BasicSingleTaskEligibilitySpansBigQueryViewBuilder.materialized_table_for_task_name(
+                state_code=tes_view_builder.state_code,
+                task_name=tes_view_builder.task_name,
+            ),
+            basic_eligibility_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 6),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "reason_text"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": None},
+                        },
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "reason_text"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": None},
+                        },
+                    ],
+                    "ineligible_criteria": [
+                        TEST_CRITERIA_BUILDER_1.criteria_name,
+                        TEST_CRITERIA_BUILDER_4.criteria_name,
+                    ],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 6),
+                    "end_date": date(2024, 2, 10),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible_reason"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": None},
+                        },
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible_reason"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": None},
+                        },
+                    ],
+                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_4.criteria_name],
+                },
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
                     "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_eligibility_span_id": 3,
+                    "start_date": date(2024, 2, 10),
+                    "end_date": date(2024, 3, 18),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible_reason"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": "2024-03-18"},
+                        },
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible_reason"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": "2024-03-18"},
+                        },
+                    ],
+                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_4.criteria_name],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 18),
+                    "end_date": None,
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible_reason"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": "2024-03-18"},
+                        },
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible_reason"},
+                        },
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
+                            "reason": {"test_reason_date": "2024-03-18"},
+                        },
+                    ],
+                    "ineligible_criteria": [],
+                },
+            ],
+        )
+        load_data_for_almost_eligible_span_view(
+            emulator=self,
+            almost_eligible_address=AlmostEligibleSpansBigQueryViewBuilder.materialized_table_for_task_name(
+                tes_view_builder.state_code,
+                tes_view_builder.task_name,
+            ),
+            almost_eligible_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 6),
+                    "is_almost_eligible": False,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 6),
+                    "end_date": date(2024, 2, 10),
+                    "is_almost_eligible": False,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 10),
+                    "end_date": date(2024, 2, 18),
+                    "is_almost_eligible": False,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 18),
+                    "end_date": date(2024, 3, 18),
+                    "is_almost_eligible": True,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 18),
+                    "end_date": None,
+                    "is_almost_eligible": False,
+                },
+            ],
+        )
+
+        load_empty_task_completion_event_view(emulator=self)
+
+        self.run_query_test(
+            query_str=tes_view_builder.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "task_name": tes_view_builder.task_name,
                     "task_eligibility_span_id": 1,
                     "start_date": date(2024, 1, 1),
                     "end_date": date(2024, 2, 6),
@@ -828,7 +980,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_name": tes_view_builder.task_name,
                     "task_eligibility_span_id": 2,
                     "start_date": date(2024, 2, 6),
                     "end_date": date(2024, 2, 10),
@@ -860,7 +1012,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_name": tes_view_builder.task_name,
                     "task_eligibility_span_id": 3,
                     "start_date": date(2024, 2, 10),
                     "end_date": date(2024, 2, 18),
@@ -892,7 +1044,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_name": tes_view_builder.task_name,
                     "task_eligibility_span_id": 4,
                     "start_date": date(2024, 2, 18),
                     "end_date": date(2024, 3, 18),
@@ -924,7 +1076,7 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
+                    "task_name": tes_view_builder.task_name,
                     "task_eligibility_span_id": 5,
                     "start_date": date(2024, 3, 18),
                     "end_date": None,
@@ -951,706 +1103,6 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                         },
                     ],
                     "ineligible_criteria": [],
-                    "end_reason": None,
-                },
-            ],
-        )
-
-    def test_almost_eligible_if_x_xor_y_and_z(self) -> None:
-        """
-        Test three criteria used in a nested composite criteria condition (Criteria_X XOR (Criteria_Y AND Criteria_Z))
-        """
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 6),
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_text"},
-                    "reason_v2": {"test_reason": "reason_text"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 6),
-                    "end_date": date(2024, 4, 8),
-                    "meets_criteria": True,
-                    "reason": {"test_reason": "eligible_reason"},
-                    "reason_v2": {"test_reason": "eligible_reason"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 4, 8),
-                    "end_date": None,
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_text"},
-                    "reason_v2": {"test_reason": "reason_text"},
-                },
-            ],
-        )
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_2,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 15),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_int": 2},
-                    "reason_v2": {"test_reason_int": 2},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 3, 28),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_int": 1},
-                    "reason_v2": {"test_reason_int": 1},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 28),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason_int": 0},
-                    "reason_v2": {"test_reason_int": 0},
-                },
-            ],
-        )
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_3,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 3, 18),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_date": "2024-03-18"},
-                    "reason_v2": {"test_reason_date": "2024-03-18"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 18),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason_date": "2024-03-18"},
-                    "reason_v2": {"test_reason_date": "2024-03-18"},
-                },
-            ],
-        )
-        self._load_data_for_candidate_population_view([(date(2024, 1, 1), None)])
-        self._load_empty_completion_event_view()
-        tes_query_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
-            state_code=StateCode.US_XX,
-            task_name="my_task_name",
-            description="my_task_description",
-            candidate_population_view_builder=TEST_POPULATION_BUILDER,
-            criteria_spans_view_builders=[
-                TEST_CRITERIA_BUILDER_1,
-                TEST_CRITERIA_BUILDER_2,
-                TEST_CRITERIA_BUILDER_3,
-            ],
-            completion_event_builder=TEST_COMPLETION_EVENT_BUILDER,
-            almost_eligible_condition=PickNCompositeCriteriaCondition(
-                sub_conditions_list=[
-                    # Criteria 1 XOR (Criteria 2 AND 3)
-                    NotEligibleCriteriaCondition(
-                        criteria=TEST_CRITERIA_BUILDER_1,
-                        description="Not eligible criteria condition",
-                    ),
-                    PickNCompositeCriteriaCondition(
-                        sub_conditions_list=[
-                            LessThanOrEqualCriteriaCondition(
-                                criteria=TEST_CRITERIA_BUILDER_2,
-                                reasons_numerical_field="test_reason_int",
-                                value=1,
-                                description="Less than value criteria condition",
-                            ),
-                            ReasonDateInCalendarWeekCriteriaCondition(
-                                criteria=TEST_CRITERIA_BUILDER_3,
-                                reasons_date_field="test_reason_date",
-                                description="Reason date in calendar week criteria condition",
-                            ),
-                        ],
-                        at_least_n_conditions_true=2,
-                    ),
-                ],
-                at_most_n_conditions_true=1,
-            ),
-        )
-
-        self.run_query_test(
-            query_str=tes_query_builder.build().view_query,
-            expected_result=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 1,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 6),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 2},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 2},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_1.criteria_name,
-                        TEST_CRITERIA_BUILDER_2.criteria_name,
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                    ],
-                    "end_reason": "INELIGIBLE_CRITERIA_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 2,
-                    "start_date": date(2024, 2, 6),
-                    "end_date": date(2024, 2, 15),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 2},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 2},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_2.criteria_name,
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                    ],
-                    "end_reason": "INELIGIBLE_REASONS_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 3,
-                    "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 3, 17),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_2.criteria_name,
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                    ],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 4,
-                    "start_date": date(2024, 3, 17),
-                    "end_date": date(2024, 3, 18),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_2.criteria_name,
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                    ],
-                    "end_reason": "INELIGIBLE_CRITERIA_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 5,
-                    "start_date": date(2024, 3, 18),
-                    "end_date": date(2024, 3, 28),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_2.criteria_name],
-                    "end_reason": "BECAME_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 6,
-                    "start_date": date(2024, 3, 28),
-                    "end_date": date(2024, 4, 8),
-                    "is_eligible": True,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 7,
-                    "start_date": date(2024, 4, 8),
-                    "end_date": None,
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {"test_reason_date": "2024-03-18"},
-                        },
-                    ],
-                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_1.criteria_name],
-                    "end_reason": None,
-                },
-            ],
-        )
-
-    def test_almost_eligible_if_x_or_y(self) -> None:
-        """
-        Test the composite criteria condition for inclusive OR logic (Criteria_X OR Criteria_Y)
-        """
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 6),
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_text"},
-                    "reason_v2": {"test_reason": "reason_text"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 6),
-                    "end_date": date(2024, 4, 8),
-                    "meets_criteria": True,
-                    "reason": {"test_reason": "eligible_reason"},
-                    "reason_v2": {"test_reason": "eligible_reason"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 4, 8),
-                    "end_date": None,
-                    "meets_criteria": False,
-                    "reason": {"test_reason": "reason_text"},
-                    "reason_v2": {"test_reason": "reason_text"},
-                },
-            ],
-        )
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_2,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 15),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_int": None},
-                    "reason_v2": {"test_reason_int": None},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 3, 28),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_int": 1},
-                    "reason_v2": {"test_reason_int": 1},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 28),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason_int": 0},
-                    "reason_v2": {"test_reason_int": 0},
-                },
-            ],
-        )
-        self._load_data_for_candidate_population_view([(date(2024, 1, 1), None)])
-        self._load_empty_completion_event_view()
-        tes_query_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
-            state_code=StateCode.US_XX,
-            task_name="my_task_name",
-            description="my_task_description",
-            candidate_population_view_builder=TEST_POPULATION_BUILDER,
-            criteria_spans_view_builders=[
-                TEST_CRITERIA_BUILDER_1,
-                TEST_CRITERIA_BUILDER_2,
-            ],
-            completion_event_builder=TEST_COMPLETION_EVENT_BUILDER,
-            almost_eligible_condition=PickNCompositeCriteriaCondition(
-                sub_conditions_list=[
-                    # Criteria 1 OR Criteria 2
-                    NotEligibleCriteriaCondition(
-                        criteria=TEST_CRITERIA_BUILDER_1,
-                        description="Not eligible criteria condition",
-                    ),
-                    LessThanOrEqualCriteriaCondition(
-                        criteria=TEST_CRITERIA_BUILDER_2,
-                        reasons_numerical_field="test_reason_int",
-                        value=1,
-                        description="Less than value criteria condition",
-                    ),
-                ],
-                at_least_n_conditions_true=1,
-            ),
-        )
-
-        self.run_query_test(
-            query_str=tes_query_builder.build().view_query,
-            expected_result=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 1,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 6),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": None},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": None},
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_1.criteria_name,
-                        TEST_CRITERIA_BUILDER_2.criteria_name,
-                    ],
-                    "end_reason": "INELIGIBLE_CRITERIA_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 2,
-                    "start_date": date(2024, 2, 6),
-                    "end_date": date(2024, 2, 15),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": None},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": None},
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_2.criteria_name,
-                    ],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 3,
-                    "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 3, 28),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 1},
-                        },
-                    ],
-                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_2.criteria_name],
-                    "end_reason": "BECAME_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 4,
-                    "start_date": date(2024, 3, 28),
-                    "end_date": date(2024, 4, 8),
-                    "is_eligible": True,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "eligible_reason"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                    ],
-                    "ineligible_criteria": [],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 5,
-                    "start_date": date(2024, 4, 8),
-                    "end_date": None,
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
-                            "reason": {"test_reason": "reason_text"},
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,
-                            "reason": {"test_reason_int": 0},
-                        },
-                    ],
-                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_1.criteria_name],
                     "end_reason": None,
                 },
             ],
@@ -1660,7 +1112,8 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
         """
         Verify eligibility spans are computed per person and cover the entire candidate population span
         """
-        self._load_data_for_criteria_view(
+        load_data_for_task_criteria_view(
+            emulator=self,
             criteria_view_builder=TEST_CRITERIA_BUILDER_1,
             criteria_data=[
                 {
@@ -1683,21 +1136,23 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 },
             ],
         )
-        self._load_data_for_candidate_population_view(
-            [
+        load_data_for_candidate_population_view(
+            emulator=self,
+            population_date_spans=[
                 (date(2024, 1, 1), date(2024, 3, 18)),
                 (date(2024, 4, 8), date(2024, 5, 15)),
-            ]
+            ],
         )
-        self._load_data_for_candidate_population_view(
-            [
+        load_data_for_candidate_population_view(
+            emulator=self,
+            population_date_spans=[
                 (date(2024, 1, 28), date(2024, 3, 6)),
                 (date(2024, 3, 28), None),
             ],
             test_person_id=23456,
             create_table=False,
         )
-        self._load_empty_completion_event_view()
+        load_empty_task_completion_event_view(emulator=self)
         tes_query_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
             state_code=StateCode.US_XX,
             task_name="my_task_name",
@@ -1866,797 +1321,6 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                     "ineligible_criteria": [
                         TEST_CRITERIA_BUILDER_1.criteria_name,
                     ],
-                    "end_reason": None,
-                },
-            ],
-        )
-
-    def test_tes_query_two_time_dependent_conditions_one_criteria(self) -> None:
-        """
-        Test the Task Eligibility Spans view for a task with two time dependent criteria conditions applied to
-        one eligibility criteria.
-        """
-        two_date_criteria_view_builder = StateSpecificTaskCriteriaBigQueryViewBuilder(
-            state_code=StateCode.US_XX,
-            criteria_name="US_XX_SIMPLE_CRITERIA",
-            criteria_spans_query_template="SELECT * FROM `{project_id}.test_dataset.state_foo`;",
-            description="Simple state specific criteria description",
-            reasons_fields=[
-                ReasonsField(
-                    name="first_reason_date",
-                    type=bigquery.StandardSqlTypeNames.DATE,
-                    description="Simple reason description",
-                ),
-                ReasonsField(
-                    name="second_reason_date",
-                    type=bigquery.StandardSqlTypeNames.DATE,
-                    description="Another simple reason description",
-                ),
-            ],
-        )
-        self._load_data_for_criteria_view(
-            criteria_view_builder=two_date_criteria_view_builder,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 28),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 28),
-                    "end_date": date(2024, 3, 27),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-27",
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-27",
-                        "second_reason_date": "2024-07-15",
-                    },
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 27),
-                    "end_date": None,
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": None,
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": None,
-                        "second_reason_date": "2024-07-15",
-                    },
-                },
-            ],
-        )
-        self._load_data_for_candidate_population_view(
-            [
-                (date(2024, 1, 1), None),
-            ]
-        )
-        self._load_empty_completion_event_view()
-        tes_query_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
-            state_code=StateCode.US_XX,
-            task_name="my_task_name",
-            description="my_task_description",
-            candidate_population_view_builder=TEST_POPULATION_BUILDER,
-            criteria_spans_view_builders=[two_date_criteria_view_builder],
-            completion_event_builder=TEST_COMPLETION_EVENT_BUILDER,
-            almost_eligible_condition=PickNCompositeCriteriaCondition(
-                sub_conditions_list=[
-                    TimeDependentCriteriaCondition(
-                        criteria=two_date_criteria_view_builder,
-                        reasons_date_field="first_reason_date",
-                        interval_length=2,
-                        interval_date_part=BigQueryDateInterval.WEEK,
-                        description="Within 2 weeks of first reason date",
-                    ),
-                    TimeDependentCriteriaCondition(
-                        criteria=two_date_criteria_view_builder,
-                        reasons_date_field="second_reason_date",
-                        interval_length=3,
-                        interval_date_part=BigQueryDateInterval.MONTH,
-                        description="Within 3 months of second reason date",
-                    ),
-                ],
-                at_least_n_conditions_true=1,
-            ),
-        )
-        # Test the criteria spans are split on the critical date boundaries correctly
-        if tes_query_builder.almost_eligible_condition is None:
-            raise ValueError(
-                "SingleTaskEligibilitySpansBigQueryViewBuilder must have the `almost_eligible_condition` attribute"
-                " populated when almost eligible conditions are supplied."
-            )
-        critical_date_list = get_critical_date_parsing_fragments_by_criteria(
-            tes_query_builder.almost_eligible_condition
-        )
-        if critical_date_list is None:
-            raise ValueError(
-                "Eligibility span must have critical dates populated when TimeDependentCriteriaCondition are"
-                " included in the almost eligible conditions."
-            )
-        if two_date_criteria_view_builder.materialized_address is None:
-            raise ValueError(
-                "Expected the criteria view builder to have a materialized address since all criteria"
-                " span views are materialized."
-            )
-        critical_date_split_query = StrictStringFormatter().format(
-            StrictStringFormatter().format(
-                tes_query_builder.split_criteria_by_critical_date_query_fragment(
-                    critical_date_list[two_date_criteria_view_builder.criteria_name]
-                ),
-                criteria_dataset_id=two_date_criteria_view_builder.dataset_id,
-                criteria_name=two_date_criteria_view_builder.criteria_name,
-                criteria_view_id=two_date_criteria_view_builder.materialized_address.table_id,
-                state_code=two_date_criteria_view_builder.state_code.value,
-            ),
-            project_id=metadata.project_id(),
-        )
-        self.run_query_test(
-            query_str=critical_date_split_query,
-            expected_result=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 15),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-                # Split by the second_reason_date 3 month condition
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 2, 26),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-                # Split by the first_reason_date 2 week condition
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 26),
-                    "end_date": date(2024, 2, 28),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-11",
-                        "second_reason_date": "2024-05-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-                # Split by the criteria reasons change
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 2, 28),
-                    "end_date": date(2024, 3, 13),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-27",
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-27",
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-                # Split by the first_reason_date 2 week condition
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 13),
-                    "end_date": date(2024, 3, 27),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": "2024-03-27",
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": "2024-03-27",
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-                # Split by the criteria reasons change
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 27),
-                    "end_date": date(2024, 4, 15),
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": None,
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": None,
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-                # Split by the second_reason_date 3 month condition
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 4, 15),
-                    "end_date": None,
-                    "meets_criteria": False,
-                    "reason": {
-                        "first_reason_date": None,
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "reason_v2": {
-                        "first_reason_date": None,
-                        "second_reason_date": "2024-07-15",
-                    },
-                    "criteria_name": two_date_criteria_view_builder.criteria_name,
-                },
-            ],
-        )
-
-        # Test the full query generates the eligibility spans correctly
-        self.run_query_test(
-            query_str=tes_query_builder.build().view_query,
-            expected_result=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 1,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 2, 15),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-11",
-                                "second_reason_date": "2024-05-15",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-11",
-                                "second_reason_date": "2024-05-15",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        two_date_criteria_view_builder.criteria_name,
-                    ],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 2,
-                    "start_date": date(2024, 2, 15),
-                    "end_date": date(2024, 2, 28),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-11",
-                                "second_reason_date": "2024-05-15",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-11",
-                                "second_reason_date": "2024-05-15",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        two_date_criteria_view_builder.criteria_name
-                    ],
-                    "end_reason": "INELIGIBLE_REASONS_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 3,
-                    "start_date": date(2024, 2, 28),
-                    "end_date": date(2024, 3, 13),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-27",
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-27",
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        two_date_criteria_view_builder.criteria_name
-                    ],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 4,
-                    "start_date": date(2024, 3, 13),
-                    "end_date": date(2024, 3, 27),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-27",
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": "2024-03-27",
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        two_date_criteria_view_builder.criteria_name
-                    ],
-                    "end_reason": "INELIGIBLE_REASONS_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 5,
-                    "start_date": date(2024, 3, 27),
-                    "end_date": date(2024, 4, 15),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": None,
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": None,
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        two_date_criteria_view_builder.criteria_name
-                    ],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 6,
-                    "start_date": date(2024, 4, 15),
-                    "end_date": None,
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": None,
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": two_date_criteria_view_builder.criteria_name,
-                            "reason": {
-                                "first_reason_date": None,
-                                "second_reason_date": "2024-07-15",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        two_date_criteria_view_builder.criteria_name
-                    ],
-                    "end_reason": None,
-                },
-            ],
-        )
-
-    def test_tes_query_two_conditions_time_until_fully_eligible(
-        self,
-    ) -> None:
-        """
-        Test the Task Eligibility Spans view for a task with two time dependent criteria conditions applied with
-        EligibleCriteriaCondition objects to represent "almost eligible if less than 2 weeks away being fully eligible"
-        """
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_3,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 3, 18),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_date": "2024-03-18"},
-                    "reason_v2": {"test_reason_date": "2024-03-18"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 18),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason_date": "2024-03-18"},
-                    "reason_v2": {"test_reason_date": "2024-03-18"},
-                },
-            ],
-        )
-        self._load_data_for_criteria_view(
-            criteria_view_builder=TEST_CRITERIA_BUILDER_4,
-            criteria_data=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 3, 10),
-                    "meets_criteria": False,
-                    "reason": {"test_reason_date": "2024-03-10"},
-                    "reason_v2": {"test_reason_date": "2024-03-10"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 10),
-                    "end_date": date(2024, 3, 12),
-                    "meets_criteria": True,
-                    "reason": {"test_reason_date": "2024-03-10"},
-                    "reason_v2": {"test_reason_date": "2024-03-10"},
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "start_date": date(2024, 3, 12),
-                    "end_date": None,
-                    "meets_criteria": True,
-                    "reason": {"test_reason_date": None},
-                    "reason_v2": {"test_reason_date": None},
-                },
-            ],
-        )
-        self._load_data_for_candidate_population_view(
-            [
-                (date(2024, 1, 1), None),
-            ]
-        )
-        self._load_empty_completion_event_view()
-        tes_query_builder = SingleTaskEligibilitySpansBigQueryViewBuilder(
-            state_code=StateCode.US_XX,
-            task_name="my_task_name",
-            description="my_task_description",
-            candidate_population_view_builder=TEST_POPULATION_BUILDER,
-            criteria_spans_view_builders=[
-                TEST_CRITERIA_BUILDER_3,
-                TEST_CRITERIA_BUILDER_4,
-            ],
-            completion_event_builder=TEST_COMPLETION_EVENT_BUILDER,
-            almost_eligible_condition=PickNCompositeCriteriaCondition(
-                sub_conditions_list=[
-                    PickNCompositeCriteriaCondition(
-                        sub_conditions_list=[
-                            TimeDependentCriteriaCondition(
-                                criteria=TEST_CRITERIA_BUILDER_3,
-                                reasons_date_field="test_reason_date",
-                                interval_length=2,
-                                interval_date_part=BigQueryDateInterval.WEEK,
-                                description="Within 2 weeks of first reason date",
-                            ),
-                            EligibleCriteriaCondition(
-                                criteria=TEST_CRITERIA_BUILDER_3,
-                                description="Criteria 3 is met",
-                            ),
-                        ],
-                        at_least_n_conditions_true=1,
-                    ),
-                    PickNCompositeCriteriaCondition(
-                        sub_conditions_list=[
-                            TimeDependentCriteriaCondition(
-                                criteria=TEST_CRITERIA_BUILDER_4,
-                                reasons_date_field="test_reason_date",
-                                interval_length=2,
-                                interval_date_part=BigQueryDateInterval.WEEK,
-                                description="Within 2 weeks of second reason date",
-                            ),
-                            EligibleCriteriaCondition(
-                                criteria=TEST_CRITERIA_BUILDER_4,
-                                description="Criteria 4 is met",
-                            ),
-                        ],
-                        at_least_n_conditions_true=1,
-                    ),
-                ],
-                at_least_n_conditions_true=2,
-            ),
-        )
-
-        self.run_query_test(
-            query_str=tes_query_builder.build().view_query,
-            expected_result=[
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 1,
-                    "start_date": date(2024, 1, 1),
-                    "end_date": date(2024, 3, 4),
-                    "is_eligible": False,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-10",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-10",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                        TEST_CRITERIA_BUILDER_4.criteria_name,
-                    ],
-                    "end_reason": "BECAME_ALMOST_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 2,
-                    "start_date": date(2024, 3, 4),
-                    "end_date": date(2024, 3, 10),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-10",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-10",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                        TEST_CRITERIA_BUILDER_4.criteria_name,
-                    ],
-                    "end_reason": "INELIGIBLE_CRITERIA_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 3,
-                    "start_date": date(2024, 3, 10),
-                    "end_date": date(2024, 3, 12),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-10",
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-10",
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [
-                        TEST_CRITERIA_BUILDER_3.criteria_name,
-                    ],
-                    "end_reason": "INELIGIBLE_REASONS_CHANGED",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 4,
-                    "start_date": date(2024, 3, 12),
-                    "end_date": date(2024, 3, 18),
-                    "is_eligible": False,
-                    "is_almost_eligible": True,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": None,
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": None,
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [TEST_CRITERIA_BUILDER_3.criteria_name],
-                    "end_reason": "BECAME_ELIGIBLE",
-                },
-                {
-                    "state_code": "US_XX",
-                    "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 5,
-                    "start_date": date(2024, 3, 18),
-                    "end_date": None,
-                    "is_eligible": True,
-                    "is_almost_eligible": False,
-                    "reasons": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": None,
-                            },
-                        },
-                    ],
-                    "reasons_v2": [
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                            "reason": {
-                                "test_reason_date": "2024-03-18",
-                            },
-                        },
-                        {
-                            "criteria_name": TEST_CRITERIA_BUILDER_4.criteria_name,
-                            "reason": {
-                                "test_reason_date": None,
-                            },
-                        },
-                    ],
-                    "ineligible_criteria": [],
                     "end_reason": None,
                 },
             ],
