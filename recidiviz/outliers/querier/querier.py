@@ -1790,7 +1790,7 @@ class OutliersQuerier:
 
         return UserInfo(
             entity=officer_entity,
-            role="supervision_officer",
+            role="supervision_officer" if officer_entity else None,
             has_seen_onboarding=True,
             has_dismissed_data_unavailable_note=False,
             has_dismissed_rate_over_100_percent_note=False,
