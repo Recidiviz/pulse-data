@@ -775,7 +775,7 @@ def main() -> int:
                 "recidiviz.utils",
                 # dataset or const imports where we want to be strict-ish
                 "recidiviz.case_triage.views.dataset_config",
-                "recidiviz.datasets.static_data.config",
+                "recidiviz.datasets.static_data.terraform_managed.config",
                 "recidiviz.pipelines.dataflow_config",
                 "recidiviz.pipelines.ingest.dataset_config",
                 "recidiviz.pipelines.supplemental.dataset_config",

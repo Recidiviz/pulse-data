@@ -168,7 +168,9 @@ def _get_valid_county_names() -> Set[str]:
 
 # Construct the path to the county codes CSV file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-county_codes_path = os.path.join(current_dir, "../datasets/static_data/county_fips.csv")
+county_codes_path = os.path.join(
+    current_dir, "../datasets/static_data/views/data/county_fips.csv"
+)
 
 # Load county code mappings
 

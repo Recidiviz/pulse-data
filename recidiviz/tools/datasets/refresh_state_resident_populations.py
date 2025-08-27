@@ -24,7 +24,9 @@ import io
 import pandas as pd
 import requests
 
-from recidiviz.tools.datasets.static_data_utils import make_output_path
+from recidiviz.tools.datasets.static_data_utils import (
+    make_large_static_data_file_output_path,
+)
 
 CDC_NOTES_COL = "Notes"
 CDC_STATES_COL = "States"
@@ -196,7 +198,10 @@ def main() -> None:
     female_csv = fetch_population_csv(YEAR, FEMALE_GENDER_CODE)
     male_csv = fetch_population_csv(YEAR, MALE_GENDER_CODE)
     df = transform_population_df(female_csv, male_csv)
-    df.to_csv(make_output_path("state_resident_populations.csv"), index=False)
+    df.to_csv(
+        make_large_static_data_file_output_path("state_resident_populations.csv"),
+        index=False,
+    )
 
 
 if __name__ == "__main__":

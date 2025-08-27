@@ -23,7 +23,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     POPULATION_PROJECTION_OUTPUT_DATASET,
     SPARK_OUTPUT_DATASET,
 )
-from recidiviz.datasets.static_data.config import GCS_BACKED_TABLES_DATASET
+from recidiviz.datasets.static_data.terraform_managed.config import (
+    GCS_BACKED_TABLES_DATASET,
+)
 
 VERA_DATASET: str = "vera_data"
 

@@ -23,7 +23,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets.static_data.config import GCS_BACKED_TABLES_DATASET
+from recidiviz.datasets.static_data.terraform_managed.config import (
+    GCS_BACKED_TABLES_DATASET,
+)
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,

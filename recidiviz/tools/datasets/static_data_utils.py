@@ -18,8 +18,20 @@
 
 import os
 
-from recidiviz.datasets import static_data
+from recidiviz.datasets.static_data import terraform_managed as large_data_csvs_module
+from recidiviz.datasets.static_data.views import data as small_data_csvs_module
 
 
-def make_output_path(name: str) -> str:
-    return os.path.join(os.path.dirname(static_data.__file__), name)
+def make_small_static_data_file_output_path(name: str) -> str:
+    """Output dir for static data CSVs that are small enough that they can be used
+    to generate a static view query that contains this data.
+    """
+    return os.path.join(os.path.dirname(small_data_csvs_module.__file__), name)
+
+
+def make_large_static_data_file_output_path(name: str) -> str:
+    """Output dir for static data CSVs that are large enough that they can't be used
+    to generate a static view query. In order to access these files, you must configure
+    TF to generate a GCS-backed table from this CSV (using local-csv-backed-gcs-file).
+    """
+    return os.path.join(os.path.dirname(large_data_csvs_module.__file__), name)
