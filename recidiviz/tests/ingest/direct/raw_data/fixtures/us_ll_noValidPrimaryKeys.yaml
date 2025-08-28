@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: noValidPrimaryKeys
+file_description: |-
+  First raw file.
+data_classification: source
+no_valid_primary_keys: true
+primary_key_cols: []
+columns:
+  - name: col_name_1a
+    description: |-
+      First column.
+    known_values:
+      - value: A
+        description: A description
+      - value: B
+      - value: C
+        description: A new value
+  - name: col_name_1b
+    description: |-
+      A column description that is long enough to take up
+      multiple lines. This text block will be interpreted
+      literally and trailing/leading whitespace is removed.
+  - name: undocumented_column
+encoding: ISO-456-7

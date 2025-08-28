@@ -36,6 +36,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_config_enums import (
     RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
@@ -176,5 +177,30 @@ class TestUpdateRegionRawFileConfigYamls(unittest.TestCase):
         update_region_raw_file_yamls(self.region_raw_file_config, updater_fn)
 
         self.assertFalse(os.path.exists(new_file_path))
+
+    def test_column_update(self) -> None:
+        file_tag_to_update = "noValidPrimaryKeys"
+        file_name = self._get_file_name(file_tag_to_update)
+
+        def updater_fn(
+            region_config: DirectIngestRegionRawFileConfig,
+        ) -> DirectIngestRegionRawFileConfig:
+            raw_file_config = region_config.raw_file_configs[file_tag_to_update]
+            for column in raw_file_config.current_columns:
+                if column.known_values:
+                    column.known_values.append(
+                        ColumnEnumValueInfo(value="C", description="A new value")
+                    )
+            region_config.raw_file_configs[file_tag_to_update] = attr.evolve(
+                raw_file_config,
+                file_path=str(self.tmp_output_dir / file_name),
+            )
+
+            return region_config
+
+        update_region_raw_file_yamls(self.region_raw_file_config, updater_fn)
+
+        diff = self._compare_raw_file_and_fixture(file_name)
+        self.assertFalse(diff, f"File mismatch for {file_name}:\n{diff}")
 
     # TODO(#46293): Add more unit tests

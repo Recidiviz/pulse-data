@@ -18,12 +18,21 @@
 from enum import Enum
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Type
 
 import attr
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 
+from recidiviz.common.attr_utils import (
+    get_inner_type_from_list_type,
+    get_inner_type_from_optional_type,
+    is_list_type,
+    is_optional_type,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
+    LIST_ITEM_IDENTIFIER_TAG,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRawFileDefaultConfig,
@@ -67,6 +76,7 @@ def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
     yaml = YAML()
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.preserve_quotes = True
+    yaml.width = 4096  # Set a large width to avoid line breaks in the YAML output
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(file_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)
@@ -94,21 +104,100 @@ def convert_raw_file_config_to_dict(
     return filtered
 
 
+def get_identifier_field_name(cls: Type) -> str | None:
+    """Find the name of the field in an attr defined class marked with list_item_identifier=True."""
+    if not attr.has(cls):
+        raise ValueError(f"Class [{cls}] is not an attr defined class")
+    # TODO(#44660) Enforce that there is exactly one unique identifier field once we have
+    # reworked RawTableRelationshipInfo to have a unique identifier
+    for field in attr.fields(cls):
+        if field.metadata.get(LIST_ITEM_IDENTIFIER_TAG):
+            return field.name
+
+    return None
+
+
+def collect_identifier_attr_map(
+    cls: Type, seen: set[Type] | None = None
+) -> dict[str, str]:
+    """
+    Recursively collect a map {parent_attr_name: child_identifier_field_name}
+    for all attrs classes reachable from `cls`.
+    """
+    if seen is None:
+        seen = set()
+    if cls in seen:
+        return {}
+    seen.add(cls)
+
+    identifier_map: dict[str, str] = {}
+
+    if not attr.has(cls):
+        return identifier_map
+
+    for field in attr.fields(cls):
+        field_type = field.type
+
+        referenced_class = None
+        if is_list_type(field_type):
+            referenced_class = get_inner_type_from_list_type(field_type)
+        if is_optional_type(field_type):
+            field_type = get_inner_type_from_optional_type(field_type)
+            if is_list_type(field_type):
+                referenced_class = get_inner_type_from_list_type(field_type)
+
+        # Check if field is a collection of an attrs class
+        if referenced_class and attr.has(referenced_class):
+            ident_field = get_identifier_field_name(referenced_class)
+            if ident_field:
+                identifier_map[field.name] = ident_field
+            identifier_map.update(collect_identifier_attr_map(referenced_class, seen))
+
+        # Check if field is a nested attrs class
+        elif attr.has(field_type):
+            ident_field = get_identifier_field_name(field_type)
+            if ident_field:
+                identifier_map[field.name] = ident_field
+            identifier_map.update(collect_identifier_attr_map(field_type, seen))
+
+    return identifier_map
+
+
+def get_raw_file_config_attribute_to_list_item_identifier_map() -> dict[str, str]:
+    """Returns a map of attribute names to their unique identifier field names for list items."""
+    attribute_to_list_item_identifier = collect_identifier_attr_map(
+        DirectIngestRawFileConfig
+    )
+    attribute_to_list_item_identifier[
+        COLUMNS_YAML_KEY
+    ] = attribute_to_list_item_identifier.pop(COLUMNS_ATTRIBUTE_NAME)
+    return attribute_to_list_item_identifier
+
+
 def update_ruamel_dict(
     ruamel_data: dict[str, Any],
     original_dict: dict[str, Any],
     updated_dict: dict[str, Any],
+    identifier_map: dict[str, str],
 ) -> None:
     """Recursively updates a ruamel dict in place by comparing changes between updated_dict and original_dict"""
+
     for key, updated_val in updated_dict.items():
         original_val = original_dict.get(key)
         if updated_val == original_val:
             continue
         if isinstance(updated_val, dict) and isinstance(original_val, dict):
-            update_ruamel_dict(ruamel_data[key], original_val, updated_val)
-        # TODO(#44663) Handle list case
-        # elif isinstance(updated_val, list) and isinstance(original_val, list):
-        #     update_ruamel_list(ruamel_data[key], original_val, updated_val)
+            update_ruamel_dict(
+                ruamel_data[key], original_val, updated_val, identifier_map
+            )
+        elif isinstance(updated_val, list) and isinstance(original_val, list):
+            update_ruamel_list(
+                attribute_name=key,
+                ruamel_list=ruamel_data[key],
+                original_list=original_val,
+                updated_list=updated_val,
+                identifier_map=identifier_map,
+            )
         else:
             ruamel_data[key] = updated_val
     for key in original_dict:
@@ -116,10 +205,92 @@ def update_ruamel_dict(
             ruamel_data.pop(key, None)
 
 
-# def update_ruamel_list(
-#     ruamel_list: list[Any], original_list: list[Any], updated_list: list[Any]
-# ) -> None:
-#     """Recursively updates a ruamel YAML list in place. TODO(#44663) Implement this function."""
+def update_ruamel_list(
+    attribute_name: str,
+    ruamel_list: list[Any],
+    original_list: list[Any],
+    updated_list: list[Any],
+    identifier_map: dict[str, str],
+) -> None:
+    """Recursively updates a ruamel YAML list in place to match updated_list."""
+    unique_identifier_key = identifier_map.get(attribute_name)
+
+    def get_identifier(item: Any) -> Any:
+        """Extract unique identifier from an item."""
+        if isinstance(item, dict):
+            return item.get(unique_identifier_key)
+        return item
+
+    def items_by_identifier(items: list[Any]) -> dict[Any, Any]:
+        """Create a mapping of identifier -> item."""
+        return {get_identifier(item): item for item in items}
+
+    def find_insertion_position(
+        updated_list: list[Any],
+        current_index: int,
+        existing_identifiers: list[str],
+    ) -> int:
+        """Find the correct position to insert a new item to maintain order."""
+        # Look backwards for the last item that exists in the current list
+        for j in range(current_index - 1, -1, -1):
+            prev_ident = get_identifier(updated_list[j])
+            if prev_ident in existing_identifiers:
+                return existing_identifiers.index(prev_ident) + 1
+
+        # If no previous item found, insert at the beginning
+        return 0
+
+    original_items = items_by_identifier(original_list)
+    updated_items = items_by_identifier(updated_list)
+
+    # Leave ruamel_list as is if lists are equivalent (same items, potentially different order)
+    if sorted(original_items.items()) == sorted(updated_items.items()):
+        return
+
+    # Step 1: Update or remove existing items
+    idents_to_remove = []
+    for idx, ruamel_item in enumerate(ruamel_list):
+        ident = get_identifier(ruamel_item)
+
+        if ident in updated_items:
+            # Item exists in updated list - check if it needs updating
+            updated_item = updated_items[ident]
+            original_item = original_items[ident]
+
+            if updated_item != original_item:
+                if isinstance(ruamel_item, list) and isinstance(updated_item, list):
+                    raise NotImplementedError(
+                        "Updating lists of lists within ruamel YAML is not implemented."
+                    )
+                if isinstance(ruamel_item, dict) and isinstance(updated_item, dict):
+                    update_ruamel_dict(
+                        ruamel_item, original_item, updated_item, identifier_map
+                    )
+                else:
+                    ruamel_list[idx] = updated_item
+        else:
+            # Item was removed in updated list
+            idents_to_remove.append(ident)
+
+    # Remove deleted items
+    ruamel_list[:] = [
+        item
+        for item in ruamel_list
+        if get_identifier(item) not in set(idents_to_remove)
+    ]
+
+    # Step 2: Insert new items in correct positions
+    current_identifiers = [get_identifier(item) for item in ruamel_list]
+
+    for i, updated_item in enumerate(updated_list):
+        ident = get_identifier(updated_item)
+
+        if ident not in current_identifiers:
+            # Find insertion position by looking for the previous existing item
+            insert_pos = find_insertion_position(updated_list, i, current_identifiers)
+
+            ruamel_list.insert(insert_pos, updated_item)
+            current_identifiers.insert(insert_pos, ident)
 
 
 def update_ruamel_for_raw_file(
@@ -127,6 +298,9 @@ def update_ruamel_for_raw_file(
     original_config_dict: dict[str, DirectIngestRawFileConfig],
     updated_config_dict: dict[str, DirectIngestRawFileConfig],
 ) -> CommentedMap:
-    """Updates a ruamel yaml object in place by applying differences identified between original and updated raw file configurations"""
-    update_ruamel_dict(ruamel_yaml, original_config_dict, updated_config_dict)
+    identifier_map = get_raw_file_config_attribute_to_list_item_identifier_map()
+
+    update_ruamel_dict(
+        ruamel_yaml, original_config_dict, updated_config_dict, identifier_map
+    )
     return ruamel_yaml
