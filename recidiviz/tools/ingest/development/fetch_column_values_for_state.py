@@ -37,20 +37,22 @@ import logging
 import sys
 from typing import List, Optional
 
+import attr
+
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.raw_data.raw_data_yaml_writer import (
+    update_region_raw_file_yamls,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.development.raw_data_config_writer import (
-    RawDataConfigWriter,
-)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
@@ -65,8 +67,8 @@ def _get_known_values(
     sandbox_dataset_prefix: Optional[str],
 ) -> RawTableColumnInfo:
     """Creates a list of possible enum values for a column in a given table"""
-    # Only fetch known values for enum columns
-    if not column.is_enum:
+    # Only fetch known values for current enum columns
+    if not column.is_enum or column.is_deleted:
         return column
 
     raw_data_dataset = raw_tables_dataset_for_region(
@@ -86,7 +88,7 @@ ORDER BY
   {column.name}
 """
     query_job = bq_client.run_query_async(query_str=query_string, use_query_cache=True)
-    distinct_values = [row["values"] for row in query_job]
+    distinct_values = [row["values"] for row in query_job.result()]
     existing_values = [enum.value for enum in column.known_values_nonnull]
 
     new_known_values_list = column.known_values_nonnull.copy()
@@ -130,80 +132,73 @@ def _update_enum_known_values(
             default_description,
             sandbox_dataset_prefix,
         )
-        for column in original_config.current_columns
+        for column in original_config.all_columns
     ]
 
-    return DirectIngestRawFileConfig(
-        state_code=original_config.state_code,
-        file_tag=original_config.file_tag,
-        file_path=original_config.file_path,
-        file_description=original_config.file_description,
-        data_classification=original_config.data_classification,
-        primary_key_cols=original_config.primary_key_cols,
-        columns=new_columns,
-        encoding=original_config.encoding,
-        separator=original_config.separator,
-        custom_line_terminator=original_config.custom_line_terminator,
-        ignore_quotes=original_config.ignore_quotes,
-        supplemental_order_by_clause=original_config.supplemental_order_by_clause,
-        export_lookback_window=original_config.export_lookback_window,
-        no_valid_primary_keys=original_config.no_valid_primary_keys,
-        infer_columns_from_config=original_config.infer_columns_from_config,
-        table_relationships=original_config.table_relationships,
-        update_cadence=original_config.update_cadence,
-        is_code_file=original_config.is_code_file,
-        is_chunked_file=original_config.is_chunked_file,
+    return attr.evolve(original_config, columns=new_columns)
+
+
+def update_region_config_with_enum_values(
+    region_config: DirectIngestRegionRawFileConfig,
+    project_id: str,
+    bq_client: BigQueryClientImpl,
+    issue_id: int,
+    sandbox_dataset_prefix: Optional[str],
+    file_tags: List[str],
+) -> DirectIngestRegionRawFileConfig:
+    """Updates the region config with known enum values fetched from BigQuery."""
+    all_raw_file_configs: List[DirectIngestRawFileConfig] = list(
+        region_config.raw_file_configs.values()
     )
+
+    raw_file_configs_to_process = []
+    if file_tags:
+        raw_file_configs_to_process = [
+            config for config in all_raw_file_configs if config.file_tag in file_tags
+        ]
+    else:
+        raw_file_configs_to_process = all_raw_file_configs
+
+    for original_raw_file_config in [
+        config for config in raw_file_configs_to_process if config.has_enums
+    ]:
+        updated_raw_file_config = _update_enum_known_values(
+            original_config=original_raw_file_config,
+            project_id=project_id,
+            bq_client=bq_client,
+            default_description="TO" + f"DO(#{issue_id}) Document this value.",
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
+        )
+        if original_raw_file_config != updated_raw_file_config:
+            region_config.raw_file_configs[
+                original_raw_file_config.file_tag
+            ] = updated_raw_file_config
+    return region_config
 
 
 def main(
-    state_code: str,
+    state_code: StateCode,
     project_id: str,
     file_tags: List[str],
     issue_id: int,
     sandbox_dataset_prefix: Optional[str],
 ) -> None:
     """Update columns in raw data configs with known values fetched from BigQuery."""
-    region_config = get_region_raw_file_config(state_code)
-
-    default_config = region_config.default_config()
+    region_config = get_region_raw_file_config(state_code.value)
 
     bq_client = BigQueryClientImpl()
 
-    raw_file_configs: List[DirectIngestRawFileConfig] = list(
-        region_config.raw_file_configs.values()
+    update_region_raw_file_yamls(
+        region_config,
+        lambda rc: update_region_config_with_enum_values(
+            rc,
+            project_id,
+            bq_client,
+            issue_id,
+            sandbox_dataset_prefix,
+            file_tags,
+        ),
     )
-
-    if file_tags:
-        raw_file_configs = [
-            config for config in raw_file_configs if config.file_tag in file_tags
-        ]
-
-    # Only refresh if a config has enum columns
-    for original_raw_file_config in [
-        config for config in raw_file_configs if config.has_enums
-    ]:
-        updated_raw_file_config = _update_enum_known_values(
-            original_config=original_raw_file_config,
-            project_id=project_id,
-            bq_client=bq_client,
-            default_description="TO" + "DO(#" + f"{issue_id}) Document this value.",
-            sandbox_dataset_prefix=sandbox_dataset_prefix,
-        )
-        raw_data_config_writer = RawDataConfigWriter()
-        raw_data_config_writer.output_to_file(
-            raw_file_config=updated_raw_file_config,
-            output_path=original_raw_file_config.file_path,
-            default_encoding=default_config.default_encoding,
-            default_separator=default_config.default_separator,
-            default_ignore_quotes=default_config.default_ignore_quotes,
-            default_export_lookback_window=default_config.default_export_lookback_window,
-            default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
-            default_custom_line_terminator=default_config.default_custom_line_terminator,
-            default_update_cadence=default_config.default_update_cadence,
-            default_infer_columns_from_config=default_config.default_infer_columns_from_config,
-            default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
-        )
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
@@ -214,8 +209,8 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         "--state-code",
         dest="state_code",
         help="State to which this config belongs in the form US_XX.",
-        type=str,
-        choices=[state.value for state in states.StateCode],
+        type=StateCode,
+        choices=list(StateCode),
         required=True,
     )
 

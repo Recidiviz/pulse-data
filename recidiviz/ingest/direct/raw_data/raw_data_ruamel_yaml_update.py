@@ -77,6 +77,14 @@ def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.preserve_quotes = True
     yaml.width = 4096  # Set a large width to avoid line breaks in the YAML output
+
+    def bool_representer(representer: Any, data: Any) -> Any:
+        return representer.represent_scalar(
+            "tag:yaml.org,2002:bool", "True" if data else "False"
+        )
+
+    yaml.Representer.add_representer(bool, bool_representer)
+
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with open(file_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)

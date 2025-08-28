@@ -223,7 +223,9 @@ class RawTableColumnInfo:
     # belongs to is an ID type root for that region (Note this does not necessarily
     # mean the table is the is_primary_person_table for the region, since there may be
     # multiple tables that are ID type roots for the region.)
-    is_primary_for_external_id_type: bool = attr.ib(default=False)
+    is_primary_for_external_id_type: bool = attr.ib(
+        default=DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE
+    )
     # Column-level import-blocking validation exemptions
     import_blocking_column_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
@@ -451,6 +453,11 @@ class RawTableColumnInfo:
                 return change.previous_value
         return self.name
 
+    @property
+    def is_deleted(self) -> bool:
+        """Returns true if this column is deleted."""
+        return not self.exists_at_datetime(datetime.now(tz=timezone.utc))
+
 
 @attr.s
 class DirectIngestRawFileDefaultConfig:
@@ -584,7 +591,9 @@ class DirectIngestRawFileConfig:
     # Each region may only have one raw file marked as is_primary_person_table; this
     # designation may be arbitrary if there are multiple primary tables representing
     # person information, such as if there are multiple source data systems.
-    is_primary_person_table: bool = attr.ib(default=False)
+    is_primary_person_table: bool = attr.ib(
+        default=DEFAULT_IS_PRIMARY_PERSON_TABLE_VALUE
+    )
 
     # TODO(#28561): add more nuance here to get at what we actually care about
     # (reasoning about the kind of data in our raw data files)
@@ -592,13 +601,15 @@ class DirectIngestRawFileConfig:
     # code table, we expect this file to be relatively static overtime (without many
     # updates). If this file is not a code table, it likely contains person-level
     # information that we expect to change more frequently
-    is_code_file: bool = attr.ib(default=False)
+    is_code_file: bool = attr.ib(default=DEFAULT_IS_CODE_FILE_VALUE)
 
     # Boolean flag denoting whether the state sends us data for this file tag split into
     # multiple csv files in each transfer. If this is the case, we need to do some
     # extra handling to ensure that all csv file chunks get coalesced into the same
     # file id in the operations database.
-    is_chunked_file: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+    is_chunked_file: bool = attr.ib(
+        default=DEFAULT_IS_CHUNKED_FILE_VALUE, validator=attr_validators.is_bool
+    )
 
     # The maximum number of unparseable bytes we will allow this raw file to have in a single
     # 100 mb sample before we throw. In general, we expect this value to be None (i.e. we
