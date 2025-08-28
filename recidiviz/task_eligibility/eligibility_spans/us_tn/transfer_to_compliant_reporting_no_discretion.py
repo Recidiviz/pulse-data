@@ -25,8 +25,10 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     has_active_sentence,
+    supervision_level_is_not_furlough,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_residential_program,
     supervision_level_is_not_unassigned,
     supervision_not_past_full_term_completion_date_or_upcoming_90_days,
 )
@@ -48,6 +50,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     on_eligible_level_for_sufficient_time,
     passed_drug_screen_check,
     special_conditions_are_current,
+    supervision_level_is_not_wrb,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -69,9 +72,12 @@ _REQUIRED_CRITERIA = [
     not_permanently_rejected_from_compliant_reporting,
     no_recent_compliant_reporting_rejections,
     not_on_life_sentence_or_lifetime_supervision,
+    supervision_level_is_not_furlough,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_residential_program,
     supervision_level_is_not_unassigned,
+    supervision_level_is_not_wrb,
     no_murder_convictions,
     not_serving_ineligible_cr_offense,
     no_dui_offense_in_past_5_years,

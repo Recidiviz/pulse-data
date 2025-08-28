@@ -25,13 +25,16 @@ from recidiviz.task_eligibility.completion_events.general import (
     supervision_level_downgrade,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_not_furlough,
     supervision_level_is_not_intake,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_residential_program,
     supervision_level_is_not_unassigned,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     supervision_level_higher_than_assessment_level,
+    supervision_level_is_not_wrb,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -46,10 +49,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
+        supervision_level_is_not_furlough.VIEW_BUILDER,
         supervision_level_is_not_intake.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
+        supervision_level_is_not_residential_program.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
+        supervision_level_is_not_wrb.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
