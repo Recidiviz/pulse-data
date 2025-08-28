@@ -41,16 +41,17 @@ from more_itertools import one
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.raw_data.raw_data_yaml_writer import (
+    update_region_raw_file_yamls,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DATETIME_SQL_REGEX,
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.development.raw_data_config_writer import (
-    RawDataConfigWriter,
-)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
@@ -97,7 +98,6 @@ def _update_parsers_in_column(
     ]
     for i, datetime_sql_parser in enumerate(parsers_to_try):
         parse_date_clause = formatter.format(datetime_sql_parser, col_name=column.name)
-
         column_clauses.extend(
             [
                 f"COUNT({parse_date_clause}) AS nonnull_parsed_values{i}",
@@ -116,7 +116,9 @@ def _update_parsers_in_column(
     query_results = one(query_job.result())
     num_nonnull_values = query_results["nonnull_values"]
     if not num_nonnull_values:
-        print(f"File {file_tag}, column {column.name}: All values are null - skipping")
+        logging.info(
+            "File %s, column %s: All values are null - skipping", file_tag, column.name
+        )
         return column
 
     found_partial_parsers = False
@@ -125,32 +127,41 @@ def _update_parsers_in_column(
         example_unparsed_value = query_results[f"example_unparsed_value{i}"]
 
         if num_nonnull_values == num_nonnull_parsed_values:
-            print(
-                f"File {file_tag}, column {column.name}: Updated parser to "
-                f"{datetime_sql_parser}"
+            logging.info(
+                "File %s, column %s: Updated parser to %s",
+                file_tag,
+                column.name,
+                datetime_sql_parser,
             )
             return attr.evolve(column, datetime_sql_parsers=[datetime_sql_parser])
 
         if num_nonnull_parsed_values:
             # If we get here, we found some but not all values that matched this parser
             found_partial_parsers = True
-            print(
-                f"File {file_tag}, column {column.name}: Found "
-                f"{num_nonnull_parsed_values} out of {num_nonnull_values} matching "
-                f"{datetime_sql_parser}. First non-matching value: "
-                f"{example_unparsed_value}."
+            logging.info(
+                "File %s, column %s: Found %s out of %s matching %s. First non-matching value: %s.",
+                file_tag,
+                column.name,
+                num_nonnull_parsed_values,
+                num_nonnull_values,
+                datetime_sql_parser,
+                example_unparsed_value,
             )
 
     if not found_partial_parsers:
         example_nonnull_value = query_results["example_nonnull_value"]
-        print(
-            f"File {file_tag}, column {column.name}: Did not find any working parsers. "
-            f"Example non-null value: {example_nonnull_value}"
+        logging.info(
+            "File %s, column %s: Did not find any working parsers. Example non-null value: %s",
+            file_tag,
+            column.name,
+            example_nonnull_value,
         )
     return column
 
 
 def update_parsers_in_region(
+    *,
+    region_config: DirectIngestRegionRawFileConfig,
     state_code: StateCode,
     project_id: str,
     file_tags: List[str],
@@ -159,7 +170,6 @@ def update_parsers_in_region(
 ) -> None:
     """Update datetime columns' datetime parsers in raw data configs"""
     # Get all the configs to update
-    region_config = get_region_raw_file_config(state_code.value)
     all_raw_file_configs: List[DirectIngestRawFileConfig] = list(
         region_config.raw_file_configs.values()
     )
@@ -170,9 +180,11 @@ def update_parsers_in_region(
     for file_tag in file_tags:
         config = region_config.raw_file_configs[file_tag]
         if config not in all_raw_file_configs:
-            print(f"File {file_tag} doesn't exist in state {state_code}.")
+            logging.info("File %s doesn't exist in state %s.", file_tag, state_code)
         elif config not in datetime_configs:
-            print(f"File {file_tag} doesn't have datetime cols in state {state_code}.")
+            logging.info(
+                "File %s doesn't have datetime cols in state %s.", file_tag, state_code
+            )
         else:
             configs_to_update.append(config)
 
@@ -198,40 +210,36 @@ def update_parsers_in_region(
         instance=DirectIngestInstance.PRIMARY,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
-    raw_data_config_writer = RawDataConfigWriter()
-    default_config = region_config.default_config()
-    for original_config in configs_to_update:
-        new_columns = [
-            (
-                column
-                if not column.is_datetime or column.datetime_sql_parsers
-                else _update_parsers_in_column(
-                    project_id,
-                    original_config.file_tag,
-                    column,
-                    raw_data_dataset,
-                    bq_client,
-                    parsers_to_try,
+
+    def update_region_config_with_parsers(
+        region_config: DirectIngestRegionRawFileConfig,
+    ) -> DirectIngestRegionRawFileConfig:
+        for original_config in configs_to_update:
+            new_columns = [
+                (
+                    column
+                    if not column.is_datetime or column.datetime_sql_parsers
+                    else _update_parsers_in_column(
+                        project_id,
+                        original_config.file_tag,
+                        column,
+                        raw_data_dataset,
+                        bq_client,
+                        parsers_to_try,
+                    )
                 )
-            )
-            for column in original_config.current_columns
-        ]
-        if original_config.current_columns != new_columns:
-            updated_config = attr.evolve(original_config, columns=new_columns)
-            raw_data_config_writer.output_to_file(
-                raw_file_config=updated_config,
-                output_path=original_config.file_path,
-                default_encoding=default_config.default_encoding,
-                default_separator=default_config.default_separator,
-                default_ignore_quotes=default_config.default_ignore_quotes,
-                default_export_lookback_window=default_config.default_export_lookback_window,
-                default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
-                default_custom_line_terminator=default_config.default_custom_line_terminator,
-                default_update_cadence=default_config.default_update_cadence,
-                default_infer_columns_from_config=default_config.default_infer_columns_from_config,
-                default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
-            )
-            print(f"File {original_config.file_tag}: Updates persisted")
+                for column in original_config.current_columns
+            ]
+
+            if original_config.current_columns != new_columns:
+                updated_config = attr.evolve(original_config, columns=new_columns)
+                region_config.raw_file_configs[
+                    original_config.file_tag
+                ] = updated_config
+
+        return region_config
+
+    update_region_raw_file_yamls(region_config, update_region_config_with_parsers)
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
@@ -299,16 +307,19 @@ def main() -> None:
     if args.parser is not None and not re.match(
         DATETIME_SQL_REGEX, args.parser.strip()
     ):
-        print("The provided datetime parser does not match the SQL parser format")
+        logging.error(
+            "The provided datetime parser does not match the SQL parser format"
+        )
         sys.exit(1)
 
     with metadata.local_project_id_override(args.project_id):
         update_parsers_in_region(
-            args.state_code,
-            args.project_id,
-            args.file_tags,
-            args.sandbox_dataset_prefix,
-            args.parser,
+            region_config=get_region_raw_file_config(args.state_code.value),
+            state_code=args.state_code,
+            project_id=args.project_id,
+            file_tags=args.file_tags,
+            sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+            parser=args.parser,
         )
 
 

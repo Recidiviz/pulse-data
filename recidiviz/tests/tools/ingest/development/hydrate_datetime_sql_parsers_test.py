@@ -16,14 +16,16 @@
 # =============================================================================
 """Tests for helper functions for hydrating datetime SQL parsers."""
 import unittest
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 import attr
-from mock import ANY, Mock, patch
+from mock import Mock, patch
+from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
@@ -44,14 +46,25 @@ class FakeQueryJob:
         return self._result
 
 
+def mock_update_region_raw_file_yamls(
+    region_config: DirectIngestRegionRawFileConfig,
+    config_updater_fn: Callable[
+        [DirectIngestRegionRawFileConfig], DirectIngestRegionRawFileConfig
+    ],
+) -> DirectIngestRegionRawFileConfig:
+    # Update the region config but don't write anything to file
+    return config_updater_fn(region_config)
+
+
 class HydrateDatetimeSqlParsersTest(unittest.TestCase):
     """Tests functions included in the datetime SQL parser hydration script"""
 
     def setUp(self) -> None:
+        self.file_tag = "myFile"
         # Basic raw file info
         self.sparse_config = DirectIngestRawFileConfig(
             state_code=StateCode.US_XX,
-            file_tag="myFile",
+            file_tag=self.file_tag,
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",
             data_classification=RawDataClassification.SOURCE,
@@ -73,6 +86,32 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             "SAFE.PARSE_DATETIME('%m/%d/%y', {col_name})",
             "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})",
         ]
+        # Datetime config to add to our DirectIngestRegionRawFileConfig
+        # so get_datetime_parsers will return our parsers list
+        self.datetime_config = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile2",
+            columns=[
+                RawTableColumnInfo(
+                    name="dateCol1",
+                    state_code=StateCode.US_XX,
+                    file_tag="myFile2",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="test",
+                    datetime_sql_parsers=self.parsers_list[:1],
+                ),
+                RawTableColumnInfo(
+                    name="dateCol2",
+                    state_code=StateCode.US_XX,
+                    file_tag="myFile2",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="test",
+                    datetime_sql_parsers=self.parsers_list[-1:],
+                ),
+            ],
+        )
         # Input config to be updated
         self.input_config = attr.evolve(
             self.sparse_config,
@@ -95,28 +134,30 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
                 ),
             ],
         )
+        self.mock_region_raw_file_config = DirectIngestRegionRawFileConfig(
+            region_code="us_xx",
+            raw_file_configs={
+                self.file_tag: self.input_config,
+                "myFile2": self.datetime_config,
+            },
+            yaml_config_file_dir="test_dir",
+        )
+        self.update_region_raw_file_yamls_patcher = patch(
+            "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.update_region_raw_file_yamls",
+            side_effect=mock_update_region_raw_file_yamls,
+        )
+        self.update_region_raw_file_yamls_patcher.start()
 
-    @patch(
-        "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.get_region_raw_file_config"
-    )
+    def tearDown(self) -> None:
+        self.update_region_raw_file_yamls_patcher.stop()
+
     @patch(
         "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.BigQueryClientImpl"
     )
-    @patch(
-        "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.RawDataConfigWriter"
-    )
     def test_update_parsers_unsuccessful(
         self,
-        mock_raw_data_config_writer: Mock,
         mock_bq_client: Mock,
-        mock_get_region_raw_file_config: Mock,
     ) -> None:
-        mock_get_region_raw_file_config.return_value = Mock(
-            raw_file_configs={"myFile": self.input_config},
-            get_datetime_parsers=lambda: self.parsers_list,
-            default_config=Mock(),
-        )
-
         def mock_run_query_async(query_str: str, use_query_cache: bool) -> FakeQueryJob:
             # pylint: disable=unused-argument
             if "dateCol1" in query_str:
@@ -155,37 +196,28 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
 
         mock_bq_client.return_value = Mock(run_query_async=mock_run_query_async)
 
-        fake_region_config_writer = Mock()
-        mock_raw_data_config_writer.return_value = fake_region_config_writer
-
         update_parsers_in_region(
-            StateCode("US_XX"), GCP_PROJECT_STAGING, ["myFile"], None, None
+            region_config=self.mock_region_raw_file_config,
+            state_code=StateCode("US_XX"),
+            project_id=GCP_PROJECT_STAGING,
+            file_tags=[self.file_tag],
+            sandbox_dataset_prefix=None,
+            parser=None,
         )
 
-        # Since no columns were updated, we shouldn't have called this function
-        fake_region_config_writer.output_to_file.assert_not_called()
+        # Config should be unchanged
+        self.assertEqual(
+            self.input_config,
+            self.mock_region_raw_file_config.raw_file_configs[self.file_tag],
+        )
 
-    @patch(
-        "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.get_region_raw_file_config"
-    )
     @patch(
         "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.BigQueryClientImpl"
     )
-    @patch(
-        "recidiviz.tools.ingest.development.hydrate_datetime_sql_parsers.RawDataConfigWriter"
-    )
     def test_update_parsers_successful(
         self,
-        mock_raw_data_config_writer: Mock,
         mock_bq_client: Mock,
-        mock_get_region_raw_file_config: Mock,
     ) -> None:
-        mock_get_region_raw_file_config.return_value = Mock(
-            raw_file_configs={"myFile": self.input_config},
-            get_datetime_parsers=lambda: self.parsers_list,
-            default_config=Mock(),
-        )
-
         def mock_run_query_async(query_str: str, use_query_cache: bool) -> FakeQueryJob:
             # pylint: disable=unused-argument
             if "dateCol1" in query_str:
@@ -224,46 +256,23 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
 
         mock_bq_client.return_value = Mock(run_query_async=mock_run_query_async)
 
-        fake_region_config_writer = Mock()
-        mock_raw_data_config_writer.return_value = fake_region_config_writer
-
         update_parsers_in_region(
-            StateCode("US_XX"), GCP_PROJECT_STAGING, ["myFile"], None, None
+            region_config=self.mock_region_raw_file_config,
+            state_code=StateCode("US_XX"),
+            project_id=GCP_PROJECT_STAGING,
+            file_tags=[self.file_tag],
+            sandbox_dataset_prefix=None,
+            parser=None,
         )
 
-        updated_config = attr.evolve(
-            self.input_config,
-            columns=[
-                RawTableColumnInfo(
-                    name="dateCol1",
-                    state_code=StateCode.US_XX,
-                    file_tag=self.input_config.file_tag,
-                    field_type=RawTableColumnFieldType.DATETIME,
-                    is_pii=False,
-                    description="test",
-                    datetime_sql_parsers=self.parsers_list[:1],
-                ),
-                RawTableColumnInfo(
-                    name="dateCol2",
-                    state_code=StateCode.US_XX,
-                    file_tag=self.input_config.file_tag,
-                    field_type=RawTableColumnFieldType.DATETIME,
-                    is_pii=False,
-                    description="test",
-                    datetime_sql_parsers=self.parsers_list[-1:],
-                ),
-            ],
-        )
-        fake_region_config_writer.output_to_file.assert_called_with(
-            raw_file_config=updated_config,
-            output_path=ANY,
-            default_encoding=ANY,
-            default_separator=ANY,
-            default_ignore_quotes=ANY,
-            default_export_lookback_window=ANY,
-            default_no_valid_primary_keys=ANY,
-            default_custom_line_terminator=ANY,
-            default_update_cadence=ANY,
-            default_infer_columns_from_config=ANY,
-            default_import_blocking_validation_exemptions=ANY,
-        )
+        actual_config = self.mock_region_raw_file_config.raw_file_configs[self.file_tag]
+        for col in actual_config.current_columns:
+            if not col.datetime_sql_parsers:
+                self.fail(
+                    f"No datetime parsers were added to datetime column [{col.name}]"
+                )
+            parser = one(col.datetime_sql_parsers)
+            # because DirectIngestRegionRawFileConfig.get_datetime_parsers returns a set
+            # we can't be sure which order we tried the parsers in, so we don't know which
+            # exact parser was successful
+            self.assertIn(parser, self.parsers_list)
