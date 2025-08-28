@@ -35,6 +35,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.raw_data.validations.datetime_parsers_column_validation import (
     DatetimeParsersColumnValidation,
 )
+from recidiviz.ingest.direct.raw_data.validations.distinct_primary_key_table_validation import (
+    DistinctPrimaryKeyTableValidation,
+)
 from recidiviz.ingest.direct.raw_data.validations.expected_type_column_validation import (
     ExpectedTypeColumnValidation,
 )
@@ -53,6 +56,10 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidation,
     RawDataImportBlockingValidationError,
     RawDataImportBlockingValidationFailure,
+    RawDataTableImportBlockingValidation,
+)
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_factory import (
+    RawDataImportBlockingValidationFactory,
 )
 
 MAX_THREADS = 4
@@ -65,6 +72,10 @@ COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
     KnownValuesColumnValidation,
     ExpectedTypeColumnValidation,
     DatetimeParsersColumnValidation,
+]
+TABLE_VALIDATION_CLASSES: List[Type[RawDataTableImportBlockingValidation]] = [
+    DistinctPrimaryKeyTableValidation,
+    StableHistoricalRawDataCountsTableValidation,
 ]
 
 
@@ -103,21 +114,23 @@ class DirectIngestRawTablePreImportValidator:
         raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
 
         state_code = StateCode(self.region_code.upper())
-        if not raw_file_config.file_is_exempt_from_validation(
-            StableHistoricalRawDataCountsTableValidation.validation_type()
-        ) and StableHistoricalRawDataCountsTableValidation.should_run_validation(
-            raw_file_config, state_code, file_tag, file_update_datetime
-        ):
-            all_validations.append(
-                StableHistoricalRawDataCountsTableValidation.create_table_validation(
-                    file_tag=file_tag,
-                    project_id=self.project_id,
-                    temp_table_address=temp_table_address,
-                    state_code=state_code,
-                    raw_data_instance=self.raw_data_instance,
-                    file_update_datetime=file_update_datetime,
+
+        for validation_class in TABLE_VALIDATION_CLASSES:
+            if not raw_file_config.file_is_exempt_from_validation(
+                validation_class.validation_type()
+            ) and validation_class.validation_applies_to_table(raw_file_config):
+                all_validations.append(
+                    RawDataImportBlockingValidationFactory.create_table_validation(
+                        validation_type=validation_class.validation_type(),
+                        file_tag=file_tag,
+                        project_id=self.project_id,
+                        temp_table_address=temp_table_address,
+                        state_code=state_code,
+                        raw_data_instance=self.raw_data_instance,
+                        file_update_datetime=file_update_datetime,
+                        raw_file_config=raw_file_config,
+                    )
                 )
-            )
 
         for column in raw_file_config.columns_at_datetime(file_update_datetime):
             if not column.name_at_datetime(datetime.now(tz=timezone.utc)):

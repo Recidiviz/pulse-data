@@ -27,7 +27,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
 )
@@ -136,30 +135,6 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
 @attr.define
 class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
     """Interface for a validation to be run on a per-table basis."""
-
-    raw_data_instance: DirectIngestInstance
-    file_update_datetime: datetime.datetime
-
-    @classmethod
-    def create_table_validation(
-        cls,
-        *,
-        file_tag: str,
-        project_id: str,
-        temp_table_address: BigQueryAddress,
-        state_code: StateCode,
-        raw_data_instance: DirectIngestInstance,
-        file_update_datetime: datetime.datetime,
-    ) -> "RawDataTableImportBlockingValidation":
-        """Factory method to create a table validation."""
-        return cls(
-            project_id=project_id,
-            temp_table_address=temp_table_address,
-            file_tag=file_tag,
-            state_code=state_code,
-            raw_data_instance=raw_data_instance,
-            file_update_datetime=file_update_datetime,
-        )
 
     @staticmethod
     @abc.abstractmethod

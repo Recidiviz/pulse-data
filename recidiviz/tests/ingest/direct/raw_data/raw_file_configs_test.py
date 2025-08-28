@@ -27,6 +27,9 @@ import attr
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import raw_data
+from recidiviz.ingest.direct.gating import (
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     ColumnUpdateInfo,
@@ -49,6 +52,7 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationType,
 )
@@ -2378,4 +2382,31 @@ def test_validate_all_raw_yaml_no_valid_primary_keys() -> None:
                     f"[state_code={region_code.upper()}][file_tag={file_tag}]: Cannot set "
                     "`no_valid_primary_keys=True` if `export_lookback_window` is not 'FULL_HISTORICAL_LOOKBACK'. If this file is "
                     "always historical, set `export_lookback_window=FULL_HISTORICAL_LOOKBACK`."
+                )
+
+
+def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation() -> (
+    None
+):
+    for region_code in get_existing_region_codes():
+        pruning_enabled = False
+        for instance in DirectIngestInstance:
+            pruning_enabled |= (
+                automatic_raw_data_pruning_enabled_for_state_and_instance(
+                    StateCode(region_code.upper()), instance
+                )
+            )
+        if not pruning_enabled:
+            continue
+        region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        for file_tag, config in region_raw_file_config.raw_file_configs.items():
+            if (
+                not config.is_exempt_from_automatic_raw_data_pruning()
+                and config.file_is_exempt_from_validation(
+                    RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
+                )
+            ):
+                raise ValueError(
+                    f"[{region_code.upper()}][{file_tag}]: Cannot be exempt from DISTINCT_PRIMARY_KEYS pre-import validation "
+                    "when automatic raw data pruning is enabled"
                 )

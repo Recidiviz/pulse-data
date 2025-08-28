@@ -22,6 +22,7 @@ from typing import Any, Dict, List
 import attr
 from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation_config import (
@@ -29,6 +30,7 @@ from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_cou
     StableHistoricalCountsDateRangeExclusion,
     StableHistoricalRawDataCountsTableValidationConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationFailure,
     RawDataImportBlockingValidationType,
@@ -80,28 +82,48 @@ class StableHistoricalRawDataCountsTableValidation(
 ):
     """Verify that the current raw data row count is within an acceptable range of the historical median for that file tag."""
 
-    row_count_percent_change_tolerance: float = attr.ib(init=False)
-    time_window_lookback_days: int = attr.ib(init=False)
-    date_range_exclusions: List[StableHistoricalCountsDateRangeExclusion] = attr.ib(
-        init=False
-    )
+    raw_data_instance: DirectIngestInstance
+    file_update_datetime: datetime.datetime
     validation_config: StableHistoricalRawDataCountsTableValidationConfig = attr.ib(
         factory=StableHistoricalRawDataCountsTableValidationConfig
     )
 
-    def __attrs_post_init__(self) -> None:
-        self.row_count_percent_change_tolerance = (
-            self.validation_config.get_custom_percent_change_tolerance(
-                self.state_code, self.file_tag
-            )
+    @classmethod
+    def create_table_validation(
+        cls,
+        *,
+        file_tag: str,
+        project_id: str,
+        temp_table_address: BigQueryAddress,
+        state_code: StateCode,
+        raw_data_instance: DirectIngestInstance,
+        file_update_datetime: datetime.datetime,
+    ) -> "StableHistoricalRawDataCountsTableValidation":
+        """Factory method to create a StableHistoricalRawDataCountsTableValidation."""
+        return cls(
+            project_id=project_id,
+            temp_table_address=temp_table_address,
+            file_tag=file_tag,
+            state_code=state_code,
+            raw_data_instance=raw_data_instance,
+            file_update_datetime=file_update_datetime,
         )
-        self.date_range_exclusions = self.validation_config.get_date_range_exclusions(
+
+    @property
+    def row_count_percent_change_tolerance(self) -> float:
+        return self.validation_config.get_custom_percent_change_tolerance(
             self.state_code, self.file_tag
         )
-        self.time_window_lookback_days = (
-            self.validation_config.get_time_window_lookback_days()
+
+    @property
+    def time_window_lookback_days(self) -> int:
+        return self.validation_config.get_time_window_lookback_days()
+
+    @property
+    def date_range_exclusions(self) -> List[StableHistoricalCountsDateRangeExclusion]:
+        return self.validation_config.get_date_range_exclusions(
+            self.state_code, self.file_tag
         )
-        super().__attrs_post_init__()
 
     @staticmethod
     def validation_type() -> RawDataImportBlockingValidationType:

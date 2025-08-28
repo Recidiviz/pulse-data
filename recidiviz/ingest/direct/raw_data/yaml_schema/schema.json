@@ -273,7 +273,8 @@
               "DATETIME_PARSERS",
               "KNOWN_VALUES",
               "EXPECTED_TYPE",
-              "STABLE_HISTORICAL_RAW_DATA_COUNTS"
+              "STABLE_HISTORICAL_RAW_DATA_COUNTS",
+              "DISTINCT_PRIMARY_KEYS"
             ]
           },
           "exemption_reason": {

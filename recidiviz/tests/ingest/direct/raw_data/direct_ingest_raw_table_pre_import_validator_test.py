@@ -138,12 +138,14 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         self.stable_counts_job.result.return_value = [
             {TEMP_TABLE_ROW_COUNT_KEY: 101, RAW_ROWS_MEDIAN_KEY: 100},
         ]
+        self.distinct_pks_job = MagicMock()
 
     def test_run_raw_table_validations_success(self) -> None:
         nonnull_values_job = MagicMock()
         # non-null validation should pass if at least one non-null value is found
         nonnull_values_job.result.return_value = [{"Col1": "mocked_result_value"}]
         self.big_query_client.run_query_async.side_effect = [
+            self.distinct_pks_job,
             self.stable_counts_job,
             nonnull_values_job,
         ]
@@ -160,14 +162,15 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             self.file_tag, self.file_update_datetime, self.temp_table_address
         )
 
-        # should be called for historical stable counts validation and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+        # should be called for distinct primary keys, historical stable counts and non-null validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 3)
 
     def test_run_raw_table_validations_renamed_col(self) -> None:
         nonnull_values_job = MagicMock()
         # non-null validation should pass if at least one non-null value is found
         nonnull_values_job.result.return_value = [{"OldCol1": "mocked_result_value"}]
         self.big_query_client.run_query_async.side_effect = [
+            self.distinct_pks_job,
             self.stable_counts_job,
             nonnull_values_job,
         ]
@@ -212,8 +215,8 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             self.file_tag, self.file_update_datetime, self.temp_table_address
         )
 
-        # should be called for historical stable counts validation and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+        # should be called for distinct primary keys, historical stable counts and non-null validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 3)
         # Should be querying for OldCol1
         self.big_query_client.run_query_async.assert_called_with(
             query_str="\nSELECT OldCol1\nFROM test-project.test_dataset.test_table\nWHERE OldCol1 IS NOT NULL\nLIMIT 1\n",
@@ -232,6 +235,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         # non-null validation should fail if no non-null values are found
         nonnull_values_job.result.return_value = []
         self.big_query_client.run_query_async.side_effect = [
+            self.distinct_pks_job,
             self.stable_counts_job,
             nonnull_values_job,
         ]
@@ -265,5 +269,5 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             )
 
         self.assertEqual(textwrap.dedent(str(context.exception)), expected_error_msg)
-        # should be called for historical stable counts validation and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+        # should be called for distinct primary keys, historical stable counts and non-null validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 3)

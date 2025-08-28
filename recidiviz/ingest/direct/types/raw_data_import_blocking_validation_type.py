@@ -34,3 +34,5 @@ class RawDataImportBlockingValidationType(Enum):
     # checks that for raw data files that are always historical exports
     # the number of rows in the raw data table is stable
     STABLE_HISTORICAL_RAW_DATA_COUNTS = "STABLE_HISTORICAL_RAW_DATA_COUNTS"
+    # checks that all primary keys in a file are distinct
+    DISTINCT_PRIMARY_KEYS = "DISTINCT_PRIMARY_KEYS"

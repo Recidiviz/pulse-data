@@ -616,6 +616,8 @@ class DirectIngestRawFileConfig:
     # Can include table-level validation exemptions and/or column-level exemptions to apply
     # to all relevant columns in this table.
     # Values are applied in addition to any default_import_blocking_validation_exemptions
+    # TODO(#12209) Make DISTINCT_PRIMARY_KEYS validation non-exemptable once automatic raw
+    # data pruning is live.
     import_blocking_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
