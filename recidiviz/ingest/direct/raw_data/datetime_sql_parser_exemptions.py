@@ -163,9 +163,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "True_Security_Level_Assessment_Result_Entered_Date",
         ],
     },
-    StateCode.US_MO: {
-        "LBAKRDTA_TAK015": ["BL_IC"],
-    },
     StateCode.US_ND: {
         "docstars_offensestable": ["LAST_UPDATE"],
     },

@@ -14,6 +14,7 @@ input_columns:
   UNIT: STRING
   HOUSING_TYPE: STRING
   HOUSING_TEMP_PERM: STRING
+  CUSTODY_LVL: STRING
   SQN: INTEGER
   START_SCD_CODES: STRING
   END_SCD_CODES: STRING
@@ -112,3 +113,13 @@ output:
                   - "ADS"
                   - "NOC"
                 StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN: "***"
+          custody_level:
+            $enum_mapping:
+              $raw_text: CUSTODY_LVL
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.MINIMUM: "C-1" # Community Release
+                StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM: "C-2" # Minimum
+                StateIncarcerationPeriodCustodyLevel.MEDIUM:
+                  - "C-3" # Medium Low
+                  - "C-4" # Medium High
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM: "C-5" # Maximum
