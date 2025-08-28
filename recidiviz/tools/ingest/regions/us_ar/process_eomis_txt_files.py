@@ -52,9 +52,13 @@ import pandas as pd
 
 import recidiviz.tools.justice_counts.google_drive as gd
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_data_yaml_writer import (
+    update_region_raw_file_yamls,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -63,9 +67,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
     create_ingest_config_skeleton,
-)
-from recidiviz.tools.ingest.development.raw_data_config_writer import (
-    RawDataConfigWriter,
 )
 from recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date import (
     upload_raw_state_files_to_ingest_bucket_with_date,
@@ -365,6 +366,38 @@ def _update_config_using_sheet(
     )
 
 
+def _update_region_config_with_eomis_data(
+    region_config: DirectIngestRegionRawFileConfig,
+    delimiter: str,
+    encoding: str,
+    metadata_dfs: dict,
+    configs_to_update: List[str],
+) -> DirectIngestRegionRawFileConfig:
+    """Updates the region config with eOMIS reference data."""
+    all_raw_file_configs: List[DirectIngestRawFileConfig] = list(
+        region_config.raw_file_configs.values()
+    )
+
+    raw_file_configs_to_process = [
+        config
+        for config in all_raw_file_configs
+        if config.file_tag in configs_to_update
+    ]
+
+    for original_raw_file_config in raw_file_configs_to_process:
+        logging.info(
+            "Using eOMIS reference tables to update %s",
+            original_raw_file_config.file_tag,
+        )
+        updated_raw_file_config = _update_config_using_sheet(
+            original_raw_file_config, delimiter, encoding, metadata_dfs
+        )
+        region_config.raw_file_configs[
+            original_raw_file_config.file_tag
+        ] = updated_raw_file_config
+    return region_config
+
+
 def _push_converted_tables(
     csv_storage_folder: str,
     project_id: str,
@@ -473,8 +506,6 @@ def main(
 
     region_config = get_region_raw_file_config("US_AR")
 
-    default_config = region_config.default_config()
-
     if update_configs:
         configs_to_update = [
             file_tag.split(".")[0] for file_tag in os.listdir(folder_path)
@@ -482,39 +513,12 @@ def main(
     else:
         configs_to_update = [mc.split(".")[0] for mc in missing_configs]
 
-    raw_file_configs: List[DirectIngestRawFileConfig] = [
-        rfc
-        for rfc in region_config.raw_file_configs.values()
-        if rfc.file_tag in configs_to_update
-    ]
-
-    # Updates configs, including the skeleton configs added in previous step.
-    logging.info(
-        "\n************\nUpdating configs for %s",
-        [rfc.file_tag for rfc in raw_file_configs],
+    update_region_raw_file_yamls(
+        region_config,
+        lambda rc: _update_region_config_with_eomis_data(
+            rc, delimiter, encoding, metadata_dfs, configs_to_update
+        ),
     )
-    for original_raw_file_config in raw_file_configs:
-        logging.info(
-            "Using eOMIS reference tables to update %s",
-            original_raw_file_config.file_tag,
-        )
-        updated_raw_file_config = _update_config_using_sheet(
-            original_raw_file_config, delimiter, encoding, metadata_dfs
-        )
-        raw_data_config_writer = RawDataConfigWriter()
-        raw_data_config_writer.output_to_file(
-            raw_file_config=updated_raw_file_config,
-            output_path=original_raw_file_config.file_path,
-            default_encoding=default_config.default_encoding,
-            default_separator=default_config.default_separator,
-            default_ignore_quotes=default_config.default_ignore_quotes,
-            default_export_lookback_window=default_config.default_export_lookback_window,
-            default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
-            default_custom_line_terminator=default_config.default_custom_line_terminator,
-            default_update_cadence=default_config.default_update_cadence,
-            default_infer_columns_from_config=default_config.default_infer_columns_from_config,
-            default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
-        )
     logging.info(
         "Configs have been updated using eOMIS reference tables.\n************"
     )
