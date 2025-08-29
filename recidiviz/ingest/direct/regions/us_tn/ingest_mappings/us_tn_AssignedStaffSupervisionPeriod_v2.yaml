@@ -243,6 +243,7 @@ output:
                 StateSupervisionLevel.INTERSTATE_COMPACT:
                   - 9IS # ADM - ISC OUTGOING
                   - ISC # ISC TRANSFER OUT OF STATE
+                  - 7OS # MOVED OUT OF STATE
 
                 StateSupervisionLevel.ABSCONSION:
                   - 9AB # ADM - ABSCONDED OFFENDER
