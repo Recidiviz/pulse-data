@@ -55,6 +55,16 @@ defaults:
 #              a specific state."
 
 custom:
+  US_MI:
+    file_tags:
+      COMS_Case_Managers:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2023-08-22T00:00:00Z"
+            datetime_end_exclusive: "2025-08-27T00:00:00Z"
+            reason:
+              "This table was modified on 2025-08-28 to also include prison case manager assignments
+              (previously, it only included supervision officer assignments)."
+
   US_TN:
     file_tags:
       VantagePointProgram:
