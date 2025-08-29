@@ -115,7 +115,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                     ],
                 ),
             ],
-            primary_key_cols=[],
+            primary_key_cols=[self.column_name],
             supplemental_order_by_clause="",
             separator=",",
             ignore_quotes=False,

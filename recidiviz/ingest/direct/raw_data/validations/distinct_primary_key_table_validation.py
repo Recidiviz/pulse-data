@@ -72,7 +72,7 @@ class DistinctPrimaryKeyTableValidation(RawDataTableImportBlockingValidation):
 
     @staticmethod
     def validation_applies_to_table(file_config: DirectIngestRawFileConfig) -> bool:
-        return not file_config.no_valid_primary_keys
+        return len(file_config.primary_key_cols) > 0
 
     def build_query(self) -> str:
         return StrictStringFormatter().format(
