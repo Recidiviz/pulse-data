@@ -47,6 +47,7 @@ recidiviz/tests/tools/docs/**
 recidiviz/tests/tools/ingest/development/region_files_generator_test.py
 recidiviz/tools/postgres/access_cloudsql_instance.sh
 recidiviz/tools/postgres/start_cloudsql_proxy.sh
+recidiviz/tools/mcp/**
 recidiviz/tools/scraper_template/**
 bandit/**
 # docs that are private-ish for now
