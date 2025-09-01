@@ -62,10 +62,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # The new compliant reporting policy has 2 "pathways" to get the opportunity: Group A are people who are on
-# Intake (Unassigned) for 60 days and test LOW on Vantage 2.0 and meet criteria set A;
+# Intake for 60 days and test Low-Compliant on Vantage 2.0 and meet criteria set A;
 # Group B are people who have been on LOW (new supervision level, mapped to MINIMUM internally)
 # for 6+ months and meeting criteria set B. There is some criteria set
-# that is applied to both groups. This TES file is for Group B, and TRANSFER_UNASSIGNED_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
+# that is applied to both groups. This TES file is for Group B, and TRANSFER_INTAKE_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
 # is for Group A. Both are combined in one opportunity record query.
 
 _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = (
@@ -125,7 +125,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 sub_conditions_list=[
                     NotEligibleCriteriaCondition(
                         criteria=assessed_not_high_on_strong_r_domains.VIEW_BUILDER,
-                        description="Don't have 3 Face to Face contacts within 60 days of intake",
+                        description="Assessed high on at least one StrongR domain",
                     ),
                     NotEligibleCriteriaCondition(
                         criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,

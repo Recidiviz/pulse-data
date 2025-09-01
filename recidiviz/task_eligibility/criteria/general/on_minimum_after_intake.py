@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criterion span view that shows spans of time during which someone is on Minimum supervision level
-directly after Unassigned level.
+"""Defines a criterion span view that shows spans of time during which someone is on
+'MINIMUM' supervision directly after 'INTAKE' supervision.
 """
 
 from google.cloud import bigquery
@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ON_MINIMUM_AFTER_UNASSIGNED"
+_CRITERIA_NAME = "ON_MINIMUM_AFTER_INTAKE"
 
 _QUERY_TEMPLATE = """
     SELECT
@@ -39,10 +39,9 @@ _QUERY_TEMPLATE = """
         TO_JSON(STRUCT(
             start_date AS supervision_level_start_date
         )) AS reason,
-        supervision_level,
         start_date AS supervision_level_start_date
     FROM `{project_id}.sessions.supervision_level_sessions_materialized`
-    WHERE supervision_level = 'MINIMUM' AND previous_supervision_level = 'UNASSIGNED'
+    WHERE supervision_level = 'MINIMUM' AND previous_supervision_level = 'INTAKE'
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -54,10 +53,11 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
         ReasonsField(
             name="supervision_level_start_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Date when the client started minimum directly following unassigned level",
+            description="Date when the client started minimum directly following intake level",
         ),
     ],
 )
+
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

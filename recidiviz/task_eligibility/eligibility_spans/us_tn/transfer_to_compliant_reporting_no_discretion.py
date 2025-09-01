@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
 from recidiviz.task_eligibility.criteria.general import (
     has_active_sentence,
     supervision_level_is_not_furlough,
+    supervision_level_is_not_intake,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
     supervision_level_is_not_residential_program,
@@ -78,6 +79,7 @@ _REQUIRED_CRITERIA = [
     supervision_level_is_not_residential_program,
     supervision_level_is_not_unassigned,
     supervision_level_is_not_wrb,
+    supervision_level_is_not_intake,
     no_murder_convictions,
     not_serving_ineligible_cr_offense,
     no_dui_offense_in_past_5_years,

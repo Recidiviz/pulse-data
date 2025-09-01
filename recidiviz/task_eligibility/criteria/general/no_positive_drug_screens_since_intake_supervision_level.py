@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criterion span view that shows spans of time during which there have been
-no positive drug screens since the latest time someone was on Unassigned supervision level
+no positive drug screens since the latest time someone started on the 'INTAKE'
+supervision level.
 """
 
 from google.cloud import bigquery
@@ -31,19 +32,19 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_POSITIVE_DRUG_SCREENS_SINCE_UNASSIGNED_SUPERVISION_LEVEL"
+_CRITERIA_NAME = "NO_POSITIVE_DRUG_SCREENS_SINCE_INTAKE_SUPERVISION_LEVEL"
 
 _QUERY_TEMPLATE = f"""
-WITH spans_between_unassigned_status AS (
+WITH spans_between_intake_status AS (
     SELECT 
        state_code,
        person_id,
        start_date,
-       -- Set the next unassigned start date as the end date 
+       -- Set the next intake start date as the end date 
        LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date) AS end_date,
-       start_date AS latest_unassigned_start_date,
+       start_date AS latest_intake_start_date,
     FROM `{{project_id}}.sessions.supervision_level_sessions_materialized` sl
-    WHERE supervision_level = 'UNASSIGNED'
+    WHERE supervision_level = 'INTAKE'
 ), 
 critical_date_spans AS (
     SELECT
@@ -51,27 +52,28 @@ critical_date_spans AS (
         s.person_id,
         s.start_date AS start_datetime,
         s.end_date AS end_datetime,
-        s.latest_unassigned_start_date,
+        s.latest_intake_start_date,
         MIN(d.drug_screen_date) AS critical_date
-    FROM spans_between_unassigned_status s
+    FROM spans_between_intake_status s
     LEFT JOIN `{{project_id}}.sessions.drug_screens_preprocessed_materialized` d
         ON s.person_id = d.person_id
         AND d.is_positive_result
         AND d.drug_screen_date BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause('s.end_date')}
     GROUP BY 1,2,3,4,5
 ),
-{critical_date_has_passed_spans_cte(attributes=['latest_unassigned_start_date'])}
+{critical_date_has_passed_spans_cte(attributes=['latest_intake_start_date'])}
 SELECT
     state_code,
     person_id, 
     start_date,
     end_date,
-    latest_unassigned_start_date,
     NOT critical_date_has_passed AS meets_criteria,
     critical_date AS first_positive_screen_date,
-    TO_JSON(STRUCT(critical_date AS first_positive_screen_date,
-                    latest_unassigned_start_date AS latest_unassigned_start_date
-            )) AS reason,
+    latest_intake_start_date,
+    TO_JSON(STRUCT(
+        critical_date AS first_positive_screen_date,
+        latest_intake_start_date AS latest_intake_start_date
+    )) AS reason,
 FROM critical_date_has_passed_spans
 """
 
@@ -88,14 +90,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
                 description="Date of first positive screen since starting supervision",
             ),
             ReasonsField(
-                name="latest_unassigned_start_date",
+                name="latest_intake_start_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of latest unassigned status start",
+                description="Date of latest intake status start",
             ),
         ],
     )
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
