@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./..env)",
+      "Read(./..env.*)",
+      "Read(./..venv)",
+      "Read(./.env)",
+      "Read(./.venv)",
+      "Read(./.ENV)",
+      "Read(./.env.bak)",
+      "Read(./.venv.bak)",
+      "Read(./..firebase)",
+      "Read(./..runtimeconfig.json)",
+      "Read(./.service_account.json)",
+      "Read(./..atmos)",
+      "Read(./..decrypted*)",
+      "Read(./.**/.terraform/*)",
+      "Read(./.*.tfstate)",
+      "Read(./.*.tfstate.*)",
+      "Read(./.*.tfvars)",
+      "Read(./.# Used to store temporary files)",
+      "Read(./.**/.tfout/*)",
+      "Read(./.recidiviz/local/**/*)",
+      "Read(./.recidiviz/case_triage/local/**/*)",
+      "Read(./.recidiviz/justice_counts/control_panel/local/**/*)"
+    ]
+  }
+}
