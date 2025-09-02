@@ -42,6 +42,7 @@ output:
                   - "ADDRESS VERIFICATION"
                   - "OFFICE REPORT"
                 StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  - "PVP"
                   - "DIAGNOSTIC"
                   - "ORIENTATION"
                   - "ORIENTATION W/FAM"
@@ -184,6 +185,7 @@ output:
                   - "WOCMM INITIAL"
                   - "OPENING SUMMARY"
                 StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "PVP"
                   - "OFFICE REPORT"
                   - "SUPPORT STAFF"
                   - "STAFF TO OFFENDER"

@@ -103,6 +103,7 @@ output:
                   - "DOC CLINICAL SA/MH ASSESSMENT"
                   - "AP&P TX DISCHARGE/TRANSFER"
                   - "SOTP TREATMENT PLAN"
+                  - "SOTP STATIC / STABLE (INITIAL)"
                   # These appear to be equivalent to the identically named assessments without *
                   # but these ones are used after 2019-01-03 while the older ones were phased out
                   - "MALE CUSTODY ASSESSMENT *"
