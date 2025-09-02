@@ -41,7 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.eligibility_spans.us_ia.complete_early_discharge_form import (
-    not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder,
+    not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_builder,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -75,7 +75,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_open_supervision_modifiers.VIEW_BUILDER,
         supervision_case_type_is_not_sex_offense.VIEW_BUILDER,
         not_serving_ineligible_offense_for_early_discharge.VIEW_BUILDER,
-        not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder,
+        not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_builder,
         supervision_type_is_not_investigation.VIEW_BUILDER,
         serving_supervision_case_at_least_90_days.VIEW_BUILDER,
         supervision_level_is_not_residential_program.VIEW_BUILDER,

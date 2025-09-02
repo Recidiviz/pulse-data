@@ -36,7 +36,6 @@ someone is incarcerated within 7 years of their parole eligibility date.
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
-        compartment_level_1_filter="INCARCERATION",
         meets_criteria_leading_window_time=7,
         date_part="YEAR",
         critical_date_column="group_parole_eligibility_date",

@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Defines a criteria span view that shows spans of time during which
-someone is within 3 years of their projected parole release date.
-Projected parole release dates in the past satisfy this requirement.
+"""Defines a criteria span view that shows spans of time during which
+someone is past their full term completion date (group projected full term
+release date max) or within 30 days of their full term completion date.
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -28,22 +27,14 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "INCARCERATION_WITHIN_3_YEARS_OF_PROJECTED_PAROLE_RELEASE_DATE"
+_CRITERIA_NAME = "SUPERVISION_PAST_GROUP_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS"
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is within 3 years of their projected parole release date.
-Projected parole release dates in the past satisfy this requirement.
-"""
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
+        meets_criteria_leading_window_time=30,
+        critical_date_column="group_projected_full_term_release_date_max",
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        meets_criteria_leading_window_time=3,
-        date_part="YEAR",
-        critical_date_name_in_reason="group_projected_parole_release_date",
-        critical_date_column="group_projected_parole_release_date",
-        sentence_sessions_dataset="sentence_sessions_v2_all",
+        description=__doc__,
     )
 )
 

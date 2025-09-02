@@ -232,16 +232,17 @@ def latest_drug_test_is_negative(
 
 
 def raise_error_if_invalid_compartment_level_1_filter(
-    compartment_level_1_filter: str,
+    compartment_level_1_filter: None | str,
 ) -> None:
     """Raises a ValueError if the compartment_level_1_filter is not valid"""
 
-    compartment_level_1 = compartment_level_1_filter.upper()
+    if compartment_level_1_filter:
+        compartment_level_1 = compartment_level_1_filter.upper()
 
-    if compartment_level_1 not in ("SUPERVISION", "INCARCERATION"):
-        raise ValueError(
-            "'compartment_level_1_filter' only accepts two values: `SUPERVISION` or `INCARCERATION`"
-        )
+        if compartment_level_1 not in ("SUPERVISION", "INCARCERATION"):
+            raise ValueError(
+                "'compartment_level_1_filter' only accepts two values: `SUPERVISION` or `INCARCERATION`"
+            )
 
 
 def get_ineligible_offense_type_criteria(
@@ -1105,7 +1106,7 @@ def is_past_completion_date_criteria_builder(
     criteria_name: str,
     description: str,
     meets_criteria_leading_window_time: int = 0,
-    compartment_level_1_filter: str = "SUPERVISION",
+    compartment_level_1_filter: Optional[str] = None,
     date_part: str = "DAY",
     critical_date_name_in_reason: str = "eligible_date",
     critical_date_column: str = "sentence_projected_full_term_release_date_max",
@@ -1113,6 +1114,7 @@ def is_past_completion_date_criteria_builder(
     leave_last_sentence_span_open: bool = False,
     sentence_sessions_dataset: str = "sentence_sessions",
     allow_past_critical_date: bool = True,
+    null_magic_future_date: bool = False,
     meets_criteria_default: bool = False,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
@@ -1147,6 +1149,9 @@ def is_past_completion_date_criteria_builder(
         allow_past_critical_date (bool, optional): If True, the critical date can be in the past.
             Defaults to True. If False, spans are cropped so that the end_date of a span is the
             LEAST of the critical date and the sentence session end_date.
+        null_magic_future_date (bool, optional): If True, critical_dates in the year 2999 and beyond will be set to NULL.
+            This is useful for when we are looking for spans of time where the critical date
+            has passed, but we do not want to include spans where the critical date is a magic future date.
         meets_criteria_default (bool, optional): Default value for the meets_criteria column.
             Defaults to False.
     Raises:
@@ -1158,6 +1163,11 @@ def is_past_completion_date_criteria_builder(
             someone is on supervision or incarceration
     """
     raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
+
+    if compartment_level_1_filter and ("group" in critical_date_column):
+        raise ValueError(
+            f"Compartment filter {compartment_level_1_filter} cannot be set for the group-level sentence date {critical_date_column}"
+        )
 
     excluded_incarceration_states = list_to_query_string(
         string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
@@ -1192,6 +1202,13 @@ def is_past_completion_date_criteria_builder(
     else:
         end_date_str = "end_date_exclusive"
 
+    # TODO(#28370) revert once normalization fix is in
+    if null_magic_future_date:
+        # If magic future date is allowed, we can use the critical date column directly
+        critical_date_column_preprocessed = f"IF(EXTRACT (YEAR FROM {critical_date_column})=9999, NULL, {critical_date_column}) AS {critical_date_column}"
+    else:
+        critical_date_column_preprocessed = critical_date_column
+
     # TODO(#41848): move this to a separate helper and/or refactor the critical date helper
     if allow_past_critical_date:
         final_end_date_condition = "end_date"
@@ -1221,7 +1238,7 @@ def is_past_completion_date_criteria_builder(
         person_id,
         start_date,
         {end_date_str},
-        {critical_date_column},
+        {critical_date_column_preprocessed},
         is_life,
         FROM `{{project_id}}.{sentence_sessions_dataset}.person_projected_date_sessions_materialized`,
         UNNEST(sentence_array)

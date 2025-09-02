@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which
-someone is past their supervision full term completion date (group projected full term
+someone is past their supervision full term completion date (sentence projected full term
 release date max) or within 30 days of their full term completion date.
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -31,8 +31,9 @@ _CRITERIA_NAME = "SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
-        critical_date_column="group_projected_full_term_release_date_max",
         meets_criteria_leading_window_time=30,
+        critical_date_column="sentence_projected_full_term_release_date_max",
+        compartment_level_1_filter="SUPERVISION",
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
     )

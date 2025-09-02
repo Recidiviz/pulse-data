@@ -15,8 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone is not
-past their supervision full term completion date (projected max completion date) or within 30 days of it.
+past their supervision full term completion date (sentence projected max completion date) or within 30 days of it.
 However, this criteria will be FALSE if no projected max completion date is set.
+
+This criteria is therefore not fully the logical opposite of the
+`SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS` view, since both criteria will be FALSE if there
+is no projected max completion date
 """
 from google.cloud import bigquery
 
@@ -32,12 +36,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone is not past their supervision full term completion date (projected max completion
-date) or within 30 days of it. However, this criteria will be FALSE if no projected max completion date is set. 
-This criteria is therefore not fully the logical opposite of the
-`SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_30_DAYS` view, since both criteria will be FALSE if there
-is no projected max completion date"""
+_DESCRIPTION = __doc__
 
 _QUERY_TEMPLATE = f"""
 SELECT

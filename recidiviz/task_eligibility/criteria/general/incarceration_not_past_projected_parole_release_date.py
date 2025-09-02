@@ -39,7 +39,6 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        compartment_level_1_filter="INCARCERATION",
         critical_date_name_in_reason="group_projected_parole_release_date",
         critical_date_column="group_projected_parole_release_date",
         negate_critical_date_has_passed=True,

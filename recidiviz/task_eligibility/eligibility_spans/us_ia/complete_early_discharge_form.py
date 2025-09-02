@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.criteria.general import (
     not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state,
     supervision_case_type_is_not_sex_offense,
     supervision_level_is_not_residential_program,
-    supervision_past_full_term_completion_date_or_upcoming_30_days,
+    supervision_past_group_full_term_completion_date_or_upcoming_30_days,
     supervision_type_is_not_investigation,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
@@ -50,8 +50,8 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in IA is eligible for early discharge from
 supervision."""
 
-not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=supervision_past_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER
+not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_builder = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=supervision_past_group_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
@@ -66,7 +66,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_case_type_is_not_sex_offense.VIEW_BUILDER,
         supervision_fees_paid.VIEW_BUILDER,
         not_serving_ineligible_offense_for_early_discharge.VIEW_BUILDER,
-        not_supervision_past_full_term_completion_date_or_upcoming_30_days_view_builder,
+        not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_builder,
         not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state.VIEW_BUILDER,
         supervision_type_is_not_investigation.VIEW_BUILDER,
         serving_supervision_case_at_least_90_days.VIEW_BUILDER,
