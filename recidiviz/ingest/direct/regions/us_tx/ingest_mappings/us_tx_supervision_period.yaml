@@ -71,6 +71,7 @@ output:
                         - Substance abuse - PHASE 2
                         - Substance abuse - PHASE 3
                         - Substance abuse - PHASE 1B
+                        - Substance abuse - PRSAP
                         #TODO(#41754) Refactor the Phases logic to have it be historically acurate
                         - Substance abuse
                       StateSupervisionCaseType.INTERNAL_UNKNOWN:
