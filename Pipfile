@@ -159,6 +159,7 @@ google-api-core = "*"
 google-api-python-client = "*"
 google-auth = "*"
 google-cloud-core = "*"
+# TODO(#47214): unpin bigquery when perf regression is fixed
 google-cloud-bigquery = "3.35.1"
 google-cloud-bigquery-datatransfer = "*"
 google-cloud-bigquery-storage = "*"
