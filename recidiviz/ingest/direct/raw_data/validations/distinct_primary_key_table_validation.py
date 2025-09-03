@@ -31,14 +31,12 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type impo
 )
 from recidiviz.utils.string import StrictStringFormatter
 
-ERROR_MESSAGE_ROW_LIMIT = 10
-
 DISTINCT_PRIMARY_KEY_QUERY_TEMPLATE = """
 SELECT {select_lower_primary_keys_clause}
 FROM `{project_id}.{dataset_id}.{table_id}`
 GROUP BY {group_by_clause}
 HAVING COUNT(*) > 1
-LIMIT {error_message_limit}
+LIMIT 1 
 """
 
 
@@ -84,7 +82,6 @@ class DistinctPrimaryKeyTableValidation(RawDataTableImportBlockingValidation):
                 f"LOWER({col}) as lower_{col}" for col in self.primary_key_cols
             ),
             group_by_clause=", ".join(f"lower_{col}" for col in self.primary_key_cols),
-            error_message_limit=ERROR_MESSAGE_ROW_LIMIT,
         )
 
     def get_error_from_results(
@@ -93,22 +90,11 @@ class DistinctPrimaryKeyTableValidation(RawDataTableImportBlockingValidation):
         if not results:
             return None
 
-        unparseable_prefix = (
-            f"First [{len(results)}] of many"
-            if len(results) == ERROR_MESSAGE_ROW_LIMIT
-            else f"All [{len(results)}]"
-        )
-
-        formatted_results = ", ".join(self.primary_key_cols) + "\n"
-        formatted_results += "\n".join(
-            [", ".join(str(v) for v in row.values()) for row in results]
-        )
         return RawDataImportBlockingValidationFailure(
             validation_type=self.validation_type(),
             validation_query=self.build_query(),
             error_msg=(
                 f"Found duplicate primary keys for raw file [{self.file_tag}]"
-                f"Primary key columns: [{self.primary_key_cols}]"
-                f"{unparseable_prefix} duplicate primary keys (case insensitive):\n{formatted_results}"
+                f"\nPrimary key columns: {self.primary_key_cols}"
             ),
         )

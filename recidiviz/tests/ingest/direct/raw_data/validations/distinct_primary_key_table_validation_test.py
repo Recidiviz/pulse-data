@@ -120,10 +120,7 @@ class TestDistinctPrimaryKeyTableValidation(BigQueryEmulatorTestCase):
     def test_case_insensitivity(self) -> None:
         expected_error_msg = (
             f"Found duplicate primary keys for raw file [{self.file_tag}]"
-            "Primary key columns: [['id', 'name']]"
-            "All [1] duplicate primary keys (case insensitive):\n"
-            "id, name\n"
-            "1, alice"
+            "\nPrimary key columns: ['id', 'name']"
         )
         temp_table_data = [
             {"id": "1", "name": "Alice", "value": 10},
@@ -154,11 +151,7 @@ class TestDistinctPrimaryKeyTableValidation(BigQueryEmulatorTestCase):
     def test_duplicate_keys(self) -> None:
         expected_error_message = (
             f"Found duplicate primary keys for raw file [{self.file_tag}]"
-            "Primary key columns: [['id', 'name']]"
-            "All [2] duplicate primary keys (case insensitive):\n"
-            "id, name\n"
-            "1, alice\n"
-            "2, bob"
+            "\nPrimary key columns: ['id', 'name']"
         )
         temp_table_data = [
             {"id": "1", "name": "Alice", "value": 10},
