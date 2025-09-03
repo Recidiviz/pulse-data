@@ -73,18 +73,25 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK026"
   }
 
-  join: us_mo_LBAKRDTA_TAK158 {
-    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK158.F1_DOC};;
-    type: full_outer
-    relationship: one_to_many
-    view_label: "us_mo_LBAKRDTA_TAK158"
-  }
-
   join: us_mo_LBAKRDTA_TAK065 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK065.CS_DOC};;
     type: full_outer
     relationship: one_to_many
     view_label: "us_mo_LBAKRDTA_TAK065"
+  }
+
+  join: us_mo_LBAKRDTA_TAK071 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK071.CV_DOC};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_mo_LBAKRDTA_TAK071"
+  }
+
+  join: us_mo_LBAKRDTA_TAK158 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK158.F1_DOC};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_mo_LBAKRDTA_TAK158"
   }
 
   join: us_mo_LBAKRDTA_TAK028 {

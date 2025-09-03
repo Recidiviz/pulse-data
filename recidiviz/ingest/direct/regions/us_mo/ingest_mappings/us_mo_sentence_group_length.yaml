@@ -3,23 +3,24 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  CG_DOC: STRING
-  CG_CYC: STRING
+  DOC: STRING
+  CYC: STRING
   group_update_datetime: DATETIME
   CG_MD: DATE
   CG_MM: DATE
+  CV_AP: DATE
 unused_columns: []
 variables:
   - sentence_group_external_id:
       $concat:
         $values:
-          - CG_DOC
-          - CG_CYC
+          - DOC
+          - CYC
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: CG_DOC
+          external_id: DOC
           id_type: $literal("US_MO_DOC")
     sentence_groups:
       - StateSentenceGroup:
@@ -29,3 +30,4 @@ output:
                 group_update_datetime: group_update_datetime
                 parole_eligibility_date_external: CG_MD
                 projected_parole_release_date_external: CG_MM
+                projected_full_term_release_date_max_external: CV_AP

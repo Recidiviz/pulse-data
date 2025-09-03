@@ -6,8 +6,9 @@ input_columns:
   person_external_id: STRING
   sentence_external_id: STRING
   critical_date: DATE
-  BS_PD: DATE
   BT_PC: DATE
+  calculated_projected_max: DATE
+  max_days: INTEGER
 unused_columns: []
 output:
   StatePerson:
@@ -21,5 +22,6 @@ output:
           sentence_lengths:
             - StateSentenceLength:
                 length_update_datetime: critical_date
-                projected_completion_date_max_external: BS_PD
                 projected_completion_date_min_external: BT_PC
+                projected_completion_date_max_external: calculated_projected_max
+                sentence_length_days_max: max_days
