@@ -86,6 +86,7 @@ FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
         "Sentence": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "Staff": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "StaffEmailByAlias": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "OffenderSentenceSummary": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
     StateCode.US_PA: {
         "RECIDIVIZ_REFERENCE_staff_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
