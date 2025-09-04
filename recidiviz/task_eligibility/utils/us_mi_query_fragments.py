@@ -84,6 +84,7 @@ WITH eligible_and_almost_eligible AS (
 ),
 release_dates AS (
 /* Queries raw data for the min and max release dates */ 
+# TODO(#47211): migrate off raw data after the MI sentence length changes have been made
     SELECT
         person_id,
         MAX(pmi_sgt_min_date) AS pmi_sgt_min_date, 
