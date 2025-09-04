@@ -24,6 +24,9 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
+    open_supervision_sessions,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     TaskEligibilitySpansSubsetType,
     array_agg_case_notes_by_person_id,
@@ -454,3 +457,65 @@ LEFT JOIN array_case_notes_cte a
         ),
         should_materialize=True,
     )
+
+
+def secondary_officer_dockets_cte() -> str:
+    return f"""
+        open_supervision_sessions AS (
+            {open_supervision_sessions()}
+        ),
+        agent_in_client_rec AS (
+            SELECT 
+                state_code,
+                person_id,
+                supervising_officer_external_id AS Case_Manager_Omnni_Employee_Id
+            FROM open_supervision_sessions
+        ),
+        secondary_officer_metadata AS (
+            SELECT 
+                person_id,
+                ARRAY_AGG(
+                    INITCAP(CONCAT(JSON_EXTRACT_SCALAR(s.full_name, "$.given_names"), 
+                           " ", 
+                           JSON_EXTRACT_SCALAR(s.full_name, "$.surname")))
+                    ORDER BY Case_Manager_Omnni_Employee_Id
+                ) AS metadata_officers
+            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_latest` cm
+            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Statuses_latest` ss USING(Supervision_Status_Id, Offender_Number)
+            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei ON Case_Manager_Omnni_Employee_Id = sei.external_id AND sei.id_type = 'US_MI_OMNI_USER'
+            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` s ON sei.staff_id = s.staff_id
+            LEFT JOIN agent_in_client_rec USING(person_id, Case_Manager_Omnni_Employee_Id)
+            WHERE 
+                -- agent is currently supervising the client for an open supervision status
+                cm.end_date is null AND ss.end_date is null
+                -- only grab supervision-related agents
+                AND Supervision_Status IN ('Parole', 'Probation', 'Delayed Sentence', 'Interstate Compact Parole', 'Interstate Compact Probation', 'Pending MDOC Custody')
+                -- only grab agents that aren't already the primary agent in the client record
+                AND agent_in_client_rec.Case_Manager_Omnni_Employee_Id IS NULL
+            GROUP BY 1
+        ),
+        dockets_metadata AS (
+            SELECT 
+                person_id,
+                ARRAY_AGG(
+                TO_JSON(
+                    STRUCT(docket_number_description AS docket_number,
+                        ref1.description AS legal_order_type, 
+                        DATE(effective_date) AS legal_order_effective_date, 
+                        DATE(expiration_date) AS legal_order_expiration_date,
+                        loc.name AS issue_location)
+                )
+                ORDER BY docket_number_description
+                ) AS metadata_dockets
+            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LEGAL_ORDER_latest`
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest` ref1 ON order_type_id = ref1.reference_code_id
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest` ref2 ON order_status_id = ref2.reference_code_id
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LOCATION_latest` loc ON issue_location_id = loc.location_id
+            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei ON external_id = offender_booking_id AND id_type = 'US_MI_DOC_BOOK'
+            WHERE
+                -- only grab open legal orders 
+                ref2.description = 'Active'
+            GROUP BY 1 
+        )
+    """

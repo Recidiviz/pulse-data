@@ -154,6 +154,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     },
     StateCode.US_MI: {
         "ADH_OFFENDER_SENTENCE": ["last_update_date"],
+        "COMS_Case_Managers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Modifiers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Specialties": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Security_Classification": [
@@ -588,7 +589,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "DatePasswordLastSet",
             "DateUpdated",
         ],
-        "COMS_Case_Managers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Employment": [
             "Employment_End_Date",
             "Employment_Start_Date",
