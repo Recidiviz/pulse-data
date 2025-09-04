@@ -19,6 +19,7 @@ input_columns:
   FIRST_HEARING_DTM: STRING
   penalty_free_text_description: STRING
   offense_class: STRING
+  major_or_minor: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -47,6 +48,9 @@ output:
           facility: facility
           location_within_facility: location_within_facility
           incident_details: VIOLATION_STATEMENT
+          incident_metadata:
+            $normalized_values_json_dict:
+              major_or_minor: major_or_minor
           incarceration_incident_outcomes:
             # Sometimes there is no penalty, so wrap this in a conditional.
             - $conditional:
