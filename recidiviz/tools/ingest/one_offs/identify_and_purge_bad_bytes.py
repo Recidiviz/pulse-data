@@ -63,6 +63,7 @@ def remove_bad_bytes(
     """
     logging.info("starting file read...")
     cursor = 0
+    counter = 0
     while True:
         input_io.seek(cursor)
         next_chunk = input_io.read()
@@ -73,6 +74,7 @@ def remove_bad_bytes(
                 output_io.write(next_chunk)
             break
         except UnicodeDecodeError as ude:
+            counter += 1
             input_io.seek(cursor)
             to_append = input_io.read(ude.start)
             excluded = input_io.read(ude.end - ude.start)
@@ -92,6 +94,8 @@ def remove_bad_bytes(
                 )
                 output_io.write(to_append)
             cursor += next_offset
+
+    logging.info("number of bad bites is: %i", counter)
 
 
 @contextmanager
