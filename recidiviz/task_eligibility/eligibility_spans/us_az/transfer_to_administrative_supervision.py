@@ -64,7 +64,7 @@ _RISK_SCORE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         risk_release_assessment_level_is_minimum.VIEW_BUILDER,
         oras_risk_level_is_medium_or_lower.VIEW_BUILDER,
     ],
-    allowed_duplicate_reasons_keys=["assessment_score", "assessment_level"],
+    allowed_duplicate_reasons_keys=[],
 )
 
 _MEET_INELIGIBLE_OFFENSE_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
