@@ -160,7 +160,7 @@ class RosterTicketService:
             f"{requester_name} has requested that the following {officer_label}(s) "
             f"be {action} the caseload of {target_name}:\n"
             f"{officer_section}\n"
-            f"Other staff affected by this change:\n"
+            f"Other supervisor(s) affected by this change:\n"
             f"{supervisor_section}\n"
             f"Note from user:\n{note}"
         )

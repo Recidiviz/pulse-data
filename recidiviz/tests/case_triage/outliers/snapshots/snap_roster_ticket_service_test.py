@@ -18,7 +18,7 @@ snapshots["test_request_roster_change[add_multiple_officer] 1"] = {
 - John Officer <email not found>, District B (supervised by Bob Supervisor)
 - Sam Officer <sam@testdomain.com>, District C (no supervisors listed)
 
-Other staff affected by this change:
+Other supervisor(s) affected by this change:
 - Alice Supervisor <alice@testdomain.com>
 - Bob Supervisor <email not found>
 
@@ -38,7 +38,7 @@ Test Requester has requested that the following officer(s) be added to the casel
 - Jane Officer <jane@testdomain.com>, District A (supervised by Alice Supervisor, Bob Supervisor)
 - John Officer <email not found>, District B (supervised by Bob Supervisor)
 
-Other staff affected by this change:
+Other supervisor(s) affected by this change:
 - Alice Supervisor <alice@testdomain.com>
 - Bob Supervisor <email not found>
 
@@ -55,7 +55,7 @@ snapshots["test_request_roster_change[add_single_officer] 1"] = {
         "_default_description_": """Test Requester has requested that the following officer(s) be added to the caseload of Alice Supervisor:
 - Jane Officer <jane@testdomain.com>, District A (supervised by Alice Supervisor, Bob Supervisor)
 
-Other staff affected by this change:
+Other supervisor(s) affected by this change:
 - Alice Supervisor <alice@testdomain.com>
 - Bob Supervisor <email not found>
 
@@ -73,7 +73,7 @@ snapshots["test_request_roster_change[remove_multiple_officers] 1"] = {
 - Jane Officer <jane@testdomain.com>, District A
 - John Officer <email not found>, District B
 
-Other staff affected by this change:
+Other supervisor(s) affected by this change:
 - Alice Supervisor <alice@testdomain.com>
 - Bob Supervisor <email not found>
 
@@ -92,7 +92,7 @@ Test Requester has requested that the following officer(s) be removed from the c
 - Jane Officer <jane@testdomain.com>, District A
 - John Officer <email not found>, District B
 
-Other staff affected by this change:
+Other supervisor(s) affected by this change:
 - Alice Supervisor <alice@testdomain.com>
 - Bob Supervisor <email not found>
 
@@ -109,7 +109,7 @@ snapshots["test_request_roster_change[remove_single_officer] 1"] = {
         "_default_description_": """Test Requester has requested that the following officer(s) be removed from the caseload of Alice Supervisor:
 - Jane Officer <jane@testdomain.com>, District A
 
-Other staff affected by this change:
+Other supervisor(s) affected by this change:
 - Alice Supervisor <alice@testdomain.com>
 - Bob Supervisor <email not found>
 
