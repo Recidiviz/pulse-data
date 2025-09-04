@@ -44,7 +44,10 @@ output:
                 StateSupervisionContactMethod.INTERNAL_UNKNOWN:
                   - "PVP"
                   - "DIAGNOSTIC"
+                  - "COMPACT RFRI"
+                  - "COMPACT NOD"
                   - "ORIENTATION"
+                  - "COMPACT TRANSFER"
                   - "ORIENTATION W/FAM"
                   - "ORIENTATION W/O FAM"
                   - "WOCMM INITIAL"
@@ -187,6 +190,7 @@ output:
                 StateSupervisionContactReason.GENERAL_CONTACT:
                   - "PVP"
                   - "OFFICE REPORT"
+                  - "COMPACT TRANSFER"
                   - "SUPPORT STAFF"
                   - "STAFF TO OFFENDER"
                   - "CASE UPDATE"
@@ -217,6 +221,8 @@ output:
                   - "IPO/TRANSTN SUMMARY"
                   - "AUDIT"
                   - "SPECIAL REQUEST"
+                  - "COMPACT RFRI"
+                  - "COMPACT NOD"
                   - "GPS/ELECTRONIC MONIT"
                   - "LOW ELECTRONIC CHECK"
                   - "SUPERVISION REVIEW"
