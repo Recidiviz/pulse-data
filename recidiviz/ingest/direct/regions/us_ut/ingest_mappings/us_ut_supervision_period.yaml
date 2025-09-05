@@ -299,6 +299,7 @@ output:
                   $values:
                     - lgl_stat_desc
                     - start_reason
+                    - body_loc_desc
                   $separator: "|"
               $custom_parser: us_ut_custom_enum_parsers.parse_supervision_type
           custodial_authority:
