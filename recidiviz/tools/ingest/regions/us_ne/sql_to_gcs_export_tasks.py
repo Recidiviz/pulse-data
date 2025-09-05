@@ -44,6 +44,7 @@ DCS_MVS_FILE_TAGS = [
     "CUSTODY_HIST",
     "SS_CHARGE",
     "SPECIAL_SERVICE",
+    "tmppopcount",
 ]
 
 # All file tags correspond to the table name in the database
