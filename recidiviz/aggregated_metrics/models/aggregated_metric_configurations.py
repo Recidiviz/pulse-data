@@ -2369,6 +2369,23 @@ WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
     ),
 )
 
+WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitCountMetric(
+    name="workflows_distinct_people_eligible_actionable_and_viewed",
+    display_name="Distinct Population: Eligible, Actionable, And Viewed",
+    description="Total distinct count of clients eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for fully launched task types",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
+            "viewed": ["true"],
+        },
+    ),
+)
+
 WORKFLOWS_DISTINCT_PEOPLE_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
     SpanDistinctUnitCountMetric(
         name=f"workflows_distinct_people_eligible_and_actionable_{b.task_type_name.lower()}",
@@ -2402,6 +2419,23 @@ WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCount
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
             "task_type_is_fully_launched": ["true"],
+        },
+    ),
+)
+
+WORKFLOWS_DISTINCT_PEOPLE_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitCountMetric(
+    name="workflows_distinct_people_almost_eligible_actionable_and_viewed",
+    display_name="Distinct Population: Almost Eligible, Actionable, And Viewed",
+    description="Total distinct count of clients almost eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for fully launched task types",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
+            "viewed": ["true"],
         },
     ),
 )
@@ -2713,6 +2747,41 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_FUNNEL_METRICS = [
     )
     for k in USAGE_EVENTS_DICT
 ]
+
+WORKFLOWS_DISTINCT_POPULATION_ALMOST_ELIGIBLE_FUNNEL_METRICS = [
+    SpanDistinctUnitCountMetric(
+        name=f"distinct_clients_almost_eligible_{k.lower()}",
+        display_name=f"Distinct Population: Almost Eligible And {snake_to_title(k)}",
+        description=f"Total distinct count of clients almost eligible for selected task type with funnel status "
+        f"{snake_to_title(k).lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                k.lower(): ["true"],
+            },
+        ),
+    )
+    for k in USAGE_EVENTS_DICT
+]
+
+WORKFLOWS_DISTINCT_POPULATION_ELIGIBLE_FUNNEL_METRICS = [
+    SpanDistinctUnitCountMetric(
+        name=f"distinct_clients_eligible_{k.lower()}",
+        display_name=f"Distinct Population: Eligible And {snake_to_title(k)}",
+        description=f"Total distinct count of clients eligible for selected task type with funnel status "
+        f"{snake_to_title(k).lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                k.lower(): ["true"],
+            },
+        ),
+    )
+    for k in USAGE_EVENTS_DICT
+]
+
 
 PERSON_DAYS_TASK_ELIGIBLE = SumSpanDaysMetric(
     name="person_days_task_eligible",
