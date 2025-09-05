@@ -90,28 +90,54 @@ def assessment_scores_with_first_score_ctes(
 """
 
 
-def termination_reports_query(only_include_et_reports: bool = True) -> str:
+def termination_reports_query(
+    only_include_et_reports: bool = False,
+    include_et_and_court_probation_reports: bool = False,
+) -> str:
     """
     Generates a SQL query to retrieve termination reports for individuals in Utah.
 
     This query fetches distinct state codes, person IDs, and report dates from the
     `wf_rpt_latest` table, joining with subject and type code tables to filter
-    specific report types. By default, it includes only early termination (ET) reports.
+    specific report types.
 
     Args:
         only_include_et_reports (bool): If True, filters the query to include only
             early termination reports based on specific subject and type codes.
-            If False, no such filtering is applied.
+        include_et_and_court_probation_reports (bool): If True, filters the query to
+            include both early termination reports and requests to convert to
+            court probation.
+
+    Raises:
+        ValueError: If both `only_include_et_reports` and
+            `include_et_and_court_probation_reports` are True.
 
     Returns:
         str: A SQL query string to retrieve the desired termination reports.
     """
+
+    if only_include_et_reports and include_et_and_court_probation_reports:
+        raise ValueError(
+            "Arguments `only_include_et_reports` and "
+            "`include_et_and_court_probation_reports` cannot both be True."
+        )
 
     et_reports_where_clause = """
     -- Subject is SUPERVISION GUIDELINE - EARLY TERMINATION REVIEW
     WHERE IFNULL(rpt_sbjct_id, '') = '11'
     -- Type is TERMINATION OF PAROLE REQUEST
         OR IFNULL(rpt_typ_id, '') = '9'"""
+
+    et_n_court_probation_reports_where_clause = f"""{et_reports_where_clause}
+    -- Subject is REQUEST TO CONVERT TO COURT PROBATION
+        OR IFNULL(rpt_sbjct_id, '') = '6'"""
+
+    if only_include_et_reports:
+        where_clause = et_reports_where_clause
+    elif include_et_and_court_probation_reports:
+        where_clause = et_n_court_probation_reports_where_clause
+    else:
+        where_clause = ""
 
     return f"""SELECT
         DISTINCT
@@ -126,4 +152,4 @@ def termination_reports_query(only_include_et_reports: bool = True) -> str:
     INNER JOIN `{{project_id}}.us_ut_normalized_state.state_person_external_id` peid
     ON peid.external_id = r.ofndr_num
         AND peid.state_code = 'US_UT'
-        AND peid.id_type = 'US_UT_DOC' {et_reports_where_clause if only_include_et_reports else ''}"""
+        AND peid.id_type = 'US_UT_DOC' {where_clause}"""
