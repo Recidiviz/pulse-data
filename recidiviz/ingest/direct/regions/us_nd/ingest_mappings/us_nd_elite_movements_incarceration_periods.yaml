@@ -152,6 +152,7 @@ output:
                   - ESCP
                   - ABSC
                 StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
+                  - ESCP_ERR
                   - ERR
                 StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
                   - OTHER
