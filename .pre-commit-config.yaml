@@ -47,8 +47,7 @@ repos:
         entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
       - id: ensure_jupyter_notebook_is_exported
         name: Export Jupyter Notebooks to nbautoexport-scripts directory
-        entry: pipenv run python -m
-          recidiviz.research.export_notebooks_pre_commit
+        entry: pipenv run python -m recidiviz.research.export_notebooks_pre_commit
         language: system
         always_run: true
         files: ^recidiviz/research/.*notebooks/.*\.ipynb$
@@ -122,5 +121,6 @@ repos:
         # If you modify this list, also update LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX mapping in generate_all_lookml.py
         files:
           ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|
-          ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/
+          ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/|
+          ^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions
         exclude: ^recidiviz/tools/looker/__generated__/

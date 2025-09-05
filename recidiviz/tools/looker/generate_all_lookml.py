@@ -54,6 +54,9 @@ from recidiviz.tools.looker.top_level_generators.raw_data_person_details_lookml_
 from recidiviz.tools.looker.top_level_generators.state_dataset_lookml_generator import (
     StateDatasetLookMLGenerator,
 )
+from recidiviz.tools.looker.top_level_generators.usage_lookml_generator import (
+    UsageLookMLGenerator,
+)
 
 # If you update this mapping, please also update the files regex for generate_lookml in .pre-commit-config.yaml
 LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX: dict[type[LookMLGenerator], str | None] = {
@@ -64,6 +67,7 @@ LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX: dict[type[LookMLGenerator], str | Non
     BreadthAndDepthLookMLGenerator: None,
     CustomMetricsLookMLGenerator: r"^recidiviz/aggregated_metrics/",
     AggregatedMetricsLookMLGenerator: r"^recidiviz/aggregated_metrics/",
+    UsageLookMLGenerator: r"^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions",
 }
 
 
