@@ -214,7 +214,7 @@ const ValidationFailureTable: FC<ValdiationFailureTableProps> = ({
         size: "small",
       }}
       rowClassName="validation-table-row"
-      rowKey="validation"
+      rowKey={(record) => `${record.getName()}-${record.getStateCode()}`}
     />
   );
 };

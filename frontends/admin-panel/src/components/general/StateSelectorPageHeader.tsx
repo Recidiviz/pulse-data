@@ -45,6 +45,7 @@ const StateSelectorPageHeader: React.FC<StateSelectorPageHeaderProps> = ({
           fetchStateList={fetchIngestStateCodes}
           onChange={onChange}
           initialValue={stateCode}
+          key="state-selector"
         />,
       ]}
       onBack={onBack}

@@ -46,7 +46,7 @@ export interface RegionActionContext {
 }
 
 interface ActionRegionConfirmationFormProps {
-  visible: boolean;
+  open: boolean;
   onConfirm: (context: RegionActionContext) => void;
   onCancel: () => void;
   action: RegionAction;
@@ -58,7 +58,7 @@ interface ActionRegionConfirmationFormProps {
 const ActionRegionConfirmationForm: React.FC<
   ActionRegionConfirmationFormProps
 > = ({
-  visible,
+  open,
   onConfirm,
   onCancel,
   action,
@@ -81,7 +81,7 @@ const ActionRegionConfirmationForm: React.FC<
 
   const GenericIngestActionConfirmationModal = (
     <Modal
-      visible={visible}
+      open={open}
       title={actionName || ""}
       okText="Ok"
       cancelText="Cancel"

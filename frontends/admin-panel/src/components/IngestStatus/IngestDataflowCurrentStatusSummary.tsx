@@ -240,6 +240,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
             defaultPageSize: 25,
             pageSizeOptions: ["25", "50", "100"],
           }}
+          rowKey={(record) => record.stateCode}
         />
       </Layout>
     </>

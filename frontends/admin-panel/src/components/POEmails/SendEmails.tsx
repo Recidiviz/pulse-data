@@ -49,7 +49,7 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
     undefined
   );
   const [showSpinner, setShowSpinner] = React.useState(false);
-  const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] =
     React.useState(false);
   const [labeledBatchList, setLabeledBatchList] = React.useState<
     Option[] | undefined
@@ -63,7 +63,7 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
   const onEmailActionConfirmation = async () => {
     if (!stateInfo || !reportType) return;
 
-    setIsConfirmationModalVisible(false);
+    setIsConfirmationModalOpen(false);
     setShowSpinner(true);
     message.info("Sending emails...");
     if (formData?.batchId) {
@@ -87,12 +87,12 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
   };
 
   const onConfirmationCancel = () => {
-    setIsConfirmationModalVisible(false);
+    setIsConfirmationModalOpen(false);
     setFormData(undefined);
   };
 
   const showConfirmationModal = () => {
-    setIsConfirmationModalVisible(true);
+    setIsConfirmationModalOpen(true);
   };
 
   const getBatches = React.useCallback(() => {
@@ -212,7 +212,7 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
       </Card>
       {stateInfo && formData?.batchId ? (
         <ActionRegionConfirmationForm
-          visible={isConfirmationModalVisible}
+          open={isConfirmationModalOpen}
           onConfirm={onEmailActionConfirmation}
           onCancel={onConfirmationCancel}
           action={RegionAction.SendEmails}

@@ -48,8 +48,7 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
   onActionLoadingStateChanged,
   onActionConfirmed,
 }) => {
-  const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
-    useState(false);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
   const setActionLoadingState = (loading: boolean) => {
     if (onActionLoadingStateChanged) {
@@ -64,7 +63,7 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
   };
 
   const onIngestActionConfirmation = async (context: RegionActionContext) => {
-    setIsConfirmationModalVisible(false);
+    setIsConfirmationModalOpen(false);
 
     setActionLoadingState(true);
     const unsupportedIngestAction = "Unsupported ingest action";
@@ -88,17 +87,17 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
         block={block}
         type={type}
         onClick={() => {
-          setIsConfirmationModalVisible(true);
+          setIsConfirmationModalOpen(true);
         }}
         key={action}
       >
         {buttonText}
       </Button>
       <ActionRegionConfirmationForm
-        visible={isConfirmationModalVisible}
+        open={isConfirmationModalOpen}
         onConfirm={onIngestActionConfirmation}
         onCancel={() => {
-          setIsConfirmationModalVisible(false);
+          setIsConfirmationModalOpen(false);
         }}
         action={action}
         actionName={regionActionNames[action]}

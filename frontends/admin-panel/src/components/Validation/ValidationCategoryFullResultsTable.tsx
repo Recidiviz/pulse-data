@@ -125,7 +125,7 @@ const ValidationCategoryFullResultsTable: FC<
         size: "small",
       }}
       rowClassName="validation-table-row"
-      rowKey="validation"
+      rowKey={(record) => record.name}
     />
   );
 };

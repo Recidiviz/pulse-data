@@ -55,7 +55,7 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
     undefined
   );
   const [showSpinner, setShowSpinner] = React.useState(false);
-  const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] =
     React.useState(false);
   const [generationResult, setGenerationResult] =
     React.useState<AlertProps | void>();
@@ -69,7 +69,7 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
     if (!stateInfo || !reportType) return;
 
     setGenerationResult();
-    setIsConfirmationModalVisible(false);
+    setIsConfirmationModalOpen(false);
     setShowSpinner(true);
     message.info("Generating emails...");
     const r = await generateEmails(
@@ -133,12 +133,12 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
   };
 
   const onConfirmationCancel = () => {
-    setIsConfirmationModalVisible(false);
+    setIsConfirmationModalOpen(false);
     setFormData(undefined);
   };
 
   const showConfirmationModal = () => {
-    setIsConfirmationModalVisible(true);
+    setIsConfirmationModalOpen(true);
   };
 
   return (
@@ -205,7 +205,7 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
 
       {stateInfo ? (
         <ActionRegionConfirmationForm
-          visible={isConfirmationModalVisible}
+          open={isConfirmationModalOpen}
           onConfirm={onEmailActionConfirmation}
           onCancel={onConfirmationCancel}
           action={RegionAction.GenerateEmails}
