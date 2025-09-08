@@ -160,9 +160,7 @@ class IngestRawFileProcessingStatus:
 
 
 class IngestOperationsStore(AdminPanelStore):
-    """
-    A store for tracking the current state of direct ingest.
-    """
+    """A store for tracking the current state of direct ingest."""
 
     def __init__(self) -> None:
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())

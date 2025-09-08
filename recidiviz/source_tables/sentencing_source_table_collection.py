@@ -17,15 +17,36 @@
 """Contains source table definitions for sentencing views."""
 from google.cloud import bigquery
 
-from recidiviz.entrypoints.sentencing.datasets import (
-    CASE_INSIGHTS_RATES_ADDRESS,
-    CASE_INSIGHTS_RATES_SCHEMA,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.state.dataset_config import SENTENCING_DATASET
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableConfig,
 )
+
+CASE_INSIGHTS_RATES_ADDRESS = BigQueryAddress(
+    dataset_id=SENTENCING_DATASET, table_id="case_insights_rates"
+)
+# TODO(#40788): Deprecate probation/rider/term-specific columns
+CASE_INSIGHTS_RATES_SCHEMA = [
+    {"name": "state_code", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "gender", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "assessment_score_bucket_start", "type": "INTEGER", "mode": "REQUIRED"},
+    {"name": "assessment_score_bucket_end", "type": "INTEGER", "mode": "REQUIRED"},
+    {"name": "most_severe_description", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "recidivism_rollup", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "recidivism_num_records", "type": "INTEGER", "mode": "REQUIRED"},
+    {"name": "recidivism_probation_series", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "recidivism_rider_series", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "recidivism_term_series", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "recidivism_series", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "disposition_num_records", "type": "INTEGER", "mode": "REQUIRED"},
+    {"name": "disposition_probation_pc", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "disposition_rider_pc", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "disposition_term_pc", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "dispositions", "type": "STRING", "mode": "REQUIRED"},
+]
 
 
 def collect_sentencing_source_tables() -> list[SourceTableCollection]:

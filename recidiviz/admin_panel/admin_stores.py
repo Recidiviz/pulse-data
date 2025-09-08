@@ -20,6 +20,7 @@ from typing import Dict, Iterable, List, Optional
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
+from recidiviz.admin_panel.lineage_store import LineageStore
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.common.constants.states import StateCode
 
@@ -56,6 +57,9 @@ class _AdminStores:
 
         self.validation_status_store = ValidationStatusStore()
         admin_panel_stores.append(self.validation_status_store)
+
+        self.lineage_store = LineageStore()
+        admin_panel_stores.append(self.lineage_store)
 
         return admin_panel_stores
 
@@ -99,6 +103,14 @@ def get_validation_status_store() -> ValidationStatusStore:
             "Admin stores not initialized, must first call initialize_admin_stores()."
         )
     return _admin_stores.validation_status_store
+
+
+def get_lineage_store() -> LineageStore:
+    if _admin_stores is None:
+        raise ValueError(
+            "Admin stores not initialized, must first call initialize_admin_stores()."
+        )
+    return _admin_stores.lineage_store
 
 
 def fetch_state_codes(state_codes: Iterable[StateCode]) -> List[Dict[str, str]]:

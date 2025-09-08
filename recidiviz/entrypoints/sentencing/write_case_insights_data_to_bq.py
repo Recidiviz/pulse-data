@@ -29,7 +29,7 @@ import pandas as pd
 from statsmodels.stats.proportion import proportion_confint  # type: ignore
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.entrypoints.sentencing.datasets import (
+from recidiviz.source_tables.sentencing_source_table_collection import (
     CASE_INSIGHTS_RATES_ADDRESS,
     CASE_INSIGHTS_RATES_SCHEMA,
 )

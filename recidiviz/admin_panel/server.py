@@ -31,6 +31,7 @@ from werkzeug import Response
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
+from recidiviz.admin_panel.routes.lineage import lineage_blueprint
 from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
@@ -111,6 +112,7 @@ app.register_blueprint(
 )
 app.register_blueprint(outliers_blueprint, url_prefix="/admin/outliers")
 app.register_blueprint(workflows_blueprint, url_prefix="/admin/workflows")
+app.register_blueprint(lineage_blueprint, url_prefix="/admin/lineage")
 
 if environment.in_development():
     # We set the project to recidiviz-staging
