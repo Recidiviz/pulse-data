@@ -101,11 +101,21 @@ function parse_version {
 }
 
 # Returns the last version tag on the given branch. Fails if that tag does not match the acceptable version regex.
+# If INCLUDE_ALPHA is set, alpha versions will be included in the search.
 function last_version_tag_on_branch {
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: last_version_tag_on_branch <BRANCH> <INCLUDE_ALPHA> [LOCAL_REPO_PATH]"
+        exit 1
+    fi
     BRANCH=$1
-    LOCAL_REPO_PATH=${2:-$(git rev-parse --show-toplevel)}
+    INCLUDE_ALPHA=$2
+    LOCAL_REPO_PATH=${3:-$(git rev-parse --show-toplevel)}
 
-    LAST_VERSION_TAG_ON_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --merged "${BRANCH}" | sort_versions | tail -n 1) || exit_on_fail
+    if [[ -n "${INCLUDE_ALPHA}" ]]; then
+        LAST_VERSION_TAG_ON_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --merged "${BRANCH}" | sort_versions | tail -n 1) || exit_on_fail
+    else
+        LAST_VERSION_TAG_ON_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --merged "${BRANCH}" | grep -v alpha | sort_versions | tail -n 1) || exit_on_fail
+    fi
 
     # Check that the version parses
     _=$(parse_version "${LAST_VERSION_TAG_ON_BRANCH}") || exit_on_fail

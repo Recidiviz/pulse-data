@@ -94,7 +94,20 @@ fi
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
 
-LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "${BRANCH_NAME}") || exit_on_fail
+if [[ -n ${PROMOTE} ]]; then
+    INCLUDE_ALPHA_VERSIONS_FLAG=true
+else
+    # We run a no-promote deploy when cutting a cherry-pick release candidate off a releases/* branch.
+    # If a repo isn't committed to that often (like the Recidiviz/looker repo) we may run into the case where:
+    # 1. a release candidate is cut on Friday which tags commit abcdefg123 with tag v1.123.0
+    # 2. there are no new commits on `main` and the Monday staging deploy tags commit abcdefg123 with tag v1.124.0-alpha.0
+    # 3. a cherry-pick release candidate is cut, attempting to create version v1.123.1
+    # 4. v1.123.1 is less than v1.124.0-alpha.0 so the deploy would fail
+    # To avoid this, we exclude alpha versions in the search when determining the last deployed version tag on the branch.
+    INCLUDE_ALPHA_VERSIONS_FLAG=false
+fi
+
+LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "${BRANCH_NAME}" "${INCLUDE_ALPHA_VERSIONS_FLAG}") || exit_on_fail
 if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${VERSION_TAG}"; then
     echo_error "Recidiviz/pulse-data deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1
@@ -103,7 +116,7 @@ fi
 clone_looker_repo_to_temp_dir
 run_cmd safe_git_checkout_remote_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR"
 LOOKER_COMMIT_HASH=$(git -C "$TEMP_LOOKER_DIR" rev-parse HEAD) || exit_on_fail
-LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR") || exit_on_fail
+LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "$BRANCH_NAME" "$INCLUDE_ALPHA_VERSIONS_FLAG" "$TEMP_LOOKER_DIR") || exit_on_fail
 if ! version_less_than "$LAST_DEPLOYED_GIT_VERSION_TAG" "$VERSION_TAG"; then
     echo_error "Recidiviz/looker deploy version [$VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1

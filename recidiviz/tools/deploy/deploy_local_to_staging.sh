@@ -38,8 +38,9 @@ source "${BASH_SOURCE_DIR}/../script_base.sh"
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags --force
 
-LAST_VERSION_TAG_ON_CURRENT_BRANCH=$(last_version_tag_on_branch HEAD)
-LAST_VERSION_TAG_ON_MAIN=$(last_version_tag_on_branch main)
+INCLUDE_ALPHA_VERSION_TAGS=true
+LAST_VERSION_TAG_ON_CURRENT_BRANCH=$(last_version_tag_on_branch HEAD "${INCLUDE_ALPHA_VERSION_TAGS}")
+LAST_VERSION_TAG_ON_MAIN=$(last_version_tag_on_branch main "${INCLUDE_ALPHA_VERSION_TAGS}")
 
 if [[ "${LAST_VERSION_TAG_ON_CURRENT_BRANCH}" != "${LAST_VERSION_TAG_ON_MAIN}" ]]; then
     echo_error "Current branch does not contain latest version tag on main [$LAST_VERSION_TAG_ON_MAIN] - please rebase."

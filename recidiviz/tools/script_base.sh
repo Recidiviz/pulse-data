@@ -173,23 +173,26 @@ function safe_git_checkout_remote_branch {
 }
 
 function check_for_tags_at_branch_tip {
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: check_for_tags_at_branch_tip <BRANCH> <ALLOW_ALPHA> [LOCAL_REPO_PATH]"
+        exit 1
+    fi
     BRANCH=$1
-    ALLOW_ALPHA=${2-}  # Optional argument
-    if [[ -n ${ALLOW_ALPHA} ]]; then
-        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}" | grep '^v\d\+\.' | grep -v alpha || echo "") || exit_on_fail
+    ALLOW_ALPHA=$2
+    LOCAL_REPO_PATH=${3:-$(git rev-parse --show-toplevel)}
+    if [[ -n "${ALLOW_ALPHA}" ]]; then
+        TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH}" | grep '^v\d\+\.' | grep -v alpha || echo "") || exit_on_fail
     else
-        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}" | grep '^v\d\+\.' || echo "") || exit_on_fail
+        TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH}" | grep '^v\d\+\.' || echo "") || exit_on_fail
     fi
 
     if [[ -n ${TAGS_AT_TIP_OF_BRANCH} ]]; then
-        echo_error "The tip of branch [$BRANCH] is already tagged - exiting."
-        echo_error "Tags: ${TAGS_AT_TIP_OF_BRANCH}"
-        echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
-        echo_error "deploy for this version, run \`git push --delete origin <tag name>\` to delete the old tag from"
-        echo_error "remote, if it exists, and \`git tag -D <tag name>\` to delete it locally."
-        exit 1
+        echo "Found tags at tip of branch [$BRANCH]:"
+        echo "${TAGS_AT_TIP_OF_BRANCH}"
+        return 1
     fi
 
+    return 0
 }
 
 

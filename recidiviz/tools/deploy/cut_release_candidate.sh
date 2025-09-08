@@ -42,13 +42,25 @@ fi
 
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags --force
+run_cmd git -C "${TEMP_LOOKER_DIR}" fetch --all --tags --prune --prune-tags --force
 
 run_cmd safe_git_checkout_remote_branch "${RELEASE_CANDIDATE_BASE_BRANCH}"
 
 echo "Checking for existing release tags at tip of [$RELEASE_CANDIDATE_BASE_BRANCH]"
-check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" ALLOW_ALPHA
 
-LAST_VERSION_TAG_ON_BRANCH=$(last_version_tag_on_branch "${RELEASE_CANDIDATE_BASE_BRANCH}")
+ALLOW_ALPHA_TAGS=true
+has_recidiviz_data_changes_to_release=$(check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" "${ALLOW_ALPHA_TAGS}")
+has_looker_changes_to_release=$(check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" "${ALLOW_ALPHA_TAGS}" "${TEMP_LOOKER_DIR}")
+if [[ -z ${has_recidiviz_data_changes_to_release} && -z ${has_looker_changes_to_release} ]]; then
+        echo_error "The tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH] is already tagged for both Recidiviz/pulse-data and Recidiviz/looker repos - exiting."
+        echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
+        echo_error "deploy for this version, run \`git push --delete origin <tag name>\` to delete the old tag from"
+        echo_error "remote, if it exists, and \`git tag -D <tag name>\` to delete it locally."
+        exit 1
+fi
+
+INCLUDE_ALPHA_VERSIONS_FLAG=true
+LAST_VERSION_TAG_ON_BRANCH=$(last_version_tag_on_branch "${RELEASE_CANDIDATE_BASE_BRANCH}" "${INCLUDE_ALPHA_VERSIONS_FLAG}")
 
 declare -a LAST_VERSION_PARTS
 read -r -a LAST_VERSION_PARTS < <(parse_version "${LAST_VERSION_TAG_ON_BRANCH}")

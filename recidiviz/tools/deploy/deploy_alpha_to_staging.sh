@@ -15,11 +15,20 @@ echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags --force
 
 echo "Checking for existing tags at tip of main"
-check_for_tags_at_branch_tip main
+ALLOW_ALPHA_TAGS=false
+MAIN_IS_TAGGED=$(check_for_tags_at_branch_tip main "${ALLOW_ALPHA_TAGS}") || exit_on_fail
+if [[ $MAIN_IS_TAGGED -eq 1 ]]; then
+        echo_error "The tip of branch [main] is already tagged for pulse-data repo - exiting."
+        echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
+        echo_error "deploy for this version, run \`git push --delete origin <tag name>\` to delete the old tag from"
+        echo_error "remote, if it exists, and \`git tag -D <tag name>\` to delete it locally."
+        exit 1
+fi
 
 run_cmd safe_git_checkout_remote_branch main
 
-LAST_VERSION_TAG_ON_MAIN=$(last_version_tag_on_branch main) || exit_on_fail
+INCLUDE_ALPHA_VERSION_TAGS=true
+LAST_VERSION_TAG_ON_MAIN=$(last_version_tag_on_branch main "${INCLUDE_ALPHA_VERSION_TAGS}") || exit_on_fail
 NEW_VERSION=$(next_alpha_version "${LAST_VERSION_TAG_ON_MAIN}") || exit_on_fail
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
