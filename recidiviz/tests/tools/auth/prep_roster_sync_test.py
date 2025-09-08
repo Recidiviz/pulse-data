@@ -47,6 +47,7 @@ from recidiviz.tools.auth.prep_roster_sync import (
     remove_users,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 @pytest.mark.uses_db
@@ -55,27 +56,31 @@ class PrepRosterSyncTest(TestCase):
     """Implements tests for the script that prepares data to be ready for roster sync."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: str | None
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
         self.maxDiff = None
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
         )
         engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
             database_key=self.database_key,
-            db_url=local_postgres_helpers.on_disk_postgres_db_url(),
+            db_url=self.postgres_launch_result.url(),
         )
 
         self.database_key.declarative_meta.metadata.create_all(engine)

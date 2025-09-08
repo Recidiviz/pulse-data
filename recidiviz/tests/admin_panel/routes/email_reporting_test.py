@@ -38,6 +38,7 @@ from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -46,11 +47,13 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 class OutliersSupervisionOfficerSupervisorReportingEndpointTests(TestCase):
     """Integration tests of our flask endpoints"""
 
-    temp_db_dir: str
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.gcs_file_system_patcher = patch(
@@ -64,7 +67,9 @@ class OutliersSupervisionOfficerSupervisorReportingEndpointTests(TestCase):
         schema_type = SchemaType.CASE_TRIAGE
         self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
         self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
         )
         db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, schema_type, db_url)
@@ -100,7 +105,7 @@ class OutliersSupervisionOfficerSupervisorReportingEndpointTests(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_generate_emails_validation(self) -> None:

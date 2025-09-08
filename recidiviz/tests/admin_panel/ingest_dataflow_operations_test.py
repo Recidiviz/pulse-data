@@ -47,6 +47,7 @@ from recidiviz.pipelines.ingest.pipeline_utils import (
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.types import assert_type
 
 PIPELINES_TESTS_WORKING_DIRECTORY = os.path.dirname(
@@ -67,11 +68,13 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 class IngestDataflowOperations(TestCase):
     """Implements tests for get_all_latest_ingest_dataflow_jobs and helpers."""
 
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         super().setUp()
@@ -92,7 +95,7 @@ class IngestDataflowOperations(TestCase):
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
         self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
-            self.watermark_manager.database_key
+            self.postgres_launch_result, self.watermark_manager.database_key
         )
         self.raw_file_manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
@@ -109,7 +112,7 @@ class IngestDataflowOperations(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_get_all_latest_ingest_jobs_simple(self) -> None:

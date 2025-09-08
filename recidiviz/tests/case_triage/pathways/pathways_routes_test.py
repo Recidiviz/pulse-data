@@ -48,6 +48,7 @@ from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     load_metrics_fixture,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.types import assert_type
 
 
@@ -108,11 +109,13 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
     """Implements tests for the pathways routes."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         super().setUp()
@@ -125,7 +128,9 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
 
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         self.count_by_dimension_metric_path = (
             "/pathways/US_TN/LibertyToPrisonTransitionsCount"
@@ -160,7 +165,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_metrics_unauthorized_recidiviz_users(self) -> None:

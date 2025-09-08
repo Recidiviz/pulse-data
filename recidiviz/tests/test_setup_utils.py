@@ -27,6 +27,10 @@ def get_pytest_worker_id() -> int:
     return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])
 
 
+def get_pytest_retry_number() -> int:
+    return int()
+
+
 def get_bq_emulator_port() -> int:
     """Returns the port for the BigQuery emulator that the current environment should
     use. If we are running outside the context of pytest, we assume there is only one

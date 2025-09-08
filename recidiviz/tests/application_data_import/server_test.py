@@ -19,7 +19,6 @@ import base64
 import os
 from datetime import date
 from http import HTTPStatus
-from typing import Optional
 from unittest import TestCase
 from unittest.mock import ANY, MagicMock, patch
 
@@ -54,6 +53,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -62,16 +62,18 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
     """Implements tests for the Application Data Import Flask server."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -90,7 +92,9 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
         self.database_key = PathwaysDatabaseManager.database_key_for_state(
             self.state_code
         )
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
     def tearDown(self) -> None:
         self.fs_patcher.stop()
@@ -368,16 +372,18 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
     """Implements tests for the Insights routes in the Application Data Import Flask server."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -398,7 +404,9 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
         self.database_key = self.database_manager.database_key_for_state(
             self.state_code
         )
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
     def tearDown(self) -> None:
         self.fs_patcher.stop()

@@ -32,7 +32,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     URL,
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import secrets
 from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
 
@@ -57,7 +56,10 @@ class DatabaseSettings(BaseSettings):
             return SQLAlchemyEngineManager.get_server_postgres_instance_url(
                 database_key=self.database_key(),
             )
-        return local_postgres_helpers.on_disk_postgres_db_url()
+
+        raise ValueError(
+            "Local postgres has not yet been configured for Resource Search!"
+        )
 
 
 # TODO(#46942): Secrets will need to be accessed from recidiviz-rnd-planner or copied to recidiviz-staging

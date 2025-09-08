@@ -36,6 +36,7 @@ from sqlalchemy.orm import DeclarativeMeta, Session, close_all_sessions
 
 from recidiviz import airflow as recidiviz_airflow_module
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.types import assert_type
 
 AIRFLOW_WORKING_DIRECTORY = os.path.dirname(recidiviz_airflow_module.__file__)
@@ -75,7 +76,7 @@ class AirflowIntegrationTest(unittest.TestCase):
     """Sets up the airflow database and provides a SQLAlchemy session builder"""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
     environment_patcher: Any
     metas: Optional[List[DeclarativeMeta]] = None
     conn_id: str = "local_test_db"
@@ -83,13 +84,15 @@ class AirflowIntegrationTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
         cls.environment_patcher = patch(
             "os.environ",
             {
                 "GCP_PROJECT": cls.project_id,
-                "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN": local_postgres_helpers.on_disk_postgres_db_url(),
-                f"AIRFLOW_CONN_{cls.conn_id.upper()}": local_postgres_helpers.on_disk_postgres_db_url().render_as_string(),
+                "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN": cls.postgres_launch_result.url(),
+                f"AIRFLOW_CONN_{cls.conn_id.upper()}": cls.postgres_launch_result.url().render_as_string(),
             },
         )
         cls.environment_patcher.start()
@@ -102,7 +105,7 @@ class AirflowIntegrationTest(unittest.TestCase):
         close_all_sessions()
         cls.environment_patcher.stop()
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -466,19 +469,21 @@ class CloudSqlQueryGeneratorUnitTest(unittest.TestCase):
     """Utility class for writitng unit tests for CloudSqlQueryGenerators"""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
     metas: List[DeclarativeMeta]
     conn_id: str = "local_test_db"
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
         os.environ[
             "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN"
-        ] = local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
+        ] = cls.postgres_launch_result.url().render_as_string()
         os.environ[
             f"AIRFLOW_CONN_{cls.conn_id.upper()}"
-        ] = local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
+        ] = cls.postgres_launch_result.url().render_as_string()
         # Make sure airflow's secrets cache picks up local_test_db's connection
         settings.initialize()
 
@@ -494,5 +499,5 @@ class CloudSqlQueryGeneratorUnitTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )

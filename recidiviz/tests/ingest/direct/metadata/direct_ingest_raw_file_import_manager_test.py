@@ -18,7 +18,7 @@
 import datetime
 import re
 from datetime import timedelta
-from typing import Optional, Type
+from typing import Type
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -51,6 +51,7 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileImportStatus,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 def _fake_eq(e1: Entity, e2: Entity) -> bool:
@@ -77,15 +78,19 @@ class DirectIngestRawFileImportManagerTest(TestCase):
     """Implements tests for DirectIngestRawFileImportManager."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.operations_key
+        )
         self.us_xx_manager = DirectIngestRawFileImportManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
@@ -112,7 +117,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_start_import_run_no_such_file_id(self) -> None:

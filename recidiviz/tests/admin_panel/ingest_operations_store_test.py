@@ -54,6 +54,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
@@ -64,15 +65,19 @@ class IngestOperationsStoreTestBase(TestCase):
     """Base Class to Implement tests for IngestOperationsStoreTest."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.operations_key
+        )
 
         self.state_code_list_patcher = mock.patch(
             "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_states_launched_in_env",
@@ -111,7 +116,7 @@ class IngestOperationsStoreTestBase(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
 

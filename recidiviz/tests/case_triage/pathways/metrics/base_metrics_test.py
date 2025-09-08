@@ -50,6 +50,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.pathways import fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 def load_metrics_fixture(
@@ -71,7 +72,7 @@ class PathwaysMetricTestBase:
     """Base class for testing Pathways metrics."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @property
     @abc.abstractmethod
@@ -89,11 +90,15 @@ class PathwaysMetricTestBase:
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         with SessionFactory.using_database(self.database_key) as session:
             for metric in load_metrics_fixture(self.schema):
@@ -109,7 +114,7 @@ class PathwaysMetricTestBase:
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
 
@@ -131,16 +136,19 @@ class TestPathwaysMetricFetcher(TestCase):
     """Tests for the PathwaysMetricFetcher"""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: Optional[str]
     engine: Engine
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
         self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result,
             self.database_key,
             create_tables=False,
         )
@@ -153,7 +161,7 @@ class TestPathwaysMetricFetcher(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_enabled_metric_without_table(self) -> None:

@@ -76,9 +76,11 @@ def main(schema_type: SchemaType, message: str) -> None:
         sys.exit(1)
 
     logging.info("Starting local postgres database for autogeneration...")
-    tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+    postgres_launch_result = local_postgres_helpers.start_on_disk_postgresql_database()
     original_env_vars = (
-        local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+        local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+            postgres_launch_result
+        )
     )
 
     try:
@@ -90,7 +92,9 @@ def main(schema_type: SchemaType, message: str) -> None:
 
     local_postgres_helpers.restore_local_env_vars(original_env_vars)
     logging.info("Stopping local postgres database...")
-    local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_db_dir)
+    local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+        postgres_launch_result
+    )
 
 
 if __name__ == "__main__":

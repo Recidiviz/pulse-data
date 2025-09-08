@@ -98,6 +98,7 @@ from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integr
     StateSpecificIngestPipelineIntegrationTestCase,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.types import assert_type
 
@@ -130,18 +131,20 @@ class DirectIngestRegionDirStructureBase:
     """Tests that each regions direct ingest directory is set up properly."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: str
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
             SchemaType.OPERATIONS
         )
         local_persistence_helpers.use_on_disk_postgresql_database(
-            self.operations_database_key
+            self.postgres_launch_result, self.operations_database_key
         )
 
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
@@ -163,7 +166,7 @@ class DirectIngestRegionDirStructureBase:
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     @property

@@ -18,7 +18,6 @@
 
 import datetime
 import unittest
-from typing import Optional
 
 import pytest
 import pytz
@@ -32,23 +31,26 @@ from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager i
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 @pytest.mark.uses_db
 class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
     """Tests for DirectIngestDataflowWatermarkManager"""
 
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
         self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
-            self.watermark_manager.database_key
+            self.postgres_launch_result, self.watermark_manager.database_key
         )
 
     def tearDown(self) -> None:
@@ -59,7 +61,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_get_raw_data_watermarks_for_latest_run(self) -> None:

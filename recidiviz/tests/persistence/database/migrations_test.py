@@ -52,12 +52,16 @@ class MigrationsTestBase(TestCase):
     __test__ = False
 
     def setUp(self) -> None:
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        self.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(
             self.schema_type()
         )
         self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
         )
         self.engine = create_engine(
             local_persistence_helpers.postgres_db_url_from_env_vars()
@@ -65,7 +69,9 @@ class MigrationsTestBase(TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            self.postgres_launch_result
+        )
 
     def expected_missing_indices(self) -> Set[str]:
         return set()
@@ -162,14 +168,22 @@ class MigrationsTestBase(TestCase):
 
         # Doing teardown/setup to generate a new postgres instance
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
-
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            self.postgres_launch_result
         )
 
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        self.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+        self.overridden_env_vars = (
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
+        )
+
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         # Fetch constraints after having SQLAlchemy load the schema
         schema_constraints = self.fetch_all_constraints()
@@ -218,14 +232,22 @@ class MigrationsTestBase(TestCase):
 
         # Doing teardown/setup to generate a new postgres instance
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
-
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            self.postgres_launch_result
         )
 
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        self.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+        self.overridden_env_vars = (
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
+        )
+
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         # Fetch indices after having SQLAlchemy load the schema
         schema_indices = self.fetch_all_indices()
@@ -283,14 +305,22 @@ class MigrationsTestBase(TestCase):
 
         # Doing teardown/setup to generate a new postgres instance
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
-
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            self.postgres_launch_result
         )
 
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        self.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
+        self.overridden_env_vars = (
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
+        )
+
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         # Check enum values
         schema_enums = self.fetch_all_enums()

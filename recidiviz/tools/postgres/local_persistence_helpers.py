@@ -58,14 +58,14 @@ from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_sche
 )
 from recidiviz.tools.postgres.local_postgres_helpers import (
     TEST_POSTGRES_USER_NAME,
-    get_on_disk_postgres_database_name,
-    get_on_disk_postgres_port,
-    on_disk_postgres_db_url,
+    OnDiskPostgresLaunchResult,
 )
 from recidiviz.utils import environment
 
 
-def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
+def update_local_sqlalchemy_postgres_env_vars(
+    launch_result: OnDiskPostgresLaunchResult,
+) -> Dict[str, Optional[str]]:
     """Updates the appropriate env vars for SQLAlchemy to talk to a locally created Postgres instance.
 
     It returns the old set of env variables that were overridden.
@@ -79,10 +79,10 @@ def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
     ]
     original_values = {env_var: os.environ.get(env_var) for env_var in sqlalchemy_vars}
 
-    os.environ[SQLALCHEMY_DB_NAME] = get_on_disk_postgres_database_name()
+    os.environ[SQLALCHEMY_DB_NAME] = launch_result.database_name
     os.environ[SQLALCHEMY_DB_HOST] = "localhost"
     os.environ[SQLALCHEMY_DB_USER] = TEST_POSTGRES_USER_NAME
-    os.environ[SQLALCHEMY_DB_PORT] = str(get_on_disk_postgres_port())
+    os.environ[SQLALCHEMY_DB_PORT] = str(launch_result.port)
     os.environ[SQLALCHEMY_DB_PASSWORD] = ""
 
     return original_values
@@ -157,6 +157,7 @@ async def async_teardown_on_disk_postgresql_database(
 
 @environment.local_only
 def use_on_disk_postgresql_database(
+    launch_result: OnDiskPostgresLaunchResult,
     database_key: SQLAlchemyDatabaseKey,
     create_tables: Optional[bool] = True,
     engine: Engine | None = None,
@@ -176,12 +177,12 @@ def use_on_disk_postgresql_database(
     # Users can pass an engine to avoid this behavior
     engine = engine or SQLAlchemyEngineManager.init_engine_for_postgres_instance(
         database_key=database_key,
-        db_url=on_disk_postgres_db_url(),
+        db_url=launch_result.url(),
     )
 
     with SessionFactory.using_database(database_key) as session:
         session.execute(
-            f"ALTER DATABASE {get_on_disk_postgres_database_name()} SET TIMEZONE TO 'UTC'"
+            f"ALTER DATABASE {launch_result.database_name} SET TIMEZONE TO 'UTC'"
         )
 
     if create_tables:

@@ -17,7 +17,7 @@
 """Implements tests for the DirectIngestRawDataResourceLockManager."""
 import datetime
 from itertools import chain
-from typing import Any, Optional
+from typing import Any
 from unittest import TestCase
 
 import pytest
@@ -43,6 +43,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils.patch_helpers import after
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 LOCK_MANAGER_PACKAGE_NAME = direct_ingest_raw_data_resource_lock_manager.__name__
 
@@ -52,15 +53,19 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
     """Implements tests for DirectIngestRawDataResourceLockManager."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.operations_key
+        )
         self.us_xx_manager = DirectIngestRawDataResourceLockManager(
             region_code=StateCode.US_XX.value,
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
@@ -83,7 +88,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_acquire_lock_no_existing(self) -> None:

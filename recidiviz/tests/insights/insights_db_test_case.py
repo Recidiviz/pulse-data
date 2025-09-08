@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """This class implements tests for the OutliersQuerier class"""
-from typing import Optional
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -27,7 +26,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import on_disk_postgres_db_url
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 INSIGHTS_US_XX_DB = "insights_us_xx"
 
@@ -36,12 +35,14 @@ class InsightsDbTestCase(TestCase):
     """Implements class methods for Insights DB related tests."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(
-            additional_databases_to_create=[INSIGHTS_US_XX_DB]
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database(
+                additional_databases_to_create=[INSIGHTS_US_XX_DB]
+            )
         )
 
     def setUp(self) -> None:
@@ -55,10 +56,12 @@ class InsightsDbTestCase(TestCase):
         )
         self.insights_engine = SQLAlchemyEngineManager.init_engine_for_db_instance(
             database_key=self.insights_database_key,
-            db_url=on_disk_postgres_db_url(database=INSIGHTS_US_XX_DB),
+            db_url=self.postgres_launch_result.url(database_name=INSIGHTS_US_XX_DB),
         )
         local_persistence_helpers.use_on_disk_postgresql_database(
-            self.insights_database_key, engine=self.insights_engine
+            self.postgres_launch_result,
+            self.insights_database_key,
+            engine=self.insights_engine,
         )
 
         InsightsBase.metadata.drop_all(self.insights_engine)
@@ -73,5 +76,5 @@ class InsightsDbTestCase(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )

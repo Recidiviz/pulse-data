@@ -64,7 +64,6 @@ from recidiviz.tests.justice_counts.utils.utils import (
 from recidiviz.tools.justice_counts.copy_over_metric_settings_to_child_agencies import (
     copy_metric_settings,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.types import assert_type
 
@@ -97,7 +96,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             self.client_patcher.start().return_value
         ) = mock_auth0_client
         test_config = Config(
-            DB_URL=local_postgres_helpers.on_disk_postgres_db_url(),
+            DB_URL=self.postgres_launch_result.url(),
             WTF_CSRF_ENABLED=False,
             AUTH_DECORATOR=passthrough_authorization_decorator(),
             AUTH_DECORATOR_ADMIN_PANEL=passthrough_authorization_decorator(),

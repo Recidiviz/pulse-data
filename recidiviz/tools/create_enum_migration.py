@@ -62,10 +62,12 @@ def _get_migration_body_section(
 def _get_old_enum_values(schema_type: SchemaType, enum_name: str) -> List[str]:
     """Fetches the current enum values for the given schema and enum name."""
     # Setup temp pg database
-    db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+    postgres_launch_result = local_postgres_helpers.start_on_disk_postgresql_database()
     database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
     overridden_env_vars = (
-        local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+        local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+            postgres_launch_result
+        )
     )
     engine = create_engine(local_persistence_helpers.postgres_db_url_from_env_vars())
 
@@ -95,7 +97,9 @@ def _get_old_enum_values(schema_type: SchemaType, enum_name: str) -> List[str]:
     finally:
         # Teardown temp pg database
         local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(db_dir)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            postgres_launch_result
+        )
 
     return enums
 

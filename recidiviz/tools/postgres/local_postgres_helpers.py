@@ -27,6 +27,7 @@ import tempfile
 import time
 from typing import Dict, Optional
 
+import attr
 from sqlalchemy.engine import URL
 
 from recidiviz.tests.test_setup_utils import get_pytest_worker_id
@@ -41,6 +42,7 @@ LINUX_TEST_DB_OWNER_NAME = "recidiviz_test_db_owner"
 TEST_POSTGRES_DB_NAME = "recidiviz_test_db"
 TEST_POSTGRES_USER_NAME = "recidiviz_test_usr"
 DEFAULT_POSTGRES_DATA_DIRECTORY = "/usr/local/var/postgres"
+REGISTERED_ON_DISK_POSTGRES_INSTANCES: dict[str, "OnDiskPostgresLaunchResult"] = {}
 
 
 def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]) -> None:
@@ -99,6 +101,13 @@ def _start_postgresql_server(
         raise e
 
 
+def pick_random_port() -> int:
+    """Returns a random port that is not currently in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
+
+
 @environment.local_only
 def can_start_on_disk_postgresql_database() -> bool:
     try:
@@ -112,10 +121,26 @@ def get_on_disk_postgres_log_dir_prefix() -> str:
     return f"postgres_log_{get_pytest_worker_id()}_"
 
 
+@attr.s(auto_attribs=True, frozen=True)
+class OnDiskPostgresLaunchResult:
+    temp_db_data_dir: str
+    database_name: str
+    port: int
+
+    def url(self, database_name: str | None = None) -> URL:
+        return URL.create(
+            drivername="postgresql",
+            username=TEST_POSTGRES_USER_NAME,
+            host="localhost",
+            port=self.port,
+            database=database_name or self.database_name,
+        )
+
+
 @environment.local_only
 def start_on_disk_postgresql_database(
     additional_databases_to_create: list[str] | None = None,
-) -> str:
+) -> OnDiskPostgresLaunchResult:
     """Starts and initializes a local postgres database for use in tests.
     Clears all postgres instances in the tmp folder. Should be called in the setUpClass function so
     this only runs once per test class.
@@ -163,13 +188,20 @@ def start_on_disk_postgresql_database(
         as_user=password_record,
     )
 
-    retry_on_exceptions_with_backoff(
-        lambda: _start_postgresql_server(
+    on_disk_postgres_port: int = 0
+
+    def _start_postgresql_server_with_random_port() -> None:
+        nonlocal on_disk_postgres_port
+        on_disk_postgres_port = pick_random_port()
+        return _start_postgresql_server(
             temp_db_data_dir,
             temp_db_log_path,
-            get_on_disk_postgres_port(),
+            on_disk_postgres_port,
             password_record,
-        ),
+        )
+
+    retry_on_exceptions_with_backoff(
+        _start_postgresql_server_with_random_port,
         errors_to_retry=(RuntimeError, PostgresPortStillInUseError),
         max_tries=5,
         min_backoff_secs=1,
@@ -182,26 +214,34 @@ def start_on_disk_postgresql_database(
     # should actually make sure that the set of permissions line up with what we have
     # in production.
     run_command(
-        f"createuser -p {get_on_disk_postgres_port()} --superuser {TEST_POSTGRES_USER_NAME}",
+        f"createuser -p {on_disk_postgres_port} --superuser {TEST_POSTGRES_USER_NAME}",
         as_user=password_record,
         assert_success=False,
     )
+    default_database_name = f"{TEST_POSTGRES_DB_NAME}{get_pytest_worker_id()}"
     databases_to_create = [
-        get_on_disk_postgres_database_name(),
+        default_database_name,
         *additional_databases_to_create,
     ]
     for database in databases_to_create:
         run_command(
-            f"createdb -p {get_on_disk_postgres_port()} -O {TEST_POSTGRES_USER_NAME} {database}",
+            f"createdb -p {on_disk_postgres_port} -O {TEST_POSTGRES_USER_NAME} {database}",
             as_user=password_record,
         )
 
-    print(
-        f"Created database `{get_on_disk_postgres_database_name()}` on postgres instance bound to port {get_on_disk_postgres_port()}"
+    launch_result = OnDiskPostgresLaunchResult(
+        database_name=default_database_name,
+        temp_db_data_dir=temp_db_data_dir,
+        port=on_disk_postgres_port,
     )
-    print(f"To query data, connect with `psql {on_disk_postgres_db_url()}`")
+    REGISTERED_ON_DISK_POSTGRES_INSTANCES[temp_db_data_dir] = launch_result
 
-    return temp_db_data_dir
+    print(
+        f"Created database `{launch_result.database_name}` on postgres instance bound to port {launch_result.port}"
+    )
+    print(f"To query data, connect with `psql {launch_result.url()}`")
+
+    return launch_result
 
 
 def _clear_all_on_disk_postgresql_databases() -> None:
@@ -217,20 +257,29 @@ def _clear_all_on_disk_postgresql_databases() -> None:
         if name.startswith(get_on_disk_postgres_temp_dir_prefix())
     ]
     for postgres_dir in postgres_dirs:
-        stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=False)
+        # If the Postgres instance was registered in this process, stop it, otherwise just remove the directory
+        if postgres_dir in REGISTERED_ON_DISK_POSTGRES_INSTANCES:
+            launch_result = REGISTERED_ON_DISK_POSTGRES_INSTANCES.pop(postgres_dir)
+            stop_and_clear_on_disk_postgresql_database(
+                launch_result,
+                assert_success=False,
+            )
+        else:
+            shutil.rmtree(postgres_dir)
 
 
 @environment.local_only
 def stop_and_clear_on_disk_postgresql_database(
-    temp_db_data_dir: str, assert_success: bool = True
+    launch_result: OnDiskPostgresLaunchResult,
+    assert_success: bool = True,
 ) -> None:
     """Stops the postgres server and performs rm -rf of the PG data directory.
     Should be called in the tearDownClass function so this only runs once per test class.
     """
     _stop_on_disk_postgresql_database(
-        temp_db_data_dir=temp_db_data_dir, assert_success=assert_success
+        launch_result=launch_result, assert_success=assert_success
     )
-    shutil.rmtree(temp_db_data_dir)
+    shutil.rmtree(launch_result.temp_db_data_dir)
 
 
 def is_port_in_use(port: int) -> int | None:
@@ -260,7 +309,7 @@ def assert_postgres_port_is_free(port: int) -> None:
 
 
 def _stop_on_disk_postgresql_database(
-    temp_db_data_dir: str, assert_success: bool = True
+    launch_result: OnDiskPostgresLaunchResult, assert_success: bool = True
 ) -> None:
     # If the current user is root then the database is owned by a separate OS test user. Run as them to stop the server.
     password_record = (
@@ -268,21 +317,13 @@ def _stop_on_disk_postgresql_database(
     )
 
     run_command(
-        f"pg_ctl -D {temp_db_data_dir} -o '-p {get_on_disk_postgres_port()}' stop -m immediate",
+        f"pg_ctl -D {launch_result.temp_db_data_dir} -o '-p {launch_result.port}' stop -m immediate",
         as_user=password_record,
         assert_success=assert_success,
     )
 
     if assert_success:
-        assert_postgres_port_is_free(get_on_disk_postgres_port())
-
-
-def get_on_disk_postgres_port() -> int:
-    return 54300 + get_pytest_worker_id()
-
-
-def get_on_disk_postgres_database_name() -> str:
-    return f"{TEST_POSTGRES_DB_NAME}{get_pytest_worker_id()}"
+        assert_postgres_port_is_free(launch_result.port)
 
 
 def get_on_disk_postgres_temp_dir_prefix() -> str:
@@ -303,24 +344,11 @@ def print_all_on_disk_postgresql_logs() -> None:
 
 
 @environment.local_only
-def on_disk_postgres_db_url(
-    database: str = get_on_disk_postgres_database_name(),
-) -> URL:
-    return URL.create(
-        drivername="postgresql",
-        username=TEST_POSTGRES_USER_NAME,
-        host="localhost",
-        port=get_on_disk_postgres_port(),
-        database=database,
-    )
-
-
-@environment.local_only
 def async_on_disk_postgres_db_url(
-    database: str = get_on_disk_postgres_database_name(),
+    port: int,
+    database: str,
     username: str = TEST_POSTGRES_USER_NAME,
     password: Optional[str] = None,
-    port: int = get_on_disk_postgres_port(),
 ) -> URL:
     return URL.create(
         drivername="postgresql+asyncpg",

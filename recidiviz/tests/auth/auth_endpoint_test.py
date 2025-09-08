@@ -20,7 +20,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -49,6 +49,7 @@ from recidiviz.tests.auth.helpers import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.metadata import CloudRunMetadata
 
 _FIXTURE_PATH = os.path.abspath(
@@ -83,16 +84,18 @@ class AuthEndpointTests(TestCase):
     """Integration tests of our flask auth endpoints"""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -139,7 +142,9 @@ class AuthEndpointTests(TestCase):
         # Setup database
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
         )
         db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, SchemaType.CASE_TRIAGE, db_url)

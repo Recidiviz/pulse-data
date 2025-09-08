@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the DirectIngestRawDataFlashStatus."""
 import datetime
-from typing import Optional
 from unittest import TestCase
 
 import pytest
@@ -31,6 +30,7 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawDataFlashStatus,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 @pytest.mark.uses_db
@@ -38,15 +38,19 @@ class DirectIngestRawDataFlashStatusTest(TestCase):
     """Implements tests for DirectIngestRawDataFlashStatus."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.operations_key
+        )
         self.us_xx_manager = DirectIngestRawDataFlashStatusManager(
             StateCode.US_XX.value,
         )
@@ -61,7 +65,7 @@ class DirectIngestRawDataFlashStatusTest(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def test_initial_status_false(self) -> None:

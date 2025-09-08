@@ -60,6 +60,7 @@ from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
     reset_justice_counts_fixtures,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 @pytest.mark.uses_db
@@ -67,13 +68,15 @@ class JusticeCountsDatabaseTestCase(TestCase):
     """Base class for unit tests that act on the Justice Counts database."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
     client_patcher: Any
     test_auth0_client: mock.Mock
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
         def mock_create_JC_user(name: str, email: str) -> Dict[str, str]:
             return {
@@ -100,7 +103,9 @@ class JusticeCountsDatabaseTestCase(TestCase):
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         self.env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
         )
 
         # Auto-generate all tables that exist in our schema in this database
@@ -114,7 +119,7 @@ class JusticeCountsDatabaseTestCase(TestCase):
         override this method to point to an engine that already exists."""
         return SQLAlchemyEngineManager.init_engine_for_postgres_instance(
             database_key=self.database_key,
-            db_url=local_postgres_helpers.on_disk_postgres_db_url(),
+            db_url=self.postgres_launch_result.url(),
         )
 
     def load_fixtures(self) -> None:
@@ -129,7 +134,7 @@ class JusticeCountsDatabaseTestCase(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
 

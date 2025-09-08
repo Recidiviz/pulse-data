@@ -32,6 +32,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
@@ -154,8 +155,7 @@ class CloudSQLProxyEngineIteratorDelegate(EngineIteratorDelegate):
 class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
     """Engine iterator delegate which spins up a local postgres instance and connects engines to it"""
 
-    def __init__(self) -> None:
-        self.db_dir: Optional[str] = None
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     def get_database_keys(self, schema_type: SchemaType) -> List[SQLAlchemyDatabaseKey]:
         return [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
@@ -172,10 +172,14 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
         database_key: SQLAlchemyDatabaseKey,
         secret_prefix_override: Optional[str] = None,
     ) -> dict[str, Optional[str]]:
-        overridden_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+        self.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
         )
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        overridden_env_vars = (
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars(
+                self.postgres_launch_result
+            )
+        )
         return overridden_env_vars
 
     def get_engine(
@@ -189,7 +193,7 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
         )
 
     def teardown_engine(self, database_key: SQLAlchemyDatabaseKey) -> None:
-        if not self.db_dir:
+        if not self.postgres_launch_result:
             raise RuntimeError("teardown_engine called before setup_engine")
 
         SQLAlchemyEngineManager.teardown_engine_for_database_key(
@@ -199,7 +203,7 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
         try:
             logging.info("Stopping local postgres database")
             local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-                self.db_dir
+                self.postgres_launch_result
             )
         except Exception as e2:
             logging.error("Error cleaning up postgres: %s", e2)

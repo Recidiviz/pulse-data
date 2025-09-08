@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.tools.workflows import fixtures
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
 from recidiviz.workflows.types import FullOpportunityInfo, WorkflowsSystemType
@@ -264,13 +265,15 @@ class TestWorkflowsQuerier(TestCase):
     """Implements tests for the WorkflowsQuerier."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     maxDiff = None
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
         super().setUpClass()
 
     def setUp(self) -> None:
@@ -287,7 +290,9 @@ class TestWorkflowsQuerier(TestCase):
         self.mock_get_configs.return_value = MOCK_CONFIGS
 
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_id")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         with SessionFactory.using_database(self.database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
@@ -313,7 +318,7 @@ class TestWorkflowsQuerier(TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
         super().tearDownClass()
 

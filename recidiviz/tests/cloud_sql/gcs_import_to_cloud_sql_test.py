@@ -58,6 +58,7 @@ from recidiviz.tests.auth.helpers import add_entity_to_database_session
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.insights import fixtures as insights_fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
 def build_list_constraints_query(schema: str, table: str) -> str:
@@ -103,16 +104,18 @@ class TestGCSImportToCloudSQL(TestCase):
     """Tests for gcs_import_to_cloud_sql.py."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -131,7 +134,9 @@ class TestGCSImportToCloudSQL(TestCase):
         self.sqlalchemy_engine_patcher.start()
 
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_mo")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         self.model = PrisonPopulationProjection
         self.table_name = self.model.__tablename__
@@ -388,16 +393,18 @@ class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
     """Tests for gcs_import_to_cloud_sql.py when a table has a generated primary key."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -415,7 +422,9 @@ class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
             Mock(return_value=self.mock_instance_id),
         )
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_mi")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         self.model = SupervisionClientEvent
         self.table_name = self.model.__tablename__
@@ -560,16 +569,18 @@ class TestGCSImportFileToCloudSQL(TestCase):
     """Tests for gcs_import_to_cloud_sql.py."""
 
     # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
+    postgres_launch_result: OnDiskPostgresLaunchResult
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.postgres_launch_result = (
+            local_postgres_helpers.start_on_disk_postgresql_database()
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+            cls.postgres_launch_result
         )
 
     def setUp(self) -> None:
@@ -588,7 +599,9 @@ class TestGCSImportFileToCloudSQL(TestCase):
             Mock(return_value=self.mock_instance_id),
         )
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_ca")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.postgres_launch_result, self.database_key
+        )
 
         self.model = SupervisionOfficer
         self.table_name = self.model.__tablename__
