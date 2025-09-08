@@ -10,7 +10,7 @@
     "deploy": "firebase deploy --only hosting"
   },
   "dependencies": {
-    "@recidiviz/auth": "^1.1.0",
+    "@recidiviz/auth": "^1.2.0",
     "@recidiviz/design-system": "^5.8.0",
     "firebase": "^12.1.0",
     "mobx": "^6.13.7",
