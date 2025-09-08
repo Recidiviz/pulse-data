@@ -1,0 +1,73 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`store state 1`] = `
+Object {
+  "edges": Array [
+    Array [
+      "e-fake-dataset.fake-table-fake-dataset.fake-table-2",
+      Object {
+        "id": "e-fake-dataset.fake-table-fake-dataset.fake-table-2",
+        "source": "fake-dataset.fake-table",
+        "target": "fake-dataset.fake-table-2",
+      },
+    ],
+    Array [
+      "e-fake-dataset.fake-table-fake-dataset.fake-table-3",
+      Object {
+        "id": "e-fake-dataset.fake-table-fake-dataset.fake-table-3",
+        "source": "fake-dataset.fake-table",
+        "target": "fake-dataset.fake-table-3",
+      },
+    ],
+  ],
+  "nodes": Array [
+    Array [
+      "fake-dataset.fake-table",
+      Object {
+        "hasDownstream": true,
+        "hasUpstream": false,
+        "urn": "fake-dataset.fake-table",
+      },
+    ],
+    Array [
+      "fake-dataset.fake-table-2",
+      Object {
+        "hasDownstream": false,
+        "hasUpstream": true,
+        "urn": "fake-dataset.fake-table-2",
+      },
+    ],
+    Array [
+      "fake-dataset.fake-table-3",
+      Object {
+        "hasDownstream": false,
+        "hasUpstream": true,
+        "urn": "fake-dataset.fake-table-3",
+      },
+    ],
+  ],
+  "urnToDownstreamUrns": Array [
+    Array [
+      "fake-dataset.fake-table",
+      Array [
+        "fake-dataset.fake-table-2",
+        "fake-dataset.fake-table-3",
+      ],
+    ],
+  ],
+  "urnToUpstreamUrns": Array [
+    Array [
+      "fake-dataset.fake-table-2",
+      Array [
+        "fake-dataset.fake-table",
+      ],
+    ],
+    Array [
+      "fake-dataset.fake-table-3",
+      Array [
+        "fake-dataset.fake-table",
+      ],
+    ],
+  ],
+}
+`;
