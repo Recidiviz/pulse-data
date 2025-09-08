@@ -216,7 +216,6 @@ export type IngestRawFileProcessingStatus = {
 export const ANCHOR_DATAFLOW_LATEST_JOB = "dataflow_latest_job";
 export const ANCHOR_INGEST_RAW_DATA = "ingest_raw_data";
 export const ANCHOR_INGEST_RESOURCES = "ingest_resources";
-export const ANCHOR_INGEST_LOGS = "ingest_logs";
 
 export const FILE_TAG_UNNORMALIZED = "UNNORMALIZED"; // special tag for files that don't follow normalized format
 export const FILE_TAG_IGNORED_IN_SUBDIRECTORY = "IGNORED_IN_SUBDIRECTORY"; // special tag for files that are not in the base directory

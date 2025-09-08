@@ -42,7 +42,6 @@ import {
 } from "../Utilities/GeneralUtilities";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
-  ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
   ANCHOR_INGEST_RESOURCES,
   DataflowIngestPipelineAdditionalMetadata,
@@ -152,9 +151,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   }, [hash]);
 
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
-  const logsEnv = env === "production" ? "prod" : "staging";
-  const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
-  const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
 
   // Uses useRef so abort controller not re-initialized every render cycle.
   const abortControllerRefResources = useRef<AbortController | undefined>(
@@ -644,17 +640,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     </Descriptions>
   );
 
-  const rawDataImportLogsView = (
-    <Descriptions bordered>
-      <Descriptions.Item label="Logs Explorer" span={3}>
-        <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
-      </Descriptions.Item>
-      <Descriptions.Item label="Non 200 Responses" span={3}>
-        <NewTabLink href={non200Url}>{non200Url}</NewTabLink>
-      </Descriptions.Item>
-    </Descriptions>
-  );
-
   // OVERALL COMPONENT STRUCTURE
   return (
     <Card>
@@ -680,11 +665,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         Raw Data Import Resources
       </Title>
       {rawDataImportResourcesView}
-      <br />
-      <Title id={ANCHOR_INGEST_LOGS} level={4}>
-        Raw Data Import Logs
-      </Title>
-      {rawDataImportLogsView}
     </Card>
   );
 };

@@ -40,7 +40,6 @@ import { StateCodeInfo } from "../general/constants";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
-  ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
   ANCHOR_INGEST_RESOURCES,
 } from "./constants";
@@ -81,10 +80,6 @@ const items: MenuProps["items"] = [
       "Raw Data Resources",
       `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_INGEST_RESOURCES}`
     ),
-    getItem(
-      "Raw Data Logs",
-      `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_INGEST_LOGS}`
-    ),
   ]),
   getItem("Secondary Instance", INGEST_DATAFLOW_SECONDARY_ROUTE, null, [
     getItem(
@@ -94,10 +89,6 @@ const items: MenuProps["items"] = [
     getItem(
       "Raw Data Resources",
       `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_RESOURCES}`
-    ),
-    getItem(
-      "Raw Data Logs",
-      `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_LOGS}`
     ),
   ]),
 ];
