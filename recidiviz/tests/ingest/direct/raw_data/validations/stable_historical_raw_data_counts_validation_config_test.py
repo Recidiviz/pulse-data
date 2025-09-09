@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the stable_historical_raw_data_counts_table_validation_config.py."""
+"""Tests for the stable_historical_raw_data_counts_validation_config.py."""
 import datetime
 import json
 import unittest
@@ -24,21 +24,21 @@ from jsonschema.validators import validate
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
-from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation_config import (
+from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_validation_config import (
     StableHistoricalCountsValidationConfigLoader,
-    StableHistoricalRawDataCountsTableValidationConfig,
+    StableHistoricalRawDataCountsValidationConfig,
 )
 
 
-class TestStableHistoricalRawDataCountsTableValidationConfig(unittest.TestCase):
-    """Tests for the StableHistoricalRawDataCountsTableValidationConfig class."""
+class TestStableHistoricalRawDataCountsValidationConfig(unittest.TestCase):
+    """Tests for the StableHistoricalRawDataCountsValidationConfig class."""
 
     def setUp(self) -> None:
         self.config_path = filepath_relative_to_caller(
             "stable_counts_validation_test_config.yaml", "configs"
         )
 
-        self.validation_config = StableHistoricalRawDataCountsTableValidationConfig(
+        self.validation_config = StableHistoricalRawDataCountsValidationConfig(
             config_loader=StableHistoricalCountsValidationConfigLoader(
                 config_path=self.config_path
             )
@@ -77,7 +77,7 @@ class TestStableHistoricalRawDataCountsTableValidationConfig(unittest.TestCase):
 
     def test_yaml_matches_schema(self) -> None:
         prod_config_path = (
-            StableHistoricalRawDataCountsTableValidationConfig().config_loader.config_path
+            StableHistoricalRawDataCountsValidationConfig().config_loader.config_path
         )
 
         spec_path = filepath_relative_to_caller(

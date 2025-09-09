@@ -14,20 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Common test cases for column validations."""
-import abc
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Type
+"""Common test cases for discrete column-based validations."""
+import datetime
+from typing import Optional
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawDataClassification,
+    RawDataExportLookbackWindow,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataColumnImportBlockingValidation,
+    BaseRawDataImportBlockingValidation,
+    RawDataImportBlockingValidationContext,
     RawDataImportBlockingValidationFailure,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -35,8 +40,9 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 
 
-class ColumnValidationTestCase(BigQueryEmulatorTestCase):
-    """Common test cases for column validations."""
+class RawDataImportBlockingValidationTestCase(BigQueryEmulatorTestCase):
+    """Common test cases for import blocking validations that test column-by-column
+    invariants rather than whole-file invariants."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -46,6 +52,9 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         self.file_tag = "test_file_tag"
         self.happy_col_name = "happy_col"
         self.sad_col_name = "sad_col"
+        self.state_code = StateCode.US_XX
+        self.file_update_datetime = datetime.datetime.now()
+        self.direct_ingest_instance = DirectIngestInstance.PRIMARY
         self.happy_col = RawTableColumnInfo(
             name=self.happy_col_name,
             state_code=StateCode.US_XX,
@@ -63,31 +72,36 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
         )
-
-    def create_validation(
-        self, column: RawTableColumnInfo
-    ) -> RawDataColumnImportBlockingValidation:
-        """Create the validation to test."""
-        return self.get_validation_class().create_column_validation(
-            project_id=self.project_id,
+        self.raw_file_config = DirectIngestRawFileConfig(
+            state_code=self.state_code,
             file_tag=self.file_tag,
-            state_code=StateCode.US_XX,
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[self.happy_col, self.sad_col],
+            custom_line_terminator=None,
+            primary_key_cols=[],
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
+            no_valid_primary_keys=False,
+            infer_columns_from_config=False,
+            table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
+        )
+        self.context = RawDataImportBlockingValidationContext(
+            state_code=self.state_code,
+            file_tag=self.file_tag,
+            project_id=self.project_id,
             temp_table_address=self.temp_table_address,
-            column=column,
-            file_upload_datetime=datetime.now(tz=timezone.utc),
+            raw_file_config=self.raw_file_config,
+            file_update_datetime=self.file_update_datetime,
+            raw_data_instance=self.direct_ingest_instance,
         )
 
-    @abc.abstractmethod
-    def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
-        """Get the validation class to test."""
-
-    @abc.abstractmethod
-    def get_test_data(self) -> List[Dict[str, Optional[str]]]:
-        """Get the test data to load into the temp table."""
-
-    def load_data(self) -> None:
-        self.data = self.get_test_data()
-
+    def _load_data(self, test_data: list[dict[str, Optional[str]]]) -> None:
         self.create_mock_table(
             address=self.temp_table_address,
             schema=[
@@ -95,16 +109,17 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
                 schema_field_for_type(self.sad_col_name, str),
             ],
         )
-        self.load_rows_into_table(self.temp_table_address, self.data)
+        self.load_rows_into_table(self.temp_table_address, test_data)
 
     def validation_failure_test(
         self,
+        validation: BaseRawDataImportBlockingValidation,
+        test_data: list[dict[str, Optional[str]]],
         expected_error: RawDataImportBlockingValidationFailure,
     ) -> None:
-        validation = self.create_validation(self.sad_col)
-        self.load_data()
+        self._load_data(test_data)
 
-        results = self.query(validation.query)
+        results = self.query(validation.build_query())
         error = validation.get_error_from_results(results.to_dict("records"))
 
         if not error:
@@ -116,11 +131,12 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
 
     def validation_success_test(
         self,
+        validation: BaseRawDataImportBlockingValidation,
+        test_data: list[dict[str, Optional[str]]],
     ) -> None:
-        validation = self.create_validation(self.happy_col)
-        self.load_data()
+        self._load_data(test_data)
 
-        results = self.query(validation.query)
+        results = self.query(validation.build_query())
         error = validation.get_error_from_results(results.to_dict("records"))
 
         self.assertIsNone(error)

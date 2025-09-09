@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Reads and provides access to the validation configuration used in the StableHistoricalRawDataCountsTableValidation."""
+"""Reads and provides access to the validation configuration used in the StableHistoricalRawDataCountsValidation."""
 import datetime
 from typing import Any, Dict, List, Optional
 
@@ -62,7 +62,7 @@ class StableHistoricalCountsDateRangeExclusion:
 
 @attr.define
 class StableHistoricalCountsToleranceOverride:
-    """Represents the tolerance override for a file tag in the StableHistoricalRawDataCountsTableValidation.
+    """Represents the tolerance override for a file tag in the StableHistoricalRawDataCountsValidation.
     percent_change_tolerance is the percent change tolerance used to compare the current row count to the historical median.
     """
 
@@ -80,7 +80,7 @@ class StableHistoricalCountsToleranceOverride:
 
 @attr.define
 class StableHistoricalCountsFileTagConfig:
-    """Represents the configuration for a file tag in the StableHistoricalRawDataCountsTableValidation.
+    """Represents the configuration for a file tag in the StableHistoricalRawDataCountsValidation.
     tolerance_override is optional and can be used to override the default percent_change_tolerance.
     date_range_exclusions is optional and can be used to exclude imports within certain date ranges
     from being used in calculating the historical median number of raw rows imported for that file tag.
@@ -114,7 +114,7 @@ class StableHistoricalCountsFileTagConfig:
 
 @attr.define
 class StableHistoricalCountsDefaultConfig:
-    """Represents the default configuration for the StableHistoricalRawDataCountsTableValidation.
+    """Represents the default configuration for the StableHistoricalRawDataCountsValidation.
     time_window_lookback_days is the number of days to look back when querying historical counts.
     percent_change_tolerance is the percent change tolerance used to compare the current row count to the historical median.
     """
@@ -154,7 +154,7 @@ class StableHistoricalCountsRegionConfig:
 
 @attr.define
 class StableHistoricalCountsValidationConfig:
-    """Represents the configuration for the StableHistoricalRawDataCountsTableValidation."""
+    """Represents the configuration for the StableHistoricalRawDataCountsValidation."""
 
     defaults: StableHistoricalCountsDefaultConfig
     custom: Optional[Dict[StateCode, StableHistoricalCountsRegionConfig]]
@@ -179,7 +179,7 @@ class StableHistoricalCountsValidationConfig:
 @attr.define
 class StableHistoricalCountsValidationConfigLoader:
     """Loads and provides access to the validation configuration
-    used in the StableHistoricalRawDataCountsTableValidation."""
+    used in the StableHistoricalRawDataCountsValidation."""
 
     config_file_name: str = attr.ib(
         default=STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML
@@ -218,8 +218,8 @@ class StableHistoricalCountsValidationConfigLoader:
 
 
 @attr.define
-class StableHistoricalRawDataCountsTableValidationConfig:
-    """Retrives configuration values for the StableHistoricalRawDataCountsTableValidation."""
+class StableHistoricalRawDataCountsValidationConfig:
+    """Retrives configuration values for the StableHistoricalRawDataCountsValidation."""
 
     config_loader: StableHistoricalCountsValidationConfigLoader = attr.ib(
         factory=StableHistoricalCountsValidationConfigLoader

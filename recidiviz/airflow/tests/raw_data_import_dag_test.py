@@ -18,7 +18,7 @@
 import datetime
 import json
 import os
-from typing import Any, Callable, Dict, Iterator, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 from unittest.mock import ANY, MagicMock, call, create_autospec, patch
 
 import attr
@@ -29,7 +29,6 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
 from airflow.utils.task_group import TaskGroup
-from google.cloud.bigquery import Row
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -2499,16 +2498,6 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
         )
         self.load_bq_mock = self.load_tasks_bq_patcher.start()
-
-        def row_iterator() -> Iterator[Row]:
-            mock_row = MagicMock(spec=Row)
-            mock_row.items.return_value = {"COL1": "value1"}.items()
-            return iter([mock_row])
-
-        single_row_iterator_mock, future_mock = MagicMock(), MagicMock()
-        single_row_iterator_mock.__iter__.side_effect = row_iterator
-        future_mock.result.return_value = single_row_iterator_mock
-        self.load_bq_mock().run_query_async.return_value = future_mock
 
         # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
         self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)

@@ -15,16 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validation to assert that in a given file that has defined primary keys, all case-insensitive primary keys are distinct"""
-from typing import Any
+from typing import Any, ClassVar
 
 from attrs import define
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    BaseRawDataImportBlockingValidation,
+    RawDataColumnValidationMixin,
+    RawDataImportBlockingValidationContext,
     RawDataImportBlockingValidationFailure,
-    RawDataTableImportBlockingValidation,
 )
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
@@ -41,36 +40,38 @@ LIMIT 1
 
 
 @define
-class DistinctPrimaryKeyTableValidation(RawDataTableImportBlockingValidation):
+class DistinctPrimaryKeyValidation(
+    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+):
     """Validation that checks that all primary keys in a file are distinct (case insensitive)."""
 
+    VALIDATION_TYPE: ClassVar[
+        RawDataImportBlockingValidationType
+    ] = RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
     primary_key_cols: list[str]
 
     @classmethod
-    def create_table_validation(
-        cls,
-        *,
-        state_code: StateCode,
-        file_tag: str,
-        project_id: str,
-        temp_table_address: BigQueryAddress,
-        primary_key_cols: list[str],
-    ) -> "DistinctPrimaryKeyTableValidation":
+    def create_validation(
+        cls, context: RawDataImportBlockingValidationContext
+    ) -> "DistinctPrimaryKeyValidation":
         return cls(
-            project_id=project_id,
-            temp_table_address=temp_table_address,
-            file_tag=file_tag,
-            primary_key_cols=primary_key_cols,
-            state_code=state_code,
+            project_id=context.project_id,
+            temp_table_address=context.temp_table_address,
+            file_tag=context.file_tag,
+            primary_key_cols=context.raw_file_config.primary_key_cols,
+            state_code=context.state_code,
         )
 
-    @staticmethod
-    def validation_type() -> RawDataImportBlockingValidationType:
-        return RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
-
-    @staticmethod
-    def validation_applies_to_table(file_config: DirectIngestRawFileConfig) -> bool:
-        return len(file_config.primary_key_cols) > 0
+    @classmethod
+    def validation_applies_to_file(
+        cls,
+        context: RawDataImportBlockingValidationContext,
+    ) -> bool:
+        return len(
+            context.raw_file_config.primary_key_cols
+        ) > 0 and not context.raw_file_config.file_is_exempt_from_validation(
+            cls.VALIDATION_TYPE
+        )
 
     def build_query(self) -> str:
         return StrictStringFormatter().format(
@@ -91,7 +92,7 @@ class DistinctPrimaryKeyTableValidation(RawDataTableImportBlockingValidation):
             return None
 
         return RawDataImportBlockingValidationFailure(
-            validation_type=self.validation_type(),
+            validation_type=self.VALIDATION_TYPE,
             validation_query=self.build_query(),
             error_msg=(
                 f"Found duplicate primary keys for raw file [{self.file_tag}]"

@@ -23,7 +23,6 @@ from unittest.mock import MagicMock
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
     DirectIngestRawTablePreImportValidator,
@@ -39,7 +38,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation import (
+from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_validation import (
     RAW_ROWS_MEDIAN_KEY,
     TEMP_TABLE_ROW_COUNT_KEY,
 )
@@ -139,15 +138,13 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             {TEMP_TABLE_ROW_COUNT_KEY: 101, RAW_ROWS_MEDIAN_KEY: 100},
         ]
         self.distinct_pks_job = MagicMock()
+        self.nonnull_values_job = MagicMock()
 
     def test_run_raw_table_validations_success(self) -> None:
-        nonnull_values_job = MagicMock()
-        # non-null validation should pass if at least one non-null value is found
-        nonnull_values_job.result.return_value = [{"Col1": "mocked_result_value"}]
         self.big_query_client.run_query_async.side_effect = [
-            self.distinct_pks_job,
+            self.nonnull_values_job,
             self.stable_counts_job,
-            nonnull_values_job,
+            self.distinct_pks_job,
         ]
         validator = DirectIngestRawTablePreImportValidator(
             project_id=self.project_id,
@@ -166,13 +163,10 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         self.assertEqual(self.big_query_client.run_query_async.call_count, 3)
 
     def test_run_raw_table_validations_renamed_col(self) -> None:
-        nonnull_values_job = MagicMock()
-        # non-null validation should pass if at least one non-null value is found
-        nonnull_values_job.result.return_value = [{"OldCol1": "mocked_result_value"}]
         self.big_query_client.run_query_async.side_effect = [
-            self.distinct_pks_job,
+            self.nonnull_values_job,
             self.stable_counts_job,
-            nonnull_values_job,
+            self.distinct_pks_job,
         ]
         raw_file_config = attr.evolve(
             self.raw_file_config,
@@ -217,27 +211,17 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
 
         # should be called for distinct primary keys, historical stable counts and non-null validation for Col1
         self.assertEqual(self.big_query_client.run_query_async.call_count, 3)
-        # Should be querying for OldCol1
-        self.big_query_client.run_query_async.assert_called_with(
-            query_str="\nSELECT OldCol1\nFROM test-project.test_dataset.test_table\nWHERE OldCol1 IS NOT NULL\nLIMIT 1\n",
-            use_query_cache=True,
-            job_labels=[
-                ResourceLabel(
-                    key="raw_data_import_step",
-                    value="raw_data_pre_import_validations",
-                    parents=None,
-                )
-            ],
-        )
 
     def test_run_raw_table_validations_failure(self) -> None:
         nonnull_values_job = MagicMock()
         # non-null validation should fail if no non-null values are found
-        nonnull_values_job.result.return_value = []
+        nonnull_values_job.result.return_value = [
+            {"column_name": "Col1", "all_values_null": True}
+        ]
         self.big_query_client.run_query_async.side_effect = [
-            self.distinct_pks_job,
-            self.stable_counts_job,
             nonnull_values_job,
+            self.stable_counts_job,
+            self.distinct_pks_job,
         ]
         validator = DirectIngestRawTablePreImportValidator(
             project_id=self.project_id,
@@ -252,13 +236,22 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             " please add the validation_type and exemption_reason to import_blocking_validation_exemptions"
             " for a table-wide exemption or to import_blocking_column_validation_exemptions"
             " for a column-specific exemption in the raw file config."
-            f"\nError: Found column [{self.column_name}] on raw file [{self.file_tag}] with only null values."
+            f"\nError: Found column(s) on raw file [{self.file_tag}] with only null values."
+            f"\nColumn name: [{self.column_name}]"
             f"\nValidation type: {RawDataImportBlockingValidationType.NONNULL_VALUES.value}"
             "\nValidation query: "
-            f"\nSELECT {self.column_name}"
-            f"\nFROM {self.project_id}.{self.temp_table_address.to_str()}"
-            f"\nWHERE {self.column_name} IS NOT NULL"
-            "\nLIMIT 1\n"
+            "\nSELECT"
+            "\n    column_name,"
+            "\n    all_values_null"
+            "\nFROM ("
+            "\n    SELECT"
+            "\n        COUNTIF(Col1 IS NOT NULL) = 0 AS Col1_null"
+            "\n    FROM test-project.test_dataset.test_table"
+            "\n)"
+            "\nUNPIVOT ("
+            "\n    all_values_null FOR column_name IN (Col1_null AS 'Col1')"
+            "\n)"
+            "\nWHERE all_values_null = True\n"
         )
 
         with self.assertRaises(

@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for distinct_primary_key_table_validation.py."""
+"""Unit tests for distinct_primary_key_validation.py."""
+import datetime
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -33,10 +34,13 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.raw_data.validations.distinct_primary_key_table_validation import (
-    DistinctPrimaryKeyTableValidation,
+from recidiviz.ingest.direct.raw_data.validations.distinct_primary_key_validation import (
+    DistinctPrimaryKeyValidation,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
+    RawDataImportBlockingValidationContext,
+)
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
 )
@@ -45,8 +49,8 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 
 
-class TestDistinctPrimaryKeyTableValidation(BigQueryEmulatorTestCase):
-    """Unit tests for DistinctPrimaryKeyTableValidation"""
+class TestDistinctPrimaryKeyValidation(BigQueryEmulatorTestCase):
+    """Unit tests for DistinctPrimaryKeyValidation"""
 
     def setUp(self) -> None:
         super().setUp()
@@ -58,14 +62,63 @@ class TestDistinctPrimaryKeyTableValidation(BigQueryEmulatorTestCase):
         self.temp_table_address = BigQueryAddress(
             dataset_id="test_dataset", table_id=self.temp_table
         )
+        self.columns = [
+            RawTableColumnInfo(
+                name="id",
+                state_code=self.state_code,
+                file_tag=self.file_tag,
+                field_type=RawTableColumnFieldType.STRING,
+                description="description",
+            ),
+            RawTableColumnInfo(
+                name="name",
+                state_code=self.state_code,
+                file_tag=self.file_tag,
+                field_type=RawTableColumnFieldType.STRING,
+                description="description",
+            ),
+            RawTableColumnInfo(
+                name="value",
+                state_code=self.state_code,
+                file_tag=self.file_tag,
+                field_type=RawTableColumnFieldType.STRING,
+                description="description",
+            ),
+        ]
         self.primary_key_cols = ["id", "name"]
 
-        self.validation = DistinctPrimaryKeyTableValidation.create_table_validation(
+        self.raw_file_config = DirectIngestRawFileConfig(
+            state_code=self.state_code,
+            file_tag=self.file_tag,
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=self.columns,
+            custom_line_terminator=None,
+            primary_key_cols=self.primary_key_cols,
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=True,
+            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
+            no_valid_primary_keys=False,
+            infer_columns_from_config=False,
+            table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
+        )
+        self.file_update_datetime = datetime.datetime.now()
+        self.context = RawDataImportBlockingValidationContext(
+            state_code=self.state_code,
             file_tag=self.file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
-            state_code=self.state_code,
-            primary_key_cols=self.primary_key_cols,
+            raw_file_config=self.raw_file_config,
+            file_update_datetime=self.file_update_datetime,
+            raw_data_instance=self.ingest_instance,
+        )
+
+        self.validation = DistinctPrimaryKeyValidation.create_validation(
+            context=self.context
         )
 
     def _load_data(
@@ -210,5 +263,12 @@ class TestDistinctPrimaryKeyTableValidation(BigQueryEmulatorTestCase):
             primary_key_cols=["id"],
         )
 
-        self.assertFalse(self.validation.validation_applies_to_table(no_pk_file_config))
-        self.assertTrue(self.validation.validation_applies_to_table(pk_file_config))
+        context_no_pk = attr.evolve(self.context, raw_file_config=no_pk_file_config)
+        context_with_pk = attr.evolve(self.context, raw_file_config=pk_file_config)
+
+        self.assertFalse(
+            DistinctPrimaryKeyValidation.validation_applies_to_file(context_no_pk)
+        )
+        self.assertTrue(
+            DistinctPrimaryKeyValidation.validation_applies_to_file(context_with_pk)
+        )

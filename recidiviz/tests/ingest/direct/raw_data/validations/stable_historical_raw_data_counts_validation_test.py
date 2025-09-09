@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for stable_historical_raw_data_counts_table_validation.py."""
+"""Unit tests for stable_historical_raw_data_counts_validation.py."""
 import datetime
 from typing import Any, Dict, List, Optional
 
@@ -25,14 +25,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
-from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation import (
+from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_validation import (
     RAW_ROWS_MEDIAN_KEY,
-    StableHistoricalRawDataCountsTableValidation,
+    StableHistoricalRawDataCountsValidation,
 )
-from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation_config import (
+from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_validation_config import (
     STABLE_HISTORICAL_COUNTS_TABLE_VALIDATION_CONFIG_YAML,
     StableHistoricalCountsValidationConfigLoader,
-    StableHistoricalRawDataCountsTableValidationConfig,
+    StableHistoricalRawDataCountsValidationConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
@@ -46,8 +46,8 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 
 
-class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase):
-    """Unit tests for StableHistoricalRawDataCountsTableValidation"""
+class TestStableHistoricalRawDataCountsValidation(BigQueryEmulatorTestCase):
+    """Unit tests for StableHistoricalRawDataCountsValidation"""
 
     def setUp(self) -> None:
         super().setUp()
@@ -63,7 +63,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             "stable_counts_validation_test_config.yaml", "configs"
         )
 
-        self.validation_config = StableHistoricalRawDataCountsTableValidationConfig(
+        self.validation_config = StableHistoricalRawDataCountsValidationConfig(
             config_loader=StableHistoricalCountsValidationConfigLoader(
                 config_path=config_path
             )
@@ -71,7 +71,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         self.update_datetime = datetime.datetime(
             2024, 12, 8, 0, 0, 0, tzinfo=datetime.timezone.utc
         )
-        self.validation = StableHistoricalRawDataCountsTableValidation(
+        self.validation = StableHistoricalRawDataCountsValidation(
             file_tag=self.file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
@@ -221,7 +221,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         stats = results.to_dict("records")[0]
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
@@ -245,7 +245,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         stats = results.to_dict("records")[0]
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
@@ -269,7 +269,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         stats = results.to_dict("records")[0]
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
@@ -293,7 +293,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         stats = results.to_dict("records")[0]
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
@@ -317,7 +317,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         stats = results.to_dict("records")[0]
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
@@ -340,7 +340,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         ]
         self._load_data(sessions_data=sessions_data, bq_metadata_data=bq_metadata_data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         stats = results.to_dict("records")[0]
 
         median = stats[RAW_ROWS_MEDIAN_KEY]
@@ -351,7 +351,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         # If this is the first time the file tag is imported, there will be no historical data
         self._load_data(sessions_data=[], bq_metadata_data=[])
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         # pandas NA type isn't truthy so map to None
         results = results.applymap(lambda x: None if pd.isna(x) else x)
 
@@ -368,14 +368,14 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             str(context_manager.exception),
             "No results found for stable historical counts validation."
             f"\nFile tag: [{self.file_tag}]."
-            f"\nValidation query: {self.validation.query}",
+            f"\nValidation query: {self.validation.build_query()}",
         )
 
     def test_validation_success(self) -> None:
         # defaults to loading 11 rows into the temp table
         self._load_data()
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         error = self.validation.get_error_from_results(results.to_dict("records"))
 
         self.assertIsNone(error)
@@ -384,7 +384,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         row_count = 1
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
-            validation_query=self.validation.query,
+            validation_query=self.validation.build_query(),
             error_msg=f"Median historical raw rows count [{self.expected_median}] is more than [{self.validation.row_count_percent_change_tolerance}]"
             f" different than the current count [{row_count}] for file [{self.file_tag}]."
             " If you want to alter the percent change threshold or add a date range to be excluded when calculating the historical median,"
@@ -395,7 +395,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         data = [{"col1": "test"}]
         self._load_data(temp_table_data=data)
 
-        results = self.query(self.validation.query)
+        results = self.query(self.validation.build_query())
         error = self.validation.get_error_from_results(results.to_dict("records"))
 
         if error is None:
@@ -439,7 +439,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             bq_metadata_data=bq_metadata_data,
             temp_table_data=temp_table_data,
         )
-        validation = StableHistoricalRawDataCountsTableValidation(
+        validation = StableHistoricalRawDataCountsValidation(
             file_tag=file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
@@ -449,7 +449,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             file_update_datetime=self.update_datetime,
         )
 
-        results = self.query(validation.query)
+        results = self.query(validation.build_query())
         error = validation.get_error_from_results(results.to_dict("records"))
 
         self.assertIsNone(error)
@@ -490,7 +490,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
         self._load_data(
             bq_metadata_data=bq_metadata_data, temp_table_data=temp_table_data
         )
-        validation = StableHistoricalRawDataCountsTableValidation(
+        validation = StableHistoricalRawDataCountsValidation(
             file_tag=file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
@@ -500,7 +500,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             file_update_datetime=self.update_datetime,
         )
 
-        results = self.query(validation.query)
+        results = self.query(validation.build_query())
         error = validation.get_error_from_results(results.to_dict("records"))
 
         self.assertIsNone(error)

@@ -365,3 +365,8 @@ def are_bq_schemas_same(
             return False
 
     return True
+
+
+def escape_backslashes_for_query(values: list[str]) -> list[str]:
+    """Properly escapes backslashes for use in a BQ query"""
+    return [value.replace("\\", "\\\\") for value in values]
