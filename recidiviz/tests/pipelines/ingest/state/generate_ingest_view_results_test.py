@@ -181,7 +181,7 @@ file_tag_first_generated_view AS (
             * EXCEPT (recency_rank)
         FROM (
             SELECT
-                *,
+                col_name_1a, col_name_1b, file_id, update_datetime, is_deleted,
                 ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
@@ -213,7 +213,7 @@ tagFullHistoricalExport_generated_view AS (
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
     filtered_rows AS (
-        SELECT *
+        SELECT COL_1, file_id, update_datetime, is_deleted
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
         WHERE
@@ -251,7 +251,7 @@ file_tag_first_generated_view AS (
             * EXCEPT (recency_rank)
         FROM (
             SELECT
-                *,
+                col_name_1a, col_name_1b, file_id, update_datetime, is_deleted,
                 ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
@@ -283,7 +283,7 @@ tagFullHistoricalExport_generated_view AS (
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
     filtered_rows AS (
-        SELECT *
+        SELECT COL_1, file_id, update_datetime, is_deleted
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
         WHERE
