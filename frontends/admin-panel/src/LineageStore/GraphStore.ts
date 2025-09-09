@@ -19,8 +19,8 @@ import { Edge, Node } from "@xyflow/react";
 import { makeAutoObservable, runInAction } from "mobx";
 
 import { buildNewNodeWithDefaults } from "../components/Lineage/GraphNode/NodeBuilder";
+import { DagreEngine } from "../components/Lineage/Layout/DagreEngine";
 import { LayoutEngine } from "../components/Lineage/Layout/LayoutEngine";
-import { SimpleEngine } from "../components/Lineage/Layout/SimpleEngine";
 import { LineageRootStore } from "./LineageRootStore";
 import {
   GraphDirection,
@@ -50,7 +50,7 @@ export class GraphStore {
     this.selectedNode = undefined;
     this.nodes = [];
     this.edges = [];
-    this.layoutEngine = new SimpleEngine();
+    this.layoutEngine = new DagreEngine();
 
     makeAutoObservable(
       this,
