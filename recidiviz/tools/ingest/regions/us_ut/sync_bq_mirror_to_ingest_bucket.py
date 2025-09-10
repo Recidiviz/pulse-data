@@ -36,7 +36,7 @@ python -m recidiviz.tools.ingest.regions.us_ut.sync_bq_mirror_to_ingest_bucket \
 
 python -m recidiviz.tools.ingest.regions.us_ut.sync_bq_mirror_to_ingest_bucket \
     --destination-project-id recidiviz-staging \
-    --table_ids [table_1,table_2,table_3] \
+    --table-ids [table_1,table_2,table_3] \
     --dry-run True
 
 if you're running from w/in a cloud run job, use something like 
