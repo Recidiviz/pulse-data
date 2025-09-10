@@ -33,6 +33,7 @@ import Nelly from "../favicon-nelly.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
+import * as Lineage from "../navigation/Lineage";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
 import DatasetView from "./Datasets/DatasetView";
@@ -41,6 +42,7 @@ import IngestStatusView from "./IngestStatus";
 import FlashDatabaseChecklist from "./IngestStatus/FlashChecklist/FlashDatabaseChecklist";
 import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
 import InsightsConfigurationView from "./Insights/InsightsConfigurationView";
+import LineageDisplay from "./Lineage/Lineage";
 import OnCallLogsReview from "./OnCall/LogsReview";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
@@ -195,6 +197,8 @@ const App = (): JSX.Element => {
       IngestOperations.INGEST_DATAFLOW_ROUTE,
       DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION),
       DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST),
+      Lineage.LINEAGE_DETAIL,
+      Lineage.LINEAGE_BASE,
     ].filter((x) => history.location.pathname.includes(x)).length,
   });
 
@@ -281,6 +285,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.DEMO_APP_MANAGEMENT_ROUTE}
             component={DemoAppManagementView}
+          />
+          <Route
+            path={[Lineage.LINEAGE_DETAIL, Lineage.LINEAGE_BASE]}
+            component={LineageDisplay}
           />
           <Route
             path={OnCall.ON_CALL_BASE_ROUTE}
