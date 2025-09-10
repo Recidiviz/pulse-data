@@ -119,8 +119,5 @@ repos:
         entry: pipenv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
         # If you modify this list, also update LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX mapping in generate_all_lookml.py
-        files:
-          ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|
-          ^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/|
-          ^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions
+        files: ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/|^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions
         exclude: ^recidiviz/tools/looker/__generated__/
