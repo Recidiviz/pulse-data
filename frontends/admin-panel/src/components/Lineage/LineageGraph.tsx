@@ -18,7 +18,7 @@
 import "@xyflow/react/dist/style.css";
 import "./LineageGraph.css";
 
-import { Background, Controls, MiniMap, ReactFlow } from "@xyflow/react";
+import { Background, Controls, MiniMap, Node, ReactFlow } from "@xyflow/react";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect } from "react";
 import { useParams } from "react-router-dom";
@@ -32,7 +32,15 @@ const nodeTypes = {
 
 function LineageGraph() {
   const {
-    graphStore: { nodes, edges, selectedNode, resetGraphToActiveNode },
+    graphStore: {
+      nodes,
+      edges,
+      selectedNode,
+      resetGraphToActiveNode,
+      handleReactFlowNodesChange,
+      handleReactFlowEdgesChange,
+      changeNodeHighlight,
+    },
     lineageStore: { hydrate, hydrationState },
   } = useLineageRootStore();
 
@@ -70,6 +78,14 @@ function LineageGraph() {
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
+      onNodesChange={handleReactFlowNodesChange}
+      onEdgesChange={handleReactFlowEdgesChange}
+      onNodeMouseEnter={(event: React.MouseEvent, node: Node) =>
+        changeNodeHighlight(node.id, true)
+      }
+      onNodeMouseLeave={(event: React.MouseEvent, node: Node) =>
+        changeNodeHighlight(node.id, false)
+      }
       fitView
       colorMode="system"
       proOptions={{ hideAttribution: true }}

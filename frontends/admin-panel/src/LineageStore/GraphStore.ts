@@ -15,7 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Edge, Node } from "@xyflow/react";
+import {
+  applyEdgeChanges,
+  applyNodeChanges,
+  Edge,
+  EdgeChange,
+  EdgeSelectionChange,
+  Node,
+  NodeChange,
+  NodeSelectionChange,
+} from "@xyflow/react";
 import { makeAutoObservable, runInAction } from "mobx";
 
 import { buildNewNodeWithDefaults } from "../components/Lineage/GraphNode/NodeBuilder";
@@ -162,5 +171,49 @@ export class GraphStore {
       .then((graphUpdates) => {
         this.recalculateNodePositions(graphUpdates);
       });
+  };
+
+  /**
+   * Uses ReactFlow's provided applyNodeChanges update our internal representation of
+   * nodes
+   */
+  handleReactFlowNodesChange = (
+    changes: NodeChange<Node<GraphDisplayNode>>[]
+  ) => {
+    this.nodes = applyNodeChanges(changes, this.nodes);
+  };
+
+  /**
+   * Uses ReactFlow's provided applyEdgeChange update our internal representation of
+   * edges
+   */
+  handleReactFlowEdgesChange = (changes: EdgeChange[]) => {
+    this.edges = applyEdgeChanges(changes, this.edges);
+  };
+
+  /**
+   * Highlights or de-highlights a node and its connected edges.
+   */
+  changeNodeHighlight = (urn: NodeUrn, selected: boolean): void => {
+    const edgeChanges = this.edges
+      .filter((edge) => edge.source === urn || edge.target === urn)
+      .map(
+        (edge) =>
+          ({
+            id: edge.id,
+            type: "select",
+            selected,
+          } as EdgeSelectionChange)
+      );
+    runInAction(() => {
+      this.handleReactFlowEdgesChange(edgeChanges);
+      this.handleReactFlowNodesChange([
+        {
+          id: urn,
+          type: "select",
+          selected,
+        } as NodeSelectionChange,
+      ]);
+    });
   };
 }
