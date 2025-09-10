@@ -98,21 +98,17 @@ export class GraphStore {
     urnToMarkExpanded: NodeUrn,
     direction: GraphDirection
   ) => {
-    const expandedNodeSet = this.nodes.filter(
+    const expandedNodeIndex = this.nodes.findIndex(
       (n) => n.id === urnToMarkExpanded
     );
-    if (expandedNodeSet.length !== 1) {
-      throwExpression(
-        `Found duplicate or no nodes for urn: ${urnToMarkExpanded}`
-      );
+    if (expandedNodeIndex === -1) {
+      throwExpression(`Found no nodes for urn: ${urnToMarkExpanded}`);
     }
-    const expandedNode = expandedNodeSet[0];
-    if (expandedNode) {
-      if (direction === GraphDirection.UPSTREAM) {
-        expandedNode.data.isExpandedUpstream = true;
-      } else if (direction === GraphDirection.DOWNSTREAM) {
-        expandedNode.data.isExpandedDownstream = true;
-      }
+
+    if (direction === GraphDirection.UPSTREAM) {
+      this.nodes[expandedNodeIndex].data.isExpandedUpstream = true;
+    } else if (direction === GraphDirection.DOWNSTREAM) {
+      this.nodes[expandedNodeIndex].data.isExpandedDownstream = true;
     }
   };
 

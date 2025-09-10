@@ -1,0 +1,208 @@
+/*
+Recidiviz - a data platform for criminal justice reform
+Copyright (C) 2020 Recidiviz, Inc.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+=============================================================================
+*/
+
+
+div {
+  --background-color: #f0f2f5;
+  --box-shadow-color: rgba(0, 0, 0, 0.1);
+  --border-color: #ddd;
+  --text-color: #333;
+  --hover-color: #e6e6e6;
+  --bbox-hover: #333;
+  --view-bbox: #4c6290;
+  --source-bbox: #6e8c93;
+}
+@media (prefers-color-scheme: dark) {
+  div {
+  --background-color: #555;
+  --box-shadow-color: rgba(0, 0, 0, 0.2);
+  --border-color: #555;
+  --text-color: #fff;
+  --hover-color: #666;
+  --bbox-hover: #bebebe;
+  }
+}
+
+.graph-node-container {
+  position: absolute;
+  top: 50%;
+  cursor: pointer;
+  border-radius: 15px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  overflow: hidden;
+  width: 24px;
+  background-color: var(--background-color);
+}
+
+.graph-node-bbox {
+  padding: 10px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background-color: var(--background-color);
+  box-shadow: 0 2px 5px var(--box-shadow-color);
+  width: 200px;
+  height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  color: var(--text-color);
+  cursor: default;
+}
+
+.graph-node-view {
+  box-shadow: -2px 2px 0 1px var(--view-bbox);
+  border-radius: 5px;
+}
+
+.graph-node-view:hover{
+  box-shadow: 0px 0px 0 3px var(--view-bbox);
+  border-radius: 5px;
+}
+
+.graph-node-source {
+  box-shadow: -2px 2px 0 1px var(--source-bbox);
+  border-radius: 5px;
+}
+
+.graph-node-source:hover {
+  box-shadow: 0px 0px 0 3px var(--source-bbox);
+  border-radius: 5px;
+}
+
+.graph-node-bbox:hover {
+  border: 1px solid var(--bbox-hover);
+  border-radius: 5px;
+}
+
+.graph-node-header {
+  color: var(--text-color);
+  width: 180px;
+  height: 20px;
+  display: flex;
+  align-items: center !important;
+  font-size: 12px;
+}
+
+
+.graph-node-dataset-label {
+  align-items: center !important;
+}
+
+.graph-node-view-label {
+  font-weight: bold;
+  color: var(--text-color);
+  width: 180px;
+  height: 40px;
+}
+
+
+.graph-node-container:hover {
+  width: 48px;
+}
+
+.graph-node-container-downstream {
+  transform: translateY(-50%);
+  transition: background-color 0.2s, width 0.2s ease-in-out, right 0.2s ease-in-out;
+  right: -15px;
+}
+.graph-node-container-downstream:hover {
+  right: -39px; 
+}
+
+.graph-node-container-upstream {
+  transform: translateY(-50%);
+  transition: background-color 0.2s, width 0.2s ease-in-out, left 0.2s ease-in-out;
+  left: -15px;
+}
+.graph-node-container-upstream:hover {
+  left: -39px; 
+}
+
+.graph-node-expand-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background-color: transparent;
+}
+
+.graph-node-expand-arrow-upstream {
+  transform: translateX(-27px);
+}
+
+.graph-node-expand-arrow:hover {
+  background-color: var(--hover-color);
+}
+
+.graph-node-container-downstream:hover .graph-node-expand-search {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.graph-node-container-downstream:hover .graph-node-expand-search-downstream {
+  transform: translateX(0);
+}
+
+
+.graph-node-container-upstream:hover .graph-node-expand-arrow-upstream {
+  transform: translateX(0);
+  transition: transform 0.2s ease-in-out;
+}
+
+
+.graph-node-container-upstream:hover .graph-node-expand-search {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.graph-node-container-upstream:hover .graph-node-expand-search-upstream {
+  transform: translateX(0);
+}
+
+.graph-node-expand-search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  opacity: 0;
+  pointer-events: none;
+  background-color: transparent;
+}
+
+.graph-node-expand-search:hover {
+  background-color: var(--hover-color);
+}
+
+.graph-node-expand-search-downstream {
+  transform: translateX(30px);
+}
+
+.graph-node-expand-search-upstream {
+  transform: translateX(-30px);
+}

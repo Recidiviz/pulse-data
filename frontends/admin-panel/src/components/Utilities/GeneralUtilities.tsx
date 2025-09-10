@@ -63,3 +63,26 @@ export const formatDatetimeFromTimestamp = (
   }
   return undefined;
 };
+
+// taken from https://stackoverflow.com/questions/42998927/accessibility-react-ensure-click-events-have-key-events
+export function buttonizeWithEvent(
+  handler: (event: React.KeyboardEvent<HTMLDivElement>) => void
+): object {
+  return {
+    role: "button",
+    onClick: handler,
+    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter") handler(event);
+    },
+  };
+}
+
+export function buttonize(handler: () => void): object {
+  return {
+    role: "button",
+    onClick: handler,
+    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter") handler();
+    },
+  };
+}
