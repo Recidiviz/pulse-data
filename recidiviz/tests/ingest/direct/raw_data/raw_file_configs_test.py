@@ -2368,23 +2368,6 @@ def test_validate_all_raw_yaml_schemas() -> None:
         )
 
 
-# TODO(#20341): Remove this test once we can do raw data pruning on non-historical files
-def test_validate_all_raw_yaml_no_valid_primary_keys() -> None:
-    for region_code in get_existing_region_codes():
-        region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
-        for file_tag in region_raw_file_config.raw_file_tags:
-            file_config = region_raw_file_config.raw_file_configs[file_tag]
-            if (
-                file_config.no_valid_primary_keys
-                and not file_config.always_historical_export
-            ):
-                raise ValueError(
-                    f"[state_code={region_code.upper()}][file_tag={file_tag}]: Cannot set "
-                    "`no_valid_primary_keys=True` if `export_lookback_window` is not 'FULL_HISTORICAL_LOOKBACK'. If this file is "
-                    "always historical, set `export_lookback_window=FULL_HISTORICAL_LOOKBACK`."
-                )
-
-
 def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation() -> (
     None
 ):
