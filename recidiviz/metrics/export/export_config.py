@@ -41,6 +41,9 @@ from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import
 from recidiviz.calculator.query.state.views.lantern_revocations_matrix.dashboard_views.lantern_revocations_matrix_dashboard_views import (
     LANTERN_REVOCATIONS_MATRIX_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.meetings.meetings_views import (
+    MEETINGS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
 )
@@ -266,6 +269,7 @@ CASE_NOTES_VIEWS_OUTPUT_DIRECTORY_URI = (
 )
 JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-texting-etl-data"
 REENTRY_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-reentry-etl-data"
+MEETINGS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-meetings-etl-data"
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
@@ -439,6 +443,19 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=REENTRY_VIEW_BUILDERS,
         output_directory_uri_template=REENTRY_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="REENTRY",
+        allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+        output_project_by_data_project={
+            GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
+            GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
+        },
+        publish_success_pubsub_message=True,
+    ),
+    # Meeting Assistant views
+    ExportViewCollectionConfig(
+        view_builders_to_export=MEETINGS_VIEW_BUILDERS,
+        output_directory_uri_template=MEETINGS_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="MEETINGS",
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
         output_project_by_data_project={

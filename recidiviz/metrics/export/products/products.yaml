@@ -181,3 +181,10 @@ products:
         environment: production
       - state_code: US_UT
         environment: production
+  - name: Meetings
+    description: Views that back the Meeting Assistant product
+    exports:
+      - MEETINGS
+    states:
+      - state_code: US_NE
+        environment: staging
