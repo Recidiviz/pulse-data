@@ -86,6 +86,18 @@ FROM _aggregated{state_code_query_fragment}
 """
 
 
+def _get_reason_field_by_name(
+    criteria: "TaskCriteriaBigQueryViewBuilder", reason_name: str
+) -> ReasonsField:
+    for reason_field in criteria.reasons_fields:
+        if reason_field.name == reason_name:
+            return reason_field
+
+    raise ValueError(
+        f"Criteria {criteria.criteria_name} has no reason field named {reason_name}"
+    )
+
+
 class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """A builder for a view that defines spans of time during which someone does (or
     does not) satisfy a single criteria. This should only be used for views that contain
@@ -144,6 +156,10 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         """
         return set()
 
+    def get_reason_field_from_name(self, reason_name: str) -> ReasonsField:
+        """Return the reason field object with the corresponding name"""
+        return _get_reason_field_by_name(self, reason_name)
+
 
 class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """A builder for a view that defines spans of time during which someone does (or
@@ -198,6 +214,10 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criterion, if this is a complex criterion.
         """
         return set()
+
+    def get_reason_field_from_name(self, reason_name: str) -> ReasonsField:
+        """Return the reason field object with the corresponding name"""
+        return _get_reason_field_by_name(self, reason_name)
 
 
 TaskCriteriaBigQueryViewBuilder = Union[
