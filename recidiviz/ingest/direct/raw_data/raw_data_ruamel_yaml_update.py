@@ -30,6 +30,7 @@ from recidiviz.common.attr_utils import (
     is_list_type,
     is_optional_type,
 )
+from recidiviz.common.constants.encoding import UTF_8
 from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
     LIST_ITEM_IDENTIFIER_TAG,
 )
@@ -71,6 +72,23 @@ def yaml_value_serializer(_instance: Any, _attribute: Any, value: Any) -> Any:
     return value
 
 
+def write_schema_pragma_to_yaml_if_not_present(file_path: Path) -> None:
+    """Writes the YAML schema pragma to the top of the specified file if not present."""
+    schema_pragma = (
+        "# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json\n"
+    )
+
+    with file_path.open("r", encoding=UTF_8) as f:
+        first_line = f.readline()
+        if first_line == schema_pragma:
+            return
+        # If schema pragma not present, read the rest of the file
+        rest = f.read()
+
+    # Rewrite file with pragma prepended
+    file_path.write_text(schema_pragma + first_line + rest, encoding=UTF_8)
+
+
 def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
     """Saves a YAML configuration object back to a file."""
     yaml = YAML()
@@ -86,8 +104,11 @@ def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
     yaml.Representer.add_representer(bool, bool_representer)
 
     file_path.parent.mkdir(parents=True, exist_ok=True)
+
     with open(file_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)
+
+    write_schema_pragma_to_yaml_if_not_present(file_path)
 
 
 def convert_raw_file_config_to_dict(

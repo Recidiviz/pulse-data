@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: newDataSource
 file_description: New data source file.
 data_classification: source

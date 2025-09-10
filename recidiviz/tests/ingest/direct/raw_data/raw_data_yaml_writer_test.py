@@ -68,7 +68,9 @@ class TestUpdateRegionRawFileConfigYamls(unittest.TestCase):
     """Tests for yaml writer"""
 
     def setUp(self) -> None:
-        self.fixtures_path = Path(os.path.join(os.path.dirname(__file__), "fixtures"))
+        self.fixtures_path = Path(
+            os.path.join(os.path.dirname(__file__), "raw_data_yaml_writer_fixtures")
+        )
 
         self._tmp_dir = tempfile.mkdtemp()
         self.tmp_output_dir = Path(self._tmp_dir)
