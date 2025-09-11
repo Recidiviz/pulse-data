@@ -112,15 +112,13 @@ class LineageReference:
     def for_bq_node(cls, node: BigQueryViewDagNode) -> list["LineageReference"]:
         return [
             cls(
-                # TODO(#46345): be smarter about removing this
-                source_urn=parent.to_str().removesuffix("_materialized"),
+                source_urn=parent.to_str(),
                 target_urn=node.view.address.to_str(),
             )
             for parent in node.parent_node_addresses
         ] + [
             cls(
-                # TODO(#46345): be smarter about removing this
-                source_urn=source.to_str().removesuffix("_materialized"),
+                source_urn=source.to_str(),
                 target_urn=node.view.address.to_str(),
             )
             for source in node.source_addresses

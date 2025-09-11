@@ -30,12 +30,15 @@ export interface LayoutEngine {
   /**
    * @param {RFNode<GraphDisplayNode>[]} nodes - the nodes that we want to visually arrange
    * @param {RFEdge[]} edges - the edges that connect |nodes|
+   * @param {RFNode<GraphDisplayNode> | undefined} nodeToAnchor - optional: the node to
+   * anchor position calculations
    *
    * @returns {Promise<{ nodes: RFNode<GraphDisplayNode>[]; edges: RFEdge[] }>} - nodes
    * that have their x/y positions updated
    */
   layout(
     nodes: RFNode<GraphDisplayNode>[],
-    edges: RFEdge[]
+    edges: RFEdge[],
+    nodeToAnchor?: RFNode<GraphDisplayNode>
   ): Promise<Map<NodeUrn, NodePosition>>;
 }

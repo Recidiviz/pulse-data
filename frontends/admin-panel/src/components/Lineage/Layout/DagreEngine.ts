@@ -28,7 +28,8 @@ export class DagreEngine implements LayoutEngine {
   // eslint-disable-next-line class-methods-use-this
   layout = async (
     nodes: RFNode<GraphDisplayNode>[],
-    edges: RFEdge[]
+    edges: RFEdge[],
+    nodeToAnchor?: RFNode<GraphDisplayNode>
   ): Promise<Map<NodeUrn, NodePosition>> => {
     const g = new dagre.graphlib.Graph({
       directed: true,
@@ -54,16 +55,46 @@ export class DagreEngine implements LayoutEngine {
       return new Map();
     }
 
+    // if there's no anchor node, just return the newly calculated positions as is
+    if (nodeToAnchor === undefined) {
+      return new Map(
+        g.nodes().map((nodeId) => {
+          const dagreNode = g.node(nodeId);
+          return [
+            nodeId,
+            {
+              x: dagreNode.x - dagreNode.width / 2,
+              y: dagreNode.y - dagreNode.height / 2,
+            },
+          ];
+        })
+      );
+    }
+
+    // build offset to shift all calculated positions by such that the graph moves around
+    // the node we expanded the node itself doesn't move
+    const newNodePosition = g.node(nodeToAnchor.id);
+    const offset = {
+      x:
+        nodeToAnchor.position.x -
+        (newNodePosition.x - newNodePosition.width / 2),
+      y:
+        nodeToAnchor.position.y -
+        (newNodePosition.y - newNodePosition.height / 2),
+    };
+
     const newNodePositions = new Map(
       g.nodes().map((nodeId) => {
         const dagreNode = g.node(nodeId);
-        return [
-          nodeId,
-          {
-            x: dagreNode.x - dagreNode.width / 2,
-            y: dagreNode.y - dagreNode.height / 2,
-          },
-        ];
+        return nodeId !== nodeToAnchor.id
+          ? [
+              nodeId,
+              {
+                x: offset.x + (dagreNode.x - dagreNode.width / 2),
+                y: offset.y + (dagreNode.y - dagreNode.height / 2),
+              },
+            ]
+          : [nodeToAnchor.id, nodeToAnchor.position];
       })
     );
     return newNodePositions;

@@ -81,22 +81,12 @@ export class GraphStore {
     ];
   };
 
-  /**
-   * Expands the graph to display the nodes adjacent to |urn| in |direction|.
-   */
-  expandGraph = async (urn: NodeUrn, direction: GraphDirection) => {
-    this.markNodeAsExpanded(urn, direction);
-    const expandedNodeUrns = this.rootStore.lineageStore.expand(
-      urn,
-      direction,
-      this.nodes
-    );
-    this.recalculateNodePositions(expandedNodeUrns);
-  };
-
-  // eslint-disable-next-line class-methods-use-this
-  contractGraph = async (urn: NodeUrn, direction: GraphDirection) => {
-    // TODO(#46345): implement contraction for mvp
+  nodeFromUrn = (urn: NodeUrn): Node<GraphDisplayNode> => {
+    const expandedNodeIndex = this.nodes.findIndex((n) => n.id === urn);
+    if (expandedNodeIndex === -1) {
+      throwExpression(`Found no nodes for urn: ${urn}`);
+    }
+    return this.nodes[expandedNodeIndex];
   };
 
   /**
@@ -107,17 +97,18 @@ export class GraphStore {
     urnToMarkExpanded: NodeUrn,
     direction: GraphDirection
   ) => {
-    const expandedNodeIndex = this.nodes.findIndex(
-      (n) => n.id === urnToMarkExpanded
-    );
-    if (expandedNodeIndex === -1) {
-      throwExpression(`Found no nodes for urn: ${urnToMarkExpanded}`);
-    }
+    const node = this.nodeFromUrn(urnToMarkExpanded);
 
     if (direction === GraphDirection.UPSTREAM) {
-      this.nodes[expandedNodeIndex].data.isExpandedUpstream = true;
+      node.data = {
+        ...node.data,
+        isExpandedUpstream: true,
+      };
     } else if (direction === GraphDirection.DOWNSTREAM) {
-      this.nodes[expandedNodeIndex].data.isExpandedDownstream = true;
+      node.data = {
+        ...node.data,
+        isExpandedDownstream: true,
+      };
     }
   };
 
@@ -125,7 +116,10 @@ export class GraphStore {
    * Given a new set of nodes |newNodes|, recalculates the nodes positions and updates
    * the graph nodes and edges state.
    */
-  recalculateNodePositions = async (newNodes: LineageNode[]) => {
+  recalculateNodePositions = async (
+    newNodes: LineageNode[],
+    nodeToAnchor?: Node<GraphDisplayNode>
+  ) => {
     // build new list of nodes and edges
     const allNodesWithoutPositions = [
       ...this.nodes,
@@ -139,7 +133,8 @@ export class GraphStore {
     // recalculate node positions
     const newNodePositionMap = await this.layoutEngine.layout(
       allNodesWithoutPositions,
-      newEdges
+      newEdges,
+      nodeToAnchor
     );
 
     // update state with new positions
@@ -163,13 +158,33 @@ export class GraphStore {
   };
 
   /**
+   * Expands the graph to display the nodes adjacent to |urn| in |direction|.
+   */
+  expandGraph = async (urn: NodeUrn, direction: GraphDirection) => {
+    this.markNodeAsExpanded(urn, direction);
+    const nodeToExpand = this.nodeFromUrn(urn);
+    const expandedNodeUrns = this.rootStore.lineageStore.expand(
+      urn,
+      direction,
+      this.nodes
+    );
+    this.recalculateNodePositions(expandedNodeUrns, nodeToExpand);
+  };
+
+  // eslint-disable-next-line class-methods-use-this
+  contractGraph = async (urn: NodeUrn, direction: GraphDirection) => {
+    // TODO(#46345): implement contraction for mvp
+  };
+
+  /**
    * Expands the subgraph that exist between two nodes
    */
   expandSubGraph = (sourceUrn: NodeUrn, targetUrn: NodeUrn) => {
+    const nodeToExpand = this.nodeFromUrn(sourceUrn);
     this.rootStore.lineageStore
       .fetchBetween(sourceUrn, targetUrn, this.nodes)
       .then((graphUpdates) => {
-        this.recalculateNodePositions(graphUpdates);
+        this.recalculateNodePositions(graphUpdates, nodeToExpand);
       });
   };
 

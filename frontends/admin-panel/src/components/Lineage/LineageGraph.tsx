@@ -90,6 +90,7 @@ function LineageGraph() {
       colorMode="system"
       proOptions={{ hideAttribution: true }}
       debug
+      minZoom={0.01}
     >
       <MiniMap
         nodeColor={(n) => {
@@ -98,6 +99,8 @@ function LineageGraph() {
           return "#eee";
         }}
         maskColor="#00000088"
+        zoomable
+        pannable
       />
       <Controls />
       <Background gap={12} size={1} className="background-canvas" />
