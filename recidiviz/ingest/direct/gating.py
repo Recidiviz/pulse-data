@@ -33,6 +33,10 @@ MANUAL_RAW_DATA_PRUNING_STATES = {
     StateCode.US_AR,
 }
 
+SECONDARY_RAW_DATA_PRUNING_ENABLED_STATES = {
+    StateCode.US_OZ,
+}
+
 
 class RawDataPruningExemptionReason(Enum):
     """
@@ -134,8 +138,13 @@ def build_raw_data_pruning_exemption_error_message(
 
 def automatic_raw_data_pruning_enabled_for_state_and_instance(
     state_code: StateCode,
-    instance: DirectIngestInstance,  # pylint: disable=unused-argument
+    instance: DirectIngestInstance,
 ) -> bool:
     if state_code in MANUAL_RAW_DATA_PRUNING_STATES:
         return False
+    if (
+        instance == DirectIngestInstance.SECONDARY
+        and state_code in SECONDARY_RAW_DATA_PRUNING_ENABLED_STATES
+    ):
+        return True
     return False
