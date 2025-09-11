@@ -71,9 +71,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
-    fixture_path_for_raw_data_dependency,
-)
+from recidiviz.tests.ingest.direct.fixture_util import fixture_path_for_raw_file_config
 from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
 from recidiviz.tools.ingest.testing.ingest_fixture_creation.fixture_pruning import (
     prune_fixture_data,
@@ -244,8 +242,8 @@ def _validate_and_preview_file_paths(
     files_to_skip = {}
     dependencies = view_builder.raw_table_dependency_configs_by_file_tag
     for file_tag, dependency in dependencies.items():
-        file_path = fixture_path_for_raw_data_dependency(
-            state_code, dependency, test_characteristic
+        file_path = fixture_path_for_raw_file_config(
+            state_code, dependency.raw_file_config, test_characteristic
         )
         if (dependency.is_code_file and skip_code_files) and os.path.exists(file_path):
             files_to_skip[file_tag] = _SKIP_CODE_FILE_MESSAGE
@@ -346,7 +344,7 @@ def main() -> None:
         query = queries[file_tag]
         if query == _SKIP_CODE_FILE_MESSAGE:
             continue
-        fixture = RawDataFixture(dependency)
+        fixture = RawDataFixture(dependency.raw_file_config)
         if query == _EMPTY_FIXTURE_MESSAGE:
             fixture.write_empty_fixture(args.test_characteristic)
         else:

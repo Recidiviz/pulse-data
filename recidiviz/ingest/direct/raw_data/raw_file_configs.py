@@ -497,7 +497,7 @@ class DirectIngestRawFileDefaultConfig:
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, hash=False)
 class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
 
@@ -632,6 +632,10 @@ class DirectIngestRawFileConfig:
     import_blocking_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
+
+    def __hash__(self) -> int:
+        """Raw file configs are uniquely identified by their state_code and file_tag"""
+        return hash((self.state_code, self.file_tag))
 
     def __attrs_post_init__(self) -> None:
         for c in self._columns:

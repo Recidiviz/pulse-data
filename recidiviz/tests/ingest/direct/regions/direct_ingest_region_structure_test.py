@@ -87,7 +87,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     INGEST_MAPPING_OUTPUT_SUBDIR,
     LEGACY_INTEGRATION_INPUT_SUBDIR,
     fixture_path_for_address,
-    fixture_path_for_raw_data_dependency,
+    fixture_path_for_raw_file_config,
     ingest_mapping_output_fixture_path,
 )
 from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
@@ -749,9 +749,9 @@ def get_fixtures_used_by_ingest_view_tests(
             used_ingest_view_result_fixture_paths.add(result_fixture_path)
             for raw_dep_config in view_builder.raw_table_dependency_configs:
                 used_raw_data_fixture_paths.add(
-                    fixture_path_for_raw_data_dependency(
+                    fixture_path_for_raw_file_config(
                         state_code,
-                        raw_dep_config,
+                        raw_dep_config.raw_file_config,
                         characteristic,
                     )
                 )

@@ -23,12 +23,10 @@ import pandas as pd
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
-)
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
-    DirectIngestViewRawFileDependency,
 )
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
@@ -84,12 +82,12 @@ def fixture_path_for_address(
     )
 
 
-def fixture_path_for_raw_data_dependency(
+def fixture_path_for_raw_file_config(
     state_code: StateCode,
-    raw_data_dependency: DirectIngestViewRawFileDependency,
+    raw_file_config: DirectIngestRawFileConfig,
     file_name: str,
 ) -> str:
-    if raw_data_dependency.raw_file_config.is_code_file and state_code not in {
+    if raw_file_config.is_code_file and state_code not in {
         # TODO(#40113) Update code file fixtures and remove this exemption
         StateCode.US_IX,
         # TODO(#40114) Update code file fixtures and remove this exemption
@@ -100,7 +98,7 @@ def fixture_path_for_raw_data_dependency(
         DIRECT_INGEST_FIXTURES_ROOT,
         state_code.value.lower(),
         f"{state_code.value.lower()}_raw_data",
-        raw_data_dependency.file_tag,
+        raw_file_config.file_tag,
         f"{file_name}.csv",
     )
 

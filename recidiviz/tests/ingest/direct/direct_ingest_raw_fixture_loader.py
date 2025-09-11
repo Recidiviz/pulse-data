@@ -26,11 +26,13 @@ import pytz
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    get_region_raw_file_config,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-    DirectIngestViewRawFileDependency,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -82,8 +84,11 @@ class DirectIngestRawDataFixtureLoader:
         self.bq_client.create_dataset_if_necessary(
             dataset_id=self.raw_tables_dataset_id
         )
-        all_dependency_tags = {
-            dependency.file_tag
+        # We load all data for a table as if it were in a us_xx_raw_data dataset.
+        # Since we only want to load a table to the BigQuery emulator once, we
+        # use the raw_file_config as our base.
+        raw_file_configs = {
+            dependency.raw_file_config
             for ingest_view in ingest_views
             for dependency in ingest_view.raw_table_dependency_configs
         }
@@ -91,26 +96,23 @@ class DirectIngestRawDataFixtureLoader:
             create_table_futures = [
                 executor.submit(
                     self._load_dependency_to_emulator,
-                    dependency=DirectIngestViewRawFileDependency.from_raw_table_dependency_arg_name(
-                        raw_table_dependency_arg_name=file_tag,
-                        region_raw_table_config=self.raw_region_config,
-                    ),
+                    raw_file_config=raw_file_config,
                     ingest_test_identifier=ingest_test_identifier,
                     create_tables=create_tables,
                 )
-                for file_tag in all_dependency_tags
+                for raw_file_config in raw_file_configs
             ]
         for future in futures.as_completed(create_table_futures):
             future.result()
 
     def _load_dependency_to_emulator(
         self,
-        dependency: DirectIngestViewRawFileDependency,
+        raw_file_config: DirectIngestRawFileConfig,
         ingest_test_identifier: str,
         create_tables: bool,
     ) -> None:
         """Reads the given dependency into the emulator."""
-        fixture = RawDataFixture(dependency)
+        fixture = RawDataFixture(raw_file_config)
         fixture_df = fixture.read_fixture_file_into_dataframe(ingest_test_identifier)
 
         if create_tables:
@@ -123,6 +125,6 @@ class DirectIngestRawDataFixtureLoader:
         except Exception as e:
             raise ValueError(
                 f"Failed to load DataFrame records into BigQueryEmulator"
-                f" for {dependency.raw_table_dependency_arg_name} for test "
+                f" for {raw_file_config.file_tag} for test "
                 f"{ingest_test_identifier}"
             ) from e
