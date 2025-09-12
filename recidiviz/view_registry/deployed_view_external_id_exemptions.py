@@ -206,14 +206,6 @@ _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
         "TODO(#45176): Delete the external_id column once it is no longer referenced "
         "in Looker"
     ),
-    # Raw data latest views
-    BigQueryAddress(
-        dataset_id="us_tn_raw_data_up_to_date_views",
-        table_id="RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster_latest",
-    ): (
-        "TODO(#45176): Rename the external_id of the underlying raw data table to "
-        "staff_external_id."
-    ),
     # workflows_views views
     **{
         address: (
@@ -227,7 +219,7 @@ _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
 
 
 def _get_state_entity_view_addresses_with_external_id_column(
-    deployed_views_by_address: dict[BigQueryAddress, BigQueryViewBuilder]
+    deployed_views_by_address: dict[BigQueryAddress, BigQueryViewBuilder],
 ) -> set[BigQueryAddress]:
     """Returns the addresses for all views in the `state_views` /
     `normalized_state_views` datasets which we know and expect to have an external_id
