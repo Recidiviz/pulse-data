@@ -30,4 +30,5 @@ PREDEFINED_ROLES = [
     "supervision_officer_supervisor",
     "supervision_regional_leadership",
     "unknown",
+    "cpa_staff",
 ]
