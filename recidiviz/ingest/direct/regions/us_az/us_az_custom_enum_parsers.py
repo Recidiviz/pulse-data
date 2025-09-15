@@ -332,7 +332,10 @@ def parse_supervision_level(raw_text: str) -> Optional[StateSupervisionLevel]:
     """Parses a person's supervision level based first on whether the admission reason
     for the given subspan means they have absconded or are in custody. If it does not,
     the function checks if the person is designated to be on 35 days or less of supervision.
-    If that is also not the case, then their assessed supervision level is used."""
+    If that is also not the case, then their assessed supervision level is used.
+
+    Note: If this function is changed, we should likely change
+    US_AZ_SUPERVISION_LEVEL_RAW in state_specific_query_strings.py as well."""
 
     supervision_level, inmate_type, admission_reason = raw_text.split("@@")
 
