@@ -648,7 +648,10 @@ def generate_documentation() -> int:
         for schema_file in all_schema_files.values():
             generator = SingleSchemaFileDocsGenerator(schema_file, all_schema_files)
             docs_md = generator.generate_file_markdown()
-            modified |= persist_file_contents(docs_md, schema_file.docs_output_path)
+            file_modified = persist_file_contents(docs_md, schema_file.docs_output_path)
+            if file_modified:
+                logging.info("Updated docs for schema file: [%s]", schema_file.path)
+                modified = True
 
         summary_lines.extend(summary_lines_for_schema_files(version, all_schema_files))
     update_summary_file(summary_lines, "## Ingest mapping schema")
