@@ -167,10 +167,10 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
           description={
             <p>
               Delete any outstanding tables in{" "}
-              <code>pruning_{stateCode.toLowerCase()}_new_raw_data</code> and{" "}
+              <code>{stateCode.toLowerCase()}_new_pruned_raw_data</code> and{" "}
               <code>
-                pruning_{stateCode.toLowerCase()}
-                _raw_data_diff_results
+                {stateCode.toLowerCase()}
+                _raw_data_pruning_diff_results
               </code>
             </p>
           }

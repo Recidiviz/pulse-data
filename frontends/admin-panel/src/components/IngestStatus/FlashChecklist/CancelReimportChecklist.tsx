@@ -128,12 +128,12 @@ const CancelReimportChecklist = (): JSX.Element => {
             <p>
               Delete any outstanding tables in{" "}
               <code>
-                pruning_{stateCode.toLowerCase()}_new_raw_data_secondary
+                {stateCode.toLowerCase()}_new_pruned_raw_data_secondary
               </code>{" "}
               and{" "}
               <code>
-                pruning_{stateCode.toLowerCase()}
-                _raw_data_diff_results_secondary
+                {stateCode.toLowerCase()}
+                _raw_data_pruning_diff_results_secondary
               </code>
             </p>
           }

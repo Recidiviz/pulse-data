@@ -294,11 +294,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
+            self.bq_client.dataset_exists("us_xx_raw_data_pruning_diff_results_primary")
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
+            self.bq_client.dataset_exists("us_xx_new_pruned_raw_data_primary")
         )
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
@@ -562,11 +562,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
+            self.bq_client.dataset_exists("us_xx_raw_data_pruning_diff_results_primary")
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
+            self.bq_client.dataset_exists("us_xx_new_pruned_raw_data_primary")
         )
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
@@ -1024,11 +1024,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
+            self.bq_client.dataset_exists("us_xx_raw_data_pruning_diff_results_primary")
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
+            self.bq_client.dataset_exists("us_xx_new_pruned_raw_data_primary")
         )
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
@@ -1100,11 +1100,11 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
+            self.bq_client.dataset_exists("us_xx_raw_data_pruning_diff_results_primary")
         )
 
         self.assertFalse(
-            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
+            self.bq_client.dataset_exists("us_xx_new_pruned_raw_data_primary")
         )
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
