@@ -324,6 +324,78 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         self.assertEqual(updated_period, validated_incarceration_periods)
 
+    # Tests that "SKEND" is appended to the admission_reason_raw_text for any period with
+    # admission reason NEW_ADMISSION or REVOCATION, or with the same admission date as such a period.
+    def test_flag_safekeeping_end(
+        self,
+    ) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="123-1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="CTFA-NEWAD-P",
+            release_date=date(2017, 4, 30),
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="123-2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="XXXX-XXXXX-T",
+            release_date=date(2018, 4, 30),
+        )
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="123-3",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="XXXX-XXXXX-T",
+        )
+
+        ips_with_sk_flag = self.delegate.infer_additional_periods(
+            person_id=self.person_id,
+            incarceration_periods=deepcopy(
+                [incarceration_period_1, incarceration_period_2, incarceration_period_3]
+            ),
+            supervision_period_index=default_normalized_sp_index_for_tests(
+                supervision_periods=[]
+            ),
+        )
+        expected_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="123-1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="CTFA-NEWAD-P-SKEND",
+            release_date=date(2017, 4, 30),
+        )
+        expected_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="123-2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="XXXX-XXXXX-T-SKEND",
+            release_date=date(2018, 4, 30),
+        )
+        expected_incarceration_period_3 = deepcopy(incarceration_period_3)
+        expected_periods = [
+            expected_incarceration_period_1,
+            expected_incarceration_period_2,
+            expected_incarceration_period_3,
+        ]
+        self.assertEqual(expected_periods, ips_with_sk_flag)
+
     # Test adding IP for an open IN_CUSTODY supervision period when a person has no incarceration periods
     def test_inferred_incarceration_periods_from_open_IC_supervision_period_with_no_ips(
         self,
@@ -1704,7 +1776,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2019, 6, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="CTFA-NEWAD-P",
+            admission_reason_raw_text="CTFA-NEWAD-P-SKEND",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -1817,7 +1889,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="CTFA-NEWAD",
+            admission_reason_raw_text="CTFA-NEWAD-SKEND",
             release_date=date(2018, 10, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
@@ -1830,7 +1902,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             admission_date=date(2018, 10, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            admission_reason_raw_text="CTFA-SAREC-T",
+            admission_reason_raw_text="CTFA-SAREC-T-SKEND",
             release_date=date(2018, 11, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             release_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
@@ -1982,5 +2054,80 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         expected_periods = [incarceration_period_1, incarceration_period_2]
+
+        self.assertEqual(expected_periods, normalized_ips)
+
+    # Safekeeping PFI normalization depends on the admission reason raw text values that get
+    # updated in infer_additional_periods. When a period has admission reason REVOCATION or NEW_ADMISSION,
+    # or falls on the same day as a period that does, then "SKEND" gets appended to the admission reason raw
+    # text. Then, when the PFI normalization function is setting PFIs to SAFEKEEPING, it knows to stop
+    # when it reaches a period with the SKEND flag in the admission reason raw text. This way, we're able
+    # to catch the admission reasons that imply someone is no longer on safekeeping, even if the
+    # particualr period with that admission reason gets dropped because it's a zero day period.
+
+    # In this case, incarceration_period_1 has SAREC in the admission reason raw text, which marks
+    # the start of a safekeeping period. incarceration_period_2 is a new admission, which marks the
+    # end of the safekeeping period, meaning that future periods should not have their PFI set to
+    # safekeeping. It gets dropped due to being a zero-day period, but we're still able to identify
+    # that the safekeeping period should end and incarceration_period_3 should not have its PFI changed,
+    # because infer_additional_periods flags that incarceration_period_3 starts on the same day as a period
+    # with admission reason NEW_ADMISSION before that period gets dropped.
+    def test_normalize_admission_reason_and_pfi_for_safekeeping(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="123-1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2015, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CTFA-SAREC-T",
+            release_date=date(2017, 4, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="123-2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="CTFA-NEWAD-P",
+            release_date=date(2017, 4, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="123-3",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 4, 30),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="XXXX-XXXXX-T",
+            release_date=date(2018, 4, 30),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        normalized_ips = self._normalized_incarceration_periods_for_calculations(
+            incarceration_periods=[
+                incarceration_period_1,
+                incarceration_period_2,
+                incarceration_period_3,
+            ],
+            normalized_supervision_periods=[],
+        )
+
+        expected_periods = [
+            deep_entity_update(
+                deepcopy(incarceration_period_1),
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
+            ),
+            deep_entity_update(
+                deepcopy(incarceration_period_3),
+                admission_reason_raw_text="XXXX-XXXXX-T-SKEND",
+            ),
+        ]
 
         self.assertEqual(expected_periods, normalized_ips)

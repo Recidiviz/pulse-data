@@ -149,21 +149,16 @@ class UsTnIncarcerationNormalizationDelegate(
         # periods on either side of the safekeeping periods would keep whatever PFI was set by legacy_standardize_purpose_for_incarceration_values.
         in_safekeeping_period = False
 
-        # If a period has one of these admission reasons, or has the same admission date as another period
-        # with one of them, then any ongoing safekeeping period will close.
-        SAFEKEEPING_PERIOD_END_ADMISSION_REASONS = [
-            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            StateIncarcerationPeriodAdmissionReason.REVOCATION,
-        ]
         for ip in standard_date_sort_for_incarceration_periods(
             legacy_normalized_periods
         ):
             # This variable will be True if the period's admission reason OR the admission reason
             # of any other period starting on the same day is in SAFEKEEPING_PERIOD_END_ADMISSION_REASONS.
-            safekeeping_end_same_day = any(
-                i.admission_reason in SAFEKEEPING_PERIOD_END_ADMISSION_REASONS
-                for i in legacy_normalized_periods
-                if i.admission_date == ip.admission_date
+            safekeeping_end_same_day = (
+                # The SKEND flag is appended to admission_reason_raw_text values in the infer_additional_periods
+                # step, which happens before standardize_purpose_for_incarceration_values.
+                ip.admission_reason_raw_text
+                and ip.admission_reason_raw_text.endswith("SKEND")
             )
             in_safekeeping_period = (
                 ip.admission_reason_raw_text is not None
@@ -305,7 +300,55 @@ def _us_tn_infer_additional_periods(
         person_id, incarceration_periods_with_custodial_authority_overrides
     )
 
-    return all_incarceration_periods
+    # Add "-SKEND" to admission reason raw text if the period should be treated as the end of
+    # someone's safekeeping, which comes up in the standardize_purpose_for_incarceration_values step.
+    # This flag is added after the previous steps in _us_tn_infer_additional_periods since
+    # from this point on in normalization, we don't need to check the "-T" or "-P" admission reason flags.
+    all_incarceration_periods_with_sk_flag = (
+        _us_tn_flag_admission_marks_end_of_safekeeping(all_incarceration_periods)
+    )
+
+    return all_incarceration_periods_with_sk_flag
+
+
+def _us_tn_flag_admission_marks_end_of_safekeeping(
+    incarceration_periods: List[StateIncarcerationPeriod],
+) -> List[StateIncarcerationPeriod]:
+    """
+    Adds a flag to the admission_reason_raw_text if an IP, or any other IP with the same admission
+    date as the IP being normalized, has an admission reason of NEW_ADMISSION or REVOCATION. The reason
+    we add this flag to ALL IPs starting on the same day (if one of them is a new admission / revocation)
+    is that it's possible for the new admission / revocation IP to be dropped if it's a zero-day
+    period, and we want to still be able to identify that a new admission / revocation happened on that day.
+    """
+
+    # If a period has one of these admission reasons, or has the same admission date as another period
+    # with one of them, then any ongoing safekeeping period will close.
+    SAFEKEEPING_PERIOD_END_ADMISSION_REASONS = [
+        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        StateIncarcerationPeriodAdmissionReason.REVOCATION,
+    ]
+    updated_incarceration_periods: List[StateIncarcerationPeriod] = []
+    for ip in incarceration_periods:
+        if (
+            ip.admission_reason_raw_text
+            and len(
+                [
+                    i
+                    for i in incarceration_periods
+                    if i.admission_date == ip.admission_date
+                    and i.admission_reason in SAFEKEEPING_PERIOD_END_ADMISSION_REASONS
+                ]
+            )
+            > 0
+        ):
+            updated_ip = deep_entity_update(
+                ip, admission_reason_raw_text=(ip.admission_reason_raw_text + "-SKEND")
+            )
+        else:
+            updated_ip = ip
+        updated_incarceration_periods.append(updated_ip)
+    return updated_incarceration_periods
 
 
 def _us_tn_override_custodial_authority_for_temporary_movements(
