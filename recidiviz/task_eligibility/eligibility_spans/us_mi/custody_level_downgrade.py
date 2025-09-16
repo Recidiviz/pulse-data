@@ -18,6 +18,7 @@
 a resident in MI is eligible for a custody level downgrade because they have gone 6 months without a
 class I or II misconduct and meet other eligibility criteria.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
@@ -27,6 +28,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     management_level_greater_than_confinement_level,
     management_level_within_six_points_of_lower_level,
     no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    LessThanOrEqualCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -45,6 +51,25 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment.VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            TimeDependentCriteriaCondition(
+                criteria=no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment.VIEW_BUILDER,
+                reasons_date_field="six_month_misconduct_free_date",
+                interval_length=1,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Within one month of becoming six months misconduct-free",
+            ),
+            LessThanOrEqualCriteriaCondition(
+                criteria=no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment.VIEW_BUILDER,
+                reasons_numerical_field="assessed_after_six_months_misconduct_free_date",
+                # Value 0 indicates the resident still needs to be re-screened
+                value=0,
+                description="Has not been re-screened since becoming six months misconduct-free",
+            ),
+        ],
+        at_least_n_conditions_true=2,
+    ),
 )
 
 if __name__ == "__main__":
