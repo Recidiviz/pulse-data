@@ -48,6 +48,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validat
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_transformation_query_builder import (
     DirectIngestTempRawTablePreMigrationTransformationQueryBuilder,
 )
+from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
+    get_pruned_table_row_counts,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -487,6 +490,8 @@ class DirectIngestRawFileLoadManager:
         by the dataset's default table expiration policy.
         """
         file = append_ready_file.import_ready_file
+        net_new_or_updated_rows: Optional[int] = None
+        deleted_rows: Optional[int] = None
 
         # TODO(#12209) add sandbox support for raw data pruning datasets
         temp_raw_data_diff_table_address = BigQueryAddress(
@@ -512,6 +517,11 @@ class DirectIngestRawFileLoadManager:
                 temp_raw_data_diff_table_address=temp_raw_data_diff_table_address,
                 temp_raw_file_address=append_ready_file.append_ready_table_address,
             )
+            net_new_or_updated_rows, deleted_rows = get_pruned_table_row_counts(
+                big_query_client=self.big_query_client,
+                project_id=metadata.project_id(),
+                temp_raw_data_diff_table_address=temp_raw_data_diff_table_address,
+            )
 
             append_source_table = temp_raw_data_diff_table_address
         else:
@@ -529,10 +539,9 @@ class DirectIngestRawFileLoadManager:
                 temp_raw_data_diff_table_address,
             )
 
-        # TODO(#40153) add additional query to grab these stats
         return AppendSummary(
             file_id=file.file_id,
-            net_new_or_updated_rows=None,
-            deleted_rows=None,
+            net_new_or_updated_rows=net_new_or_updated_rows,
+            deleted_rows=deleted_rows,
             historical_diffs_active=historical_diffs_active,
         )

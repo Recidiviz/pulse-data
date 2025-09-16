@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
+    AppendSummary,
     ImportReadyFile,
     RawFileBigQueryLoadConfig,
 )
@@ -600,6 +601,12 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
     def test_historical_diff_depends_on_transform(self) -> None:
+        expected_append_summary = AppendSummary(
+            file_id=10,
+            net_new_or_updated_rows=1,
+            deleted_rows=1,
+            historical_diffs_active=True,
+        )
         self._set_pruning_mocks(True)
         (
             file_tag,
@@ -627,8 +634,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_ready_file.append_ready_table_address, prep_output
         )
 
-        _ = self.manager.append_to_raw_data_table(append_ready_file)
+        append_summary = self.manager.append_to_raw_data_table(append_ready_file)
 
+        assert append_summary == expected_append_summary
         self.compare_output_against_expected(raw_data_table, append_output)
 
     def test_fail_load_failure_to_start(self) -> None:
