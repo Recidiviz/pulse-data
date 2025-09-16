@@ -37,6 +37,11 @@ max_allowed_error_overrides:
     override_reason:
       TODO(#20470) - Added in IX specific logic to address some of the error, but
       requires further investigation
+  - validation_name: outliers_staff_count_percent_change_intramonth
+    hard_max_allowed_error_override: 0.03
+    override_reason:
+      The sample size is so small that a single change of one officer is enough to
+      cause the validation to fail. Bumps up by a single percentage point.
   - validation_name: incarceration_release_person_level_external_comparison
     hard_max_allowed_error_override: 0.375
     override_reason:
