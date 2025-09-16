@@ -160,7 +160,10 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
                     primary_key_columns=["state_code", "unit_supervisor"],
-                    static_attribute_columns=["unit_supervisor_name"],
+                    static_attribute_columns=[
+                        "unit_supervisor_name",
+                        "unit_supervisor_email_address",
+                    ],
                 )
             case MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
                 return MetricUnitOfAnalysis(
@@ -344,6 +347,7 @@ SELECT
     state_code,
     staff_id AS unit_supervisor,
     full_name_clean AS unit_supervisor_name,
+    LOWER(email) AS unit_supervisor_email_address,
 FROM
     `{project_id}.reference_views.state_staff_with_names`
 """,
