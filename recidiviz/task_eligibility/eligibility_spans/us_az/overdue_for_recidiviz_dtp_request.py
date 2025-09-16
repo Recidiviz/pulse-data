@@ -71,13 +71,13 @@ COMMON_CRITERIA_ACROSS_TPR_AND_DTP: list[TaskCriteriaBigQueryViewBuilder] = [
     custody_level_is_minimum_or_medium.VIEW_BUILDER,
     no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
     not_serving_flat_sentence.VIEW_BUILDER,
+    is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         logic_type=TaskCriteriaGroupLogicType.AND,
-        criteria_name="US_AZ_NO_VIOLATIONS_AND_ELIGIBLE_LEGAL_STATUS",
+        criteria_name="US_AZ_NO_VIOLATIONS",
         sub_criteria_list=[
             no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
             no_major_violent_violation_during_incarceration.VIEW_BUILDER,
-            is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=[],
     ),
