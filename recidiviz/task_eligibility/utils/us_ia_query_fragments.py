@@ -71,8 +71,9 @@ def case_notes_helper() -> str:
     SELECT DISTINCT pei.external_id,
         pa.person_id,
         'Open Interventions' AS criteria,
-        CASE WHEN pa.external_id LIKE '%PROGRAM%' AND pa.external_id LIKE '%INTERVENTION%' 
-            THEN SPLIT(program_id, '##')[OFFSET(1)]
+        CASE WHEN pa.external_id LIKE '%PROGRAM%' AND pa.external_id LIKE '%INTERVENTION%'
+                AND program_id LIKE "%##%"
+            THEN SPLIT(program_id, '##')[SAFE_OFFSET(1)]
             ELSE program_id
             END AS note_title,
         CASE WHEN participation_status = 'IN_PROGRESS' 
@@ -93,7 +94,7 @@ def case_notes_helper() -> str:
     (WITH violations AS (
         SELECT pei.external_id,
             svr.person_id,
-            NULLIF(SPLIT(c.condition_raw_text, "@@")[OFFSET(1)], "NONE") AS condition_description, -- description is sometimes unavailable and in those cases I had hydrated it as a placeholder "NONE" in ingest
+            NULLIF(SPLIT(c.condition_raw_text, "@@")[SAFE_OFFSET(1)], "NONE") AS condition_description, -- description is sometimes unavailable and in those cases I had hydrated it as a placeholder "NONE" in ingest
             CASE WHEN c.condition = 'SUBSTANCE' THEN 'DRUG VIOLATION'
                 WHEN c.condition = 'EMPLOYMENT' THEN 'EMPLOYMENT VIOLATION'
                 ELSE 'NO CONDITION PROVIDED' END AS violation_type, -- violation type (employment, substance, or internal_unknown for other sources)
