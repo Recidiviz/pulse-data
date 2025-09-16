@@ -34,8 +34,6 @@ from recidiviz.calculator.query.state.views.tasks.state_specific_tasks_criteria_
     contact_compliance_builder,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -384,7 +382,7 @@ def contact_compliance_builder_type_agnostic(
               IF(CAST(SCHEDULED_VIRTUAL_OFFICE_REQ AS INT64) != 0, SCHEDULED_VIRTUAL_OFFICE_REQ, NULL) AS scheduled_virtual_office_due,
               IF(CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0, SCHEDULED_OFFICE_REQ, NULL) AS scheduled_office_due
             )) AS types_and_amounts_due
-        FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest`
+        FROM `{{project_id}}.static_reference_data_views.us_tx_contact_standards_type_agnostic_materialized`
 {where_clause}
     ),
     -- Creates table of all contacts and adds scheduled/unscheduled prefix
@@ -668,9 +666,6 @@ def contact_compliance_builder_type_agnostic(
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_TX,
         normalized_state_dataset="us_tx_normalized_state",
-        raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
-        ),
         reasons_fields=[
             ReasonsField(
                 name="last_contact_date",
