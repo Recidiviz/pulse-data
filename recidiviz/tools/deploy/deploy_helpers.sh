@@ -111,7 +111,7 @@ function last_version_tag_on_branch {
     INCLUDE_ALPHA=$2
     LOCAL_REPO_PATH=${3:-$(git rev-parse --show-toplevel)}
 
-    if [[ -n "${INCLUDE_ALPHA}" ]]; then
+    if [[ "${INCLUDE_ALPHA}" == "true" ]]; then
         LAST_VERSION_TAG_ON_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --merged "${BRANCH}" | sort_versions | tail -n 1) || exit_on_fail
     else
         LAST_VERSION_TAG_ON_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --merged "${BRANCH}" | grep -v alpha | sort_versions | tail -n 1) || exit_on_fail
