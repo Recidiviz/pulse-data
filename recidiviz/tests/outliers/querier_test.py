@@ -51,6 +51,7 @@ from recidiviz.outliers.types import (
     OutliersClientEventConfig,
     OutliersMetricConfig,
     UserInfo,
+    UserRole,
     VitalsMetric,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
@@ -937,7 +938,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.assertIsNotNone(result.entity)
         self.assertEqual(result.entity.external_id, "101")  # type: ignore
-        self.assertEqual(result.role, "supervision_officer_supervisor")
+        self.assertEqual(result.role, UserRole.SUPERVISION_OFFICER_SUPERVISOR)
         self.assertTrue(result.has_seen_onboarding)
         self.assertTrue(result.has_dismissed_data_unavailable_note)
         self.assertTrue(result.has_dismissed_rate_over_100_percent_note)
@@ -955,8 +956,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.assertIsNotNone(result.entity)
         self.assertEqual(result.entity.external_id, "OFFICER1")  # type: ignore
-        self.assertEqual(result.role, "supervision_officer")
-        self.assertTrue(result.has_seen_onboarding)
+        self.assertEqual(result.role, UserRole.SUPERVISION_OFFICER)
+        self.assertFalse(result.has_seen_onboarding)
         self.assertFalse(result.has_dismissed_data_unavailable_note)
         self.assertFalse(result.has_dismissed_rate_over_100_percent_note)
 
@@ -990,6 +991,88 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 has_dismissed_rate_over_100_percent_note=False,
             ),
         )
+
+    def test_get_user_info(self) -> None:
+        """Test get_user_info method for all conditional cases."""
+        querier = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        )
+
+        TEST_CASES = [
+            (
+                "supervisor exists with external_id",
+                "hash1",  # pseudonymized_id
+                True,  # can_access_supervision_workflows
+                UserRole.SUPERVISION_OFFICER_SUPERVISOR,
+                "101",
+            ),
+            (
+                "regular officer (not supervisor)",
+                "officerhash1",  # pseudonymized_id
+                True,  # can_access_supervision_workflow
+                UserRole.SUPERVISION_OFFICER,
+                "OFFICER1",
+            ),
+        ]
+
+        for (
+            test_message,
+            pseudonymized_id,
+            can_access_supervision_workflows,
+            expected_role,
+            expected_external_id,
+        ) in TEST_CASES:
+            with self.subTest(test_case=test_message):
+
+                result = querier.get_user_info(
+                    pseudonymized_id,
+                    can_access_supervision_workflows,
+                    InsightsCaseloadCategoryType.ALL,
+                )
+
+                self.assertIsNotNone(result.entity, f"Failed for: {test_message}")
+                self.assertEqual(result.entity.external_id, expected_external_id, f"Failed for: {test_message}")  # type: ignore
+                self.assertEqual(
+                    result.role, expected_role, f"Failed for: {test_message}"
+                )
+
+    def test_get_supervisor_user_info_entity_not_found(
+        self,
+    ) -> None:
+        """Test get_supervisor_user_info when supervisor entity is not found."""
+        querier = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        )
+
+        # Use a pseudonymized_id that doesn't exist in test data
+        result: UserInfo = querier.get_supervisor_user_info("nonexistent_hash")
+
+        # Should return UserInfo with no entity and None role
+        self.assertIsNone(result.entity)
+        self.assertIsNone(result.role)
+        self.assertFalse(result.has_seen_onboarding)
+        self.assertFalse(result.has_dismissed_data_unavailable_note)
+        self.assertFalse(result.has_dismissed_rate_over_100_percent_note)
+
+    def test_get_officer_user_info_entity_not_found(self) -> None:
+        """Test get_officer_user_info when officer entity is not found."""
+        querier = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        )
+
+        # Use a pseudonymized_id that doesn't exist in test data
+        result: UserInfo = querier.get_officer_user_info(
+            "nonexistent_officer_hash",
+            include_workflows_info=True,
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+        )
+
+        # Should return UserInfo with no entity and None role
+        self.assertIsNone(result.entity)
+        self.assertIsNone(result.role)
+        self.assertFalse(result.has_seen_onboarding)
+        self.assertFalse(result.has_dismissed_data_unavailable_note)
+        self.assertFalse(result.has_dismissed_rate_over_100_percent_note)
 
     def test_get_configuration_for_user_no_fv(self) -> None:
         querier = OutliersQuerier(

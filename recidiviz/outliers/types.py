@@ -592,18 +592,30 @@ class SupervisionOfficerSupervisorEntity:
         return cattrs.unstructure(self)
 
 
+class UserRole(str, Enum):
+    """The role of the user based on their entity."""
+
+    SUPERVISION_OFFICER = "supervision_officer"
+    SUPERVISION_OFFICER_SUPERVISOR = "supervision_officer_supervisor"
+
+
 @attr.s
 class UserInfo:
     entity: Optional[
         Union[SupervisionOfficerSupervisorEntity, SupervisionOfficerEntity]
     ] = attr.ib()
-    role: Optional[str] = attr.ib()
+    role: Optional[UserRole] = attr.ib()
     has_seen_onboarding: bool = attr.ib()
     has_dismissed_data_unavailable_note: bool = attr.ib()
     has_dismissed_rate_over_100_percent_note: bool = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
+        result = cattrs.unstructure(self)
+        if result.get("entity") and result.get("entity").get("latest_login_date"):
+            result["entity"]["latest_login_date"] = result["entity"][
+                "latest_login_date"
+            ].isoformat()
+        return result
 
 
 @attr.s

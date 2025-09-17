@@ -75,6 +75,35 @@ snapshots[
 ]
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_officer_when_user_is_officer"
+] = [
+    {
+        "metricId": "timely_contact",
+        "vitalsMetrics": [
+            {
+                "metric30DDelta": -17.0,
+                "metricDate": "2025-07-01",
+                "metricValue": 80.0,
+                "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": "2025-06-01",
+            }
+        ],
+    },
+    {
+        "metricId": "timely_risk_assessment",
+        "vitalsMetrics": [
+            {
+                "metric30DDelta": 0.0,
+                "metricDate": "2025-07-01",
+                "metricValue": 94.0,
+                "officerPseudonymizedId": "officerhash2",
+                "previousMetricDate": None,
+            }
+        ],
+    },
+]
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_supervisor_when_can_access_all_supervisors"
 ] = [
     {
@@ -411,6 +440,30 @@ snapshots[
             "supervisionType": "PROBATION",
         }
     ]
+}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_officer_as_supervision_officer_success"
+] = {
+    "officer": {
+        "avgDailyPopulation": 10.0,
+        "district": "Guts",
+        "earliestPersonAssignmentDate": None,
+        "email": "officer123@recidiviz.org",
+        "externalId": "123",
+        "fullName": {
+            "givenNames": "Olivia",
+            "middleNames": None,
+            "nameSuffix": None,
+            "surname": "Rodrigo",
+        },
+        "includeInOutcomes": True,
+        "latestLoginDate": None,
+        "pseudonymizedId": "officerhash1",
+        "supervisorExternalId": "102",
+        "supervisorExternalIds": ["102"],
+        "zeroGrantOpportunities": None,
+    }
 }
 
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
@@ -824,6 +877,29 @@ snapshots[
             "middleNames": None,
             "nameSuffix": None,
             "surname": "2",
+        },
+        "hasOutliers": True,
+        "pseudonymizedId": "hashhash",
+        "supervisionLocationForListPage": "region 2",
+        "supervisionLocationForSupervisorPage": "unit 2",
+    },
+    "hasDismissedDataUnavailableNote": False,
+    "hasDismissedRateOver100PercentNote": False,
+    "hasSeenOnboarding": False,
+    "role": "supervision_officer_supervisor",
+}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_user_info_for_supervisor_match_with_officer_and_supervisor_entity"
+] = {
+    "entity": {
+        "email": "supervisor2@recidiviz.org",
+        "externalId": "102",
+        "fullName": {
+            "givenNames": "Olivia",
+            "middleNames": None,
+            "nameSuffix": None,
+            "surname": "Rodrigo",
         },
         "hasOutliers": True,
         "pseudonymizedId": "hashhash",

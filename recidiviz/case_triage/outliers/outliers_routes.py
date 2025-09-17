@@ -632,32 +632,43 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context.can_access_supervision_workflows,
             num_lookback_periods,
         )
+
         if officer_entity is None:
             return jsonify_response(
                 f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
                 HTTPStatus.NOT_FOUND,
             )
 
-        # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
-        if not user_context.can_access_all_supervisors and (
-            not querier.supervisor_exists_with_external_id(
+        # Check if user has appropriate access permissions
+        is_user_requested_officer = (
+            user_context.pseudonymized_id is not None
+            and user_context.pseudonymized_id == pseudonymized_officer_id
+        )
+
+        is_user_supervising_officer = (
+            user_context.user_external_id in officer_entity.supervisor_external_ids
+            and querier.supervisor_exists_with_external_id(
                 user_context.user_external_id
             )
-            or user_context.user_external_id
-            not in officer_entity.supervisor_external_ids
+        )
+
+        if (
+            is_user_requested_officer
+            or user_context.can_access_all_supervisors
+            or is_user_supervising_officer
         ):
-            return jsonify_response(
-                "User cannot access all supervisors and does not supervise the requested officer.",
-                HTTPStatus.UNAUTHORIZED,
+            return jsonify(
+                {
+                    "officer": convert_nested_dictionary_keys(
+                        officer_entity.to_json(),
+                        snake_to_camel,
+                    )
+                }
             )
 
-        return jsonify(
-            {
-                "officer": convert_nested_dictionary_keys(
-                    officer_entity.to_json(),
-                    snake_to_camel,
-                )
-            }
+        return jsonify_response(
+            "User cannot access the requested officer.",
+            HTTPStatus.UNAUTHORIZED,
         )
 
     @api.get("/<state>/user-info/<pseudonymized_id>")
@@ -680,17 +691,11 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        user_info = None
-        if querier.supervisor_exists_with_external_id(
-            user_external_id
-        ) or user_external_id in ["RECIDIVIZ", "CSG"]:
-            user_info = querier.get_supervisor_user_info(pseudonymized_id)
-        else:
-            user_info = querier.get_officer_user_info(
-                pseudonymized_id,
-                user_context.can_access_supervision_workflows,
-                querier.get_product_configuration(user_context).primary_category_type,
-            )
+        user_info = querier.get_user_info(
+            pseudonymized_id,
+            user_context.can_access_supervision_workflows,
+            querier.get_product_configuration(user_context).primary_category_type,
+        )
 
         user_info_json = convert_nested_dictionary_keys(
             user_info.to_json(),
@@ -1063,7 +1068,6 @@ def create_outliers_api_blueprint() -> Blueprint:
         user_context: UserContext = g.user_context
         querier = OutliersQuerier(state_code, user_context.feature_variants)
 
-        user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
         officer = querier.get_supervision_officer_from_pseudonymized_id(
@@ -1076,9 +1080,18 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.NOT_FOUND,
             )
 
+        is_user_requested_officer = (
+            user_context.pseudonymized_id is not None
+            and user_context.pseudonymized_id == pseudonymized_officer_id
+        )
+
+        is_user_supervising_officer = (
+            user_context.user_external_id in officer.supervisor_external_ids
+        )
+
         if (
-            user_external_id not in officer.supervisor_external_ids
-            and user_external_id != "RECIDIVIZ"
+            not is_user_requested_officer
+            and not is_user_supervising_officer
             and not user_context.can_access_all_supervisors
         ):
             # Return an unauthorized error if the requesting user is requesting information about someone else

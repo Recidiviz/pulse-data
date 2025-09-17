@@ -58,6 +58,7 @@ from recidiviz.outliers.types import (
     TargetStatus,
     TargetStatusStrategy,
     UserInfo,
+    UserRole,
     VitalsMetric,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
@@ -1743,10 +1744,29 @@ class OutliersQuerier:
             session.execute(upsert_stmt)
             session.commit()
 
+    def get_user_info(
+        self,
+        pseudonymized_id: str,
+        can_access_supervision_workflows: bool,
+        primary_category_type: InsightsCaseloadCategoryType,
+    ) -> UserInfo:
+        """
+        Composes the UserInfo entity given the pseudonymized_id.
+        """
+        supervisor_user_info = self.get_supervisor_user_info(pseudonymized_id)
+
+        if supervisor_user_info.entity:
+            return supervisor_user_info
+
+        return self.get_officer_user_info(
+            pseudonymized_id,
+            can_access_supervision_workflows,
+            primary_category_type,
+        )
+
     def get_supervisor_user_info(self, pseudonymized_id: str) -> UserInfo:
         """
-        Composes the UserInfo entity given the pseudonymized_id by reading a relevant supervisor
-        entity (if one exists) and user metadata.
+        Composes the UserInfo entity for a supervisor user.
         """
         supervisor_entity = self.get_supervisor_entity_from_pseudonymized_id(
             pseudonymized_id
@@ -1755,19 +1775,13 @@ class OutliersQuerier:
 
         return UserInfo(
             entity=supervisor_entity,
-            role="supervision_officer_supervisor" if supervisor_entity else None,
-            has_seen_onboarding=(
-                user_metadata.has_seen_onboarding if user_metadata else False
+            role=UserRole.SUPERVISION_OFFICER_SUPERVISOR if supervisor_entity else None,
+            has_seen_onboarding=getattr(user_metadata, "has_seen_onboarding", False),
+            has_dismissed_data_unavailable_note=getattr(
+                user_metadata, "has_dismissed_data_unavailable_note", False
             ),
-            has_dismissed_data_unavailable_note=(
-                user_metadata.has_dismissed_data_unavailable_note
-                if user_metadata
-                else False
-            ),
-            has_dismissed_rate_over_100_percent_note=(
-                user_metadata.has_dismissed_rate_over_100_percent_note
-                if user_metadata
-                else False
+            has_dismissed_rate_over_100_percent_note=getattr(
+                user_metadata, "has_dismissed_rate_over_100_percent_note", False
             ),
         )
 
@@ -1778,8 +1792,7 @@ class OutliersQuerier:
         category_type_to_compare: InsightsCaseloadCategoryType,
     ) -> UserInfo:
         """
-        Composes the UserInfo entity given the pseudonymized_id by reading a relevant officer
-        entity (if one exists) and user metadata.
+        Composes the UserInfo entity for a supervision officer.
         """
         officer_entity = self.get_supervision_officer_entity(
             pseudonymized_id,
@@ -1790,8 +1803,8 @@ class OutliersQuerier:
 
         return UserInfo(
             entity=officer_entity,
-            role="supervision_officer" if officer_entity else None,
-            has_seen_onboarding=True,
+            role=UserRole.SUPERVISION_OFFICER if officer_entity else None,
+            has_seen_onboarding=False,  # Officers start with onboarding not seen
             has_dismissed_data_unavailable_note=False,
             has_dismissed_rate_over_100_percent_note=False,
         )
