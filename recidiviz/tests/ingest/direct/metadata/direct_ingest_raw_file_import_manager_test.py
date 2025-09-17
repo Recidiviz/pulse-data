@@ -778,6 +778,8 @@ class DirectIngestRawFileImportManagerTest(TestCase):
                 import_status=run.import_status,
                 historical_diffs_active=run.historical_diffs_active,
                 raw_rows=run.raw_rows,
+                net_new_or_updated_rows=run.net_new_or_updated_rows,
+                deleted_rows=run.deleted_rows,
                 is_invalidated=False,
             )
 

@@ -79,6 +79,10 @@ class DirectIngestRawFileImportSummary:
         validator=attr_validators.is_opt_bool
     )
     raw_rows: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    net_new_or_updated_rows: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_int
+    )
+    deleted_rows: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
     is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
 
     def for_api(self) -> Dict[str, Any]:
@@ -94,6 +98,8 @@ class DirectIngestRawFileImportSummary:
             ],
             "historicalDiffsActive": self.historical_diffs_active,
             "rawRowCount": self.raw_rows,
+            "netNewOrUpdatedRows": self.net_new_or_updated_rows,
+            "deletedRows": self.deleted_rows,
             "isInvalidated": self.is_invalidated,
         }
 
@@ -405,6 +411,8 @@ class DirectIngestRawFileImportManager:
                     schema.DirectIngestRawFileImport.import_status,
                     schema.DirectIngestRawFileImport.historical_diffs_active,
                     schema.DirectIngestRawFileImport.raw_rows,
+                    schema.DirectIngestRawFileImport.net_new_or_updated_rows,
+                    schema.DirectIngestRawFileImport.deleted_rows,
                     schema.DirectIngestRawFileImportRun.import_run_start,
                     schema.DirectIngestRawFileImportRun.import_run_id,
                     schema.DirectIngestRawFileImportRun.dag_run_id,

@@ -141,7 +141,13 @@ function filtersForKey(
   items: RawDataFileTagImport[]
 ): ColumnFilterItem[] {
   return Array.from(
-    new Set<number | string | boolean>(items.map((x) => x[key]))
+    new Set<number | string | boolean>(
+      items.map((x) => x[key]).filter((value) => value !== null) as (
+        | number
+        | string
+        | boolean
+      )[]
+    )
   ).map((x) => ({
     text: `${x}`,
     value: x,
@@ -151,7 +157,12 @@ function filtersForKey(
 const RawDataFileTagRecentRunsTable: React.FC<
   RawDataFileTagRecentRunsTableProps
 > = ({ importRuns, loading }) => {
-  const columns: ColumnsType<RawDataFileTagImport> = [
+  // Check if any import run has historical diffs active
+  const hasHistoricalDiffsActive = importRuns.some(
+    (run) => run.historicalDiffsActive
+  );
+
+  const baseColumns: ColumnsType<RawDataFileTagImport> = [
     {
       title: "Run ID",
       dataIndex: ["importRunStart", "dagRunId", "importRunId"],
@@ -201,6 +212,31 @@ const RawDataFileTagRecentRunsTable: React.FC<
       onFilter: (value, record: RawDataFileTagImport) =>
         getIsInvalidatedText(record) === value,
     },
+  ];
+
+  const historicalDiffsColumns: ColumnsType<RawDataFileTagImport> = [
+    {
+      title: "Net New or Updated Rows",
+      dataIndex: "netNewOrUpdatedRows",
+      render: (netNewOrUpdatedRows: number | null) =>
+        netNewOrUpdatedRows !== null ? netNewOrUpdatedRows : "-",
+      sorter: (a, b) =>
+        (a.netNewOrUpdatedRows || 0) - (b.netNewOrUpdatedRows || 0),
+    },
+    {
+      title: "Deleted Rows",
+      dataIndex: "deletedRows",
+      render: (deletedRows: number | null) =>
+        deletedRows !== null ? deletedRows : "-",
+      sorter: (a, b) => (a.deletedRows || 0) - (b.deletedRows || 0),
+    },
+  ];
+
+  // Combine columns conditionally
+  const columns = [
+    ...baseColumns.slice(0, -1), // All columns except "Is Invalidated"
+    ...(hasHistoricalDiffsActive ? historicalDiffsColumns : []),
+    baseColumns[baseColumns.length - 1], // "Is Invalidated" column at the end
   ];
 
   return (
