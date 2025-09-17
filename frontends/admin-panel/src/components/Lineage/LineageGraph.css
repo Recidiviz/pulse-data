@@ -17,18 +17,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =============================================================================
 */
 
-svg {
-  --background-color: #f0f2f5;
+:root {
+  --canvas-background-color: #f0f2f5;
 }
 @media (prefers-color-scheme: dark) {
-  svg {
-  --background-color:  rgba(16,16,16);
+  :root {
+  --canvas-background-color:  rgba(16,16,16);
   }
 }
 
 
 .background-canvas {
-  background: var(--background-color);
+  background: var(--canvas-background-color);
 }
 
 .react-flow__node.selectable:focus {

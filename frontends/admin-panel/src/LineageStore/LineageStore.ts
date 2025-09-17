@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { Edge, Node } from "@xyflow/react";
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 
 import { fetchNodes, fetchNodesBetween } from "../AdminPanelAPI/LineageAPI";
 import { Hydratable, HydrationState } from "../InsightsStore/types";
@@ -72,10 +72,7 @@ export class LineageStore implements Hydratable {
         if (!candidateEdges.has(edgeId)) {
           candidateEdges.set(
             edgeId,
-            this.edges.get(edgeId) ??
-              throwExpression(
-                `Unknown edge attempted to be added to graph ${edgeId}`
-              )
+            this.edges.get(edgeId) ?? throwExpression(`Unknown edge: ${edgeId}`)
           );
         }
       });
@@ -88,10 +85,7 @@ export class LineageStore implements Hydratable {
         if (!candidateEdges.has(edgeId)) {
           candidateEdges.set(
             edgeId,
-            this.edges.get(edgeId) ??
-              throwExpression(
-                `Unknown edge attempted to be added to graph ${edgeId}`
-              )
+            this.edges.get(edgeId) ?? throwExpression(`Unknown edge: ${edgeId}`)
           );
         }
       });
@@ -133,9 +127,7 @@ export class LineageStore implements Hydratable {
     // things?
     const currentNodesSet = new Set(currentNodes.map((n) => n.id));
     return Array.from(adjacentNodes.difference(currentNodesSet)).map(
-      (urn) =>
-        this.nodes.get(urn) ??
-        throwExpression(`Unknown node attempted to be added to graph ${urn}`)
+      (urn) => this.nodes.get(urn) ?? throwExpression(`Unknown urn: ${urn}`)
     );
   };
 
@@ -143,10 +135,7 @@ export class LineageStore implements Hydratable {
    * Fetches a single node.
    */
   nodeForUrn = (urn: NodeUrn): LineageNode => {
-    return (
-      this.nodes.get(urn) ??
-      throwExpression(`Unknown node attempted to be added to graph ${urn}`)
-    );
+    return this.nodes.get(urn) ?? throwExpression(`Unknown urn: ${urn}`);
   };
 
   /**
@@ -163,9 +152,7 @@ export class LineageStore implements Hydratable {
 
     const currentNodesSet = new Set(currentNodes.map((n) => n.id));
     return Array.from(newNodeUrns.difference(currentNodesSet)).map(
-      (urn) =>
-        this.nodes.get(urn) ??
-        throwExpression(`Unknown node attempted to be added to graph ${urn}`)
+      (urn) => this.nodes.get(urn) ?? throwExpression(`Unknown urn: ${urn}`)
     );
   };
 
@@ -180,22 +167,28 @@ export class LineageStore implements Hydratable {
   populateLineageStore = async () => {
     const graphResponse = await fetchNodes();
 
+    const urnToDownstreamUrns = new Map<NodeUrn, Set<string>>();
+    const urnToUpstreamUrns = new Map<NodeUrn, Set<string>>();
+    const edges = new Map<EdgeId, Edge>();
+    const nodes = new Map<NodeUrn, LineageNode>();
+
     // use graph references to build upstream & downstream ref mapping
     graphResponse.references.forEach((r) => {
       // downstream ref map
-      if (!this.urnToDownstreamUrns.has(r.sourceUrn)) {
-        this.urnToDownstreamUrns.set(r.sourceUrn, new Set());
+      if (!urnToDownstreamUrns.has(r.sourceUrn)) {
+        urnToDownstreamUrns.set(r.sourceUrn, new Set());
       }
-      this.urnToDownstreamUrns.get(r.sourceUrn)?.add(r.targetUrn);
+      urnToDownstreamUrns.get(r.sourceUrn)?.add(r.targetUrn);
 
       // upstream ref map
-      if (!this.urnToUpstreamUrns.has(r.targetUrn)) {
-        this.urnToUpstreamUrns.set(r.targetUrn, new Set());
+      if (!urnToUpstreamUrns.has(r.targetUrn)) {
+        urnToUpstreamUrns.set(r.targetUrn, new Set());
       }
-      this.urnToUpstreamUrns.get(r.targetUrn)?.add(r.sourceUrn);
+      urnToUpstreamUrns.get(r.targetUrn)?.add(r.sourceUrn);
 
+      // create map of edge id to edge source & target
       const edgeId = `e-${r.sourceUrn}-${r.targetUrn}`;
-      this.edges.set(edgeId, {
+      edges.set(edgeId, {
         id: edgeId,
         source: r.sourceUrn,
         target: r.targetUrn,
@@ -204,12 +197,18 @@ export class LineageStore implements Hydratable {
 
     // create map of urn to node metadata
     graphResponse.nodes.forEach((n) =>
-      this.nodes.set(n.urn, {
+      nodes.set(n.urn, {
         ...n,
-        hasUpstream: !!this.urnToUpstreamUrns.get(n.urn)?.size,
-        hasDownstream: !!this.urnToDownstreamUrns.get(n.urn)?.size,
+        hasUpstream: !!urnToUpstreamUrns.get(n.urn)?.size,
+        hasDownstream: !!urnToDownstreamUrns.get(n.urn)?.size,
       })
     );
+    runInAction(() => {
+      this.urnToDownstreamUrns = urnToDownstreamUrns;
+      this.urnToUpstreamUrns = urnToUpstreamUrns;
+      this.edges = edges;
+      this.nodes = nodes;
+    });
   };
 
   hydrate = async () => {

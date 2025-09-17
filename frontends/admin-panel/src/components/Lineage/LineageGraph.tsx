@@ -18,12 +18,24 @@
 import "@xyflow/react/dist/style.css";
 import "./LineageGraph.css";
 
-import { Background, Controls, MiniMap, Node, ReactFlow } from "@xyflow/react";
+import {
+  Background,
+  Controls,
+  MiniMap,
+  Node,
+  ReactFlow,
+  useReactFlow,
+} from "@xyflow/react";
+import { message } from "antd";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 
 import { useLineageRootStore } from "../../LineageStore/LineageRootContext";
+import { getErrorMessage, isHydrated } from "../../LineageStore/Utils";
+import { LINEAGE_BASE } from "../../navigation/Lineage";
+import { defaultFitViewOptions } from "./Constants";
+import { GraphAutoCompleteSearchBar } from "./GraphAutoCompleteSearch/GraphAutoCompleteSearch";
 import BigQueryGraphNode from "./GraphNode/GraphNode";
 
 const nodeTypes = {
@@ -44,6 +56,9 @@ function LineageGraph() {
     lineageStore: { hydrate, hydrationState },
   } = useLineageRootStore();
 
+  const { fitView } = useReactFlow();
+
+  const history = useHistory();
   const { datasetId, viewId } = useParams<{
     datasetId?: string;
     viewId?: string;
@@ -60,18 +75,30 @@ function LineageGraph() {
   }, [getData, hydrationState]);
 
   useEffect(() => {
-    if (
-      datasetId &&
-      viewId &&
-      hydrationState &&
-      hydrationState.status === "hydrated"
-    ) {
+    if (datasetId && viewId && isHydrated(hydrationState)) {
       const newActiveNode = `${datasetId}.${viewId}`;
       if (newActiveNode !== selectedNode) {
-        resetGraphToActiveNode(newActiveNode);
+        try {
+          resetGraphToActiveNode(newActiveNode);
+          fitView({
+            nodes: [{ id: newActiveNode }],
+            ...defaultFitViewOptions,
+          });
+        } catch (e) {
+          message.error(getErrorMessage(e));
+          history.push(LINEAGE_BASE);
+        }
       }
     }
-  }, [datasetId, viewId, selectedNode, resetGraphToActiveNode, hydrationState]);
+  }, [
+    datasetId,
+    viewId,
+    selectedNode,
+    resetGraphToActiveNode,
+    hydrationState,
+    fitView,
+    history,
+  ]);
 
   return (
     <ReactFlow
@@ -92,6 +119,7 @@ function LineageGraph() {
       debug
       minZoom={0.01}
     >
+      <GraphAutoCompleteSearchBar />
       <MiniMap
         nodeColor={(n) => {
           if (n.data.type === "view") return "#4c6290";

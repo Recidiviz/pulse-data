@@ -32,12 +32,13 @@ import { DagreEngine } from "../components/Lineage/Layout/DagreEngine";
 import { LayoutEngine } from "../components/Lineage/Layout/LayoutEngine";
 import { LineageRootStore } from "./LineageRootStore";
 import {
+  BigQueryLineageNode,
   GraphDirection,
   GraphDisplayNode,
   LineageNode,
   NodeUrn,
 } from "./types";
-import { throwExpression } from "./Utils";
+import { createBigQueryNodeAutoCompleteGroups, throwExpression } from "./Utils";
 
 /**
  * Store for managing the graph's visual state and behavior.
@@ -70,10 +71,18 @@ export class GraphStore {
     );
   }
 
+  get autoCompleteOptions() {
+    return createBigQueryNodeAutoCompleteGroups(
+      Array.from(
+        this.rootStore.lineageStore.nodes.values()
+      ) as BigQueryLineageNode[]
+    );
+  }
+
   /**
    * Resets the graph to be a single node.
    */
-  resetGraphToActiveNode = async (urn: NodeUrn) => {
+  resetGraphToActiveNode = (urn: NodeUrn) => {
     this.selectedNode = urn;
     this.edges = [];
     this.nodes = [

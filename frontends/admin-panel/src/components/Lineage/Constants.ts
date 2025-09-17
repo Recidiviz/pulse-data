@@ -15,9 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-/**
- * Throws a new error, using |errorMessage|.
- */
-export function throwExpression(errorMessage: string): never {
-  throw new Error(errorMessage);
-}
+export const defaultFitViewOptions = {
+  minZoom: 1.7,
+  maxZoom: 1.7,
+  duration: 300,
+};

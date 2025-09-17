@@ -32,6 +32,7 @@ services:
       - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
       - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       - IS_DEV=true
+      - FLASK_DEBUG=1
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
       - ASSET_GENERATION_URL=http://asset-generation-service:5174
 
