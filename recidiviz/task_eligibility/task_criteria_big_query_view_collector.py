@@ -23,6 +23,9 @@ from recidiviz.big_query.big_query_view_collector import (
     BigQueryViewCollector,
     filename_matches_view_id_validator,
 )
+from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_collector import (
+    ComplianceTaskEligibilitySpansBigQueryViewCollector,
+)
 from recidiviz.task_eligibility.criteria import general as general_criteria_module
 from recidiviz.task_eligibility.criteria import (
     state_specific as state_specific_criteria_module,
@@ -82,5 +85,10 @@ class TaskCriteriaBigQueryViewCollector(
         for tes_builder in tes_view_builders.collect_view_builders():
             # Some view builders are only defined as complex criteria on a TES builder
             view_builders.update(tes_builder.all_descendant_criteria_builders())
+
+        compliance_view_builders = ComplianceTaskEligibilitySpansBigQueryViewCollector()
+        for compliance_builder in compliance_view_builders.collect_view_builders():
+            # Some view builders are only defined as complex criteria on a compliance TES builder
+            view_builders.update(compliance_builder.all_descendant_criteria_builders())
 
         return list(view_builders)

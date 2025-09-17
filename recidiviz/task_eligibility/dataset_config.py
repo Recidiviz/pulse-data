@@ -27,6 +27,10 @@ TASK_COMPLETION_EVENTS_DATASET_ID = "task_eligibility_completion_events_general"
 # Where general TES criteria live
 TASK_ELIGIBILITY_CRITERIA_GENERAL = "task_eligibility_criteria_general"
 
+# Dataset with views that union together all task eligibility spans,
+# component criteria, and populations with information about compliance tasks
+COMPLIANCE_TASK_ELIGIBILITY_SPANS_DATASET_ID = "compliance_task_eligibility_spans"
+
 
 def task_eligibility_spans_state_specific_dataset(state_code: StateCode) -> str:
     """Returns the dataset containing task eligibility spans for this region."""
@@ -41,3 +45,10 @@ def task_eligibility_criteria_state_specific_dataset(state_code: StateCode) -> s
 def completion_event_state_specific_dataset(state_code: StateCode) -> str:
     """Returns the dataset containing task eligibility spans for this region."""
     return f"task_eligibility_completion_events_{state_code.value.lower()}"
+
+
+def compliance_task_eligibility_spans_state_specific_dataset(
+    state_code: StateCode,
+) -> str:
+    """Returns the dataset containing compliance task eligibility spans for this region."""
+    return f"compliance_task_eligibility_spans_{state_code.value.lower()}"

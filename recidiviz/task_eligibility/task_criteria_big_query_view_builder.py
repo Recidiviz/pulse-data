@@ -18,7 +18,7 @@
 These views are used as inputs to a task eligibility spans view.
 """
 import re
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -160,6 +160,30 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         """Return the reason field object with the corresponding name"""
         return _get_reason_field_by_name(self, reason_name)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, StateSpecificTaskCriteriaBigQueryViewBuilder):
+            return False
+        return (
+            self.criteria_name == other.criteria_name
+            and self.description == other.description
+            and self.view_query_template == other.view_query_template
+            and self.state_code == other.state_code
+            and tuple(self.reasons_fields) == tuple(other.reasons_fields)
+            and self.meets_criteria_default == other.meets_criteria_default
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.criteria_name,
+                self.description,
+                self.view_query_template,
+                self.state_code,
+                tuple(self.reasons_fields),
+                self.meets_criteria_default,
+            )
+        )
+
 
 class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """A builder for a view that defines spans of time during which someone does (or
@@ -218,6 +242,28 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     def get_reason_field_from_name(self, reason_name: str) -> ReasonsField:
         """Return the reason field object with the corresponding name"""
         return _get_reason_field_by_name(self, reason_name)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, StateAgnosticTaskCriteriaBigQueryViewBuilder):
+            return False
+        return (
+            self.criteria_name == other.criteria_name
+            and self.description == other.description
+            and self.view_query_template == other.view_query_template
+            and tuple(self.reasons_fields) == tuple(other.reasons_fields)
+            and self.meets_criteria_default == other.meets_criteria_default
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.criteria_name,
+                self.description,
+                self.view_query_template,
+                tuple(self.reasons_fields),
+                self.meets_criteria_default,
+            )
+        )
 
 
 TaskCriteriaBigQueryViewBuilder = Union[

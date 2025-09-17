@@ -21,6 +21,9 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.task_eligibility import task_eligiblity_spans
+from recidiviz.task_eligibility.all_compliance_task_eligibility_spans import (
+    get_compliance_eligiblity_spans_unioned_view_builders,
+)
 from recidiviz.task_eligibility.almost_eligible_task_spans_big_query_view_collector import (
     AlmostEligibleSpansBigQueryViewCollector,
 )
@@ -29,6 +32,9 @@ from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_vi
 )
 from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
     build_collapsed_task_eligibility_spans_view_for_tes_builder,
+)
+from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_collector import (
+    ComplianceTaskEligibilitySpansBigQueryViewCollector,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
@@ -71,6 +77,8 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
                 tes_builders,
                 collapsed_tes_builders,
                 task_eligiblity_spans.get_unioned_view_builders(),
+                ComplianceTaskEligibilitySpansBigQueryViewCollector().collect_view_builders(),
+                get_compliance_eligiblity_spans_unioned_view_builders(),
             )
         )
     )
