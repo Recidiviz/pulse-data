@@ -51,7 +51,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     on_eligible_level_for_sufficient_time,
     passed_drug_screen_check,
     special_conditions_are_current,
-    supervision_level_is_not_wrb,
+    supervision_level_raw_text_is_not_wrb,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -78,7 +78,7 @@ _REQUIRED_CRITERIA = [
     supervision_level_is_not_interstate_compact,
     supervision_level_is_not_residential_program,
     supervision_level_is_not_unassigned,
-    supervision_level_is_not_wrb,
+    supervision_level_raw_text_is_not_wrb,
     supervision_level_is_not_intake,
     no_murder_convictions,
     not_serving_ineligible_cr_offense,

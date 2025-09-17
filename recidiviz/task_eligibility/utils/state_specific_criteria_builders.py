@@ -18,18 +18,93 @@
 that can be parameterized.
 """
 
+from typing import List, Optional
+
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+
+
+def state_specific_correctional_level_raw_text_is_not(
+    *,
+    criteria_name: str,
+    criteria_description: str,
+    ineligible_raw_text_correctional_level_condition: str,
+    compartment_level_1_types: Optional[List[str]] = None,
+    state_code: StateCode,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """
+    Create state-specific TES criterion view builder that checks whether a client's
+    raw-text correctional level is not (one of) the specified level(s).
+
+    Args:
+        criteria_name (str): Name of the criterion.
+        criteria_description (str): Description of the criterion.
+        ineligible_raw_text_correctional_level_condition (str): Identifies the
+            correctional level(s) that should be considered ineligible. Must be TRUE for
+            ineligible correctional level(s). For example: "= 'WRB'" or "LIKE 'Z%'".
+        compartment_level_1_types (List[str], optional): The `compartment_level_1`
+            value(s) for which the specified correctional level(s) will be considered
+            disqualifying. Default: None (includes all values, such that anyone with the
+            specified raw-text level will be ineligible, regardless of compartment).
+        state_code (StateCode): Specifies the state for which data will be
+            included.
+
+    Returns:
+        StateSpecificTaskCriteriaBigQueryViewBuilder: Criterion view builder.
+    """
+
+    where_clause_addition = f"AND correctional_level_raw_text {ineligible_raw_text_correctional_level_condition}"
+    if compartment_level_1_types is not None:
+        where_clause_addition += f"\n\tAND compartment_level_1 IN ({list_to_query_string(compartment_level_1_types, quoted=True)})"
+
+    _query_template = f"""
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(
+            correctional_level_raw_text AS correctional_level_raw_text
+        )) AS reason,
+        correctional_level_raw_text,
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+    WHERE state_code = '{state_code.value}'
+        {where_clause_addition}
+    """
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=state_code,
+        criteria_name=criteria_name,
+        description=criteria_description,
+        # Set default to True because we only created spans of *ineligibility* in
+        # the query above, and we want to assume that folks are eligible by default
+        # otherwise.
+        meets_criteria_default=True,
+        criteria_spans_query_template=_query_template,
+        sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="correctional_level_raw_text",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Raw-text correctional level",
+            ),
+        ],
+    )
 
 
 def state_specific_supervision_type_raw_text_is_not(

@@ -34,7 +34,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     supervision_level_higher_than_assessment_level,
-    supervision_level_is_not_wrb,
+    supervision_level_raw_text_is_not_wrb,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -55,7 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
         supervision_level_is_not_residential_program.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
-        supervision_level_is_not_wrb.VIEW_BUILDER,
+        supervision_level_raw_text_is_not_wrb.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
