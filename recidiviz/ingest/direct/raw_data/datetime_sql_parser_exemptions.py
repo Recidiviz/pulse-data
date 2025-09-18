@@ -815,7 +815,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "dbo_Treatment": ["LastModifiedDateTime"],
         "dbo_tblCCISStatus": ["LstMod_Dt"],
         "dbo_tblInmTestScore": ["LstMod_Dt", "Test_Dt"],
-        "dbo_tblInmTestScoreHist": ["Hist_dt", "LstMod_Dt", "Test_Dt"],
+        "dbo_tblInmTestScoreHist": ["LstMod_Dt", "Test_Dt"],
         "dbo_tblSearchInmateInfo": [
             "IC_Dt",
             "Reclass_Dt",
