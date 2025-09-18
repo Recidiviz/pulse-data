@@ -36,6 +36,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
     TIMELY_CONTACT,
     TIMELY_CONTACT_DUE_DATE_BASED,
     TIMELY_F2F_CONTACT,
@@ -465,6 +466,24 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name="incarcerations",
                 event_name_singular="incarceration",
                 event_name_past_tense="were incarcerated",
+            ),
+        ],
+    ),
+    StateCode.US_AZ: OutliersBackendConfig(
+        metrics=[
+            ################
+            # This is a placeholder metric required because there are various places in
+            # OutliersQuerier where we assume the existence of at least one outcomes metric.
+            # This data has not been validated and is not displayed to users.
+            ################
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_AZ,
+                metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+                title_display_name="Transfer Rate",
+                body_display_name="transfer rate",
+                event_name="transfers",
+                event_name_singular="transfer",
+                event_name_past_tense="were transferred",
             ),
         ],
     ),
