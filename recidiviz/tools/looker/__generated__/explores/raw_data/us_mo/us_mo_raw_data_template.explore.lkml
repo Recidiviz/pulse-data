@@ -94,6 +94,20 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK158"
   }
 
+  join: us_mo_LBAKRDTA_TAK243 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK243.T1_DOC};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_mo_LBAKRDTA_TAK243"
+  }
+
+  join: us_mo_LBAKRDTA_TAK244 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK244.T2_DOC};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_mo_LBAKRDTA_TAK244"
+  }
+
   join: us_mo_LBAKRDTA_TAK028 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK028.BY_DOC};;
     type: full_outer

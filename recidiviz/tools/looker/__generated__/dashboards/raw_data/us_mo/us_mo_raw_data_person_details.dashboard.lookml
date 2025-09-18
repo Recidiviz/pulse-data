@@ -675,6 +675,77 @@
     width: 24
     height: 6
 
+  - name: LBAKRDTA_TAK243
+    title: LBAKRDTA_TAK243
+    explore: us_mo_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mo_LBAKRDTA_TAK243.primary_key,
+      us_mo_LBAKRDTA_TAK243.T1_DOC,
+      us_mo_LBAKRDTA_TAK243.T1_CYC,
+      us_mo_LBAKRDTA_TAK243.T1TID,
+      us_mo_LBAKRDTA_TAK243.T1_PON,
+      us_mo_LBAKRDTA_TAK243.T1CID,
+      us_mo_LBAKRDTA_TAK243.T1CSD__raw,
+      us_mo_LBAKRDTA_TAK243.T1CST,
+      us_mo_LBAKRDTA_TAK243.T1_DCR,
+      us_mo_LBAKRDTA_TAK243.T1_TCR,
+      us_mo_LBAKRDTA_TAK243.T1_DLU,
+      us_mo_LBAKRDTA_TAK243.T1_TLU,
+      us_mo_LBAKRDTA_TAK243.T1_UID,
+      us_mo_LBAKRDTA_TAK243.T1_UIU,
+      us_mo_LBAKRDTA_TAK243.file_id,
+      us_mo_LBAKRDTA_TAK243.is_deleted]
+    sorts: [us_mo_LBAKRDTA_TAK243.T1CSD__raw]
+    note_display: hover
+    note_text: "Supervision contacts. Has overall information about each contact; for a breakdown of each contact's components, see LBAKRDTA_TAK244."
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 78
+    col: 0
+    width: 24
+    height: 6
+
+  - name: LBAKRDTA_TAK244
+    title: LBAKRDTA_TAK244
+    explore: us_mo_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mo_LBAKRDTA_TAK244.primary_key,
+      us_mo_LBAKRDTA_TAK244.T2_DOC,
+      us_mo_LBAKRDTA_TAK244.T2_CYC,
+      us_mo_LBAKRDTA_TAK244.T2TID,
+      us_mo_LBAKRDTA_TAK244.T2CID,
+      us_mo_LBAKRDTA_TAK244.T2DID,
+      us_mo_LBAKRDTA_TAK244.T2CTP,
+      us_mo_LBAKRDTA_TAK244.T2NCT,
+      us_mo_LBAKRDTA_TAK244.T2FUD__raw,
+      us_mo_LBAKRDTA_TAK244.T2_DCR,
+      us_mo_LBAKRDTA_TAK244.T2_TCR,
+      us_mo_LBAKRDTA_TAK244.T2_DLU,
+      us_mo_LBAKRDTA_TAK244.T2_TLU,
+      us_mo_LBAKRDTA_TAK244.T2_UID,
+      us_mo_LBAKRDTA_TAK244.T2_UIU,
+      us_mo_LBAKRDTA_TAK244.file_id,
+      us_mo_LBAKRDTA_TAK244.is_deleted]
+    sorts: [us_mo_LBAKRDTA_TAK244.T2FUD__raw]
+    note_display: hover
+    note_text: "Supervision contact details. Has information about each contact type involved in a contact action."
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 84
+    col: 0
+    width: 24
+    height: 6
+
   - name: LBAKRDTA_TAK028
     title: LBAKRDTA_TAK028
     explore: us_mo_raw_data
@@ -722,7 +793,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 78
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -756,7 +827,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 84
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -823,7 +894,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 90
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -855,7 +926,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 96
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -898,7 +969,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 102
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -929,7 +1000,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 108
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -964,7 +1035,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 114
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -1017,7 +1088,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 120
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -1057,7 +1128,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 126
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1102,7 +1173,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 132
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1135,7 +1206,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 138
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1170,7 +1241,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 144
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1199,7 +1270,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 150
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1237,7 +1308,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 156
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1276,7 +1347,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 162
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1308,7 +1379,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 168
+    row: 180
     col: 0
     width: 24
     height: 6
