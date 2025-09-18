@@ -122,6 +122,8 @@ products:
     exports:
       - INSIGHTS
     states:
+      - state_code: US_AZ
+        environment: production
       - state_code: US_CA
         environment: production
       - state_code: US_PA
