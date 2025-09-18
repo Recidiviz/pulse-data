@@ -175,6 +175,7 @@ output:
                   - MANDATORY DISCHARGE
                   - EXPIRATION OF SENTENCE
                   - DISCHARGE - INS
+                  - DISCHARGE
                 StateIncarcerationPeriodReleaseReason.VACATED:
                   - SENTENCE VACATED
                   - CASE DISMISSED
