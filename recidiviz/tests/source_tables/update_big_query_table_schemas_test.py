@@ -1520,6 +1520,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ne_state.state_supervision_violation_response_decision_entry",
     "us_ne_state.state_supervision_violation_type_entry",
     "us_ne_state.state_task_deadline",
+    "us_ny_ingest_view_results.incarceration_period",
     "us_ny_ingest_view_results.person",
     "us_ny_normalized_state.state_assessment",
     "us_ny_normalized_state.state_charge",

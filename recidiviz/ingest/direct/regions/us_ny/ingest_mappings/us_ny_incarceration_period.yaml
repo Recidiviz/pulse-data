@@ -1,0 +1,267 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_period` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  nysid: STRING
+  seq_no: INTEGER
+  start_date: DATE
+  end_date: DATE
+  admission_reason: STRING
+  release_reason: STRING
+  facility: STRING
+  custody_lvl: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: nysid
+          id_type: $literal("US_NY_SID")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - nysid
+                - seq_no
+          specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
+          admission_date: start_date
+          release_date: end_date
+          facility: facility
+          admission_reason:
+            $enum_mapping:
+              $raw_text: admission_reason
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: "100" # NEW COURT COMMIT
+                StateIncarcerationPeriodAdmissionReason.TRANSFER: "TRANSFER" # Recidiviz-generated code for non-admission facility movements
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: "CUSTODY_CLASSIFICATION" # Recidiviz-generated code for non-admission custody level changes
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: "143" # RETURN ESCAPEE
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: "150" # RET ERROR DISCH
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: # TODO(#47465): Figure out how to map these values
+                  - "101" # NT PAR VIOLATOR
+                  - "102" # NT C-R VIOLATOR
+                  - "103" # NT STAT VIOLATOR
+                  - "104" # NT ABSCONDER
+                  - "105" # NT ESCAPEE
+                  - "106" # OCFS ADMISSION
+                  - "107" # NT TEMP REL ARREST
+                  - "108" # NT PAR SUP CT CMMT
+                  - "109" # NT PAR SUP RPV
+                  - "110" # NT OCFS RPV
+                  - "111" # NT PAR SUP OCFS RPV
+                  - "112" # NT PRS VIOLATOR
+                  - "120" # RET FROM CRT DISCH
+                  - "121" # RET CRT ORD REL
+                  - "130" # RET PRS VIOLATOR
+                  - "140" # RET PAR VIOLATOR
+                  - "141" # RET C-R VIOLATOR
+                  - "142" # RET STAT REL VIOL
+                  - "144" # RETURN ABSCONDER
+                  - "145" # RET FROM OMH
+                  - "146" # RET OTHR AGENCY
+                  - "147" # RET TEMP REL ARREST
+                  - "148" # RET COND PAR DEPORT
+                  - "149" # RET OCFS COMMIT
+                  - "151" # RET MED PAROLE
+                  - "152" # PAR VIOL-WILL DTC
+                  - "153" # NEW ADM-WILL DTC
+                  - "154" # RET OCFS PAR VIOL
+                  - "155" # RET WDTC OCFS PV
+                  - "156" # RET WDTC OMH
+                  - "157" # RET W/ STAY OF RELEASE
+                  - "158" # ADMIT PAROLE SUPER
+                  - "159" # PAR VIOL NO NT-ALT
+                  - "170" # ADMIT RTF
+                  - "179" # ADMIT RESET
+                  - "186" # PP-CT CMT-NEW COURT
+                  - "187" # PP-CT CMT-PV
+                  - "188" # PP-CT CMT-CRV
+                  - "189" # PP-CT CMT-ESCAPE
+                  - "190" # PP-RET PAR VIOL
+                  - "191" # PP-RET CON REL VIOL
+                  - "192" # PP-RET STAT REL VIOL
+                  - "193" # PP-RET REAFRM SENT W.PAR
+                  - "194" # PP-RET CT ORD DISCH
+                  - "195" # PP-RET ESCAPE
+                  - "196" # PP-RET OTHER
+                  - "197" # PP-RET-CPDO
+                  - "198" # PP-RET MED PAR
+                  - "260" # COURT RETURN
+          release_reason:
+            $conditional:
+              - $if:
+                  $not_null: release_reason
+                $then:
+                  $enum_mapping:
+                    $raw_text: release_reason
+                    $mappings:
+                      StateIncarcerationPeriodReleaseReason.TRANSFER: "TRANSFER" # Recidiviz-generated code for non-release facility movements
+                      StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: "CUSTODY_CLASSIFICATION" # Recidiviz-generated code for non-release custody level changes
+                      StateIncarcerationPeriodReleaseReason.DEATH: "206" # DEATH
+                      StateIncarcerationPeriodReleaseReason.EXECUTION: "207" # EXECUTION
+                      StateIncarcerationPeriodReleaseReason.ESCAPE: "205" # ESCAPEE
+                      StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION:
+                        - "209" # DISCHARGE ERROR ADMISSION
+                        - "242" # REL ERROR ADMISSION
+                      StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                        - "220" # COND REL PAROLE
+                        - "221" # COND REL IMMIGRATION
+                        - "222" # CR LOCALITY
+                        - "223" # COND REL OTH STATE
+                        - "224" # COND REL TO FEDS
+                      StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                        - "UNKNOWN_RELEASE" # Recidiviz-generated code for inferred releases, which don't have a known release reason.
+                        # TODO(#47465): Figure out how to map these values
+                        - "200" # COURT DISCHARGE
+                        - "201" # OTHER DISCHARGE
+                        - "202" # MAXIMUM EXPIRATION
+                        - "203" # DISCHARGE TO OMH
+                        - "204" # ABSCONDER
+                        - "208" # DISCHARGE TO OCFS
+                        - "210" # ABSCONDER IN CUSTODY
+                        - "211" # ABSCONDER DECEASED
+                        - "212" # DISCHARGE-FOREGN NATNL
+                        - "213" # RELEASE-MAX EXP PRS
+                        - "214" # ME PRS TO IMMIGRATION
+                        - "215" # ME PRS TO LOCAL
+                        - "216" # ME PRS TO OTHER
+                        - "217" # ME PRS TO FEDERAL
+                        - "218" # DISCHARGE ME TO IMMIGR
+                        - "219" # MAX EXP PRS-STAY OF REL
+                        - "225" # MERIT DETER TO PAROLE
+                        - "226" # MERIT DETER TO IMMIGR
+                        - "227" # MERIT DETER TO LOCAL
+                        - "228" # MERIT DETER TO OTHER
+                        - "229" # MERIT DETER TO FEDERAL
+                        - "230" # PAROLE - PAROLE
+                        - "231" # PAROLE IMMIGRATION
+                        - "232" # PAROLE LOCALITY
+                        - "233" # PAROLE OTH STATE
+                        - "234" # PAROLE FEDERAL
+                        - "235" # PAROLE DEPORTATION
+                        - "236" # PAROLE FOR MEDICAL
+                        - "237" # E PAR PAROLE
+                        - "238" # E PAR DEPORT
+                        - "240" # STATUTORY RELEASE
+                        - "241" # OTHER RELEASE
+                        - "245" # TEMP REL ARREST
+                        - "246" # RL PAR SUPR,FOR DTC
+                        - "247" # PAROLE MERIT TIME
+                        - "250" # RL- SENT TO COURT
+                        - "251" # LCTA REL TO PAROLE
+                        - "252" # LCTA REL TO IMMIGRATION
+                        - "253" # LCTA REL TO LOCALITY
+                        - "254" # LCTA REL TO OTHER STATE
+                        - "255" # LCTA REL TO FEDERAL
+                        - "260" # RT- FROM COURT
+                        - "261" # ME-CS (SOMTA)
+                        - "262" # CIVIL DISCHARGE TO STF(SEC TREAT FAC-SOMTA)
+                        - "270" # MERIT IMMIGRATION
+                        - "271" # MERIT LOCAL
+                        - "272" # MERIT OTH ST
+                        - "273" # MERIT FEDERAL
+                        - "274" # SUPL MERIT TO PAROLE
+                        - "275" # SUPL MERIT TO IMMIGRATION
+                        - "276" # SUPL MERIT TO LOCALITY
+                        - "277" # SUPL MERIT TO OTHER STATE
+                        - "278" # SUPL MERIT TO FEDERAL
+                        - "280" # PRES REL TO PAROLE
+                        - "281" # PRES MER REL-PAROLE
+                        - "282" # PRES SUPL MERIT-PAROLE
+                        - "283" # CIVIL COMMIT MAX EXP
+                        - "284" # CIVIL COMMIT ME PRS
+                        - "285" # CIVIL COMMIT CR
+                        - "286" # CIVIL COMMIT PAROLE
+                        - "287" # MAX EXP-STAY OF REL
+                        - "288" # PP-PAR FOR MEDICAL
+                        - "289" # PP-RL CR DCJS
+                        - "290" # PP-RL CR PAROLE
+                        - "291" # PP-PAR TO DIV OF PAR
+                        - "292" # PP-STATUTORY RL TO PAR
+                        - "293" # PP-MAX EXPIR.
+                        - "294" # PP-CT ORDER DISCHRG
+                        - "295" # PP-OTHER DISCHARGE
+                        - "296" # PP-PAR LOCAL AUTH
+                        - "297" # PP-PAR FED AUTH
+                        - "298" # PP-OTHER RELEASE
+                        - "299" # DISCH NYCDOC
+                        # These are all admission, not release codes. If a period ends with an admission code,
+                        # it means that there must have been a release that we don't have data for, and the admission
+                        # code for the next period is being used as the release code instead. Therefore, we map all of
+                        # these codes to unknown. Note that if someone has one of these release codes, the ingested
+                        # release date is likely incorrect, and in fact falls somewhere between the ingested admission and
+                        # release date.
+                        - "100" # NEW COURT COMMIT
+                        - "101" # NT PAR VIOLATOR
+                        - "102" # NT C-R VIOLATOR
+                        - "103" # NT STAT VIOLATOR
+                        - "104" # NT ABSCONDER
+                        - "105" # NT ESCAPEE
+                        - "106" # OCFS ADMISSION
+                        - "107" # NT TEMP REL ARREST
+                        - "108" # NT PAR SUP CT CMMT
+                        - "109" # NT PAR SUP RPV
+                        - "110" # NT OCFS RPV
+                        - "111" # NT PAR SUP OCFS RPV
+                        - "112" # NT PRS VIOLATOR
+                        - "120" # RET FROM CRT DISCH
+                        - "121" # RET CRT ORD REL
+                        - "130" # RET PRS VIOLATOR
+                        - "140" # RET PAR VIOLATOR
+                        - "141" # RET C-R VIOLATOR
+                        - "142" # RET STAT REL VIOL
+                        - "143" # RETURN ESCAPEE
+                        - "144" # RETURN ABSCONDER
+                        - "145" # RET FROM OMH
+                        - "146" # RET OTHR AGENCY
+                        - "147" # RET TEMP REL ARREST
+                        - "148" # RET COND PAR DEPORT
+                        - "149" # RET OCFS COMMIT
+                        - "150" # RET ERROR DISCH
+                        - "151" # RET MED PAROLE
+                        - "152" # PAR VIOL-WILL DTC
+                        - "153" # NEW ADM-WILL DTC
+                        - "154" # RET OCFS PAR VIOL
+                        - "155" # RET WDTC OCFS PV
+                        - "156" # RET WDTC OMH
+                        - "157" # RET W/ STAY OF RELEASE
+                        - "158" # ADMIT PAROLE SUPER
+                        - "159" # PAR VIOL NO NT-ALT
+                        - "170" # ADMIT RTF
+                        - "179" # ADMIT RESET
+                        - "186" # PP-CT CMT-NEW COURT
+                        - "187" # PP-CT CMT-PV
+                        - "188" # PP-CT CMT-CRV
+                        - "189" # PP-CT CMT-ESCAPE
+                        - "190" # PP-RET PAR VIOL
+                        - "191" # PP-RET CON REL VIOL
+                        - "192" # PP-RET STAT REL VIOL
+                        - "193" # PP-RET REAFRM SENT W.PAR
+                        - "194" # PP-RET CT ORD DISCH
+                        - "195" # PP-RET ESCAPE
+                        - "196" # PP-RET OTHER
+                        - "197" # PP-RET-CPDO
+                        - "198" # PP-RET MED PAR
+          custody_level:
+            $conditional:
+              - $if:
+                  $not_null: custody_lvl
+                $then:
+                  $enum_mapping:
+                    $raw_text: custody_lvl
+                    $mappings:
+                      StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN: "-9" # NOT CODED
+                      StateIncarcerationPeriodCustodyLevel.MINIMUM:
+                        - "8" # MIN I
+                        - "9" # MIN II
+                        - "10" # MIN
+                      StateIncarcerationPeriodCustodyLevel.MEDIUM:
+                        - "3" # MED A
+                        - "4" # MED A
+                        - "5" # MED A
+                        - "6" # MED A
+                        - "7" # MED B
+                      StateIncarcerationPeriodCustodyLevel.MAXIMUM:
+                        - "1" # MAX A
+                        - "2" # MAX B
