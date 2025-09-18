@@ -1125,7 +1125,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
             "Entered_Date",
             "Scheduled_Date",
         ],
-        "COMS_Supervision_Statuses": ["End_Date", "Entered_Date", "Start_Date"],
     },
     StateCode.US_ND: {
         "RECIDIVIZ_REFERENCE_community_opportunities": ["lastUpdatedDate"],
