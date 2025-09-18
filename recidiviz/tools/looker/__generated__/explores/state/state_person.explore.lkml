@@ -18,6 +18,7 @@ explore: state_person_template {
     state_person_race,
     state_person_staff_relationship_period,
     state_program_assignment,
+    state_scheduled_supervision_contact,
     state_sentence,
     state_sentence_group,
     state_supervision_contact,
@@ -103,6 +104,11 @@ explore: state_person_template {
 
   join: state_program_assignment {
     sql_on: ${state_person.person_id} = ${state_program_assignment.person_id};;
+    relationship: one_to_many
+  }
+
+  join: state_scheduled_supervision_contact {
+    sql_on: ${state_person.person_id} = ${state_scheduled_supervision_contact.person_id};;
     relationship: one_to_many
   }
 
@@ -234,6 +240,10 @@ explore: state_person_staff_relationship_period {
 
 }
 explore: state_program_assignment {
+  extension: required
+
+}
+explore: state_scheduled_supervision_contact {
   extension: required
 
 }

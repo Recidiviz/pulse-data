@@ -49,6 +49,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incar
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.scheduled_supervision_contact_normalization_manager import (
+    ScheduledSupervisionContactNormalizationManager,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
 )
@@ -139,6 +142,13 @@ def build_normalized_state_person(
         staff_external_id_to_staff_id,
     ).get_normalized_supervision_contacts()
 
+    normalized_scheduled_supervision_contacts = (
+        ScheduledSupervisionContactNormalizationManager(
+            person.scheduled_supervision_contacts,
+            staff_external_id_to_staff_id,
+        ).get_normalized_scheduled_supervision_contacts()
+    )
+
     # The normalization functions need to know if this person has any periods that
     # ended because of death to handle any open periods or periods that extend past
     # their death date accordingly.
@@ -217,6 +227,7 @@ def build_normalized_state_person(
         "sentence_inferred_groups": normalized_sentence_inferred_groups,
         "sentence_imposed_groups": normalized_sentence_imposed_groups,
         "supervision_contacts": normalized_supervision_contacts,
+        "scheduled_supervision_contacts": normalized_scheduled_supervision_contacts,
         "supervision_periods": normalized_supervision_periods,
         "supervision_sentences": normalized_supervision_sentences,
         "supervision_violations": normalized_violations,

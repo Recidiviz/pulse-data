@@ -18,6 +18,7 @@ explore: normalized_state_person_template {
     normalized_state_person_race,
     normalized_state_person_staff_relationship_period,
     normalized_state_program_assignment,
+    normalized_state_scheduled_supervision_contact,
     normalized_state_sentence,
     normalized_state_sentence_group,
     normalized_state_sentence_imposed_group,
@@ -105,6 +106,11 @@ explore: normalized_state_person_template {
 
   join: normalized_state_program_assignment {
     sql_on: ${normalized_state_person.person_id} = ${normalized_state_program_assignment.person_id};;
+    relationship: one_to_many
+  }
+
+  join: normalized_state_scheduled_supervision_contact {
+    sql_on: ${normalized_state_person.person_id} = ${normalized_state_scheduled_supervision_contact.person_id};;
     relationship: one_to_many
   }
 
@@ -246,6 +252,10 @@ explore: normalized_state_person_staff_relationship_period {
 
 }
 explore: normalized_state_program_assignment {
+  extension: required
+
+}
+explore: normalized_state_scheduled_supervision_contact {
   extension: required
 
 }

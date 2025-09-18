@@ -648,6 +648,43 @@
     width: 12
     height: 6
 
+  - name: Normalized State Scheduled Supervision Contact
+    title: Normalized State Scheduled Supervision Contact
+    explore: normalized_state_person
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [normalized_state_scheduled_supervision_contact.contact_meeting_address,
+      normalized_state_scheduled_supervision_contact.contact_method,
+      normalized_state_scheduled_supervision_contact.contact_method_raw_text,
+      normalized_state_scheduled_supervision_contact.contact_reason,
+      normalized_state_scheduled_supervision_contact.contact_reason_raw_text,
+      normalized_state_scheduled_supervision_contact.contact_type,
+      normalized_state_scheduled_supervision_contact.contact_type_raw_text,
+      normalized_state_scheduled_supervision_contact.contacting_staff_external_id,
+      normalized_state_scheduled_supervision_contact.contacting_staff_external_id_type,
+      normalized_state_scheduled_supervision_contact.contacting_staff_id,
+      normalized_state_scheduled_supervision_contact.external_id,
+      normalized_state_scheduled_supervision_contact.location,
+      normalized_state_scheduled_supervision_contact.location_raw_text,
+      normalized_state_scheduled_supervision_contact.scheduled_contact_date,
+      normalized_state_scheduled_supervision_contact.scheduled_contact_datetime_date,
+      normalized_state_scheduled_supervision_contact.scheduled_supervision_contact_id,
+      normalized_state_scheduled_supervision_contact.sequence_num,
+      normalized_state_scheduled_supervision_contact.state_code,
+      normalized_state_scheduled_supervision_contact.status,
+      normalized_state_scheduled_supervision_contact.status_raw_text,
+      normalized_state_scheduled_supervision_contact.update_datetime_date]
+    sorts: [normalized_state_scheduled_supervision_contact.scheduled_contact_date desc, normalized_state_scheduled_supervision_contact.scheduled_contact_datetime_date desc, normalized_state_scheduled_supervision_contact.update_datetime_date desc]
+    listen: 
+      Person Id: normalized_state_person.person_id
+      State Code: normalized_state_person.state_code
+      External Id: normalized_state_person_external_id.external_id
+      Id Type: normalized_state_person_external_id.id_type
+    row: 62
+    col: 12
+    width: 12
+    height: 6
+
   - name: Normalized State Sentence
     title: Normalized State Sentence
     explore: normalized_state_person
@@ -680,8 +717,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 62
-    col: 12
+    row: 68
+    col: 0
     width: 12
     height: 6
 
@@ -701,7 +738,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 68
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -725,8 +762,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 68
-    col: 12
+    row: 74
+    col: 0
     width: 12
     height: 6
 
@@ -749,7 +786,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 74
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -767,8 +804,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 74
-    col: 12
+    row: 80
+    col: 0
     width: 12
     height: 6
 
@@ -797,7 +834,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 80
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -820,8 +857,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 80
-    col: 12
+    row: 86
+    col: 0
     width: 12
     height: 6
 
@@ -860,7 +897,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 86
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -900,8 +937,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 86
-    col: 12
+    row: 92
+    col: 0
     width: 12
     height: 6
 
@@ -934,7 +971,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 92
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -960,8 +997,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 92
-    col: 12
+    row: 98
+    col: 0
     width: 12
     height: 6
 
@@ -996,7 +1033,7 @@
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
     row: 98
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -1021,8 +1058,8 @@
       State Code: normalized_state_person.state_code
       External Id: normalized_state_person_external_id.external_id
       Id Type: normalized_state_person_external_id.id_type
-    row: 98
-    col: 12
+    row: 104
+    col: 0
     width: 12
     height: 6
 

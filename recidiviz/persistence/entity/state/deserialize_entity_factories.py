@@ -293,6 +293,19 @@ class StateSupervisionContactFactory(EntityFactory):
         )
 
 
+class StateScheduledSupervisionContactFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateScheduledSupervisionContact:
+        return entity_deserialize(
+            cls=entities.StateScheduledSupervisionContact,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
 class StateSupervisionViolationFactory(EntityFactory):
     @staticmethod
     def deserialize(

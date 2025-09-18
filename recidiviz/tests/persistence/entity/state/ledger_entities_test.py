@@ -545,6 +545,98 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
             )
 
 
+class StateScheduledSupervisionContactTest(
+    unittest.TestCase, LedgerEntityTestCaseProtocol
+):
+    """Ensures StateScheduledSupervisionContact is tested against the LedgerEntityTestCaseProtocol"""
+
+    @classmethod
+    def ledger_entity(cls) -> Type[LedgerEntityMixin]:
+        return entities.StateScheduledSupervisionContact
+
+    def test_ledger_datetime_is_not_future(self) -> None:
+        ok = entities.StateScheduledSupervisionContact(
+            state_code=self.state_code,
+            update_datetime=self.the_past,
+            contact_method=entities.StateScheduledSupervisionContactMethod.IN_PERSON,
+            scheduled_contact_date=datetime.date(2023, 1, 1),
+            external_id="external_id",
+            status=entities.StateScheduledSupervisionContactStatus.SCHEDULED,
+            contact_method_raw_text="in person",
+            contact_meeting_address="some address",
+        )
+        self.assertEqual(ok.ledger_datetime_field, self.the_past)
+        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+            _ = entities.StateScheduledSupervisionContact(
+                state_code=self.state_code,
+                update_datetime=self.the_future,
+                contact_method=entities.StateScheduledSupervisionContactMethod.IN_PERSON,
+                scheduled_contact_date=datetime.date(2023, 1, 1),
+                external_id="external_id",
+                status=entities.StateScheduledSupervisionContactStatus.SCHEDULED,
+                contact_method_raw_text="in person",
+                contact_meeting_address="some address",
+            )
+
+    def test_ledger_partition_key(self) -> None:
+        ledger = entities.StateScheduledSupervisionContact(
+            update_datetime=self.ledger_time,
+            contact_method=entities.StateScheduledSupervisionContactMethod.IN_PERSON,
+            state_code=self.state_code,
+            sequence_num=None,
+            contacting_staff_external_id="STAFF_ID",
+            contacting_staff_external_id_type="STAFF_TYPE",
+            scheduled_contact_date=datetime.date(2023, 1, 1),
+            external_id="external_id_1",
+            status=entities.StateScheduledSupervisionContactStatus.SCHEDULED,
+            contact_method_raw_text="in person",
+            contact_meeting_address="some address",
+        )
+        self.assertEqual(
+            ledger.partition_key,
+            "2023-01-01T00:00:00-None-StateScheduledSupervisionContactMethod.IN_PERSON-STAFF_ID-STAFF_TYPE",
+        )
+        ledger = entities.StateScheduledSupervisionContact(
+            update_datetime=self.ledger_time,
+            contact_method=entities.StateScheduledSupervisionContactMethod.IN_PERSON,
+            state_code=self.state_code,
+            sequence_num=1,
+            contacting_staff_external_id="STAFF_ID",
+            contacting_staff_external_id_type="STAFF_TYPE",
+            scheduled_contact_date=datetime.date(2023, 1, 1),
+            external_id="external_id_2",
+            status=entities.StateScheduledSupervisionContactStatus.SCHEDULED,
+            contact_method_raw_text="in person",
+            contact_meeting_address="some address",
+        )
+        self.assertEqual(
+            ledger.partition_key,
+            "2023-01-01T00:00:00-001-StateScheduledSupervisionContactMethod.IN_PERSON-STAFF_ID-STAFF_TYPE",
+        )
+
+    @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
+    def test_ledger_entity_checks_is_called(
+        self, mock_ledger_entity_checks: MagicMock
+    ) -> None:
+        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        person = self.new_state_person()
+        contact = entities.StateScheduledSupervisionContact(
+            person=person,
+            state_code=self.state_code,
+            update_datetime=datetime.datetime(2022, 1, 1),
+            contact_method=entities.StateScheduledSupervisionContactMethod.IN_PERSON,
+            scheduled_contact_date=datetime.date(2023, 1, 1),
+            sequence_num=1,
+            external_id="external_id",
+            status=entities.StateScheduledSupervisionContactStatus.SCHEDULED,
+            contact_method_raw_text="in person",
+            contact_meeting_address="some address",
+        )
+        person.scheduled_supervision_contacts = [contact]
+        _ = validate_root_entity(person)
+        mock_ledger_entity_checks.assert_called()
+
+
 def test_all_ledger_entities_have_a_test_case() -> None:
     """Ensures every entity with a LedgerEntityMixin has a test implementing LedgerEntityTestCaseProtocol"""
     tested_entities: List[LedgerEntityMixin] = []

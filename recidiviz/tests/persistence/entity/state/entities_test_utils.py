@@ -67,6 +67,13 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_scheduled_supervision_contact import (
+    StateScheduledSupervisionContactLocation,
+    StateScheduledSupervisionContactMethod,
+    StateScheduledSupervisionContactReason,
+    StateScheduledSupervisionContactStatus,
+    StateScheduledSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -558,6 +565,29 @@ def generate_full_graph_state_person(
         contacting_staff_external_id_type="US_XX_STAFF_ID",
     )
     person.supervision_contacts = [supervision_contact]
+
+    scheduled_supervision_contact = (
+        entities.StateScheduledSupervisionContact.new_with_defaults(
+            external_id="SCHEDULED_CONTACT_ID",
+            status=StateScheduledSupervisionContactStatus.SCHEDULED,
+            status_raw_text="SCHEDULED",
+            contact_type=StateScheduledSupervisionContactType.DIRECT,
+            contact_type_raw_text="FACE_TO_FACE",
+            scheduled_contact_date=datetime.date(year=2020, month=1, day=2),
+            state_code="US_XX",
+            update_datetime=datetime.datetime(2020, 1, 1),
+            contact_reason=StateScheduledSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text="GENERAL_CONTACT",
+            location=StateScheduledSupervisionContactLocation.RESIDENCE,
+            location_raw_text="RESIDENCE",
+            contacting_staff_external_id="EMP2",
+            contacting_staff_external_id_type="US_XX_STAFF_ID",
+            sequence_num=1,
+            contact_method=StateScheduledSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="CONTACT",
+        )
+    )
+    person.scheduled_supervision_contacts = [scheduled_supervision_contact]
 
     supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
         external_id="svr1",
@@ -1177,6 +1207,31 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         contacting_staff_id=1,
     )
 
+    scheduled_supervision_contact = (
+        normalized_entities.NormalizedStateScheduledSupervisionContact(
+            scheduled_supervision_contact_id=1,
+            external_id="SCHEDULED_CONTACT_ID",
+            status=StateScheduledSupervisionContactStatus.SCHEDULED,
+            status_raw_text="SCHEDULED",
+            contact_type=StateScheduledSupervisionContactType.DIRECT,
+            contact_type_raw_text="FACE_TO_FACE",
+            scheduled_contact_date=datetime.date(year=2020, month=1, day=2),
+            scheduled_contact_datetime=datetime.datetime(2020, 1, 2, 0, 0, 0),
+            update_datetime=datetime.datetime(2020, 1, 1),
+            state_code="US_XX",
+            contact_reason=StateScheduledSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text="GENERAL_CONTACT",
+            location=StateScheduledSupervisionContactLocation.RESIDENCE,
+            location_raw_text="RESIDENCE",
+            contact_method=StateScheduledSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="CONTACT",
+            contacting_staff_external_id="EMP2",
+            contacting_staff_external_id_type="US_XX_STAFF_ID",
+            contacting_staff_id=1,
+            sequence_num=1,
+        )
+    )
+
     incarceration_sentence = normalized_entities.NormalizedStateIncarcerationSentence(
         incarceration_sentence_id=1,
         external_id="BOOK_ID1234-1",
@@ -1563,6 +1618,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         incarceration_incidents=[incarceration_incident],
         supervision_violations=[supervision_violation],
         supervision_contacts=[supervision_contact],
+        scheduled_supervision_contacts=[scheduled_supervision_contact],
         incarceration_sentences=[incarceration_sentence],
         supervision_sentences=[supervision_sentence],
         incarceration_periods=[incarceration_period],

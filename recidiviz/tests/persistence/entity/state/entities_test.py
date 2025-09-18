@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/entities.py"""
-from datetime import date, datetime
+import datetime
 from typing import ForwardRef, Optional
 from unittest import TestCase
 
@@ -32,6 +32,10 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
+)
+from recidiviz.common.constants.state.state_scheduled_supervision_contact import (
+    StateScheduledSupervisionContactMethod,
+    StateScheduledSupervisionContactStatus,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
@@ -55,6 +59,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonAddressPeriod,
     StatePersonStaffRelationshipPeriod,
     StateProgramAssignment,
+    StateScheduledSupervisionContact,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateTaskDeadline,
@@ -227,7 +232,7 @@ class TestStateEntities(TestCase):
             supervision_period_id=1000,
             state_code="US_XX",
             external_id="1111",
-            start_date=date(2020, 1, 1),
+            start_date=datetime.date(2020, 1, 1),
             supervising_officer_staff_external_id="ABCDE",
             supervising_officer_staff_external_id_type="EMP-2",
         )
@@ -251,6 +256,21 @@ class TestStateEntities(TestCase):
             status=StateSupervisionContactStatus.COMPLETED,
         )
 
+    def test_check_constraint_for_contacting_staff_id_simple_2(self) -> None:
+        _ = StateScheduledSupervisionContact(
+            scheduled_supervision_contact_id=1000,
+            state_code="US_XX",
+            external_id="1111",
+            contacting_staff_external_id="ABCDE",
+            contacting_staff_external_id_type="EMP-2",
+            status=StateScheduledSupervisionContactStatus.SCHEDULED,
+            scheduled_contact_date=datetime.date(2020, 1, 2),
+            update_datetime=datetime.datetime(2020, 1, 1, tzinfo=datetime.UTC),
+            contact_method=StateScheduledSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="FACE",
+            contact_meeting_address="123 Bikini Bottom",
+        )
+
     def test_post_attrs_referring_staff_id_simple(self) -> None:
         _ = StateProgramAssignment(
             program_assignment_id=1000,
@@ -265,9 +285,9 @@ class TestStateEntities(TestCase):
     def test_post_attrs_state_task_deadline_simple(self) -> None:
         _ = StateTaskDeadline(
             state_code="US_XX",
-            eligible_date=date(2012, 10, 15),
-            due_date=date(2015, 7, 10),
-            update_datetime=datetime(2022, 4, 8, 0, 0, 0),
+            eligible_date=datetime.date(2012, 10, 15),
+            due_date=datetime.date(2015, 7, 10),
+            update_datetime=datetime.datetime(2022, 4, 8, 0, 0, 0),
             task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
             sequence_num=None,
         )
@@ -280,9 +300,9 @@ class TestStateEntities(TestCase):
             _ = StateTaskDeadline(
                 task_deadline_id=1000,
                 state_code="US_XX",
-                eligible_date=date(2015, 6, 15),
-                due_date=date(2012, 7, 10),
-                update_datetime=datetime(2022, 4, 8, 0, 0, 0),
+                eligible_date=datetime.date(2015, 6, 15),
+                due_date=datetime.date(2012, 7, 10),
+                update_datetime=datetime.datetime(2022, 4, 8, 0, 0, 0),
                 task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
                 sequence_num=None,
             )
@@ -295,7 +315,7 @@ class TestStateEntities(TestCase):
         period = StatePersonAddressPeriod(
             state_code="US_OZ",
             address_line_1="14 Yellow Brick Road",
-            address_start_date=date(2001, 1, 1),
+            address_start_date=datetime.date(2001, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
         assert period.full_address == "14 Yellow Brick Road"
@@ -305,19 +325,19 @@ class TestStateEntities(TestCase):
             state_code="US_OZ",
             address_line_1="14 Yellow Brick Road",
             address_city=CITY,
-            address_start_date=date(2001, 1, 1),
+            address_start_date=datetime.date(2001, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
         assert period.full_address == f"14 Yellow Brick Road\n{CITY}"
         assert period.date_range.is_open
-        assert period.date_range.lower_bound_inclusive_date == date(2001, 1, 1)
+        assert period.date_range.lower_bound_inclusive_date == datetime.date(2001, 1, 1)
 
         period = StatePersonAddressPeriod(
             state_code="US_OZ",
             address_line_1="14 Yellow Brick Road",
             address_city=CITY,
             address_country=COUNTRY,
-            address_start_date=date(2001, 1, 1),
+            address_start_date=datetime.date(2001, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
         assert period.full_address == f"14 Yellow Brick Road\n{CITY}\n{COUNTRY}"
@@ -328,7 +348,7 @@ class TestStateEntities(TestCase):
             address_city=CITY,
             address_country=COUNTRY,
             address_zip="00001",
-            address_start_date=date(2001, 1, 1),
+            address_start_date=datetime.date(2001, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
         assert period.full_address == f"14 Yellow Brick Road\n{CITY} 00001\n{COUNTRY}"
@@ -340,8 +360,8 @@ class TestStateEntities(TestCase):
             address_city=CITY,
             address_country=COUNTRY,
             address_zip="00001",
-            address_start_date=date(2001, 1, 1),
-            address_end_date=date(2021, 1, 1),
+            address_start_date=datetime.date(2001, 1, 1),
+            address_end_date=datetime.date(2021, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
         assert not period.date_range.is_open
@@ -361,8 +381,8 @@ class TestStateEntities(TestCase):
             address_city=CITY,
             address_state="OZ",
             address_zip="00001",
-            address_start_date=date(2001, 1, 1),
-            address_end_date=date(2021, 1, 1),
+            address_start_date=datetime.date(2001, 1, 1),
+            address_end_date=datetime.date(2021, 1, 1),
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         )
         assert not period.date_range.is_open
@@ -383,7 +403,7 @@ class TestStatePersonStaffRelationshipPeriod(TestCase):
         _ = StatePersonStaffRelationshipPeriod(
             person_staff_relationship_period_id=123,
             state_code=StateCode.US_XX.value,
-            relationship_start_date=date(2021, 1, 1),
+            relationship_start_date=datetime.date(2021, 1, 1),
             relationship_end_date_exclusive=None,
             system_type=StateSystemType.INCARCERATION,
             system_type_raw_text=None,
@@ -398,8 +418,8 @@ class TestStatePersonStaffRelationshipPeriod(TestCase):
         _ = StatePersonStaffRelationshipPeriod(
             person_staff_relationship_period_id=123,
             state_code=StateCode.US_XX.value,
-            relationship_start_date=date(2021, 1, 1),
-            relationship_end_date_exclusive=date(2023, 1, 1),
+            relationship_start_date=datetime.date(2021, 1, 1),
+            relationship_end_date_exclusive=datetime.date(2023, 1, 1),
             system_type=StateSystemType.INCARCERATION,
             system_type_raw_text="CM",
             relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
@@ -420,8 +440,8 @@ class TestStatePersonStaffRelationshipPeriod(TestCase):
             _ = StatePersonStaffRelationshipPeriod(
                 person_staff_relationship_period_id=123,
                 state_code=StateCode.US_XX.value,
-                relationship_start_date=date(2021, 1, 1),
-                relationship_end_date_exclusive=date(2023, 1, 1),
+                relationship_start_date=datetime.date(2021, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2023, 1, 1),
                 system_type=StateSystemType.INCARCERATION,
                 system_type_raw_text="CM",
                 relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
@@ -443,8 +463,8 @@ class TestStatePersonStaffRelationshipPeriod(TestCase):
             _ = StatePersonStaffRelationshipPeriod(
                 person_staff_relationship_period_id=123,
                 state_code=StateCode.US_XX.value,
-                relationship_start_date=date(2021, 1, 1),
-                relationship_end_date_exclusive=date(2021, 1, 1),
+                relationship_start_date=datetime.date(2021, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2021, 1, 1),
                 system_type=StateSystemType.INCARCERATION,
                 system_type_raw_text="CM",
                 relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,
@@ -466,8 +486,8 @@ class TestStatePersonStaffRelationshipPeriod(TestCase):
             _ = StatePersonStaffRelationshipPeriod(
                 person_staff_relationship_period_id=123,
                 state_code=StateCode.US_XX.value,
-                relationship_start_date=date(2022, 1, 1),
-                relationship_end_date_exclusive=date(2021, 1, 1),
+                relationship_start_date=datetime.date(2022, 1, 1),
+                relationship_end_date_exclusive=datetime.date(2021, 1, 1),
                 system_type=StateSystemType.INCARCERATION,
                 system_type_raw_text="CM",
                 relationship_type=StatePersonStaffRelationshipType.CASE_MANAGER,

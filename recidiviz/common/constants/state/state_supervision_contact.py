@@ -129,6 +129,8 @@ _STATE_SUPERVISION_CONTACT_REASON_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
 class StateSupervisionContactStatus(StateEntityEnum):
     ATTEMPTED = state_enum_strings.state_supervision_contact_status_attempted
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
+    # TODO(#47469): Remove this status once all scheduled contacts have been migrated to
+    #  StateScheduledSupervisionContact
     SCHEDULED = state_enum_strings.state_supervision_contact_status_scheduled
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown

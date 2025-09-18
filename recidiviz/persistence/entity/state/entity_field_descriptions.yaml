@@ -601,6 +601,39 @@ state_supervision_case_type_entry:
     case_type: The type of case that describes the associated period of supervision.
     case_type_raw_text: The raw text value of the case type.
 
+state_scheduled_supervision_contact:
+  fields:
+    contact_method: The method that should be used to perform the contact.
+    contact_method_raw_text: The raw text value of the contact method.
+    contact_reason: The reason why this contact will take place.
+    contact_reason_raw_text: The raw text value of the contact reason.
+    contact_type: The type of contact which will take place.
+    contact_type_raw_text: The raw text value of the contact type.
+    location: Where this contact will take place.
+    location_raw_text: The raw text value of the scheduled contact location.
+    status: The current status of this scheduled contact.
+    status_raw_text: The raw text value of the contact status.
+    contacting_staff_external_id: >-
+      The external id of the staff member who should make the
+      contact. This field with the contacting_staff_external_id_type field make up
+      a primary key for the state_staff_external_id table.
+    contacting_staff_external_id_type: >-
+      The ID type associated with the external id
+      of the staff member who should make the contact. This field with the contacting_staff_external_id
+      field make up a primary key for the state_staff_external_id table.
+    contact_meeting_address: The address where the contact should take place, if relevant to the contact method.
+    scheduled_contact_date: The date when a contact is scheduled to occur.
+    scheduled_contact_datetime: The datetime when a contact is scheduled to occur.
+    sequence_num: >-
+      The ordinal position of this scheduled contact in the sequence of StateScheduledSupervisionContact
+      of this method for a given person and supervision officer pair.
+    update_datetime: >-
+      The the time at which this scheduled contact was updated for this (person, officer) pair.
+      Will generally correspond to the time we received the raw data file with this
+      information about this scheduled contact from the state.
+  normalization_only_fields:
+    contacting_staff_id: StateStaff ID for the contacting officer.
+
 state_supervision_contact:
   fields:
     contact_date: The date when this contact happened.

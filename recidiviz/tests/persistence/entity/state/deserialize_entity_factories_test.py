@@ -72,6 +72,13 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_scheduled_supervision_contact import (
+    StateScheduledSupervisionContactLocation,
+    StateScheduledSupervisionContactMethod,
+    StateScheduledSupervisionContactReason,
+    StateScheduledSupervisionContactStatus,
+    StateScheduledSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -375,6 +382,53 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             verified_employment=True,
             resulted_in_arrest=False,
             supervision_contact_metadata='{"MEASURABLE": "YES"}',
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateScheduledSupervisionContact(self) -> None:
+        update_datetime = datetime.datetime.now()
+        result = deserialize_entity_factories.StateScheduledSupervisionContactFactory.deserialize(
+            external_id="SCHEDULED_CONTACT_ID",
+            contact_type=StateScheduledSupervisionContactType.DIRECT,
+            contact_type_raw_text="D",
+            status=StateScheduledSupervisionContactStatus.SCHEDULED,
+            status_raw_text="C",
+            contact_reason=StateScheduledSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text="GC",
+            location=StateScheduledSupervisionContactLocation.RESIDENCE,
+            location_raw_text="R",
+            scheduled_contact_date=date(2020, 1, 2),
+            state_code="us_xx",
+            contacting_staff_external_id="1",
+            contacting_staff_external_id_type="STAFF_ID",
+            contact_method=StateScheduledSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="FACE",
+            update_datetime=update_datetime,
+            contact_meeting_address="123 BIKINI BOTTOM",
+            sequence_num=1,
+        )
+
+        # Assert
+        expected_result = entities.StateScheduledSupervisionContact(
+            external_id="SCHEDULED_CONTACT_ID",
+            status=StateScheduledSupervisionContactStatus.SCHEDULED,
+            status_raw_text="C",
+            contact_type=StateScheduledSupervisionContactType.DIRECT,
+            contact_type_raw_text="D",
+            scheduled_contact_date=date(year=2020, month=1, day=2),
+            state_code="US_XX",
+            contact_reason=StateScheduledSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text="GC",
+            location=StateScheduledSupervisionContactLocation.RESIDENCE,
+            location_raw_text="R",
+            contacting_staff_external_id="1",
+            contacting_staff_external_id_type="STAFF_ID",
+            contact_method=StateScheduledSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="FACE",
+            contact_meeting_address="123 BIKINI BOTTOM",
+            update_datetime=update_datetime,
+            sequence_num=1,
         )
 
         self.assertEqual(expected_result, result)

@@ -623,6 +623,15 @@ def _get_state_person_specific_errors(
             root_entity.task_deadlines,
         ):
             error_messages.append(err)
+
+    # Ensure StateScheduledSupervisionContact passes ledger checks
+    if root_entity.scheduled_supervision_contacts:
+        if err := ledger_entity_checks(
+            root_entity,
+            state_entities.StateScheduledSupervisionContact,
+            root_entity.scheduled_supervision_contacts,
+        ):
+            error_messages.append(err)
     return error_messages
 
 

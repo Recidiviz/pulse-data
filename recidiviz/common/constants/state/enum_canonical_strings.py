@@ -637,6 +637,40 @@ state_supervision_contact_location_alternative_place_of_employment = (
     "ALTERNATIVE_PLACE_OF_EMPLOYMENT"
 )
 
+# state_scheduled_supervision_contact.py
+state_scheduled_supervision_contact_type_direct = "DIRECT"
+state_scheduled_supervision_contact_type_collateral = "COLLATERAL"
+state_scheduled_supervision_contact_type_both_collateral_and_direct = (
+    "BOTH_COLLATERAL_AND_DIRECT"
+)
+
+state_scheduled_supervision_contact_method_telephone = "TELEPHONE"
+state_scheduled_supervision_contact_method_written_message = "WRITTEN_MESSAGE"
+state_scheduled_supervision_contact_method_virtual = "VIRTUAL"
+state_scheduled_supervision_contact_method_in_person = "IN_PERSON"
+
+state_scheduled_supervision_contact_reason_emergency_contact = "EMERGENCY_CONTACT"
+state_scheduled_supervision_contact_reason_general_contact = "GENERAL_CONTACT"
+state_scheduled_supervision_contact_reason_initial_contact = "INITIAL_CONTACT"
+
+state_scheduled_supervision_contact_status_deleted = "DELETED"
+state_scheduled_supervision_contact_status_scheduled = "SCHEDULED"
+
+state_scheduled_supervision_contact_location_court = "COURT"
+state_scheduled_supervision_contact_location_field = "FIELD"
+state_scheduled_supervision_contact_location_jail = "JAIL"
+state_scheduled_supervision_contact_location_place_of_employment = "PLACE_OF_EMPLOYMENT"
+state_scheduled_supervision_contact_location_residence = "RESIDENCE"
+state_scheduled_supervision_contact_location_supervision_office = "SUPERVISION_OFFICE"
+state_scheduled_supervision_contact_location_treatment_provider = "TREATMENT_PROVIDER"
+state_scheduled_supervision_contact_location_law_enforcement_agency = (
+    "LAW_ENFORCEMENT_AGENCY"
+)
+state_scheduled_supervision_contact_location_parole_commission = "PAROLE_COMMISSION"
+state_scheduled_supervision_contact_location_alternative_place_of_employment = (
+    "ALTERNATIVE_PLACE_OF_EMPLOYMENT"
+)
+
 # state_employment_period.py
 state_employment_period_employment_status_alternate_income_source = (
     "ALTERNATE_INCOME_SOURCE"

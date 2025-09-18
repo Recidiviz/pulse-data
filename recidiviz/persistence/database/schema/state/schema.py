@@ -767,6 +767,59 @@ state_supervision_contact_method = Enum(
     name="state_supervision_contact_method",
 )
 
+state_scheduled_supervision_contact_location = Enum(
+    state_enum_strings.state_scheduled_supervision_contact_location_court,
+    state_enum_strings.state_scheduled_supervision_contact_location_field,
+    state_enum_strings.state_scheduled_supervision_contact_location_jail,
+    state_enum_strings.state_scheduled_supervision_contact_location_place_of_employment,
+    state_enum_strings.state_scheduled_supervision_contact_location_residence,
+    state_enum_strings.state_scheduled_supervision_contact_location_supervision_office,
+    state_enum_strings.state_scheduled_supervision_contact_location_treatment_provider,
+    state_enum_strings.state_scheduled_supervision_contact_location_law_enforcement_agency,
+    state_enum_strings.state_scheduled_supervision_contact_location_parole_commission,
+    state_enum_strings.state_scheduled_supervision_contact_location_alternative_place_of_employment,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_scheduled_supervision_contact_location",
+)
+
+state_scheduled_supervision_contact_status = Enum(
+    state_enum_strings.state_scheduled_supervision_contact_status_deleted,
+    state_enum_strings.state_scheduled_supervision_contact_status_scheduled,
+    state_enum_strings.present_without_info,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_scheduled_supervision_contact_status",
+)
+
+state_scheduled_supervision_contact_reason = Enum(
+    state_enum_strings.state_scheduled_supervision_contact_reason_emergency_contact,
+    state_enum_strings.state_scheduled_supervision_contact_reason_general_contact,
+    state_enum_strings.state_scheduled_supervision_contact_reason_initial_contact,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_scheduled_supervision_contact_reason",
+)
+
+state_scheduled_supervision_contact_type = Enum(
+    state_enum_strings.state_scheduled_supervision_contact_type_collateral,
+    state_enum_strings.state_scheduled_supervision_contact_type_direct,
+    state_enum_strings.state_scheduled_supervision_contact_type_both_collateral_and_direct,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_scheduled_supervision_contact_type",
+)
+
+state_scheduled_supervision_contact_method = Enum(
+    state_enum_strings.state_scheduled_supervision_contact_method_in_person,
+    state_enum_strings.state_scheduled_supervision_contact_method_telephone,
+    state_enum_strings.state_scheduled_supervision_contact_method_virtual,
+    state_enum_strings.state_scheduled_supervision_contact_method_written_message,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_scheduled_supervision_contact_method",
+)
+
 state_employment_period_employment_status = Enum(
     state_enum_strings.state_employment_period_employment_status_alternate_income_source,
     state_enum_strings.state_employment_period_employment_status_employed_unknown_amount,
@@ -1140,6 +1193,9 @@ class StatePerson(StateBase):
     )
     supervision_contacts = relationship(
         "StateSupervisionContact", backref="person", lazy="selectin"
+    )
+    scheduled_supervision_contacts = relationship(
+        "StateScheduledSupervisionContact", backref="person", lazy="selectin"
     )
     employment_periods = relationship(
         "StateEmploymentPeriod", backref="person", lazy="selectin"
@@ -1833,6 +1889,58 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
     verified_employment = Column(Boolean)
 
     supervision_contact_metadata = Column(Text)
+
+
+class StateScheduledSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateScheduledSupervisionContact in the SQL schema."""
+
+    __tablename__ = "state_scheduled_supervision_contact"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="scheduled_supervision_contact_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        UniqueConstraint(
+            "state_code",
+            "contact_method",
+            "contacting_staff_external_id",
+            "contacting_staff_external_id_type",
+            "update_datetime",
+            name="state_scheduled_supervision_contact_unique_per_person_staff_method_update_date",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        CheckConstraint(
+            "(contacting_staff_external_id IS NULL AND contacting_staff_external_id_type IS NULL) OR (contacting_staff_external_id IS NOT NULL AND contacting_staff_external_id_type IS NOT NULL)",
+            name="contacting_staff_external_id_fields_consistent",
+        ),
+    )
+
+    scheduled_supervision_contact_id = Column(Integer, primary_key=True)
+
+    external_id = Column(String(255), nullable=False, index=True)
+    state_code = Column(String(255), nullable=False, index=True)
+
+    scheduled_contact_date = Column(Date)
+    scheduled_contact_datetime = Column(DateTime)
+    update_datetime = Column(DateTime)
+    contact_reason = Column(state_scheduled_supervision_contact_reason)
+    contact_reason_raw_text = Column(String(255))
+    contact_type = Column(state_scheduled_supervision_contact_type)
+    contact_type_raw_text = Column(String(255))
+    contact_method = Column(state_scheduled_supervision_contact_method)
+    contact_method_raw_text = Column(String(255))
+    contacting_staff_external_id = Column(String(255))
+    contacting_staff_external_id_type = Column(String(255))
+    location = Column(state_scheduled_supervision_contact_location)
+    location_raw_text = Column(String(255))
+    status = Column(state_scheduled_supervision_contact_status, nullable=False)
+    status_raw_text = Column(String(255))
+    sequence_num = Column(Integer, nullable=False)
+    contact_meeting_address = Column(String(255))
 
 
 class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):

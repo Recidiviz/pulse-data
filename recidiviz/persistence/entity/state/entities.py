@@ -93,6 +93,13 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_scheduled_supervision_contact import (
+    StateScheduledSupervisionContactLocation,
+    StateScheduledSupervisionContactMethod,
+    StateScheduledSupervisionContactReason,
+    StateScheduledSupervisionContactStatus,
+    StateScheduledSupervisionContactType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -631,6 +638,9 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
     supervision_contacts: List["StateSupervisionContact"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    scheduled_supervision_contacts: List["StateScheduledSupervisionContact"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     task_deadlines: List["StateTaskDeadline"] = attr.ib(
@@ -2215,6 +2225,159 @@ class StateEarlyDischarge(
 
 
 @attr.s(eq=False, kw_only=True)
+class StateScheduledSupervisionContact(
+    StateEntityMixin,
+    LedgerEntityMixin,
+    HasExternalIdEntity,
+    BuildableAttr,
+    DefaultableAttr,
+    Entity,
+):
+    """
+    The StateScheduledSupervisionContact object represents a StateScheduledSupervisionContact
+    that is scheduled to happen at a point in time and, at the point it is scheduled
+    (the update_datetime), has not happened yet.
+    """
+
+    # Status
+    status: StateScheduledSupervisionContactStatus = attr.ib(
+        validator=attr.validators.instance_of(StateScheduledSupervisionContactStatus)
+    )
+    status_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Attributes
+    #   - When
+    scheduled_contact_date: Optional[datetime.date] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_date(
+            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+        ),
+    )
+
+    scheduled_contact_datetime: Optional[datetime.datetime] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_reasonable_datetime(
+            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
+            max_allowed_datetime_exclusive=STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
+        ),
+    )
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_not_future_datetime
+    )
+
+    #   - What
+    contact_type: Optional[StateScheduledSupervisionContactType] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateScheduledSupervisionContactType),
+    )
+    contact_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #   - How
+    contact_method: StateScheduledSupervisionContactMethod = attr.ib(
+        validator=attr.validators.instance_of(StateScheduledSupervisionContactMethod)
+    )
+    contact_method_raw_text: Optional[str] = attr.ib(
+        validator=attr_validators.is_opt_str
+    )
+
+    contact_reason: Optional[StateScheduledSupervisionContactReason] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateScheduledSupervisionContactReason),
+    )
+    contact_reason_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #    - Where
+    contact_meeting_address: Optional[str] = attr.ib(
+        validator=attr_validators.is_opt_str
+    )
+    location: Optional[StateScheduledSupervisionContactLocation] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateScheduledSupervisionContactLocation),
+    )
+    location_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #   - Who
+    # See |person| in entity relationships below.
+    contacting_staff_external_id: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("contacting_staff_external_id_type"),
+        ],
+    )
+    contacting_staff_external_id_type: Optional[str] = attr.ib(
+        default=None,
+        validator=[
+            attr_validators.is_opt_str,
+            appears_with("contacting_staff_external_id"),
+        ],
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    scheduled_supervision_contact_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+
+    @classmethod
+    def entity_tree_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="state_scheduled_supervision_contact_unique_per_person_staff_method_update_date",
+                fields=[
+                    "state_code",
+                    "contact_method",
+                    "contacting_staff_external_id",
+                    "contacting_staff_external_id_type",
+                    "update_datetime",
+                ],
+            )
+        ]
+
+    @property
+    def ledger_partition_columns(self) -> List[str]:
+        return [
+            "contact_method",
+            "contacting_staff_external_id",
+            "contacting_staff_external_id_type",
+        ]
+
+    @property
+    def ledger_datetime_field(self) -> DateOrDateTime:
+        """StateScheduledSupervisionContact ledger updates happen on update_datetime."""
+        return self.update_datetime
+
+    def __attrs_post_init__(self) -> None:
+
+        if not self.scheduled_contact_date and not self.scheduled_contact_datetime:
+            raise ValueError(
+                "Must explicitly set one of scheduled_contact_date and "
+                "scheduled_contact_datetime at ingest mapping time."
+            )
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="scheduled_supervision_contact_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
 class StateSupervisionContact(
     StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
@@ -2247,6 +2410,9 @@ class StateSupervisionContact(
     contact_datetime: Optional[datetime.datetime] = attr.ib(
         default=None, validator=attr_validators.is_opt_datetime
     )
+
+    # TODO(#47474): Delete this field once these dates are hydrated in
+    #  StateScheduledSupervisionContact
     scheduled_contact_date: Optional[datetime.date] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_reasonable_date(
@@ -2254,6 +2420,8 @@ class StateSupervisionContact(
             max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
         ),
     )
+    # TODO(#47474): Delete this field once these dates are hydrated in
+    #  StateScheduledSupervisionContact
     scheduled_contact_datetime: Optional[datetime.datetime] = attr.ib(
         default=None,
         validator=attr_validators.is_opt_reasonable_datetime(

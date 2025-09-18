@@ -64,6 +64,10 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_scheduled_supervision_contact import (
+    StateScheduledSupervisionContactMethod,
+    StateScheduledSupervisionContactStatus,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -292,6 +296,10 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
             external_id=_EXTERNAL_ID,
             status=StateSupervisionContactStatus.PRESENT_WITHOUT_INFO,
         )
+    ],
+    state_entities.StateScheduledSupervisionContact: [
+        # StateScheduledSupervisionContact cannot be reference entities - must always have a
+        # scheduled_contact_date.
     ],
     state_entities.StateSupervisionPeriod: [],
     state_entities.StateSupervisionSentence: [
@@ -620,6 +628,18 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
             end_date=datetime.date(2022, 5, 10),
             supervisor_staff_external_id="ABC",
             supervisor_staff_external_id_type="US_XX_STAFF_ID",
+        )
+    ],
+    state_entities.StateScheduledSupervisionContact: [
+        state_entities.StateScheduledSupervisionContact(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateScheduledSupervisionContactStatus.PRESENT_WITHOUT_INFO,
+            contact_method=StateScheduledSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="FACE",
+            update_datetime=datetime.datetime(2022, 1, 1),
+            contact_meeting_address=None,
+            scheduled_contact_date=datetime.date(2022, 1, 2),
         )
     ],
     state_entities.StateSupervisionCaseTypeEntry: [

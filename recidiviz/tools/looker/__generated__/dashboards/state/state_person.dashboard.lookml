@@ -631,6 +631,42 @@
     width: 12
     height: 6
 
+  - name: State Scheduled Supervision Contact
+    title: State Scheduled Supervision Contact
+    explore: state_person
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [state_scheduled_supervision_contact.contact_meeting_address,
+      state_scheduled_supervision_contact.contact_method,
+      state_scheduled_supervision_contact.contact_method_raw_text,
+      state_scheduled_supervision_contact.contact_reason,
+      state_scheduled_supervision_contact.contact_reason_raw_text,
+      state_scheduled_supervision_contact.contact_type,
+      state_scheduled_supervision_contact.contact_type_raw_text,
+      state_scheduled_supervision_contact.contacting_staff_external_id,
+      state_scheduled_supervision_contact.contacting_staff_external_id_type,
+      state_scheduled_supervision_contact.external_id,
+      state_scheduled_supervision_contact.location,
+      state_scheduled_supervision_contact.location_raw_text,
+      state_scheduled_supervision_contact.scheduled_contact_date,
+      state_scheduled_supervision_contact.scheduled_contact_datetime_date,
+      state_scheduled_supervision_contact.scheduled_supervision_contact_id,
+      state_scheduled_supervision_contact.sequence_num,
+      state_scheduled_supervision_contact.state_code,
+      state_scheduled_supervision_contact.status,
+      state_scheduled_supervision_contact.status_raw_text,
+      state_scheduled_supervision_contact.update_datetime_date]
+    sorts: [state_scheduled_supervision_contact.scheduled_contact_date desc, state_scheduled_supervision_contact.scheduled_contact_datetime_date desc, state_scheduled_supervision_contact.update_datetime_date desc]
+    listen: 
+      Person Id: state_person.person_id
+      State Code: state_person.state_code
+      External Id: state_person_external_id.external_id
+      Id Type: state_person_external_id.id_type
+    row: 62
+    col: 12
+    width: 12
+    height: 6
+
   - name: State Sentence
     title: State Sentence
     explore: state_person
@@ -660,8 +696,8 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 62
-    col: 12
+    row: 68
+    col: 0
     width: 12
     height: 6
 
@@ -680,7 +716,7 @@
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
     row: 68
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -704,8 +740,8 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 68
-    col: 12
+    row: 74
+    col: 0
     width: 12
     height: 6
 
@@ -734,7 +770,7 @@
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
     row: 74
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -756,8 +792,8 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 74
-    col: 12
+    row: 80
+    col: 0
     width: 12
     height: 6
 
@@ -795,7 +831,7 @@
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
     row: 80
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -833,8 +869,8 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 80
-    col: 12
+    row: 86
+    col: 0
     width: 12
     height: 6
 
@@ -867,7 +903,7 @@
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
     row: 86
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -893,8 +929,8 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 86
-    col: 12
+    row: 92
+    col: 0
     width: 12
     height: 6
 
@@ -927,7 +963,7 @@
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
     row: 92
-    col: 0
+    col: 12
     width: 12
     height: 6
 
@@ -952,8 +988,8 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 92
-    col: 12
+    row: 98
+    col: 0
     width: 12
     height: 6
 
