@@ -18,7 +18,10 @@
 """Tests for create_ingest_config_skeleton.py"""
 import os
 import shutil
+import tempfile
+import types
 import unittest
+from unittest.mock import patch
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -27,7 +30,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
     create_ingest_config_skeleton,
-    make_config_directory,
 )
 
 INPUT_TABLE = "raw_table_1"
@@ -41,6 +43,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
     """Tests for create_ingest_config_skeleton.py"""
 
     def setUp(self) -> None:
+        self.test_dir = tempfile.mkdtemp()
         self.input_path = os.path.join(
             os.path.dirname(__file__),
             FIXTURE_DIR_NAME,
@@ -54,8 +57,26 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
         self.add_description_placeholders = False
         self.custom_line_terminator = None
 
+        # Create the mock config directory structure
+        self.mock_config_dir = os.path.join(self.test_dir, FAKE_STATE, "raw_data")
+        os.makedirs(self.mock_config_dir, exist_ok=True)
+
+        self.get_config_dir_patcher = patch(
+            "recidiviz.tools.ingest.development.create_ingest_config_skeleton.get_config_directory",
+            side_effect=self._mock_get_config_directory,
+        )
+        self.get_config_dir_patcher.start()
+
+        self.mock_region_module = types.ModuleType("mock_regions")
+        self.mock_region_module.__file__ = os.path.join(self.test_dir, "__init__.py")
+
     def tearDown(self) -> None:
-        shutil.rmtree(os.path.split(make_config_directory(FAKE_STATE))[0])
+        self.get_config_dir_patcher.stop()
+        shutil.rmtree(self.test_dir)
+
+    def _mock_get_config_directory(self, state_code: str) -> str:
+        """Mock function to return test directory instead of real config directory."""
+        return os.path.join(self.test_dir, state_code, "raw_data")
 
     def test_create_structure_custom_line_terminator(self) -> None:
         file_tag = "raw_table_2"
@@ -77,7 +98,9 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             custom_line_terminator="†",
         )
 
-        config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
+        config = DirectIngestRegionRawFileConfig(
+            region_code=self.state_code, region_module=self.mock_region_module
+        )
 
         self.assertIsNotNone(config)
 
@@ -107,7 +130,9 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             self.custom_line_terminator,
         )
 
-        config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
+        config = DirectIngestRegionRawFileConfig(
+            region_code=self.state_code, region_module=self.mock_region_module
+        )
 
         self.assertIsNotNone(config)
 
@@ -137,7 +162,9 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             custom_line_terminator=self.custom_line_terminator,
         )
 
-        config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
+        config = DirectIngestRegionRawFileConfig(
+            region_code=self.state_code, region_module=self.mock_region_module
+        )
         table_config = config.raw_file_configs[INPUT_TABLE]
 
         self.assertIsNotNone(config)
@@ -171,5 +198,7 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
             custom_line_terminator=self.custom_line_terminator,
         )
 
-        config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
+        config = DirectIngestRegionRawFileConfig(
+            region_code=self.state_code, region_module=self.mock_region_module
+        )
         self.assertEqual(config.raw_file_configs, {})

@@ -45,7 +45,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import RawDataClassificat
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 
 
-def make_config_directory(state_code: str) -> str:
+def get_config_directory(state_code: str) -> str:
     return os.path.join(
         os.path.dirname(regions.__file__),
         state_code,
@@ -54,7 +54,7 @@ def make_config_directory(state_code: str) -> str:
 
 
 def initialize_state_directories(state_code: str) -> None:
-    config_directory = make_config_directory(state_code)
+    config_directory = get_config_directory(state_code)
     os.makedirs(config_directory, exist_ok=True)
     base_config_filename = f"{state_code}_default.yaml"
 
@@ -124,7 +124,7 @@ def write_skeleton_config(
         )
         return
 
-    config_directory = make_config_directory(state_code)
+    config_directory = get_config_directory(state_code)
     config_file_name = f"{state_code}_{table_name}.yaml"
     config_path = os.path.join(config_directory, config_file_name)
 
@@ -173,10 +173,10 @@ def create_ingest_config_skeleton(
 
     if initialize_state:
         initialize_state_directories(state_code)
-    elif not os.path.exists(make_config_directory(state_code)):
+    elif not os.path.exists(get_config_directory(state_code)):
         logging.error(
             "Folder %s does not exist. Run with --initialize-state to create directory structure.",
-            make_config_directory(state_code),
+            get_config_directory(state_code),
         )
 
     for path in raw_table_paths:
