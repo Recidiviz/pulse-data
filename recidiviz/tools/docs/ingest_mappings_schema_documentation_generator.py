@@ -648,7 +648,9 @@ def generate_documentation() -> int:
         for schema_file in all_schema_files.values():
             generator = SingleSchemaFileDocsGenerator(schema_file, all_schema_files)
             docs_md = generator.generate_file_markdown()
-            file_modified = persist_file_contents(docs_md, schema_file.docs_output_path)
+            file_modified = persist_file_contents(
+                docs_md, schema_file.docs_output_path, log_diff=True
+            )
             if file_modified:
                 logging.info("Updated docs for schema file: [%s]", schema_file.path)
                 modified = True

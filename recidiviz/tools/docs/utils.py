@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for documentation generation."""
+import difflib
+import logging
 import os
 import re
 
@@ -40,7 +42,9 @@ def hyperlink_todos(text: str) -> str:
     return re.sub(TO_DO_REGEX, _link_todo, text)
 
 
-def persist_file_contents(documentation: str, markdown_path: str) -> bool:
+def persist_file_contents(
+    documentation: str, markdown_path: str, log_diff: bool = False
+) -> bool:
     """Persists contents to the provided path. Returns whether contents at that path
     changed."""
     prior_documentation = None
@@ -49,6 +53,15 @@ def persist_file_contents(documentation: str, markdown_path: str) -> bool:
             prior_documentation = md_file.read()
 
     if prior_documentation != documentation:
+        if log_diff and prior_documentation:
+            logging.info(
+                "\n".join(
+                    difflib.ndiff(
+                        prior_documentation.split("\n"),
+                        documentation.split("\n"),
+                    )
+                )
+            )
         path_dir, _ = os.path.split(markdown_path)
         os.makedirs(path_dir, exist_ok=True)
         with open(markdown_path, "w", encoding="utf-8") as md_file:
