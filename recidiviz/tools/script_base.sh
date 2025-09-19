@@ -180,7 +180,7 @@ function check_for_tags_at_branch_tip {
     BRANCH=$1
     ALLOW_ALPHA=$2
     LOCAL_REPO_PATH=${3:-$(git rev-parse --show-toplevel)}
-    if [[ -n "${ALLOW_ALPHA}" ]]; then
+    if [[ "${ALLOW_ALPHA}" == "true" ]]; then
         TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH}" | grep '^v\d\+\.' | grep -v alpha || echo "") || exit_on_fail
     else
         TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH}" | grep '^v\d\+\.' || echo "") || exit_on_fail
