@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
     not_serving_a_life_sentence_on_supervision,
     supervision_case_type_is_not_sex_offense,
     supervision_level_is_medium_or_minimum,
+    supervision_level_is_minimum,
     supervision_level_is_not_residential_program,
     supervision_type_is_not_investigation,
 )
@@ -82,6 +83,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_level_downgrade_within_6_months.VIEW_BUILDER,
         us_ia_not_eligible_or_marked_ineligible_for_early_discharge_view_builder,
         not_serving_a_life_sentence_on_supervision.VIEW_BUILDER,
+        # TODO(#48523): remove this once we are allowed to show L3 eligible clients again
+        supervision_level_is_minimum.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade_from_medium_or_minimum.VIEW_BUILDER,
     almost_eligible_condition=NotEligibleCriteriaCondition(
