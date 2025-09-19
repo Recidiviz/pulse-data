@@ -194,6 +194,7 @@ def do_sandbox_raw_file_import(
     skip_raw_data_migrations: bool,
     persist_intermediary_tables: bool,
     allow_incomplete_chunked_files: bool,
+    skip_raw_data_pruning: bool,
 ) -> None:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
@@ -267,6 +268,7 @@ def do_sandbox_raw_file_import(
         skip_raw_data_migrations=skip_raw_data_migrations,
         persist_intermediary_tables=persist_intermediary_tables,
         allow_incomplete_chunked_files=allow_incomplete_chunked_files,
+        skip_raw_data_pruning=skip_raw_data_pruning,
     )
 
     logging.info("************************** RESULTS **************************")
@@ -366,6 +368,15 @@ def parse_arguments() -> argparse.Namespace:
         ),
         action="store_true",
     )
+    parser.add_argument(
+        "--skip-raw-data-pruning",
+        help=(
+            "Skips raw data pruning. For states with automatic raw data pruning enabled, by default "
+            "files are pruned against the latest data in the raw table regardless of the "
+            "update_datetime of the file being imported."
+        ),
+        action="store_true",
+    )
     return parser.parse_args()
 
 
@@ -383,4 +394,5 @@ if __name__ == "__main__":
             skip_raw_data_migrations=known_args.skip_raw_data_migrations,
             persist_intermediary_tables=known_args.persist_intermediary_tables,
             allow_incomplete_chunked_files=known_args.allow_incomplete_chunked_files,
+            skip_raw_data_pruning=known_args.skip_raw_data_pruning,
         )

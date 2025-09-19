@@ -105,6 +105,12 @@ class SandboxConceptualFileImportResult:
     raw_rows_count: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+    net_new_or_updated_rows_count: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    deleted_rows_count: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
     error_message: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -123,6 +129,11 @@ class SandboxConceptualFileImportResult:
             )
         if self.error_message is not None:
             return f": {self.error_message}"
+        if (
+            self.net_new_or_updated_rows_count is not None
+            and self.deleted_rows_count is not None
+        ):
+            return f": {self.raw_rows_count} raw rows, {self.net_new_or_updated_rows_count} new/updated, {self.deleted_rows_count} deleted"
         if self.raw_rows_count is not None:
             return f": {self.raw_rows_count} rows"
 
@@ -277,6 +288,7 @@ def _import_bq_metadata_to_sandbox(
     skip_blocking_validations: bool,
     skip_raw_data_migrations: bool,
     persist_intermediary_tables: bool,
+    skip_raw_data_pruning: bool,
 ) -> RawFileImport:
     """Imports a single |bq_metadata| into a sandbox raw data table."""
 
@@ -337,10 +349,6 @@ def _import_bq_metadata_to_sandbox(
         skip_raw_data_migrations=skip_raw_data_migrations,
         persist_intermediary_tables=persist_intermediary_tables,
     )
-    # TODO(#12209) add additional features for raw data pruning -- for tables that will be
-    # pruned, what do we want the behavior of the sandbox import to look like? importing
-    # the whole file? or import what _would_ be imported into the table if ran (also
-    # how would that work for older update_datetimes????)
     append_summary = loader.append_to_raw_data_table(
         append_ready,
         # persist intermediary tables (the __transformed table) if persist_intermediary_tables
@@ -348,6 +356,7 @@ def _import_bq_metadata_to_sandbox(
         # reflects the raw file irrespective of what the config says
         persist_intermediary_tables=persist_intermediary_tables
         or infer_schema_from_csv,
+        skip_raw_data_pruning=skip_raw_data_pruning,
     )
 
     return RawFileImport.from_load_results(append_ready, append_summary)
@@ -467,6 +476,7 @@ def import_raw_files_to_sandbox(
     skip_raw_data_migrations: bool,
     persist_intermediary_tables: bool,
     allow_incomplete_chunked_files: bool,
+    skip_raw_data_pruning: bool,
 ) -> SandboxImportRun:
     """Executes a sandbox import for |files_to_import|."""
     status_to_imports = defaultdict(list)
@@ -493,6 +503,7 @@ def import_raw_files_to_sandbox(
                 skip_blocking_validations=skip_blocking_validations,
                 skip_raw_data_migrations=skip_raw_data_migrations,
                 persist_intermediary_tables=persist_intermediary_tables,
+                skip_raw_data_pruning=skip_raw_data_pruning,
             )
             status_to_imports[SandboxImportStatus.SUCCEEDED].append(
                 SandboxConceptualFileImportResult(
@@ -500,6 +511,8 @@ def import_raw_files_to_sandbox(
                     status=SandboxImportStatus.SUCCEEDED,
                     error_message=None,
                     raw_rows_count=result.raw_rows,
+                    net_new_or_updated_rows_count=result.net_new_or_updated_rows,
+                    deleted_rows_count=result.deleted_rows,
                 )
             )
 

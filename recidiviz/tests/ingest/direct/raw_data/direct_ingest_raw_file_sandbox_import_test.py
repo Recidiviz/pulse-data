@@ -224,7 +224,8 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             raw_rows_count=1,
         )
         load_mock().append_to_raw_data_table.return_value = AppendSummary(
-            file_id=1, historical_diffs_active=False
+            file_id=1,
+            historical_diffs_active=False,
         )
 
         _import_bq_metadata_to_sandbox(
@@ -237,6 +238,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             skip_blocking_validations=False,
             persist_intermediary_tables=False,
             skip_raw_data_migrations=False,
+            skip_raw_data_pruning=False,
         )
 
         headers_mock.assert_called_once()
@@ -292,7 +294,8 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             raw_rows_count=1,
         )
         load_mock().append_to_raw_data_table.return_value = AppendSummary(
-            file_id=1, historical_diffs_active=False
+            file_id=1,
+            historical_diffs_active=False,
         )
 
         _import_bq_metadata_to_sandbox(
@@ -305,6 +308,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             skip_blocking_validations=False,
             persist_intermediary_tables=False,
             skip_raw_data_migrations=False,
+            skip_raw_data_pruning=False,
         )
 
         headers_mock.assert_called_once()
@@ -346,7 +350,8 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             raw_rows_count=1,
         )
         load_mock().append_to_raw_data_table.return_value = AppendSummary(
-            file_id=1, historical_diffs_active=False
+            file_id=1,
+            historical_diffs_active=False,
         )
 
         _import_bq_metadata_to_sandbox(
@@ -359,6 +364,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             skip_blocking_validations=False,
             persist_intermediary_tables=False,
             skip_raw_data_migrations=False,
+            skip_raw_data_pruning=False,
         )
 
         headers_mock.assert_called_once()
@@ -400,7 +406,8 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             raw_rows_count=1,
         )
         load_mock().append_to_raw_data_table.return_value = AppendSummary(
-            file_id=1, historical_diffs_active=False
+            file_id=1,
+            historical_diffs_active=False,
         )
 
         _import_bq_metadata_to_sandbox(
@@ -413,13 +420,14 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             skip_blocking_validations=False,
             persist_intermediary_tables=False,
             skip_raw_data_migrations=False,
+            skip_raw_data_pruning=False,
         )
 
         headers_mock.assert_called_once()
         pre_import_mock.assert_called_once()
         load_mock().load_and_prep_paths.assert_called_once()
         load_mock().append_to_raw_data_table.assert_has_calls(
-            [call(ANY, persist_intermediary_tables=True)]
+            [call(ANY, persist_intermediary_tables=True, skip_raw_data_pruning=False)]
         )
 
     @patch(
@@ -456,7 +464,8 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             raw_rows_count=1,
         )
         load_mock().append_to_raw_data_table.return_value = AppendSummary(
-            file_id=1, historical_diffs_active=False
+            file_id=1,
+            historical_diffs_active=False,
         )
 
         _import_bq_metadata_to_sandbox(
@@ -469,6 +478,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             skip_blocking_validations=False,
             persist_intermediary_tables=True,
             skip_raw_data_migrations=False,
+            skip_raw_data_pruning=False,
         )
 
         headers_mock.assert_called_once()
@@ -485,7 +495,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             ]
         )
         load_mock().append_to_raw_data_table.assert_has_calls(
-            [call(ANY, persist_intermediary_tables=True)]
+            [call(ANY, persist_intermediary_tables=True, skip_raw_data_pruning=False)]
         )
 
     @patch(
@@ -522,7 +532,8 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             raw_rows_count=1,
         )
         load_mock().append_to_raw_data_table.return_value = AppendSummary(
-            file_id=1, historical_diffs_active=False
+            file_id=1,
+            historical_diffs_active=False,
         )
 
         _import_bq_metadata_to_sandbox(
@@ -535,6 +546,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             skip_blocking_validations=False,
             persist_intermediary_tables=False,
             skip_raw_data_migrations=True,
+            skip_raw_data_pruning=False,
         )
 
         headers_mock.assert_called_once()
@@ -551,5 +563,63 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             ]
         )
         load_mock().append_to_raw_data_table.assert_has_calls(
-            [call(ANY, persist_intermediary_tables=False)]
+            [call(ANY, persist_intermediary_tables=False, skip_raw_data_pruning=False)]
+        )
+
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._validate_headers"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._do_pre_import_normalization"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.DirectIngestRawFileLoadManager"
+    )
+    def test_import_bq_metadata_skip_raw_data_pruning(
+        self,
+        load_mock: MagicMock,
+        pre_import_mock: MagicMock,
+        headers_mock: MagicMock,
+    ) -> None:
+        gcs_files = [
+            RawGCSFileMetadata(
+                path=GcsfsFilePath.from_absolute_path(
+                    "gs://test/unprocessed_2024-01-25T16:35:33:617135_raw_tagMoreBasicData.csv"
+                ),
+                gcs_file_id=1,
+                file_id=1,
+            )
+        ]
+
+        bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
+
+        headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1,
+            historical_diffs_active=False,
+        )
+
+        _import_bq_metadata_to_sandbox(
+            fs=self.mock_gcsfs,
+            bq_client=self.mock_big_query_client,
+            region_config=self.region_raw_file_config,
+            bq_metadata=bq_metadata,
+            sandbox_dataset_prefix="test",
+            infer_schema_from_csv=False,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=False,
+            skip_raw_data_migrations=False,
+            skip_raw_data_pruning=True,
+        )
+
+        headers_mock.assert_called_once()
+        pre_import_mock.assert_not_called()
+        load_mock().load_and_prep_paths.assert_called_once()
+        load_mock().append_to_raw_data_table.assert_has_calls(
+            [call(ANY, persist_intermediary_tables=False, skip_raw_data_pruning=True)]
         )

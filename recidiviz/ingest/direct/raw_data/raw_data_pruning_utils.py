@@ -63,4 +63,4 @@ def get_pruned_table_row_counts(
         )
 
     row = list(results)[0]
-    return row["net_new_or_updated_rows"], row["deleted_rows"]
+    return row["net_new_or_updated_rows"] or 0, row["deleted_rows"] or 0

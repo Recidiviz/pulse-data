@@ -482,6 +482,7 @@ class DirectIngestRawFileLoadManager:
         append_ready_file: AppendReadyFile,
         *,
         persist_intermediary_tables: bool = False,
+        skip_raw_data_pruning: bool = False,
     ) -> AppendSummary:
         """Appends already loaded and transformed data to the raw data table,
         optionally applying a historical data diff to the data if historical diffs
@@ -493,10 +494,9 @@ class DirectIngestRawFileLoadManager:
         net_new_or_updated_rows: Optional[int] = None
         deleted_rows: Optional[int] = None
 
-        # TODO(#12209) add sandbox support for raw data pruning datasets
         temp_raw_data_diff_table_address = BigQueryAddress(
             dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
-                self.state_code, self.raw_data_instance
+                self.state_code, self.raw_data_instance, self.sandbox_dataset_prefix
             ),
             table_id=f"{file.file_tag}__{file.file_id}",
         )
@@ -506,8 +506,9 @@ class DirectIngestRawFileLoadManager:
             table_id=file.file_tag,
         )
 
-        if historical_diffs_active := self._should_generate_historical_diffs(
-            file.file_tag
+        if (
+            historical_diffs_active := not skip_raw_data_pruning
+            and self._should_generate_historical_diffs(file.file_tag)
         ):
 
             self._generate_historical_diff(

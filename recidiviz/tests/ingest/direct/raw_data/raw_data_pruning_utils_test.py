@@ -89,3 +89,17 @@ class TestRawDataPruningUtils(BigQueryEmulatorTestCase):
 
         self.assertEqual(net_new_or_updated, num_new_or_updated)
         self.assertEqual(deleted, num_deleted)
+
+    def test_get_pruned_table_row_counts_empty_table(self) -> None:
+        self._create_test_table_with_data(
+            pd.DataFrame(columns=["is_deleted", "file_id", "update_datetime"])
+        )
+
+        net_new_or_updated, deleted = get_pruned_table_row_counts(
+            big_query_client=self.bq_client,
+            project_id=self.project_id,
+            temp_raw_data_diff_table_address=self.test_address,
+        )
+
+        self.assertEqual(net_new_or_updated, 0)
+        self.assertEqual(deleted, 0)
