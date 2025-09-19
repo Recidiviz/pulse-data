@@ -51,7 +51,7 @@ echo "Checking for existing release tags at tip of [$RELEASE_CANDIDATE_BASE_BRAN
 ALLOW_ALPHA_TAGS=true
 has_recidiviz_data_changes_to_release=$(check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" "${ALLOW_ALPHA_TAGS}")
 has_looker_changes_to_release=$(check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" "${ALLOW_ALPHA_TAGS}" "${TEMP_LOOKER_DIR}")
-if [[ -z ${has_recidiviz_data_changes_to_release} && -z ${has_looker_changes_to_release} ]]; then
+if [[ ${has_recidiviz_data_changes_to_release} -eq 1 && ${has_looker_changes_to_release} -eq 1 ]]; then
         echo_error "The tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH] is already tagged for both Recidiviz/pulse-data and Recidiviz/looker repos - exiting."
         echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
         echo_error "deploy for this version, run \`git push --delete origin <tag name>\` to delete the old tag from"
