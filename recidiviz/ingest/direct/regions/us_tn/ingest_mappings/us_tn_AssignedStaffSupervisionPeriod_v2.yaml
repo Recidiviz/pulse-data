@@ -197,6 +197,11 @@ output:
                   - Z3A # MAXIMUM SUPV PROBATION
                   - ZMA # MAXIMUM SUPV PAROLE
                   - 8HI # HIGH
+                  - WRB # WARRANT ON BOND - We are mapping this as high because this
+                    # means the person has already returned from arrest and are being
+                    # supervised at a higher level because of that arrest, and it
+                    # will be a higher level than your StrongR and the requirements
+                    # will resemble those on high.
 
                 StateSupervisionLevel.MAXIMUM:
                   - 1D1 # SPEC RESTRCT - DRC PHASE 1
@@ -223,13 +228,16 @@ output:
                   - CCU # IN CUSTODY - COMMUNITY CORR (new value as of 7/1/2025)
 
                 StateSupervisionLevel.UNASSIGNED:
+                  - Z # NO SUPERVISION LVL (ARCV)
+
+                StateSupervisionLevel.INTAKE:
                   - 2IN # RESTRICTED - INTAKE
                   - IPA # INTAKE PAROLE
                   - IPR # INTAKE PROBATION
                   - XPA # INTAKE SEX OFFNDR PAROLE
                   - XPR # INTAKE SEX OFFNDR PROB.
-                  - Z # NO SUPERVISION LVL (ARCV)
                   - 7IN # INTAKE REGULAR
+                  - 7SN # INTAKE SEX OFFENDER
 
                 # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                 StateSupervisionLevel.UNSUPERVISED:
@@ -262,11 +270,12 @@ output:
                   - CWS # COMMUNITY CORRECTIONS WARRANT (new value as of 7/1/2025)
                   - CWA # COMMUNITY CORRECTIONS WARRANT ON BOND (new value as of 7/1/2025)
 
+                StateSupervisionLevel.RESIDENTIAL_PROGRAM:
+                  - 9RT # ADM - RES. TREATMNT PLCMT
+                  - RTP # RESIDENT TREATMT PLACEMNT
+                  - ZRE # RESIDENTIAL
                 StateSupervisionLevel.FURLOUGH:
                   - MDF # Medical Furlough
-
-                StateSupervisionLevel.INTAKE:
-                  - 7SN # INTAKE SEX OFFENDER
 
                 # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
@@ -280,11 +289,8 @@ output:
                   - 3RE # ELEVATED - RESISTIVE
                   - 4P3 # STANDARD - PSU PHASE THREE
                   - 9DP # ADM - DEPORTED
-                  - 9RT # ADM - RES. TREATMNT PLCMT
                   - DET # DETAINER STATUS OFFENDER
                   - MSD # MISDEMEANOR OFFENDER
-                  - RTP # RESIDENT TREATMT PLACEMNT
-                  - WRB # WARRANT ON BOND
                   - Z1C # INTENSIVE PHASE 1
                   - Z1E # INTENSIVE ELECTRONIC 1
                   - Z2C # INTENSIVE PHASE 2
@@ -296,7 +302,6 @@ output:
                   - ZDE # DETAINER PAROLE
                   - ZIS # ISC TRANSFER IN
                   - ZIT # INTERSTATE TRANSFER OUTST
-                  - ZRE # RESIDENTIAL
                   - ZS1 # STEP 1
                   - ZS2 # STEP 2
                   - ZS3 # STEP 3
