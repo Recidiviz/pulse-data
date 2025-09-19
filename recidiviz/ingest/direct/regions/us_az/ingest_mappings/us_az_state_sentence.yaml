@@ -20,7 +20,7 @@ input_columns:
   SUBSECTION_CODE: STRING
   DESCRIPTION: STRING
   MURDER_DEGREE: STRING
-  VIOLENCE_FLAG: STRING
+  is_violent: STRING
   SEX_OFFENSE_FLAG: STRING
   TPR_ELIGIBILITY_NOTE: STRING
   is_controlling: BOOLEAN
@@ -92,7 +92,7 @@ output:
                 classification_subtype: MURDER_DEGREE
                 is_violent:
                   $equal:
-                    - VIOLENCE_FLAG
+                    - is_violent
                     - $literal("Y")
                 is_sex_offense:
                   $equal:
