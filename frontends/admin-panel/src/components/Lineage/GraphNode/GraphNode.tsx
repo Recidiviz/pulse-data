@@ -20,10 +20,12 @@ import { Handle, Node, NodeProps, Position } from "@xyflow/react";
 import { AutoTextSize } from "auto-text-size";
 import React, { memo } from "react";
 
+import { useUiStore } from "../../../LineageStore/LineageRootContext";
 import {
   BigQueryGraphDisplayNode,
   GraphDirection,
 } from "../../../LineageStore/types";
+import { buttonize } from "../../Utilities/GeneralUtilities";
 import { BigQueryGraphNodeExpand } from "./GraphNodeExpandComponent";
 
 const BigQueryGraphNode: React.FC<NodeProps<Node<BigQueryGraphDisplayNode>>> =
@@ -38,8 +40,13 @@ const BigQueryGraphNode: React.FC<NodeProps<Node<BigQueryGraphDisplayNode>>> =
       isExpandedDownstream,
     } = data;
 
+    const { setNodeDetailDrawerUrn } = useUiStore();
+
     return (
-      <div className={`graph-node-bbox graph-node-${type.toLowerCase()}`}>
+      <div
+        className={`graph-node-bbox graph-node-${type.toLowerCase()}`}
+        {...buttonize(() => setNodeDetailDrawerUrn(id))}
+      >
         <BigQueryGraphNodeExpand
           direction={GraphDirection.UPSTREAM}
           id={id}

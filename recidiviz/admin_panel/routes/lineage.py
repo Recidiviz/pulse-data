@@ -26,6 +26,8 @@ from recidiviz.admin_panel.admin_stores import get_lineage_store
 from recidiviz.admin_panel.models.lineage_api_schemas import (
     BigQueryBetweenSchema,
     BigQueryNodeExpandedSchema,
+    BigQuerySourceTableExpandedSchema,
+    BigQuerySourceTableMetadata,
     BigQueryViewNodeMetadata,
     LineageGraphSchema,
 )
@@ -72,21 +74,39 @@ class FetchBetweenRoute(MethodView):
         return {"urns": urns}
 
 
-@lineage_blueprint.route("metadata/<dataset_id>/<view_id>")
-class FetchMetadata(MethodView):
+@lineage_blueprint.route("metadata/view/<urn>")
+class FetchViewMetadata(MethodView):
     """Route for fetching metadata about a bq view"""
 
     @lineage_blueprint.response(HTTPStatus.OK, BigQueryNodeExpandedSchema)
     def get(
         self,
-        dataset_id: str,
-        view_id: str,
+        urn: str,
     ) -> BigQueryViewNodeMetadata:
-        address = BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
+        address = BigQueryAddress.from_str(urn)
         metadata = get_lineage_store().get_node_metadata(address)
         if metadata is None:
             abort(
                 HTTPStatus.BAD_REQUEST,
-                message=f"No known view: {dataset_id=} {view_id=}",
+                message=f"No known view: {urn=}",
+            )
+        return metadata
+
+
+@lineage_blueprint.route("metadata/source/<urn>")
+class FetchSourceMetadata(MethodView):
+    """Route for fetching metadata about a bq view"""
+
+    @lineage_blueprint.response(HTTPStatus.OK, BigQuerySourceTableExpandedSchema)
+    def get(
+        self,
+        urn: str,
+    ) -> BigQuerySourceTableMetadata:
+        address = BigQueryAddress.from_str(urn)
+        metadata = get_lineage_store().get_source_metadata(address)
+        if metadata is None:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"No known view: {urn=}",
             )
         return metadata

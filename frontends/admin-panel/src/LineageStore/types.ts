@@ -120,3 +120,18 @@ export enum BigQueryNodeType {
   VIEW = "view",
   SOURCE_TABLE = "source",
 }
+
+export type BigQueryViewLineageDetail = BigQueryLineageMetadata & {
+  description: string;
+  viewQuery: string;
+  materializedAddress?: string;
+};
+
+export type BigQuerySourceLineageDetail = BigQueryLineageMetadata & {
+  description: string;
+};
+
+export enum BigQueryViewType {
+  VIEW = "View",
+  MATERIALIZED_VIEW = "Materialized View",
+}

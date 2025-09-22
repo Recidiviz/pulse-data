@@ -20,6 +20,7 @@ from typing import Sequence
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.admin_panel.models.lineage_api_schemas import (
     BigQueryGraphNode,
+    BigQuerySourceTableMetadata,
     BigQuerySourceTableNode,
     BigQueryViewNode,
     BigQueryViewNodeMetadata,
@@ -27,6 +28,10 @@ from recidiviz.admin_panel.models.lineage_api_schemas import (
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_utils import build_views_to_update
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
+)
+from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
@@ -36,6 +41,9 @@ class LineageStore(AdminPanelStore):
     def __init__(self) -> None:
         self.cache_key = f"{self.__class__}V2"
         self.walker = self._build_walker()
+        self.source_tables = build_source_table_repository_for_collected_schemata(
+            metadata.project_id()
+        )
 
     def _build_walker(self) -> BigQueryViewDagWalker:
         view_builders = deployed_view_builders()
@@ -81,3 +89,12 @@ class LineageStore(AdminPanelStore):
             return None
 
         return BigQueryViewNodeMetadata.from_node(node)
+
+    def get_source_metadata(
+        self, address: BigQueryAddress
+    ) -> BigQuerySourceTableMetadata | None:
+        config = self.source_tables.source_tables.get(address)
+        if not config:
+            return None
+
+        return BigQuerySourceTableMetadata.from_source_table_config(config)

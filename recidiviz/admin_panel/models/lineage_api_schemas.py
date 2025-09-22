@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagNode
 from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
 from recidiviz.common.attr_converters import optional_enum_value_from_enum
+from recidiviz.source_tables.source_table_config import SourceTableConfig
 
 
 class BigQueryNodeType(Enum):
@@ -85,6 +86,15 @@ class BigQueryNodeExpandedSchema(BigQueryNodeLimitedSchema):
     description = fields.Str(required=True)
     view_query = fields.Str()
     materialized_address = fields.Str()
+    # TODO(#46345): populate this w/ add'l info from bq???
+
+
+class BigQuerySourceTableExpandedSchema(BigQueryNodeLimitedSchema):
+    """Schema representing a fuller set of fields and metadata about a node that
+    represents a source table in our big query view graph
+    """
+
+    description = fields.Str(required=True)
     # TODO(#46345): populate this w/ add'l info from bq???
 
 
@@ -227,4 +237,29 @@ class BigQueryViewNodeMetadata(BigQueryViewNode):
             view_query=node.view.view_query,
             materialized_address=materialized_address,
             state_code=node.view.address.state_code_for_address(),
+        )
+
+
+@attr.define(kw_only=True)
+class BigQuerySourceTableMetadata(BigQuerySourceTableNode):
+    """Attr version of a fuller set of fields and metadata about a node that represents
+    a source table
+    """
+
+    config: SourceTableConfig = attr.field()
+    description: str = attr.field()
+    # TODO(#46345): populate this w/ add'l info?? like schema? or yaml?
+
+    @classmethod
+    def from_source_table_config(
+        cls, config: SourceTableConfig
+    ) -> "BigQuerySourceTableMetadata":
+        return cls(
+            urn=config.address.to_str(),
+            address=config.address,
+            config=config,
+            view_id=config.address.table_id,
+            dataset_id=config.address.dataset_id,
+            description=config.description,
+            state_code=config.address.state_code_for_address(),
         )

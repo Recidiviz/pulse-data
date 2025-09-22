@@ -15,7 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { GraphType } from "../LineageStore/types";
+import {
+  BigQuerySourceLineageDetail,
+  BigQueryViewLineageDetail,
+  GraphType,
+  NodeUrn,
+} from "../LineageStore/types";
 import { get, getResource } from "./utils";
 
 export const fetchNodes = async (): Promise<GraphType> => {
@@ -23,10 +28,15 @@ export const fetchNodes = async (): Promise<GraphType> => {
 };
 
 export const fetchViewMetadata = async (
-  datasetId: string,
-  viewId: string
-): Promise<GraphType> => {
-  return get(`/admin/lineage/metadata/${datasetId}/${viewId}`);
+  urn: NodeUrn
+): Promise<BigQueryViewLineageDetail> => {
+  return get(`/admin/lineage/metadata/view/${urn}`);
+};
+
+export const fetchSourceMetadata = async (
+  urn: NodeUrn
+): Promise<BigQuerySourceLineageDetail> => {
+  return get(`/admin/lineage/metadata/source/${urn}`);
 };
 
 export const fetchNodesBetween = async (

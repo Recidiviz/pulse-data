@@ -49,6 +49,9 @@ export class UiStore {
   // whether or not the filter modal is currently active
   filterModalOpen: boolean;
 
+  // whether or not the detail drawer is open
+  nodeDetailDrawerUrn?: NodeUrn;
+
   constructor(public rootStore: LineageRootStore) {
     this.nodeFilters = [];
     this.filterModalOpen = false;
@@ -60,6 +63,18 @@ export class UiStore {
       },
       { autoBind: true }
     );
+  }
+
+  // whether or not the node detail drawer should be open
+  get nodeDetailDrawerOpen() {
+    return this.nodeDetailDrawerUrn !== undefined;
+  }
+
+  // the corresponding node of the open urn, if one is active
+  get nodeDetailDrawerNode() {
+    return this.nodeDetailDrawerUrn
+      ? this.rootStore.graphStore.nodeFromUrn(this.nodeDetailDrawerUrn)
+      : undefined;
   }
 
   // builds the autocomplete options for the search bar
@@ -155,6 +170,10 @@ export class UiStore {
 
   setFilterModalState = (open: boolean) => {
     this.filterModalOpen = open;
+  };
+
+  setNodeDetailDrawerUrn = (urn?: NodeUrn) => {
+    this.nodeDetailDrawerUrn = urn;
   };
 
   /**

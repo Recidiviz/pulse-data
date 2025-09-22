@@ -1,0 +1,91 @@
+/* Recidiviz - a data platform for criminal justice reform
+ Copyright (C) 2025 Recidiviz, Inc.
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ =============================================================================
+*/
+
+
+div {
+  --supporting-text-color: #333;
+}
+@media (prefers-color-scheme: dark) {
+  div {
+  --supporting-text-color: #DBE0E1 ;
+  }
+}
+
+
+
+.graph-detail-title {
+  border-radius: 5px 0 0 0;
+  color: var(--text-color);
+  height: 64px;
+  width: 100%;
+  display: flex;
+}
+.graph-detail-title-view {
+border-left: 3px solid var(--view-bbox);
+ }
+.graph-detail-title-source {
+border-left: 3px solid var(--source-bbox);
+ }
+
+.graph-detail-icon{
+  border-radius: 5px;
+  font-size: 48px;
+  height: 64px;
+  width: 8%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+.graph-detail-icon-view{
+  color: var(--view-bbox);
+}
+.graph-detail-icon-source{
+  color: var(--source-bbox);
+}
+
+
+.graph-detail-spacer {
+  width: 1%;
+}
+
+.group-detail-info{ 
+  flex-direction: column;
+  width: 87%;
+}
+
+.graph-detail-view-label {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.graph-detail-dataset-label {
+  font-size: 16px;
+  color: var(--supporting-text-color);
+}
+
+a.no-underline-hyperlink {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.no-underline-hyperlink-source:hover {
+  color: var(--source-bbox);
+}
+a.no-underline-hyperlink-view:hover {
+  color: var(--view-bbox);
+}

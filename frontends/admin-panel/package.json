@@ -27,6 +27,7 @@
     "prop-types": "^15.7.2",
     "querystringify": "^2.2.0",
     "react": "^17.0.0",
+    "react-code-blocks": "^0.1.6",
     "react-dom": "^17.0.0",
     "react-draggable": "^4.5.0",
     "react-fluid-text": "^0.1.1",

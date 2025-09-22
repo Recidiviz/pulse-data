@@ -36,6 +36,7 @@ import { getErrorMessage, isHydrated } from "../../LineageStore/Utils";
 import { LINEAGE_BASE } from "../../navigation/Lineage";
 import { defaultFitViewOptions } from "./Constants";
 import BigQueryGraphNode from "./GraphNode/GraphNode";
+import { GraphNodeDetailDrawer } from "./GraphNode/GraphNodeDetailDrawer";
 import { LineageToolbar } from "./LineageToolbar/LineageToolbar";
 import { NodeFilterModal } from "./LineageToolbar/NodeFilterModal/NodeFilterModal";
 
@@ -132,6 +133,7 @@ function LineageGraph() {
       />
       <Controls />
       <NodeFilterModal />
+      <GraphNodeDetailDrawer />
       <Background gap={12} size={1} className="background-canvas" />
     </ReactFlow>
   );

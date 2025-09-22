@@ -19,11 +19,16 @@ import * as React from "react";
 interface NewTabLinkProps {
   href: string;
   children: React.ReactNode;
+  className?: string;
 }
 
-const NewTabLink = ({ href, children }: NewTabLinkProps): JSX.Element => {
+const NewTabLink = ({
+  href,
+  className,
+  children,
+}: NewTabLinkProps): JSX.Element => {
   return (
-    <a href={href} target="_blank" rel="noreferrer">
+    <a href={href} target="_blank" rel="noreferrer" className={className}>
       {children}
     </a>
   );
