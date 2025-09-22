@@ -151,6 +151,7 @@ const items: MenuProps["items"] = [
       LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE
     ),
   ]),
+  getItem("Lineage", Lineage.LINEAGE_BASE),
   getItem("On-Call", OnCall.ON_CALL_BASE_ROUTE),
 ];
 
