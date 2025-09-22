@@ -170,37 +170,6 @@ class TestDistinctPrimaryKeyValidation(BigQueryEmulatorTestCase):
 
         self.assertIsNone(error)
 
-    def test_case_insensitivity(self) -> None:
-        expected_error_msg = (
-            f"Found duplicate primary keys for raw file [{self.file_tag}]"
-            "\nPrimary key columns: ['id', 'name']"
-        )
-        temp_table_data = [
-            {"id": "1", "name": "Alice", "value": 10},
-            {"id": "2", "name": "Bob", "value": 20},
-            {
-                "id": "1",
-                "name": "alice",
-                "value": 40,
-            },  # Duplicate by case-insensitivity
-            {"id": "3", "name": "Charlie", "value": 30},
-        ]
-        self._load_data(temp_table_data=temp_table_data)
-
-        results = self.query(self.validation.build_query())
-        error = self.validation.get_error_from_results(results.to_dict("records"))
-
-        if error is None:
-            self.fail("Expected an error to be returned.")
-        self.assertEqual(
-            error.validation_type,
-            RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS,
-        )
-        self.assertEqual(
-            expected_error_msg,
-            error.error_msg,
-        )
-
     def test_duplicate_keys(self) -> None:
         expected_error_message = (
             f"Found duplicate primary keys for raw file [{self.file_tag}]"

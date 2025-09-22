@@ -31,9 +31,9 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type impo
 from recidiviz.utils.string import StrictStringFormatter
 
 DISTINCT_PRIMARY_KEY_QUERY_TEMPLATE = """
-SELECT {select_lower_primary_keys_clause}
+SELECT {primary_key_cols}
 FROM `{project_id}.{dataset_id}.{table_id}`
-GROUP BY {group_by_clause}
+GROUP BY {primary_key_cols}
 HAVING COUNT(*) > 1
 LIMIT 1 
 """
@@ -79,10 +79,7 @@ class DistinctPrimaryKeyValidation(
             project_id=self.project_id,
             dataset_id=self.temp_table_address.dataset_id,
             table_id=self.temp_table_address.table_id,
-            select_lower_primary_keys_clause=", ".join(
-                f"LOWER({col}) as lower_{col}" for col in self.primary_key_cols
-            ),
-            group_by_clause=", ".join(f"lower_{col}" for col in self.primary_key_cols),
+            primary_key_cols=", ".join(self.primary_key_cols),
         )
 
     def get_error_from_results(
