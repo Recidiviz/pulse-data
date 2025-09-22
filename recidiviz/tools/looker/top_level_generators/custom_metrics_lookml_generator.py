@@ -49,6 +49,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configura
     INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
     INSIGHTS_IMPACT_LOOKER_METRICS,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_jii_tablet_app_metrics_configurations import (
+    JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
+    JII_TABLET_APP_IMPACT_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     build_assignments_by_time_period_lookml_view,
     build_assignments_lookml_view,
@@ -172,6 +176,15 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=GLOBAL_IMPACT_LOOKER_METRICS,
             assignment_types_dict=GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        # JII tablet app
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="jii_tablet_app_metrics",
+            output_directory=output_subdir,
+            metrics=JII_TABLET_APP_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
         )
 
