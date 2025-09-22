@@ -33,7 +33,6 @@ import functools
 import logging
 import os
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from inspect import getmembers, isfunction
@@ -46,6 +45,10 @@ from recidiviz.admin_panel.models import validation_pb2
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
     app_rules,
+)
+from recidiviz.tools.validation.git_validation_utils import (
+    get_commits_with_pattern,
+    get_modified_files,
 )
 
 ADMIN_PANEL_DIRECTORY = "frontends/admin-panel/src"
@@ -92,6 +95,7 @@ def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
     return file_for_endpoint
 
 
+# TODO(#47719) Remove dead code
 def _get_modified_endpoints() -> List[RequiredModificationSets]:
     """Returns the dynamic set of documentation for the App Engine endpoints and the corresponding
     source code modifications."""
@@ -267,16 +271,6 @@ def check_assertions(
     return failed_assertion_files
 
 
-def _get_modified_files(commit_range: str) -> FrozenSet[str]:
-    """Returns a set of all files that have been modified in the given commit range."""
-    git = subprocess.run(
-        ["git", "diff", "--name-only", commit_range],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
-    return frozenset(git.stdout.decode().splitlines())
-
-
 def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str], str]) -> str:
     """Returns the set of source modification assertion failures in a pretty-printable format."""
     matched_prefixes = failure[0]
@@ -311,26 +305,11 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
     This is determined based on the commit messages in this range, i.e. whether commit messages were written to skip
     either all assertion sets or specific assertion sets.
     """
-    git = subprocess.run(
-        [
-            "git",
-            "log",
-            "--format=%h %B",
-            f"--grep={_SKIP_COMMIT_REGEX}",
-            commit_range,
-        ],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
-
-    if git.returncode != 0:
-        logging.error("git log failed")
-        sys.exit(git.returncode)
+    commit_lines = get_commits_with_pattern(commit_range, _SKIP_COMMIT_REGEX)
+    commit_output = "\n".join(commit_lines)
 
     sets_to_skip = set()  # type: Set[str]
-    full_validation_message = re.findall(
-        r"\[skip validation(.*?)\]", git.stdout.decode()
-    )
+    full_validation_message = re.findall(r"\[skip validation(.*?)\]", commit_output)
     if full_validation_message:
         for valid_message in full_validation_message:
             skip_sets = [
@@ -346,7 +325,7 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
 def main(commit_range: str) -> None:
     assertions_to_skip = _get_assertions_to_skip(commit_range)
 
-    failures = check_assertions(_get_modified_files(commit_range), assertions_to_skip)
+    failures = check_assertions(get_modified_files(commit_range), assertions_to_skip)
     return_code = 0
     if failures:
         return_code = 1
