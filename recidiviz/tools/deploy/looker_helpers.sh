@@ -147,7 +147,7 @@ function verify_looker_repo_credentials {
     echo "To fix:"
     echo "1. Create a GitHub personal access token (PAT) with read and write access to the Looker repo."
     echo " https://github.com/settings/tokens"
-    echo "2. Run git clone $LOOKER_REPO_URL $LOOKER_REPO_DIR to verify your credentials are set up correctly."
+    echo "2. Run git clone $LOOKER_REPO_URL $TEMP_LOOKER_DIR to verify your credentials are set up correctly."
     echo "When prompted for a username, use your GitHub username."
     echo "When prompted for a password, use the PAT you just created."
     exit 1
