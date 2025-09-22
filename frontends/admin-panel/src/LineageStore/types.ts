@@ -18,6 +18,7 @@
 /* --- lineage graph types -------------------------------------------------------------
 types related to how we represent the how nodes are connected to each other, but does 
 not include metadata about how they are displayed
+----------------------------------------------------------------------------------------
 */
 // a node's unique identifier; for now, for BQ views this is just `dataset.view`
 export type NodeUrn = string;
@@ -32,6 +33,7 @@ export type LineageNode = {
 
 /* --- display graph types -------------------------------------------------------------
 types related to how we display the view graph visually using reactflow
+----------------------------------------------------------------------------------------
 */
 // base type for metadata about what nodes are being displayed in the graph visual
 export type GraphDisplayMetadata = LineageNode & {
@@ -67,6 +69,18 @@ export type NodePosition = {
   y: number;
 };
 
+/* --- graph filter types ----------------------------------------------------------- */
+
+export enum NodeFilterType {
+  INCLUDE = "INCLUDE",
+  EXCLUDE = "EXCLUDE",
+}
+
+export enum NodeFilterKey {
+  STATE_CODE_FILTER = "STATE_CODE",
+  DATASET_ID_FILTER = "DATASET_ID",
+}
+
 /* --- graph api types -------------------------------------------------------------- */
 
 // represents the most basic amount of information we expect the api to return about
@@ -77,24 +91,27 @@ export type GraphApiNodeType = {
 
 // represents a graph "edge", or a reference/dependence between two nodes
 export type GraphReferenceType = {
-  sourceUrn: NodeUrn;
-  targetUrn: NodeUrn;
+  source: NodeUrn;
+  target: NodeUrn;
 };
 
 // api rep of the entire graph
 export type GraphType = {
-  nodes: GraphApiNodeType[];
+  nodes: BigQueryLineageMetadata[];
   references: GraphReferenceType[];
 };
 
 /* --- big query nodes info & types ------------------------------------------------- */
 
-export type BigQueryLineageNode = LineageNode & {
+export type BigQueryLineageMetadata = {
+  urn: NodeUrn;
   type: BigQueryNodeType;
   viewId: string;
   datasetId: string;
   stateCode: string | null;
 };
+
+export type BigQueryLineageNode = LineageNode & BigQueryLineageMetadata;
 
 export type BigQueryGraphDisplayNode = GraphDisplayMetadata &
   BigQueryLineageNode;

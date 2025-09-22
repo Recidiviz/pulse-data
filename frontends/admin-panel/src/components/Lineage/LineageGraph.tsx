@@ -35,8 +35,9 @@ import { useLineageRootStore } from "../../LineageStore/LineageRootContext";
 import { getErrorMessage, isHydrated } from "../../LineageStore/Utils";
 import { LINEAGE_BASE } from "../../navigation/Lineage";
 import { defaultFitViewOptions } from "./Constants";
-import { GraphAutoCompleteSearchBar } from "./GraphAutoCompleteSearch/GraphAutoCompleteSearch";
 import BigQueryGraphNode from "./GraphNode/GraphNode";
+import { LineageToolbar } from "./LineageToolbar/LineageToolbar";
+import { NodeFilterModal } from "./LineageToolbar/NodeFilterModal/NodeFilterModal";
 
 const nodeTypes = {
   view: BigQueryGraphNode,
@@ -47,7 +48,7 @@ function LineageGraph() {
     graphStore: {
       nodes,
       edges,
-      selectedNode,
+      selectedNodeUrn,
       resetGraphToActiveNode,
       handleReactFlowNodesChange,
       handleReactFlowEdgesChange,
@@ -77,7 +78,7 @@ function LineageGraph() {
   useEffect(() => {
     if (datasetId && viewId && isHydrated(hydrationState)) {
       const newActiveNode = `${datasetId}.${viewId}`;
-      if (newActiveNode !== selectedNode) {
+      if (newActiveNode !== selectedNodeUrn) {
         try {
           resetGraphToActiveNode(newActiveNode);
           fitView({
@@ -93,7 +94,7 @@ function LineageGraph() {
   }, [
     datasetId,
     viewId,
-    selectedNode,
+    selectedNodeUrn,
     resetGraphToActiveNode,
     hydrationState,
     fitView,
@@ -119,7 +120,7 @@ function LineageGraph() {
       debug
       minZoom={0.01}
     >
-      <GraphAutoCompleteSearchBar />
+      <LineageToolbar />
       <MiniMap
         nodeColor={(n) => {
           if (n.data.type === "view") return "#4c6290";
@@ -130,6 +131,7 @@ function LineageGraph() {
         pannable
       />
       <Controls />
+      <NodeFilterModal />
       <Background gap={12} size={1} className="background-canvas" />
     </ReactFlow>
   );

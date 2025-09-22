@@ -20,6 +20,7 @@ import { createContext, useContext } from "react";
 import { GraphStore } from "./GraphStore";
 import { LineageRootStore } from "./LineageRootStore";
 import { LineageStore } from "./LineageStore";
+import { UiStore } from "./UiStore";
 
 export const LineageRootContext = createContext<LineageRootStore | undefined>(
   undefined
@@ -39,4 +40,8 @@ export function useLineageStore(): LineageStore {
 
 export function useGraphStore(): GraphStore {
   return useLineageRootStore().graphStore;
+}
+
+export function useUiStore(): UiStore {
+  return useLineageRootStore().uiStore;
 }

@@ -14,24 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { Node as RFNode } from "@xyflow/react";
 
-import { GraphStore } from "./GraphStore";
-import { LineageStore } from "./LineageStore";
-import { UiStore } from "./UiStore";
+import {
+  BigQueryGraphDisplayNode,
+  NodeFilterKey,
+  NodeFilterType,
+} from "../types";
 
-export class LineageRootStore {
-  // stores information and metadata about the parts of the graph we can see
-  graphStore: GraphStore;
+export interface NodeFilter {
+  type: NodeFilterType;
+  key: NodeFilterKey;
+  value: string;
 
-  // stores information and metadata about the graph itself
-  lineageStore: LineageStore;
-
-  // stores information and metadata about stateful UI elements layered on top of the graph
-  uiStore: UiStore;
-
-  constructor() {
-    this.graphStore = new GraphStore(this);
-    this.lineageStore = new LineageStore();
-    this.uiStore = new UiStore(this);
-  }
+  /**
+   * Boolean for whether or not |node| should be included in the graph as a result of
+   * this filter
+   */
+  shouldIncludeNode(node: RFNode<BigQueryGraphDisplayNode>): boolean;
 }

@@ -27,28 +27,28 @@ import {
 } from "@xyflow/react";
 import { makeAutoObservable, runInAction } from "mobx";
 
-import { buildNewNodeWithDefaults } from "../components/Lineage/GraphNode/NodeBuilder";
+import { buildNewBigQueryNodeWithDefaults } from "../components/Lineage/GraphNode/NodeBuilder";
 import { DagreEngine } from "../components/Lineage/Layout/DagreEngine";
 import { LayoutEngine } from "../components/Lineage/Layout/LayoutEngine";
 import { LineageRootStore } from "./LineageRootStore";
 import {
+  BigQueryGraphDisplayNode,
   BigQueryLineageNode,
   GraphDirection,
   GraphDisplayNode,
-  LineageNode,
   NodeUrn,
 } from "./types";
-import { createBigQueryNodeAutoCompleteGroups, throwExpression } from "./Utils";
+import { throwExpression } from "./Utils";
 
 /**
- * Store for managing the graph's visual state and behavior.
+ * Store for managing the graph's state and behavior.
  */
 export class GraphStore {
   // the node that is searched -- should be reflected in the url of the page
-  selectedNode?: NodeUrn;
+  selectedNodeUrn?: NodeUrn;
 
   // nodes that are passed to ReactFlow to render in the graph
-  nodes: Node<GraphDisplayNode>[];
+  nodes: Node<BigQueryGraphDisplayNode>[];
 
   // edges that are passed to ReactFlow to render in the graph
   edges: Edge[];
@@ -57,7 +57,7 @@ export class GraphStore {
   layoutEngine: LayoutEngine;
 
   constructor(public rootStore: LineageRootStore) {
-    this.selectedNode = undefined;
+    this.selectedNodeUrn = undefined;
     this.nodes = [];
     this.edges = [];
     this.layoutEngine = new DagreEngine();
@@ -71,26 +71,30 @@ export class GraphStore {
     );
   }
 
-  get autoCompleteOptions() {
-    return createBigQueryNodeAutoCompleteGroups(
-      Array.from(
-        this.rootStore.lineageStore.nodes.values()
-      ) as BigQueryLineageNode[]
-    );
+  get hasSelectedNode() {
+    return this.selectedNodeUrn !== undefined;
+  }
+
+  get selectedNode() {
+    return this.selectedNodeUrn
+      ? this.nodeFromUrn(this.selectedNodeUrn)
+      : undefined;
   }
 
   /**
    * Resets the graph to be a single node.
    */
   resetGraphToActiveNode = (urn: NodeUrn) => {
-    this.selectedNode = urn;
+    this.selectedNodeUrn = urn;
     this.edges = [];
     this.nodes = [
-      buildNewNodeWithDefaults(this.rootStore.lineageStore.nodeForUrn(urn)),
+      buildNewBigQueryNodeWithDefaults(
+        this.rootStore.lineageStore.nodeForUrn(urn)
+      ),
     ];
   };
 
-  nodeFromUrn = (urn: NodeUrn): Node<GraphDisplayNode> => {
+  nodeFromUrn = (urn: NodeUrn): Node<BigQueryGraphDisplayNode> => {
     const expandedNodeIndex = this.nodes.findIndex((n) => n.id === urn);
     if (expandedNodeIndex === -1) {
       throwExpression(`Found no nodes for urn: ${urn}`);
@@ -122,32 +126,53 @@ export class GraphStore {
   };
 
   /**
-   * Given a new set of nodes |newNodes|, recalculates the nodes positions and updates
-   * the graph nodes and edges state.
+   * Adds |newNodes| to the graph and recalculates the node positions and relevant edges,
+   * updating the graph nodes and edges state accordingly.
    */
-  recalculateNodePositions = async (
-    newNodes: LineageNode[],
+  addAndRecalculateNodePositions = async (
+    newNodes: BigQueryLineageNode[],
     nodeToAnchor?: Node<GraphDisplayNode>
   ) => {
     // build new list of nodes and edges
     const allNodesWithoutPositions = [
       ...this.nodes,
-      ...newNodes.map((n) => buildNewNodeWithDefaults(n)),
+      ...newNodes.map((n) => buildNewBigQueryNodeWithDefaults(n)),
     ];
 
+    const { displayedNodes, hiddenNodes } =
+      this.rootStore.uiStore.applyFiltersToExistingNodes(
+        allNodesWithoutPositions
+      );
+
+    await this.recalculateNodePositions(
+      displayedNodes,
+      hiddenNodes,
+      nodeToAnchor
+    );
+  };
+
+  /**
+   * Recalculates the node positions and relevant edges, updating the graph nodes and
+   * edges state accordingly.
+   */
+  recalculateNodePositions = async (
+    displayedNodes: Node<BigQueryGraphDisplayNode>[],
+    hiddenNodes: Node<BigQueryGraphDisplayNode>[],
+    nodeToAnchor?: Node<GraphDisplayNode>
+  ) => {
     const newEdges = this.rootStore.lineageStore.computeEdgesFromNodes(
-      allNodesWithoutPositions.map((n) => n.id)
+      displayedNodes.map((n) => n.id)
     );
 
     // recalculate node positions
     const newNodePositionMap = await this.layoutEngine.layout(
-      allNodesWithoutPositions,
+      displayedNodes,
       newEdges,
       nodeToAnchor
     );
 
     // update state with new positions
-    const newNodesWithPositions = allNodesWithoutPositions.map((node) => {
+    const newNodesWithPositions = displayedNodes.map((node) => {
       const newPosition =
         newNodePositionMap.get(node.id) ??
         throwExpression(
@@ -157,11 +182,15 @@ export class GraphStore {
       return {
         ...nonPositionContents,
         position: newPosition,
+        hidden: false,
       };
     });
 
     runInAction(() => {
-      this.nodes = newNodesWithPositions;
+      this.nodes = [
+        ...newNodesWithPositions,
+        ...hiddenNodes.map((n) => ({ ...n, hidden: true })),
+      ];
       this.edges = newEdges;
     });
   };
@@ -177,7 +206,7 @@ export class GraphStore {
       direction,
       this.nodes
     );
-    this.recalculateNodePositions(expandedNodeUrns, nodeToExpand);
+    this.addAndRecalculateNodePositions(expandedNodeUrns, nodeToExpand);
   };
 
   // eslint-disable-next-line class-methods-use-this
@@ -193,7 +222,7 @@ export class GraphStore {
     this.rootStore.lineageStore
       .fetchBetween(sourceUrn, targetUrn, this.nodes)
       .then((graphUpdates) => {
-        this.recalculateNodePositions(graphUpdates, nodeToExpand);
+        this.addAndRecalculateNodePositions(graphUpdates, nodeToExpand);
       });
   };
 
@@ -202,7 +231,7 @@ export class GraphStore {
    * nodes
    */
   handleReactFlowNodesChange = (
-    changes: NodeChange<Node<GraphDisplayNode>>[]
+    changes: NodeChange<Node<BigQueryGraphDisplayNode>>[]
   ) => {
     this.nodes = applyNodeChanges(changes, this.nodes);
   };

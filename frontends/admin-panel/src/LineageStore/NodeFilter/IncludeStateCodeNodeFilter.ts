@@ -14,24 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { Node } from "@xyflow/react";
 
-import { GraphStore } from "./GraphStore";
-import { LineageStore } from "./LineageStore";
-import { UiStore } from "./UiStore";
+import {
+  BigQueryGraphDisplayNode,
+  NodeFilterKey,
+  NodeFilterType,
+} from "../types";
+import { NodeFilter } from "./NodeFilter";
 
-export class LineageRootStore {
-  // stores information and metadata about the parts of the graph we can see
-  graphStore: GraphStore;
+export class IncludeStateCodeNodeFilter implements NodeFilter {
+  key: NodeFilterKey = NodeFilterKey.STATE_CODE_FILTER;
 
-  // stores information and metadata about the graph itself
-  lineageStore: LineageStore;
+  type: NodeFilterType = NodeFilterType.INCLUDE;
 
-  // stores information and metadata about stateful UI elements layered on top of the graph
-  uiStore: UiStore;
+  // eslint-disable-next-line no-useless-constructor
+  constructor(public value: string) {}
 
-  constructor() {
-    this.graphStore = new GraphStore(this);
-    this.lineageStore = new LineageStore();
-    this.uiStore = new UiStore(this);
+  shouldIncludeNode(node: Node<BigQueryGraphDisplayNode>): boolean {
+    // allow state-agnostic and matching state-specific nodes through
+    return node.data.stateCode === null || node.data.stateCode === this.value;
   }
 }

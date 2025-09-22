@@ -24,25 +24,37 @@ Object {
     Array [
       "fake-dataset.fake-table",
       Object {
+        "datasetId": "fake-dataset",
         "hasDownstream": true,
         "hasUpstream": false,
+        "stateCode": null,
+        "type": "view",
         "urn": "fake-dataset.fake-table",
+        "viewId": "fake-table",
       },
     ],
     Array [
       "fake-dataset.fake-table-2",
       Object {
+        "datasetId": "fake-dataset",
         "hasDownstream": false,
         "hasUpstream": true,
+        "stateCode": null,
+        "type": "view",
         "urn": "fake-dataset.fake-table-2",
+        "viewId": "fake-table-2",
       },
     ],
     Array [
       "fake-dataset.fake-table-3",
       Object {
+        "datasetId": "fake-dataset",
         "hasDownstream": false,
         "hasUpstream": true,
+        "stateCode": null,
+        "type": "view",
         "urn": "fake-dataset.fake-table-3",
+        "viewId": "fake-table-3",
       },
     ],
   ],

@@ -16,27 +16,28 @@
 // =============================================================================
 import "./GraphAutoCompleteSearch.css";
 
-import { Panel, useReactFlow } from "@xyflow/react";
+import { useReactFlow } from "@xyflow/react";
 import { AutoComplete, Input, message } from "antd";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
 
-import { useLineageRootStore } from "../../../LineageStore/LineageRootContext";
-import { getErrorMessage } from "../../../LineageStore/Utils";
-import { LINEAGE_BASE } from "../../../navigation/Lineage";
-import { defaultFitViewOptions } from "../Constants";
+import { useLineageRootStore } from "../../../../LineageStore/LineageRootContext";
+import { getErrorMessage } from "../../../../LineageStore/Utils";
+import { LINEAGE_BASE } from "../../../../navigation/Lineage";
+import { defaultFitViewOptions } from "../../Constants";
 
 export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
   const {
-    graphStore: { selectedNode, resetGraphToActiveNode, autoCompleteOptions },
+    graphStore: { selectedNodeUrn, resetGraphToActiveNode },
+    uiStore: { autoCompleteOptions },
   } = useLineageRootStore();
   const history = useHistory();
   const { fitView } = useReactFlow();
   const [searchValue, setSearchValue] = useState("");
 
   const handleSearch = (value: string) => {
-    if (value.trim() && value.trim() !== selectedNode) {
+    if (value.trim() && value.trim() !== selectedNodeUrn) {
       try {
         resetGraphToActiveNode(value.trim());
         fitView({
@@ -54,28 +55,26 @@ export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
   };
 
   return (
-    <Panel position="top-left">
-      <AutoComplete
-        options={autoCompleteOptions}
-        value={searchValue}
-        filterOption
-        onSelect={(value) => {
-          handleSearch(value);
-        }}
-        // TODO(#46345): dynamically setting the view width to expand when we are
-        // searching as some of the results can be hard to read
-      >
-        <Input.Search
-          className="node-search"
-          placeholder="Search by view name..."
-          enterButton
-          allowClear
-          onChange={(s) => setSearchValue(s.target.value)}
-          onSearch={(e) => handleSearch(e)}
-          size="large"
-          style={{ width: "25vw" }}
-        />
-      </AutoComplete>
-    </Panel>
+    <AutoComplete
+      options={autoCompleteOptions}
+      value={searchValue}
+      filterOption
+      onSelect={(value) => {
+        handleSearch(value);
+      }}
+      // TODO(#46345): dynamically setting the view width to expand when we are
+      // searching as some of the results can be hard to read
+    >
+      <Input.Search
+        className="node-search"
+        placeholder="Search by view name..."
+        enterButton
+        allowClear
+        onChange={(s) => setSearchValue(s.target.value)}
+        onSearch={(e) => handleSearch(e)}
+        size="large"
+        style={{ width: "25vw" }}
+      />
+    </AutoComplete>
   );
 });

@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagNode
 from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
+from recidiviz.common.attr_converters import optional_enum_value_from_enum
 
 
 class BigQueryNodeType(Enum):
@@ -55,8 +56,8 @@ class BigQueryNodeLimitedSchema(LineageNodeSchema):
 class LineageReferenceSchema(CamelCaseSchema):
     """Schema representing a reference between two LineageNodes"""
 
-    source_urn = fields.Str(required=True)
-    target_urn = fields.Str(required=True)
+    source = fields.Str(required=True)
+    target = fields.Str(required=True)
 
 
 class BigQueryBetweenSchema(CamelCaseSchema):
@@ -94,16 +95,16 @@ class BigQueryNodeExpandedSchema(BigQueryNodeLimitedSchema):
 class LineageReference:
     """Attr representation of reference between two lineage nodes"""
 
-    source_urn: str = attr.field()
-    target_urn: str = attr.field()
+    source: str = attr.field()
+    target: str = attr.field()
 
     @classmethod
     def for_bq_view(cls, view: BigQueryView) -> list["LineageReference"]:
         return [
             cls(
                 # TODO(#46345): be smarter about removing this
-                source_urn=parent.to_str().removesuffix("_materialized"),
-                target_urn=view.address.to_str(),
+                source=parent.to_str().removesuffix("_materialized"),
+                target=view.address.to_str(),
             )
             for parent in view.parent_tables
         ]
@@ -112,14 +113,14 @@ class LineageReference:
     def for_bq_node(cls, node: BigQueryViewDagNode) -> list["LineageReference"]:
         return [
             cls(
-                source_urn=parent.to_str(),
-                target_urn=node.view.address.to_str(),
+                source=parent.to_str(),
+                target=node.view.address.to_str(),
             )
             for parent in node.parent_node_addresses
         ] + [
             cls(
-                source_urn=source.to_str(),
-                target_urn=node.view.address.to_str(),
+                source=source.to_str(),
+                target=node.view.address.to_str(),
             )
             for source in node.source_addresses
         ]
@@ -145,6 +146,7 @@ class BigQueryGraphNode(LineageNode):
     type: BigQueryNodeType = attr.field()
     view_id: str = attr.field()
     dataset_id: str = attr.field()
+    state_code: str | None = attr.field(converter=optional_enum_value_from_enum)
 
     @abc.abstractmethod
     def upstream_references(self) -> list[LineageReference]:
@@ -167,6 +169,7 @@ class BigQueryViewNode(BigQueryGraphNode):
             node=node,
             view_id=node.view.view_id,
             dataset_id=node.view.dataset_id,
+            state_code=node.view.address.state_code_for_address(),
         )
 
     def upstream_references(self) -> list[LineageReference]:
@@ -190,6 +193,7 @@ class BigQuerySourceTableNode(BigQueryGraphNode):
             address=address,
             view_id=address.table_id,
             dataset_id=address.dataset_id,
+            state_code=address.state_code_for_address(),
         )
 
     def upstream_references(self) -> list[LineageReference]:
@@ -222,4 +226,5 @@ class BigQueryViewNodeMetadata(BigQueryViewNode):
             description=node.view.description,
             view_query=node.view.view_query,
             materialized_address=materialized_address,
+            state_code=node.view.address.state_code_for_address(),
         )

@@ -16,11 +16,14 @@
 // =============================================================================
 import { Node } from "@xyflow/react";
 
-import { GraphDisplayNode, LineageNode } from "../../../LineageStore/types";
+import {
+  BigQueryGraphDisplayNode,
+  BigQueryLineageNode,
+} from "../../../LineageStore/types";
 
-export function buildNewNodeWithDefaults(
-  node: LineageNode
-): Node<GraphDisplayNode> {
+export function buildNewBigQueryNodeWithDefaults(
+  node: BigQueryLineageNode
+): Node<BigQueryGraphDisplayNode> {
   return {
     type: "view",
     id: node.urn,
@@ -36,5 +39,5 @@ export function buildNewNodeWithDefaults(
       x: 0,
       y: 0,
     },
-  } as Node<GraphDisplayNode>;
+  } as Node<BigQueryGraphDisplayNode>;
 }

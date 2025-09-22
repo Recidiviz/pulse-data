@@ -16,9 +16,10 @@
 // =============================================================================
 
 import { Tooltip } from "antd";
-import { DefaultOptionType } from "antd/lib/select";
+import { BaseOptionType, DefaultOptionType } from "antd/lib/select";
 
 import { HydrationState } from "../InsightsStore/types";
+import { NodeFilter } from "./NodeFilter/NodeFilter";
 import { BigQueryGraphDisplayNode } from "./types";
 
 /**
@@ -35,6 +36,10 @@ export function throwExpression(errorMessage: string): never {
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
+}
+
+export function buildSelectOptionForFilter(filter: NodeFilter): BaseOptionType {
+  return { value: filter.value, filter };
 }
 
 function createBigQueryNodeLabel(viewId: string, urn: string) {
@@ -60,7 +65,7 @@ export function createBigQueryNodeAutoCompleteGroups(
 }
 
 /**
- * Returns true if hydration has reached a successful terminal state and false otherwise.
+ * Returns true if state has reached a successful terminal state and false otherwise.
  */
 export function isHydrated(state: HydrationState): boolean {
   switch (state.status) {

@@ -19,6 +19,7 @@ Contains helper functions to use as a "converter" functions in an attr.ib
 and largely exist to make MyPy happy.
 """
 import json
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from recidiviz.utils.types import assert_type
@@ -55,3 +56,9 @@ def optional_json_str_to_dict(s: Optional[str]) -> Optional[Dict[str, Any]]:
         raise ValueError("Expecting valid JSON and not the empty string.")
 
     return assert_type(json.loads(s), dict)
+
+
+def optional_enum_value_from_enum(s: Enum | None) -> Any | None:
+    if s is None:
+        return None
+    return s.value

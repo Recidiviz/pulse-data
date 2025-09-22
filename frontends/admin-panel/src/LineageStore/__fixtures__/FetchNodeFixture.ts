@@ -14,28 +14,40 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { GraphType } from "../types";
+import { BigQueryNodeType, GraphType } from "../types";
 
 export const rawGraphInfoFixture: GraphType = {
   nodes: [
     {
       urn: "fake-dataset.fake-table",
+      viewId: "fake-table",
+      datasetId: "fake-dataset",
+      stateCode: null,
+      type: BigQueryNodeType.VIEW,
     },
     {
       urn: "fake-dataset.fake-table-2",
+      viewId: "fake-table-2",
+      datasetId: "fake-dataset",
+      stateCode: null,
+      type: BigQueryNodeType.VIEW,
     },
     {
       urn: "fake-dataset.fake-table-3",
+      viewId: "fake-table-3",
+      datasetId: "fake-dataset",
+      stateCode: null,
+      type: BigQueryNodeType.VIEW,
     },
   ],
   references: [
     {
-      sourceUrn: "fake-dataset.fake-table",
-      targetUrn: "fake-dataset.fake-table-2",
+      source: "fake-dataset.fake-table",
+      target: "fake-dataset.fake-table-2",
     },
     {
-      sourceUrn: "fake-dataset.fake-table",
-      targetUrn: "fake-dataset.fake-table-3",
+      source: "fake-dataset.fake-table",
+      target: "fake-dataset.fake-table-3",
     },
   ],
 };

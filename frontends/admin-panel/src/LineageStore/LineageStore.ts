@@ -21,18 +21,21 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { fetchNodes, fetchNodesBetween } from "../AdminPanelAPI/LineageAPI";
 import { Hydratable, HydrationState } from "../InsightsStore/types";
 import {
+  BigQueryLineageNode,
   EdgeId,
   GraphDirection,
   GraphDisplayNode,
   GraphEdge,
-  LineageNode,
   NodeUrn,
 } from "./types";
 import { throwExpression } from "./Utils";
 
+/**
+ * Store for introspecting about the entire view graph.
+ */
 export class LineageStore implements Hydratable {
   // map of urn -> entity metadata
-  nodes: Map<NodeUrn, LineageNode>;
+  nodes: Map<NodeUrn, BigQueryLineageNode>;
 
   // map of edge id (e-{source}-{target}) to edge
   edges: Map<EdgeId, GraphEdge>;
@@ -47,7 +50,7 @@ export class LineageStore implements Hydratable {
 
   constructor() {
     this.hydrationState = { status: "needs hydration" };
-    this.nodes = new Map<NodeUrn, LineageNode>();
+    this.nodes = new Map<NodeUrn, BigQueryLineageNode>();
     this.urnToDownstreamUrns = new Map<NodeUrn, Set<string>>();
     this.urnToUpstreamUrns = new Map<NodeUrn, Set<string>>();
     this.edges = new Map<EdgeId, Edge>();
@@ -121,7 +124,7 @@ export class LineageStore implements Hydratable {
     urnToExpand: NodeUrn,
     direction: GraphDirection,
     currentNodes: Node<GraphDisplayNode>[]
-  ): LineageNode[] => {
+  ): BigQueryLineageNode[] => {
     const adjacentNodes = this.adjacentNodes(urnToExpand, direction);
     // TODO(#46345): maybe also store urns as a set so as not to have to do so many O(n)
     // things?
@@ -134,7 +137,7 @@ export class LineageStore implements Hydratable {
   /**
    * Fetches a single node.
    */
-  nodeForUrn = (urn: NodeUrn): LineageNode => {
+  nodeForUrn = (urn: NodeUrn): BigQueryLineageNode => {
     return this.nodes.get(urn) ?? throwExpression(`Unknown urn: ${urn}`);
   };
 
@@ -142,11 +145,11 @@ export class LineageStore implements Hydratable {
    * Fetches all nodes between a start and end node.
    */
   fetchBetween = async (
-    sourceUrn: NodeUrn,
-    targetUrn: NodeUrn,
+    source: NodeUrn,
+    target: NodeUrn,
     currentNodes: Node<GraphDisplayNode>[]
-  ): Promise<LineageNode[]> => {
-    const nodesJson = await fetchNodesBetween(sourceUrn, targetUrn);
+  ): Promise<BigQueryLineageNode[]> => {
+    const nodesJson = await fetchNodesBetween(source, target);
     const nodeNames = await nodesJson.json();
     const newNodeUrns = new Set<NodeUrn>(nodeNames);
 
@@ -170,28 +173,28 @@ export class LineageStore implements Hydratable {
     const urnToDownstreamUrns = new Map<NodeUrn, Set<string>>();
     const urnToUpstreamUrns = new Map<NodeUrn, Set<string>>();
     const edges = new Map<EdgeId, Edge>();
-    const nodes = new Map<NodeUrn, LineageNode>();
+    const nodes = new Map<NodeUrn, BigQueryLineageNode>();
 
     // use graph references to build upstream & downstream ref mapping
     graphResponse.references.forEach((r) => {
       // downstream ref map
-      if (!urnToDownstreamUrns.has(r.sourceUrn)) {
-        urnToDownstreamUrns.set(r.sourceUrn, new Set());
+      if (!urnToDownstreamUrns.has(r.source)) {
+        urnToDownstreamUrns.set(r.source, new Set());
       }
-      urnToDownstreamUrns.get(r.sourceUrn)?.add(r.targetUrn);
+      urnToDownstreamUrns.get(r.source)?.add(r.target);
 
       // upstream ref map
-      if (!urnToUpstreamUrns.has(r.targetUrn)) {
-        urnToUpstreamUrns.set(r.targetUrn, new Set());
+      if (!urnToUpstreamUrns.has(r.target)) {
+        urnToUpstreamUrns.set(r.target, new Set());
       }
-      urnToUpstreamUrns.get(r.targetUrn)?.add(r.sourceUrn);
+      urnToUpstreamUrns.get(r.target)?.add(r.source);
 
       // create map of edge id to edge source & target
-      const edgeId = `e-${r.sourceUrn}-${r.targetUrn}`;
+      const edgeId = `e-${r.source}-${r.target}`;
       edges.set(edgeId, {
         id: edgeId,
-        source: r.sourceUrn,
-        target: r.targetUrn,
+        source: r.source,
+        target: r.target,
       });
     });
 
