@@ -126,7 +126,6 @@ function LineageGraph() {
           if (n.data.type === "source") return "#6e8c93";
           return "#eee";
         }}
-        maskColor="#00000088"
         zoomable
         pannable
       />

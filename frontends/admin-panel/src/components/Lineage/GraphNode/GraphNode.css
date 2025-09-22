@@ -19,11 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 div {
-  --background-color: #f0f2f5;
+  --background-color: #e9eded;
   --box-shadow-color: rgba(0, 0, 0, 0.1);
-  --border-color: #ddd;
+  --border-color: #b2bbc0;
   --text-color: #333;
-  --hover-color: #e6e6e6;
+  --hover-color: #d9dbdb;
   --bbox-hover: #333;
   --view-bbox: #4c6290;
   --source-bbox: #6e8c93;

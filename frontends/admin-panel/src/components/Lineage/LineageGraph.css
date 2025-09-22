@@ -18,11 +18,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 :root {
-  --canvas-background-color: #f0f2f5;
+  --canvas-background-color: #ffffff;
+  --xy-minimap-mask-background-color-props: rgba(240, 240, 240, 0.6);
 }
 @media (prefers-color-scheme: dark) {
   :root {
   --canvas-background-color:  rgba(16,16,16);
+  --xy-minimap-mask-background-color-props: #00000088;
   }
 }
 
