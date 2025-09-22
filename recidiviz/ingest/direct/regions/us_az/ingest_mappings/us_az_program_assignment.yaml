@@ -16,6 +16,16 @@ input_columns:
   EXEMPTION_COMMENTS: STRING
   EXEMPTION_REMOVED_DATE: DATETIME
 unused_columns: []
+variables:
+  - discharge_indicator:
+      $conditional:
+        - $if:
+            $and:
+              - $is_null: PARTICIPATION_END_DATE
+              - $is_null: COMPLETION_DATE
+              - $is_null: CHANGE_EFF_DATE
+          $then: $literal("NO_DISCHARGE_DATE")
+        - $else: $literal("HAS_DISCHARGE_DATE")
 output:
   StatePerson:
     external_ids:
@@ -38,28 +48,13 @@ output:
                 - program_name
           participation_status:
             $enum_mapping:
-              $raw_text: ENROLL_STATUS
-              $mappings:
-                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
-                  - Completed But Failed
-                  - Removed-Roster
-                  - Did Not Complete
-                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
-                  - Completed
-                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
-                  - Participating
-                  - Enrolled
-                StateProgramAssignmentParticipationStatus.REFUSED:
-                  - Refused Program
-                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
-                  - Not Participating - Cycle Cancelled
-                  - Not-Participating - Transfer
-                  - Not Participating - Released
-                  - Not Participating
-                StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN:
-                  # Sometimes people have completed the program when they have this enrollment
-                  # status, and sometimes they have not.
-                  - Administrative Discharge from Program
+              $custom_parser: us_az_custom_enum_parsers.parse_program_assignment_participation_status
+              $raw_text:
+                $concat:
+                  $values:
+                    - ENROLL_STATUS
+                    - $variable(discharge_indicator)
+                  $separator: "@@"
           referral_date: ASSIGNMENT_DATE
           start_date: PARTICIPATION_START_DATE
           discharge_date:

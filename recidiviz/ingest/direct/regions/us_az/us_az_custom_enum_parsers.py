@@ -35,6 +35,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitType,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
@@ -517,3 +520,46 @@ def parse_sentence_status(raw_text: str) -> StateSentenceStatus:
         return StateSentenceStatus.INTERNAL_UNKNOWN
 
     raise ValueError(f"Unknown sentence status: {raw_text}")
+
+
+def parse_program_assignment_participation_status(
+    raw_text: str,
+) -> StateProgramAssignmentParticipationStatus:
+    """
+    Parse program assignment participation status, inferring discharge status when
+    enrollment status indicates active participation but discharge dates are present.
+    """
+    enroll_status, discharge_indicator = raw_text.split("@@")
+
+    # Define the mapping from ENROLL_STATUS to participation status
+    if enroll_status == "Completed But Failed":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL
+    if enroll_status == "Removed-Roster":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL
+    if enroll_status == "Did Not Complete":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL
+    if enroll_status == "Completed":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL
+    if enroll_status == "Refused Program":
+        return StateProgramAssignmentParticipationStatus.REFUSED
+    if enroll_status == "Not Participating - Cycle Cancelled":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
+    if enroll_status == "Not-Participating - Transfer":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
+    if enroll_status == "Not Participating - Released":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
+    if enroll_status == "Not Participating":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
+    if enroll_status == "Administrative Discharge from Program":
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN
+
+    # Handle inference logic for "Participating" and "Enrolled" statuses
+    if enroll_status in ("Participating", "Enrolled"):
+        if discharge_indicator == "HAS_DISCHARGE_DATE":
+            # Infer discharge status when enrollment status suggests active participation
+            # but discharge dates are present
+            return StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN
+        return StateProgramAssignmentParticipationStatus.IN_PROGRESS
+
+    # If we don't recognize the enrollment status, return INTERNAL_UNKNOWN
+    return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN
