@@ -10,7 +10,7 @@ runs:
       id: pipenv-caching
       with:
         path: ~/.local/share/virtualenvs/
-        key: ${{ runner.os }}-${{ runner.arch }}-python-pipenv-${{ hashFiles(format('{0}/Pipfile.lock', github.workspace)) }}
+        key: ${{ runner.os }}-${{ runner.arch }}-python-pipenv-v2-${{ hashFiles(format('{0}/Pipfile.lock', github.workspace)) }}
         # If we haven't cached a pipenv for the new version of the lock file this will
         # restore the cache for the most recent version. Since most of the time our
         # lock file updates only change a small number of packages, this speeds up
