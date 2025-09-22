@@ -252,6 +252,14 @@ class CompareTablesResult:
     def count_in_both(self) -> int:
         return self._get_comparison_val(STATS_IN_BOTH_COL)
 
+    @property
+    def count_original_not_new(self) -> int:
+        return self._get_comparison_val(STATS_IN_ORIGINAL_NOT_NEW_COL)
+
+    @property
+    def count_new_not_original(self) -> int:
+        return self._get_comparison_val(STATS_IN_NEW_NOT_ORIGINAL_COL)
+
     def _get_comparison_val(self, col_name: str) -> int:
         count = self.comparison_stats_df.loc[0, col_name]
         if pd.isnull(count):

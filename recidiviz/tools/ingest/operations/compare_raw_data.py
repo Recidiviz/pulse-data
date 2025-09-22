@@ -39,6 +39,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tools.ingest.operations.constants import (
+    FILL_CHAR,
+    LINE_SEPARATOR,
+    LINE_WIDTH,
+    RAW_DATA_DIFF_RESULTS_DATASET_ID,
+)
 from recidiviz.tools.ingest.operations.helpers.raw_data_region_diff_query_executor import (
     RawDataRegionDiffQueryExecutor,
     RawDataRegionQueryResult,
@@ -56,13 +62,7 @@ from recidiviz.tools.ingest.operations.helpers.raw_table_file_counts_diff_query_
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.log_helpers import make_log_output_path
 
-LINE_WIDTH = 100
-FILL_CHAR = "-"
-LINE_SEPARATOR = "#" * LINE_WIDTH
-
 RESULT_ROW_DISPLAY_LIMIT = 50
-
-RAW_DATA_DIFF_RESULTS_DATASET_ID = "raw_data_comparison_output"
 
 
 def _get_table_name_prefix(
