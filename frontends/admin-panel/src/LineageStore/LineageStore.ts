@@ -144,19 +144,29 @@ export class LineageStore implements Hydratable {
   /**
    * Fetches all nodes between a start and end node.
    */
-  fetchBetween = async (
+  fetchBetweenAndAddToCurrent = async (
+    direction: GraphDirection,
     source: NodeUrn,
     target: NodeUrn,
     currentNodes: Node<GraphDisplayNode>[]
   ): Promise<BigQueryLineageNode[]> => {
-    const nodesJson = await fetchNodesBetween(source, target);
-    const nodeNames = await nodesJson.json();
-    const newNodeUrns = new Set<NodeUrn>(nodeNames);
+    const urnsBetween = await fetchNodesBetween(direction, source, target);
+    const newNodeUrns = new Set<NodeUrn>(urnsBetween.urns);
 
     const currentNodesSet = new Set(currentNodes.map((n) => n.id));
     return Array.from(newNodeUrns.difference(currentNodesSet)).map(
-      (urn) => this.nodes.get(urn) ?? throwExpression(`Unknown urn: ${urn}`)
+      this.nodeForUrn
     );
+  };
+
+  fetchBetween = async (
+    direction: GraphDirection,
+    source: NodeUrn,
+    target: NodeUrn
+  ): Promise<BigQueryLineageNode[]> => {
+    const urnsBetween = (await fetchNodesBetween(direction, source, target))
+      .urns;
+    return urnsBetween.map(this.nodeForUrn);
   };
 
   setHydrationState(hydrationState: HydrationState) {

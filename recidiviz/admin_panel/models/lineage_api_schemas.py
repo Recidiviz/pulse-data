@@ -69,6 +69,11 @@ class BigQueryBetweenSchema(CamelCaseSchema):
     urns = fields.List(fields.Str())
 
 
+class BigQueryDownstreamSchema(CamelCaseSchema):
+
+    urns = fields.List(fields.Str())
+
+
 class LineageGraphSchema(CamelCaseSchema):
     """Schema holding the entire representation of the lineage view graph."""
 

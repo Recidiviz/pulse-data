@@ -36,7 +36,7 @@ import { getErrorMessage, isHydrated } from "../../LineageStore/Utils";
 import { LINEAGE_BASE } from "../../navigation/Lineage";
 import { defaultFitViewOptions } from "./Constants";
 import BigQueryGraphNode from "./GraphNode/GraphNode";
-import { GraphNodeDetailDrawer } from "./GraphNode/GraphNodeDetailDrawer";
+import { GraphNodeDetailDrawer } from "./GraphNode/GraphNodeDetailDrawer/GraphNodeDetailDrawer";
 import { LineageToolbar } from "./LineageToolbar/LineageToolbar";
 import { NodeFilterModal } from "./LineageToolbar/NodeFilterModal/NodeFilterModal";
 

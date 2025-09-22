@@ -38,4 +38,5 @@ if __name__ == "__main__":
 
     for store in stores.all_stores:
         logging.info("Hydrating %s", store)
-        store.hydrate_cache()
+        if "lineage" in str(store.__class__).lower():
+            store.hydrate_cache()

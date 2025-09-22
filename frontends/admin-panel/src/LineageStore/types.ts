@@ -69,7 +69,7 @@ export type NodePosition = {
   y: number;
 };
 
-/* --- graph filter types ----------------------------------------------------------- */
+/* --- graph ui types --------------------------------------------------------------- */
 
 export enum NodeFilterType {
   INCLUDE = "INCLUDE",
@@ -79,6 +79,12 @@ export enum NodeFilterType {
 export enum NodeFilterKey {
   STATE_CODE_FILTER = "STATE_CODE",
   DATASET_ID_FILTER = "DATASET_ID",
+}
+
+export enum NodeDetailDrawerTab {
+  DETAILS = "DETAILS",
+  DOWNSTREAM_SEARCH = "DOWNSTREAM_SEARCH",
+  UPSTREAM_SEARCH = "UPSTREAM_SEARCH",
 }
 
 /* --- graph api types -------------------------------------------------------------- */
@@ -99,6 +105,14 @@ export type GraphReferenceType = {
 export type GraphType = {
   nodes: BigQueryLineageMetadata[];
   references: GraphReferenceType[];
+};
+
+export type NodeAncestorDependencies = {
+  urns: NodeUrn[];
+};
+
+export type NodeAncestorPath = {
+  urns: NodeUrn[];
 };
 
 /* --- big query nodes info & types ------------------------------------------------- */

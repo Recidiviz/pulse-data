@@ -25,6 +25,7 @@ import { applyFiltersToNode, buildNodeFilter } from "./NodeFilter/Utils";
 import {
   BigQueryGraphDisplayNode,
   BigQueryLineageNode,
+  NodeDetailDrawerTab,
   NodeFilterKey,
   NodeFilterType,
   NodeUrn,
@@ -52,9 +53,14 @@ export class UiStore {
   // whether or not the detail drawer is open
   nodeDetailDrawerUrn?: NodeUrn;
 
+  // which detail drawer tab is currently active; only visible if |nodeDetailDrawerUrn|
+  // is non-null
+  activeNodeDetailDrawerTab: NodeDetailDrawerTab;
+
   constructor(public rootStore: LineageRootStore) {
     this.nodeFilters = [];
     this.filterModalOpen = false;
+    this.activeNodeDetailDrawerTab = NodeDetailDrawerTab.DETAILS;
 
     makeAutoObservable(
       this,
@@ -168,12 +174,23 @@ export class UiStore {
     return this.nodeFilters.filter((f) => f.type === NodeFilterType.EXCLUDE);
   }
 
+  /** IMPORTANT: while this function does clear filters, it does NOT update the nodes
+   * that are displayed the graph (on purpose)
+   */
+  clearFiltersWithoutUpdatingNodesOnTheGraph = () => {
+    this.nodeFilters = [];
+  };
+
   setFilterModalState = (open: boolean) => {
     this.filterModalOpen = open;
   };
 
   setNodeDetailDrawerUrn = (urn?: NodeUrn) => {
     this.nodeDetailDrawerUrn = urn;
+  };
+
+  setActiveNodeDetailDrawerTab = (tab: NodeDetailDrawerTab) => {
+    this.activeNodeDetailDrawerTab = tab;
   };
 
   /**

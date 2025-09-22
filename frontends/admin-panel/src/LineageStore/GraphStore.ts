@@ -152,6 +152,36 @@ export class GraphStore {
   };
 
   /**
+   * Replaces the current nodes in the graph with |newNodes| and clears all existing
+   * filters. Then, calculates node positions and computes new edges.
+   */
+  resetGraphWithNewNodes = async (
+    newNodes: BigQueryLineageNode[],
+    existingNodeToAnchor?: Node<GraphDisplayNode>,
+    resetFilters?: boolean
+  ) => {
+    // build new list of nodes and edges
+    const allNodesWithoutPositions = newNodes.map((n) =>
+      buildNewBigQueryNodeWithDefaults(n)
+    );
+
+    if (resetFilters !== undefined && resetFilters) {
+      this.rootStore.uiStore.clearFiltersWithoutUpdatingNodesOnTheGraph();
+    }
+
+    const { displayedNodes, hiddenNodes } =
+      this.rootStore.uiStore.applyFiltersToExistingNodes(
+        allNodesWithoutPositions
+      );
+
+    await this.recalculateNodePositions(
+      displayedNodes,
+      hiddenNodes,
+      existingNodeToAnchor
+    );
+  };
+
+  /**
    * Recalculates the node positions and relevant edges, updating the graph nodes and
    * edges state accordingly.
    */
@@ -215,15 +245,39 @@ export class GraphStore {
   };
 
   /**
-   * Expands the subgraph that exist between two nodes
+   * Expands the subgraph that exists between two nodes
    */
-  expandSubGraph = (sourceUrn: NodeUrn, targetUrn: NodeUrn) => {
-    const nodeToExpand = this.nodeFromUrn(sourceUrn);
-    this.rootStore.lineageStore
-      .fetchBetween(sourceUrn, targetUrn, this.nodes)
-      .then((graphUpdates) => {
-        this.addAndRecalculateNodePositions(graphUpdates, nodeToExpand);
-      });
+  expandSubGraph = async (
+    direction: GraphDirection,
+    startingUrn: NodeUrn,
+    ancestorUrn: NodeUrn
+  ) => {
+    const nodeToExpand = this.nodeFromUrn(startingUrn);
+    const graphUpdates =
+      await this.rootStore.lineageStore.fetchBetweenAndAddToCurrent(
+        direction,
+        startingUrn,
+        ancestorUrn,
+        this.nodes
+      );
+    this.addAndRecalculateNodePositions(graphUpdates, nodeToExpand);
+  };
+
+  /**
+   * Resets the graph to just be the subgraph that exists between two nodes.
+   */
+  resetToSubGraph = async (
+    direction: GraphDirection,
+    startingUrn: NodeUrn,
+    ancestorUrn: NodeUrn
+  ) => {
+    const nodeToExpand = this.nodeFromUrn(startingUrn);
+    const newNodes = await this.rootStore.lineageStore.fetchBetween(
+      direction,
+      startingUrn,
+      ancestorUrn
+    );
+    this.resetGraphWithNewNodes(newNodes, nodeToExpand, true);
   };
 
   /**

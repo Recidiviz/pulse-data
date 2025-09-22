@@ -18,10 +18,13 @@
 import {
   BigQuerySourceLineageDetail,
   BigQueryViewLineageDetail,
+  GraphDirection,
   GraphType,
+  NodeAncestorDependencies,
+  NodeAncestorPath,
   NodeUrn,
 } from "../LineageStore/types";
-import { get, getResource } from "./utils";
+import { get } from "./utils";
 
 export const fetchNodes = async (): Promise<GraphType> => {
   return get(`/admin/lineage/fetch_all`);
@@ -39,11 +42,19 @@ export const fetchSourceMetadata = async (
   return get(`/admin/lineage/metadata/source/${urn}`);
 };
 
+export const fetchAncestorUrns = async (
+  direction: GraphDirection,
+  urn: NodeUrn
+): Promise<NodeAncestorDependencies> => {
+  return get(`/admin/lineage/ancestors/${direction.toLowerCase()}/${urn}`);
+};
+
 export const fetchNodesBetween = async (
-  startAddress: string,
-  endAddress: string
-): Promise<Response> => {
-  return getResource(
-    `/admin/lineage/fetch_between/${startAddress}/${endAddress}`
+  direction: GraphDirection,
+  startUrn: string,
+  ancestorUrn: string
+): Promise<NodeAncestorPath> => {
+  return get(
+    `/admin/lineage/between/${direction.toLowerCase()}/${startUrn}/${ancestorUrn}`
   );
 };

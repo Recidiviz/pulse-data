@@ -23,8 +23,10 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 
 from recidiviz.admin_panel.admin_stores import get_lineage_store
+from recidiviz.admin_panel.lineage_store import GraphDirection
 from recidiviz.admin_panel.models.lineage_api_schemas import (
     BigQueryBetweenSchema,
+    BigQueryDownstreamSchema,
     BigQueryNodeExpandedSchema,
     BigQuerySourceTableExpandedSchema,
     BigQuerySourceTableMetadata,
@@ -51,18 +53,31 @@ class AllViewsRoute(MethodView):
         return {"nodes": all_nodes, "references": all_references}
 
 
-@lineage_blueprint.route("fetch_between/<start_address_str>/<end_address_str>")
+@lineage_blueprint.route("between/<direction_str>/<source_str>/<ancestor_str>")
 class FetchBetweenRoute(MethodView):
     """Route for fetching the routes between two nodes"""
 
     @lineage_blueprint.response(HTTPStatus.OK, BigQueryBetweenSchema)
     def get(
         self,
-        start_address_str: str,
-        end_address_str: str,
+        direction_str: str,
+        source_str: str,
+        ancestor_str: str,
     ) -> dict[str, list]:
-        start_address = BigQueryAddress.from_str(start_address_str)
-        end_address = BigQueryAddress.from_str(end_address_str)
+        try:
+            direction = GraphDirection(direction_str.upper())
+        except ValueError:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"Unknown direction view: {direction_str=}",
+            )
+
+        if direction == GraphDirection.DOWNSTREAM:
+            start_address = BigQueryAddress.from_str(source_str)
+            end_address = BigQueryAddress.from_str(ancestor_str)
+        else:
+            start_address = BigQueryAddress.from_str(ancestor_str)
+            end_address = BigQueryAddress.from_str(source_str)
 
         urns = [
             addr.to_str()
@@ -110,3 +125,29 @@ class FetchSourceMetadata(MethodView):
                 message=f"No known view: {urn=}",
             )
         return metadata
+
+
+@lineage_blueprint.route("ancestors/<direction_str>/<urn>")
+class FetchAncestor(MethodView):
+    """Route for fetching ancestor for a view"""
+
+    @lineage_blueprint.response(HTTPStatus.OK, BigQueryDownstreamSchema)
+    def get(self, direction_str: str, urn: str) -> dict[str, list[str]]:
+        try:
+            direction = GraphDirection(direction_str.upper())
+        except ValueError:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"Unknown direction view: {direction_str=}",
+            )
+
+        address = BigQueryAddress.from_str(urn)
+
+        downstream_deps = get_lineage_store().get_ancestor_dependencies(
+            direction, address
+        )
+
+        if downstream_deps is None:
+            return {"urns": []}
+
+        return {"urns": [addr.to_str() for addr in downstream_deps]}

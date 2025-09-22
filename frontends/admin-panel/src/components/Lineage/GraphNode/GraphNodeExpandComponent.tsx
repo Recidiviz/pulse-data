@@ -16,10 +16,15 @@
 // =============================================================================
 
 import { MinusOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { useState } from "react";
 
-import { useGraphStore } from "../../../LineageStore/LineageRootContext";
-import { GraphDirection } from "../../../LineageStore/types";
+import {
+  useGraphStore,
+  useUiStore,
+} from "../../../LineageStore/LineageRootContext";
+import {
+  GraphDirection,
+  NodeDetailDrawerTab,
+} from "../../../LineageStore/types";
 import {
   buttonize,
   buttonizeWithEvent,
@@ -37,16 +42,23 @@ export const BigQueryGraphNodeExpand = ({
   isExpanded?: boolean;
 }): JSX.Element => {
   // TODO(#46966): implement contraction for mvp by using this state
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [showSearch, setShowSearch] = useState(false);
-
   const { expandGraph, contractGraph } = useGraphStore();
+  const { setNodeDetailDrawerUrn, setActiveNodeDetailDrawerTab } = useUiStore();
 
   const iconComponent = isExpanded ? (
     <MinusOutlined size={18} />
   ) : (
     <PlusOutlined size={18} />
   );
+
+  const handleAncestorSearch = () => {
+    const tabToOpen =
+      direction === GraphDirection.UPSTREAM
+        ? NodeDetailDrawerTab.UPSTREAM_SEARCH
+        : NodeDetailDrawerTab.DOWNSTREAM_SEARCH;
+    setActiveNodeDetailDrawerTab(tabToOpen);
+    setNodeDetailDrawerUrn(id);
+  };
 
   const handleContractOrExpand = (
     e: React.MouseEvent | React.KeyboardEvent
@@ -86,8 +98,7 @@ export const BigQueryGraphNodeExpand = ({
                   "graph-node-expand-search " +
                   `graph-node-expand-search-${direction.toLowerCase()}`
                 }
-                /* // TODO(#46966): implement downstream search */
-                {...buttonize(() => setShowSearch(true))}
+                {...buttonize(() => handleAncestorSearch())}
                 title={`Expand to specific ${direction.toLowerCase()}`}
               >
                 <SearchOutlined size={18} color="#eee" />
@@ -101,8 +112,7 @@ export const BigQueryGraphNodeExpand = ({
                   "graph-node-expand-search " +
                   `graph-node-expand-search-${direction.toLowerCase()}`
                 }
-                /* // TODO(#46966): implement downstream search */
-                {...buttonize(() => setShowSearch(true))}
+                {...buttonize(() => handleAncestorSearch())}
                 title={`Expand to specific ${direction.toLowerCase()}`}
               >
                 <SearchOutlined size={18} color="#eee" />

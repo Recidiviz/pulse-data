@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Store used to keep information related to our data lineage graph."""
+import json
+from collections import defaultdict
+from enum import Enum
 from typing import Sequence
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
@@ -35,11 +38,16 @@ from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
+class GraphDirection(Enum):
+    DOWNSTREAM = "DOWNSTREAM"
+    UPSTREAM = "UPSTREAM"
+
+
 class LineageStore(AdminPanelStore):
     """A store for tracking the current state of our data lineage assets."""
 
     def __init__(self) -> None:
-        self.cache_key = f"{self.__class__}V2"
+        self.cache_key_base = f"{self.__class__.__name__}"
         self.walker = self._build_walker()
         self.source_tables = build_source_table_repository_for_collected_schemata(
             metadata.project_id()
@@ -54,18 +62,108 @@ class LineageStore(AdminPanelStore):
 
         return BigQueryViewDagWalker(views_to_update)
 
+    def _cache_key_for_direction_and_address(
+        self, direction: GraphDirection, address: BigQueryAddress
+    ) -> str:
+        return f"{self.cache_key_base}__{direction.value}__{address.to_str()}"
+
     def hydrate_cache(self) -> None:
-        # TODO(#36174) consider caching path or other info that would be helpful to
-        # pre-compute at certain intervals
-        pass
+        for address, downstream_list in self._build_downstream_dependencies().items():
+            self.redis.set(
+                self._cache_key_for_direction_and_address(
+                    direction=GraphDirection.DOWNSTREAM, address=address
+                ),
+                json.dumps(downstream_list),
+            )
+
+        for address, downstream_list in self._build_upstream_dependencies().items():
+            self.redis.set(
+                self._cache_key_for_direction_and_address(
+                    direction=GraphDirection.UPSTREAM, address=address
+                ),
+                json.dumps(downstream_list),
+            )
+
+    def _build_upstream_dependencies(
+        self,
+    ) -> dict[BigQueryAddress, list[str]]:
+        self.walker.populate_ancestor_sub_dags()
+
+        return {
+            node.view.address:
+            # add in all ancestor nodes that are in the view graph
+            [
+                address.to_str()
+                for address in node.ancestors_sub_dag.nodes_by_address.keys()
+                if address != node.view.address
+            ]
+            # add in all source tables of the node and ancestor nodes
+            + [
+                source_table.to_str()
+                for ancestor_node in node.ancestors_sub_dag.nodes_by_address.values()
+                for source_table in ancestor_node.source_addresses
+            ]
+            for node in self.walker.nodes_by_address.values()
+        } | {address: [] for address in self.walker.get_referenced_source_tables()}
+
+    def _build_downstream_dependencies(
+        self,
+    ) -> dict[BigQueryAddress, list[str]]:
+        self.walker.populate_descendant_sub_dags()
+
+        all_source_address_references: dict[BigQueryAddress, set[str]] = defaultdict(
+            set
+        )
+        for node in self.walker.nodes_by_address.values():
+            if node.source_addresses:
+                downstream_address_strs = {
+                    address.to_str()
+                    for address in node.descendants_sub_dag.nodes_by_address.keys()
+                }
+                for source_table in node.source_addresses:
+                    all_source_address_references[source_table] = (
+                        all_source_address_references[source_table]
+                        | downstream_address_strs
+                    )
+
+        return {
+            node.view.address: [
+                address.to_str()
+                for address in node.descendants_sub_dag.nodes_by_address.keys()
+                if address != node.view.address
+            ]
+            for node in self.walker.nodes_by_address.values()
+        } | {
+            address: list(references)
+            for address, references in all_source_address_references.items()
+        }
+
+    def get_ancestor_dependencies(
+        self, direction: GraphDirection, address: BigQueryAddress
+    ) -> list[BigQueryAddress] | None:
+        serialized_downstream = self.redis.get(
+            self._cache_key_for_direction_and_address(direction, address)
+        )
+        if serialized_downstream is None:
+            return None
+        return [
+            BigQueryAddress.from_str(dep) for dep in json.loads(serialized_downstream)
+        ]
 
     def get_nodes_between(
         self, start_set: set[BigQueryAddress], end_set: set[BigQueryAddress]
     ) -> set[BigQueryAddress]:
-        return self.walker.get_all_node_addresses_between_start_and_end_collections(
-            start_source_addresses=set(),
-            start_node_addresses=start_set,
-            end_node_addresses=end_set,
+
+        start_source_addresses = start_set - self.walker.nodes_by_address.keys()
+        start_node_addresses = start_set & self.walker.nodes_by_address.keys()
+
+        return (
+            self.walker.get_all_node_addresses_between_start_and_end_collections(
+                start_source_addresses=start_source_addresses,
+                start_node_addresses=start_node_addresses,
+                end_node_addresses=end_set,
+            )
+            | start_source_addresses
         )
 
     def get_all_nodes(self) -> Sequence[BigQueryGraphNode]:
