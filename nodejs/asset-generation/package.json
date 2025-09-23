@@ -35,8 +35,8 @@
     "styled-components": "^6.1.13",
     "vite": "^4.5.14",
     "vite-node": "^3.2.4",
-    "zod": "^3.25.76",
-    "zod-validation-error": "^2.1.0"
+    "zod": "^4.1.11",
+    "zod-validation-error": "^4.0.2"
   },
   "devDependencies": {
     "@recidiviz/eslint-config": "^3.0.0",
