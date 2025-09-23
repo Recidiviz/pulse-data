@@ -26,7 +26,7 @@ div {
   --hover-color: #d9dbdb;
   --bbox-hover: #333;
   --view-bbox: #4c6290;
-  --source-bbox: #6e8c93;
+  --source-bbox: #d9a95f;
 }
 @media (prefers-color-scheme: dark) {
   div {

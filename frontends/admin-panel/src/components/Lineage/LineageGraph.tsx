@@ -125,7 +125,7 @@ function LineageGraph() {
       <MiniMap
         nodeColor={(n) => {
           if (n.data.type === "view") return "#4c6290";
-          if (n.data.type === "source") return "#6e8c93";
+          if (n.data.type === "source") return "#d9a95f";
           return "#eee";
         }}
         zoomable
