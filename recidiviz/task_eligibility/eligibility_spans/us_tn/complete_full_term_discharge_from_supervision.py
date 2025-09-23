@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for full term discharge from supervision or is 60 days away from being eligible.
+someone in TN is eligible for full term discharge from supervision or is 1 day away from being eligible.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
@@ -32,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_zero_tolerance_codes_spans,
     not_on_life_sentence_or_lifetime_supervision,
+    supervision_level_raw_text_is_not_wrb,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -40,14 +41,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in TN is eligible
-for full term discharge from supervision or is 1 day away from being eligible.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,
@@ -56,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         has_active_sentence.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
+        supervision_level_raw_text_is_not_wrb.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
