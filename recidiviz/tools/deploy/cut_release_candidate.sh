@@ -40,6 +40,9 @@ if [[ ! ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" && ! ${RELEASE_CANDIDATE_BASE
     run_cmd exit 1
 fi
 
+# Ensure we have a local copy of the Looker repo before checking tags
+clone_looker_repo_to_temp_dir
+
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags --force
 run_cmd git -C "${TEMP_LOOKER_DIR}" fetch --all --tags --prune --prune-tags --force
