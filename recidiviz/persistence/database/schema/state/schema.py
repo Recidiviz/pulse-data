@@ -1942,6 +1942,8 @@ class StateScheduledSupervisionContact(StateBase, _ReferencesStatePersonSharedCo
     sequence_num = Column(Integer, nullable=False)
     contact_meeting_address = Column(String(255))
 
+    scheduled_supervision_contact_metadata = Column(Text)
+
 
 class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateEmploymentPeriod in the SQL schema."""

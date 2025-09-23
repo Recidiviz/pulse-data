@@ -651,6 +651,7 @@
       state_scheduled_supervision_contact.scheduled_contact_date,
       state_scheduled_supervision_contact.scheduled_contact_datetime_date,
       state_scheduled_supervision_contact.scheduled_supervision_contact_id,
+      state_scheduled_supervision_contact.scheduled_supervision_contact_metadata,
       state_scheduled_supervision_contact.sequence_num,
       state_scheduled_supervision_contact.state_code,
       state_scheduled_supervision_contact.status,

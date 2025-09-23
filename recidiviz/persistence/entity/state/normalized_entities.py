@@ -3042,6 +3042,9 @@ class NormalizedStateScheduledSupervisionContact(
     contact_type_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    scheduled_supervision_contact_metadata: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     #   - How
     contact_method: StateScheduledSupervisionContactMethod = attr.ib(

@@ -624,6 +624,7 @@ state_scheduled_supervision_contact:
     contact_meeting_address: The address where the contact should take place, if relevant to the contact method.
     scheduled_contact_date: The date when a contact is scheduled to occur.
     scheduled_contact_datetime: The datetime when a contact is scheduled to occur.
+    scheduled_supervision_contact_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of this scheduled supervision contact.
     sequence_num: >-
       The ordinal position of this scheduled contact in the sequence of StateScheduledSupervisionContact
       of this method for a given person and supervision officer pair.

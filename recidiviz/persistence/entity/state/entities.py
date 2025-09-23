@@ -2270,6 +2270,9 @@ class StateScheduledSupervisionContact(
     contact_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    scheduled_supervision_contact_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     #   - How
     contact_method: StateScheduledSupervisionContactMethod = attr.ib(

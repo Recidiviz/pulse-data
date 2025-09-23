@@ -669,6 +669,7 @@
       normalized_state_scheduled_supervision_contact.scheduled_contact_date,
       normalized_state_scheduled_supervision_contact.scheduled_contact_datetime_date,
       normalized_state_scheduled_supervision_contact.scheduled_supervision_contact_id,
+      normalized_state_scheduled_supervision_contact.scheduled_supervision_contact_metadata,
       normalized_state_scheduled_supervision_contact.sequence_num,
       normalized_state_scheduled_supervision_contact.state_code,
       normalized_state_scheduled_supervision_contact.status,
