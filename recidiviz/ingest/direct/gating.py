@@ -34,6 +34,7 @@ MANUAL_RAW_DATA_PRUNING_STATES = {
 }
 
 SECONDARY_RAW_DATA_PRUNING_ENABLED_STATES = {
+    StateCode.US_MI,
     StateCode.US_OZ,
 }
 
@@ -140,7 +141,10 @@ def automatic_raw_data_pruning_enabled_for_state_and_instance(
     state_code: StateCode,
     instance: DirectIngestInstance,
 ) -> bool:
-    if state_code in MANUAL_RAW_DATA_PRUNING_STATES:
+    if (
+        instance == DirectIngestInstance.PRIMARY
+        and state_code in MANUAL_RAW_DATA_PRUNING_STATES
+    ):
         return False
     if (
         instance == DirectIngestInstance.SECONDARY

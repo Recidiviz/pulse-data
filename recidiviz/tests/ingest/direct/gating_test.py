@@ -40,10 +40,9 @@ def test_manual_raw_data_pruning_states() -> None:
     )
 
     for state_code in MANUAL_RAW_DATA_PRUNING_STATES:
-        for instance in DirectIngestInstance:
-            assert (
-                automatic_raw_data_pruning_enabled_for_state_and_instance(
-                    state_code, instance
-                )
-                is False
+        assert (
+            automatic_raw_data_pruning_enabled_for_state_and_instance(
+                state_code, DirectIngestInstance.PRIMARY
             )
+            is False
+        )
