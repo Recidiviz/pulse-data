@@ -1365,9 +1365,6 @@ class StateSupervisionPeriod(
                     # TODO(#41438): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
                     StateCode.US_AR,
-                    # TODO(#41439): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0204-07-10.
-                    StateCode.US_AZ,
                     # TODO(#41441): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 9999-01-31.
                     StateCode.US_CA,
@@ -1400,9 +1397,6 @@ class StateSupervisionPeriod(
                     # TODO(#41438): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
                     StateCode.US_AR,
-                    # TODO(#41439): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 2402-04-23.
-                    StateCode.US_AZ,
                     # TODO(#41441): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 9999-01-30.
                     StateCode.US_CA,
