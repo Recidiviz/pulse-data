@@ -93,6 +93,10 @@ div {
 .graph-node-bbox:hover {
   border: 1px solid var(--bbox-hover);
   border-radius: 5px;
+  cursor: pointer;
+}
+
+.graph-node-bbox:active {
   cursor: move;
 }
 

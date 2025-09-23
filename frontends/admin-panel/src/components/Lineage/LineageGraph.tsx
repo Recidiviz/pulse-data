@@ -56,6 +56,7 @@ function LineageGraph() {
       changeNodeHighlight,
     },
     lineageStore: { hydrate, hydrationState },
+    uiStore: { setNodeDetailDrawerUrn },
   } = useLineageRootStore();
 
   const { fitView } = useReactFlow();
@@ -82,6 +83,7 @@ function LineageGraph() {
       if (newActiveNode !== selectedNodeUrn) {
         try {
           resetGraphToActiveNode(newActiveNode);
+          setNodeDetailDrawerUrn(newActiveNode);
           fitView({
             nodes: [{ id: newActiveNode }],
             ...defaultFitViewOptions,
@@ -99,6 +101,7 @@ function LineageGraph() {
     resetGraphToActiveNode,
     hydrationState,
     fitView,
+    setNodeDetailDrawerUrn,
     history,
   ]);
 

@@ -30,7 +30,7 @@ import { defaultFitViewOptions } from "../../Constants";
 export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
   const {
     graphStore: { selectedNodeUrn, resetGraphToActiveNode },
-    uiStore: { autoCompleteOptions },
+    uiStore: { autoCompleteOptions, setNodeDetailDrawerUrn },
   } = useLineageRootStore();
   const history = useHistory();
   const { fitView } = useReactFlow();
@@ -40,6 +40,7 @@ export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
     if (value.trim() && value.trim() !== selectedNodeUrn) {
       try {
         resetGraphToActiveNode(value.trim());
+        setNodeDetailDrawerUrn(value.trim());
         fitView({
           nodes: [{ id: value.trim() }],
           ...defaultFitViewOptions,
