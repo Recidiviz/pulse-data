@@ -685,7 +685,11 @@ def get_all_ingest_view_fixtures_for_state(
     """Returns all raw data and ingest view result fixtures for a given state."""
 
     raw_data_fixture_paths = os.walk(
-        os.path.join(DIRECT_INGEST_FIXTURES_ROOT, state_code.value.lower(), "raw")
+        os.path.join(
+            DIRECT_INGEST_FIXTURES_ROOT,
+            state_code.value.lower(),
+            f"{state_code.value.lower()}_raw_data",
+        )
     )
     all_raw_data_fixture_paths = set()
     for path, _, file_names in raw_data_fixture_paths:
