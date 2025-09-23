@@ -157,6 +157,7 @@
       us_nd_docstars_contacts.C4,
       us_nd_docstars_contacts.C5,
       us_nd_docstars_contacts.C6,
+      us_nd_docstars_contacts.REMARKS,
       us_nd_docstars_contacts.CATEGORY,
       us_nd_docstars_contacts.ORIGINATOR,
       us_nd_docstars_contacts.CONTACT_DATE__raw,
