@@ -126,3 +126,9 @@ num_allowed_rows_overrides:
     override_reason:
       Current failing level as of 4/18/25 is 65026 rows in staging.
       For now, we are not inferring IPs for in custody periods until we can re-validate PA insights.
+  - validation_name: officer_monthly_usage_report_actions_without_logins
+    hard_num_allowed_rows_override: 1
+    override_reason:
+      There is some weird date logic issue for logins/actions on the border of a month change, and so the login
+      gets attributed to one month and the action is attributed to the other month.
+      Will be resolved with the Polaris segment ad blocker work around
