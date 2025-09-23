@@ -46,7 +46,7 @@ VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         analyst_data_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-        states_to_exclude=[StateCode.US_IA, StateCode.US_OR],
+        states_to_exclude=[StateCode.US_IA],
     )
 )
 

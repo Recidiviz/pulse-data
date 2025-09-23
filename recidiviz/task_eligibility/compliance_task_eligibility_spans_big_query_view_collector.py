@@ -67,6 +67,5 @@ class ComplianceTaskEligibilitySpansBigQueryViewCollector(
         """
         view_builders_by_state = defaultdict(list)
         for vb in self.collect_view_builders():
-            print(vb)
             view_builders_by_state[vb.state_code].append(vb)
         return view_builders_by_state
