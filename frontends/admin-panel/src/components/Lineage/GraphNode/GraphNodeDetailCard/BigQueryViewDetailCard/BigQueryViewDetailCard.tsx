@@ -14,11 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import "./BigQueryViewDetailCard.css";
 
 import { Collapse, message, Spin } from "antd";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useState } from "react";
 import { CodeBlock, tomorrowNight } from "react-code-blocks";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { fetchViewMetadata } from "../../../../../AdminPanelAPI/LineageAPI";
 import { useUiStore } from "../../../../../LineageStore/LineageRootContext";
@@ -79,7 +82,12 @@ const BigQueryViewDetailCard: React.FC = observer(() => {
           }
           key="description"
         >
-          {bqMetadata.description}
+          <ReactMarkdown
+            className="node-detail-description-markdown"
+            remarkPlugins={[remarkGfm]}
+          >
+            {bqMetadata.description}
+          </ReactMarkdown>
         </Collapse.Panel>
         <Collapse.Panel
           header={

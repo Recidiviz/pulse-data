@@ -20,3 +20,27 @@
   font-size: 16px;
   color: var(--supporting-text-color);
 }
+
+
+.node-detail-description-markdown table {
+    border-spacing: 0 !important;
+    border-collapse: collapse !important;
+    border-color: inherit !important;
+    display: block !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: auto !important;
+}
+
+.node-detail-description-markdown tbody,
+.node-detail-description-markdown td,
+.node-detail-description-markdown tfoot,
+.node-detail-description-markdown th,
+.node-detail-description-markdown thead,
+.node-detail-description-markdown tr {
+    border-color: inherit !important;
+    border-style: solid !important;
+    border-width: 2px !important;
+    padding: 0.5rem;
+}

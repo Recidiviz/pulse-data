@@ -74,7 +74,7 @@ border-left: 3px solid var(--source-bbox);
 }
 
 .graph-detail-dataset-label {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--supporting-text-color);
 }
 
