@@ -123,7 +123,17 @@ function create_looker_release_branch {
     exit 1
   }
 
-  looker_git add -A
+  # Verify no unexpected changes (only allow modified dashboards/manifest, deleted/added model files)
+  local unexpected_changes
+  unexpected_changes=$(git -C "$TEMP_LOOKER_DIR" diff --name-status | grep -v "^M\s\+manifest\.lkml$" | grep -v "^M\s\+dashboards/" | grep -v "^[DA]\s\+models/.*\.model\.lkml$") || exit_on_fail
+
+  if [[ -n "$unexpected_changes" ]]; then
+      echo "ERROR: Unexpected changes detected when cutting Recidiviz/looker release branch:"
+      echo "$unexpected_changes"
+      exit 1
+  fi
+
+  looker_git add "${TEMP_LOOKER_DIR}/dashboards/" "${TEMP_LOOKER_DIR}/models/" "${TEMP_LOOKER_DIR}/manifest.lkml"
   looker_git commit -m "[DEPLOY] Cut release candidate ${RELEASE_VERSION_TAG}"
 
   # Delete local tag if it exists
