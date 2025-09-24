@@ -25,6 +25,7 @@ input_columns:
   V2AggressionNeedLevel: STRING
   V2AttitudesBehaviorsNeedLevel: STRING
   V2PartnerFamilyChildrenNeedLevel: STRING
+  LOW_COMPLIANT_ELIGIBLE: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -81,6 +82,7 @@ output:
               V2_AGGRESSION_NEED_LEVEL: V2AggressionNeedLevel
               V2_ATTITUDE_BEHAVIOR_NEED_LEVEL: V2AttitudesBehaviorsNeedLevel
               V2_FAMILY_NEED_LEVEL: V2PartnerFamilyChildrenNeedLevel
+              LOW_COMPLIANT_ELIGIBLE: LOW_COMPLIANT_ELIGIBLE
           conducting_staff_external_id: ConductingStaffID
           conducting_staff_external_id_type:
             $conditional:
