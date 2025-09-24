@@ -206,4 +206,4 @@ release.out
 
 # AI Tools
 .gemini/
-.claude/
+.claude/settings.local.json

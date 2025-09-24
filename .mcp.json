@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "bigquery": {
+      "type": "stdio",
+      "command": "bash",
+      "args": ["-c", "./recidiviz/tools/mcp/bigquery-toolbox/toolbox --prebuilt bigquery --stdio"],
+      "env": {
+        "BIGQUERY_PROJECT": "recidiviz-staging"
+      }
+    }
+  }
+}
