@@ -43,7 +43,7 @@ from recidiviz.tests.test_setup_utils import (
 # TODO(#20786): Migrate back to the goccy version by removing the comment about PAT and replacing recidiviz with
 #  goccy below.
 EMULATOR_IMAGE_REPOSITORY = "ghcr.io/recidiviz/bigquery-emulator"
-EMULATOR_VERSION = "0.4.4-recidiviz.23.1"
+EMULATOR_VERSION = "0.4.4-recidiviz.25"
 EMULATOR_IMAGE = f"{EMULATOR_IMAGE_REPOSITORY}:{EMULATOR_VERSION}"
 
 EMULATOR_ENTRYPOINT = "/bin/bigquery-emulator"

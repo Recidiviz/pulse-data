@@ -4,7 +4,7 @@ runners:
   # ARM64 pricing is generally ~20% cheaper than x64 and should be used where possible
   arm64:
     image: py311-postgres-arm64
-    family: ["m8g", "c8g", "c7g", "m7g"]
+    family: ["m8g", "r8g", "i8g", "c8g", "c7g", "m7g"]
     extras: ["s3-cache"]
     # Disable SSH access to the runner instances
     ssh: false
