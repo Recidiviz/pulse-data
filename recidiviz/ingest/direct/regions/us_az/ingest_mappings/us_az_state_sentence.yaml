@@ -89,6 +89,9 @@ output:
                       - ARS_CODE
                       - SUBSECTION_CODE
                 description: DESCRIPTION
+                # This view only includes cases in which a person was remanded to state
+                # custody, which is only the case for felonies.
+                classification_type: $literal_enum(StateChargeV2ClassificationType.FELONY)
                 classification_subtype: MURDER_DEGREE
                 is_violent:
                   $equal:
@@ -105,7 +108,7 @@ output:
                     - is_controlling
                     - $literal("True")
                 judge_external_id: JUDGE_ID
-                status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
           sentence_metadata:
             $normalized_values_json_dict:
               flat_sentence: flat_sentence_flag
