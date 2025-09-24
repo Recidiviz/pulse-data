@@ -114,6 +114,7 @@ if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${VERSION_TAG}"; then
 fi
 
 clone_looker_repo_to_temp_dir
+looker_git fetch --all --tags --prune --prune-tags --force
 run_cmd safe_git_checkout_remote_branch "$BRANCH_NAME" "$TEMP_LOOKER_DIR"
 LOOKER_COMMIT_HASH=$(git -C "$TEMP_LOOKER_DIR" rev-parse HEAD) || exit_on_fail
 LAST_DEPLOYED_GIT_VERSION_TAG=$(last_version_tag_on_branch "$BRANCH_NAME" "$INCLUDE_ALPHA_VERSIONS_FLAG" "$TEMP_LOOKER_DIR") || exit_on_fail
