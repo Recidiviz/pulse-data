@@ -29,7 +29,11 @@ from recidiviz.admin_panel.models.lineage_api_schemas import (
     BigQueryViewNodeMetadata,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalker,
+    TraversalDirection,
+)
 from recidiviz.big_query.big_query_view_utils import build_views_to_update
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
@@ -87,55 +91,81 @@ class LineageStore(AdminPanelStore):
     def _build_upstream_dependencies(
         self,
     ) -> dict[BigQueryAddress, list[str]]:
-        self.walker.populate_ancestor_sub_dags()
+        def build_upstream_dependencies(
+            v: BigQueryView, parent_results: dict[BigQueryView, set[str]]
+        ) -> set[str]:
+            """Builds the upstream dependencies for |v|"""
+            return (
+                # all source addresses for our current view, if any exist
+                {
+                    addr.to_str()
+                    for addr in self.walker.node_for_view(v).source_addresses
+                }
+                # all grandparents (parents of our parents)
+                | {parent.address.to_str() for parent in parent_results.keys()}
+                # all grandparents (parents of our parents)
+                | {
+                    parent_result
+                    for parent_result_set in parent_results.values()
+                    for parent_result in parent_result_set
+                }
+            )
+
+        result = self.walker.process_dag(build_upstream_dependencies, synchronous=True)
 
         return {
-            node.view.address:
-            # add in all ancestor nodes that are in the view graph
-            [
-                address.to_str()
-                for address in node.ancestors_sub_dag.nodes_by_address.keys()
-                if address != node.view.address
-            ]
-            # add in all source tables of the node and ancestor nodes
-            + [
-                source_table.to_str()
-                for ancestor_node in node.ancestors_sub_dag.nodes_by_address.values()
-                for source_table in ancestor_node.source_addresses
-            ]
-            for node in self.walker.nodes_by_address.values()
+            view.address: list(upstream_result_set)
+            for view, upstream_result_set in result.view_results.items()
         } | {address: [] for address in self.walker.get_referenced_source_tables()}
 
     def _build_downstream_dependencies(
         self,
     ) -> dict[BigQueryAddress, list[str]]:
-        self.walker.populate_descendant_sub_dags()
+        """Builds a dictionary of node downstream dependencies, both for views within
+        our view graph as well as source tables.
+        """
 
+        def build_downstream_dependencies(
+            _v: BigQueryView, parent_results: dict[BigQueryView, set[str]]
+        ) -> set[str]:
+            """Builds the downstream dependencies for |_v|"""
+            return (
+                # all grandparents (parents of our parents)
+                {parent.address.to_str() for parent in parent_results.keys()}
+                # all grandparents (parents of our parents)
+                | {
+                    parent_result
+                    for parent_result_set in parent_results.values()
+                    for parent_result in parent_result_set
+                }
+            )
+
+        result = self.walker.process_dag(
+            build_downstream_dependencies,
+            synchronous=True,
+            traversal_direction=TraversalDirection.LEAVES_TO_ROOTS,
+        )
+
+        # for each source address, declare its downstream references to be all downstream
+        # references of all of it's child nodes
         all_source_address_references: dict[BigQueryAddress, set[str]] = defaultdict(
             set
         )
         for node in self.walker.nodes_by_address.values():
             if node.source_addresses:
-                downstream_address_strs = {
-                    address.to_str()
-                    for address in node.descendants_sub_dag.nodes_by_address.keys()
-                }
                 for source_table in node.source_addresses:
                     all_source_address_references[source_table] = (
                         all_source_address_references[source_table]
-                        | downstream_address_strs
+                        | result.view_results[node.view]
+                        | {node.view.address.to_str()}
                     )
 
         return {
-            node.view.address: [
-                address.to_str()
-                for address in node.descendants_sub_dag.nodes_by_address.keys()
-                if address != node.view.address
-            ]
-            for node in self.walker.nodes_by_address.values()
+            view.address: list(upstream_result_set)
+            for view, upstream_result_set in result.view_results.items()
         } | {
-            address: list(references)
-            for address, references in all_source_address_references.items()
+            address: list(downstream_deps)
+            for address, downstream_deps in all_source_address_references.items()
         }
 
     def get_ancestor_dependencies(

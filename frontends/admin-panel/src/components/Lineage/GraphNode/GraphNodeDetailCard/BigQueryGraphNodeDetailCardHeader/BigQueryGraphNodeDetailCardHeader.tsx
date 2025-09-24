@@ -50,9 +50,9 @@ const BigQueryGraphNodeDetailCardHeader: React.FC<BigQueryGraphNodeDetailCardHea
       ? "recidiviz-123"
       : "recidiviz-staging";
 
-    const projectUrl = `http://go/bq-${env}`;
-    const datasetUrl = `http://go/bq-${env}-dataset/${datasetId}`;
-    const viewUrl = `http://go/bq-${env}/${datasetId}/${viewId}`;
+    const projectUrl = `https://go/bq-${env}`;
+    const datasetUrl = `https://go/bq-${env}-dataset/${datasetId}`;
+    const viewUrl = `https://go/bq-${env}/${datasetId}/${viewId}`;
 
     const icon =
       type === BigQueryNodeType.VIEW ? (

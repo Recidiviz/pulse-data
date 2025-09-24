@@ -60,9 +60,8 @@ export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
       options={autoCompleteOptions}
       value={searchValue}
       filterOption
-      onSelect={(value) => {
-        handleSearch(value);
-      }}
+      onSelect={(value) => handleSearch(value)}
+      onChange={(value) => setSearchValue(value)}
       // TODO(#46345): dynamically setting the view width to expand when we are
       // searching as some of the results can be hard to read
     >
@@ -72,7 +71,6 @@ export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
         enterButton
         allowClear
         onChange={(s) => setSearchValue(s.target.value)}
-        onSearch={(e) => handleSearch(e)}
         size="large"
         style={{ width: "25vw" }}
       />
