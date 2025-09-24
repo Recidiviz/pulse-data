@@ -57,6 +57,8 @@ def get_contact_info_for_compliance_builder() -> str:
             WHEN JSON_VALUE(supervision_contact_metadata, '$.VIRTUAL_FLAG') = "1"
               AND contact_method_raw_text = 'OFFICE'
               THEN 'SCHEDULED VIRTUAL OFFICE'
+            WHEN contact_method_raw_text = "EMPLOYMENT"
+                THEN "SCHEDULED FIELD"
             ELSE
                 CONCAT("SCHEDULED " || contact_method_raw_text)
         END AS contact_type,
