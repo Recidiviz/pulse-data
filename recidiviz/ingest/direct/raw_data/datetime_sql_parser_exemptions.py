@@ -1243,24 +1243,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
 DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
     StateCode, dict[str, list[str]]
 ] = {
-    StateCode.US_AZ: {
-        "AZ_DOC_DRUG_TRANSITION_PRG_NOTES": ["CREATE_DTM"],
-        "AZ_DOC_DRUG_TRANSITION_PRG_OVERRIDE": [
-            "COIII_CREATE_DTM",
-            "COIII_UPDT_DTM",
-            "TC_UPDT_DTM",
-        ],
-        "AZ_DOC_DRUG_TRAN_PRG_INELIGOD": ["TC_CREATE_DTM"],
-        "AZ_DOC_SC_ARS_ENHANCE_CD": ["CREATE_DTM", "UPDT_DTM"],
-        "AZ_DOC_TRANSITION_PRG_INELIGOD": ["TC_CREATE_DTM"],
-        "AZ_DOC_TRANSITION_PRG_NOTES": ["CREATE_DTM"],
-        "AZ_DOC_TRANSITION_PRG_OVERRIDE": [
-            "COIII_CREATE_DTM",
-            "COIII_UPDT_DTM",
-            "TC_UPDT_DTM",
-        ],
-        "PERSON_MERGE": ["EMAIL_SENT_DATE", "MERGE_DATE"],
-    },
     StateCode.US_CA: {
         "HoldInCustody": ["HoldPlaceDate"],
         "IncarcerationInCustody": ["ParoleEndDate", "in_date", "out_date"],

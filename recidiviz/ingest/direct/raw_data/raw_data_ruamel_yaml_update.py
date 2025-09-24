@@ -137,7 +137,7 @@ def get_identifier_field_name(cls: Type) -> str | None:
     """Find the name of the field in an attr defined class marked with list_item_identifier=True."""
     if not attr.has(cls):
         raise ValueError(f"Class [{cls}] is not an attr defined class")
-    # TODO(#44660) Enforce that there is exactly one unique identifier field once we have
+    # TODO(#45340) Enforce that there is exactly one unique identifier field once we have
     # reworked RawTableRelationshipInfo to have a unique identifier
     for field in attr.fields(cls):
         if field.metadata.get(LIST_ITEM_IDENTIFIER_TAG):
