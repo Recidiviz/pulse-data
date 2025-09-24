@@ -59,6 +59,10 @@ const EMAIL_SETTINGS = {
  */
 function stateSpecificOpportunities(stateCode) {
   switch (stateCode) {
+    case "US_IA":
+      return {
+        EARLY_DISCHARGE: "Early Discharge",
+      };
     case "US_IX":
       return {
         EARLY_DISCHARGE: "Earned Discharge",
@@ -295,6 +299,13 @@ function stateSpecificText(
 
   // Note: Many states are in multiple timezones. We use the zone with more people.
   switch (stateCode) {
+    case "US_IA":
+      return {
+        supervisionToolName: "the Recidiviz Supervision Assistant",
+        timeZone: "America/Chicago",
+        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision who may be eligible for Early Discharge.`,
+        supervisionOpportunitySpecificText,
+      };
     case "US_IX":
       return {
         supervisionToolName: "the P&P Assistant Tool",
