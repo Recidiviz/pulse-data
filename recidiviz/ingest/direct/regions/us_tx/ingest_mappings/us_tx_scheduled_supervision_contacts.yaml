@@ -3,47 +3,125 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  SID_NO: STRING
-  APPIONTMENT_ID: STRING
-  Contact_Datetime: DATETIME
-  OFFICER_ID: STRING
-  MEETING_ADDRESS: STRING
+  SID_Number: STRING
+  APPT_ID: STRING
+  address: STRING
   Type_Description: STRING
+  APPT_START_TIME: DATETIME
+  SCHD_DELETE_FLAG: STRING
+  update_datetime: DATETIME
+  Location_Description: STRING
+  Reason_Description: STRING
+  SCHT_VIRTUAL_FLAG: STRING
+  SCHT_PLN_VIEW_FLAG: STRING
+  Staff_ID_Number: STRING
 unused_columns: []
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: SID_NO
+          external_id: SID_Number
           id_type: $literal("US_TX_SID")
-    supervision_contacts:
-      - StateSupervisionContact:
-          external_id: APPIONTMENT_ID
-          scheduled_contact_date: Contact_Datetime
+    scheduled_supervision_contacts:
+      - StateScheduledSupervisionContact:
+          external_id: APPT_ID
+          scheduled_contact_datetime: APPT_START_TIME
+          contact_type: $literal_enum(StateScheduledSupervisionContactType.DIRECT)
           contact_method:
             $enum_mapping:
               $raw_text: Type_Description
               $mappings:
-                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                StateScheduledSupervisionContactMethod.INTERNAL_UNKNOWN:
                   - "Surveillance"
-                StateSupervisionContactMethod.IN_PERSON:
+                StateScheduledSupervisionContactMethod.IN_PERSON:
                   - "Home"
                   - "Employment"
                   - "Office"
                   - "Field"
-                StateSupervisionContactMethod.TELEPHONE:
+                StateScheduledSupervisionContactMethod.TELEPHONE:
                   - "Telephonic"
-                StateSupervisionContactMethod.VIRTUAL:
+                StateScheduledSupervisionContactMethod.VIRTUAL:
                   - "Electronic"
-                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                StateScheduledSupervisionContactMethod.WRITTEN_MESSAGE:
                   - "Written"
-          status: $literal_enum(StateSupervisionContactStatus.SCHEDULED)
-          contacting_staff_external_id: OFFICER_ID
+          contact_reason:
+            $enum_mapping:
+              $raw_text: Reason_Description
+              $mappings:
+                StateScheduledSupervisionContactReason.INITIAL_CONTACT:
+                  - "New Arrival"
+                StateScheduledSupervisionContactReason.EMERGENCY_CONTACT:
+                  - "Alert Notification - Equipment"
+                  - "Rapid Response"
+                StateScheduledSupervisionContactReason.GENERAL_CONTACT:
+                  - "EM Verification" #Electric monitoring
+                  - "Employment Verification"
+                  - "Residence Validation"
+                  - "Investigative"
+                  - "Random"
+                  - "Regular Visit"
+                  - "Unscheduled"
+                  - "Annual"
+                  - "Unscheduled Home Optional"
+                  - "Unscheduled Field Optional"
+                  - "Unscheduled Office Optional"
+                  - "Unscheduled Field/Home Optional"
+                  - "Unscheduled Home/Office Optional"
+                  - "Unscheduled - Weekend Only"
+                  - "Face to Face - RRC"
+                StateScheduledSupervisionContactReason.INTERNAL_UNKNOWN:
+                  - "Inmate Request"
+                  - "Other"
+                  - "PPI"
+                  - "Surveillance"
+                  - "Transfer Investigation"
+                  - "Public Inquiry"
+                  - "Management Oversight"
+                  - "Child Safety Zone Check"
+                  - "Intervention"
+                  - "Plain View"
+          location:
+            $enum_mapping:
+              $raw_text: Location_Description
+              $mappings:
+                StateScheduledSupervisionContactLocation.COURT:
+                  - "Court"
+                StateScheduledSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
+                  - "Police Department"
+                  - "Sheriff Department"
+                StateScheduledSupervisionContactLocation.JAIL:
+                  - "Jail"
+                StateScheduledSupervisionContactLocation.RESIDENCE:
+                  - "Contact's Home"
+                StateScheduledSupervisionContactLocation.TREATMENT_PROVIDER:
+                  - "Hospital/Nursing home"
+                  - "Treatment Facility"
+                StateScheduledSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - "Workplace"
+                StateScheduledSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - "Parole Office"
+                StateScheduledSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - "Unit"
+                  - "DPS Website"
+                  - "Program/HwH"
+                  - "Other"
+          status:
+            $enum_mapping:
+              $raw_text: SCHD_DELETE_FLAG
+              $mappings:
+                StateScheduledSupervisionContactStatus.DELETED:
+                  - "1"
+                StateScheduledSupervisionContactStatus.SCHEDULED:
+                  - "0"
+          contact_meeting_address: address
+          contacting_staff_external_id: Staff_ID_Number
           contacting_staff_external_id_type:
             $conditional:
               - $if:
-                  $not_null: OFFICER_ID
+                  $not_null: Staff_ID_Number
                 $then: $literal("US_TX_STAFF_ID")
-          supervision_contact_metadata:
+          update_datetime: update_datetime
+          scheduled_supervision_contact_metadata:
             $normalized_values_json_dict:
-              MEETING_ADDRESS: MEETING_ADDRESS
+              VIRTUAL_FLAG: SCHT_VIRTUAL_FLAG
+              PLAIN_VIEW_FLAG: SCHT_PLN_VIEW_FLAG
