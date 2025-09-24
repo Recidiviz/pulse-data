@@ -5,6 +5,7 @@ manifest_language: 1.0.0
 input_columns:
   PERSON_ID: STRING
   STAFF_REVIEW_ID: STRING
+  STATE_VIOLATION_ID: STRING
   incident_type: STRING
   incident_date: STRING
   facility: STRING
@@ -51,6 +52,7 @@ output:
           incident_metadata:
             $normalized_values_json_dict:
               major_or_minor: major_or_minor
+              STATE_VIOLATION_ID: STATE_VIOLATION_ID
           incarceration_incident_outcomes:
             # Sometimes there is no penalty, so wrap this in a conditional.
             - $conditional:
