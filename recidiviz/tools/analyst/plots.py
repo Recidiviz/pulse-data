@@ -22,7 +22,7 @@ import math
 from os.path import abspath, dirname
 
 # imports for notebooks
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -214,10 +214,12 @@ def add_legend(
     labels: Optional[List[str]] = None,
     format_labels: bool = False,
     label_formatter: Callable = lambda s: s.title().replace("_", " ").replace("-", " "),
+    reverse: bool = False,
     **kwargs: Optional[Any],
 ) -> None:
     """
-    Add a legend to the plot with the option to customize title, location, and labels.
+    Add a legend to the plot with the option to customize title, location, labels,
+    formatting, and order.
 
     Args:
         ax (Optional[plt.Axes]): The Axes object to add the legend to (default: None).
@@ -230,9 +232,10 @@ def add_legend(
         label_formatter (Callable): Function to use to format the legend labels.
             Default title-cases the labels and replaces underscores and hyphens with
             spaces.
+        reverse (bool): Whether to reverse the order of labels/handles in the legend.
+            Default: False.
         **kwargs: Additional keyword arguments to pass to the `plt.legend()` function.
     """
-
     if ax is None:
         ax = plt.gca()
 
@@ -249,9 +252,13 @@ def add_legend(
             label_formatter(str(legend_label)) for legend_label in legend_labels
         ]
 
+    # Reverse order if requested
+    if reverse:
+        handles, legend_labels = handles[::-1], legend_labels[::-1]
+
     # Add the legend
     plt.legend(
-        loc=location, title=title, labels=legend_labels, handles=handles, **kwargs
+        handles=handles, labels=legend_labels, title=title, loc=location, **kwargs
     )
 
 
@@ -652,4 +659,32 @@ def line_labels(
             color=col,
             weight=weight,
             **text_kwargs,
+        )
+
+
+def add_point_labels(
+    series: pd.Series,
+    offset: Tuple[float, float] = (0, 5),
+    fmt: Callable[[float], str] = str,
+    ax: Optional[plt.Axes] = None,
+) -> None:
+    """
+    Annotate each point of a pandas Series plot with its value.
+
+    Parameters
+    ----------
+    series : pandas.Series
+        The plotted series (x=index, y=values).
+    offset : tuple (x_offset, y_offset)
+        Position offset for the label in points (default: (0, 5)).
+    fmt : function
+        Function to format labels (default: str).
+        Example: fmt=lambda v: f"{v:,}" for comma separators.
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    for x, y in series.items():
+        ax.annotate(
+            fmt(y), (x, y), textcoords="offset points", xytext=offset, ha="center"
         )

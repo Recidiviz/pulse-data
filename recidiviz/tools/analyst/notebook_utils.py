@@ -71,6 +71,7 @@ from recidiviz.tools.analyst.plots import (  # isort:skip
     plot_settings,
     add_legend,
     line_labels,
+    add_point_labels,
 )
 
 # IPython magics - only run if in notebook environment
