@@ -106,6 +106,10 @@ _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
 YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
     r"^# yaml-language-server: \$schema=(?P<schema_path>.*schema.json)$"
 )
+STATES_WITH_NO_FIXTURES = {
+    StateCode.US_ID,
+    StateCode.US_NC,
+}
 UNTESTED_INGEST_VIEWS = {
     StateCode.US_PA: {
         # TODO(#19828): Write tests for this view and remove exemption
@@ -697,6 +701,21 @@ def get_all_ingest_view_fixtures_for_state(
             fixture_path = os.path.join(path, file_name)
             if is_valid_code_path(fixture_path):
                 all_raw_data_fixture_paths.add(fixture_path)
+
+    if (
+        not any(all_raw_data_fixture_paths)
+        and state_code not in STATES_WITH_NO_FIXTURES
+    ):
+        raise ValueError(
+            f"Did not find any raw data fixtures for state [{state_code.value}]"
+        )
+
+    if any(all_raw_data_fixture_paths) and state_code in STATES_WITH_NO_FIXTURES:
+        raise ValueError(
+            f"Found raw data fixtures for state [{state_code.value}] but it is "
+            f"marked as a state with no fixtures. Please remove the fixtures or remove "
+            f"the state to STATES_WITH_NO_FIXTURES in this file."
+        )
 
     result_fixture_paths = list(
         os.walk(
