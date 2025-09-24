@@ -9,8 +9,9 @@ input_columns:
   end_date: DATE
   admission_reason: STRING
   release_reason: STRING
-  facility: STRING
+  subdivision: STRING
   custody_lvl: STRING
+  facil7: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -28,7 +29,8 @@ output:
           specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
           admission_date: start_date
           release_date: end_date
-          facility: facility
+          housing_unit: subdivision
+          facility: facil7
           admission_reason:
             $enum_mapping:
               $raw_text: admission_reason
