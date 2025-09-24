@@ -1616,7 +1616,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_or_ingest_view_results.Incarceration_Period",
     "us_or_ingest_view_results.Program_Assignment",
     "us_or_ingest_view_results.Risk_Assessment",
-    "us_or_ingest_view_results.Sentences",
     "us_or_ingest_view_results.Staff",
     "us_or_ingest_view_results.State_Person",
     "us_or_ingest_view_results.Supervision_Contact",

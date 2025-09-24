@@ -831,9 +831,9 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
 
     ### TEST: A raw data fixture exists if and only if there are tests referencing that fixture file.
     if unused_fixtures := all_raw_data_fixture_paths - used_raw_data_fixture_paths:
-        _unused_printout = "\n".join(unused_fixtures)
+        printout = "\n".join(unused_fixtures)
         raise ValueError(
-            f"Found unused raw data fixtures in paths:\n{_unused_printout}\n"
+            f"Found unused raw data fixtures in paths:\n{printout}\n"
             "Either you added fixtures and forgot to write the test, the test is in an incorrect "
             "location, or these are old fixtures which need to be deleted."
         )
@@ -843,10 +843,8 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
         unused_fixtures := all_ingest_view_result_fixture_paths
         - used_ingest_view_result_fixture_paths
     ):
-        _unused_printout = "\n".join(unused_fixtures)
-        raise ValueError(
-            f"Found unused ingest view results fixtures:\n{_unused_printout}"
-        )
+        printout = "\n".join(unused_fixtures)
+        raise ValueError(f"Found unused ingest view results fixtures:\n{printout}")
 
     ### TEST: An ingest mapping fixture exists if and only if there are tests referencing that fixture file
     all_ingest_mapping_output_fixtures = set()
@@ -885,10 +883,8 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
         unused_fixtures := all_ingest_mapping_output_fixtures
         - expected_ingest_mapping_output_fixtures
     ):
-        _unused_printout = "\n".join(unused_fixtures)
-        raise ValueError(
-            f"Found unused ingest mapping output fixtures:\n{_unused_printout}"
-        )
+        printout = "\n".join(unused_fixtures)
+        raise ValueError(f"Found unused ingest mapping output fixtures:\n{printout}")
 
 
 # TODO(#22059): Update integration test fixtures and consolidate tests in this file
