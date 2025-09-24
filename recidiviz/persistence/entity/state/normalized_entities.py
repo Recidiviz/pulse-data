@@ -1904,9 +1904,6 @@ class NormalizedStateIncarcerationPeriod(
                     # TODO(#41446): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
                     StateCode.US_AR,
-                    # TODO(#41449): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0004-11-02.
-                    StateCode.US_ND,
                 },
             ),
         ),
