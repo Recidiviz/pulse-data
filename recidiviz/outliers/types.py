@@ -75,7 +75,7 @@ def _optional_name_converter(name: Optional[str]) -> Optional[str]:
     return None if name is None else person_name_case(name)
 
 
-@attr.s
+@attr.s(frozen=True)
 class PersonName:
     """Components of a person's name represented as structured data."""
 
@@ -93,7 +93,7 @@ class PersonName:
         return f"{self.given_names} {self.surname}"
 
 
-@attr.s
+@attr.s(frozen=True)
 class CaseloadCategory:
     # The caseload category as it appears in the data
     id: str = attr.ib()
@@ -102,7 +102,7 @@ class CaseloadCategory:
     display_name: str = attr.ib()
 
 
-@attr.s(eq=False)
+@attr.s(eq=False, frozen=True)
 class OutliersMetric:
     # The aggregated metric, which is an object from aggregated_metric_configurations.py
     aggregated_metric: EventCountMetric = attr.ib()
@@ -129,7 +129,7 @@ class OutliersMetric:
         )
 
 
-@attr.s
+@attr.s(frozen=True)
 class OutliersClientEvent:
     # The aggregated metric, which is an object from aggregated_metric_configurations.py
     aggregated_metric: EventCountMetric = attr.ib()
@@ -279,7 +279,7 @@ class OutliersMetricConfig:
         )
 
 
-@attr.s
+@attr.s(frozen=True)
 class OutliersClientEventConfig:
     name: str = attr.ib()
 
@@ -292,7 +292,7 @@ class OutliersClientEventConfig:
         return cls(event.name, display_name)
 
 
-@attr.s
+@attr.s(frozen=True)
 class OutliersBackendConfig:
     """
     Information for a state's Outliers configuration represented as structured data.
@@ -366,7 +366,7 @@ class OutliersBackendConfig:
         return self.metrics + self.deprecated_metrics
 
 
-@attr.s
+@attr.s(frozen=True)
 class OfficerOutlierStatus:
     # The officer's external id
     external_id: str = attr.ib()
@@ -381,7 +381,7 @@ class OfficerOutlierStatus:
     prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
 
 
-@attr.s
+@attr.s(frozen=True)
 class OfficerMetricEntity:
     # The name of the unit of analysis, i.e. full name of a SupervisionOfficer object
     name: PersonName = attr.ib()
@@ -404,7 +404,7 @@ class OfficerMetricEntity:
     prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
 
 
-@attr.s
+@attr.s(frozen=True)
 class MetricContext:
     # Unless otherwise specified, the target is the state average for the current period
     target: float = attr.ib()
@@ -416,7 +416,7 @@ class MetricContext:
     )
 
 
-@attr.s
+@attr.s(frozen=True)
 class OutlierMetricInfo:
     # The Outliers metric the information corresponds to
     metric: OutliersMetricConfig = attr.ib()
@@ -435,7 +435,7 @@ class OutlierMetricInfo:
         return cattrs.unstructure(self)
 
 
-@attr.s
+@attr.s(frozen=True)
 class OfficerSupervisorReportData:
     # List of OutlierMetricInfo objects, representing metrics with outliers for this supervisor
     metrics: List[OutlierMetricInfo] = attr.ib()
@@ -461,7 +461,7 @@ class OfficerSupervisorReportData:
         return c.unstructure(self)
 
 
-@attr.s
+@attr.s(frozen=True)
 class SupervisionOfficerEntity:
     """Represents a supervision officer for the insights product. The officer may or
     may not have been included in outcomes calculations and may or may not be an
@@ -499,7 +499,7 @@ class SupervisionOfficerEntity:
         return result
 
 
-@attr.s
+@attr.s(frozen=True)
 class SupervisionOfficerOutcomes:
     """Represents outcomes information for an officer who was included in benchmark
     and outlier status calculations."""
@@ -572,7 +572,7 @@ class VitalsMetric:
         self.vitals_metrics.append(officer_vitals)
 
 
-@attr.s
+@attr.s(frozen=True)
 class SupervisionOfficerSupervisorEntity:
     # The full name of the supervisor
     full_name: PersonName = attr.ib()
@@ -599,7 +599,7 @@ class UserRole(str, Enum):
     SUPERVISION_OFFICER_SUPERVISOR = "supervision_officer_supervisor"
 
 
-@attr.s
+@attr.s(frozen=True)
 class UserInfo:
     entity: Optional[
         Union[SupervisionOfficerSupervisorEntity, SupervisionOfficerEntity]
@@ -618,7 +618,7 @@ class UserInfo:
         return result
 
 
-@attr.s
+@attr.s(frozen=True)
 class OutliersProductConfiguration:
     """
     Class that contains all of the information that is configured for a state
@@ -748,7 +748,7 @@ class ActionStrategyType(Enum):
     ACTION_STRATEGY_60_PERC_OUTLIERS = "ACTION_STRATEGY_60_PERC_OUTLIERS"
 
 
-@attr.s
+@attr.s(frozen=True)
 class ActionStrategySurfacedEvent:
     # The state code of the user
     state_code: str = attr.ib()
@@ -809,7 +809,7 @@ class RosterChangeType(str, Enum):
     REMOVE = "REMOVE"
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, frozen=True)
 class RosterChangeRequestSchema:
     """Schema that represents a request to make a roster change."""
 
@@ -822,7 +822,7 @@ class RosterChangeRequestSchema:
         return cattrs.unstructure(self)
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, frozen=True)
 class RosterChangeRequestResponseSchema:
     """Schema that represents the response from the RosterTicketService"""
 

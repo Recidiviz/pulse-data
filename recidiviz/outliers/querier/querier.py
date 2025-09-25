@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 import cattrs
+from attrs import evolve
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
@@ -1962,9 +1963,11 @@ class OutliersQuerier:
         """
         config_dict = {}
 
-        backend_config_obj = self.get_outliers_backend_config()
-        # Filter out metrics that the user doesn't have access to based on feature variants
-        backend_config_obj.metrics = self.get_outcomes_metrics()
+        backend_config_obj = evolve(
+            self.get_outliers_backend_config(),
+            # Filter out metrics that the user doesn't have access to based on feature variants
+            metrics=self.get_outcomes_metrics(),
+        )
         backend_config = backend_config_obj.to_json()
         # Include the deprecated metrics in the product configuration so that the
         # frontend will handle displaying the correct metrics based on the responses

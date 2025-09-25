@@ -20,6 +20,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import freezegun
+from attrs import evolve
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
@@ -148,7 +149,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             )["show_metric_section_headings"]
         )
 
-        self.config.metrics = self.config.metrics[:1]
+        self.config = evolve(self.config, metrics=self.config.metrics[:1])
         self.assertFalse(
             self._get_prepared_data(
                 OfficerSupervisorReportData(
@@ -220,23 +221,27 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
 
         # some of the fields produce different output based on logic;
         # no need to test the copy pass-through fields again
-        test_report.metrics[0].highlighted_officers = test_report.metrics[
-            0
-        ].highlighted_officers[:1]
+        test_report.metrics[0] = evolve(
+            test_report.metrics[0],
+            highlighted_officers=test_report.metrics[0].highlighted_officers[:1],
+        )
         actual = self._get_prepared_data(test_report)["adverse_metrics"][0]
         self.assertRegex(
             actual["chart"]["alt_text"], "where Jeanette Schneider-Cox is far"
         )
 
-        test_report.metrics = [
-            create_fixture(
-                self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
-                target_fixture_favorable_zero,
-                other_officers_fixture_favorable_zero,
-                highlighted_officers_fixture_favorable_zero,
-                TargetStatusStrategy.ZERO_RATE,
-            ),
-        ]
+        test_report = evolve(
+            test_report,
+            metrics=[
+                create_fixture(
+                    self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
+                    target_fixture_favorable_zero,
+                    other_officers_fixture_favorable_zero,
+                    highlighted_officers_fixture_favorable_zero,
+                    TargetStatusStrategy.ZERO_RATE,
+                ),
+            ],
+        )
         actual = self._get_prepared_data(test_report)["favorable_metrics"][0]
         self.assertTrue(actual["legend_zero"])
         self.assertEqual(actual["far_direction"], "below")
@@ -245,9 +250,10 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             "where Jeanette Schneider-Cox and Samuel Dunn have zero earned discharge requests",
         )
 
-        test_report.metrics[0].highlighted_officers = test_report.metrics[
-            0
-        ].highlighted_officers[1:]
+        test_report.metrics[0] = evolve(
+            test_report.metrics[0],
+            highlighted_officers=test_report.metrics[0].highlighted_officers[1:],
+        )
         actual = self._get_prepared_data(test_report)["favorable_metrics"][0]
         self.assertRegex(
             actual["chart"]["alt_text"],
