@@ -92,6 +92,7 @@ export const NodeFilterModal: React.FC = observer(() => {
         setCandidateFilters(nodeFilters);
         setFilterModalState(false);
       }}
+      destroyOnClose
       okText="Apply Filters"
       okButtonProps={{
         loading: applyButtonLoading,

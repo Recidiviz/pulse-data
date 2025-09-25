@@ -47,6 +47,12 @@ export class UiStore {
   // visual filters that are applied |nodes| to remove certain nodes from the graph
   nodeFilters: NodeFilter[];
 
+  // whether or not search new node search in the toolbar is expanded
+  searchNewNodeExpanded: boolean;
+
+  // whether or not search zoom to node search in the toolbar is expanded
+  zoomToBarExpanded: boolean;
+
   // whether or not the filter modal is currently active
   filterModalOpen: boolean;
 
@@ -60,6 +66,8 @@ export class UiStore {
   constructor(public rootStore: LineageRootStore) {
     this.nodeFilters = [];
     this.filterModalOpen = false;
+    this.zoomToBarExpanded = false;
+    this.searchNewNodeExpanded = false;
     this.activeNodeDetailDrawerTab = NodeDetailDrawerTab.DETAILS;
 
     makeAutoObservable(
@@ -83,8 +91,8 @@ export class UiStore {
       : undefined;
   }
 
-  // builds the autocomplete options for the search bar
-  get autoCompleteOptions() {
+  // builds the autocomplete options for the lineage search bar
+  get getLineageGraphSearchOptions() {
     return createBigQueryNodeAutoCompleteGroups(
       Array.from(this.rootStore.lineageStore.nodes.values())
     );
@@ -140,6 +148,18 @@ export class UiStore {
     return this.nodeFilters.length !== 0;
   }
 
+  // builds the autocomplete options for the zoom to search bar. since the toolbar search
+  // is not always rendered, mobx will _only_ recompute this when the bar opens if
+  // this.rootStore.graphStore.nodes has changed since the last time it was opened, not
+  // each time the underlying graphStore.nodes changes
+  get nodeZoomToSearchOptions() {
+    return createBigQueryNodeAutoCompleteGroups(
+      this.rootStore.graphStore.nodes
+        .filter((n) => n.hidden !== true)
+        .map((n) => n.data)
+    );
+  }
+
   /** IMPORTANT: while this function does clear filters, it does NOT update the nodes
    * that are displayed the graph (on purpose)
    */
@@ -157,6 +177,14 @@ export class UiStore {
 
   setActiveNodeDetailDrawerTab = (tab: NodeDetailDrawerTab) => {
     this.activeNodeDetailDrawerTab = tab;
+  };
+
+  setSearchNewNodeExpanded = (expanded: boolean) => {
+    this.searchNewNodeExpanded = expanded;
+  };
+
+  setZoomToBarExpanded = (expanded: boolean) => {
+    this.zoomToBarExpanded = expanded;
   };
 
   /**

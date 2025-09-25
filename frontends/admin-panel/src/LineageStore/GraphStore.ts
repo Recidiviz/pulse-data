@@ -82,6 +82,7 @@ export class GraphStore {
    * Resets the graph to be a single node.
    */
   resetGraphToUrn = (urn: NodeUrn) => {
+    this.rootStore.uiStore.clearFiltersWithoutUpdatingNodesOnTheGraph();
     this.edges = [];
     this.nodes = [
       buildNewBigQueryNodeWithDefaults(

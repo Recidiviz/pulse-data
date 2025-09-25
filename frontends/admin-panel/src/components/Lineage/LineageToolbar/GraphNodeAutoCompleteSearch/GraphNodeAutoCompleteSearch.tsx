@@ -14,54 +14,55 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import "./GraphAutoCompleteSearch.css";
 
 import { useReactFlow } from "@xyflow/react";
 import { AutoComplete, Input, message } from "antd";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 
-import { useLineageRootStore } from "../../../../LineageStore/LineageRootContext";
+import { useUiStore } from "../../../../LineageStore/LineageRootContext";
 import { getErrorMessage } from "../../../../LineageStore/Utils";
 import { defaultFitViewOptions } from "../../Constants";
 
-export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
-  const {
-    graphStore: { resetGraphToUrn },
-    uiStore: { autoCompleteOptions, setNodeDetailDrawerUrn },
-  } = useLineageRootStore();
+export const GraphNodeAutoCompleteSearch: React.FC = observer(() => {
+  const { setZoomToBarExpanded, nodeZoomToSearchOptions } = useUiStore();
+
   const { fitView } = useReactFlow();
   const [searchValue, setSearchValue] = useState("");
 
-  const handleSearch = (selectedUrn: string) => {
-    try {
-      resetGraphToUrn(selectedUrn);
-      setNodeDetailDrawerUrn(selectedUrn);
-      fitView({
-        nodes: [{ id: selectedUrn }],
-        ...defaultFitViewOptions,
-      });
-      setSearchValue("");
-    } catch (e) {
-      message.error(getErrorMessage(e));
-      setSearchValue("");
+  const handleSearch = (value: string) => {
+    if (value.trim()) {
+      try {
+        fitView({
+          nodes: [{ id: value.trim() }],
+          ...defaultFitViewOptions,
+        });
+        setSearchValue("");
+      } catch (e) {
+        message.error(getErrorMessage(e));
+        setSearchValue("");
+      }
     }
   };
 
   return (
     <AutoComplete
-      options={autoCompleteOptions}
+      options={nodeZoomToSearchOptions}
       value={searchValue}
       filterOption
       onSelect={(value) => handleSearch(value)}
       onChange={(value) => setSearchValue(value)}
-      // TODO(#46345): dynamically setting the view width to expand when we are
-      // searching as some of the results can be hard to read
+      defaultOpen
+      autoFocus
+      onDropdownVisibleChange={(open: boolean) => {
+        if (open === false) {
+          setZoomToBarExpanded(false);
+        }
+      }}
     >
-      <Input.Search
+      <Input
         className="node-search"
         placeholder="Search by view name..."
-        enterButton
         allowClear
         onChange={(s) => setSearchValue(s.target.value)}
         size="large"
