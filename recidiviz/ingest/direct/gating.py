@@ -96,6 +96,7 @@ FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE: dict[
     },
     StateCode.US_PA: {
         "RECIDIVIZ_REFERENCE_staff_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "ParoleFieldServicesStaffRoster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
     StateCode.US_MI: {
         "RECIDIVIZ_REFERENCE_leadership_roster": RawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
