@@ -27,12 +27,12 @@ import { GraphAutoCompleteSearchBar } from "./GraphAutoCompleteSearch/GraphAutoC
 
 export const LineageToolbar: React.FC = observer(() => {
   const {
-    uiStore: { filtersActive, setFilterModalState },
-    graphStore: { hasSelectedNode },
+    uiStore: { areFiltersActive, setFilterModalState },
+    graphStore: { hasNodesInGraph },
   } = useLineageRootStore();
 
   const buttonRef = useRef<HTMLElement>(null);
-  const toolTipContent = hasSelectedNode
+  const toolTipContent = hasNodesInGraph
     ? "Add or remove filters to adjust which nodes are displayed"
     : "Select node to apply filters";
 
@@ -46,13 +46,13 @@ export const LineageToolbar: React.FC = observer(() => {
           <Tooltip title={toolTipContent}>
             <Button
               ref={buttonRef}
-              disabled={!hasSelectedNode}
+              disabled={!hasNodesInGraph}
               className={`
                 lineage-filter-button
-                lineage-filter-button-active-${filtersActive}`}
+                lineage-filter-button-active-${areFiltersActive}`}
               size="large"
               icon={
-                filtersActive ? (
+                areFiltersActive ? (
                   <FilterTwoTone twoToneColor="#177ddc" />
                 ) : (
                   <FilterOutlined />

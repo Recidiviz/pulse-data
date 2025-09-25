@@ -17,8 +17,9 @@
 import { Edge, Node } from "@xyflow/react";
 
 import { BigQueryGraphDisplayNode, GraphReferenceType, NodeUrn } from "./types";
+import { throwExpression } from "./Utils";
 
-function buildAdjacencyMappingFromReferences(
+export function buildAdjacencyMappingFromReferences(
   references: GraphReferenceType[]
 ): {
   urnToDownstreamUrns: Map<NodeUrn, Set<NodeUrn>>;
@@ -60,15 +61,14 @@ function setDifference<T>(setA: Set<T>, setB: Set<T>): Set<T> {
  */
 export function findUnreachableNodes(
   startingUrn: NodeUrn,
-  nodes: Node<BigQueryGraphDisplayNode>[],
-  edges: Edge[],
-  nodesToFilterOut: Node<BigQueryGraphDisplayNode>[]
-): Set<NodeUrn> {
-  // first, build adjacency mappings from edges and nodes
-  const { urnToDownstreamUrns, urnToUpstreamUrns } =
-    buildAdjacencyMappingFromReferences(edges);
-  const urnsToFilterOut = new Set(nodesToFilterOut.map((n) => n.id));
-
+  allUrns: Set<NodeUrn>,
+  urnToUpstreamUrns: Map<NodeUrn, Set<NodeUrn>>,
+  urnToDownstreamUrns: Map<NodeUrn, Set<NodeUrn>>,
+  urnsToFilterOut: Set<NodeUrn>
+): {
+  connectedNotFilteredUrns: Set<NodeUrn>;
+  unreachableUrns: Set<NodeUrn>;
+} {
   // do bfs, starting w/ startingUrn and expanding outward in all directions
   const queue: NodeUrn[] = [startingUrn];
   const visitedNodes: Set<NodeUrn> = new Set([startingUrn]);
@@ -106,10 +106,77 @@ export function findUnreachableNodes(
     }
   }
 
-  const allUrns = new Set(nodes.map((n) => n.id));
+  return {
+    connectedNotFilteredUrns: visitedNodes,
+    // we want to return all "unreachable" or disconnected nodes that are not already
+    // going to be filtered out, so we do that by doing
+    // ((allUrns - reachableUrns) - filteredOutUrns)
+    unreachableUrns: setDifference(
+      setDifference(allUrns, visitedNodes),
+      urnsToFilterOut
+    ),
+  };
+}
 
-  // we want to return all "unreachable" or disconnected nodes that are not already
-  // going to be filtered out, so we do that by doing
-  // ((allUrns - reachableUrns) - filteredOutUrns)
-  return setDifference(setDifference(allUrns, visitedNodes), urnsToFilterOut);
+export function findLargestConnectedGraphOfPossibleUnconnectedGraphs(
+  nodes: Node<BigQueryGraphDisplayNode>[],
+  edges: Edge[],
+  nodesToFilterOut: Node<BigQueryGraphDisplayNode>[]
+): Set<NodeUrn> {
+  if (nodes.length === 0 || nodes.length === nodesToFilterOut.length) {
+    return new Set();
+  }
+  // first, we build the adj mapping of the entire graph, including the nodes we are
+  // filtering out
+  const { urnToDownstreamUrns, urnToUpstreamUrns } =
+    buildAdjacencyMappingFromReferences(edges);
+  const urnsToFilterOut = new Set(nodesToFilterOut.map((n) => n.id));
+  let candidateUrns = new Set<NodeUrn>(
+    nodes.map((n) => n.id).filter((urn) => !urnsToFilterOut.has(urn))
+  );
+  let largestConnectedGraph = new Set<NodeUrn>();
+
+  // TODO(#46787) can we be smarter about what node to start with -- if we had a good heuristic
+  // for choosing the middle of the graph (maybe like which node has most references?
+  // but idk if that is actually faster) in O(1) that could speed up this process
+  // considerably
+  const connectedGraphStartingPoints: Array<NodeUrn> = [
+    candidateUrns.values().next().value ??
+      throwExpression("Found no candidate urns to find connected graph"),
+  ];
+
+  // then, iteratively try to find different connected portions of the graph to find
+  // the largest portion
+  while (connectedGraphStartingPoints.length > 0) {
+    const connectedGraphStartingPointToTry =
+      connectedGraphStartingPoints.shift() ??
+      throwExpression("Found no new starting points to find connected graph");
+
+    const { connectedNotFilteredUrns, unreachableUrns } = findUnreachableNodes(
+      connectedGraphStartingPointToTry,
+      candidateUrns,
+      urnToUpstreamUrns,
+      urnToDownstreamUrns,
+      urnsToFilterOut
+    );
+
+    if (connectedNotFilteredUrns.size > largestConnectedGraph.size) {
+      largestConnectedGraph = connectedNotFilteredUrns;
+    }
+
+    // if the size of the largest graph is bigger than all of the remaining unconnected
+    // and unfiltered nodes, we have found the biggest possible connected graph
+    if (largestConnectedGraph.size >= unreachableUrns.size) {
+      break;
+    }
+
+    // if not, let's shrink our search size to the set of remaining nodes and try again
+    candidateUrns = unreachableUrns;
+    connectedGraphStartingPoints.push(
+      candidateUrns.values().next().value ??
+        throwExpression("Found no candidate urns to find connected graph")
+    );
+  }
+
+  return largestConnectedGraph;
 }

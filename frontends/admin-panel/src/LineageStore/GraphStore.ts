@@ -44,9 +44,6 @@ import { throwExpression } from "./Utils";
  * Store for managing the graph's state and behavior.
  */
 export class GraphStore {
-  // the node that is searched -- should be reflected in the url of the page
-  selectedNodeUrn?: NodeUrn;
-
   // nodes that are passed to ReactFlow to render in the graph
   nodes: Node<BigQueryGraphDisplayNode>[];
 
@@ -57,7 +54,6 @@ export class GraphStore {
   layoutEngine: LayoutEngine;
 
   constructor(public rootStore: LineageRootStore) {
-    this.selectedNodeUrn = undefined;
     this.nodes = [];
     this.edges = [];
     this.layoutEngine = new DagreEngine();
@@ -71,21 +67,14 @@ export class GraphStore {
     );
   }
 
-  get hasSelectedNode() {
-    return this.selectedNodeUrn !== undefined;
-  }
-
-  get selectedNode() {
-    return this.selectedNodeUrn
-      ? this.nodeFromUrn(this.selectedNodeUrn)
-      : undefined;
+  get hasNodesInGraph() {
+    return this.nodes.length > 0;
   }
 
   /**
    * Resets the graph to be a single node.
    */
-  resetGraphToActiveNode = (urn: NodeUrn) => {
-    this.selectedNodeUrn = urn;
+  resetGraphToUrn = (urn: NodeUrn) => {
     this.edges = [];
     this.nodes = [
       buildNewBigQueryNodeWithDefaults(
@@ -140,7 +129,7 @@ export class GraphStore {
     ];
 
     const { displayedNodes, hiddenNodes } =
-      this.rootStore.uiStore.applyFiltersToExistingNodes(
+      this.rootStore.uiStore.applyActiveFiltersToExistingNodes(
         allNodesWithoutPositions
       );
 
@@ -170,7 +159,7 @@ export class GraphStore {
     }
 
     const { displayedNodes, hiddenNodes } =
-      this.rootStore.uiStore.applyFiltersToExistingNodes(
+      this.rootStore.uiStore.applyActiveFiltersToExistingNodes(
         allNodesWithoutPositions
       );
 

@@ -287,10 +287,7 @@ const App = (): JSX.Element => {
             path={LineStaffTools.DEMO_APP_MANAGEMENT_ROUTE}
             component={DemoAppManagementView}
           />
-          <Route
-            path={[Lineage.LINEAGE_DETAIL, Lineage.LINEAGE_BASE]}
-            component={LineageDisplay}
-          />
+          <Route path={Lineage.LINEAGE_BASE} component={LineageDisplay} />
           <Route
             path={OnCall.ON_CALL_BASE_ROUTE}
             component={OnCallLogsReview}

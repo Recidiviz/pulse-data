@@ -18,10 +18,14 @@
 import { Node } from "@xyflow/react";
 import { makeAutoObservable } from "mobx";
 
-import { findUnreachableNodes } from "./GraphHelpers";
+import { findLargestConnectedGraphOfPossibleUnconnectedGraphs } from "./GraphHelpers";
 import { LineageRootStore } from "./LineageRootStore";
 import { NodeFilter } from "./NodeFilter/NodeFilter";
-import { applyFiltersToNode, buildNodeFilter } from "./NodeFilter/Utils";
+import {
+  applyFiltersToExistingNodes,
+  buildNodeFilter,
+  NodeFilteringResult,
+} from "./NodeFilter/Utils";
 import {
   BigQueryGraphDisplayNode,
   BigQueryLineageNode,
@@ -33,12 +37,8 @@ import {
 import {
   buildSelectOptionForFilter,
   createBigQueryNodeAutoCompleteGroups,
+  throwExpression,
 } from "./Utils";
-
-type NodeFilteringResult = {
-  displayedNodes: Node<BigQueryGraphDisplayNode>[];
-  hiddenNodes: Node<BigQueryGraphDisplayNode>[];
-};
 
 /**
  * Stores for managing visual and interactive elements layered on top of the lineage graph
@@ -72,7 +72,7 @@ export class UiStore {
   }
 
   // whether or not the node detail drawer should be open
-  get nodeDetailDrawerOpen() {
+  get isNodeDetailDrawerOpen() {
     return this.nodeDetailDrawerUrn !== undefined;
   }
 
@@ -136,42 +136,8 @@ export class UiStore {
       .map(buildSelectOptionForFilter);
   }
 
-  // builds dataset filter options that are "valid" based on what the selected node is
-  get datasetFilterOptions() {
-    if (this.rootStore.graphStore.hasSelectedNode) {
-      return this.allDatasetFilterOptions.filter(
-        (option) =>
-          !option.filter.shouldIncludeNode(
-            this.rootStore.graphStore.selectedNode
-          )
-      );
-    }
-    return [];
-  }
-
-  // builds state code filter options that are "valid" based on what the selected node is
-  get stateCodeFilterOptions() {
-    if (this.rootStore.graphStore.hasSelectedNode) {
-      if (this.rootStore.graphStore.selectedNode?.data.stateCode === null) {
-        return this.allStateCodeFilterOptions;
-      }
-      return this.allStateCodeFilterOptions.filter((option) =>
-        option.filter.shouldIncludeNode(this.rootStore.graphStore.selectedNode)
-      );
-    }
-    return [];
-  }
-
-  get filtersActive(): boolean {
+  get areFiltersActive(): boolean {
     return this.nodeFilters.length !== 0;
-  }
-
-  get includeFilters(): NodeFilter[] {
-    return this.nodeFilters.filter((f) => f.type === NodeFilterType.INCLUDE);
-  }
-
-  get excludeFilters(): NodeFilter[] {
-    return this.nodeFilters.filter((f) => f.type === NodeFilterType.EXCLUDE);
   }
 
   /** IMPORTANT: while this function does clear filters, it does NOT update the nodes
@@ -198,12 +164,13 @@ export class UiStore {
    *
    * If we were to just apply filters across all nodes, there's a chance some nodes are
    * no longer reachable if they strictly downstream of a node that was filtered out --
-   * instead, we will start with the selectedNode and then expand outwards iteratively
-   * applying filters on each level until we re-build the graph and mark any unreachable
-   * nodes as hidden as well.
+   * in this case, we'd end up with an unconnected graph (which we don't want). in these
+   * cases, we'll just pick the larger side of the connected graph
+   * TODO(#46787) should we display a toast explaining what happened -- could be jarring
+   * if we choose the larger part of the graph, but the part of the graph the user was
+   * not expecting
    */
-  updateFilters = async (newFilters: NodeFilter[], selectedUrn: NodeUrn) => {
-    this.nodeFilters = newFilters;
+  updateFilters = async (newFilters: NodeFilter[]) => {
     // reset all nodes as no longer hidden
     const nodesWithHiddenReset = this.rootStore.graphStore.nodes.map((n) => ({
       ...n,
@@ -211,12 +178,19 @@ export class UiStore {
     }));
 
     // apply filters to figure out which nodes we will be filtering out
-    const { displayedNodes, hiddenNodes } =
-      this.applyFiltersToExistingNodes(nodesWithHiddenReset);
+    const { displayedNodes, hiddenNodes } = applyFiltersToExistingNodes(
+      nodesWithHiddenReset,
+      newFilters
+    );
+
+    if (displayedNodes.length === 0) {
+      throwExpression(
+        "Cannot apply filters that will remove all nodes from the graph"
+      );
+    }
 
     // walk the graph to determine which, if any, nodes are "unreachable"
-    const unReachableNodeUrns = findUnreachableNodes(
-      selectedUrn,
+    const newGraphUrns = findLargestConnectedGraphOfPossibleUnconnectedGraphs(
       nodesWithHiddenReset,
       // we need to recompute edges from the set of all possible nodes, not just the
       // rootStore.graphStore.edges as that only contains the edges between displayed
@@ -227,47 +201,22 @@ export class UiStore {
       hiddenNodes
     );
 
-    // mark any unreachable nodes as "hidden"
-    const displayedAndReachableNodes = displayedNodes.filter((n) => {
-      if (unReachableNodeUrns.has(n.id)) {
-        hiddenNodes.push({ ...n, hidden: true });
-        return false;
-      }
-      return true;
-    });
+    // remove any unreachable nodes from the graph
+    const displayedAndReachableNodes = displayedNodes.filter((n) =>
+      newGraphUrns.has(n.id)
+    );
 
     await this.rootStore.graphStore.recalculateNodePositions(
       displayedAndReachableNodes,
       hiddenNodes,
-      this.rootStore.graphStore.nodeFromUrn(selectedUrn)
+      undefined
     );
+    this.nodeFilters = newFilters;
   };
 
-  applyFiltersToExistingNodes = (
+  applyActiveFiltersToExistingNodes = (
     nodes: Node<BigQueryGraphDisplayNode>[]
   ): NodeFilteringResult => {
-    if (!this.filtersActive) {
-      return { displayedNodes: nodes, hiddenNodes: [] };
-    }
-
-    return nodes.reduce(
-      (result: NodeFilteringResult, node: Node<BigQueryGraphDisplayNode>) => {
-        const shouldDisplayNode = applyFiltersToNode(
-          node,
-          this.includeFilters,
-          this.excludeFilters
-        );
-
-        (shouldDisplayNode ? result.displayedNodes : result.hiddenNodes).push(
-          node
-        );
-
-        return result;
-      },
-      {
-        displayedNodes: [],
-        hiddenNodes: [],
-      } as NodeFilteringResult
-    );
+    return applyFiltersToExistingNodes(nodes, this.nodeFilters);
   };
 }

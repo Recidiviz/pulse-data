@@ -29,7 +29,7 @@ import {
 import { message } from "antd";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect } from "react";
-import { useHistory, useParams } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 
 import { useLineageRootStore } from "../../LineageStore/LineageRootContext";
 import { getErrorMessage, isHydrated } from "../../LineageStore/Utils";
@@ -49,8 +49,7 @@ function LineageGraph() {
     graphStore: {
       nodes,
       edges,
-      selectedNodeUrn,
-      resetGraphToActiveNode,
+      resetGraphToUrn,
       handleReactFlowNodesChange,
       handleReactFlowEdgesChange,
       changeNodeHighlight,
@@ -62,10 +61,7 @@ function LineageGraph() {
   const { fitView } = useReactFlow();
 
   const history = useHistory();
-  const { datasetId, viewId } = useParams<{
-    datasetId?: string;
-    viewId?: string;
-  }>();
+  const location = useLocation();
 
   const getData = useCallback(async () => {
     if (hydrationState && hydrationState.status === "needs hydration") {
@@ -78,14 +74,14 @@ function LineageGraph() {
   }, [getData, hydrationState]);
 
   useEffect(() => {
-    if (datasetId && viewId && isHydrated(hydrationState)) {
-      const newActiveNode = `${datasetId}.${viewId}`;
-      if (newActiveNode !== selectedNodeUrn) {
+    if (isHydrated(hydrationState) && location.search) {
+      const startingUrn = new URLSearchParams(location.search).get("start_urn");
+      if (startingUrn !== null) {
         try {
-          resetGraphToActiveNode(newActiveNode);
-          setNodeDetailDrawerUrn(newActiveNode);
+          resetGraphToUrn(startingUrn);
+          setNodeDetailDrawerUrn(startingUrn);
           fitView({
-            nodes: [{ id: newActiveNode }],
+            nodes: [{ id: startingUrn }],
             ...defaultFitViewOptions,
           });
         } catch (e) {
@@ -94,16 +90,8 @@ function LineageGraph() {
         }
       }
     }
-  }, [
-    datasetId,
-    viewId,
-    selectedNodeUrn,
-    resetGraphToActiveNode,
-    hydrationState,
-    fitView,
-    setNodeDetailDrawerUrn,
-    history,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrationState]);
 
   return (
     <ReactFlow

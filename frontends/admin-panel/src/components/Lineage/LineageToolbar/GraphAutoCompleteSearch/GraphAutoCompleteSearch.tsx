@@ -20,38 +20,31 @@ import { useReactFlow } from "@xyflow/react";
 import { AutoComplete, Input, message } from "antd";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
-import { useHistory } from "react-router-dom";
 
 import { useLineageRootStore } from "../../../../LineageStore/LineageRootContext";
 import { getErrorMessage } from "../../../../LineageStore/Utils";
-import { LINEAGE_BASE } from "../../../../navigation/Lineage";
 import { defaultFitViewOptions } from "../../Constants";
 
 export const GraphAutoCompleteSearchBar: React.FC = observer(() => {
   const {
-    graphStore: { selectedNodeUrn, resetGraphToActiveNode },
+    graphStore: { resetGraphToUrn },
     uiStore: { autoCompleteOptions, setNodeDetailDrawerUrn },
   } = useLineageRootStore();
-  const history = useHistory();
   const { fitView } = useReactFlow();
   const [searchValue, setSearchValue] = useState("");
 
-  const handleSearch = (value: string) => {
-    if (value.trim() && value.trim() !== selectedNodeUrn) {
-      try {
-        resetGraphToActiveNode(value.trim());
-        setNodeDetailDrawerUrn(value.trim());
-        fitView({
-          nodes: [{ id: value.trim() }],
-          ...defaultFitViewOptions,
-        });
-        setSearchValue("");
-        const [newDatasetId, newViewId] = value.split(".", 2);
-        history.push(`${LINEAGE_BASE}/${newDatasetId}/${newViewId}`);
-      } catch (e) {
-        message.error(getErrorMessage(e));
-        setSearchValue("");
-      }
+  const handleSearch = (selectedUrn: string) => {
+    try {
+      resetGraphToUrn(selectedUrn);
+      setNodeDetailDrawerUrn(selectedUrn);
+      fitView({
+        nodes: [{ id: selectedUrn }],
+        ...defaultFitViewOptions,
+      });
+      setSearchValue("");
+    } catch (e) {
+      message.error(getErrorMessage(e));
+      setSearchValue("");
     }
   };
 

@@ -15,33 +15,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { useReactFlow } from "@xyflow/react";
 import { message, Modal, Space } from "antd";
 import Paragraph from "antd/lib/typography/Paragraph";
 import Title from "antd/lib/typography/Title";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 
-import { useLineageRootStore } from "../../../../LineageStore/LineageRootContext";
+import { useUiStore } from "../../../../LineageStore/LineageRootContext";
 import { NodeFilter } from "../../../../LineageStore/NodeFilter/NodeFilter";
 import { NodeFilterKey, NodeFilterType } from "../../../../LineageStore/types";
-import {
-  getErrorMessage,
-  throwExpression,
-} from "../../../../LineageStore/Utils";
+import { getErrorMessage } from "../../../../LineageStore/Utils";
 import { NodeFilterSelect } from "./NodeFilterSelect";
 
 export const NodeFilterModal: React.FC = observer(() => {
   const {
-    uiStore: {
-      nodeFilters,
-      updateFilters,
-      filterModalOpen,
-      setFilterModalState,
-      stateCodeFilterOptions,
-      datasetFilterOptions,
-    },
-    graphStore: { selectedNodeUrn },
-  } = useLineageRootStore();
+    nodeFilters,
+    updateFilters,
+    filterModalOpen,
+    setFilterModalState,
+    allDatasetFilterOptions,
+    allStateCodeFilterOptions,
+  } = useUiStore();
+
+  const { fitView } = useReactFlow();
+  const [applyButtonLoading, setApplyButtonLoading] = useState(false);
 
   // list of filters that are displayed on the front end while the modal is open --
   // at the time when the user clicks "Apply", we use these filters to set nodeFilters
@@ -73,20 +71,21 @@ export const NodeFilterModal: React.FC = observer(() => {
       open={filterModalOpen}
       onOk={() => {
         try {
-          const definitelyTheSelectedNodeUrn =
-            selectedNodeUrn ??
-            throwExpression(
-              "Shouldn't have been able to select filters without an active node"
-            );
-          // then do it!
-          updateFilters(candidateFilters, definitelyTheSelectedNodeUrn).then(
-            () => setFilterModalState(false),
+          setApplyButtonLoading(true);
+          updateFilters(candidateFilters).then(
+            () => {
+              setApplyButtonLoading(false);
+              setFilterModalState(false);
+              fitView(); // reset viewport to see the whole graph
+            },
             (e) => {
               message.error(getErrorMessage(e));
+              setApplyButtonLoading(false);
             }
           );
         } catch (e) {
           message.error(getErrorMessage(e));
+          setApplyButtonLoading(false);
         }
       }}
       onCancel={() => {
@@ -94,6 +93,9 @@ export const NodeFilterModal: React.FC = observer(() => {
         setFilterModalState(false);
       }}
       okText="Apply Filters"
+      okButtonProps={{
+        loading: applyButtonLoading,
+      }}
     >
       <Title level={3}> Filter Select </Title>
       <Paragraph>
@@ -105,7 +107,7 @@ export const NodeFilterModal: React.FC = observer(() => {
         <NodeFilterSelect
           title="State Codes to Include"
           placeholder="e.g. US_XX"
-          options={stateCodeFilterOptions}
+          options={allStateCodeFilterOptions}
           type={NodeFilterType.INCLUDE}
           filterKey={NodeFilterKey.STATE_CODE_FILTER}
           addCandidateFilter={addCandidateFilter}
@@ -115,7 +117,7 @@ export const NodeFilterModal: React.FC = observer(() => {
         <NodeFilterSelect
           title="Datasets to Exclude"
           placeholder="e.g. fake_dataset"
-          options={datasetFilterOptions}
+          options={allDatasetFilterOptions}
           type={NodeFilterType.EXCLUDE}
           filterKey={NodeFilterKey.DATASET_ID_FILTER}
           addCandidateFilter={addCandidateFilter}

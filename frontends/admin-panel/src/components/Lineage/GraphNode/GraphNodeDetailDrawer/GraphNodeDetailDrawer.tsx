@@ -31,7 +31,7 @@ import BigQueryViewDetailCard from "../GraphNodeDetailCard/BigQueryViewDetailCar
 
 export const GraphNodeDetailDrawer: React.FC = observer(() => {
   const {
-    nodeDetailDrawerOpen,
+    isNodeDetailDrawerOpen,
     setNodeDetailDrawerUrn,
     activeNodeDetailDrawerTab,
     setActiveNodeDetailDrawerTab,
@@ -63,7 +63,7 @@ export const GraphNodeDetailDrawer: React.FC = observer(() => {
 
   return (
     <Drawer
-      open={nodeDetailDrawerOpen}
+      open={isNodeDetailDrawerOpen}
       onClose={() => {
         setActiveNodeDetailDrawerTab(NodeDetailDrawerTab.DETAILS);
         setNodeDetailDrawerUrn(undefined);

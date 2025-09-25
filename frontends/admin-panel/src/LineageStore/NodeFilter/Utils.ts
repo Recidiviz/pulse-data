@@ -26,6 +26,11 @@ import { ExcludeDatasetNodeFilter } from "./ExcludeDatasetNodeFilter";
 import { IncludeStateCodeNodeFilter } from "./IncludeStateCodeNodeFilter";
 import { NodeFilter } from "./NodeFilter";
 
+export type NodeFilteringResult = {
+  displayedNodes: Node<BigQueryGraphDisplayNode>[];
+  hiddenNodes: Node<BigQueryGraphDisplayNode>[];
+};
+
 export function buildNodeFilter(
   type: NodeFilterType,
   key: NodeFilterKey,
@@ -69,4 +74,41 @@ export function applyFiltersToNode(
   );
 
   return includeFiltersResult && excludeFiltersResult;
+}
+
+export function applyFiltersToExistingNodes(
+  nodes: Node<BigQueryGraphDisplayNode>[],
+  filters: NodeFilter[]
+): NodeFilteringResult {
+  if (filters.length === 0) {
+    return { displayedNodes: nodes, hiddenNodes: [] };
+  }
+
+  const includeFilters = filters.filter(
+    (f) => f.type === NodeFilterType.INCLUDE
+  );
+
+  const excludeFilters = filters.filter(
+    (f) => f.type === NodeFilterType.EXCLUDE
+  );
+
+  return nodes.reduce(
+    (result: NodeFilteringResult, node: Node<BigQueryGraphDisplayNode>) => {
+      const shouldDisplayNode = applyFiltersToNode(
+        node,
+        includeFilters,
+        excludeFilters
+      );
+
+      (shouldDisplayNode ? result.displayedNodes : result.hiddenNodes).push(
+        node
+      );
+
+      return result;
+    },
+    {
+      displayedNodes: [],
+      hiddenNodes: [],
+    } as NodeFilteringResult
+  );
 }
