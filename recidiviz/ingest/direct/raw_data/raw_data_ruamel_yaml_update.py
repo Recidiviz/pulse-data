@@ -23,6 +23,7 @@ from typing import Any, Type
 import attr
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.representer import RoundTripRepresenter
 
 from recidiviz.common.attr_utils import (
     get_inner_type_from_list_type,
@@ -96,6 +97,8 @@ def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
     yaml.preserve_quotes = True
     yaml.width = 4096  # Set a large width to avoid line breaks in the YAML output
 
+    # Add custom bool representer to ensure booleans are capitalized
+    # to match existing style in our raw data YAML files
     def bool_representer(representer: Any, data: Any) -> Any:
         return representer.represent_scalar(
             "tag:yaml.org,2002:bool", "True" if data else "False"
@@ -109,6 +112,10 @@ def write_ruamel_yaml_to_file(file_path: Path, data: CommentedMap) -> None:
         yaml.dump(data, f)
 
     write_schema_pragma_to_yaml_if_not_present(file_path)
+
+    # Reset bool representer because during the pytest suite state is sometimes being
+    # carried over to other tests causing unexpected behavior
+    yaml.representer.add_representer(bool, RoundTripRepresenter.represent_bool)
 
 
 def convert_raw_file_config_to_dict(
