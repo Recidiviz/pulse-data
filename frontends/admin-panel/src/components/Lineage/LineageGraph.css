@@ -28,6 +28,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   }
 }
 
+.graph-loading {
+  display: flex;
+  position: relative;
+  justify-content: center;
+  top: calc(50% - 64px);
+  align-items: center;
+  font-size: 64px;
+  color: var(--view-bbox);
+}
 
 .background-canvas {
   background: var(--canvas-background-color);

@@ -61,7 +61,6 @@ export const LineageToolbar: React.FC = observer(() => {
   ) : (
     <Tooltip title={searchComponentTooltip}>
       <Button
-        className="lineage-filter-button"
         size="large"
         icon={searchComponentIcon}
         onClick={() => {
@@ -80,7 +79,6 @@ export const LineageToolbar: React.FC = observer(() => {
   ) : (
     <Tooltip title={zoomToComponentTooltip}>
       <Button
-        className="lineage-filter-button"
         size="large"
         disabled={!hasNodesInGraph}
         icon={<LoginOutlined />}
@@ -123,9 +121,9 @@ export const LineageToolbar: React.FC = observer(() => {
   return (
     <Panel position="top-left">
       <div className="lineage-toolbar">
-        <div className="lineage-search-bar-container">{searchComponent}</div>
-        <div className="lineage-zoom-to-bar-container">{zoomToComponent}</div>
-        <div className="lineage-filter-button-container">{filterComponent}</div>
+        <div className="lineage-toolbar-item">{searchComponent}</div>
+        <div className="lineage-toolbar-item">{zoomToComponent}</div>
+        <div className="lineage-toolbar-item">{filterComponent}</div>
       </div>
     </Panel>
   );
