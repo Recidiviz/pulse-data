@@ -90,6 +90,7 @@ function LineageGraph() {
         }
       }
     }
+    // we only want this to happen on initial page load after we are hydrated
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrationState]);
 

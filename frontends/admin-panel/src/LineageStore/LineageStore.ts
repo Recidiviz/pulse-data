@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Edge, Node } from "@xyflow/react";
+import { Edge } from "@xyflow/react";
 import { makeAutoObservable, runInAction } from "mobx";
 
 import { fetchNodes, fetchNodesBetween } from "../AdminPanelAPI/LineageAPI";
@@ -24,7 +24,6 @@ import {
   BigQueryLineageNode,
   EdgeId,
   GraphDirection,
-  GraphDisplayNode,
   GraphEdge,
   NodeUrn,
 } from "./types";
@@ -123,13 +122,10 @@ export class LineageStore implements Hydratable {
   expand = (
     urnToExpand: NodeUrn,
     direction: GraphDirection,
-    currentNodes: Node<GraphDisplayNode>[]
+    currentUrns: Set<NodeUrn>
   ): BigQueryLineageNode[] => {
     const adjacentNodes = this.adjacentNodes(urnToExpand, direction);
-    // TODO(#46345): maybe also store urns as a set so as not to have to do so many O(n)
-    // things?
-    const currentNodesSet = new Set(currentNodes.map((n) => n.id));
-    return Array.from(adjacentNodes.difference(currentNodesSet)).map(
+    return Array.from(adjacentNodes.difference(currentUrns)).map(
       (urn) => this.nodes.get(urn) ?? throwExpression(`Unknown urn: ${urn}`)
     );
   };
@@ -148,15 +144,12 @@ export class LineageStore implements Hydratable {
     direction: GraphDirection,
     source: NodeUrn,
     target: NodeUrn,
-    currentNodes: Node<GraphDisplayNode>[]
+    currentUrns: Set<NodeUrn>
   ): Promise<BigQueryLineageNode[]> => {
     const urnsBetween = await fetchNodesBetween(direction, source, target);
     const newNodeUrns = new Set<NodeUrn>(urnsBetween.urns);
 
-    const currentNodesSet = new Set(currentNodes.map((n) => n.id));
-    return Array.from(newNodeUrns.difference(currentNodesSet)).map(
-      this.nodeForUrn
-    );
+    return Array.from(newNodeUrns.difference(currentUrns)).map(this.nodeForUrn);
   };
 
   fetchBetween = async (

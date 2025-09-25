@@ -42,6 +42,7 @@ export type GraphDisplayMetadata = LineageNode & {
   isExpandedDownstream?: boolean;
   hasUpstream?: boolean;
   hasDownstream?: boolean;
+  rank: number;
 };
 
 // a unique edge id in the form of `e-{sourceUrn}-{targetUrn}` to ensure uniqueness
@@ -86,6 +87,10 @@ export enum NodeDetailDrawerTab {
   DOWNSTREAM_SEARCH = "DOWNSTREAM_SEARCH",
   UPSTREAM_SEARCH = "UPSTREAM_SEARCH",
 }
+export type NewGraphLayout = {
+  position: NodePosition;
+  rank: number;
+};
 
 /* --- graph api types -------------------------------------------------------------- */
 

@@ -20,7 +20,7 @@ import { BaseOptionType, DefaultOptionType } from "antd/lib/select";
 
 import { HydrationState } from "../InsightsStore/types";
 import { NodeFilter } from "./NodeFilter/NodeFilter";
-import { BigQueryGraphDisplayNode } from "./types";
+import { BigQueryLineageNode } from "./types";
 
 /**
  * Throws a new error, using |errorMessage|.
@@ -51,7 +51,7 @@ function createBigQueryNodeLabel(viewId: string, urn: string) {
 }
 
 export function createBigQueryNodeAutoCompleteGroups(
-  nodes: BigQueryGraphDisplayNode[]
+  nodes: BigQueryLineageNode[]
 ): DefaultOptionType[] {
   const datasetToNode = Object.groupBy(nodes, (node) => node.datasetId);
   const newOptions = Object.keys(datasetToNode).map((datasetId: string) => ({

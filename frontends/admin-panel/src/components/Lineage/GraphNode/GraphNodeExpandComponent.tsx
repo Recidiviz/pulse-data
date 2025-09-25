@@ -41,7 +41,6 @@ export const BigQueryGraphNodeExpand = ({
   hasNeighbors?: boolean;
   isExpanded?: boolean;
 }): JSX.Element => {
-  // TODO(#46966): implement contraction for mvp by using this state
   const { expandGraph, contractGraph } = useGraphStore();
   const { setNodeDetailDrawerUrn, setActiveNodeDetailDrawerTab } = useUiStore();
 
@@ -71,10 +70,34 @@ export const BigQueryGraphNodeExpand = ({
     }
   };
 
+  const expandOrContractComponent = (
+    <div
+      className={
+        "graph-node-expand-arrow " +
+        `graph-node-expand-arrow-${direction.toLowerCase()} `
+      }
+      {...buttonizeWithEvent(handleContractOrExpand)}
+    >
+      {iconComponent}
+    </div>
+  );
+
+  const searchComponent = (
+    <div
+      className={
+        "graph-node-expand-search " +
+        `graph-node-expand-search-${direction.toLowerCase()}`
+      }
+      {...buttonize(() => handleAncestorSearch())}
+      title={`Expand to specific ${direction.toLowerCase()}`}
+    >
+      <SearchOutlined size={18} color="#eee" />
+    </div>
+  );
+
   return (
     <>
-      {/* // TODO(#46345): implement contraction for mvp by removing !isExpanded */}
-      {hasNeighbors && !isExpanded && (
+      {hasNeighbors && (
         <div
           className={
             "graph-node-container " +
@@ -84,48 +107,14 @@ export const BigQueryGraphNodeExpand = ({
         >
           {direction === GraphDirection.DOWNSTREAM && (
             <>
-              <div
-                className={
-                  "graph-node-expand-arrow " +
-                  `graph-node-expand-arrow-${direction.toLowerCase()} `
-                }
-                {...buttonizeWithEvent(handleContractOrExpand)}
-              >
-                {iconComponent}
-              </div>
-              <div
-                className={
-                  "graph-node-expand-search " +
-                  `graph-node-expand-search-${direction.toLowerCase()}`
-                }
-                {...buttonize(() => handleAncestorSearch())}
-                title={`Expand to specific ${direction.toLowerCase()}`}
-              >
-                <SearchOutlined size={18} color="#eee" />
-              </div>
+              {expandOrContractComponent}
+              {searchComponent}
             </>
           )}
           {direction === GraphDirection.UPSTREAM && (
             <>
-              <div
-                className={
-                  "graph-node-expand-search " +
-                  `graph-node-expand-search-${direction.toLowerCase()}`
-                }
-                {...buttonize(() => handleAncestorSearch())}
-                title={`Expand to specific ${direction.toLowerCase()}`}
-              >
-                <SearchOutlined size={18} color="#eee" />
-              </div>
-              <div
-                className={
-                  "graph-node-expand-arrow " +
-                  `graph-node-expand-arrow-${direction.toLowerCase()} `
-                }
-                {...buttonizeWithEvent(handleContractOrExpand)}
-              >
-                {iconComponent}
-              </div>
+              {searchComponent}
+              {expandOrContractComponent}
             </>
           )}
         </div>

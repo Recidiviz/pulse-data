@@ -22,7 +22,6 @@ import attr
 from marshmallow import fields
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagNode
 from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
 from recidiviz.common.attr_converters import optional_enum_value_from_enum
@@ -112,17 +111,6 @@ class LineageReference:
 
     source: str = attr.field()
     target: str = attr.field()
-
-    @classmethod
-    def for_bq_view(cls, view: BigQueryView) -> list["LineageReference"]:
-        return [
-            cls(
-                # TODO(#46345): be smarter about removing this
-                source=parent.to_str().removesuffix("_materialized"),
-                target=view.address.to_str(),
-            )
-            for parent in view.parent_tables
-        ]
 
     @classmethod
     def for_bq_node(cls, node: BigQueryViewDagNode) -> list["LineageReference"]:

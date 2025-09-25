@@ -29,7 +29,10 @@ import { makeAutoObservable, runInAction } from "mobx";
 
 import { buildNewBigQueryNodeWithDefaults } from "../components/Lineage/GraphNode/NodeBuilder";
 import { DagreEngine } from "../components/Lineage/Layout/DagreEngine";
-import { LayoutEngine } from "../components/Lineage/Layout/LayoutEngine";
+import {
+  buildAdjacencyMappingFromReferences,
+  findUnreachableNodes,
+} from "./GraphHelpers";
 import { LineageRootStore } from "./LineageRootStore";
 import {
   BigQueryGraphDisplayNode,
@@ -51,7 +54,7 @@ export class GraphStore {
   edges: Edge[];
 
   // underlying layout engine / algorithm used to re-position nodes in the viewport
-  layoutEngine: LayoutEngine;
+  layoutEngine: DagreEngine;
 
   constructor(public rootStore: LineageRootStore) {
     this.nodes = [];
@@ -69,6 +72,10 @@ export class GraphStore {
 
   get hasNodesInGraph() {
     return this.nodes.length > 0;
+  }
+
+  get allNodeUrns() {
+    return new Set(this.nodes.map((n) => n.id));
   }
 
   /**
@@ -95,21 +102,22 @@ export class GraphStore {
    * Marks a node as being expanded or not, in order to have the expansion visually
    * rendered on the frontend
    */
-  markNodeAsExpanded = (
+  updateNodeExpanded = (
     urnToMarkExpanded: NodeUrn,
-    direction: GraphDirection
+    direction: GraphDirection,
+    expanded: boolean
   ) => {
     const node = this.nodeFromUrn(urnToMarkExpanded);
 
     if (direction === GraphDirection.UPSTREAM) {
       node.data = {
         ...node.data,
-        isExpandedUpstream: true,
+        isExpandedUpstream: expanded,
       };
     } else if (direction === GraphDirection.DOWNSTREAM) {
       node.data = {
         ...node.data,
-        isExpandedDownstream: true,
+        isExpandedDownstream: expanded,
       };
     }
   };
@@ -218,19 +226,73 @@ export class GraphStore {
    * Expands the graph to display the nodes adjacent to |urn| in |direction|.
    */
   expandGraph = async (urn: NodeUrn, direction: GraphDirection) => {
-    this.markNodeAsExpanded(urn, direction);
+    this.updateNodeExpanded(urn, direction, true);
     const nodeToExpand = this.nodeFromUrn(urn);
     const expandedNodeUrns = this.rootStore.lineageStore.expand(
       urn,
       direction,
-      this.nodes
+      this.allNodeUrns
     );
     this.addAndRecalculateNodePositions(expandedNodeUrns, nodeToExpand);
   };
 
-  // eslint-disable-next-line class-methods-use-this
-  contractGraph = async (urn: NodeUrn, direction: GraphDirection) => {
-    // TODO(#46345): implement contraction for mvp
+  /**
+   * Contracts the graph to remove the nodes and edges adjacent and ancestral to |urn|
+   * in |direction| using a single direction bfs.
+   */
+  contractGraph = (urnToContractFrom: NodeUrn, direction: GraphDirection) => {
+    const { urnToDownstreamUrns, urnToUpstreamUrns } =
+      buildAdjacencyMappingFromReferences(this.edges);
+
+    const adjMap =
+      direction === GraphDirection.DOWNSTREAM
+        ? urnToDownstreamUrns
+        : urnToUpstreamUrns;
+
+    const queue: NodeUrn[] = [urnToContractFrom];
+    const urnsToHide: Set<NodeUrn> = new Set([urnToContractFrom]);
+
+    // first, traverse in the direction of contraction to collapse nodes
+    while (queue.length > 0) {
+      const currentUrn =
+        queue.shift() ?? throwExpression("Found no nodes in contraction queue");
+
+      const adjNodes = adjMap.get(currentUrn);
+      if (adjNodes) {
+        adjNodes.forEach((n) => {
+          if (!urnsToHide.has(n)) {
+            urnsToHide.add(n);
+            queue.push(n);
+          }
+        });
+      }
+    }
+
+    // we technically "visited" our starting node during our single direction bfs and
+    // included it in this set so as not to visit it twice, but we don't want to actually
+    // remove it from the graph, so we remove it from our set
+    urnsToHide.delete(urnToContractFrom);
+
+    // then, do another BFS to find unreachable nodes, leaving all other connected
+    // nodes in the graph
+    const { connectedNotFilteredUrns } = findUnreachableNodes(
+      urnToContractFrom,
+      this.allNodeUrns,
+      urnToDownstreamUrns,
+      urnToUpstreamUrns,
+      new Set(this.nodes.filter((n) => urnsToHide.has(n.id)).map((n) => n.id))
+    );
+
+    const remainingNodes = this.nodes.filter((n) =>
+      connectedNotFilteredUrns.has(n.id)
+    );
+
+    this.updateNodeExpanded(urnToContractFrom, direction, false);
+
+    this.nodes = remainingNodes;
+    this.edges = this.rootStore.lineageStore.computeEdgesFromNodes(
+      remainingNodes.map((n) => n.id)
+    );
   };
 
   /**
@@ -247,7 +309,7 @@ export class GraphStore {
         direction,
         startingUrn,
         ancestorUrn,
-        this.nodes
+        this.allNodeUrns
       );
     this.addAndRecalculateNodePositions(graphUpdates, nodeToExpand);
   };
