@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     at_least_24_months_since_last_csed,
+    enrolled_in_functional_literacy_tpr,
     meets_functional_literacy_tpr,
     no_active_felony_detainers,
     no_ineligible_tpr_offense_convictions,
@@ -51,8 +52,25 @@ from recidiviz.task_eligibility.eligibility_spans.us_az.overdue_for_recidiviz_dt
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+# An important note: enrolled_in_functional_literacy_tpr will never have True values, this criteria is created
+# solely to include enrollment information in the criteria reasons blob to be displayed in the criteria line
+# on the frontend
+_FUNCTIONAL_LITERACY_CRITERIA_TPR = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY_TPR",
+    sub_criteria_list=[
+        meets_functional_literacy_tpr.VIEW_BUILDER,
+        enrolled_in_functional_literacy_tpr.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
@@ -64,7 +82,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,
         ### TPR-specific criteria
         # a. Functional literacy
-        meets_functional_literacy_tpr.VIEW_BUILDER,
+        _FUNCTIONAL_LITERACY_CRITERIA_TPR,
         # b. Offenses
         no_ineligible_tpr_offense_convictions.VIEW_BUILDER,
         # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
@@ -85,7 +103,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
                     NotEligibleCriteriaCondition(
-                        criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
+                        criteria=_FUNCTIONAL_LITERACY_CRITERIA_TPR,
                         description="Missing Mandatory Literacy criteria",
                     ),
                     EligibleCriteriaCondition(
@@ -118,7 +136,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                                 description="Missing Felony Detainer criteria",
                             ),
                             NotEligibleCriteriaCondition(
-                                criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
+                                criteria=_FUNCTIONAL_LITERACY_CRITERIA_TPR,
                                 description="Missing Mandatory Literacy criteria",
                             ),
                         ],
@@ -132,7 +150,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                                 description="Has Felony Detainer criteria",
                             ),
                             EligibleCriteriaCondition(
-                                criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
+                                criteria=_FUNCTIONAL_LITERACY_CRITERIA_TPR,
                                 description="Has Mandatory Literacy criteria",
                             ),
                         ],

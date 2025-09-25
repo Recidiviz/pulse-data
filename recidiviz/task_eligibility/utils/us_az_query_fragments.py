@@ -477,6 +477,7 @@ def within_x_time_of_date(
 
 
 def meets_mandatory_literacy(opp_name: str) -> str:
+    """Returns spans of time after someone has completed a mandatory literacy program"""
     assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
     if opp_name.upper() == "TPR":
         _TABLE = "AZ_DOC_TRANSITION_PRG_EVAL"
@@ -652,6 +653,38 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         sub_sessions_with_attributes
     -- Ensuring for every row, we grab the latest data location and latest date of meeting literacy
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, start_date, meets_criteria ORDER BY latest_functional_literacy_date DESC) = 1
+    """
+
+
+def enrolled_in_mandatory_literacy(enrollment_meets_criteria: bool) -> str:
+    """Returns spans of time someone is enrolled in a mandatory literacy program
+
+    enrollment_meets_criteria: True if enrollment in mandatory literacy meets eligibility requirements, False otherwise
+    """
+    assert isinstance(enrollment_meets_criteria, bool), "Please input True or False"
+    return f"""
+    SELECT
+      state_code,
+      person_id,
+      start_date,
+      COALESCE(discharge_date, CAST(NULL AS DATE)) AS end_date,
+      {enrollment_meets_criteria} AS meets_criteria,
+      TO_JSON(STRUCT(
+                start_date AS enrollment_date
+            )) AS reason,
+      start_date AS enrollment_date,
+    FROM
+    #TODO(#33858): Ingest into state task deadline or find some way to view this historically
+      `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment`
+    WHERE state_code = 'US_AZ'
+    AND participation_status_raw_text IN ('PARTICIPATING')
+    AND program_id LIKE '%MAN%LIT%'
+    # Fixing the issue of zero-day spans while still keeping all participating individuals
+    # This also takes care of cases when the start_date happens after the discharge_date
+    # TODO(#34798): Remove erroneous cases where start_date > discharge_date
+    AND start_date < {nonnull_end_date_clause('discharge_date')}  
+    #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
     """
 
 
