@@ -25,6 +25,7 @@ import {
   EdgeId,
   GraphDirection,
   GraphEdge,
+  IsExpandedStatuses,
   NodeUrn,
 } from "./types";
 import { throwExpression } from "./Utils";
@@ -60,15 +61,14 @@ export class LineageStore implements Hydratable {
   /**
    * Computes the set of valid edges that connects the provided |urns|.
    */
-  computeEdgesFromNodes = (urns: Iterable<NodeUrn>): GraphEdge[] => {
-    const candidateNodes = new Set<NodeUrn>(urns);
+  computeEdgesFromNodes = (urns: Set<NodeUrn>): GraphEdge[] => {
     const candidateEdges = new Map<string, GraphEdge>();
 
-    candidateNodes.forEach((urn: NodeUrn) => {
+    urns.forEach((urn: NodeUrn) => {
       // find edges between node and other active upstream nodes
       const upstreamEdgesToAdd = this.urnToUpstreamUrns
         .get(urn)
-        ?.intersection(candidateNodes);
+        ?.intersection(urns);
       upstreamEdgesToAdd?.forEach((upstreamUrn) => {
         const edgeId = `e-${upstreamUrn}-${urn}`;
         if (!candidateEdges.has(edgeId)) {
@@ -81,7 +81,7 @@ export class LineageStore implements Hydratable {
       // find edges between node and other active downstream nodes
       const downstreamEdgesToAdd = this.urnToDownstreamUrns
         .get(urn)
-        ?.intersection(candidateNodes);
+        ?.intersection(urns);
       downstreamEdgesToAdd?.forEach((downstreamUrn) => {
         const edgeId = `e-${urn}-${downstreamUrn}`;
         if (!candidateEdges.has(edgeId)) {
@@ -98,6 +98,30 @@ export class LineageStore implements Hydratable {
     return Array.from(candidateEdges.values()).sort((a, b) =>
       a.id.localeCompare(b.id)
     );
+  };
+
+  computeExpandedUpstreamForNodes = (
+    displayedUrns: Set<NodeUrn>,
+    hiddenByFiltersUrns: Set<NodeUrn>
+  ): Map<NodeUrn, IsExpandedStatuses> => {
+    // combine both urns that are displayed and those that are not to determine if the
+    // we have expanded all possible adj neighbors
+    const allUrnsInDisplayGraph = displayedUrns.union(hiddenByFiltersUrns);
+    const isExpandedMap = new Map<string, IsExpandedStatuses>();
+
+    displayedUrns.forEach((urn: NodeUrn) => {
+      // if all adj nodes for this node are in the graph, declare it expanded
+      isExpandedMap.set(urn, {
+        isExpandedDownstream:
+          this.urnToDownstreamUrns.get(urn)?.difference(allUrnsInDisplayGraph)
+            .size === 0,
+        isExpandedUpstream:
+          this.urnToUpstreamUrns.get(urn)?.difference(allUrnsInDisplayGraph)
+            .size === 0,
+      });
+    });
+
+    return isExpandedMap;
   };
 
   /**

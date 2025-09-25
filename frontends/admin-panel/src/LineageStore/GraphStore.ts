@@ -99,30 +99,6 @@ export class GraphStore {
   };
 
   /**
-   * Marks a node as being expanded or not, in order to have the expansion visually
-   * rendered on the frontend
-   */
-  updateNodeExpanded = (
-    urnToMarkExpanded: NodeUrn,
-    direction: GraphDirection,
-    expanded: boolean
-  ) => {
-    const node = this.nodeFromUrn(urnToMarkExpanded);
-
-    if (direction === GraphDirection.UPSTREAM) {
-      node.data = {
-        ...node.data,
-        isExpandedUpstream: expanded,
-      };
-    } else if (direction === GraphDirection.DOWNSTREAM) {
-      node.data = {
-        ...node.data,
-        isExpandedDownstream: expanded,
-      };
-    }
-  };
-
-  /**
    * Adds |newNodes| to the graph and recalculates the node positions and relevant edges,
    * updating the graph nodes and edges state accordingly.
    */
@@ -187,27 +163,53 @@ export class GraphStore {
     hiddenNodes: Node<BigQueryGraphDisplayNode>[],
     nodeToAnchor?: Node<GraphDisplayNode>
   ) => {
-    const newEdges = this.rootStore.lineageStore.computeEdgesFromNodes(
-      displayedNodes.map((n) => n.id)
-    );
+    const displayedUrns = new Set(displayedNodes.map((n) => n.id));
 
-    // recalculate node positions
+    // first, re-compute all edges that exist between displayed nodes
+    const newEdges =
+      this.rootStore.lineageStore.computeEdgesFromNodes(displayedUrns);
+
+    // then, re-compute all isExpanded booleans for nodes
+    const isExpandedMap =
+      this.rootStore.lineageStore.computeExpandedUpstreamForNodes(
+        displayedUrns,
+        new Set(hiddenNodes.map((n) => n.id))
+      );
+
+    // once we have our edges, we can recalculate node positions
     const newNodePositionMap = await this.layoutEngine.layout(
       displayedNodes,
       newEdges,
       nodeToAnchor
     );
 
-    // update state with new positions
+    // update existing nodes w/ new positions and new metadata
     const newNodesWithPositions = displayedNodes.map((node) => {
       const newPosition =
         newNodePositionMap.get(node.id) ??
         throwExpression(
           `Unknown node attempted to be added to graph ${node.id}`
         );
-      const { position: oldPosition, ...nonPositionContents } = node;
+      const newIsExpanded =
+        isExpandedMap.get(node.id) ??
+        throwExpression(
+          `Unknown node attempted to be added to graph ${node.id}`
+        );
+      const {
+        position: oldPosition, // will be replaced
+        data: {
+          isExpandedDownstream: oldIsExpandedDownstream, // will be replaced
+          isExpandedUpstream: oldIsExpandedUpstream, // will be replaced
+          ...nonIsExpandedContent
+        },
+        ...nonPositionContents
+      } = node;
       return {
         ...nonPositionContents,
+        data: {
+          ...nonIsExpandedContent,
+          ...newIsExpanded,
+        },
         position: newPosition,
         hidden: false,
       };
@@ -226,7 +228,6 @@ export class GraphStore {
    * Expands the graph to display the nodes adjacent to |urn| in |direction|.
    */
   expandGraph = async (urn: NodeUrn, direction: GraphDirection) => {
-    this.updateNodeExpanded(urn, direction, true);
     const nodeToExpand = this.nodeFromUrn(urn);
     const expandedNodeUrns = this.rootStore.lineageStore.expand(
       urn,
@@ -287,11 +288,34 @@ export class GraphStore {
       connectedNotFilteredUrns.has(n.id)
     );
 
-    this.updateNodeExpanded(urnToContractFrom, direction, false);
+    const isExpandedMap =
+      this.rootStore.lineageStore.computeExpandedUpstreamForNodes(
+        connectedNotFilteredUrns,
+        new Set()
+      );
 
-    this.nodes = remainingNodes;
+    this.nodes = remainingNodes.map((n) => {
+      const newIsExpanded =
+        isExpandedMap.get(n.id) ??
+        throwExpression(`Unknown node attempted to be added to graph ${n.id}`);
+      const {
+        data: {
+          isExpandedDownstream: oldIsExpandedDownstream, // will be replaced
+          isExpandedUpstream: oldIsExpandedUpstream, // will be replaced
+          ...nonIsExpandedContent
+        },
+        ...nonDataContents
+      } = n;
+      return {
+        ...nonDataContents,
+        data: {
+          ...nonIsExpandedContent,
+          ...newIsExpanded,
+        },
+      };
+    });
     this.edges = this.rootStore.lineageStore.computeEdgesFromNodes(
-      remainingNodes.map((n) => n.id)
+      new Set(remainingNodes.map((n) => n.id))
     );
   };
 

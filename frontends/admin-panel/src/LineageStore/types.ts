@@ -64,6 +64,11 @@ export enum GraphDirection {
   DOWNSTREAM = "DOWNSTREAM",
 }
 
+export type IsExpandedStatuses = {
+  isExpandedUpstream: boolean;
+  isExpandedDownstream: boolean;
+};
+
 // position metadata about where a node is located in the viewport
 export type NodePosition = {
   x: number;

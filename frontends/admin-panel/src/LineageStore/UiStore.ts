@@ -196,7 +196,7 @@ export class UiStore {
       // rootStore.graphStore.edges as that only contains the edges between displayed
       // nodes
       this.rootStore.lineageStore.computeEdgesFromNodes(
-        nodesWithHiddenReset.map((n) => n.id)
+        new Set(nodesWithHiddenReset.map((n) => n.id))
       ),
       hiddenNodes
     );

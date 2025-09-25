@@ -32,6 +32,19 @@ let mockRootStore: any;
 beforeEach(() => {
   const mockLineageStore = {
     computeEdgesFromNodes: jest.fn(() => []),
+    // dummy values as this property is not tested in this set of tests
+    computeExpandedUpstreamForNodes: jest.fn(
+      () =>
+        new Map(
+          diamondShapedGraph.nodes.map((n) => [
+            n.urn,
+            {
+              isExpandedUpstream: false,
+              isExpandedDownstream: true,
+            },
+          ])
+        )
+    ),
   };
   mockRootStore = {
     lineageStore: mockLineageStore,
