@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   SID_Number: STRING
-  APPT_ID: STRING
+  external_id: STRING
   address: STRING
   Type_Description: STRING
   APPT_START_TIME: DATETIME
@@ -24,7 +24,7 @@ output:
           id_type: $literal("US_TX_SID")
     scheduled_supervision_contacts:
       - StateScheduledSupervisionContact:
-          external_id: APPT_ID
+          external_id: external_id
           scheduled_contact_datetime: APPT_START_TIME
           contact_type: $literal_enum(StateScheduledSupervisionContactType.DIRECT)
           contact_method:
