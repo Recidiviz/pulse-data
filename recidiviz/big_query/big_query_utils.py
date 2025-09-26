@@ -48,7 +48,10 @@ from recidiviz.common.constants.encoding import (
     PYTHON_STANDARD_ENCODINGS_TO_BIG_QUERY_ENCODING,
 )
 from recidiviz.persistence.database.reserved_words import BIGQUERY_RESERVED_WORDS
+from recidiviz.utils import metadata
 from recidiviz.utils.encoding import to_python_standard
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
 # Maximum value of an integer stored in BigQuery
@@ -56,6 +59,10 @@ MAX_BQ_INT = (2**63) - 1
 
 # When exporting files to GCS using a wildcard export, the number of digits appended to the filename is fixed
 WILDCARD_EXPORT_NUM_DIGITS = 12
+
+
+LINEAGE_DESCRIPTION = "Explore this view's lineage at "
+LINEAGE_GO_LINK_BASE = "https://go/lineage-{environment}/{dataset_id}.{view_id}"
 
 
 class BigQueryDateInterval(enum.Enum):
@@ -370,3 +377,36 @@ def are_bq_schemas_same(
 def escape_backslashes_for_query(values: list[str]) -> list[str]:
     """Properly escapes backslashes for use in a BQ query"""
     return [value.replace("\\", "\\\\") for value in values]
+
+
+LINEAGE_LINK_DATASET_EXEMPTIONS = {
+    "operations_v2_cloudsql_connection",
+    "case_triage_cloudsql_connection",
+}
+
+
+def build_lineage_link_description(
+    *, view_id: str, dataset_id: str, non_empty_description: bool
+) -> str:
+
+    if dataset_id in LINEAGE_LINK_DATASET_EXEMPTIONS:
+        return ""
+
+    prefix = "\n" if non_empty_description else ""
+    return prefix + LINEAGE_DESCRIPTION + build_lineage_go_link(view_id, dataset_id)
+
+
+def build_lineage_go_link(view_id: str, dataset_id: str) -> str:
+    # use this conditional instead of get_environment_for_project as lots of tests use
+    # recidiviz-456
+    environment = (
+        GCPEnvironment.PRODUCTION
+        if metadata.project_id() == GCP_PROJECT_PRODUCTION
+        else GCPEnvironment.STAGING
+    )
+    return StrictStringFormatter().format(
+        LINEAGE_GO_LINK_BASE,
+        environment=environment.value,
+        dataset_id=dataset_id,
+        view_id=view_id,
+    )

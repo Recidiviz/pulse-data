@@ -1395,7 +1395,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertEqual(
             mock_table.description,
             "Materialized data from view [fake-dataset.test_view]. "
-            "View description:\ntest_view description",
+            "View description:\ntest_view description\nExplore this view's lineage at https://go/lineage-staging/fake-dataset.test_view",
         )
 
     def test_materialize_view_to_table_materialized_address_override(self) -> None:

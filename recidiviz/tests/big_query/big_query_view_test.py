@@ -636,13 +636,21 @@ class BigQueryViewTest(unittest.TestCase):
 
         v = builder.build()
 
-        self.assertEqual(v.bq_description, short_description)
+        self.assertEqual(
+            v.bq_description,
+            short_description
+            + "\nExplore this view's lineage at https://go/lineage-staging/view_dataset.my_view",
+        )
         self.assertEqual(
             v.materialized_table_bq_description,
             f"Materialized data from view [view_dataset.my_view]. View description:\n"
-            f"{short_description}",
+            f"{short_description}\nExplore this view's lineage at https://go/lineage-staging/view_dataset.my_view",
         )
-        self.assertEqual(v.description, long_description)
+        self.assertEqual(
+            v.description,
+            long_description
+            + "\nExplore this view's lineage at https://go/lineage-staging/view_dataset.my_view",
+        )
 
     def test_description_too_long(self) -> None:
         long_description = "my very long description" + (
@@ -674,7 +682,13 @@ class BigQueryViewTest(unittest.TestCase):
 
     def test_materialized_description_too_long(self) -> None:
         # Make length just under the allowed limit
-        long_description = "x" * (BQ_TABLE_DESCRIPTION_MAX_LENGTH - 1)
+        long_description = "x" * (
+            BQ_TABLE_DESCRIPTION_MAX_LENGTH
+            - len(
+                "\nExplore this view's lineage at https://go/lineage-staging/view_dataset.my_view"
+            )
+            - 1
+        )
         builder = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
@@ -686,8 +700,16 @@ class BigQueryViewTest(unittest.TestCase):
 
         v = builder.build()
 
-        self.assertEqual(v.description, long_description)
-        self.assertEqual(v.bq_description, long_description)
+        self.assertEqual(
+            v.description,
+            long_description
+            + "\nExplore this view's lineage at https://go/lineage-staging/view_dataset.my_view",
+        )
+        self.assertEqual(
+            v.bq_description,
+            long_description
+            + "\nExplore this view's lineage at https://go/lineage-staging/view_dataset.my_view",
+        )
 
         with self.assertRaisesRegex(
             ValueError,

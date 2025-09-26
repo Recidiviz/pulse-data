@@ -25,6 +25,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
+from recidiviz.big_query.big_query_utils import build_lineage_link_description
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -99,8 +100,16 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
             ),
         )
 
-        self._bq_description = bq_description
-        self._description = description
+        self._bq_description = bq_description + build_lineage_link_description(
+            view_id=view_id,
+            dataset_id=dataset_id,
+            non_empty_description=bool(bq_description),
+        )
+        self._description = description + build_lineage_link_description(
+            view_id=view_id,
+            dataset_id=dataset_id,
+            non_empty_description=bool(description),
+        )
         self._view_query_template = view_query_template
 
         try:
