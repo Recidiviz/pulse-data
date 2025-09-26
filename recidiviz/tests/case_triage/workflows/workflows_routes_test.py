@@ -1911,6 +1911,137 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             {"enabledConfigs": {"oppType": expected_config}},
         )
 
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SendGridClientWrapper",
+        autospec=True,
+    )
+    def test_handle_email_user_success(
+        self,
+        mock_sendgrid_client: MagicMock,
+    ) -> None:
+        user_email = "foo@example.com"
+        subject = "test subject"
+        body = "test body"
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tx", "foo@example.com"
+        )
+
+        request_body = {
+            "user_email": user_email,
+            "email_subject": subject,
+            "email_body": body,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/email_user",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_send_message_args = {
+            "to_email": user_email,
+            "from_email": "no-reply@recidiviz.org",
+            "from_email_name": "Recidiviz",
+            "subject": subject,
+            "html_content": body,
+            "reply_to_email": "feedback@recidiviz.org",
+            "reply_to_name": "Recidiviz Support",
+            "disable_unsubscribe": True,
+        }
+        mock_sendgrid_client.return_value.send_message.assert_called_once()
+        self.assertEqual(
+            mock_sendgrid_client.return_value.send_message.call_args.kwargs,
+            expected_send_message_args,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SendGridClientWrapper",
+        autospec=True,
+    )
+    def test_handle_email_user_unauthorized_state(
+        self,
+        mock_sendgrid_client: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_az", "foo@example.com"
+        )
+
+        request_body = {
+            "user_email": "foo@example.com",
+            "email_subject": "test subject",
+            "email_body": "test body",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_AZ/email_user",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_sendgrid_client.return_value.send_message.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SendGridClientWrapper",
+        autospec=True,
+    )
+    def test_handle_email_user_mismatched_email(
+        self,
+        mock_sendgrid_client: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tx", "foo@example.com"
+        )
+
+        request_body = {
+            # We shouldn't be allowed to email anyone else.
+            "user_email": "other-email@example.com",
+            "email_subject": "test subject",
+            "email_body": "test body",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/email_user",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_sendgrid_client.return_value.send_message.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SendGridClientWrapper",
+        autospec=True,
+    )
+    def test_handle_email_user_missing_field(
+        self,
+        mock_sendgrid_client: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tx", "foo@example.com"
+        )
+
+        request_body = {
+            "user_email": "foo@example.com",
+            "email_subject": "test subject",
+            # Missing email_body
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/email_user",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_sendgrid_client.return_value.send_message.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
     def test_workflows_config_disabled_state(self) -> None:
         with self.test_app.test_request_context():
             response = self.test_client.get(

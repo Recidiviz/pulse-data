@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""An wrapper class for accessing the SendGridAPIClient"""
+"""An wrapper class for accessing the SendGridAPIClient for sending emails to external
+(state user) email addresses."""
 import base64
 import logging
 from typing import List, Optional
@@ -22,11 +23,22 @@ from typing import List, Optional
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers import mail as mail_helpers
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils import secrets
 
 _JC_SENDGRID_API_KEY = "justice_counts_sendgrid_api_key"
 _SENDGRID_ENFORCED_TLS_AND_CERT_API_KEY = "sendgrid_enforced_tls_and_cert_api_key"
 _SENDGRID_ENFORCED_TLS_API_KEY = "sendgrid_enforced_tls_api_key"
+
+_STATE_CODES_WITH_ENFORCED_TLS_ONLY: List[StateCode] = [
+    StateCode.US_ID,
+    StateCode.US_IX,
+]
+
+
+def get_enforced_tls_only_state_codes() -> List[StateCode]:
+    """Returns a list of states where only TLS is required, but not a valid certificate"""
+    return _STATE_CODES_WITH_ENFORCED_TLS_ONLY
 
 
 class SendGridClientWrapper:

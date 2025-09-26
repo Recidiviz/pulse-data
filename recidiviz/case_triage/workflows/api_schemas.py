@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Contains Marshmallow schemas for Workflows API """
+"""Contains Marshmallow schemas for Workflows API"""
 import re
 from typing import Any, Dict, List
 
@@ -154,6 +154,17 @@ class WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema(CamelOrSnakeCaseSche
     early_termination_date = fields.Date(required=True)
     justification_reasons = fields.List(fields.Nested(JustificationReasonSchema))
     should_queue_task = fields.Boolean(load_default=True, load_only=True)
+
+
+class WorkflowsEmailUserSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/<state>/email_user endpoint.
+    Camel-cased keys are expected since the request is coming from the dashboards app
+    """
+
+    user_email = fields.Str(required=True)
+    email_subject = fields.Str(required=True)
+    email_body = fields.Str(required=True)  # As HTML
 
 
 class WorkflowsConfigSchema(CamelCaseSchema):

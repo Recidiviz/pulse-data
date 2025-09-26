@@ -41,6 +41,7 @@ from recidiviz.case_triage.helpers import (
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
     WorkflowsConfigurationsResponseSchema,
+    WorkflowsEmailUserSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
@@ -79,6 +80,10 @@ from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.params import get_str_param_value
 from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.sendgrid_client_wrapper import (
+    SendGridClientWrapper,
+    get_enforced_tls_only_state_codes,
+)
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
 from recidiviz.workflows.types import OpportunityConfigResponse, WorkflowsSystemType
 
@@ -753,6 +758,61 @@ def create_workflows_api_blueprint() -> Blueprint:
             "Early termination date successfully updated in DOCSTARS.",
             HTTPStatus.OK,
         )
+
+    @workflows_api.post("/external_request/<state>/email_user")
+    @requires_api_schema(WorkflowsEmailUserSchema)
+    def email_user(
+        state: str,
+    ) -> Response:
+        # Validate the email from the request matches the signed-in user
+        # This is currently only used in Texas for emailing a google maps route link
+        if state.upper() != StateCode.US_TX.value:
+            return jsonify_response(
+                f"Unsupported state for user emails: {state}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+        recipient_email = g.api_data["user_email"]
+        if recipient_email != g.authenticated_user_email:
+            return jsonify_response(
+                "user_email in request body does not match authenticated user",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        sendgrid = (
+            SendGridClientWrapper(key_type="enforced_tls_only")
+            if state in get_enforced_tls_only_state_codes() and not g.is_recidiviz_user
+            else SendGridClientWrapper()
+        )
+
+        subject = g.api_data["email_subject"]
+        html_content = g.api_data["email_body"]
+        reply_to_address = "feedback@recidiviz.org"
+        reply_to_name = "Recidiviz Support"
+
+        try:
+            sendgrid.send_message(
+                to_email=recipient_email,
+                from_email="no-reply@recidiviz.org",
+                from_email_name="Recidiviz",
+                subject=subject,
+                html_content=html_content,
+                reply_to_email=reply_to_address,
+                reply_to_name=reply_to_name,
+                disable_unsubscribe=True,
+            )
+            logging.info('Emailed %s with the subject "%s"', recipient_email, subject)
+            return jsonify_response(
+                "Email successfully sent.",
+                HTTPStatus.OK,
+            )
+        except Exception as e:
+            logging.error(
+                "Error while trying to send email to %s: %s", recipient_email, e
+            )
+            return jsonify_response(
+                f"Error while trying to send email. Error: {e}",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
 
     @workflows_api.get("/<state>/opportunities")
     @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)

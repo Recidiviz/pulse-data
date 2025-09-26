@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements user validations for workflows APIs. """
+"""Implements user validations for workflows APIs."""
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from flask import g
 
@@ -27,7 +27,6 @@ from recidiviz.case_triage.authorization_utils import (
     get_active_feature_variants,
     on_successful_authorization_requested_state,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.auth0 import AuthorizationError
 
 
@@ -56,8 +55,7 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     """
     on_successful_authorization_requested_state(
         claims,
-        get_workflows_external_request_enabled_states()
-        + get_workflows_enabled_states(),
+        get_workflows_enabled_states(),
     )
     g.authenticated_user_email = claims.get(
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
@@ -69,10 +67,3 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
         app_metadata.get("featureVariants", {}),
         app_metadata.get("pseudonymizedId", None),
     )
-
-
-def get_workflows_external_request_enabled_states() -> List[str]:
-    """
-    List of states in which we will make external system requests for Workflows
-    """
-    return [StateCode.US_TN.value, StateCode.US_CA.value, StateCode.US_ND.value]

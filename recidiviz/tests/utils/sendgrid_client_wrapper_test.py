@@ -19,7 +19,7 @@ import collections
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, call, patch
 
-from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
+from recidiviz.utils.sendgrid_client_wrapper import SendGridClientWrapper
 
 
 class SendGridClientWrapperTest(TestCase):
@@ -30,13 +30,13 @@ class SendGridClientWrapperTest(TestCase):
         self.error_response = HttpResponse(404)
         self.success_response = HttpResponse(202)
         self.client_patcher = patch(
-            "recidiviz.reporting.sendgrid_client_wrapper.SendGridAPIClient"
+            "recidiviz.utils.sendgrid_client_wrapper.SendGridAPIClient"
         )
         self.secrets_patcher = patch(
-            "recidiviz.reporting.sendgrid_client_wrapper.secrets"
+            "recidiviz.utils.sendgrid_client_wrapper.secrets"
         ).start()
         self.mail_helpers_patcher = patch(
-            "recidiviz.reporting.sendgrid_client_wrapper.mail_helpers"
+            "recidiviz.utils.sendgrid_client_wrapper.mail_helpers"
         )
         self.mock_mail_helpers = self.mail_helpers_patcher.start()
         self.mock_client = self.client_patcher.start().return_value

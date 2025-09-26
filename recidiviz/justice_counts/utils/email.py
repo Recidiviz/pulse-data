@@ -42,8 +42,8 @@ from recidiviz.justice_counts.utils.constants import (
     UNSUBSCRIBE_GROUP_ID,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
+from recidiviz.utils.sendgrid_client_wrapper import SendGridClientWrapper
 
 
 def send_confirmation_email(

@@ -16,7 +16,7 @@
 # =============================================================================
 
 """
-Cloud Run Job script that copies all metric settings from a super agency to its 
+Cloud Run Job script that copies all metric settings from a super agency to its
 child agencies, and sends the requesting user an email confirmation upon the success
 of the job.
 
@@ -24,11 +24,11 @@ If child agencies have existing settings that conflict with the super agency,
 they will be overwritten. If the child agency has existing settings that do not
 conflict with the super agency, then they will not be affected.
 
-The following are a list of metric definition keys grouped by system. 
-These can be passed into the metric_definition_key_subset flag to 
+The following are a list of metric definition keys grouped by system.
+These can be passed into the metric_definition_key_subset flag to
 update a subset of metrics.
 
-COURTS: 
+COURTS:
 - COURTS_AND_PRETRIAL_FUNDING
 - COURTS_AND_PRETRIAL_EXPENSES
 - COURTS_AND_PRETRIAL_TOTAL_STAFF
@@ -59,7 +59,7 @@ JAILS:
 - JAILS_PRE_ADJUDICATION_RELEASES
 - JAILS_POST_ADJUDICATION_RELEASES
 - JAILS_READMISSIONS
-- JAILS_USE_OF_FORCE_INCIDENTS 
+- JAILS_USE_OF_FORCE_INCIDENTS
 - JAILS_GRIEVANCES_UPHELD
 
 LAW_ENFORCEMENT:
@@ -83,7 +83,7 @@ PRISONS:
 - PRISONS_USE_OF_FORCE_INCIDENTS
 - PRISONS_GRIEVANCES_UPHELD
 
-PROSECUTION: 
+PROSECUTION:
 - PROSECUTION_FUNDING
 - PROSECUTION_EXPENSES
 - PROSECUTION_TOTAL_STAFF
@@ -96,7 +96,7 @@ PROSECUTION:
 - PROSECUTION_CASES_DISPOSED
 - PROSECUTION_VIOLATIONS_WITH_DISCIPLINARY_ACTION
 
-SUPERVISION: 
+SUPERVISION:
 - SUPERVISION_FUNDING
 - SUPERVISION_EXPENSES
 - SUPERVISION_TOTAL_STAFF
@@ -109,7 +109,7 @@ SUPERVISION:
 - SUPERVISION_REVOCATIONS
 - SUPERVISION_RECONVICTIONS
 
-Note: If you need to copy over metrics for a supervision subsystem, replace the SUPERVISION 
+Note: If you need to copy over metrics for a supervision subsystem, replace the SUPERVISION
 in the metric name with the name of the subsystem (i.e SUPERVISION_FUNDING -> PAROLE_FUNDING).
 """
 
@@ -125,11 +125,11 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 from recidiviz.tools.justice_counts.copy_over_metric_settings_to_child_agencies import (
     copy_metric_settings_and_alert_user,
     create_script_parser,
 )
+from recidiviz.utils.sendgrid_client_wrapper import SendGridClientWrapper
 
 logger = logging.getLogger(__name__)
 

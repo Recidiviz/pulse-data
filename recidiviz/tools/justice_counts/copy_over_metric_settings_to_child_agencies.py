@@ -132,7 +132,6 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
@@ -140,6 +139,7 @@ from recidiviz.utils.environment import (
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool, str_to_list
+from recidiviz.utils.sendgrid_client_wrapper import SendGridClientWrapper
 
 logger = logging.getLogger(__name__)
 

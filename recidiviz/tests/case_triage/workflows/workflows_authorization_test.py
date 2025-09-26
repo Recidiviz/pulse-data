@@ -73,7 +73,7 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
         )
 
     @mock.patch(
-        "recidiviz.case_triage.workflows.workflows_authorization.get_workflows_external_request_enabled_states",
+        "recidiviz.case_triage.workflows.workflows_authorization.get_workflows_enabled_states",
         return_value=["US_CA", "US_TN"],
     )
     def test_recidiviz_auth(self, _mock_enabled_states: MagicMock) -> None:
@@ -96,7 +96,7 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
             self.assertEqual(assertion.exception.code, "recidiviz_user_not_authorized")
 
     @mock.patch(
-        "recidiviz.case_triage.workflows.workflows_authorization.get_workflows_external_request_enabled_states",
+        "recidiviz.case_triage.workflows.workflows_authorization.get_workflows_enabled_states",
         return_value=["US_CA", "US_TN"],
     )
     def test_on_successful_authorization(self, _mock_enabled_states: MagicMock) -> None:
