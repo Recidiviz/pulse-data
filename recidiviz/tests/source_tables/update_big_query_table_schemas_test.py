@@ -1097,8 +1097,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mo_ingest_view_results.citations",
     "us_mo_ingest_view_results.classification_assessments",
     "us_mo_ingest_view_results.incarceration_incident",
-    "us_mo_ingest_view_results.offender_sentence_institution",
-    "us_mo_ingest_view_results.offender_sentence_supervision",
     "us_mo_ingest_view_results.oras_assessments_weekly_v2",
     "us_mo_ingest_view_results.program_assignment",
     "us_mo_ingest_view_results.sentence",

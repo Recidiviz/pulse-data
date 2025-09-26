@@ -316,24 +316,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         "ViolationsAndSanctions": ["sanctions_groupings"],
     },
     StateCode.US_MO: {
-        "offender_sentence_institution": [
-            "most_recent_status_by_sentence",
-            "sentence_status_xref",
-            "shock_sentence",
-        ],
-        "offender_sentence_supervision": [
-            "classified_status_bw",
-            "collapsed_sentence_status_type_classification",
-            "distinct_supervision_sentence_ids",
-            "full_supervision_sentence_info",
-            "most_recent_fso_and_status_for_sentence",
-            "ranked_supervision_sentence_status_xref",
-            "shock_sentence",
-            "supervision_sentence_status_xref_bv",
-            "supervision_sentence_status_xref_with_types",
-            "supervision_sentence_type_classifier",
-            "valid_sentences_with_status_xref",
-        ],
         "oras_assessments_weekly_v2": [
             "assessments_with_duplicates",
             "duplicate_counts",

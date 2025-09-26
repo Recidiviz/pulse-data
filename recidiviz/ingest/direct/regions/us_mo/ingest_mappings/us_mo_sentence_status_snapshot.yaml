@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+# This file associates the columns outputted from the query in `view_sentence_status_snapshot` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
