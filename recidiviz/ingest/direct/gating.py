@@ -36,6 +36,7 @@ MANUAL_RAW_DATA_PRUNING_STATES = {
 SECONDARY_RAW_DATA_PRUNING_ENABLED_STATES = {
     StateCode.US_MI,
     StateCode.US_OZ,
+    StateCode.US_UT,
 }
 
 
