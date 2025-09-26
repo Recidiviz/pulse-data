@@ -31,7 +31,6 @@ MANUAL_RAW_DATA_PRUNING_STATES = {
     StateCode.US_MI,
     StateCode.US_ND,
     StateCode.US_AR,
-    StateCode.US_UT,
 }
 
 SECONDARY_RAW_DATA_PRUNING_ENABLED_STATES = {
