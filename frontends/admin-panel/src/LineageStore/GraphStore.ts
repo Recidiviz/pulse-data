@@ -131,7 +131,6 @@ export class GraphStore {
    */
   resetGraphWithNewNodes = async (
     newNodes: BigQueryLineageNode[],
-    existingNodeToAnchor?: Node<GraphDisplayNode>,
     resetFilters?: boolean
   ) => {
     // build new list of nodes and edges
@@ -148,11 +147,7 @@ export class GraphStore {
         allNodesWithoutPositions
       );
 
-    await this.recalculateNodePositions(
-      displayedNodes,
-      hiddenNodes,
-      existingNodeToAnchor
-    );
+    await this.recalculateNodePositions(displayedNodes, hiddenNodes, undefined);
   };
 
   /**
@@ -347,13 +342,12 @@ export class GraphStore {
     startingUrn: NodeUrn,
     ancestorUrn: NodeUrn
   ) => {
-    const nodeToExpand = this.nodeFromUrn(startingUrn);
     const newNodes = await this.rootStore.lineageStore.fetchBetween(
       direction,
       startingUrn,
       ancestorUrn
     );
-    this.resetGraphWithNewNodes(newNodes, nodeToExpand, true);
+    this.resetGraphWithNewNodes(newNodes, true);
   };
 
   /**

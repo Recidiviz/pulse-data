@@ -171,3 +171,76 @@ class LineageStoreTest(TestCase):
             "dataset_4.table_4",
             "dataset_5.table_5",
         }
+
+    def test_get_nodes_between(self) -> None:
+        assert self.store.get_nodes_between(
+            BigQueryAddress(
+                dataset_id="source_dataset",
+                table_id="source_table",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_1",
+                table_id="table_1",
+            ),
+        ) == {
+            BigQueryAddress(
+                dataset_id="source_dataset",
+                table_id="source_table",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_1",
+                table_id="table_1",
+            ),
+        }
+
+        assert self.store.get_nodes_between(
+            BigQueryAddress(
+                dataset_id="source_dataset",
+                table_id="source_table",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_5",
+                table_id="table_5",
+            ),
+        ) == {
+            BigQueryAddress(
+                dataset_id="source_dataset",
+                table_id="source_table",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_1",
+                table_id="table_1",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_3",
+                table_id="table_3",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_5",
+                table_id="table_5",
+            ),
+        }
+
+        assert self.store.get_nodes_between(
+            BigQueryAddress(
+                dataset_id="dataset_1",
+                table_id="table_1",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_5",
+                table_id="table_5",
+            ),
+        ) == {
+            BigQueryAddress(
+                dataset_id="dataset_1",
+                table_id="table_1",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_3",
+                table_id="table_3",
+            ),
+            BigQueryAddress(
+                dataset_id="dataset_5",
+                table_id="table_5",
+            ),
+        }

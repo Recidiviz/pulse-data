@@ -16,6 +16,7 @@
 // =============================================================================
 import "./GraphNodeAncestorSearchCard.css";
 
+import { useReactFlow } from "@xyflow/react";
 import { Input, message, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import { observer } from "mobx-react-lite";
@@ -58,6 +59,7 @@ const GraphNodeAncestorSearchCard: React.FC<GraphNodeAncestorSearchCardProps> =
       graphStore: { resetToSubGraph },
       lineageStore: { nodeForUrn },
     } = useLineageRootStore();
+    const { fitView } = useReactFlow();
 
     const [searchValue, setSearchValue] = useState("");
     const [optionsLoading, setOptionLoading] = useState<boolean>(true);
@@ -148,6 +150,7 @@ const GraphNodeAncestorSearchCard: React.FC<GraphNodeAncestorSearchCardProps> =
                 setActiveNodeDetailDrawerTab(NodeDetailDrawerTab.DETAILS);
                 setNodeDetailDrawerUrn(undefined);
                 setSearchLoading(false);
+                fitView();
               },
               (e) => {
                 message.error(getErrorMessage(e));

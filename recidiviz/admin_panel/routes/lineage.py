@@ -82,7 +82,7 @@ class FetchBetweenRoute(MethodView):
         urns = [
             addr.to_str()
             for addr in get_lineage_store().get_nodes_between(
-                {start_address}, {end_address}
+                start_address, end_address
             )
         ]
 

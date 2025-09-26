@@ -181,20 +181,52 @@ class LineageStore(AdminPanelStore):
         ]
 
     def get_nodes_between(
-        self, start_set: set[BigQueryAddress], end_set: set[BigQueryAddress]
+        self, start_addr: BigQueryAddress, end_addr: BigQueryAddress
     ) -> set[BigQueryAddress]:
+        """Finds all addresses between |start_addr| and |end_addr|."""
 
-        start_source_addresses = start_set - self.walker.nodes_by_address.keys()
-        start_node_addresses = start_set & self.walker.nodes_by_address.keys()
+        def _build_nodes_between_source_and_node(
+            v: BigQueryView,
+            parent_results: dict[BigQueryView, set[BigQueryAddress] | None],
+        ) -> set[BigQueryAddress] | None:
 
-        return (
-            self.walker.get_all_node_addresses_between_start_and_end_collections(
-                start_source_addresses=start_source_addresses,
-                start_node_addresses=start_node_addresses,
-                end_node_addresses=end_set,
-            )
-            | start_source_addresses
+            if start_addr in self.walker.nodes_by_address[v.address].source_addresses:
+                return {start_addr, v.address}
+
+            ancestors = {
+                pp for p in parent_results.values() if p is not None for pp in p
+            }
+
+            return None if not ancestors else ancestors | {v.address}
+
+        def _build_nodes_between_two_nodes(
+            v: BigQueryView,
+            parent_results: dict[BigQueryView, set[BigQueryAddress] | None],
+        ) -> set[BigQueryAddress] | None:
+
+            if v.address == start_addr:
+                return {v.address}
+
+            ancestors = {
+                pp for p in parent_results.values() if p is not None for pp in p
+            }
+
+            return None if not ancestors else ancestors | {v.address}
+
+        build_func = (
+            _build_nodes_between_source_and_node
+            if start_addr not in self.walker.nodes_by_address
+            else _build_nodes_between_two_nodes
         )
+
+        result = self.walker.process_dag(build_func, synchronous=True)
+        nodes_between = result.view_results[self.walker.view_for_address(end_addr)]
+        if nodes_between is None:
+            raise ValueError(
+                f"Failed to calculate nodes between -- no path exists between {start_addr.to_str()} and {end_addr.to_str()}"
+            )
+
+        return nodes_between
 
     def get_all_nodes(self) -> Sequence[BigQueryGraphNode]:
         view_nodes = [
