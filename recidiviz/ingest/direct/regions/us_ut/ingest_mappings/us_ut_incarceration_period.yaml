@@ -11,6 +11,7 @@ input_columns:
   lgl_stat_desc: STRING
   lgl_stat_cd: STRING
   body_loc_desc: STRING
+  prsn_cmplx_name: STRING
   custody_level: STRING
   period_id: INTEGER
 unused_columns: []
@@ -29,7 +30,8 @@ output:
                 - period_id
           admission_date: start_date
           release_date: end_date
-          facility: body_loc_desc
+          facility: prsn_cmplx_name
+          housing_unit: body_loc_desc
           admission_reason:
             $enum_mapping:
               $raw_text: start_reason
