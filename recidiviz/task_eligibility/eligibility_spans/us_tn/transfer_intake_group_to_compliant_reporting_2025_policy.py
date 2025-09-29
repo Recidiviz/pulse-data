@@ -33,12 +33,12 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_limited_supervision_2025_policy,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    assessed_risk_low_after_intake_supervision_level,
     no_positive_drug_screens_since_intake_supervision_level,
     no_supervision_violation_report_since_intake_supervision_level,
     on_intake_for_60_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    assessed_risk_low_compliant_on_strong_r2_after_intake_supervision_level,
     home_visit_since_intake_supervision_level,
     no_supervision_sanction_since_intake_supervision_level,
     not_in_day_reporting_center,
@@ -82,7 +82,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         on_intake_for_60_days.VIEW_BUILDER,
         home_visit_since_intake_supervision_level.VIEW_BUILDER,
-        assessed_risk_low_after_intake_supervision_level.VIEW_BUILDER,
+        assessed_risk_low_compliant_on_strong_r2_after_intake_supervision_level.VIEW_BUILDER,
         no_supervision_sanction_since_intake_supervision_level.VIEW_BUILDER,
         no_supervision_violation_report_since_intake_supervision_level.VIEW_BUILDER,
         no_positive_drug_screens_since_intake_supervision_level.VIEW_BUILDER,
