@@ -28,8 +28,9 @@ class UsTnSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
         """TN has an 'oversight board' that revokes credit for time served, so we allow non-credit serving sentences."""
         return True
 
-    # TODO(#28869) understand why TN gives us data like this (a sentence really changes,
-    # there's an acute data issue, or the originating process is flawed)
+    # NOTE: We don't really understand why TN gives us data like this (it could be that
+    # a sentence really changes, there's an acute data issue, or the originating process
+    # is flawed)
     @property
     def correct_early_completed_statuses(self) -> bool:
         """

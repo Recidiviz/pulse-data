@@ -2,76 +2,116 @@
 
 region_code: US_TN
 exclusions:
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#28869) Hydrate new sentencing entities
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+    exclusion_reason:
+      Sentencing assistance case insights are not configured/launched for this
+      state
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 1.0
     override_reason: TODO(#13057) Needs investigation.
   - validation_name: incarceration_population_person_level_external_comparison
     hard_max_allowed_error_override: 0.20
-    override_reason: TODO(#13057) Needs investigation. This threshold was bumped from .15 to .20 on 11/16/23 due to outliers refactors that started including TEMPORARY_CUSTODY periods as part of population when they were not previously. This decision should be revisited at some point, but for now we bump threshold.
+    override_reason:
+      TODO(#13057) Needs investigation. This threshold was bumped from .15 to
+      .20 on 11/16/23 due to outliers refactors that started including
+      TEMPORARY_CUSTODY periods as part of population when they were not
+      previously. This decision should be revisited at some point, but for now
+      we bump threshold.
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 0.05
     override_reason: TODO(#13057) Needs investigation.
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.001
-    override_reason: TODO(#15351) Needs investigation. There is one ID not accounted for over a span of 5 days in September 2022.
+    override_reason:
+      TODO(#15351) Needs investigation. There is one ID not accounted for over a
+      span of 5 days in September 2022.
   - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
     hard_max_allowed_error_override: 0.1
     override_reason: >-
-      Needs investigation before launching Usage by User report for TN. Worst failing row as of 1/20/25 is 5%.
-      #TODO(#37570)
+      Needs investigation before launching Usage by User report for TN. Worst
+      failing row as of 1/20/25 is 5%. #TODO(#37570)
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 30000
-    override_reason: TODO(#12167) Needs investigation. Ingest view mishandling zero-day incarceration periods. 552 failing rows as of 11/3/2022. This number jumped with incarceration period refactor to include housing units. Current error at 1059 as of 4/13/23. With refactors needed for Outliers to correctly attribute temporary custody periods, this error increased significantly. However, from the perspective of downstream handling in sessions and for what is needed in products, this mismatch is not causing issues/may actually be the correct interpretation. Error is 16654 as of 11/29/23. Will revisit this upon refactors after outliers launch. After another adjustment to include IN CUSTODY SPs, this validation spiked even further to 244,546. For now we bump the threshold while Insights launch validations are ongoing and will revisit in future.
+    override_reason:
+      TODO(#12167) Needs investigation. Ingest view mishandling zero-day
+      incarceration periods. 552 failing rows as of 11/3/2022. This number
+      jumped with incarceration period refactor to include housing units.
+      Current error at 1059 as of 4/13/23. With refactors needed for Outliers to
+      correctly attribute temporary custody periods, this error increased
+      significantly. However, from the perspective of downstream handling in
+      sessions and for what is needed in products, this mismatch is not causing
+      issues/may actually be the correct interpretation. Error is 16654 as of
+      11/29/23. Will revisit this upon refactors after outliers launch. After
+      another adjustment to include IN CUSTODY SPs, this validation spiked even
+      further to 244,546. For now we bump the threshold while Insights launch
+      validations are ongoing and will revisit in future.
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 20000
-    override_reason: TODO(#12166) Needs investigation. Ingest mappings don't currently map to temp custody releases. Number of erroring rows went from 90 to 114 then to 18926 after refactors with TEMPORARY_CUSTODY for outliers work. Bumping the threshold on 11/29/23 since we do think the priortiization of these release reasons may not line up with the correct mappings according to the state, but should revisit this when we prioritize validation refactors based on Outliers feedback.
+    override_reason:
+      TODO(#12166) Needs investigation. Ingest mappings don't currently map to
+      temp custody releases. Number of erroring rows went from 90 to 114 then to
+      18926 after refactors with TEMPORARY_CUSTODY for outliers work. Bumping
+      the threshold on 11/29/23 since we do think the priortiization of these
+      release reasons may not line up with the correct mappings according to the
+      state, but should revisit this when we prioritize validation refactors
+      based on Outliers feedback.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 80000
-    override_reason: In TN, there can be concurrent periods for the same offender under different supervision types. We expect this number to by high and grow gradually, but will keep an eye on it for any abnormal spikes.
+    override_reason:
+      In TN, there can be concurrent periods for the same offender under
+      different supervision types. We expect this number to by high and grow
+      gradually, but will keep an eye on it for any abnormal spikes.
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 400000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 325,825 rows #TODO(#16230)
+    override_reason: Needs investigation.  Current failing level as of 10/26 is
+      325,825 rows #TODO(#16230)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 125000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 376,632 rows #TODO(#16234)
+    override_reason: Needs investigation.  Current failing level as of 10/26 is
+      376,632 rows #TODO(#16234)
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 12
     override_reason: Needs investigation.  Current failing level as of 12/27/24 is 6 rows.
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 4000
-    override_reason: Needs investigation. Current failing level as of 2/24/23 is 2,193 rows #TODO(#19047)
+    override_reason: Needs investigation. Current failing level as of 2/24/23 is
+      2,193 rows #TODO(#19047)
   - validation_name: normalized_state_charge_missing_descriptions
     hard_num_allowed_rows_override: 15
     override_reason: Current failing level as of 04/11/25 is 11 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 650
-    override_reason: Current failing level as of 12/27/24 is 517, some ISC codes are not decoded
+    override_reason:
+      Current failing level as of 12/27/24 is 517, some ISC codes are not
+      decoded
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 230000
-    override_reason: Failing level as of 4/8/24 is 220029 rows. Current failing level as of 2/6/24 was 215,026 rows. Failing level as of 4/20/23 was 178,074 rows (12%). #TODO(#20405)
+    override_reason: Failing level as of 4/8/24 is 220029 rows. Current failing
+      level as of 2/6/24 was 215,026 rows. Failing level as of 4/20/23 was
+      178,074 rows (12%). #TODO(#20405)
   - validation_name: current_supervision_staff_missing_district
     hard_num_allowed_rows_override: 29
     override_reason:
-      From initial ingest of staff, there are 29 people who have a role subtype that indicates supervision
-      officer, but their actual location is a not a supervision office. We confirmed with the supervisor staff rosters that
-      these people are not located in any of the supervision districts, and therefore it is okay to bump this threshold for
-      any known person in the Staff tables that is not an active supervision officer in a district.
+      From initial ingest of staff, there are 29 people who have a role subtype
+      that indicates supervision officer, but their actual location is a not a
+      supervision office. We confirmed with the supervisor staff rosters that
+      these people are not located in any of the supervision districts, and
+      therefore it is okay to bump this threshold for any known person in the
+      Staff tables that is not an active supervision officer in a district.
   - validation_name: unidentified_supervision_officer_supervisors
     hard_num_allowed_rows_override: 1
     override_reason:
-      Since we manually get the supervisior roster information from TN approx once a quarter, there will be
-      situations where a supervisor no longer has active roles periods because the are no longer an active employee, but
-      still show up as a supervisor in open supervisor periods for the officers they used to supervise. We bump this threshold
-      here as a running list of the supervisors who have gone inactive and therefore we need to make sure to check in with
-      TN staff the next time we ask them for manual rosters. There is currently 1 failing row as of 12/12/2023.
+      Since we manually get the supervisior roster information from TN approx
+      once a quarter, there will be situations where a supervisor no longer has
+      active roles periods because the are no longer an active employee, but
+      still show up as a supervisor in open supervisor periods for the officers
+      they used to supervise. We bump this threshold here as a running list of
+      the supervisors who have gone inactive and therefore we need to make sure
+      to check in with TN staff the next time we ask them for manual rosters.
+      There is currently 1 failing row as of 12/12/2023.
   - validation_name: officer_monthly_usage_report_actions_without_logins
     hard_num_allowed_rows_override: 1
     override_reason: Will be resolved with the Polaris segment ad blocker work around
