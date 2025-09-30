@@ -2,14 +2,24 @@
 
 products:
   - name: Admin Panel
-    description: The admin panel is a Recidiviz-internal surface from which we can observe things about the operation of our system and take diagnostic or corrective actions. The admin panel is not under the purview of any one team, so any and all should feel free to make contributions or fix issues as they arise!
+    description:
+      The admin panel is a Recidiviz-internal surface from which we can observe
+      things about the operation of our system and take diagnostic or corrective
+      actions. The admin panel is not under the purview of any one team, so any
+      and all should feel free to make contributions or fix issues as they
+      arise!
     is_state_agnostic: True
     exports:
       - INGEST_METADATA
       - VALIDATION_METADATA
     environment: production
   - name: Lantern Dashboard
-    description: Lantern is a dashboard for leadership and supervisors to understand the patterns and behaviors associated with revocations. Users can see over-time revocation trends, the violation history leading up to revocation, demographic and geographic breakdowns of revocations, and individual lists of people who were revoked.
+    description:
+      Lantern is a dashboard for leadership and supervisors to understand the
+      patterns and behaviors associated with revocations. Users can see
+      over-time revocation trends, the violation history leading up to
+      revocation, demographic and geographic breakdowns of revocations, and
+      individual lists of people who were revoked.
     exports:
       - LANTERN
     states:
@@ -18,7 +28,9 @@ products:
       - state_code: US_PA
         environment: production
   - name: Product User Import
-    description: Potential users of Polaris tools that we receive via ingest, to be imported into the Polaris Roster Postgres table
+    description:
+      Potential users of Polaris tools that we receive via ingest, to be
+      imported into the Polaris Roster Postgres table
     exports:
       - PRODUCT_USER_IMPORT
     states:
@@ -45,7 +57,12 @@ products:
       - state_code: US_TN
         environment: production
   - name: Public Dashboard
-    description: The Public Dashboard (Spotlight) is a public data portal designed to make criminal justice data more accessible to public stakeholders. It accomplishes this through a series of interactive data visualizations on key metrics (such as populations or admission reasons) and holistic, data-driven narratives on what's happening in the system as a whole.
+    description:
+      The Public Dashboard (Spotlight) is a public data portal designed to make
+      criminal justice data more accessible to public stakeholders. It
+      accomplishes this through a series of interactive data visualizations on
+      key metrics (such as populations or admission reasons) and holistic,
+      data-driven narratives on what's happening in the system as a whole.
     exports:
       - PUBLIC_DASHBOARD
     states:
@@ -54,7 +71,12 @@ products:
       - state_code: US_PA
         environment: production
   - name: Vitals
-    description: Vitals provides a snapshot of agency performance on a set of key operational metrics, which can be drilled down by geographic region and officer. This helps community supervision leadership and supervisors proactively identify resource constraints as well as opportunities for improvement in both compliance and policy.
+    description:
+      Vitals provides a snapshot of agency performance on a set of key
+      operational metrics, which can be drilled down by geographic region and
+      officer. This helps community supervision leadership and supervisors
+      proactively identify resource constraints as well as opportunities for
+      improvement in both compliance and policy.
     exports:
       - VITALS
     states:
@@ -63,7 +85,11 @@ products:
       - state_code: US_ND
         environment: production
   - name: Pathways
-    description: Prison and Supervision populations and transitions over time which can be drilled down by geographic region, demographic categories, time period, etc. Also see PATHWAYS_AND_PROJECTIONS and PATHWAYS_PRISON for variations on the Pathways exports..
+    description:
+      Prison and Supervision populations and transitions over time which can be
+      drilled down by geographic region, demographic categories, time period,
+      etc. Also see PATHWAYS_AND_PROJECTIONS and PATHWAYS_PRISON for variations
+      on the Pathways exports..
     exports:
       - PATHWAYS_EVENT_LEVEL
     states:
@@ -87,7 +113,9 @@ products:
       - state_code: US_MO
         environment: production
   - name: Workflows
-    description: Workflows is a collection of data and tools that help POs and supervisors provide services to their clients and hold themselves accountable.
+    description:
+      Workflows is a collection of data and tools that help POs and supervisors
+      provide services to their clients and hold themselves accountable.
     exports:
       - WORKFLOWS_FIRESTORE
     states:
@@ -122,7 +150,9 @@ products:
       - state_code: US_UT
         environment: production
   - name: Insights
-    description: Insights is a state-agnostic product offering for staff performance and accountability.
+    description:
+      Insights is a state-agnostic product offering for staff performance and
+      accountability.
     exports:
       - INSIGHTS
     states:
@@ -145,14 +175,18 @@ products:
       - state_code: US_UT
         environment: production
   - name: Product failed logins
-    description: Tracks the failed logins from the dashboard product over the last 30 days to enhance our user support
+    description:
+      Tracks the failed logins from the dashboard product over the last 30 days
+      to enhance our user support
     is_state_agnostic: True
     exports:
       - PRODUCT_FAILED_LOGINS
     environment: production
   # TODO(https://github.com/Recidiviz/recidiviz-dashboards/issues/7303): Remove this export once we have switched over to the new export infrastructure
   - name: Sentencing
-    description: Sentencing is a product offering that powers tools to assist in the creation of PSIs (Pre-Sentencing Investigations)
+    description:
+      Sentencing is a product offering that powers tools to assist in the
+      creation of PSIs (Pre-Sentencing Investigations)
     exports:
       - SENTENCING
     states:
@@ -161,7 +195,10 @@ products:
       - state_code: US_ND
         environment: production
   - name: Vertex Search Case Notes
-    description: Case notes that back Vertex AI Search - this export is needed because case notes need to be in text files in order for search snippets to be supported
+    description:
+      Case notes that back Vertex AI Search - this export is needed because case
+      notes need to be in text files in order for search snippets to be
+      supported
     exports:
       - CASE_NOTES_VERTEX_SEARCH
     states:
@@ -176,6 +213,8 @@ products:
     states:
       - state_code: US_IX
         environment: production
+      - state_code: US_TX
+        environment: staging
   - name: Reentry
     description: Views that back the Reentry product
     exports:
