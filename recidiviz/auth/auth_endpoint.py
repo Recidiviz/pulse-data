@@ -36,7 +36,9 @@ from sqlalchemy import delete, func, inspect, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
+from recidiviz.auth.cleanup_user_overrides import cleanup_user_overrides
 from recidiviz.auth.helpers import (
+    convert_user_object_to_dict,
     generate_pseudonymized_id,
     generate_user_hash,
     log_reason,
@@ -683,7 +685,7 @@ def get_auth_endpoint_blueprint(
 
                 roster_users_as_dicts = [
                     {
-                        **user.to_dict(),
+                        **convert_user_object_to_dict(user),
                         "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1)
                         if user.email_address not in facilities_users
                         else None,
@@ -701,6 +703,13 @@ def get_auth_endpoint_blueprint(
                 )
 
                 session.commit()
+
+                # After the import, clean up any UserOverride data that is duplicative of Roster data.
+                # Users with upcoming blocks set above should be unaffected because they have been
+                # removed from Roster
+                cleanup_user_overrides(
+                    session=session, dry_run=False, state_code=state_code
+                )
 
             logging.info(
                 "CSV (%s) successfully imported to Cloud SQL schema %s for region code %s",

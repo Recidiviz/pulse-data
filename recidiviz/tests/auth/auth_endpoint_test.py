@@ -30,15 +30,20 @@ import pytest
 from dateutil.tz import tzlocal
 from flask import Flask
 from flask_smorest import Api
+from sqlalchemy import select
 
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
-from recidiviz.auth.helpers import replace_char_0_slash
+from recidiviz.auth.helpers import convert_user_object_to_dict, replace_char_0_slash
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.persistence.database.schema.case_triage.schema import Roster
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    Roster,
+    UserOverride,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tests.auth.helpers import (
@@ -149,6 +154,7 @@ class AuthEndpointTests(TestCase):
         db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, SchemaType.CASE_TRIAGE, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
+        self.session = SessionFactory.using_database(self.database_key).__enter__()
 
         self.get_secret_patcher = patch("recidiviz.auth.helpers.get_secret")
         self.mock_get_secret = self.get_secret_patcher.start()
@@ -1381,6 +1387,97 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
             )
             self.assertEqual(expected, json.loads(response.data))
+
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_import_ingested_users_cleanup_user_override(
+        self, mock_generate_pseudonymized_id: MagicMock
+    ) -> None:
+        mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
+            f"hashed-{external_id}" if external_id else None
+        )
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        # User will be removed from UserOverride because all data is the same as in Roster
+        user_override_supervision_line_staff = generate_fake_user_overrides(
+            email="supervision_staff@testdomain.com",
+            region_code="US_XX",
+            external_id="3706",
+            roles=[SUPERVISION_STAFF],
+            district="D1",
+            first_name="supervision",
+            last_name="user",
+            pseudonymized_id="pseudo-3706",
+        )
+        # User will have empty UserOverride except for district
+        user_override_supervision_leadership_staff = generate_fake_user_overrides(
+            email="leadership@testdomain.com",
+            region_code="US_XX",
+            roles=[LEADERSHIP_ROLE],
+            district="D1",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=SUPERVISION_STAFF,
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                user_override_supervision_line_staff,
+                user_override_supervision_leadership_staff,
+                leadership_default,
+                supervision_staff_default,
+            ],
+        )
+
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+            self.assertEqual(
+                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
+                response.data,
+            )
+            expected: List[Dict[str, Any]] = [
+                {
+                    "blocked_on": None,
+                    "district": "D1",
+                    "email_address": "leadership@testdomain.com",
+                    "external_id": None,
+                    "first_name": None,
+                    "last_name": None,
+                    "roles": None,
+                    "state_code": "US_XX",
+                    "user_hash": _LEADERSHIP_USER_HASH,
+                    "pseudonymized_id": None,
+                },
+            ]
+
+            modified_user_overrides = (
+                self.session.execute(select(UserOverride)).scalars().all()
+            )
+            self.assertEqual(
+                expected,
+                [convert_user_object_to_dict(user) for user in modified_user_overrides],
+            )
 
     def test_import_ingested_users_missing_region_code(self) -> None:
         with self.app.test_request_context():

@@ -23,10 +23,15 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from flask import request
+from sqlalchemy import inspect
 from sqlalchemy.engine.row import Row
 
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.auth.constants import PREDEFINED_ROLES
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    Roster,
+    UserOverride,
+)
 from recidiviz.utils import metadata, validate_jwt
 from recidiviz.utils.secrets import get_secret
 
@@ -178,3 +183,23 @@ def validate_roles(user_dict: Dict[str, Any]) -> None:
         raise ValueError(
             f"User {email_address} must have at least one of the following roles: {', '.join(PREDEFINED_ROLES)}"
         )
+
+
+def convert_user_object_to_dict(obj: Roster | UserOverride) -> dict[str, Any]:
+    """
+    Convert a Roster or UserOverride SQLAlchemy object to a dictionary, excluding
+    created/updated dates.
+    """
+    mapper = inspect(obj.__class__)
+
+    result = {}
+    for column in mapper.columns:
+        attr_name = column.key
+
+        date_fields = ["created_datetime", "updated_datetime"]
+        if any(date_field in attr_name.lower() for date_field in date_fields):
+            continue
+
+        result[attr_name] = getattr(obj, attr_name)
+
+    return result

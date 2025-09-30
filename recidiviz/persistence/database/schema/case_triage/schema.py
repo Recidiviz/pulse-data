@@ -59,19 +59,6 @@ class Roster(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     def __repr__(self) -> str:
         return f"Roster(state_code={self.state_code}, email_address={self.email_address}, external_id={self.external_id}, roles={self.roles}, district={self.district}, first_name={self.first_name}, last_name={self.last_name})"
 
-    def to_dict(self) -> dict:
-        return {
-            "state_code": self.state_code,
-            "email_address": self.email_address,
-            "external_id": self.external_id,
-            "roles": self.roles,
-            "district": self.district,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "user_hash": self.user_hash,
-            "pseudonymized_id": self.pseudonymized_id,
-        }
-
 
 class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     """Used when a single user needs to be added, removed, or modified without uploading a new roster."""
