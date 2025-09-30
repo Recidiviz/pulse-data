@@ -555,7 +555,7 @@ class PipelineParameters:
                     "machineType": self.machine_type,
                     "diskSizeGb": self.disk_gb_size,
                     "workerZone": self.worker_zone,
-                    "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
+                    "tempLocation": f"gs://{project_id}-dataflow-templates-temporary/temp/",
                     "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
                     "additionalExperiments": [
                         "shuffle-mode=service",
