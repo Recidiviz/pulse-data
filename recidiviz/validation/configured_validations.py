@@ -311,6 +311,15 @@ from recidiviz.validation.views.state.workflows.client_record_duplicate_person_e
 from recidiviz.validation.views.state.workflows.flag_new_offense_codes import (
     FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.missing_client_record_rows_null_full_name import (
+    MISSING_CLIENT_RECORD_ROWS_NULL_FULL_NAME_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.missing_client_record_rows_null_officer import (
+    MISSING_CLIENT_RECORD_ROWS_NULL_OFFICER_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.missing_client_record_rows_unknown_reason import (
+    MISSING_CLIENT_RECORD_ROWS_UNKNOWN_REASON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.opportunites_without_person_records import (
     OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
 )
@@ -1065,6 +1074,18 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.INVARIANT,
             region_configs=region_configs,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=MISSING_CLIENT_RECORD_ROWS_NULL_FULL_NAME_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=MISSING_CLIENT_RECORD_ROWS_NULL_OFFICER_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=MISSING_CLIENT_RECORD_ROWS_UNKNOWN_REASON_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
     ]
 
