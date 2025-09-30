@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Raw data import download delegate for US_UT"""
+import datetime
 
 from recidiviz.ingest.direct.raw_data.base_raw_data_import_delegate import (
     BaseRawDataImportDelegate,
@@ -36,7 +37,9 @@ class UsUtRawDataImportDelegate(BaseRawDataImportDelegate, SequentialChunkedFile
     ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
         """Logic for handling chunked files in Utah."""
 
-        if file_tag == "sprvsn_cntc":
+        if file_tag == "sprvsn_cntc" and min(
+            gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
+        ).date() > datetime.date(2025, 2, 13):
             return SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
                 file_tag=file_tag, gcs_files=gcs_files, zero_indexed=True
             )
