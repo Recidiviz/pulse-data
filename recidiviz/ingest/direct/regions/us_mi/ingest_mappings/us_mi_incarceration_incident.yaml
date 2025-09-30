@@ -9,7 +9,6 @@ input_columns:
   miscond_written_date: STRING
   _incident_location_name: STRING
   _incident_place_type_description: STRING
-  proposed_hearing_date: STRING
   _offense_description_list: STRING
   _offense_code_list: STRING
   penalties: STRING
@@ -63,46 +62,78 @@ output:
                 $iterable:
                   $split_json: penalties
                 $result:
-                  StateIncarcerationIncidentOutcome:
-                    external_id:
-                      $concat:
-                        $values:
-                          - misconduct_incident_id
-                          - $json_extract:
-                              $key: miscond_hearing_penalty_id
-                              $json: $iter_item
-                    hearing_date: proposed_hearing_date
-                    date_effective:
-                      $json_extract:
-                        $key: effective_date
-                        $json: $iter_item
-                    projected_end_date:
-                      $json_extract:
-                        $key: end_date
-                        $json: $iter_item
-                    report_date: miscond_written_date
-                    outcome_type:
-                      $enum_mapping:
-                        $raw_text:
+                  $conditional:
+                    - $if:
+                        $not_null:
                           $json_extract:
-                            $key: _penalty_type_description
+                            $key: miscond_hearing_penalty_id
                             $json: $iter_item
-                        $mappings:
-                          StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
-                            - Restitution
-                          StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
-                            - Prison Detention
-                          StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
-                            - Loss of Privilege
-                          StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
-                            - Prison Toplock
-                          StateIncarcerationIncidentOutcomeType.WARNING:
-                            - Counseling/Reprimand
-                          StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
-                            - Extra Duty
-                          StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
-                            - Prison Reclassification
-                    punishment_length_days:
-                      $json_extract:
-                        $key: penalty_days
-                        $json: $iter_item
+                      $then:
+                        StateIncarcerationIncidentOutcome:
+                          external_id:
+                            $concat:
+                              $values:
+                                - misconduct_incident_id
+                                - $json_extract:
+                                    $key: miscond_hearing_penalty_id
+                                    $json: $iter_item
+                          hearing_date:
+                            $json_extract:
+                              $key: hearing_date
+                              $json: $iter_item
+                          date_effective:
+                            $json_extract:
+                              $key: effective_date
+                              $json: $iter_item
+                          projected_end_date:
+                            $json_extract:
+                              $key: end_date
+                              $json: $iter_item
+                          report_date: miscond_written_date
+                          outcome_type:
+                            $conditional:
+                              - $if:
+                                  $in:
+                                    $value:
+                                      $json_extract:
+                                        $key: finding
+                                        $json: $iter_item
+                                    $options:
+                                      - $literal("Guilty")
+                                      - $literal("Guilty of Minor Only")
+                                $then:
+                                  $enum_mapping:
+                                    $raw_text:
+                                      $json_extract:
+                                        $key: _penalty_type_description
+                                        $json: $iter_item
+                                    $mappings:
+                                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                                        - Restitution
+                                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                                        - Prison Detention
+                                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                                        - Loss of Privilege
+                                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                                        - Prison Toplock
+                                      StateIncarcerationIncidentOutcomeType.WARNING:
+                                        - Counseling/Reprimand
+                                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                                        - Extra Duty
+                                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                                        - Prison Reclassification
+                              - $else:
+                                  $enum_mapping:
+                                    $raw_text:
+                                      $json_extract:
+                                        $key: finding
+                                        $json: $iter_item
+                                    $mappings:
+                                      StateIncarcerationIncidentOutcomeType.DISMISSED:
+                                        - Dismissed
+                                      StateIncarcerationIncidentOutcomeType.NOT_GUILTY:
+                                        - Not Guilty
+                          punishment_length_days:
+                            $json_extract:
+                              $key: penalty_days
+                              $json: $iter_item
