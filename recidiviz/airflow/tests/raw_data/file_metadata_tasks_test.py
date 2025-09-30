@@ -839,6 +839,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
         append_errors = [
             RawDataAppendImportError(
                 file_id=4,
+                file_tag="tagBasicData",
                 raw_temp_table=BigQueryAddress.from_str("temp.table2"),
                 error_msg="yikes!",
             ),
@@ -1134,9 +1135,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
         append_errors = [
             RawDataAppendImportError(
                 file_id=3,
+                file_tag="multipleColPrimaryKeyHistorical",
                 raw_temp_table=BigQueryAddress(
                     dataset_id="temp",
-                    table_id="multipleColPrimaryKeyHistorical__1__transformed",
+                    table_id="123_multipleColPrimaryKeyHistorical__1__transformed",
                 ),
                 error_msg="yike!",
             )

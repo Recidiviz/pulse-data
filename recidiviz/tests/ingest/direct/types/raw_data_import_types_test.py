@@ -222,6 +222,7 @@ class TestSerialization(unittest.TestCase):
     def test_raw_data_import_append_error(self) -> None:
         error = RawDataAppendImportError(
             file_id=1,
+            file_tag="tagBasicData",
             raw_temp_table=BigQueryAddress(dataset_id="data", table_id="set"),
             error_msg="eeeeeeeee",
         )

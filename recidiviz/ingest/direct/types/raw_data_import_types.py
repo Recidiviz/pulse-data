@@ -255,6 +255,7 @@ class RawDataAppendImportError(RawDataImportError):
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
     raw_temp_table: BigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(BigQueryAddress)
     )
@@ -266,16 +267,13 @@ class RawDataAppendImportError(RawDataImportError):
     def __str__(self) -> str:
         return f"{self.error_type.value} writing from {self.raw_temp_table.to_str()} to raw data table failed with:\n\n{self.error_msg}"
 
-    @property
-    def file_tag(self) -> str:
-        return self.raw_temp_table.table_id.split("_")[0]
-
     def serialize(self) -> str:
         result_dict = {
             "file_id": self.file_id,
             "raw_temp_table": self.raw_temp_table.to_str(),
             "error_msg": self.error_msg,
             "error_type": self.error_type.value,
+            "file_tag": self.file_tag,
         }
         return json.dumps(result_dict)
 
@@ -287,6 +285,7 @@ class RawDataAppendImportError(RawDataImportError):
             raw_temp_table=BigQueryAddress.from_str(data["raw_temp_table"]),
             error_msg=data["error_msg"],
             file_id=data["file_id"],
+            file_tag=data["file_tag"],
         )
 
 

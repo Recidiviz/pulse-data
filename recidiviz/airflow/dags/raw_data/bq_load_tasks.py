@@ -407,6 +407,7 @@ def _append_to_raw_data_table_for_file_tag(
             failures.append(
                 RawDataAppendImportError(
                     file_id=append_ready_file.import_ready_file.file_id,
+                    file_tag=append_ready_file.import_ready_file.file_tag,
                     raw_temp_table=append_ready_file.append_ready_table_address,
                     error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {failures[0].raw_temp_table.to_str()}",
@@ -419,6 +420,7 @@ def _append_to_raw_data_table_for_file_tag(
             failures.append(
                 RawDataAppendImportError(
                     file_id=append_ready_file.import_ready_file.file_id,
+                    file_tag=append_ready_file.import_ready_file.file_tag,
                     raw_temp_table=append_ready_file.append_ready_table_address,
                     error_msg=f"{str(e)}\n{traceback.format_exc()}",
                 )
