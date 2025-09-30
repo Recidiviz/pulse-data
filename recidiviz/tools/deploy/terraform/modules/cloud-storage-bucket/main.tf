@@ -53,6 +53,14 @@ variable "labels" {
   }
 }
 
+# See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket#soft_delete_policy-1
+variable "soft_delete_policy" {
+  type = object({
+    retention_duration_seconds = number
+  })
+  default = null
+}
+
 # See https://cloud.google.com/storage/docs/lifecycle
 variable "lifecycle_rules" {
   type = list(object({
@@ -103,5 +111,12 @@ resource "google_storage_bucket" "bucket" {
 
   versioning {
     enabled = true
+  }
+
+  dynamic "soft_delete_policy" {
+    for_each = var.soft_delete_policy == null ? [] : [var.soft_delete_policy]
+    content {
+      retention_duration_seconds = soft_delete_policy.value.retention_duration_seconds
+    }
   }
 }

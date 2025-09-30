@@ -444,30 +444,29 @@ module "validation-metadata" {
   name_suffix = "validation-metadata"
 }
 
-# TODO(#6052): Refactor to use ../cloud-storage-bucket
-resource "google_storage_bucket" "dataflow-templates-scratch" {
-  name                        = "${var.project_id}-dataflow-templates-scratch"
+module "dataflow_templates_scratch" {
+  source      = "./modules/cloud-storage-bucket"
+  project_id  = var.project_id
+  name_suffix = "dataflow-templates-scratch"
+
   location                    = "us"
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
 
-  # Disable soft delete to avoid incurring additional charges for ephemeral data
-  soft_delete_policy {
+  soft_delete_policy = {
     retention_duration_seconds = 0
   }
 
-  lifecycle_rule {
-    action {
-      type = "Delete"
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 3
+      }
     }
-    condition {
-      age = 3
-    }
-  }
-
-  versioning {
-    enabled = true
-  }
+  ]
 }
 
 # This bucket contains legacy county direct ingest data from Vera.
@@ -589,4 +588,9 @@ module "airflow-kubernetes-pod-operator-outputs" {
       }
     },
   ]
+}
+
+moved {
+  from = google_storage_bucket.dataflow-templates-scratch
+  to   = module.dataflow_templates_scratch.google_storage_bucket.bucket
 }
