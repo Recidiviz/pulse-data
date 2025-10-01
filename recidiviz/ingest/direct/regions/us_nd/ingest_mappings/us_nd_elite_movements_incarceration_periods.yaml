@@ -151,6 +151,7 @@ output:
                   - ESC
                   - ESCP
                   - ABSC
+                  - ESCP_CJ
                 StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
                   - ESCP_ERR
                   - ERR
