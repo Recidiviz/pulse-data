@@ -7,13 +7,14 @@ input_columns:
   DOC_ID: STRING
   COMPLETION_PR_FLAG: STRING
   ENROLL_STATUS: STRING
-  ASSIGNMENT_DATE: STRING
-  COMPLETION_DATE: STRING
-  CHANGE_EFF_DATE: STRING
-  PARTICIPATION_START_DATE: STRING
-  PARTICIPATION_END_DATE: STRING
+  ASSIGNMENT_DATE: DATETIME
+  COMPLETION_DATE: DATETIME
+  CHANGE_EFF_DATE: DATETIME
+  PARTICIPATION_START_DATE: DATETIME
+  PARTICIPATION_END_DATE: DATETIME
   EXEMPTION: STRING
   EXEMPTION_COMMENTS: STRING
+  CHANGE_REASON: STRING
   EXEMPTION_REMOVED_DATE: DATETIME
 unused_columns: []
 variables:
@@ -53,6 +54,7 @@ output:
                 $concat:
                   $values:
                     - ENROLL_STATUS
+                    - CHANGE_REASON
                     - $variable(discharge_indicator)
                   $separator: "@@"
           referral_date: ASSIGNMENT_DATE

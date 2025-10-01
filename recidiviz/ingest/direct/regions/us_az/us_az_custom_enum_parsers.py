@@ -529,7 +529,7 @@ def parse_program_assignment_participation_status(
     Parse program assignment participation status, inferring discharge status when
     enrollment status indicates active participation but discharge dates are present.
     """
-    enroll_status, discharge_indicator = raw_text.split("@@")
+    enroll_status, change_reason, discharge_indicator = raw_text.split("@@")
 
     # Define the mapping from ENROLL_STATUS to participation status
     if enroll_status == "Completed But Failed":
@@ -550,7 +550,10 @@ def parse_program_assignment_participation_status(
         return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
     if enroll_status == "Not Participating":
         return StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER
-    if enroll_status == "Administrative Discharge from Program":
+    if (
+        enroll_status == "Administrative Discharge from Program"
+        or "Admin Discharge" in change_reason
+    ):
         return StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN
 
     # Handle inference logic for "Participating" and "Enrolled" statuses
