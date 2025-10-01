@@ -25,8 +25,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
+    has_assessment_since_latest_class_i_or_ii_misconduct,
     management_level_greater_than_confinement_level,
     management_level_within_six_points_of_lower_level,
+    no_class_i_or_ii_misconduct_in_current_supersession,
     no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -37,8 +39,22 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+_NO_CLASS_I_OR_II_MISCONDUCT_OR_ASSESSMENT_AFTER_MISCONDUCT = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_MI_NO_CLASS_I_OR_II_MISCONDUCT_OR_ASSESSMENT_AFTER_MISCONDUCT",
+    sub_criteria_list=[
+        no_class_i_or_ii_misconduct_in_current_supersession.VIEW_BUILDER,
+        has_assessment_since_latest_class_i_or_ii_misconduct.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
@@ -49,6 +65,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         management_level_greater_than_confinement_level.VIEW_BUILDER,
         management_level_within_six_points_of_lower_level.VIEW_BUILDER,
         no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment.VIEW_BUILDER,
+        _NO_CLASS_I_OR_II_MISCONDUCT_OR_ASSESSMENT_AFTER_MISCONDUCT,
     ],
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
