@@ -20,12 +20,10 @@ requires a scheduled home contact, taking into account both standard and
 critical understaffing policies.
 """
 
-from recidiviz.calculator.query.state.views.workflows.firestore.task_config import (
-    ComplianceType,
-)
+from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    prioritized_supervision_population,
+    prioritized_supervision_population_with_officer,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -66,7 +64,7 @@ US_TX_NEEDS_UNSCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = (
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TX,
     task_name="needs_unscheduled_home_contact",
-    candidate_population_view_builder=prioritized_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=prioritized_supervision_population_with_officer.VIEW_BUILDER,
     criteria_spans_view_builders=[
         US_TX_NEEDS_UNSCHEDULED_HOME_CONTACT_CRITERIA_BUILDER
     ],

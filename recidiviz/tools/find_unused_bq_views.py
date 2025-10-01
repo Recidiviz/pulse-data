@@ -437,10 +437,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_supervision_locations"
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress(
-        dataset_id="compliance_task_eligibility_spans",
-        table_id="all_compliance_task_eligibility_spans",
-    ): "Will be referenced by tasks record and compliance metric calculations (Mayuka Sarukkai, 8/28/2025)",
     BigQueryAddress.from_str(
         "static_reference_data_views.us_ix_contact_standards"
     ): "This is currently unused but it will be used once our tasks migration to TES is completed (Hugo Salas, 9/26/2025)",

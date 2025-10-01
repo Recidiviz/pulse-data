@@ -21,9 +21,7 @@ a compliance-oriented task (e.g., contacts, assessments).
 from typing import List, Optional, Sequence
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.views.workflows.firestore.task_config import (
-    ComplianceType,
-)
+from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,

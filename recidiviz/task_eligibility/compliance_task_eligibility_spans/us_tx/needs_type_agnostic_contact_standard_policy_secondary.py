@@ -23,12 +23,10 @@ for two overlapping spans.
 Currently, this only applies to MAXIMUM (High in TX) GENERAL (Regular in TX) clients.
 """
 
-from recidiviz.calculator.query.state.views.workflows.firestore.task_config import (
-    ComplianceType,
-)
+from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    prioritized_supervision_population,
+    prioritized_supervision_population_with_officer,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -42,7 +40,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TX,
     task_name="needs_type_agnostic_contact_standard_policy_secondary",
-    candidate_population_view_builder=prioritized_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=prioritized_supervision_population_with_officer.VIEW_BUILDER,
     criteria_spans_view_builders=[
         needs_type_agnostic_contact_standard_policy_secondary.VIEW_BUILDER,
     ],

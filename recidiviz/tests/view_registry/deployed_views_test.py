@@ -409,9 +409,17 @@ class ViewDagInvariantTests(unittest.TestCase):
             # Funnel analysis requires referencing all unioned segment events.
             INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
-            # Compliance Tasks product export view pulls from the unioned view of all tasks for a given state.
+            # Compliance Tasks product export views pull from the unioned view of all tasks for a given state.
             US_NE_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
             US_TX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
+            # Views to help calculate compliance metrics pull from the unioned view of all tasks for a given state.
+            BigQueryAddress(
+                dataset_id="analyst_data", table_id="assessment_compliance_spans"
+            ),
+            BigQueryAddress(
+                dataset_id="observations__person_event",
+                table_id="supervision_contact_due",
+            ),
         }
 
         allowed_union_all_datasets_to_query_from = {

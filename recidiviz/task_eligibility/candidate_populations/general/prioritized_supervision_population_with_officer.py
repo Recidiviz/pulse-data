@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "PRIORITIZED_SUPERVISION_POPULATION"
+_POPULATION_NAME = "PRIORITIZED_SUPERVISION_POPULATION_WITH_OFFICER"
 
 _QUERY_TEMPLATE = f"""
 SELECT
@@ -53,6 +53,7 @@ WHERE
             AND attr.compartment_level_1 = "SUPERVISION_OUT_OF_STATE"
         )
     )
+    AND attr.supervising_officer_external_id IS NOT NULL
 -- Prioritize the supervision row over the other compartment types
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY state_code, person_id, start_date ORDER BY IFNULL(priority, 999)

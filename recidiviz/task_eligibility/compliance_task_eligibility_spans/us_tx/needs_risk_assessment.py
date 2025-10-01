@@ -18,9 +18,7 @@
 need a risk assessment conducted
 """
 
-from recidiviz.calculator.query.state.views.workflows.firestore.task_config import (
-    ComplianceType,
-)
+from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_tx import (
     tras_eligible_population,

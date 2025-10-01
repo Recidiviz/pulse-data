@@ -19,9 +19,7 @@ first STABLE assessment), or when 12 months have passed since a SO case type NE 
 (therefore they need an updated STABLE assessment)
 """
 
-from recidiviz.calculator.query.state.views.workflows.firestore.task_config import (
-    ComplianceType,
-)
+from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_active_supervision_including_null_supervision_level_population,
