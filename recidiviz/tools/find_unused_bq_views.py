@@ -535,6 +535,7 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
         "all_state_specific_criteria",
         "all_general_candidate_populations",
         "all_candidate_populations",
+        "all_state_specific_candidate_populations",
     }:
         return True
 

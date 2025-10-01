@@ -284,7 +284,7 @@ FROM intersection_spans_with_critical_understaffing
             ),
             ReasonsField(
                 name="contact_due_date",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Due date of the contact.",
             ),
             ReasonsField(
@@ -460,8 +460,8 @@ def contact_compliance_builder_type_agnostic(
             p.contact_types_accepted,
             p.supervision_level,
             ci.contact_date,
-            contact_period_start,
-            contact_period_end_exclusive,
+            CAST(contact_period_start AS DATE) AS contact_period_start,
+            CAST(contact_period_end_exclusive AS DATE) AS contact_period_end_exclusive,
             ci.contact_type,
         FROM clean_empty_periods p
         LEFT JOIN contact_info ci
@@ -676,7 +676,7 @@ def contact_compliance_builder_type_agnostic(
             ),
             ReasonsField(
                 name="contact_due_date",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Due date of the contact.",
             ),
             ReasonsField(
