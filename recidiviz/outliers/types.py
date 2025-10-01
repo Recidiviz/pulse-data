@@ -311,11 +311,10 @@ class OutliersBackendConfig:
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
 
-    # String containing exclusions that should be applied to the supervision staff product views.
-    supervision_staff_exclusions: str = attr.ib(default=None)
-
-    # A string representing the filters to apply for the state's supervision officer aggregated metrics
-    supervision_officer_metric_exclusions: str = attr.ib(default=None)
+    # A string representing the criteria for including a staff member in outcomes. This criteria can
+    # reference columns in `aggregated_metrics.supervision_officer_aggregated_metrics_materialized`,
+    # `outliers_views.supervision_officers_materialized`, and `sessions.supervision_staff_attribute_sessions_materialized`
+    include_in_outcomes_criteria: str = attr.ib(default=None)
 
     # List of metrics that were previously configured. This list is maintained in order
     # to prevent completely omitting a metric from the webtool when metrics are being
@@ -352,12 +351,11 @@ class OutliersBackendConfig:
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
-        # Omit the exclusions since they are only for internal (backend) use.
+        # Omit the inclusion criteria since they are only for internal (backend) use.
         unst_hook = make_dict_unstructure_fn(
             OutliersBackendConfig,
             c,
-            supervision_staff_exclusions=override(omit=True),
-            supervision_officer_metric_exclusions=override(omit=True),
+            include_in_outcomes=override(omit=True),
         )
         c.register_unstructure_hook(OutliersBackendConfig, unst_hook)
         return c.unstructure(self)

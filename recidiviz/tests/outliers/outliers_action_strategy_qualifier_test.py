@@ -855,8 +855,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     event_name_past_tense="had a technical incarceration",
                 ),
             ],
-            supervision_officer_metric_exclusions="",
-            supervision_staff_exclusions="",
         )
         qualifier = OutliersActionStrategyQualifier(events=events, config=config)
         self.assertFalse(

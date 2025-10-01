@@ -102,10 +102,9 @@ The denominator is the average daily caseload for the officer over the given tim
             ),
         ],
         vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_F2F_CONTACT],
-        supervision_officer_metric_exclusions="""
+        include_in_outcomes_criteria="""COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER', 'TRANSITIONAL')
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
-        supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER', 'TRANSITIONAL')",
         primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
         available_specialized_caseload_categories={
             InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
@@ -159,11 +158,10 @@ The denominator is the average daily caseload for the officer over the given tim
                 event_name_past_tense="absconded",
             ),
         ],
-        supervision_officer_metric_exclusions="""
+        include_in_outcomes_criteria="""COALESCE(supervision_district_id, supervision_district_id_inferred, '') NOT IN ('FAST', 'CO')
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_community_confinement / avg_daily_population) <= 0.05""",
-        supervision_staff_exclusions="COALESCE(supervision_district_id, supervision_district_id_inferred, '') NOT IN ('FAST', 'CO')",
     ),
     StateCode.US_MI: OutliersBackendConfig(
         metrics=[
@@ -271,12 +269,9 @@ Denominator is the average probation caseload for the agent over the given time 
                 event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
-        supervision_officer_metric_exclusions="""
-        AND avg_daily_population BETWEEN 10 AND 150
+        include_in_outcomes_criteria="""avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_unsupervised_supervision_level/avg_daily_population) <= 0.50 """,
-        # If we were to add supervision_staff_exclusions for US_MI, we might have to refactor us_mi_insights_workflows_details_for_leadership.
-        # See https://github.com/Recidiviz/pulse-data/pull/27833#discussion_r1504426734
     ),
     StateCode.US_TN: OutliersBackendConfig(
         metrics=[
@@ -331,11 +326,10 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
-        supervision_officer_metric_exclusions="""
-    --TODO(#25695): Revisit this after excluding admin supervision levels    
-    AND avg_daily_population BETWEEN 10 AND 175
-    AND prop_period_with_critical_caseload >= 0.75""",
-        supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('TRANSITIONAL')",
+        include_in_outcomes_criteria="""COALESCE(specialized_caseload_type_primary,'') NOT IN ('TRANSITIONAL')
+        --TODO(#25695): Revisit this after excluding admin supervision levels    
+        AND avg_daily_population BETWEEN 10 AND 175
+        AND prop_period_with_critical_caseload >= 0.75""",
         primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
         available_specialized_caseload_categories={
             InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
@@ -379,11 +373,9 @@ Denominator is the average daily caseload for the agent over the given time peri
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
         ],
-        supervision_officer_metric_exclusions="""
-    AND avg_daily_population BETWEEN 10 AND 175
-    AND prop_period_with_critical_caseload >= 0.75""",
-        supervision_staff_exclusions=f"""
-    supervision_office_name NOT IN {tuple(US_CA_EXCLUDED_UNITS)}""",
+        include_in_outcomes_criteria=f"""supervision_office_name NOT IN {tuple(US_CA_EXCLUDED_UNITS)}
+        AND avg_daily_population BETWEEN 10 AND 175
+        AND prop_period_with_critical_caseload >= 0.75""",
     ),
     StateCode.US_ND: OutliersBackendConfig(
         metrics=[
@@ -426,11 +418,10 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
-        supervision_officer_metric_exclusions="""
+        include_in_outcomes_criteria="""'GENERAL' IN UNNEST(specialized_caseload_type_array)
+        AND attrs.officer_id != attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)]
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
-        supervision_staff_exclusions="""'GENERAL' IN UNNEST(specialized_caseload_type_array)
-        AND attrs.officer_id != attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)]""",
     ),
     StateCode.US_TX: OutliersBackendConfig(
         metrics=[
