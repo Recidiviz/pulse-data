@@ -54,6 +54,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_fu
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ne_supervision_tasks_record import (
+    US_NE_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import (
     automatic_raw_data_pruning_enabled_for_state_and_instance,
@@ -403,6 +406,8 @@ class ViewDagInvariantTests(unittest.TestCase):
             # Funnel analysis requires referencing all unioned segment events.
             INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
+            # Compliance Tasks product export view pulls from the unioned view of all tasks for a given state.
+            US_NE_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
         }
 
         allowed_union_all_datasets_to_query_from = {

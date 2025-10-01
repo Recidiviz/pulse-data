@@ -1271,6 +1271,9 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="reference_views", table_id="workflows_opportunity_configs"
             ),
+            BigQueryAddress(
+                dataset_id="reference_views", table_id="compliance_tasks_configs"
+            ),
         }
         if node.view.address in known_empty_parent_view_addresss:
             return
