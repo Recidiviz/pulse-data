@@ -51,11 +51,15 @@ output:
                 StateRace.WHITE: W
                 StateRace.OTHER: O
                 StateRace.EXTERNAL_UNKNOWN: U
-              $ignore: [H]
+              $ignore:
+                - H
+                - M
+                - C
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
             $enum_mapping:
+              # TODO(#50107): Add in CULTURALETHNICAFFILIATION to better hydrate this field.
               $raw_text: INMATERACECODE
               $mappings:
                 StateEthnicity.HISPANIC: H
@@ -67,3 +71,5 @@ output:
                 - W
                 - O
                 - U
+                - M
+                - C

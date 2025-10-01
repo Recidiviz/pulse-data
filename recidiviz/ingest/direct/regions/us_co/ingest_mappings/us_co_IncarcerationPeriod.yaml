@@ -55,6 +55,227 @@ output:
                   - Z4 # Fugitive Inmate (State Prison still counts them, so is still responsible authority)
                 StateCustodialAuthority.OTHER_STATE:
                   - I4 # Other State Law Enforcement Agency
+                # TODO(#50107): Properly assign these when validating this view
+                StateCustodialAuthority.INTERNAL_UNKNOWN:
+                  - A0 # Central Office Classifications
+                  - A1 # DOC Executive Director's Office
+                  - A2 # Central Office Accounting
+                  - A3 # Central Office Offender Services
+                  - A4 # Central Office Security
+                  - A5 # Central Office Programs
+                  - A7 # Central Office, OIT
+                  - A8 # Central Office Research & Planning
+                  - A9 # Training Academy
+                  - AA # Human Resources
+                  - AB # Construction Division
+                  - AC # CDOC Collections
+                  - AD # HR Training PC Lab
+                  - AE # HR Training Off-Site
+                  - AF # Offender File Location
+                  - AG # Health Records Center
+                  - AH # Central Office Health Services
+                  - AJ # Inmate Appeals
+                  - AK # K-9 Division
+                  - AL # Victim Services Unit (VSU)
+                  - AM # Stock Med Room
+                  - AN # Central Office Court Services
+                  - AO # Other Headquarters Offices
+                  - AP # Community Referrals (and Movements) Unit (CRU)
+                  - AQ # Telemed
+                  - AS # Central Office SXO Registration Coordinator
+                  - AT # Central Transportation
+                  - AU # Central Office Internal Affairs
+                  - AV # Vo-Tech
+                  - AW # Centralized Trust Fund
+                  - AX # Canteen
+                  - AY # Warehouse/Pantry
+                  - AZ # Contracted Canteen
+                  - B0 # State Prison - Intake Only Facility
+                  - B1 # State Prison - Major
+                  - B2 # State Prison - Minimum
+                  - B3 # Boot Camp
+                  - B4 # Private Prison
+                  - B6 # County Jail Contract
+                  - B9 # Colorado Concurrent Sentences
+                  - BC # City Jail Backlog
+                  - BD # Interstate Corr. Compact (ICC)
+                  - BE # CO Non-DOC Facility
+                  - BF # Reception Center
+                  - BG # Out-of-State Contract Facility
+                  - BJ # Community Corrections Center
+                  - BK # Intensive Supervision Program (ISP)
+                  - BL # YOS Phase III Community Corrections
+                  - BM # YOS Facility
+                  - BN # Intensive Residential Treatment (IRT)
+                  - BT # Other State Prison
+                  - BW # State Mental Hospital
+                  - BY # Parolees in Prison Facility
+                  - C1 # Division of Adult Parole
+                  - C2 # Parole Finance
+                  - C3 # Parole Community Services
+                  - C4 # Parole Planning & Placement
+                  - C5 # Parole Inmate Services
+                  - C6 # Parole Case Records Services
+                  - C7 # Parole Fugitive Services
+                  - C8 # Parole Administrative Services
+                  - CA # Parole Offender Programs
+                  - CB # Parole Hearing Unit
+                  - CC # DCC MIS
+                  - CD # Parole Training Unit
+                  - D2 # Region Office
+                  - D3 # Parole Office
+                  - D4 # Satellite Office
+                  - D5 # Community Corrections Center
+                  - D6 # Day Reporting Center
+                  - D7 # Drug Court
+                  - D8 # DCC Warehouse/Kitchen
+                  - D9 # DCC Canteen
+                  - DA # Colorado Parole Apprehension Team
+                  - DB # Parole Regional Unit
+                  - E0 # Municipal Jail
+                  - E1 # County Sheriff
+                  - E2 # Colorado State Court
+                  - E3 # Police Department
+                  - E4 # City Name
+                  - E5 # County Prosecuting Attorney
+                  - E6 # County Health Department
+                  - E7 # County Mental Health Dept
+                  - E8 # Social Services
+                  - E9 # Transitional Living
+                  - EA # Colorado County or District Court
+                  - EB # County District Attorney
+                  - EC # Local Victim Witness Office
+                  - ED # County Probation Office
+                  - EL # Release Law Enforcement
+                  - ES # State Police
+                  - EU # University Police Department
+                  - F1 # Parole Board
+                  - F2 # Office of Juv. Offn. Review
+                  - G1 # Hospital (Outside)
+                  - G2 # Clinic (Outside)
+                  - G3 # Doctor's Office (Outside)
+                  - G4 # Other Medical (Outside)
+                  - G5 # Mental Health Treatmt(Outside)
+                  - G6 # Laboratory Provider
+                  - G7 # TB Test Manufacturer
+                  - G8 # Specialist (Outside)
+                  - H1 # Community College
+                  - H2 # University
+                  - H3 # Trade School
+                  - H4 # Adult Education / GED
+                  - H5 # Other Education
+                  - H6 # Public School (in Colorado)
+                  - I1 # Other State ICC Office
+                  - I2 # Other State Court
+                  - I3 # Other State Parole Office
+                  - I5 # Other State DOC
+                  - I6 # DCC SOSRA Coordinator
+                  - I7 # Other State Parole Board
+                  - I8 # Other Country
+                  - I9 # Other State District Attorney
+                  - IA # Community Corrections Board (CCB)
+                  - IB # Other State Probation Department
+                  - J1 # DJJ Central Office
+                  - J2 # Juris. Drug Task Force
+                  - JA # Youth Correctional Facility
+                  - JB # Foster Home
+                  - JD # Group Home
+                  - JE # Child Caring Institution (CCI)
+                  - JF # Youth Reception Center
+                  - JG # Youth Parole Office
+                  - JH # Youth Conservation Camp
+                  - K0 # Converted Agency
+                  - K1 # Substance Abuse Treatment (Out-Patient)
+                  - K2 # Domestic Violence Rehab
+                  - K3 # Sex Offender Aftercare
+                  - K4 # Parenting
+                  - K5 # Life Skills
+                  - K6 # Clothing / Food Assistance
+                  - K7 # AA/NA
+                  - K8 # Employment Agency
+                  - K9 # Mental Health Counseling
+                  - KA # Cognitive Therapy Provider
+                  - KB # Client Choice Treatment Provider (CCTP)
+                  - KC # CCTP/MAT Organization
+                  - KD # Urinalysis Provider
+                  - KI # Substance Abuse Treatment (In-Patient)
+                  - KX # Other Referral Agency
+                  - L1 # Medical Laboratory
+                  - L2 # TB Test Manufacturer
+                  - L3 # HIV Test Manufacturer
+                  - L4 # Immunization Manufacturer
+                  - M1 # Law Firm
+                  - M2 # Electronic Monitoring
+                  - M3 # Bank
+                  - M4 # Extradition Company
+                  - M5 # Hotel/Motel
+                  - M6 # Restitution (Hot Checks)
+                  - M7 # Insurance Company
+                  - M8 # Other Non-Profit Agency
+                  - M9 # Employer (Other)
+                  - MA # Housing Vendor (Felon Friendly)
+                  - MB # Retail Store
+                  - MC # Vendor (Canteen & Other Inven)
+                  - MD # Bank (for Colorado Inmate Banking Use only)
+                  - ME # Obligation Payee
+                  - MF # Food Services Employer
+                  - MG # Smart Start Office
+                  - MM # Media
+                  - MP # SOSRA Polygraph Vendor
+                  - MV # Volunteer
+                  - MX # Housing Vendor (Felon Friendly)
+                  - N1 # Religious Organization
+                  - N2 # Service Clubs
+                  - N3 # Child Care Center
+                  - P0 # Colorado Crime Lab
+                  - P1 # Governor's Office
+                  - P2 # Dept of Human Services
+                  - P4 # State Treasury
+                  - P5 # Secretary of State
+                  - P6 # Attorney General
+                  - P7 # Dept. of Labor
+                  - P8 # ACIC
+                  - P9 # Other Government Agency
+                  - PA # State Comptroller
+                  - PB # Child Support Enforcement Agency
+                  - PC # Registration Fee Trust - DOT DMV
+                  - PD # DOC Bureau of Health Services (BHS)
+                  - PE # CO Dept. of Motor Vehicles
+                  - PF # State Fire Marshal
+                  - PJ # State Department of Justice
+                  - PL # State Legislature
+                  - PP # PRCS Supervising Offices
+                  - PS # Sex Offender Tracking Program (SOTP)
+                  - PV # Victim Compensation & Government Claims Board
+                  - R1 # Homeless Shelter
+                  - R2 # Transient (i.e., Homeless)
+                  - R3 # Sober Living
+                  - R4 # Transitional Living
+                  - T1 # Private Residence
+                  - T2 # Temporary Lodging
+                  - U1 # US Marshall
+                  - U2 # US Probation
+                  - U3 # Immigration & Nat. Service
+                  - U4 # US Military
+                  - U5 # Federal Bureau of Prisons (BOP)
+                  - U6 # FBI Office
+                  - U7 # DEA Office
+                  - U8 # NCIC
+                  - U9 # US District Court
+                  - UA # Social Security Administration
+                  - UB # Internal Revenue Service (IRS)
+                  - UC # Veteran's Administration (VA)
+                  - UD # Other Federal Detaining Agency
+                  - UE # Federal Transfer Tracking
+                  - X3 # Ext. Mvmt. Note 3 (Oth = UNK)
+                  - X4 # Ext. Mvmt. Note 4 (Oth = prior Oth)
+                  - X5 # Ext. Mvmt Note 5 (Oth = prior Rpt)
+                  - Z1 # Not Specified
+                  - Z2 # County (in Home State)
+                  - Z3 # Victim Restitution (TBD)
+                  - Z5 # Not Applicable
+                  - Z9 # Unknown
+                  - ZZ # Not Used
           admission_date: start_datetime
           release_date: end_datetime
           facility: p_facility_id
@@ -213,12 +434,144 @@ output:
                   - "V3" # From ICC
                   - "V4" # From Other Jurisdiction
                   - "V5" # From ISP-I
+                # TODO(#50107): Properly assign these when validating this view
+                StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
+                  - "03" # To ICE Custody
+                  - "06" # Criteria Not Met
+                  - "0A" # County Contract Boarder
+                  - "14" # Returned to Sending State
+                  - "18" # Variance
+                  - "27" # Intensive Residential Treatment
+                  - "28" # Posted Bond
+                  - "29" # Own Recognizance
+                  - "30" # Private Custody during Hospital Stay
+                  - "34" # Governor's Order
+                  - "38" # Court Appearance (with DRAG Order)
+                  - "40" # Sentence Modified
+                  - "41" # Sentenced to Oth. Jurisdiction
+                  - "42" # Sentence Revoked/Remanded
+                  - "43" # Sentence Vacated
+                  - "44" # Witness
+                  - "45" # Released by Court
+                  - "48" # Early Parole Discharge
+                  - "54" # In-State Parole Reinstated
+                  - "57" # Sure and Swift
+                  - "59" # Finished serving Sentence
+                  - "5E" # Establish Residence
+                  - "5J" # Compassionate Release Orderd by the Court
+                  - "5K" # Inmate Walked Away
+                  - "61" # Justified Homicide
+                  - "62" # Murdered
+                  - "63" # Natural Causes
+                  - "64" # Suicide
+                  - "65" # Lethal Injection
+                  - "66" # Execution
+                  - "67" # Death - Other
+                  - "76" # Terminal Illness
+                  - "78" # Escape with Violence
+                  - "80" # Attempted Escape
+                  - "83" # Start Intensive Treatment Program
+                  - "84" # End Intensive Treatment Program
+                  - "92" # Overcrowding
+                  - "94" # Facility to ISP-I.
+                  - "9A" # Privilege
+                  - "9B" # 24-hour
+                  - "9C" # 48-hour
+                  - "9D" # Funeral
+                  - "9E" # Family Emergency
+                  - "9F" # Medical
+                  - "A0" # See Disposition
+                  - "A3" # YOS Resentence
+                  - "AA" # Discharge to Probation Failed
+                  - "AD" # Court Ordered Release Failed
+                  - "AK" # ICC - Parolee
+                  - "AL" # ICC - Probationer
+                  - "AM" # Dual ICC
+                  - "AR" # To Probation
+                  - "AS" # Probation with NC
+                  - "AU" # Regress on Summons
+                  - "AV" # Revoked on Summons
+                  - "AY" # Approved for Community Corrections
+                  - "AZ" # See Case Notes
+                  - "B1" # Discretionary Parole
+                  - "B2" # Discretionary - Weekend
+                  - "B3" # Discretionary - Accelerated Transition
+                  - "B4" # Discretionary - SB 241
+                  - "B5" # Discretionary (2001-2004)
+                  - "B6" # Discretionary - SB 03-252
+                  - "BB" # Mandatory Parole - Weekend
+                  - "BC" # Mandatory Parole - HB1351 ERT
+                  - "BD" # Mandatory Parole (2001-2004)
+                  - "BE" # Mandatory Reparole
+                  - "BF" # Mandatory Reparole - Weekend
+                  - "BG" # Special Needs Parole
+                  - "BH" # INS Detainer (ICE)
+                  - "BJ" # INS Deportation (ICE)
+                  - "C1" # Mandatory Release - per Martin Cooper
+                  - "C2" # Sentence Discharge - 1087
+                  - "C3" # Appeal Bond
+                  - "C4" # CSH Transfer - Executive Order
+                  - "C5" # Federal Bureau Of Prisons
+                  - "C6" # Inactivated
+                  - "C7" # Dual In-State Compact (usually CSP)
+                  - "C8" # Dual CO Sentence & Interstate Compact
+                  - "CX" # CCC - Return to Parole
+                  - "D1" # Other Jails
+                  - "D2" # Federal Detainer
+                  - "D3" # Absconder - Mandatory Discharge
+                  - "D5" # Interstate Violation Case Closed
+                  - "D8" # International Discharge
+                  - "DD" # U.S. Marshall Custody
+                  - "DG" # Colorado Detainer
+                  - "DH" # Discharge to Charges
+                  - "DI" # To another State
+                  - "DJ" # Intensive Supervision Escape
+                  - "DL" # Other State Detainer
+                  - "DM" # Low Risk/Low Custody Absconder
+                  - "DP" # United States Marshal
+                  - "DX" # DWCF - Return to Parole
+                  - "DY" # YOS - Phase III
+                  - "DZ" # Parolee Transfer to CCC
+                  - "F1" # ICC Sentence Served-Pickup CO Sentence
+                  - "P4" # Parole Office changed
+                  - "PE" # Returned to Parole from Abscond
+                  - "PH" # Parolee in Prison
+                  - "PJ" # ISP - Parolee
+                  - "T8" # DAY TRIP DEAN MCGEE EYE INSTITUTE, OK
+                  - "X1" # External Movement Note 1
+                  - "X8" # Possible Parole Violator (PPV)
           admission_reason:
             $enum_mapping:
               $raw_text: start_code
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - "79" # Returned to ISP-I
+                  # TODO(#50107): Properly assign these when validating this view
+                  - "11" # Returned as Parolee in Prison
+                  - "14" # Returned from Dual Commitment
+                  - "15" # Terminated from YOS Ph. III
+                  - "28" # Returned from Abscond
+                  - "34" # Assigned To Central Office
+                  - "35" # Received from ISP Facility
+                  - "38" # Arrested Parolee
+                  - "3B" # Returned to ISP-I Location
+                  - "40" # Discharged
+                  - "50" # Commutation
+                  - "52" # Released By Court
+                  - "54" # Full Pardon
+                  - "55" # Released after Erroneous Admission
+                  - "60" # Paroled
+                  - "63" # To Intensive Supervision Program (ISP-I)
+                  - "65" # To YOS Phase III
+                  - "73" # Out to Dual Commitment
+                  - "74" # Transfered Interstate
+                  - "75" # Death
+                  - "77" # Execution
+                  - "78" # Returned to Parole
+                  - "85" # Transferred Out-Of-State (ICC)
+                  - "88" # Absconded from Parole
+                  - "8D" # Out to Other Jurisdiction
+                  - "95" # Transferred to ISP Facility
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
                   - "81" # Out to Court
                   - "82" # Out on Escorted Leave
@@ -321,6 +674,24 @@ output:
                   - "10" # Returned from Parole
                   - "2D" # Returned from Other Jurisdiction
                   - "37" # Halfway-In (at CCC)
+                  # TODO(#50107): Properly assign these when validating this view
+                  - "03" # YOS Commitment
+                  - "07" # ICC Commitment
+                  - "11" # Returned as Parolee in Prison
+                  - "14" # Returned from Dual Commitment
+                  - "15" # Terminated from YOS Ph. III
+                  - "25" # Returned from ICC
+                  - "28" # Returned from Abscond
+                  - "34" # Assigned To Central Office
+                  - "35" # Received from ISP Facility
+                  - "38" # Arrested Parolee
+                  - "3B" # Returned to ISP-I Location
+                  - "54" # Full Pardon
+                  - "63" # To Intensive Supervision Program (ISP-I)
+                  - "65" # To YOS Phase III
+                  - "73" # Out to Dual Commitment
+                  - "77" # Execution
+                  - "95" # Transferred to ISP Facility
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - "60" # Paroled
                   - "63-P" # To Intensive Supervision (ISP) - Parole

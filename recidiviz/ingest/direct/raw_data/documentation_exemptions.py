@@ -97,10 +97,6 @@ COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS: dict[StateCode, set[str]] = {
     StateCode.US_CO: {
         "eomis_sentencecompute",
         "eomis_organizationprof",
-        "informix_dispcrim",
-        "informix_displnry",
-        "informix_dispsanc",
-        "informix_sanction",
     },
     # TODO(#39246): Document columns used in these files and remove this exemption for US_MI
     StateCode.US_MI: {"ADH_OFFENDER_SCHEDULE"},
@@ -168,15 +164,6 @@ COLUMN_DOCUMENTATION_COLUMN_LEVEL_EXEMPTIONS: dict[StateCode, dict[str, set[str]
 # downstream BQ views, even though the file_description is empty or insufficient (i.e.
 # docstring is just a TO-DO).
 FILE_DOCUMENTATION_EXEMPTIONS: dict[StateCode, set[str]] = {
-    # TODO(#39244): Add file-level documentation for these files and remove this exemption for US_CO
-    StateCode.US_CO: {
-        "informix_displnry",
-        "informix_dispcrim",
-        "informix_intrac_offender",
-        "informix_intrac_inc_type",
-        "informix_dispsanc",
-        "informix_sanction",
-    },
     # TODO(#39253): Add file-level documentation for these files and remove this exemption for US_IX
     StateCode.US_IX: {
         "com_Investigation",

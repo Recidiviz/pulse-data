@@ -1001,9 +1001,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
     StateCode.US_CA: {
         "ParoleHousing": ["ADDREFFECTIVEDATE", "ADDRENDDATE"],
     },
-    StateCode.US_CO: {
-        "Base_Curr_Off_Pop": ["DOB"],
-    },
     StateCode.US_IX: {
         "clsf_OffenderSecurityLevelAct": ["InsertDate", "UpdateDate"],
         "com_PSIReport": [
