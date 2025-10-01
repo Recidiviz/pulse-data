@@ -43,6 +43,17 @@ def raw_latest_views_dataset_for_region(
     return f"{prefix}{state_code.value.lower()}_raw_data_up_to_date_views{suffix}"
 
 
+def raw_data_views_dataset_for_region(
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> str:
+    """Returns the dataset containing raw data `_all` views for this region."""
+    suffix = "_secondary" if instance == DirectIngestInstance.SECONDARY else ""
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}{state_code.value.lower()}_raw_data_views{suffix}"
+
+
 def raw_data_pruning_new_raw_data_dataset(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> str:

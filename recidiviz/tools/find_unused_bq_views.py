@@ -172,7 +172,10 @@ from recidiviz.calculator.query.state.views.workflows.person_record import (
     PERSON_RECORD_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_data_views_dataset_for_region,
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
@@ -516,6 +519,11 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
         # We autogenerate these views out of convenience and don't expect all to be used
         *{
             raw_latest_views_dataset_for_region(state_code, instance)
+            for state_code in StateCode
+            for instance in DirectIngestInstance
+        },
+        *{
+            raw_data_views_dataset_for_region(state_code, instance)
             for state_code in StateCode
             for instance in DirectIngestInstance
         },

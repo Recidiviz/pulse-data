@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This script can be used to load the raw data latest views for a state based on local
-raw data configuration YAML files. This script by default will load ALL views and ALL
+This script can be used to load the raw data views (`_all` and `_latest`) for a state based
+on local raw data configuration YAML files. This script by default will load ALL views and ALL
 columns, regardless of whether any of the columns contain documentation. This can be
 used to allow you to explore raw data that has been uploaded before you understand
 enough to document the column so that you can use it in a downstream view.
@@ -34,6 +34,7 @@ python -m recidiviz.tools.load_raw_data_latest_views_to_sandbox \
 """
 import argparse
 import logging
+from collections import defaultdict
 
 from more_itertools import one
 
@@ -48,6 +49,9 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
+    DirectIngestRawDataTableAllViewCollector,
+)
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewCollector,
 )
@@ -63,15 +67,29 @@ def _load_raw_data_latest_views_to_sandbox(
     state_code: StateCode,
     raw_data_source_instance: DirectIngestInstance,
     exclude_undocumented_views_and_columns: bool,
+    latest_only: bool,
 ) -> None:
-    """Load the raw data latest views for the given state to a sandbox."""
+    """Load the raw data views for the given state to a sandbox."""
 
-    print("Collecting all latest raw data view builders...")
-    all_builders = DirectIngestRawDataTableLatestViewCollector(
-        region_code=state_code.value.lower(),
-        raw_data_source_instance=raw_data_source_instance,
-        filter_to_documented=exclude_undocumented_views_and_columns,
-    ).collect_view_builders()
+    print("Collecting all raw data view builders...")
+    all_builders: list[BigQueryViewBuilder] = [
+        builder
+        for builder in DirectIngestRawDataTableLatestViewCollector(
+            region_code=state_code.value.lower(),
+            raw_data_source_instance=raw_data_source_instance,
+            filter_to_documented=exclude_undocumented_views_and_columns,
+        ).collect_view_builders()
+        if builder.has_valid_query()
+    ]
+
+    if not latest_only:
+        all_builders.extend(
+            DirectIngestRawDataTableAllViewCollector(
+                region_code=state_code.value.lower(),
+                raw_data_source_instance=raw_data_source_instance,
+                filter_to_documented=exclude_undocumented_views_and_columns,
+            ).collect_view_builders()
+        )
 
     bq_client = BigQueryClientImpl()
 
@@ -82,14 +100,14 @@ def _load_raw_data_latest_views_to_sandbox(
         state_code_filter=state_code,
     )
 
-    print("Filtering tables that don't exist or can't produce a valid query...")
-    raw_data_table_to_builder = {}
+    print("Filtering tables that don't exist...")
+    raw_data_table_to_builder = defaultdict(list)
 
     for builder in sorted(all_builders, key=lambda b: b.address.to_str()):
         parent_tables = builder.build(sandbox_context=sandbox_context).parent_tables
         # We assume each view only queries from exactly one raw data table
         parent_raw_data_table = one(parent_tables)
-        raw_data_table_to_builder[parent_raw_data_table] = builder
+        raw_data_table_to_builder[parent_raw_data_table].append(builder)
 
     raw_tables_dataset_id = one({a.dataset_id for a in raw_data_table_to_builder})
 
@@ -101,23 +119,15 @@ def _load_raw_data_latest_views_to_sandbox(
     }
 
     builders_to_load: list[BigQueryViewBuilder] = []
-    for raw_data_table, builder in raw_data_table_to_builder.items():
-        if not builder.has_valid_query():
-            print(
-                f"!! Skipping load of view [{builder.address.to_str()}] because the "
-                f"config for raw data table [{raw_data_table.to_str()}] does not have "
-                f"enough information to build a query (e.g. no primary key columns "
-                f"defined).",
-            )
-            continue
+    for raw_data_table, builders in raw_data_table_to_builder.items():
         if raw_data_table not in existing_raw_data_tables:
             print(
-                f"!! Skipping load of view [{builder.address.to_str()}] because parent "
+                f"!! Skipping load of view(s) [{', '.join(b.address.to_str() for b in builders)}] because parent "
                 f"raw data table [{raw_data_table.to_str()}] does not yet exist "
                 f"in [{metadata.project_id()}].",
             )
             continue
-        builders_to_load.append(builder)
+        builders_to_load.extend(builders)
 
     load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
@@ -184,6 +194,12 @@ def parse_arguments() -> argparse.Namespace:
         "documented column). Otherwise, this script loads ALL views with ALL "
         "columns, regardless of whether they are documented.",
     )
+    parser.add_argument(
+        "--latest_only",
+        action="store_true",
+        default=False,
+        help="If set, we will only load the latest views (those ending in `_latest`).",
+    )
 
     return parser.parse_args()
 
@@ -198,4 +214,5 @@ if __name__ == "__main__":
             state_code=args.state_code,
             raw_data_source_instance=args.raw_data_source_instance,
             exclude_undocumented_views_and_columns=args.exclude_undocumented_views_and_columns,
+            latest_only=args.latest_only,
         )

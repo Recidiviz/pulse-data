@@ -17,6 +17,7 @@
 """Defines helpers that give us insight into the schemas of our deployed views and
 tables.
 """
+import itertools
 from functools import cache
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -112,6 +113,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
+    DirectIngestRawDataTableAllViewBuilder,
+    DirectIngestRawDataTableAllViewCollector,
+)
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
     DirectIngestRawDataTableLatestViewCollector,
@@ -166,31 +171,51 @@ def state_specific_deployed_views_without_state_code_columns(
     that contain data for a single state, it's not extremely concerning to add
     exemptions here if you have a good reason.
     """
-    # Raw data tables / associated latest views generally do not have `state_code`
+    # Raw data tables / associated views generally do not have `state_code`
     # columns, but it is not an issue if one does. Only include ones that do not.
-    raw_data_views_no_state_code_column = {
-        latest_view_builder.address
-        for instance in DirectIngestInstance
-        for state_code in get_existing_direct_ingest_states()
-        for latest_view_builder in DirectIngestRawDataTableLatestViewCollector(
-            region_code=state_code.value,
-            raw_data_source_instance=instance,
-            # Regardless of whether a raw data table is properly documented, do
-            # not ingest.
-            filter_to_documented=False,
-        ).collect_view_builders()
-        if (
-            STATE_CODE_COLUMN_NAME
+    raw_data_latest_views_no_state_code_column = set()
+    raw_data_views_no_state_code_column = set()
+
+    for state_code, ingest_instance in itertools.product(
+        get_existing_direct_ingest_states(), DirectIngestInstance
+    ):
+        raw_data_latest_views_no_state_code_column |= {
+            view_builder.address
+            for view_builder in DirectIngestRawDataTableLatestViewCollector(
+                region_code=state_code.value,
+                raw_data_source_instance=ingest_instance,
+                # Regardless of whether a raw data table is properly documented, do
+                # not ingest.
+                filter_to_documented=False,
+            ).collect_view_builders()
+            if STATE_CODE_COLUMN_NAME
             not in {
                 c.name
                 for c in assert_type(
-                    latest_view_builder, DirectIngestRawDataTableLatestViewBuilder
+                    view_builder, DirectIngestRawDataTableLatestViewBuilder
                 ).raw_file_config.current_columns
             }
-        )
-    }
+        }
+        raw_data_views_no_state_code_column |= {
+            view_builder.address
+            for view_builder in DirectIngestRawDataTableAllViewCollector(
+                region_code=state_code.value,
+                raw_data_source_instance=ingest_instance,
+                # Regardless of whether a raw data table is properly documented, do
+                # not ingest.
+                filter_to_documented=False,
+            ).collect_view_builders()
+            if STATE_CODE_COLUMN_NAME
+            not in {
+                c.name
+                for c in assert_type(
+                    view_builder, DirectIngestRawDataTableAllViewBuilder
+                ).raw_file_config.current_columns
+            }
+        }
 
     missing_state_code_col_addresses = {
+        *raw_data_latest_views_no_state_code_column,
         *raw_data_views_no_state_code_column,
         US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_ACTION_QUEUE_VIEW_BUILDER.address,

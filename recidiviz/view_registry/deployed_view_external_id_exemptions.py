@@ -142,6 +142,11 @@ _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
         "more specifically named column is introduced and referenced downstream. As of "
         "7/17/25, this view is exported via the INSIGHTS metric export."
     ),
+    # raw data views
+    BigQueryAddress(
+        dataset_id="us_tn_raw_data_views",
+        table_id="RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster_all",
+    ): "TODO(#45176):rename this column to staff_external_id",
     # reentry views
     REENTRY_CASE_MANAGER_VIEW_BUILDER.address: (
         "TODO(#45253): Remove external_id column once it is no longer referenced "

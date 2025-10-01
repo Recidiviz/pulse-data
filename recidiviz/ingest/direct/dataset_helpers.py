@@ -17,6 +17,7 @@
 """Helpers for collecting raw data datasets"""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
+    raw_data_views_dataset_for_region,
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
@@ -37,6 +38,10 @@ def get_raw_data_table_and_view_datasets() -> dict[str, StateCode]:
             raw_latest_views_dataset = raw_latest_views_dataset_for_region(
                 state_code, instance
             )
+            raw_table_views_dataset = raw_data_views_dataset_for_region(
+                state_code, instance
+            )
             raw_datasets[raw_tables_dataset] = state_code
             raw_datasets[raw_latest_views_dataset] = state_code
+            raw_datasets[raw_table_views_dataset] = state_code
     return raw_datasets
