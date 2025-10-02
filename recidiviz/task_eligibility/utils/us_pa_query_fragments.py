@@ -701,10 +701,19 @@ def adm_case_notes_helper() -> str:
     return f"""
     SELECT * FROM ({case_notes_helper()})
     
+    UNION ALL 
+    
+    -- pulls in all offenses we have from our 5 sources that have either a description
+    -- or statute
+
+    {build_and_deduplicate_offense_history(filter_to_current=False)}
+    
     UNION ALL
     
-    /* pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
-    we don't have all the information we need to determine whether it should change eligibility */
+    -- pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
+    -- we don't have all the information we need to determine whether it should change eligibility
+
+    -- first, as it relates to DUIs
     
     (WITH sentences AS (
         SELECT * 
@@ -724,6 +733,8 @@ def adm_case_notes_helper() -> str:
 
     UNION ALL 
 
+    -- second, as it related to specific drug charges
+
     SELECT DISTINCT person_id,
       'Potential Barriers to Eligibility' AS criteria,
       'DRUG' AS note_title,
@@ -739,8 +750,8 @@ def adm_case_notes_helper() -> str:
     
     UNION ALL 
     
-    /* pulls all pending charges from criminal history 
-       note - flagging these in sidebar instead of building into eligibility criteria due to TT's recommendation & concerns with data quality */
+    -- third, as it relates to all pending charges from criminal history
+    -- note - flagging these in sidebar instead of building into eligibility criteria due to TT's recommendation & concerns with data quality
     (
     WITH pending_charges AS (
     /* pull all pending charges */
@@ -797,7 +808,11 @@ def spc_case_notes_helper() -> str:
     """this pulls all pa case notes and adds one that should only be displayed for the special circumstances opportunity"""
     return f"""
     SELECT * FROM ({case_notes_helper()})
-     
+        
+    UNION ALL 
+    
+    {build_and_deduplicate_offense_history(filter_to_current=True)}
+    
     UNION ALL 
     
     /* pulls all cases where someone we consider non-violent has a violent pending charge
@@ -855,6 +870,106 @@ def spc_case_notes_helper() -> str:
         AND case_type = 'non-life sentence (non-violent case)' -- only pull cases with a violent pending charge that would otherwise be considered non-violent
     )
 """
+
+
+def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
+    """builds offense history, filtering to just offenses for currently serving sentences
+    if |filter_to_current| is True, or including all offenses if it is False. as we
+    receive offense/charge history from 5 different sources, we also deduplicate
+    offenses that have the same statue and imposed date that appear in multiple sources
+    """
+
+    if filter_to_current:
+        # in order to filter to _just_ current charges, we pull in sentences to
+        # filter out any sentences that are not currently being served
+        from_clause = f"""FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sen
+        USING (state_code, person_id, sentences_preprocessed_id)
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc 
+        USING(person_id, charge_id)
+    WHERE sen.state_code = 'US_PA' 
+      AND (sen.statute IS NOT NULL OR sen.description IS NOT NULL)
+      AND CURRENT_DATE('US/Eastern') BETWEEN span.start_date AND {nonnull_end_date_exclusive_clause('span.end_date')} 
+    """
+    else:
+        # for all charges, we just join sentences & charges
+        from_clause = """FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sen
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc 
+        USING(person_id, charge_id) 
+    WHERE sen.state_code = 'US_PA' 
+      AND (sen.statute IS NOT NULL OR sen.description IS NOT NULL)
+    """
+
+    return f"""
+    SELECT DISTINCT person_id,
+      'Offense History' AS criteria,
+      COALESCE(statute, 'NO STATUTE PROVIDED') AS note_title,
+      CONCAT(COALESCE(INITCAP(description), 'No Description Provided'), source) AS note_body,
+      date_imposed as event_date,
+      FROM (
+        WITH 
+        -- each row is a one charge with an attached statute, annotated with it's source
+        all_statue_and_source_info AS (
+          SELECT 
+            person_id, 
+            sen.statute,
+            sen.description,
+            CASE 
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN ' (Source: CAPTOR - Criminal History)'
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN ' (Source: Supervisor Controls)'
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'SENREC' THEN ' (Source: CAPTOR - Sentence Summary)'
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN ' (Source: CalcRite)'
+              ELSE ' (Source: CAPTOR - Other)'
+            END as source,
+            CASE 
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'CRIM_HIST' THEN 1
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'SENREC' THEN 2
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'DBO_SENTENCE' THEN 3
+              WHEN SPLIT(sc.external_id, "-")[OFFSET(0)] = 'INCARCERATION_SENTENCE' THEN 4
+              ELSE 5
+            END as source_sorting_rank,
+            sen.date_imposed,
+          {from_clause}
+        ),
+        -- here, we normalize the statute's title to make it easier to deduplicate, leaving
+        -- everything after the title in place (such as *'s, which can represent the offense
+        -- count) to make sure that conflicting or differing info is not collapsed
+        normalized_title_and_source_info AS (
+          SELECT 
+          *,
+          CASE
+            WHEN title in ('18', 'CC', 'CS') THEN '18' -- title 18 = criminal offenses = CC or CS 
+            WHEN title IN ('75', 'VC') THEN '75' -- vehicle
+            WHEN title IN ('30', 'FB') THEN '30' -- fishing & boating
+            WHEN title IN ('42', 'JC') THEN '42' -- judicial code
+            ELSE title
+          END as normalized_title
+          FROM (
+            SELECT *,
+              SUBSTR(statute_clean, 0, 2) AS title,
+              SUBSTR(statute_clean, 3) AS statute_after_title,
+            FROM (
+              SELECT *, 
+                  REGEXP_REPLACE(statute_split, r"\\.|-", '') AS statute_clean, -- remove periods, hyphens
+              FROM all_statue_and_source_info
+              LEFT JOIN UNNEST(SPLIT(REPLACE(statute, ',', ';'), ';')) AS statute_split -- split on commas and semicolons
+            )
+          )
+        )
+        SELECT 
+          person_id, 
+          statute, 
+          description, 
+          source,
+          date_imposed
+        FROM normalized_title_and_source_info
+        -- duplicates of the same statute/date imposed exist because we pull offenses from different systems, 
+        -- for each statue that has multiple entries on the same date, preferentially select
+        -- the source we think the agent will be most familiar w/
+        QUALIFY RANK() OVER(PARTITION BY person_id, normalized_title, statute_after_title, date_imposed, description ORDER BY source_sorting_rank) = 1
+      )
+  """
 
 
 def contains_nae(column: str) -> str:
