@@ -329,6 +329,7 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
         function_type in {expr.Anonymous, expr.TryCast}
         and function_name
         in {
+            "JSON_QUERY",
             "JSON_QUERY_ARRAY",
             "JSON_EXTRACT_ARRAY",
             "JSON_EXTRACT_STRING_ARRAY",
