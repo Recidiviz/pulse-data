@@ -73,7 +73,7 @@ def generate_sccp_form_opportunity_record_view_builder(
     """
     filtered_tes_query = select_relevant_task_eligibility_spans_for_record(
         tes_view_builder=tes_view_builder,
-        spans_subset_type=TaskEligibilitySpansSubsetType.ELIGIBILE_AND_ALMOST_ELIGIBLE_ONLY,
+        spans_subset_type=TaskEligibilitySpansSubsetType.ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY,
         include_eligible_date=False,
         include_reasons_v2=False,
     )
