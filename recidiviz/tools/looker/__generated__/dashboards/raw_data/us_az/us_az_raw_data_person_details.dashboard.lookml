@@ -341,3 +341,62 @@
     width: 24
     height: 6
 
+  - name: MEA_PROFILES
+    title: MEA_PROFILES
+    explore: us_az_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_az_MEA_PROFILES.primary_key,
+      us_az_MEA_PROFILES.USERID,
+      us_az_MEA_PROFILES.FIRSTNAME,
+      us_az_MEA_PROFILES.MIDDLENAME,
+      us_az_MEA_PROFILES.SURNAME,
+      us_az_MEA_PROFILES.EMAIL,
+      us_az_MEA_PROFILES.DAYTEL,
+      us_az_MEA_PROFILES.EVENINGTEL,
+      us_az_MEA_PROFILES.MOBILE,
+      us_az_MEA_PROFILES.CONTACTID,
+      us_az_MEA_PROFILES.MESSAGES_ON,
+      us_az_MEA_PROFILES.CULTURE,
+      us_az_MEA_PROFILES.AQ_SEARCH_CRITERIA,
+      us_az_MEA_PROFILES.JOB_CLASSIFICATION_ID,
+      us_az_MEA_PROFILES.IS_ACTIVE,
+      us_az_MEA_PROFILES.IS_CC_USER,
+      us_az_MEA_PROFILES.APP_AREA_ID,
+      us_az_MEA_PROFILES.LICENSE_TREATMENT_NUMBER,
+      us_az_MEA_PROFILES.file_id,
+      us_az_MEA_PROFILES.is_deleted]
+    sorts: [us_az_MEA_PROFILES.USERID]
+    note_display: hover
+    note_text: "MEA Profiles of each person. This file has information on which officers are active and which have left the department."
+    listen: 
+      View Type: us_az_PERSON.view_type
+      US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
+    row: 36
+    col: 0
+    width: 24
+    height: 6
+
+  - name: RECIDIVIZ_REFERENCE_staff_id_override
+    title: RECIDIVIZ_REFERENCE_staff_id_override
+    explore: us_az_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_az_RECIDIVIZ_REFERENCE_staff_id_override.primary_key,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.FIRST_NAME,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.SURNAME,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.PERSON_ID,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.OVERRIDE_ID,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.file_id,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.is_deleted]
+    sorts: [us_az_RECIDIVIZ_REFERENCE_staff_id_override.PERSON_ID]
+    note_display: hover
+    note_text: "A reference file maintained by Recidiviz based on feedback from Arizona about users we are conflating as a result of grouping USERID values by full name. The data in this sheet will allow us to differentiate between users with the same full name. Each user that shares a full name with another user will appear in this sheet with a distinct OVERRIDE_ID.  In the state_staff view, we can then group by full name and OVERRIDE_ID to differentiate between those two individuals. Each individual listed in this sheet should have exactly one OVERRIDE_ID value so that all of their USERIDs can be properly aggregated.  For example, if we see these rows in the PERSON table: | FIRST_NAME | SURNAME | PERSON_ID | |-|-|-| |John|Doe|1| |John|Doe|2| |John|Doe|3|  We would assume that there is exactly one John Doe, and they have been assigned each of the PERSON_IDs 1, 2, and 3 at some point. If we then get feedback from AZ that there are actually two employees named John Doe, we would clarify which IDs belong to which John Doe, and input the following into this reference data:   | FIRST_NAME | SURNAME | PERSON_ID | OVERRIDE_ID | |-|-|-|-| |John|Doe|1|1| |John|Doe|2|2| |John|Doe|3|1|  This would allow us to differentiate between the two John Does: One who has had PERSON_IDs 1 and 3, and one who has had PERSON_ID 2."
+    listen: 
+      View Type: us_az_PERSON.view_type
+      US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
+    row: 42
+    col: 0
+    width: 24
+    height: 6
+
