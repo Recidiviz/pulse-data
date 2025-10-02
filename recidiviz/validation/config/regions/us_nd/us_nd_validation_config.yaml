@@ -96,3 +96,9 @@ num_allowed_rows_overrides:
     override_reason: |-
       This validation will flag every incarceration-side user as an erroring row until
       we ingest email addresses from Elite. #TODO(#37707)
+  - validation_name: missing_client_record_rows_null_full_name
+    hard_num_allowed_rows_override: 4
+    override_reason: Only two people missing from raw data as of 2025-10-02. TODO(#50219)
+  - validation_name: missing_client_record_rows_null_officer
+    hard_num_allowed_rows_override: 4
+    override_reason: Only two people missing from raw data as of 2025-10-02. TODO(#50219)

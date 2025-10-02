@@ -67,3 +67,9 @@ num_allowed_rows_overrides:
   - validation_name: inferred_group_aggregated_projected_dates_validation
     hard_num_allowed_rows_override: 60000
     override_reason: Bumping until work is complete to fix. TODO(#34858)
+  - validation_name: missing_client_record_rows_null_full_name
+    hard_num_allowed_rows_override: 1
+    override_reason: Investigation needed. TODO(#50213)
+  - validation_name: missing_client_record_rows_null_officer
+    hard_num_allowed_rows_override: 10
+    override_reason: Investigation needed. TODO(#50214)
