@@ -78,3 +78,8 @@ they confirm before running the query.
 
 ### Important Views
 - `workflows_views.client_record` and `workflows_views.resident_record` are two of the most important views leveraged by our front-end. If we need our front end to have access to data, it's quite possible the data should be added here as well.
+
+## Data Ingestion Process
+For detailed information about how raw data is imported, transformed through ingest views, and normalized into Recidiviz entities, see:
+
+- [Ingest Process Documentation](./recidiviz/ingest/CLAUDE.md)
