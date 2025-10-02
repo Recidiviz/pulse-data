@@ -1097,11 +1097,9 @@ class OutliersQuerier:
         Retrieve vitals metrics for officers by officer or supervisor ID.
 
         :param officer_id: List[str] pseudonymized ids for the officers vitals metrics will be retrieved for.
-                                     If not included, all officers' metrics will be retrieved.
+                                 If not included, all officers' metrics will be retrieved.
         :return: List of vitals metrics entities
         """
-
-        # FETCHING METRIC IDS
 
         # Extract metric IDs from configuration
 
@@ -1134,39 +1132,59 @@ class OutliersQuerier:
             # (where "the current date" is the date the aggregated metrics collection was last refreshed.)
             #
             # https://github.com/Recidiviz/pulse-data/pull/35760#discussion_r1882412306
+
+            metric_ids = list(vitals_metrics_by_metric_id.keys())
+
+            MainMetric = aliased(SupervisionOfficerMetric)
+            NumeratorMetric = aliased(SupervisionOfficerMetric)
+            DenominatorMetric = aliased(SupervisionOfficerMetric)
+
             filtered_officers_and_metrics = (
                 session.query(
-                    SupervisionOfficerMetric.metric_id,
-                    SupervisionOfficerMetric.metric_value,
-                    SupervisionOfficerMetric.period,
-                    SupervisionOfficerMetric.end_date,
+                    MainMetric.metric_id,
+                    MainMetric.metric_value,
+                    MainMetric.period,
+                    MainMetric.end_date,
                     SupervisionOfficer.pseudonymized_id,
-                    func.lag(SupervisionOfficerMetric.metric_value)
+                    func.lag(MainMetric.metric_value)
                     .over(
-                        partition_by=[
-                            SupervisionOfficerMetric.metric_id,
-                            SupervisionOfficerMetric.officer_id,
-                        ],
-                        order_by=SupervisionOfficerMetric.end_date,
+                        partition_by=[MainMetric.metric_id, MainMetric.officer_id],
+                        order_by=MainMetric.end_date,
                     )
                     .label("previous_metric_value"),
-                    func.lag(SupervisionOfficerMetric.end_date)
+                    func.lag(MainMetric.end_date)
                     .over(
-                        partition_by=[
-                            SupervisionOfficerMetric.metric_id,
-                            SupervisionOfficerMetric.officer_id,
-                        ],
-                        order_by=SupervisionOfficerMetric.end_date,
+                        partition_by=[MainMetric.metric_id, MainMetric.officer_id],
+                        order_by=MainMetric.end_date,
                     )
                     .label("previous_end_date"),
+                    NumeratorMetric.metric_value.label("metric_numerator"),
+                    DenominatorMetric.metric_value.label("metric_denominator"),
                 )
                 .join(
                     SupervisionOfficer,
-                    SupervisionOfficerMetric.officer_id
-                    == SupervisionOfficer.external_id,
+                    MainMetric.officer_id == SupervisionOfficer.external_id,
+                )
+                .outerjoin(
+                    NumeratorMetric,
+                    and_(
+                        NumeratorMetric.officer_id == MainMetric.officer_id,
+                        NumeratorMetric.metric_id
+                        == (MainMetric.metric_id + "_numerator"),
+                        NumeratorMetric.end_date == MainMetric.end_date,
+                    ),
+                )
+                .outerjoin(
+                    DenominatorMetric,
+                    and_(
+                        DenominatorMetric.officer_id == MainMetric.officer_id,
+                        DenominatorMetric.metric_id
+                        == (MainMetric.metric_id + "_denominator"),
+                        DenominatorMetric.end_date == MainMetric.end_date,
+                    ),
                 )
                 .filter(
-                    SupervisionOfficerMetric.metric_id.in_(vitals_metrics_by_metric_id),
+                    MainMetric.metric_id.in_(metric_ids),
                     (
                         SupervisionOfficer.pseudonymized_id.in_(
                             supervision_officer_pseudonymized_ids
@@ -1195,8 +1213,10 @@ class OutliersQuerier:
                         filtered_officers_and_metrics.c.metric_value
                         - filtered_officers_and_metrics.c.previous_metric_value,
                         0,
-                    ).label("metric_30d_delta")
-                ),
+                    )
+                ).label("metric_30d_delta"),
+                filtered_officers_and_metrics.c.metric_numerator,
+                filtered_officers_and_metrics.c.metric_denominator,
             ).filter(
                 filtered_officers_and_metrics.c.metric_value.isnot(None),
                 case(
@@ -1214,22 +1234,18 @@ class OutliersQuerier:
                 ),
             )
 
-            for (
-                pseudonymized_id,
-                metric_id,
-                metric_value,
-                end_date,
-                previous_end_date,
-                metric_30d_delta,
-            ) in vitals_metrics_for_officers_query:
-                vitals_metrics_by_metric_id[metric_id].add_officer_vitals_entity(
-                    pseudonymized_id,
-                    metric_value,
-                    metric_30d_delta,
-                    end_date,
-                    previous_end_date,
-                )
+            results = vitals_metrics_for_officers_query.all()
 
+            for row in results:
+                vitals_metrics_by_metric_id[row.metric_id].add_officer_vitals_entity(
+                    row.pseudonymized_id,
+                    row.metric_value,
+                    row.metric_30d_delta,
+                    row.end_date,
+                    row.previous_end_date,
+                    row.metric_numerator,
+                    row.metric_denominator,
+                )
         return sorted(vitals_metrics_by_metric_id.values())
 
     def get_vitals_metrics_for_supervision_officer(

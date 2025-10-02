@@ -17,6 +17,7 @@
 """Outliers-related constants"""
 
 import recidiviz.aggregated_metrics.models.aggregated_metric_configurations as metric_config
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.outliers.types import (
     MetricOutcome,
     OutliersClientEvent,
@@ -129,21 +130,33 @@ TIMELY_RISK_ASSESSMENT = OutliersVitalsMetricConfig(
     metric_id="timely_risk_assessment",
     title_display_name="Timely Risk Assessment",
     body_display_name="Assessment",
+    numerator_query_fragment=f"{metric_config.AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED.name} - {metric_config.AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE.name}",
+    denominator_query_fragment=metric_config.AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED.name,
+    metric_time_period=MetricTimePeriod.DAY,
 )
 TIMELY_CONTACT = OutliersVitalsMetricConfig(
     metric_id="timely_contact",
     title_display_name="Timely Contact",
     body_display_name="Contact",
+    numerator_query_fragment=f"{metric_config.AVG_DAILY_POPULATION_CONTACT_REQUIRED.name} - {metric_config.AVG_DAILY_POPULATION_CONTACT_OVERDUE.name}",
+    denominator_query_fragment=metric_config.AVG_DAILY_POPULATION_CONTACT_REQUIRED.name,
+    metric_time_period=MetricTimePeriod.DAY,
 )
 TIMELY_F2F_CONTACT = OutliersVitalsMetricConfig(
     metric_id="timely_contact",
     title_display_name="Timely F2F Contact",
     body_display_name="Contact",
+    numerator_query_fragment=f"{metric_config.AVG_DAILY_POPULATION_CONTACT_REQUIRED.name} - {metric_config.AVG_DAILY_POPULATION_CONTACT_OVERDUE.name}",
+    denominator_query_fragment=metric_config.AVG_DAILY_POPULATION_CONTACT_REQUIRED.name,
+    metric_time_period=MetricTimePeriod.DAY,
 )
 TIMELY_CONTACT_DUE_DATE_BASED = OutliersVitalsMetricConfig(
     metric_id="timely_contact_due_date_based",
     title_display_name="Timely Contact",
     body_display_name="Contact",
+    numerator_query_fragment=metric_config.CONTACT_DUE_DATES_MET.name,
+    denominator_query_fragment=metric_config.CONTACT_DUE_DATES.name,
+    metric_time_period=MetricTimePeriod.MONTH,
 )
 
 # Lantern Events

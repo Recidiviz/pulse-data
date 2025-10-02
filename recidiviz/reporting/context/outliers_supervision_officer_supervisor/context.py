@@ -46,6 +46,7 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from jinja2 import Template
 
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -395,11 +396,17 @@ if __name__ == "__main__":
                     metric_id="timely_risk_assessment",
                     title_display_name="Timely Risk Assessment",
                     body_display_name="Assessment",
+                    numerator_query_fragment="avg_population_assessment_required - avg_population_assessment_overdue",
+                    denominator_query_fragment="avg_population_assessment_required",
+                    metric_time_period=MetricTimePeriod.DAY,
                 ),
                 OutliersVitalsMetricConfig(
                     metric_id="timely_contact",
                     title_display_name="Timely Contact",
                     body_display_name="Contact",
+                    numerator_query_fragment="avg_population_contacts_required - avg_population_contacts_overdue",
+                    denominator_query_fragment="avg_population_contacts_required",
+                    metric_time_period=MetricTimePeriod.DAY,
                 ),
             ],
         )

@@ -440,7 +440,10 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name_past_tense="were incarcerated",
             ),
         ],
-        vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_CONTACT_DUE_DATE_BASED],
+        vitals_metrics=[
+            TIMELY_RISK_ASSESSMENT,
+            TIMELY_CONTACT_DUE_DATE_BASED,
+        ],
     ),
     StateCode.US_UT: OutliersBackendConfig(
         metrics=[

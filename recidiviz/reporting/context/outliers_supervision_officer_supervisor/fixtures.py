@@ -18,6 +18,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -134,11 +135,17 @@ def get_config_fixture_for_state(state_code: StateCode) -> OutliersProductConfig
                 metric_id="timely_risk_assessment",
                 title_display_name="Timely Risk Assessment",
                 body_display_name="Assessment",
+                numerator_query_fragment="avg_population_assessment_required - avg_population_assessment_overdue",
+                denominator_query_fragment="avg_population_assessment_required",
+                metric_time_period=MetricTimePeriod.DAY,
             ),
             OutliersVitalsMetricConfig(
                 metric_id="timely_contact",
                 title_display_name="Timely Contact",
                 body_display_name="Contact",
+                numerator_query_fragment="avg_population_contacts_required - avg_population_contacts_overdue",
+                denominator_query_fragment="avg_population_contacts_required",
+                metric_time_period=MetricTimePeriod.DAY,
             ),
         ],
     )

@@ -24,6 +24,7 @@ import attr
 import cattrs
 from cattrs.gen import make_dict_unstructure_fn, override
 
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import EventCountMetric
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
@@ -157,6 +158,17 @@ class OutliersVitalsMetricConfig:
 
     # A shorter display name
     body_display_name: str = attr.ib()
+
+    # Query fragment representing how to calculate the numerator for this metric, using
+    # aggregated metrics
+    numerator_query_fragment: str = attr.ib()
+
+    # Query fragment representing how to calculate the denominator for this metric,
+    # using aggregated metrics
+    denominator_query_fragment: str = attr.ib()
+
+    # Metric time period for which this metric is expected to be calculated
+    metric_time_period: MetricTimePeriod = attr.ib()
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -533,6 +545,8 @@ class SupervisionOfficerVitalsEntity:
     metric_30d_delta: float
     metric_date: str
     previous_metric_date: Optional[str]
+    metric_numerator: float
+    metric_denominator: float
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -555,6 +569,8 @@ class VitalsMetric:
         metric_30d_delta: int,
         end_date: date,
         previous_end_date: date,
+        metric_numerator: float,
+        metric_denominator: float,
     ) -> None:
         """Adds a SupervisionOfficerVitalsEntity to the vitals_metrics list using provided parameters."""
         # Create a new SupervisionOfficerVitalsEntity instance
@@ -564,6 +580,8 @@ class VitalsMetric:
             metric_30d_delta=metric_30d_delta,
             metric_date=str(end_date),
             previous_metric_date=str(previous_end_date) if previous_end_date else None,
+            metric_numerator=metric_numerator,
+            metric_denominator=metric_denominator,
         )
 
         # Directly append to the existing list
