@@ -18,10 +18,10 @@
 import unittest
 
 import apache_beam as beam
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
 from recidiviz.pipelines.utils.beam_utils import bigquery_io_utils
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
 class TestBeamUtils(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestBeamUtils(unittest.TestCase):
             {"key_field": "b", "other_field": "y"},
         ]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -57,7 +57,7 @@ class TestBeamUtils(unittest.TestCase):
             {"key_field": "b", "other_field": "y"},
         ]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         with self.assertRaises(ValueError):
             _ = (

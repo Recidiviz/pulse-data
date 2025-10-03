@@ -18,8 +18,6 @@
 from typing import Any, Callable, Dict, Iterable, List, Tuple
 from unittest.mock import patch
 
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -31,6 +29,7 @@ from recidiviz.pipelines.utils.beam_utils.load_query_results_keyed_by_column imp
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.fake_bigquery import FakeReadFromBigQueryWithEmulator
 
 TransformOutputType = Tuple[int, Dict[str, Any]]
@@ -47,9 +46,7 @@ class TestLoadQueryResultsKeyedByColumn(BigQueryEmulatorTestCase):
         )
         self.read_from_bq_patcher.start()
 
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
     def tearDown(self) -> None:
         super().tearDown()

@@ -19,8 +19,6 @@ import datetime
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.state.state_person import StateGender
@@ -57,6 +55,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.fake_bigquery import FakeWriteToBigQueryEmulator
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
@@ -75,9 +74,7 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
         )
         self.write_to_bq_patcher.start()
 
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
     def tearDown(self) -> None:
         super().tearDown()

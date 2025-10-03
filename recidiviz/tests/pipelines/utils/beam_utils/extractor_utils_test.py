@@ -24,7 +24,6 @@ from unittest.mock import MagicMock
 
 import apache_beam as beam
 import attr
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
@@ -58,6 +57,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 )
 from recidiviz.pipelines.utils.beam_utils import extractor_utils
 from recidiviz.tests.persistence.database import database_test_utils
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -210,7 +210,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(schema_person.state_code),
@@ -378,7 +378,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(entity_person.state_code),
@@ -518,7 +518,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode.US_XX,
@@ -651,7 +651,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(entity_person.state_code),
@@ -798,7 +798,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(entity_person.state_code),
@@ -997,7 +997,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(schema_person.state_code),
@@ -1174,7 +1174,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(entity_person.state_code),
@@ -1237,7 +1237,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode.US_XX,
@@ -1426,7 +1426,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(schema_person.state_code),
@@ -1575,7 +1575,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=StateCode(expected_entity_person.state_code),
@@ -1706,7 +1706,7 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
             ],
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -1769,7 +1769,7 @@ class TestExtractAssociationValues(unittest.TestCase):
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = (
                 test_pipeline
@@ -1843,7 +1843,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
-            test_pipeline = TestPipeline()
+            test_pipeline = create_test_pipeline()
 
             output = (
                 test_pipeline
@@ -1891,7 +1891,7 @@ class TestShallowHydrateEntity(unittest.TestCase):
             entities, "StateSupervisionViolation"
         )
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         # Read entities from data_dict
         entities_raw = (

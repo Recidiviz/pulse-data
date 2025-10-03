@@ -20,8 +20,7 @@ from types import ModuleType
 from typing import Iterable, Optional, Tuple
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from apache_beam.pipeline_test import assert_that, equal_to
 from mock import patch
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
@@ -51,6 +50,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.ingest.constants import DEFAULT_UPDATE_DATETIME
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import read_ingest_view_results_fixture
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.ingest.state.ingest_region_test_mixin import (
     IngestRegionTestMixin,
 )
@@ -63,9 +63,7 @@ class TestMergeIngestViewRootEntityTrees(
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
     @classmethod
     def state_code(cls) -> StateCode:

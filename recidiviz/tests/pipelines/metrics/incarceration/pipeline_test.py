@@ -22,7 +22,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
@@ -87,6 +86,7 @@ from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParam
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.persistence.database import database_test_utils
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -554,7 +554,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         correct_output = [(fake_person, incarceration_events)]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         person_entities = self.load_person_entities_dict(
             person=fake_person,
@@ -593,7 +593,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         person_entities = self.load_person_entities_dict(person=fake_person)
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -674,7 +674,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             "releases": expected_metric_count,
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         inputs = [(fake_person, incarceration_events)]
 
@@ -717,7 +717,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         inputs: list[tuple[NormalizedStatePerson, list[IncarcerationMetric]]] = [
             (fake_person, [])
@@ -750,7 +750,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         """Tests the ProduceIncarcerationMetrics when there is
         no input to the function."""
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline

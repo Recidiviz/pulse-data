@@ -22,7 +22,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 from more_itertools import one
@@ -102,6 +101,7 @@ from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import 
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.persistence.database import database_test_utils
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
 )
@@ -1045,7 +1045,7 @@ class TestClassifyEvents(unittest.TestCase):
 
         correct_output = [(fake_person, expected_events)]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -1136,7 +1136,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_COMPLIANCE.value: expected_compliance_metric_count,
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         inputs = [(fake_person, supervision_time_events)]
 
@@ -1179,7 +1179,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             (fake_person, [])
         ]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -1204,7 +1204,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         """Tests the ProduceSupervisionMetrics when there is
         no input to the function."""
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline

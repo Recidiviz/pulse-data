@@ -16,8 +16,7 @@
 # =============================================================================
 """Tests the SerializeEntities DoFn."""
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that
+from apache_beam.pipeline_test import assert_that
 from apache_beam.testing.util import is_not_empty
 
 from recidiviz.common.constants.states import StateCode
@@ -39,6 +38,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
 class TestSerializeEntities(BigQueryEmulatorTestCase):
@@ -46,9 +46,7 @@ class TestSerializeEntities(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
     def test_serialize_state_entities(self) -> None:
         root_entities = [

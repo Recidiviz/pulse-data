@@ -18,8 +18,7 @@
 import datetime
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
@@ -37,6 +36,7 @@ from recidiviz.pipelines.ingest.state.create_root_entity_id_to_staff_id_mapping 
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 STATE_STAFF_1 = StateStaff(
     staff_id=123,
@@ -176,9 +176,7 @@ class TestCreateRootEntityIdToStaffIdMapping(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
     def test_create_root_entity_id_to_staff_id_mapping_empty(self) -> None:
         input_state_persons = (

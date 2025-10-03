@@ -18,8 +18,7 @@
 from datetime import datetime
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
@@ -34,6 +33,7 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
 class TestAssociateRootEntitiesWithPrimaryKeys(BigQueryEmulatorTestCase):
@@ -41,9 +41,7 @@ class TestAssociateRootEntitiesWithPrimaryKeys(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
         self.ingest_view_1 = "ingest_view_1"
         self.ingest_view_2 = "ingest_view_2"

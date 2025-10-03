@@ -19,8 +19,7 @@ from datetime import date, datetime
 
 import apache_beam as beam
 import attr
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that
+from apache_beam.pipeline_test import assert_that
 from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.states import StateCode
@@ -33,6 +32,7 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
 class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
@@ -40,9 +40,7 @@ class TestMergeRootEntitiesAcrossDates(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
     def test_merge_root_entities_across_dates(self) -> None:
         date_1 = datetime(2020, 1, 1).timestamp()

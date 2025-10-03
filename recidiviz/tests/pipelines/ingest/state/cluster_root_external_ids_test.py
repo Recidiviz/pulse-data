@@ -18,13 +18,13 @@
 from itertools import permutations
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
 class TestClusterExternalIds(BigQueryEmulatorTestCase):
@@ -32,9 +32,7 @@ class TestClusterExternalIds(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
 
         self.external_id_1 = ("ID1", "TYPE_1")
         self.external_id_2 = ("ID2", "TYPE_2")

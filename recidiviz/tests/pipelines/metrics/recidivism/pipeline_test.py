@@ -24,7 +24,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
@@ -73,6 +72,7 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -518,7 +518,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ),
         ]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -586,7 +586,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -627,7 +627,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             NormalizedStateIncarcerationPeriod.__name__: [],
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -738,7 +738,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             2014: expected_combinations_count_2014,
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -777,7 +777,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             (fake_person, {})
         ]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -801,7 +801,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
     def testProduceRecidivismMetrics_NoPersonEvents(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline
         when there is no entities.StatePerson and no ReleaseEvents."""
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
         output = (
             test_pipeline
             | beam.Create([])
@@ -830,7 +830,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
         that can be written to BigQuery."""
         metric = MetricGroup.recidivism_metric_with_age
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -849,7 +849,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
         metric = MetricGroup.recidivism_metric_without_dimensions
         metric.created_on = date.today()
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -868,7 +868,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
         metric = MetricGroup.recidivism_metric_without_dimensions
         metric.created_on = None
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline

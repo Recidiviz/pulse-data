@@ -23,7 +23,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -83,6 +82,7 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.identifier_models import Span
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -423,7 +423,7 @@ class TestClassifyResults(unittest.TestCase):
             supervision_periods=[supervision_period],
         )
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -451,7 +451,7 @@ class TestClassifyResults(unittest.TestCase):
             person=self.fake_person,
         )
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -539,7 +539,7 @@ class TestProduceMetrics(unittest.TestCase):
             PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN: 4,
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         inputs = [(fake_person, population_span_events)]
 
@@ -570,7 +570,7 @@ class TestProduceMetrics(unittest.TestCase):
     def test_produce_metrics_no_input(self) -> None:
         """Tests the ProduceMetrics when there is no input to the function."""
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline

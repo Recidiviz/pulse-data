@@ -20,9 +20,7 @@ from unittest.mock import patch
 
 import apache_beam as beam
 import attr
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import assert_that
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
@@ -62,6 +60,7 @@ from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
 class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
@@ -69,9 +68,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
         self.entities_module_context = entities_module_context_for_module(
             state_entities
         )
@@ -1594,9 +1591,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.test_pipeline = create_test_pipeline()
         self.entities_module_context = entities_module_context_for_module(
             normalized_entities
         )

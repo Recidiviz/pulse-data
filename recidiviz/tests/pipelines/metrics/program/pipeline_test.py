@@ -24,7 +24,6 @@ from unittest import mock
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
@@ -73,6 +72,7 @@ from recidiviz.pipelines.metrics.program.metrics import (
 )
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.persistence.database import database_test_utils
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -489,7 +489,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         correct_output = [(fake_person, program_events)]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -575,7 +575,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         correct_output = [(fake_person, program_events)]
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -633,7 +633,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             NormalizedStateSupervisionPeriod.__name__: [supervision_period],
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -693,7 +693,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         assert program_assignment.program_id is not None
         assert program_assignment.referral_date is not None
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline
@@ -762,7 +762,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             "participation": expected_metric_count,
         }
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         inputs = [(fake_person, program_events)]
 
@@ -801,7 +801,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         inputs: list[tuple[NormalizedStatePerson, list[ProgramParticipationMetric]]] = [
             (fake_person, [])
@@ -830,7 +830,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         """Tests the ProduceProgramMetrics when there is
         no input to the function."""
 
-        test_pipeline = TestPipeline()
+        test_pipeline = create_test_pipeline()
 
         output = (
             test_pipeline

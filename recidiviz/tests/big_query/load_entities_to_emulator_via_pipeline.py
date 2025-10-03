@@ -21,8 +21,6 @@ using (essentially) the same code in our ingest pipelines.
 from unittest.mock import patch
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -43,6 +41,7 @@ from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 from recidiviz.tests.pipelines.fake_bigquery import FakeWriteToBigQueryEmulator
 from recidiviz.utils.types import assert_type
 
@@ -78,12 +77,10 @@ def write_root_entities_to_emulator(
             emulator_tc
         ),
     ):
-        apache_beam_pipeline_options = PipelineOptions()
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         entities_module_context = entities_module_context_for_entity_class(
             root_entity_type
         )
-        pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        pipeline = create_test_pipeline()
         _ = (
             pipeline
             | beam.Create(
