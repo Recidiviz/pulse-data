@@ -15,8 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for testing Apache Beam pipelines."""
+import logging
+
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.testing.test_pipeline import TestPipeline
+
+from recidiviz.utils.environment import in_ci
 
 
 def create_test_pipeline() -> TestPipeline:
@@ -27,10 +31,23 @@ def create_test_pipeline() -> TestPipeline:
 
     Specifically, this sets save_main_session=False to avoid pickling the entire
     global namespace, which can lead to coder registry corruption and flaky tests.
+    Additionally, in CI environments, it also reduces Beam's logging verbosity since
+    the coder registry corruption seems to be triggered most often by debug logging.
 
     Returns:
-        A TestPipeline configured with save_main_session=False
+        A TestPipeline configured with safe defaults
     """
     apache_beam_pipeline_options = PipelineOptions()
     apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
+
+    # We see coder registry corruption ("Not a KV coder: BytesCoder") most often during
+    # debug logging.
+    if in_ci():
+        logging.getLogger("apache_beam.runners.worker.operations").setLevel(
+            logging.WARNING
+        )
+        logging.getLogger("apache_beam.runners.worker.bundle_processor").setLevel(
+            logging.WARNING
+        )
+
     return TestPipeline(options=apache_beam_pipeline_options)
