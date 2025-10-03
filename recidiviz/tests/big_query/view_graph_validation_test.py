@@ -261,8 +261,6 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         self._verify_views_have_no_unqualified_external_id_columns(
             view_address_to_schema
         )
-        # TODO(#44757): Enforce no views have an ambiguous `external_id` column name
-        #  (with exemptions)
 
     def _schema_has_field(
         self, schema: list[bigquery.SchemaField], field_name: str

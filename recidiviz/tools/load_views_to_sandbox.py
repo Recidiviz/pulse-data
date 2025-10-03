@@ -689,7 +689,8 @@ def summary_for_auto_sandbox(
             textwrap.fill(
                 "This is the set of views on your branch that has changed as compared "
                 "to deployed views, but you've exempted via the "
-                "--changed_datasets_to_include and --changed_datasets_to_ignore flags. "
+                "--changed_datasets_to_include, --changed_datasets_to_ignore, or "
+                "--state_code_filter flags. "
                 "These views will not be loaded unless they are also included in the "
                 "DOWNSTREAM section below (can happen if they are in the dependency "
                 "chain between other changed views and views you want to load).",

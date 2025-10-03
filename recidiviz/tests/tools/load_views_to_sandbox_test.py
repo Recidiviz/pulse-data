@@ -377,12 +377,13 @@ class TestSummaryForAutoSandbox(unittest.TestCase):
 ╞══════════════════════════╪══════════════════════╪════════════════════════════════════════════════════╡
 │ IGNORED view changes     │ <none>               │ This is the set of views on your branch that has   │
 │                          │                      │ changed as compared to deployed views, but you've  │
-│                          │                      │ exempted via the --changed_datasets_to_include and │
-│                          │                      │ --changed_datasets_to_ignore flags. These views    │
-│                          │                      │ will not be loaded unless they are also included   │
-│                          │                      │ in the DOWNSTREAM section below (can happen if     │
-│                          │                      │ they are in the dependency chain between other     │
-│                          │                      │ changed views and views you want to load).         │
+│                          │                      │ exempted via the --changed_datasets_to_include,    │
+│                          │                      │ --changed_datasets_to_ignore, or                   │
+│                          │                      │ --state_code_filter flags. These views will not be │
+│                          │                      │ loaded unless they are also included in the        │
+│                          │                      │ DOWNSTREAM section below (can happen if they are   │
+│                          │                      │ in the dependency chain between other changed      │
+│                          │                      │ views and views you want to load).                 │
 ├──────────────────────────┼──────────────────────┼────────────────────────────────────────────────────┤
 │ ADDED views to load      │ <none>               │ These are the views on your branch that have been  │
 │                          │                      │ added as compared to deployed views and will be    │
@@ -447,12 +448,13 @@ class TestSummaryForAutoSandbox(unittest.TestCase):
 ╞══════════════════════════╪════════════════════════════════╪════════════════════════════════════════════════════╡
 │ IGNORED view changes     │ * dataset_2.my_view            │ This is the set of views on your branch that has   │
 │                          │                                │ changed as compared to deployed views, but you've  │
-│                          │                                │ exempted via the --changed_datasets_to_include and │
-│                          │                                │ --changed_datasets_to_ignore flags. These views    │
-│                          │                                │ will not be loaded unless they are also included   │
-│                          │                                │ in the DOWNSTREAM section below (can happen if     │
-│                          │                                │ they are in the dependency chain between other     │
-│                          │                                │ changed views and views you want to load).         │
+│                          │                                │ exempted via the --changed_datasets_to_include,    │
+│                          │                                │ --changed_datasets_to_ignore, or                   │
+│                          │                                │ --state_code_filter flags. These views will not be │
+│                          │                                │ loaded unless they are also included in the        │
+│                          │                                │ DOWNSTREAM section below (can happen if they are   │
+│                          │                                │ in the dependency chain between other changed      │
+│                          │                                │ views and views you want to load).                 │
 ├──────────────────────────┼────────────────────────────────┼────────────────────────────────────────────────────┤
 │ UPDATED source tables    │ * source_table_dataset.table_1 │ This is the set of overridden source tables to     │
 │  to read from            │ * source_table_dataset.table_2 │ read from as specified by the                      │
