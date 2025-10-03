@@ -79,7 +79,7 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
             ],
             allowed_duplicate_reasons_keys=[
                 "frequency",
-                "frequency_in_months",
+                "frequency_date_part",
                 "type_of_contact",
                 "contact_type",
                 "contact_cadence",
@@ -95,6 +95,7 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
             ],
             allowed_duplicate_reasons_keys=[
                 "frequency",
+                "frequency_date_part",
                 "type_of_contact",
                 "officer_in_critically_understaffed_location",
             ],
@@ -104,6 +105,7 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
     ],
     allowed_duplicate_reasons_keys=[
         "frequency",
+        "frequency_date_part",
         "type_of_contact",
         "contact_count",
         "contact_due_date",

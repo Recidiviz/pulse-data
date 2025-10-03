@@ -27,7 +27,6 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_intersection_spans,
 )
 from recidiviz.calculator.query.state.views.tasks.state_specific_tasks_criteria_builders import (
@@ -100,7 +99,6 @@ def us_tx_contact_compliance_builder(
             is applicable to the person. If not provided, the default query will
             pull from the `contact_cadence_spans_materialized` table.
     """
-
     return contact_compliance_builder(
         criteria_name=criteria_name,
         description=description,
@@ -134,8 +132,9 @@ def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
     criteria_query = f"""
 WITH has_monthly_home_contact_requirement AS (
     SELECT * FROM `{{project_id}}.tasks_views.us_tx_contact_cadence_spans_materialized`
-    WHERE frequency_in_months = 1
-    AND contact_type = "{contact_type}"
+    WHERE frequency = 1
+        AND frequency_date_part = 'MONTH'
+        AND contact_type = "{contact_type}"
 )
 ,
 -- Generate a monthly date array spanning all of the time over which a person may
@@ -341,114 +340,13 @@ def contact_compliance_builder_type_agnostic(
 
     _QUERY_TEMPLATE = f"""
     WITH
-    -- Create periods of case type and supervision level information. Whenever the client
-    -- has a TC phase, assign the raw text as the case type.
-    person_info AS (
-       SELECT 
-          sp.person_id,
-          start_date,
-          termination_date AS end_date,
-          supervision_level,
-          CASE
-            WHEN case_type = "DRUG_COURT"
-                THEN case_type_raw_text
-            ELSE case_type
-          END AS case_type,
-          sp.state_code,
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` ct
-          USING(supervision_period_id)
-        WHERE sp.state_code = "US_TX"
-            AND supervision_level NOT IN ('IN_CUSTODY', 'WARRANT')
-    ),
-    -- Aggregate above periods by supervision_level and case_type
-    person_info_agg AS (
-        {aggregate_adjacent_spans(
-        table_name='person_info',
-        attribute=['supervision_level', 'case_type'],
-        session_id_output_name='person_info_agg',
-        end_date_field_name='end_date'
-    )}
-    ),
     -- Create list of contact types and amounts required, this is only used to add to the 
     -- reasons JSON column at the end so we are able to surface how many contacts are 
     -- required at the start of each contact period.
-    contact_required AS (
-      SELECT
-            *,
-            TO_JSON(STRUCT(
-              IF(CAST(SCHEDULED_HOME_REQ AS INT64) != 0, SCHEDULED_HOME_REQ, NULL) AS scheduled_home_due,
-              IF(CAST(SCHEDULED_FIELD_REQ AS INT64) != 0, SCHEDULED_FIELD_REQ, NULL) AS scheduled_field_due,
-              IF(CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0, UNSCHEDULED_FIELD_REQ, NULL) AS unscheduled_field_due,
-              IF(CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0, UNSCHEDULED_HOME_REQ, NULL) AS unscheduled_home_due,
-              IF(CAST(SCHEDULED_VIRTUAL_OFFICE_REQ AS INT64) != 0, SCHEDULED_VIRTUAL_OFFICE_REQ, NULL) AS scheduled_virtual_office_due,
-              IF(CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0, SCHEDULED_OFFICE_REQ, NULL) AS scheduled_office_due
-            )) AS types_and_amounts_due
-        FROM `{{project_id}}.static_reference_data_views.us_tx_contact_standards_type_agnostic_materialized`
-{where_clause}
-    ),
+
     -- Creates table of all contacts and adds scheduled/unscheduled prefix
     contact_info AS (
         {get_contact_info_for_compliance_builder()}
-    ),
-    -- Creates a record of what contact types can be accepted for a given supervision period
-    -- and calculates how long the person has been in supervision, and thus how many contact
-    -- periods should have occured. 
-    person_info_with_contact_types_accepted AS (
-        SELECT 
-            pia.supervision_level,
-            pia.case_type,
-            pia.person_id,
-            cca.contact_types_accepted,
-            pia.start_date,
-            pia.end_date,
-            DATE_TRUNC(start_date, MONTH) AS level_type_start_month,
-            CAST(frequency_in_months AS INT64) AS frequency_in_months,
-            DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1 AS total_months,
-            FLOOR ((DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1)/CAST(cca.frequency_in_months AS INT64)) as num_periods 
-        FROM person_info_agg pia
-        LEFT JOIN contact_required cca
-            ON cca.supervision_level = pia.supervision_level 
-            AND  cca.case_type = pia.case_type
-        -- Check to see if this supervision level and case type has any agnostic contacts
-        WHERE cca.frequency_in_months IS NOT NULL
-    ),
-    -- There are times where a client has two supervision levels or case types within 
-    -- a single month. In order to not have multiple contact cadences, we choose the contact
-    -- cadence that is associated with the most recent supervision level / case type in a 
-    -- month. 
-    single_contacts_compliance AS (
-        SELECT
-            *
-        FROM person_info_with_contact_types_accepted
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, level_type_start_month, contact_types_accepted ORDER BY start_date DESC) = 1
-    ),
-    -- Creates sets of empty periods that are the duration of the contact frequency
-    empty_periods AS (
-        Select 
-            person_id,
-            contact_types_accepted,
-            supervision_level,
-            case_type,
-            start_date as level_type_start_date,
-            end_date as level_type_end_date,
-            frequency_in_months,
-            -- For each span, calculate the starting month and ending month
-            level_type_start_month + INTERVAL period_index * frequency_in_months MONTH AS contact_period_start,
-            -- Calculate the end of the span (last day of the month)
-            level_type_start_month + INTERVAL (period_index + 1) * frequency_in_months MONTH AS contact_period_end_exclusive
-        from single_contacts_compliance,
-        UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS period_index
-    ),
-    -- There are times where periods are created in advance for a former contact cadence
-    -- we want to remove these periods so that only periods with the appropriate cadence
-    -- are kept in a given time. 
-    clean_empty_periods AS 
-    (
-        SELECT
-            *
-        FROM empty_periods
-        WHERE level_type_end_date IS NULL OR contact_period_end_exclusive < level_type_end_date
     ),
     -- Looks back to connect contacts to a given contact period they were completed in
     lookback_cte AS
@@ -456,19 +354,22 @@ def contact_compliance_builder_type_agnostic(
      SELECT
             p.person_id,
             p.case_type,
-            p.frequency_in_months,
+            p.frequency,
+            p.frequency_date_part,
             p.contact_types_accepted,
             p.supervision_level,
             ci.contact_date,
             CAST(contact_period_start AS DATE) AS contact_period_start,
-            CAST(contact_period_end_exclusive AS DATE) AS contact_period_end_exclusive,
+            CAST(p.contact_period_end AS DATE) AS contact_period_end,
+            DATE_ADD(CAST(p.contact_period_end AS DATE), INTERVAL 1 DAY) as contact_period_end_exclusive,
             ci.contact_type,
-        FROM clean_empty_periods p
+        FROM `{{project_id}}.tasks_views.us_tx_contact_cadence_spans_type_agnostic_materialized` p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
             AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
             AND ci.contact_date >= p.contact_period_start
-            AND ci.contact_date < p.contact_period_end_exclusive
+            AND ci.contact_date < DATE_ADD(CAST(p.contact_period_end AS DATE), INTERVAL 1 DAY)
+    {where_clause}
     ),
     -- Union all critical dates (start date, end date, contact dates)
     critical_dates as (
@@ -479,8 +380,9 @@ def contact_compliance_builder_type_agnostic(
             contact_period_end_exclusive,
             contact_period_start as critical_date,
             case_type,
-            frequency_in_months,
             supervision_level,
+            frequency,
+            frequency_date_part,
         FROM lookback_cte
         UNION DISTINCT 
         SELECT 
@@ -490,8 +392,9 @@ def contact_compliance_builder_type_agnostic(
             contact_period_end_exclusive,
             contact_period_end_exclusive as critical_date,
             case_type,
-            frequency_in_months,
             supervision_level,
+            frequency,
+            frequency_date_part,
         FROM lookback_cte
         UNION DISTINCT
         SELECT 
@@ -501,8 +404,9 @@ def contact_compliance_builder_type_agnostic(
             contact_period_end_exclusive,
             contact_date as critical_date,
             case_type,
-            frequency_in_months,
             supervision_level,
+            frequency,
+            frequency_date_part,
         FROM lookback_cte
         WHERE contact_date IS NOT NULL
     ), 
@@ -516,8 +420,9 @@ def contact_compliance_builder_type_agnostic(
             critical_date as period_start,
             LEAD (critical_date) OVER(PARTITION BY contact_period_start,person_id ORDER BY critical_date) AS period_end,
             case_type,
-            frequency_in_months,
             supervision_level,
+            frequency,
+            frequency_date_part,
         FROM critical_dates
     ),
     -- Divided periods with the associated contacts connected
@@ -530,9 +435,10 @@ def contact_compliance_builder_type_agnostic(
             ci.contact_type,
             contact_period_end_exclusive,
             case_type,
-            frequency_in_months,
             supervision_level,
             contact_types_accepted,
+            frequency,
+            frequency_date_part,
         FROM divided_periods p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
@@ -552,6 +458,19 @@ def contact_compliance_builder_type_agnostic(
             SUM (case when contact_type = "SCHEDULED VIRTUAL OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as scheduled_virtual_office_count,
             SUM (case when contact_type = "UNSCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, contact_period_start ORDER BY period_start asc) as unscheduled_field_count,
         FROM divided_periods_with_contacts
+    ),
+    types_and_amounts_due_cte AS (
+      SELECT
+            * EXCEPT(frequency, frequency_date_part),
+            TO_JSON(STRUCT(
+              IF(CAST(SCHEDULED_HOME_REQ AS INT64) != 0, SCHEDULED_HOME_REQ, NULL) AS scheduled_home_due,
+              IF(CAST(SCHEDULED_FIELD_REQ AS INT64) != 0, SCHEDULED_FIELD_REQ, NULL) AS scheduled_field_due,
+              IF(CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0, UNSCHEDULED_FIELD_REQ, NULL) AS unscheduled_field_due,
+              IF(CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0, UNSCHEDULED_HOME_REQ, NULL) AS unscheduled_home_due,
+              IF(CAST(SCHEDULED_VIRTUAL_OFFICE_REQ AS INT64) != 0, SCHEDULED_VIRTUAL_OFFICE_REQ, NULL) AS scheduled_virtual_office_due,
+              IF(CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0, SCHEDULED_OFFICE_REQ, NULL) AS scheduled_office_due
+            )) AS types_and_amounts_due
+        FROM `{{project_id}}.static_reference_data_views.us_tx_contact_standards_type_agnostic_materialized`
     ),
     -- Check for compliance based on contact standards for that given supervision level and case type
     compliance_check AS (
@@ -588,7 +507,7 @@ def contact_compliance_builder_type_agnostic(
                 scheduled_office_count AS scheduled_office_done
             )) AS types_and_amounts_done,
             types_and_amounts_due,
-            contact_required.contact_types_accepted,
+            contact_types_accepted,
             CASE 
                 WHEN period_start = contact_period_start
                     THEN "START"
@@ -598,20 +517,20 @@ def contact_compliance_builder_type_agnostic(
                  "CONTACT"
             END AS period_type,
             CASE 
-                WHEN cc.frequency_in_months = 1 
-                    THEN "1 MONTH"
-                ELSE
-                    CONCAT(cc.frequency_in_months, " MONTHS") 
-            END AS frequency,
-            CASE 
-                WHEN cc.frequency_in_months = 1
+                WHEN frequency = 1 AND frequency_date_part = "MONTH"
                     THEN "EVERY MONTH"
+                WHEN frequency = 1 AND frequency_date_part = "WEEK"
+                    THEN "EVERY WEEK"
+                WHEN frequency = 1 AND frequency_date_part = "DAY"
+                    THEN "EVERY DAY"
                 ELSE
-                    CONCAT("EVERY ", cc.frequency_in_months, " MONTHS") 
-            END AS contact_cadence
+                    CONCAT("EVERY ", frequency, " ", frequency_date_part, "S") 
+            END AS contact_cadence,
+            frequency,
+            frequency_date_part
         FROM contact_count cc
-        LEFT JOIN contact_required
-            USING (supervision_level, case_type)
+        LEFT JOIN types_and_amounts_due_cte
+            USING (supervision_level, case_type, contact_types_accepted)
 
     ),
     -- Finalize periods
@@ -634,6 +553,7 @@ def contact_compliance_builder_type_agnostic(
                 ELSE FALSE
             END AS overdue_flag,
             frequency,
+            frequency_date_part,
             contact_cadence,
             supervision_level,
             case_type
@@ -702,7 +622,12 @@ def contact_compliance_builder_type_agnostic(
             ReasonsField(
                 name="frequency",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Contact cadence.",
+                description="Frequency of contact requirement, paired with frequency_date_part. Backwards compatible for TX.",
+            ),
+            ReasonsField(
+                name="frequency_date_part",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Date part for frequency contact requirement. Backwards compatible for TX.",
             ),
             ReasonsField(
                 name="contact_types_accepted",
