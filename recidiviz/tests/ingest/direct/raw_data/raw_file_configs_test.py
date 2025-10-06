@@ -1742,6 +1742,12 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     is_pii=False,
                     description="column 3 description",
                     known_values=None,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.ADDITION,
+                            update_datetime=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                        )
+                    ],
                 ),
             ],
             config_3.current_columns,

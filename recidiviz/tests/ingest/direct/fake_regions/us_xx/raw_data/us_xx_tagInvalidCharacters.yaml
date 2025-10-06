@@ -3,8 +3,8 @@ file_tag: tagInvalidCharacters
 file_description: |-
   tagInvalidCharacters file description
 data_classification: source
-primary_key_cols:
-  - COL_1
+primary_key_cols: []
+no_valid_primary_keys: True
 columns:
   - name: COL_1
     description: |-

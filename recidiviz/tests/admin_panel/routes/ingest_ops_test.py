@@ -408,7 +408,7 @@ class IngestOpsEndpointTests(TestCase):
             DirectIngestRegionRawFileConfig(
                 region_code=StateCode.US_XX.value,
                 region_module=fake_regions,
-            ).raw_file_configs["tagBasicData"]
+            ).raw_file_configs["file_tag_first"]
         )
         # Act
         response = self.client.get(
@@ -420,13 +420,13 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(
             response.json,
             {
-                "encoding": "UTF-8",
+                "encoding": "ISO-456-7",
                 "exportLookbackWindow": "Two Week Incremental Lookback",
-                "fileDescription": "tagBasicData file description",
-                "fileTag": "tagBasicData",
+                "fileDescription": "First raw file.",
+                "fileTag": "file_tag_first",
                 "inferColumns": False,
                 "manuallyPruned": False,
-                "lineTerminator": "\n",
+                "lineTerminator": "‡\n",
                 "isChunkedFile": False,
                 "isCodeFile": False,
                 "separator": ",",

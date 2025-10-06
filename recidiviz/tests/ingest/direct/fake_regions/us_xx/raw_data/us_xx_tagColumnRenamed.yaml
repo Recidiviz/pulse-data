@@ -3,8 +3,8 @@ file_tag: tagColumnRenamed
 file_description: |-
   tag testing column renaming and null values list
 data_classification: source
-primary_key_cols: []
-no_valid_primary_keys: True
+primary_key_cols:
+  - COL1
 columns:
   - name: COL1
     description: |-

@@ -15,14 +15,18 @@ columns:
   - name: COL3
     description: |-
       column 3 description
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2024-01-01T00:00:00+00:00
   - name: COL4
     description: |-
       column 4 description
     update_history:
       - update_type: DELETION
-        update_datetime: 2021-01-01T00:00:00+00:00
+        update_datetime: 2019-01-01T00:00:00+00:00
 custom_line_terminator: "\n"
 table_relationships:
   - foreign_table: file_tag_first
     join_logic:
       - file_tag_first.col_name_1a = tagBasicData.COL1
+export_lookback_window: FULL_HISTORICAL_LOOKBACK

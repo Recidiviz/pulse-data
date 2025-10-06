@@ -1,0 +1,3 @@
+COL1,COL2,file_id,update_datetime,is_deleted
+id1,val,1,2018-01-01T00:00:00.000000,false
+id2,val,1,2018-01-01T00:00:00.000000,false
