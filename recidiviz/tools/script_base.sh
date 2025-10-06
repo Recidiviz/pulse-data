@@ -147,7 +147,7 @@ function safe_git_checkout_remote_branch {
     verify_clean_git_status "$LOCAL_REPO_PATH"
 
     echo "Checking out [$BRANCH]"
-    if ! git -C "$LOCAL_REPO_PATH" checkout -t "origin/${BRANCH}"
+    if ! git -C "$LOCAL_REPO_PATH" checkout -t "origin/${BRANCH}" 2>/dev/null
     then
         echo "Branch [$BRANCH] already exists - reusing"
         run_cmd git -C "$LOCAL_REPO_PATH" checkout "${BRANCH}"
@@ -180,13 +180,20 @@ function check_for_tags_at_branch_tip {
     BRANCH=$1
     ALLOW_ALPHA=$2
     LOCAL_REPO_PATH=${3:-$(git rev-parse --show-toplevel)}
-    if [[ "${ALLOW_ALPHA}" == "true" ]]; then
-        TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH}" | grep '^v\d\+\.' | grep -v alpha || echo "") || exit_on_fail
+
+    if git -C "$LOCAL_REPO_PATH" rev-parse --verify --quiet "$BRANCH" >/dev/null; then
+        BRANCH_REF="$BRANCH"
     else
-        TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH}" | grep '^v\d\+\.' || echo "") || exit_on_fail
+        BRANCH_REF="origin/$BRANCH"
     fi
 
-    if [[ -n ${TAGS_AT_TIP_OF_BRANCH} ]]; then
+    if [[ "${ALLOW_ALPHA}" == "true" ]]; then
+        TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH_REF}" | grep '^v\d\+\.' | grep -v alpha || echo "") || exit_on_fail
+    else
+        TAGS_AT_TIP_OF_BRANCH=$(git -C "$LOCAL_REPO_PATH" tag --points-at "${BRANCH_REF}" | grep '^v\d\+\.' || echo "") || exit_on_fail
+    fi
+
+    if [[ -n "${TAGS_AT_TIP_OF_BRANCH}" ]]; then
         echo "Found tags at tip of branch [$BRANCH]:"
         echo "${TAGS_AT_TIP_OF_BRANCH}"
         return 1

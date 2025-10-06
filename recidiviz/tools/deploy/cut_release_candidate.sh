@@ -54,7 +54,7 @@ echo "Checking for existing release tags at tip of [$RELEASE_CANDIDATE_BASE_BRAN
 ALLOW_ALPHA_TAGS=true
 has_recidiviz_data_changes_to_release=$(check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" "${ALLOW_ALPHA_TAGS}")
 has_looker_changes_to_release=$(check_for_tags_at_branch_tip "${RELEASE_CANDIDATE_BASE_BRANCH}" "${ALLOW_ALPHA_TAGS}" "${TEMP_LOOKER_DIR}")
-if [[ ${has_recidiviz_data_changes_to_release} -eq 1 && ${has_looker_changes_to_release} -eq 1 ]]; then
+if [[ -n "${has_recidiviz_data_changes_to_release}" && -n "${has_looker_changes_to_release}" ]]; then
         echo_error "The tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH] is already tagged for both Recidiviz/pulse-data and Recidiviz/looker repos - exiting."
         echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
         echo_error "deploy for this version, run \`git push --delete origin <tag name>\` to delete the old tag from"
@@ -135,6 +135,8 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
 
     echo "Pushing new release branch [$NEW_RELEASE_BRANCH] to remote"
     run_cmd git push --set-upstream origin "${NEW_RELEASE_BRANCH}"
+
+    script_prompt "Have you completed all Post-Deploy tasks for this release candidate staging version in https://go/platform-deploy-log?"
 fi
 
 duration=$SECONDS

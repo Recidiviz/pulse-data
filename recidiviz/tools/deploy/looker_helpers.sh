@@ -125,7 +125,8 @@ function create_looker_release_branch {
 
   # Verify no unexpected changes (only allow modified dashboards/manifest, deleted/added model files)
   local unexpected_changes
-  unexpected_changes=$(git -C "$TEMP_LOOKER_DIR" diff --name-status | grep -v "^M\s\+manifest\.lkml$" | grep -v "^M\s\+dashboards/" | grep -v "^[DA]\s\+models/.*\.model\.lkml$") || exit_on_fail
+  unexpected_changes=$(git -C "$TEMP_LOOKER_DIR" diff --name-status \
+    | grep -vE "^M\s+manifest\.lkml$|^M\s+dashboards/|^[DA]\s+models/.*\.model\.lkml$") 
 
   if [[ -n "$unexpected_changes" ]]; then
       echo "ERROR: Unexpected changes detected when cutting Recidiviz/looker release branch:"

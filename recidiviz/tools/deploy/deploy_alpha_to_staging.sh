@@ -48,4 +48,6 @@ run_cmd git push --set-upstream origin "${NEW_ALPHA_DEPLOY_BRANCH}"
 echo "Returning to main"
 run_cmd safe_git_checkout_remote_branch main
 
+script_prompt "Have you completed all Post-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+
 echo "Alpha staging deploy complete."
