@@ -33,6 +33,7 @@ snapshots[
 ] = [
     {
         "callToAction": "do something",
+        "caseNotesTitle": "Case notes title",
         "compareBy": [
             {
                 "field": "eligibilityDate",
@@ -77,6 +78,7 @@ snapshots[
         "revisionDescription": "for testing",
         "sidebarComponents": ["someComponent"],
         "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
+        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
         "stagingId": None,
         "stateCode": "US_ID",
         "status": "ACTIVE",
@@ -90,17 +92,17 @@ snapshots[
         ],
         "subheading": "this is what the policy does",
         "submittedTabTitle": "Submitted",
+        "supportsIneligible": False,
         "supportsSubmitted": True,
         "tabGroups": [],
         "tabPrefaceCopy": [{"tab": "Pending", "text": "Pending people"}],
         "tooltipEligibilityText": "Eligible",
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
-        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
-        "caseNotesTitle": "Case notes title",
     },
     {
         "callToAction": "do something",
+        "caseNotesTitle": "Case notes title",
         "compareBy": [
             {
                 "field": "eligibilityDate",
@@ -145,6 +147,7 @@ snapshots[
         "revisionDescription": "for testing",
         "sidebarComponents": ["someComponent"],
         "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
+        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
         "stagingId": None,
         "stateCode": "US_ID",
         "status": "INACTIVE",
@@ -158,17 +161,17 @@ snapshots[
         ],
         "subheading": "this is what the policy does",
         "submittedTabTitle": "Submitted",
+        "supportsIneligible": False,
         "supportsSubmitted": True,
         "tabGroups": [],
         "tabPrefaceCopy": [{"tab": "Pending", "text": "Pending people"}],
         "tooltipEligibilityText": "Eligible",
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
-        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
-        "caseNotesTitle": "Case notes title",
     },
     {
         "callToAction": "do something",
+        "caseNotesTitle": "Case notes title",
         "compareBy": [
             {
                 "field": "eligibilityDate",
@@ -213,6 +216,7 @@ snapshots[
         "revisionDescription": "for testing",
         "sidebarComponents": ["someComponent"],
         "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
+        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
         "stagingId": None,
         "stateCode": "US_ID",
         "status": "ACTIVE",
@@ -226,13 +230,12 @@ snapshots[
         ],
         "subheading": "this is what the policy does",
         "submittedTabTitle": "Submitted",
+        "supportsIneligible": False,
         "supportsSubmitted": True,
         "tabGroups": [],
         "tabPrefaceCopy": [{"tab": "Pending", "text": "Pending people"}],
         "tooltipEligibilityText": "Eligible",
         "variantDescription": "A config",
         "zeroGrantsTooltip": "example tooltip",
-        "snoozeCompanionOpportunityTypes": ["usNdOppType1", "usNdOppType2"],
-        "caseNotesTitle": "Case notes title",
     },
 ]

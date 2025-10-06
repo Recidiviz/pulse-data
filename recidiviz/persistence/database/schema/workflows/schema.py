@@ -175,6 +175,9 @@ class OpportunityConfiguration(WorkflowsBase):
     # Does this opportunity support submitted/in-progress/pending status?
     supports_submitted = Column(Boolean, nullable=False, server_default="true")
 
+    # Whether to include ineligible opportunities in the opportunity view
+    supports_ineligible = Column(Boolean, nullable=False, server_default="false")
+
     # Text for the tab of submitted/in-progress/pending opportunities
     submitted_tab_title = Column(String, nullable=True)
 

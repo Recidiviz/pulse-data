@@ -258,6 +258,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     denial_adjective = fields.Str(required=False)
     denial_noun = fields.Str(required=False)
     supports_submitted = fields.Bool()
+    supports_ineligible = fields.Bool()
     submitted_tab_title = fields.Str(required=False)
     empty_tab_copy = fields.List(fields.Nested(TabTextSchema))
     tab_preface_copy = fields.List(fields.Nested(TabTextSchema))

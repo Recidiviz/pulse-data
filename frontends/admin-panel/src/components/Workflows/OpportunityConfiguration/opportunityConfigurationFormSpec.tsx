@@ -88,6 +88,10 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         label: "Supports Submitted status?",
         Edit: Checkbox,
       },
+      supportsIneligible: {
+        label: `Include ineligible opportunities on the Client/Resident Profile page?`,
+        Edit: Checkbox,
+      },
     },
   },
   {

@@ -141,6 +141,7 @@ export const babyOpportunityConfigurationSchema = z
     denialAdjective: nullishAsUndefined(z.string()),
     denialNoun: nullishAsUndefined(z.string()),
 
+    supportsIneligible: z.boolean().default(false),
     supportsSubmitted: z.boolean().default(false),
     submittedTabTitle: nullishAsUndefined(z.string()),
 
@@ -160,7 +161,6 @@ export const babyOpportunityConfigurationSchema = z
     overdueOpportunityCalloutCopy: nullishAsUndefined(z.string()),
 
     snoozeCompanionOpportunityTypes: z.array(z.string()).default([]),
-
     caseNotesTitle: nullishAsUndefined(z.string()),
   })
   .strict();

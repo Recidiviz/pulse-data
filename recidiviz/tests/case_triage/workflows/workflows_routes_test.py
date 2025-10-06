@@ -1869,6 +1869,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             denial_adjective="Ineligible",
             denial_noun="Ineligibility",
             supports_submitted=True,
+            supports_ineligible=False,
             submitted_tab_title="Submitted",
             empty_tab_copy=[],
             tab_preface_copy=[],

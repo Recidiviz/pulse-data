@@ -90,6 +90,7 @@ class OpportunityConfig:
     compare_by: Optional[List[Any]] = attr.ib()
     notifications: List[Any] = attr.ib()
     zero_grants_tooltip: Optional[str] = attr.ib()
+    supports_ineligible: bool = attr.ib()
 
     denied_tab_title: Optional[str] = attr.ib()
     denial_adjective: Optional[str] = attr.ib()

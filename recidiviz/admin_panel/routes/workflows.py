@@ -203,6 +203,7 @@ class OpportunityConfigurationsAPI(MethodView):
             denial_adjective=body_args.get("denial_adjective"),
             denial_noun=body_args.get("denial_noun"),
             supports_submitted=body_args["supports_submitted"],
+            supports_ineligible=body_args["supports_ineligible"],
             submitted_tab_title=body_args.get("submitted_tab_title"),
             empty_tab_copy=body_args["empty_tab_copy"],
             tab_preface_copy=body_args["tab_preface_copy"],
