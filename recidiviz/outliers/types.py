@@ -250,6 +250,11 @@ class OutliersMetricConfig:
         default=None, validator=attr_validators.is_not_set_along_with("feature_variant")
     )
 
+    # A string representing the SQL condition for including a staff member in outcomes for this
+    # metric. This condition can reference columns in
+    # `aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+    include_in_outcomes_condition: str | None = attr.ib(default=None)
+
     @classmethod
     def build_from_metric(
         cls,
@@ -269,6 +274,7 @@ class OutliersMetricConfig:
         rate_denominator: str = "avg_daily_population",
         feature_variant: str | None = None,
         inverse_feature_variant: str | None = None,
+        include_in_outcomes_condition: str | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
             state_code=state_code,
@@ -288,6 +294,7 @@ class OutliersMetricConfig:
             rate_denominator=rate_denominator,
             feature_variant=feature_variant,
             inverse_feature_variant=inverse_feature_variant,
+            include_in_outcomes_condition=include_in_outcomes_condition,
         )
 
 
@@ -323,10 +330,12 @@ class OutliersBackendConfig:
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
 
-    # A string representing the criteria for including a staff member in outcomes. This criteria can
-    # reference columns in `aggregated_metrics.supervision_officer_aggregated_metrics_materialized`,
-    # `outliers_views.supervision_officers_materialized`, and `sessions.supervision_staff_attribute_sessions_materialized`
-    include_in_outcomes_criteria: str = attr.ib(default=None)
+    # A string representing the SQL condition for including a staff member in outcomes. This
+    # condition can reference columns in
+    # `aggregated_metrics.supervision_officer_aggregated_metrics_materialized`,
+    # `outliers_views.supervision_officers_materialized`, and
+    # `sessions.supervision_staff_attribute_sessions_materialized`
+    include_in_outcomes_condition: str = attr.ib(default=None)
 
     # List of metrics that were previously configured. This list is maintained in order
     # to prevent completely omitting a metric from the webtool when metrics are being
@@ -367,7 +376,7 @@ class OutliersBackendConfig:
         unst_hook = make_dict_unstructure_fn(
             OutliersBackendConfig,
             c,
-            include_in_outcomes=override(omit=True),
+            include_in_outcomes_condition=override(omit=True),
         )
         c.register_unstructure_hook(OutliersBackendConfig, unst_hook)
         return c.unstructure(self)
