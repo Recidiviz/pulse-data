@@ -2399,3 +2399,26 @@ def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation
                     f"[{region_code.upper()}][{file_tag}]: Cannot be exempt from DISTINCT_PRIMARY_KEYS pre-import validation "
                     "when automatic raw data pruning is enabled"
                 )
+
+
+# TODO(#47750) Maybe remove supplemental_order_by clause entirely
+def test_automatic_raw_data_pruning_files_do_not_have_supplemental_order_by() -> None:
+    for region_code in get_existing_region_codes():
+        pruning_enabled = False
+        for instance in DirectIngestInstance:
+            pruning_enabled |= (
+                automatic_raw_data_pruning_enabled_for_state_and_instance(
+                    StateCode(region_code.upper()), instance
+                )
+            )
+        if not pruning_enabled:
+            continue
+        region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        for file_tag, config in region_raw_file_config.raw_file_configs.items():
+            if (
+                not config.is_exempt_from_automatic_raw_data_pruning()
+                and config.supplemental_order_by_clause
+            ):
+                raise ValueError(
+                    f"[{region_code.upper()}][{file_tag}]: Cannot have supplemental_order_by_clause when automatic raw data pruning is enabled"
+                )
