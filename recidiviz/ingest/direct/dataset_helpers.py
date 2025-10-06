@@ -28,8 +28,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 
 def get_raw_data_table_and_view_datasets() -> dict[str, StateCode]:
-    """Returns all all datasets for raw data tables (i.e. us_xx_raw_data) and latest
-    views (i.e. us_xx_up_to_date_views) across all states.
+    """Returns all all datasets for raw data tables (i.e. us_xx_raw_data), latest
+    views (i.e. us_xx_up_to_date_views), and raw data views (i.e. us_xx_raw_data_views)
+    across all states.
     """
     raw_datasets: dict[str, StateCode] = {}
     for state_code in get_existing_direct_ingest_states():

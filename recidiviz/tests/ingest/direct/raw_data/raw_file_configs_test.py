@@ -56,6 +56,12 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationType,
 )
+from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
+    RAW_DATA_ALL_VIEW_ID_SUFFIX,
+)
+from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
+    RAW_DATA_LATEST_VIEW_ID_SUFFIX,
+)
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
@@ -2422,3 +2428,19 @@ def test_automatic_raw_data_pruning_files_do_not_have_supplemental_order_by() ->
                 raise ValueError(
                     f"[{region_code.upper()}][{file_tag}]: Cannot have supplemental_order_by_clause when automatic raw data pruning is enabled"
                 )
+
+
+# Add as a unit test instead of a validation in DirectIngestRawFileConfig to avoid circular import
+def test_file_tags_dont_end_with_reserved_suffixes() -> None:
+    RESERVED_FILE_TAG_SUFFIXES = {
+        RAW_DATA_LATEST_VIEW_ID_SUFFIX,
+        RAW_DATA_ALL_VIEW_ID_SUFFIX,
+    }
+    for region_code in get_existing_region_codes():
+        region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        for file_tag in region_raw_file_config.raw_file_tags:
+            for reserved_suffix in RESERVED_FILE_TAG_SUFFIXES:
+                if file_tag.endswith(reserved_suffix):
+                    raise ValueError(
+                        f"[{region_code.upper()}][{file_tag}]: File tag cannot end with reserved suffix '{reserved_suffix}'"
+                    )

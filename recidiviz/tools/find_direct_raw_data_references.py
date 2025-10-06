@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Find views that reference raw data tables/views directly.
-"""
+"""Find views that reference raw data tables/views directly."""
 
 from collections import defaultdict
 from typing import Dict, List, Set
@@ -24,6 +23,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_helpers import get_raw_data_table_and_view_datasets
+from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
+    RAW_DATA_ALL_VIEW_ID_SUFFIX,
+)
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
@@ -75,14 +77,14 @@ def find_direct_raw_data_references(
     raw_datasets = get_raw_data_table_and_view_datasets()
     for view in views:
         for parent_table in view.parent_tables:
-            # We don't count raw data references that are *in* raw data latest views
+            # We don't count raw data references that are *in* raw data datasets
             if view.dataset_id in raw_datasets:
                 continue
 
             if parent_table.dataset_id in raw_datasets:
                 file_tag = parent_table.table_id.removesuffix(
                     RAW_DATA_LATEST_VIEW_ID_SUFFIX
-                )
+                ).removesuffix(RAW_DATA_ALL_VIEW_ID_SUFFIX)
                 state_code = raw_datasets[parent_table.dataset_id]
                 raw_data_references[state_code][file_tag].add(view.address)
     return raw_data_references
