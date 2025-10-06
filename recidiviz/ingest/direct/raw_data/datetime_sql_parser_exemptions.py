@@ -353,12 +353,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         ],
         "IA_DOC_FieldRuleViolations": ["EnteredDt"],
         "IA_DOC_FieldandResidentialRules": ["EndDt", "StartDt"],
-        "IA_DOC_InterventionPrograms": [
-            "EligibilityDt",
-            "InterventionProgramEndDt",
-            "InterventionProgramStartDt",
-            "OrientationDt",
-        ],
         "IA_DOC_Interventions": [
             "EligibilityDt",
             "InterventionEndDt",
