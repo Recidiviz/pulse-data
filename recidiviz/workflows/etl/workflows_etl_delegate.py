@@ -35,8 +35,8 @@ from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
 # Firestore client caps us at 500 records per batch. We've run into transaction size limits with
-# this being set to 499, so it's now set to 400.
-MAX_FIRESTORE_RECORDS_PER_BATCH = 400
+# this being set to 400, so it's now set to 200.
+MAX_FIRESTORE_RECORDS_PER_BATCH = 200
 
 
 class WorkflowsETLDelegate(abc.ABC):
