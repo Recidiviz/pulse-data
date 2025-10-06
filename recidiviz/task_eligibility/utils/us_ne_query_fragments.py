@@ -59,7 +59,7 @@ def us_ne_state_specific_contact_types_query_fragment() -> str:
         JSON_EXTRACT_SCALAR(supervision_contact_metadata, '$.lawEnforcement') AS is_law_enforcement,
         contact_type_raw_text_split
      FROM
-        `{project_id}.{normalized_state_dataset}.state_supervision_contact`,
+        `{project_id}.normalized_state.state_supervision_contact`,
         UNNEST(CASE
                 WHEN contact_type_raw_text LIKE '%/%' AND contact_type_raw_text != 'LE/NCJIS CHECK' THEN SPLIT(contact_type_raw_text, '/')
                 ELSE [contact_type_raw_text]

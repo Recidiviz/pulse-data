@@ -62,7 +62,7 @@ def get_contact_info_for_compliance_builder() -> str:
                 CONCAT("SCHEDULED " || contact_method_raw_text)
         END AS contact_type,
         external_id as contact_external_id
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
+    FROM `{project_id}.normalized_state.state_supervision_contact` 
     WHERE state_code = "US_TX" AND status = "COMPLETED"
       AND contact_type in ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
 
@@ -73,7 +73,7 @@ def get_contact_info_for_compliance_builder() -> str:
         contact_date,
         "SCHEDULED COLLATERAL" AS contact_type,
         external_id,
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_contact` 
+    FROM `{project_id}.normalized_state.state_supervision_contact` 
     WHERE state_code = "US_TX" AND status = "COMPLETED"
       AND contact_type IN ("COLLATERAL", "BOTH_COLLATERAL_AND_DIRECT")
     """
@@ -587,7 +587,6 @@ def contact_compliance_builder_type_agnostic(
         description=description,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_TX,
-        normalized_state_dataset="us_tx_normalized_state",
         reasons_fields=[
             ReasonsField(
                 name="last_contact_date",
