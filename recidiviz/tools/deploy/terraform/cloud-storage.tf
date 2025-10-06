@@ -444,33 +444,6 @@ module "validation-metadata" {
   name_suffix = "validation-metadata"
 }
 
-# TODO(#49987): Once the dataflow-templates-temporary pipelines have been deployed to 
-# prod and all pipelines are directed to those, delete these pipelines.
-module "dataflow_templates_scratch" {
-  source      = "./modules/cloud-storage-bucket"
-  project_id  = var.project_id
-  name_suffix = "dataflow-templates-scratch"
-
-  location                    = "us"
-  storage_class               = "STANDARD"
-  uniform_bucket_level_access = true
-
-  soft_delete_policy = {
-    retention_duration_seconds = 0
-  }
-
-  lifecycle_rules = [
-    {
-      action = {
-        type = "Delete"
-      }
-      condition = {
-        age = 3
-      }
-    }
-  ]
-}
-
 # A temporary staging area where templates are copied to as part of running templates
 module "dataflow_templates_temporary" {
   source      = "./modules/cloud-storage-bucket"
@@ -616,11 +589,4 @@ module "airflow-kubernetes-pod-operator-outputs" {
       }
     },
   ]
-}
-
-# TODO(#49987): Once the dataflow-templates-temporary pipelines have been deployed to 
-# prod and all pipelines are directed to those, delete this block.
-moved {
-  from = google_storage_bucket.dataflow-templates-scratch
-  to   = module.dataflow_templates_scratch.google_storage_bucket.bucket
 }
