@@ -27,8 +27,8 @@ import logging
 import sys
 
 from recidiviz.tools.looker.constants import GENERATED_SUBDIR_NAME
-from recidiviz.tools.looker.looker_git_manager import LookerGitManager
 from recidiviz.tools.looker.script_helpers import (
+    get_git_manager_for_temp_looker_repo,
     hash_directory,
     hash_recidiviz_data_generated_lookml_directory,
 )
@@ -37,13 +37,10 @@ from recidiviz.tools.utils.script_helpers import run_command
 
 def hash_looker_repo_generated_dir(branch_name: str, github_token: str) -> str:
     """Hash the generated LookML directory in the remote Looker repository."""
-    looker_git_manager = LookerGitManager(
-        looker_branch_name=branch_name, github_token=github_token
-    )
-    looker_git_manager.clone_and_checkout_branch()
-    return hash_directory(
-        path=looker_git_manager.looker_repo_root / GENERATED_SUBDIR_NAME
-    )
+    git_manager = get_git_manager_for_temp_looker_repo(github_token=github_token)
+    git_manager.checkout_branch(branch_name)
+
+    return hash_directory(path=git_manager.repo_root / GENERATED_SUBDIR_NAME)
 
 
 def _parse_args() -> argparse.Namespace:

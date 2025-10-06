@@ -20,6 +20,8 @@ import os
 from pathlib import Path
 
 from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH, VIEWS_DIR
+from recidiviz.tools.utils.git_manager import GitManager
+from recidiviz.utils.github import LOOKER_REPO_NAME
 
 
 def hash_directory(path: Path) -> str:
@@ -79,3 +81,12 @@ def get_generated_views_path(output_dir: str, module_name: str) -> str:
     "module" is a loose term and can be any string that represents a logical grouping.
     """
     return os.path.join(output_dir, VIEWS_DIR, module_name)
+
+
+def get_git_manager_for_temp_looker_repo(github_token: str) -> GitManager:
+    """Factory method to create a GitManager instance for a temporary Looker repository."""
+    return GitManager.clone_repo_and_create_manager(
+        repo_root=Path("__TEMP_LOOKER_REPO_DIR__").resolve(),
+        repo_name=LOOKER_REPO_NAME,
+        github_token=github_token,
+    )
