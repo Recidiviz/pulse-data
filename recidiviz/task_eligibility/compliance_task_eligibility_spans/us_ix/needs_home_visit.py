@@ -21,7 +21,7 @@ need a home visit (i.e. are not compliant with scheduled home visits)
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    parole_active_supervision_including_null_supervision_level_population,
+    probation_parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -40,7 +40,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_home_visit",
-    candidate_population_view_builder=parole_active_supervision_including_null_supervision_level_population.VIEW_BUILDER,
+    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
