@@ -122,6 +122,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "case_triage",
     "census_managed_views",
     "compliance_task_eligibility_spans",
+    "compliance_task_eligibility_spans_us_ix",
     "compliance_task_eligibility_spans_us_ne",
     "compliance_task_eligibility_spans_us_tx",
     "covid_public_data",

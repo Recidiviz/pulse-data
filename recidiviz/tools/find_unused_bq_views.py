@@ -141,9 +141,6 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.tasks.us_ix.us_ix_contact_cadence_spans import (
-    US_IX_CONTACT_CADENCE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -440,20 +437,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_supervision_locations"
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_ix_contact_standards"
-    ): "This is currently unused but it will be used once our tasks migration to TES is completed (Hugo Salas, 9/26/2025)",
-    US_IX_CONTACT_CADENCE_SPANS_VIEW_BUILDER.address: (
-        "This will be used once our tasks migration to TES is completed (Hugo Salas, 9/26/2025)"
-    ),
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_ix",
-        table_id="needs_face_to_face_contact",
-    ): "Will be referenced by IX tasks record (Hugo Salas, 9/30/2025)",
-    BigQueryAddress(
-        dataset_id="task_eligibility_criteria_us_ix",
-        table_id="needs_home_visit",
-    ): "Will be referenced by IX tasks record (Hugo Salas, 9/30/2025)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
