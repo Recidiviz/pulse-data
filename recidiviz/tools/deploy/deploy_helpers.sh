@@ -311,7 +311,7 @@ function verify_can_deploy {
     fi
 
     echo "Checking Github status checks for commit"
-    python -m recidiviz.tools.deploy.verify_github_check_statuses \
+    run_cmd python -m recidiviz.tools.deploy.verify_github_check_statuses \
       --project_id "${PROJECT_ID}" \
       --commit_ref "${COMMIT_HASH}" \
       --prompt
