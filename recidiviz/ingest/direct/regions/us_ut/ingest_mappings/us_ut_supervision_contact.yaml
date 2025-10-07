@@ -134,6 +134,7 @@ output:
                   - "TRC CLASS REMOVAL"
                   - "TRC TREATMENT REVIEW"
                   - "VIVITROL SCREEN DENY"
+                  - "CCC MENTOR"
           location:
             $enum_mapping:
               $raw_text: cntc_loc_desc
@@ -280,6 +281,7 @@ output:
                   - "TRC CLASS REMOVAL"
                   - "TRC TREATMENT REVIEW"
                   - "VIVITROL SCREEN DENY"
+                  - "CCC MENTOR"
           status:
             $enum_mapping:
               $raw_text: cntc_rslt_desc
