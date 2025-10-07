@@ -2390,6 +2390,11 @@ class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
     sentence_group_lengths = relationship(
         "StateSentenceGroupLength", backref="sentence_group", lazy="selectin"
     )
+    sentence_group_metadata = Column(
+        String(255),
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular sentence group.",
+    )
 
 
 class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):

@@ -730,6 +730,7 @@
     type: looker_grid
     fields: [normalized_state_sentence_group.external_id,
       normalized_state_sentence_group.sentence_group_id,
+      normalized_state_sentence_group.sentence_group_metadata,
       normalized_state_sentence_group.sentence_inferred_group_id,
       normalized_state_sentence_group.state_code]
     sorts: []

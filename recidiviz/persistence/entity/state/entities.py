@@ -3871,6 +3871,10 @@ class StateSentenceGroup(
     sentence_group_lengths: List["StateSentenceGroupLength"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    # Additional metadata field with additional sentence group attributes
+    sentence_group_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
 
 @attr.s(eq=False, kw_only=True)

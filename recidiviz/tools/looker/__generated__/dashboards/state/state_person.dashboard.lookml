@@ -709,6 +709,7 @@
     type: looker_grid
     fields: [state_sentence_group.external_id,
       state_sentence_group.sentence_group_id,
+      state_sentence_group.sentence_group_metadata,
       state_sentence_group.state_code]
     sorts: []
     listen: 

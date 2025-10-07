@@ -1206,6 +1206,10 @@ class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceGroupLength),
     )
+    # Additional metadata field with additional sentence group attributes
+    sentence_group_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
 
 @attr.s(eq=False, kw_only=True)
