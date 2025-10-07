@@ -39,8 +39,6 @@ class SupervisionMetricsPipeline(MetricPipeline):
             normalized_entities.NormalizedStatePersonEthnicity,
             normalized_entities.NormalizedStatePersonExternalId,
             normalized_entities.NormalizedStateSupervisionContact,
-            normalized_entities.NormalizedStateSupervisionSentence,
-            normalized_entities.NormalizedStateIncarcerationSentence,
             normalized_entities.NormalizedStateAssessment,
             normalized_entities.NormalizedStateIncarcerationPeriod,
             normalized_entities.NormalizedStateSupervisionPeriod,

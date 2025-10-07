@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies various events related to supervision."""
-import datetime
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -30,29 +29,18 @@ from recidiviz.common.constants.state.state_assessment import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import (
-    DateRange,
-    DateRangeDiff,
-    current_date_us_eastern,
-    last_day_of_month,
-)
+from recidiviz.common.date import DateRange, DateRangeDiff, current_date_us_eastern
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
@@ -63,7 +51,6 @@ from recidiviz.pipelines.metrics.base_identifier import (
     IdentifierContext,
 )
 from recidiviz.pipelines.metrics.supervision.events import (
-    ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
     SupervisionPopulationEvent,
     SupervisionStartEvent,
@@ -96,12 +83,8 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
     get_state_specific_violation_delegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
-    SUCCESSFUL_TERMINATIONS,
     identify_most_severe_case_type,
     supervising_location_info,
-)
-from recidiviz.pipelines.utils.supervision_type_identification import (
-    sentence_supervision_type_to_supervision_periods_supervision_type,
 )
 from recidiviz.utils.range_querier import RangeQuerier
 
@@ -130,12 +113,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         return self._find_supervision_events(
             included_result_classes=included_result_classes,
             person=person,
-            supervision_sentences=identifier_context[
-                NormalizedStateSupervisionSentence.__name__
-            ],
-            incarceration_sentences=identifier_context[
-                NormalizedStateIncarcerationSentence.__name__
-            ],
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.__name__
             ],
@@ -156,8 +133,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         *,
         included_result_classes: Set[Type[IdentifierResult]],
         person: NormalizedStatePerson,
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         assessments: List[NormalizedStateAssessment],
@@ -167,7 +142,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         """Identifies various events related to being on supervision.
 
         Args:
-            - supervision_sentences: list of StateSupervisionSentences for a person
             - supervision_periods: list of StateSupervisionPeriods for a person
             - incarceration_periods: list of StateIncarcerationPeriods for a person
             - assessments: list of StateAssessments for a person
@@ -211,16 +185,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         supervision_events: List[SupervisionEvent] = []
-
-        if ProjectedSupervisionCompletionEvent in included_result_classes:
-            projected_supervision_completion_events = (
-                self._classify_supervision_success(
-                    supervision_sentences,
-                    incarceration_sentences,
-                    supervision_period_index,
-                )
-            )
-            supervision_events.extend(projected_supervision_completion_events)
 
         for supervision_period in supervision_period_index.sorted_supervision_periods:
             if SupervisionPopulationEvent in included_result_classes:
@@ -734,248 +698,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         return None
 
-    def _classify_supervision_success(
-        self,
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
-        supervision_period_index: NormalizedSupervisionPeriodIndex,
-    ) -> List[ProjectedSupervisionCompletionEvent]:
-        """This classifies whether supervision projected to end in a given month was completed successfully.
-
-        Will use both incarceration and supervision sentences in determining supervision success.
-
-        For supervision and incarceration sentence with a projected_completion_date, where that date is before or on today's date,
-        and the sentence has a set completion_date, looks at all supervision periods that have terminated and
-        finds the one with the latest termination date. From that supervision period, classifies the termination as either
-        successful or not successful.
-        """
-        projected_completion_events: List[ProjectedSupervisionCompletionEvent] = []
-
-        all_sentences: List[
-            Union[
-                NormalizedStateIncarcerationSentence, NormalizedStateSupervisionSentence
-            ]
-        ] = []
-        all_sentences.extend(supervision_sentences)
-        all_sentences.extend(incarceration_sentences)
-
-        for sentence in all_sentences:
-            sentence_effective_date = sentence.effective_date
-            sentence_completion_date = sentence.completion_date
-
-            # These fields must be set to be included in any supervision success metrics
-            # Ignore sentences with erroneous start_dates in the future
-            if (
-                not sentence_effective_date
-                or not sentence_completion_date
-                or sentence_effective_date > current_date_us_eastern()
-            ):
-                continue
-
-            if isinstance(sentence, NormalizedStateIncarcerationSentence):
-                # This handles max_length_days that would otherwise cause a null or overflow error
-                if (
-                    not sentence.max_length_days
-                    or sentence.max_length_days > 547500  # 1500 years
-                ):
-                    continue
-
-                projected_completion_date = (
-                    sentence_effective_date
-                    + datetime.timedelta(days=sentence.max_length_days)
-                )
-
-                sentence_supervision_type: Optional[
-                    StateSupervisionSentenceSupervisionType
-                ] = StateSupervisionSentenceSupervisionType.PAROLE
-            elif isinstance(sentence, NormalizedStateSupervisionSentence):
-                if not sentence.projected_completion_date:
-                    continue
-                projected_completion_date = sentence.projected_completion_date
-                sentence_supervision_type = sentence.supervision_type
-            else:
-                raise ValueError(
-                    f"Sentence instance type does not match expected sentence types. "
-                    f"Expected: StateIncarcerationSentence/StateSupervisionSentence, "
-                    f"Actual: {type(sentence)}"
-                )
-
-            # Only include sentences that are projected to have already ended
-            if (
-                not projected_completion_date
-                or projected_completion_date > current_date_us_eastern()
-            ):
-                continue
-
-            latest_supervision_period = None
-            supervision_period_supervision_type_for_sentence = (
-                sentence_supervision_type_to_supervision_periods_supervision_type(
-                    sentence_supervision_type
-                )
-            ) or StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-
-            for (
-                supervision_period
-            ) in supervision_period_index.sorted_supervision_periods:
-                termination_date = supervision_period.termination_date
-
-                # Skips supervision periods without termination dates or not within sentence bounds
-                if (
-                    not termination_date
-                    or not supervision_period.start_date
-                    or sentence_effective_date > supervision_period.start_date
-                    or sentence_completion_date < termination_date
-                ):
-                    continue
-
-                # If there is a non-null sentence_supervision_type and
-                # supervision_type on the period, assert that they
-                # match
-                if (
-                    supervision_period.supervision_type
-                    and sentence_supervision_type
-                    and supervision_period.supervision_type
-                    != supervision_period_supervision_type_for_sentence
-                ):
-                    continue
-
-                if not latest_supervision_period or (
-                    latest_supervision_period.termination_date
-                    and latest_supervision_period.termination_date < termination_date
-                ):
-                    latest_supervision_period = supervision_period
-
-            if latest_supervision_period:
-                completion_event = self._get_projected_completion_event(
-                    projected_completion_date=projected_completion_date,
-                    supervision_period=latest_supervision_period,
-                    supervision_type_for_event=supervision_period_supervision_type_for_sentence,
-                )
-
-                if completion_event:
-                    projected_completion_events.append(completion_event)
-
-        return projected_completion_events
-
-    def _get_projected_completion_event(
-        self,
-        projected_completion_date: date,
-        supervision_period: NormalizedStateSupervisionPeriod,
-        supervision_type_for_event: StateSupervisionPeriodSupervisionType,
-    ) -> Optional[ProjectedSupervisionCompletionEvent]:
-        """Returns a ProjectedSupervisionCompletionEvent for the given supervision
-        sentence and its last terminated period, if the sentence should be included
-        in the success metric counts. If the sentence should not be included in success
-        metrics, then returns None."""
-        termination_reason = supervision_period.termination_reason
-
-        # TODO(#2596): Assert that the sentence status is COMPLETED or COMMUTED to
-        #  qualify as successful
-        (
-            include_termination_in_success_metric,
-            successful_completion,
-        ) = self._termination_is_successful_if_should_include_in_success_metric(
-            termination_reason
-        )
-
-        if not include_termination_in_success_metric:
-            return None
-
-        if successful_completion is None:
-            raise ValueError(
-                "Expected set value for successful_completion if the "
-                "termination should be included in the metrics."
-            )
-
-        (
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
-        ) = supervising_location_info(
-            supervision_period,
-            self.supervision_delegate,
-        )
-
-        case_type, case_type_raw_text = identify_most_severe_case_type(
-            supervision_period
-        )
-
-        last_day_of_projected_month = last_day_of_month(projected_completion_date)
-
-        # TODO(#2975): Note that this metric measures success by projected completion month. Update or expand this
-        #  metric to capture the success of early termination as well
-        return ProjectedSupervisionCompletionEvent(
-            state_code=supervision_period.state_code,
-            year=projected_completion_date.year,
-            month=projected_completion_date.month,
-            event_date=last_day_of_projected_month,
-            supervision_type=supervision_type_for_event,
-            supervision_level=supervision_period.supervision_level,
-            supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-            case_type=case_type,
-            case_type_raw_text=case_type_raw_text,
-            successful_completion=successful_completion,
-            supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-            level_1_supervision_location_external_id=level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-            custodial_authority=supervision_period.custodial_authority,
-        )
-
-    def _termination_is_successful_if_should_include_in_success_metric(
-        self,
-        termination_reason: Optional[StateSupervisionPeriodTerminationReason],
-    ) -> Tuple[bool, Optional[bool]]:
-        """Determines whether the given termination of supervision should be included in
-        a supervision success metric and, if it should be included, determines whether a
-        termination of supervision with the given |termination_reason| should be
-        considered a successful termination.
-
-        Returns a tuple in the format [bool, Optional[bool]], representing
-        (should_include_in_success_metric, termination_was_successful).
-        """
-        # If this is the last supervision period termination status, there is some kind
-        # of data error and we cannot determine whether this sentence ended
-        # successfully - exclude these entirely
-        if not termination_reason or termination_reason in (
-            StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
-            StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
-            StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
-            StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            StateSupervisionPeriodTerminationReason.WEEKEND_CONFINEMENT,
-        ):
-            return False, None
-
-        # If this is the last supervision period termination status, then the
-        # supervision sentence ended in some sort of truncated, not-necessarily
-        # successful manner unrelated to a failure on supervision - exclude these
-        # entirely
-        if termination_reason in (
-            StateSupervisionPeriodTerminationReason.DEATH,
-            StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
-            StateSupervisionPeriodTerminationReason.SUSPENSION,
-        ):
-            return False, None
-
-        # If the last period is an investigative period, then the person was never
-        # actually sentenced formally. In this case we should not include the period
-        # in our "success" metrics.
-        if termination_reason == StateSupervisionPeriodTerminationReason.INVESTIGATION:
-            return False, None
-
-        if termination_reason in SUCCESSFUL_TERMINATIONS:
-            return True, True
-
-        if termination_reason in (
-            # Unsuccessful terminations
-            StateSupervisionPeriodTerminationReason.ABSCONSION,
-            StateSupervisionPeriodTerminationReason.REVOCATION,
-            StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-        ):
-            return True, False
-
-        raise ValueError(
-            f"Unexpected StateSupervisionPeriodTerminationReason: {termination_reason}"
-        )
-
     def _expand_dual_supervision_events(
         self,
         supervision_events: List[SupervisionEvent],
@@ -1021,9 +743,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             SupervisionPopulationEvent,
         ],
         SupervisionMetricType.SUPERVISION_START: [SupervisionStartEvent],
-        SupervisionMetricType.SUPERVISION_SUCCESS: [
-            ProjectedSupervisionCompletionEvent
-        ],
         SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationEvent],
     }
 

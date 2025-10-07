@@ -581,8 +581,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyIncarcerationEvents_NoSentenceGroups(self) -> None:
-        """Tests the ClassifyIncarcerationEvents DoFn when the person has no sentence groups."""
+    def testClassifyIncarcerationEvents_NoIncarcerationInfo(self) -> None:
+        """Tests the ClassifyIncarcerationEvents DoFn when the person has no child
+        entities.
+        """
         fake_person = NormalizedStatePerson(
             state_code=self.state_code.value,
             person_id=123,

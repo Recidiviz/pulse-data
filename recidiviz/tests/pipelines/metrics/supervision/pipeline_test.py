@@ -39,15 +39,11 @@ from recidiviz.common.constants.state.state_person import (
     StateRace,
     StateResidencyStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -63,11 +59,9 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.ingest.dataset_config import (
@@ -85,7 +79,6 @@ from recidiviz.pipelines.metrics.supervision import identifier
 from recidiviz.pipelines.metrics.supervision import identifier as supervision_identifier
 from recidiviz.pipelines.metrics.supervision import pipeline
 from recidiviz.pipelines.metrics.supervision.events import (
-    ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
     SupervisionPopulationEvent,
     SupervisionStartEvent,
@@ -116,7 +109,6 @@ from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
 )
 from recidiviz.tests.pipelines.metrics.supervision import identifier_test
 from recidiviz.tests.pipelines.metrics.supervision.identifier_test import (
-    create_projected_completion_event_from_period,
     create_termination_event_from_period,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
@@ -232,26 +224,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        supervision_sentence = schema.StateSupervisionSentence(
-            supervision_sentence_id=1122,
-            external_id="ss1",
-            state_code=state_code,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            effective_date=date(2015, 3, 1),
-            projected_completion_date=date(2016, 12, 31),
-            completion_date=date(2016, 12, 29),
-            status=StateSentenceStatus.COMPLETED,
-            person_id=fake_person_id,
-        )
-
-        incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=123,
-            external_id="is1",
-            state_code=state_code,
-            person_id=fake_person_id,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id,
             charge_id=1234523,
@@ -287,14 +259,6 @@ class TestSupervisionPipeline(unittest.TestCase):
                 supervision_period,
                 {"supervising_officer_staff_id": 123456, "sequence_num": 0},
             )
-        ]
-
-        supervision_sentences_data = [
-            normalized_database_base_dict(supervision_sentence)
-        ]
-
-        incarceration_sentences_data = [
-            normalized_database_base_dict(incarceration_sentence)
         ]
 
         charge_data = [normalized_database_base_dict(charge)]
@@ -345,8 +309,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
-            schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
@@ -366,7 +328,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_TERMINATION,
         }
@@ -387,7 +348,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_TERMINATION,
         }
@@ -409,7 +369,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -519,26 +478,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id,
         )
 
-        supervision_sentence = schema.StateSupervisionSentence(
-            supervision_sentence_id=1122,
-            external_id="ss-1122",
-            state_code="US_XX",
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            effective_date=date(2008, 11, 20),
-            projected_completion_date=date(2017, 12, 31),
-            person_id=fake_person_id,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=123,
-            external_id="is-123",
-            state_code="US_XX",
-            effective_date=date(2008, 11, 20),
-            person_id=fake_person_id,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id,
             state_code="US_XX",
@@ -630,14 +569,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation)
         ]
 
-        supervision_sentences_data = [
-            normalized_database_base_dict(supervision_sentence)
-        ]
-
-        incarceration_sentences_data = [
-            normalized_database_base_dict(incarceration_sentence)
-        ]
-
         charge_data = [normalized_database_base_dict(charge)]
 
         assessment_data = [
@@ -655,8 +586,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
-            schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
         }
@@ -732,26 +661,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id_1,
         )
 
-        supervision_sentence = schema.StateSupervisionSentence(
-            supervision_sentence_id=1122,
-            state_code="US_XX",
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            effective_date=date(2016, 3, 1),
-            projected_completion_date=date(2017, 12, 31),
-            completion_date=date(2016, 12, 29),
-            person_id=fake_person_id_1,
-        )
-
-        incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=123,
-            external_id="is1",
-            state_code="US_XX",
-            person_id=fake_person_id_1,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id_1,
             charge_id=1234523,
@@ -779,14 +688,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_violation_data = [
             normalized_database_base_dict(supervision_violation)
-        ]
-
-        supervision_sentences_data = [
-            normalized_database_base_dict(supervision_sentence)
-        ]
-
-        incarceration_sentences_data = [
-            normalized_database_base_dict(incarceration_sentence)
         ]
 
         charge_data = [normalized_database_base_dict(charge)]
@@ -852,8 +753,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
-            schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
         }
@@ -861,7 +760,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -893,12 +791,6 @@ class TestClassifyEvents(unittest.TestCase):
         incarceration_periods: Optional[
             Iterable[NormalizedStateIncarcerationPeriod]
         ] = None,
-        incarceration_sentences: Optional[
-            Iterable[NormalizedStateIncarcerationSentence]
-        ] = None,
-        supervision_sentences: Optional[
-            Iterable[NormalizedStateSupervisionSentence]
-        ] = None,
         violation_responses: Optional[
             Iterable[NormalizedStateSupervisionViolationResponse]
         ] = None,
@@ -915,12 +807,6 @@ class TestClassifyEvents(unittest.TestCase):
             NormalizedStateAssessment.__name__: assessments if assessments else [],
             NormalizedStateIncarcerationPeriod.__name__: (
                 incarceration_periods if incarceration_periods else []
-            ),
-            NormalizedStateIncarcerationSentence.__name__: (
-                incarceration_sentences if incarceration_sentences else []
-            ),
-            NormalizedStateSupervisionSentence.__name__: (
-                supervision_sentences if supervision_sentences else []
             ),
             NormalizedStateSupervisionViolationResponse.__name__: (
                 violation_responses if violation_responses else []
@@ -972,26 +858,6 @@ class TestClassifyEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        effective_date = date(2008, 1, 1)
-        completion_date = date(2015, 5, 29)
-        supervision_sentence = NormalizedStateSupervisionSentence(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            effective_date=effective_date,
-            projected_completion_date=date(2015, 5, 30),
-            completion_date=completion_date,
-        )
-
-        incarceration_sentence = NormalizedStateIncarcerationSentence(
-            state_code="US_XX",
-            incarceration_sentence_id=123,
-            external_id="is1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
         assessment = NormalizedStateAssessment(
             assessment_id=1,
             state_code="US_XX",
@@ -1008,19 +874,10 @@ class TestClassifyEvents(unittest.TestCase):
             supervision_periods=[supervision_period],
             assessments=[assessment],
             incarceration_periods=[incarceration_period],
-            incarceration_sentences=[incarceration_sentence],
-            supervision_sentences=[supervision_sentence],
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         expected_events: Iterable[SupervisionEvent] = [
-            create_projected_completion_event_from_period(
-                supervision_period,
-                event_date=date(2015, 5, 31),
-                supervision_type=supervision_type,
-                level_1_supervision_location_external_id="10",
-                successful_completion=True,
-            ),
             # We have to add these expected events in this order because there is no unsorted-list equality check in the
             # Apache Beam testing utils
             *identifier_test.expected_population_events(
@@ -1056,7 +913,6 @@ class TestClassifyEvents(unittest.TestCase):
                 identifier=self.identifier,
                 included_result_classes={
                     SupervisionPopulationEvent,
-                    ProjectedSupervisionCompletionEvent,
                     SupervisionStartEvent,
                     SupervisionTerminationEvent,
                 },

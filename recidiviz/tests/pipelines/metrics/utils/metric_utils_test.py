@@ -46,7 +46,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
     SupervisionStartMetric,
-    SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
 
@@ -127,7 +126,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
         }
 

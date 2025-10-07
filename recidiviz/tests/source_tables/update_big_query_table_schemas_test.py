@@ -43,7 +43,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "dataflow_metrics.supervision_population_metrics",
     "dataflow_metrics.supervision_population_span_metrics",
     "dataflow_metrics.supervision_start_metrics",
-    "dataflow_metrics.supervision_success_metrics",
     "dataflow_metrics.supervision_termination_metrics",
     "dataflow_metrics.violation_with_response_metrics",
     "supplemental_data.us_ix_case_note_matched_entities",

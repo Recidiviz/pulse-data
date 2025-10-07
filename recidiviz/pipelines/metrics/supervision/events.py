@@ -192,18 +192,6 @@ class SupervisionPopulationEvent(
 
 
 @attr.s(frozen=True)
-class ProjectedSupervisionCompletionEvent(SupervisionEvent):
-    """Models a month in which supervision was projected to complete.
-
-    Describes whether or not the supervision was successfully completed or not, as well
-    as other details about the time on supervision.
-    """
-
-    # Whether or not the supervision was completed successfully
-    successful_completion: bool = attr.ib(default=True)
-
-
-@attr.s(frozen=True)
 class SupervisionStartEvent(SupervisionEvent, InPopulationMixin):
     """Models a day on which supervision started."""
 

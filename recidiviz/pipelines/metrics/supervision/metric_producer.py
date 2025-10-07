@@ -28,7 +28,6 @@ from recidiviz.pipelines.metrics.base_metric_producer import (
     metric_type_for_metric_class,
 )
 from recidiviz.pipelines.metrics.supervision.events import (
-    ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
     SupervisionPopulationEvent,
     SupervisionStartEvent,
@@ -41,7 +40,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
     SupervisionStartMetric,
-    SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
 from recidiviz.pipelines.metrics.utils.calculator_utils import (
@@ -76,9 +74,6 @@ class SupervisionMetricProducer(
                 SupervisionCaseComplianceMetric,
                 SupervisionPopulationMetric,
                 SupervisionOutOfStatePopulationMetric,
-            ],
-            ProjectedSupervisionCompletionEvent: [
-                SupervisionSuccessMetric,
             ],
             SupervisionStartEvent: [SupervisionStartMetric],
             SupervisionTerminationEvent: [SupervisionTerminationMetric],
@@ -207,7 +202,6 @@ class SupervisionMetricProducer(
             )
         if metric_type in (
             SupervisionMetricType.SUPERVISION_START,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
         ):
             return True

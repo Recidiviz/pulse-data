@@ -79,7 +79,7 @@ metric_pipelines:
     machine_type: c4a-highcpu-32
   - pipeline: supervision_metrics
     state_code: US_ND
-    metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
+    metric_types: SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
     machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_ND
@@ -159,7 +159,7 @@ metric_pipelines:
     machine_type: c4a-highcpu-32
   - pipeline: supervision_metrics
     state_code: US_PA
-    metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_START
+    metric_types: SUPERVISION_TERMINATION SUPERVISION_START
     machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_PA

@@ -43,7 +43,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
     SupervisionStartMetric,
-    SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import (
@@ -73,7 +72,6 @@ ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
     ProgramMetricType.PROGRAM_PARTICIPATION,
     SupervisionMetricType.SUPERVISION_COMPLIANCE,
     SupervisionMetricType.SUPERVISION_START,
-    SupervisionMetricType.SUPERVISION_SUCCESS,
     SupervisionMetricType.SUPERVISION_TERMINATION,
     ViolationMetricType.VIOLATION,
 ]
@@ -102,7 +100,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     SupervisionOutOfStatePopulationMetric: "supervision_out_of_state_population_metrics",
     SupervisionPopulationMetric: "supervision_population_metrics",
     SupervisionStartMetric: "supervision_start_metrics",
-    SupervisionSuccessMetric: "supervision_success_metrics",
     SupervisionTerminationMetric: "supervision_termination_metrics",
     # ViolationMetrics
     ViolationWithResponseMetric: "violation_with_response_metrics",
@@ -132,7 +129,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     "supervision_out_of_state_population_metrics": SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
     "supervision_population_metrics": SupervisionMetricType.SUPERVISION_POPULATION,
     "supervision_start_metrics": SupervisionMetricType.SUPERVISION_START,
-    "supervision_success_metrics": SupervisionMetricType.SUPERVISION_SUCCESS,
     "supervision_termination_metrics": SupervisionMetricType.SUPERVISION_TERMINATION,
     # ViolationMetrics
     "violation_with_response_metrics": ViolationMetricType.VIOLATION,

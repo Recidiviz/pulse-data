@@ -50,7 +50,6 @@ from recidiviz.pipelines.metrics.supervision import identifier
 from recidiviz.pipelines.metrics.supervision import identifier as supervision_identifier
 from recidiviz.pipelines.metrics.supervision import metric_producer, pipeline
 from recidiviz.pipelines.metrics.supervision.events import (
-    ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
     SupervisionPopulationEvent,
     SupervisionStartEvent,
@@ -61,7 +60,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
-    SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
 from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
@@ -333,309 +331,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_supervision_success(self) -> None:
-        """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent."""
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                successful_completion=True,
-                supervising_officer_staff_id=10000,
-                level_1_supervision_location_external_id="district5",
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=StateSupervisionLevel.HIGH,
-                supervision_level_raw_text="HIGH",
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_XX",
-                year=2018,
-                month=4,
-                event_date=date(2018, 4, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=StateSupervisionLevel.HIGH,
-                supervision_level_raw_text="HIGH",
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            ALL_METRICS_INCLUSIONS,
-            calculation_month_count=-1,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count(supervision_events)
-
-        self.assertEqual(expected_count, len(metrics))
-
-    def test_produce_supervision_metrics_supervision_unsuccessful(self) -> None:
-        """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent
-        and the supervision is not successfully completed."""
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                successful_completion=False,
-                supervising_officer_staff_id=10000,
-                level_1_supervision_location_external_id="district5",
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=StateSupervisionLevel.HIGH,
-                supervision_level_raw_text="HIGH",
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_XX",
-                year=2018,
-                month=4,
-                event_date=date(2018, 4, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=StateSupervisionLevel.HIGH,
-                supervision_level_raw_text="HIGH",
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            ALL_METRICS_INCLUSIONS,
-            calculation_month_count=-1,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count(supervision_events)
-
-        self.assertEqual(expected_count, len(metrics))
-        assert all(
-            not metric.successful_completion
-            for metric in metrics
-            if isinstance(metric, SupervisionSuccessMetric)
-        )
-
-    def test_produce_supervision_metrics_supervision_mixed_success(self) -> None:
-        """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent and the
-        supervision is not successfully completed."""
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=2,
-                event_date=date(2010, 2, 2),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=False,
-                level_1_supervision_location_external_id="district5",
-                supervising_officer_staff_id=10000,
-            ),
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=2,
-                event_date=date(2010, 2, 2),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                successful_completion=True,
-                level_1_supervision_location_external_id="district5",
-                supervising_officer_staff_id=10000,
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_XX",
-                year=2010,
-                month=2,
-                event_date=date(2010, 2, 2),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_XX",
-                year=2018,
-                month=4,
-                event_date=date(2010, 4, 2),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            ALL_METRICS_INCLUSIONS,
-            calculation_month_count=-1,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count(supervision_events)
-
-        self.assertEqual(expected_count, len(metrics))
-        self.assertTrue(
-            all(
-                not metric.successful_completion
-                for metric in metrics
-                if isinstance(metric, SupervisionSuccessMetric)
-                and metric.supervision_type
-                == StateSupervisionPeriodSupervisionType.PAROLE
-            )
-        )
-        self.assertTrue(
-            all(
-                metric.successful_completion
-                for metric in metrics
-                if isinstance(metric, SupervisionSuccessMetric)
-                and metric.supervision_type
-                == StateSupervisionPeriodSupervisionType.PROBATION
-            )
-        )
-
-    @freeze_time("2020-02-01 00:00:00-05:00")
-    def test_produce_supervision_metrics_supervision_with_district_officer(
-        self,
-    ) -> None:
-        """Tests the produce_supervision_metrics function when there is a mix of missing & non-null district/officer
-        data for one person over many ProjectedSupervisionCompletionEvents."""
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1993, 4, 2),
-            gender=StateGender.FEMALE,
-        )
-
-        race = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2017,
-                month=6,
-                event_date=date(2017, 6, 30),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                successful_completion=False,
-            ),
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2020,
-                month=1,
-                event_date=date(2020, 1, 30),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                successful_completion=False,
-                level_1_supervision_location_external_id="district5",
-                supervising_officer_staff_id=10000,
-            ),
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2018,
-                month=12,
-                event_date=date(2018, 12, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                successful_completion=False,
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            ALL_METRICS_INCLUSIONS,
-            calculation_month_count=-1,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count(supervision_events)
-
-        self.assertEqual(expected_count, len(metrics))
-
     def test_produce_supervision_metrics_multiple_months(self) -> None:
         """Tests the produce_supervision_metrics function where the person was on supervision for multiple months."""
         person = NormalizedStatePerson(
@@ -710,8 +405,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_supervision_metrics_overlapping_days(self) -> None:
-        """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
-        simultaneously in a given month."""
+        """Tests the produce_supervision_metrics function where the person has multiple
+        identical events on the same day.
+        """
         person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
@@ -770,8 +466,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_supervision_metrics_overlapping_months_types(self) -> None:
-        """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
-        simultaneously in a given month, but the supervisions are of different types."""
+        """Tests the produce_supervision_metrics function where the person has multiple
+        events on the same day with different supervision types.
+        """
         person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
@@ -839,8 +536,10 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     def test_produce_supervision_metrics_overlapping_months_types_dual(self) -> None:
-        """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
-        simultaneously in a given month, but the supervisions are of different types."""
+        """Tests the produce_supervision_metrics function where the person has multiple
+        events on the same day with different supervision types where one of those is
+        DUAL.
+        """
         person = NormalizedStatePerson(
             state_code="US_XX",
             person_id=12345,
@@ -1210,64 +909,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
     @freeze_time("2010-12-01 00:00:00-05:00")
-    def test_produce_supervision_metrics_only_success(self) -> None:
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                level_1_supervision_location_external_id="district5",
-                supervising_officer_staff_id=10000,
-            )
-        ]
-
-        metric_inclusions = {SupervisionMetricType.SUPERVISION_SUCCESS}
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            metric_inclusions,
-            calculation_month_count=12,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count(
-            supervision_events,
-            include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUPERVISION_SUCCESS,
-        )
-
-        self.assertEqual(expected_count, len(metrics))
-        assert all(
-            metric.metric_type == SupervisionMetricType.SUPERVISION_SUCCESS
-            for metric in metrics
-        )
-
-    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_only_population(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -1345,16 +986,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                level_1_supervision_location_external_id="district5",
-                supervising_officer_staff_id=10000,
-            ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=2010,
@@ -1369,13 +1000,25 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             ),
+            SupervisionTerminationEvent(
+                state_code="US_XX",
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 13),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                assessment_score=11,
+                assessment_level=StateAssessmentLevel.LOW,
+                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                assessment_score_change=-9,
+            ),
         ]
 
         metric_inclusions = {SupervisionMetricType.SUPERVISION_POPULATION}
 
         with self.assertRaisesRegex(
             ValueError,
-            "No included metric classes for event of type.*ProjectedSupervisionCompletionEvent",
+            "No included metric classes for event of type.*SupervisionTerminationEvent",
         ):
             self.metric_producer.produce_metrics(
                 person,
