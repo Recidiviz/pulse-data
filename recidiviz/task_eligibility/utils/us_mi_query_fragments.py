@@ -515,6 +515,8 @@ def secondary_officer_dockets_cte() -> str:
             WHERE
                 -- only grab open legal orders 
                 ref2.description = 'Active'
+                -- only include Parole/Probation dockets
+                AND ref1.description IN ('Probation', 'Parole')
             GROUP BY 1 
         )
     """
