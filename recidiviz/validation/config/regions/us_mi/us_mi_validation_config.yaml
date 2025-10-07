@@ -81,5 +81,5 @@ num_allowed_rows_overrides:
       No immediate impact because the most recent row it's failing for is a period from 2020, and our tools don't use data that far back.
       TODO(#26444)
   - validation_name: officer_monthly_usage_report_actions_without_logins
-    hard_num_allowed_rows_override: 5
+    hard_num_allowed_rows_override: 10
     override_reason: Will be resolved with the Polaris segment ad blocker work around
