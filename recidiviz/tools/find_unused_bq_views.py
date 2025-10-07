@@ -340,6 +340,13 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
         "(Anna Geiduschek 1/8/24)"
     ),
+    BigQueryAddress(
+        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        table_id="most_recent_supervision_success_metrics",
+    ): (
+        "TODO(#36564): This is unused and will be deleted in a follow-up PR "
+        "(Anna Geiduschek 10/1/25)"
+    ),
     PSA_RISK_SCORES_VIEW_BUILDER.address: (
         "Past intern work may be picked up so this view should be kept. See #26726. (Damini Sharma 1/22/24)"
     ),

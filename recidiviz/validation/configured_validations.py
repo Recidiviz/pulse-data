@@ -272,9 +272,6 @@ from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_
 from recidiviz.validation.views.state.supervision_start_person_level_external_comparison import (
     SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.supervision_success_by_period_by_demographics_internal_consistency import (
-    SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.supervision_termination_person_level_external_comparison import (
     SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -778,17 +775,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=[
                 "metric_total",
                 "age_bucket_breakdown_sum",
-                "race_or_ethnicity_breakdown_sum",
-                "gender_breakdown_sum",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        # TODO(#3743): This validation will fail until we fix the view to handle people who age into new buckets
-        SamenessDataValidationCheck(
-            view_builder=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-            comparison_columns=[
-                "metric_total",
                 "race_or_ethnicity_breakdown_sum",
                 "gender_breakdown_sum",
             ],
