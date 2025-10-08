@@ -185,6 +185,9 @@ class OpportunityConfigurationsAPI(MethodView):
             denial_reasons=body_args["denial_reasons"],
             eligible_criteria_copy=body_args["eligible_criteria_copy"],
             ineligible_criteria_copy=body_args["ineligible_criteria_copy"],
+            strictly_ineligible_criteria_copy=body_args[
+                "strictly_ineligible_criteria_copy"
+            ],
             dynamic_eligibility_text=body_args["dynamic_eligibility_text"],
             eligibility_date_text=body_args.get("eligibility_date_text"),
             hide_denial_revert=body_args["hide_denial_revert"],

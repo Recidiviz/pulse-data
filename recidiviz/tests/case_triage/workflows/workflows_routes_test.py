@@ -1850,6 +1850,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 }
             ],
             ineligible_criteria_copy=[],
+            strictly_ineligible_criteria_copy=[],
             denial_reasons=[{"key": "DENY", "text": "Denied"}],
             sidebar_components=["someComponent", "someOtherComponent"],
             eligibility_date_text=None,

@@ -115,6 +115,7 @@ export const babyOpportunityConfigurationSchema = z
     initialHeader: nullishAsUndefined(z.string()),
     eligibleCriteriaCopy: criteriaCopySchema,
     ineligibleCriteriaCopy: criteriaCopySchema,
+    strictlyIneligibleCriteriaCopy: criteriaCopySchema,
     sidebarComponents: z.array(z.string()).default([]),
     methodologyUrl: z.string(),
     isAlert: z.boolean(),

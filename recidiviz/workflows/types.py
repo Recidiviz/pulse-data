@@ -76,6 +76,7 @@ class OpportunityConfig:
     denial_reasons: List[Dict[str, str]] = attr.ib()
     eligible_criteria_copy: List[Dict[str, Optional[str]]] = attr.ib()
     ineligible_criteria_copy: List[Dict[str, Optional[str]]] = attr.ib()
+    strictly_ineligible_criteria_copy: List[Dict[str, Optional[str]]] = attr.ib()
     dynamic_eligibility_text: str = attr.ib()
     eligibility_date_text: Optional[str] = attr.ib()
     hide_denial_revert: bool = attr.ib()

@@ -118,9 +118,12 @@ class OpportunityConfiguration(WorkflowsBase):
     # Map from code to description for denial reasons
     denial_reasons = Column(JSON, nullable=False, server_default="{}")
 
-    # Templatized copy to show for eligibility criteria
+    # Templatized copy to show for eligible opportunities
     eligible_criteria_copy = Column(JSON, nullable=False, server_default="{}")
+    # Templatized copy to show for almost eligible opportunities
     ineligible_criteria_copy = Column(JSON, nullable=False, server_default="{}")
+    # Templatized copy to show for ineligible opportunities
+    strictly_ineligible_criteria_copy = Column(JSON, nullable=True, server_default="{}")
 
     # Text shown when results are found
     dynamic_eligibility_text = Column(String, nullable=False)

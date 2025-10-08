@@ -68,6 +68,7 @@ def load_model_fixture(
                         "hide_denial_revert",
                         "eligible_criteria_copy",
                         "ineligible_criteria_copy",
+                        "strictly_ineligible_criteria_copy",
                         "sidebar_components",
                         "denial_reasons",
                         "tab_groups",
@@ -121,6 +122,13 @@ def make_add_config_arguments(
                 "text": "test text",
                 "tooltip": "test tooltip",
             },
+        ],
+        "strictly_ineligible_criteria_copy": [
+            {
+                "key": "TESTING_STRICTLY_INELIGIBLE_CRITERIA",
+                "text": "strictly ineligible text",
+                "tooltip": "strictly ineligible tooltip",
+            }
         ],
         "dynamic_eligibility_text": "dynamic_eligibility_text",
         "call_to_action": "call_to_action",

@@ -56,6 +56,7 @@ def generate_config(
         denial_reasons=[{"key": "DENY", "text": "Denied"}],
         eligible_criteria_copy=[],
         ineligible_criteria_copy=[],
+        strictly_ineligible_criteria_copy=[],
         dynamic_eligibility_text="text",
         call_to_action="do something",
         subheading="this is what the policy does",

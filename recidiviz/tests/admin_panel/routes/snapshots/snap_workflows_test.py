@@ -82,6 +82,7 @@ snapshots[
         "stagingId": None,
         "stateCode": "US_ID",
         "status": "ACTIVE",
+        "strictlyIneligibleCriteriaCopy": [],
         "subcategoryHeadings": [
             {"subcategory": "PENDING_1", "text": "Pending type 1"},
             {"subcategory": "PENDING_2", "text": "Pending type 2"},
@@ -151,6 +152,7 @@ snapshots[
         "stagingId": None,
         "stateCode": "US_ID",
         "status": "INACTIVE",
+        "strictlyIneligibleCriteriaCopy": [],
         "subcategoryHeadings": [
             {"subcategory": "PENDING_1", "text": "Pending type 1"},
             {"subcategory": "PENDING_2", "text": "Pending type 2"},
@@ -220,6 +222,7 @@ snapshots[
         "stagingId": None,
         "stateCode": "US_ID",
         "status": "ACTIVE",
+        "strictlyIneligibleCriteriaCopy": [],
         "subcategoryHeadings": [
             {"subcategory": "PENDING_1", "text": "Pending type 1"},
             {"subcategory": "PENDING_2", "text": "Pending type 2"},

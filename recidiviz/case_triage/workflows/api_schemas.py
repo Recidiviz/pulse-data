@@ -246,6 +246,8 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     initial_header = fields.Str(required=False)
     eligible_criteria_copy = fields.List(fields.Nested(CriteriaCopySchema()))
     ineligible_criteria_copy = fields.List(fields.Nested(CriteriaCopySchema()))
+    # This only applies to criteria in an ineligible opportunity, not an almost eligible opportunity.
+    strictly_ineligible_criteria_copy = fields.List(fields.Nested(CriteriaCopySchema()))
     sidebar_components = fields.List(fields.Str())
     methodology_url = fields.Str()
     is_alert = fields.Bool()

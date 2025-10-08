@@ -111,6 +111,12 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         Edit: CriteriaCopyEdit,
         View: CriteriaCopyView,
       },
+      strictlyIneligibleCriteriaCopy: {
+        label: "Ineligible Criteria Copy",
+        multiple: true,
+        Edit: CriteriaCopyEdit,
+        View: CriteriaCopyView,
+      },
       nonOmsCriteriaHeader: {
         label: "Non-OMS Criteria Header",
       },
