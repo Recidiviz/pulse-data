@@ -59,6 +59,25 @@ output:
                       StateSupervisionPeriodSupervisionType.ABSCONSION:
                         - "29" # Absconder Status - Not Reporting
                         - "30" # UCV and Absconder Status
+              - $else_if:
+                  $in:
+                    $value: status_code
+                    $options:
+                      - $literal("25") # County Detainer Status
+                      - $literal("50") # Federal/US Marshall Detainer
+                      - $literal("51") # Other State Detainer
+                      - $literal("52") # INS Detainer
+                      - $literal("53") # INS Deportation Order
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_code
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.WARRANT_STATUS:
+                        - "25" # County Detainer Status
+                        - "50" # Federal/US Marshall Detainer
+                        - "51" # Other State Detainer
+                        - "52" # INS Detainer
+                        - "53" # INS Deportation Order
               - $else:
                   $enum_mapping:
                     $raw_text: supervision_type
