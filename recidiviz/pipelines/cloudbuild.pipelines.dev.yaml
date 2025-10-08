@@ -3,13 +3,53 @@
 # and specifies it to be pushed to the provided _IMAGE_PATH.
 
 steps:
-  - name: "gcr.io/kaniko-project/executor:v1.8.1"
+  - name: gcr.io/cloud-builders/docker
     args:
-      - --destination=${_IMAGE_PATH}
-      - --cache=true
-      - --dockerfile=recidiviz/pipelines/Dockerfile.pipelines
-      # For unknown reasons, Cloud Build does not respect these arguments in the format of `--build-arg=""`
-      - --build-arg
-      - GOOGLE_CLOUD_PROJECT=${_GOOGLE_CLOUD_PROJECT}
-      - --build-arg
-      - RECIDIVIZ_ENV=${_RECIDIVIZ_ENV}
+      - a+w
+      - /workspace
+    id: Give non-root users access to /workspace/ volume
+    entrypoint: chmod
+  - name: alpine
+    args:
+      - "-c"
+      - >-
+        wget -O docker-credential-gcr.tar.gz
+        "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.1.22/docker-credential-gcr_linux_amd64-2.1.22.tar.gz"
+        && tar xz -f docker-credential-gcr.tar.gz docker-credential-gcr && chmod
+        +x docker-credential-gcr && mkdir /workspace/gcloud && mv
+        docker-credential-gcr /workspace/gcloud
+    id: download-docker-credential
+    entrypoint: sh
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - buildx
+      - create
+      - "--name"
+      - dataflow
+    id: create-build-context-dataflow
+    waitFor:
+      - download-docker-credential
+  - name: gcr.io/cloud-builders/docker
+    env:
+      - DOCKER_BUILDKIT=1
+    args:
+      - "-c"
+      - >-
+        export PATH="/workspace/gcloud:$${PATH}" &&
+        /workspace/gcloud/docker-credential-gcr configure-docker
+        --registries=us-docker.pkg.dev && docker buildx build .
+        -f recidiviz/pipelines/Dockerfile.pipelines
+        --builder dataflow
+        --tag=${_IMAGE_PATH}
+        --cache-to type=registry,ref=us-docker.pkg.dev/${_GOOGLE_CLOUD_PROJECT}/dataflow/build:cache,mode=max
+        --cache-from type=registry,ref=us-docker.pkg.dev/${_GOOGLE_CLOUD_PROJECT}/dataflow/build:cache
+        --build-arg GOOGLE_CLOUD_PROJECT=${_GOOGLE_CLOUD_PROJECT}
+        --build-arg RECIDIVIZ_ENV=${_RECIDIVIZ_ENV}
+        --push
+    id: build-dataflow
+    waitFor:
+      - create-build-context-dataflow
+    entrypoint: sh
+timeout: 1800s
+options:
+  substitutionOption: ALLOW_LOOSE

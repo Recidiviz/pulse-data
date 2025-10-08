@@ -29,17 +29,65 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
 
   build {
     step {
-      name = "gcr.io/kaniko-project/executor:v1.8.1"
+      name       = "gcr.io/cloud-builders/docker"
+      entrypoint = "chmod"
+      args       = ["a+w", "/workspace"]
+      id         = "Give non-root users access to /workspace/ volume"
+    }
+
+    step {
+      name       = "alpine"
+      entrypoint = "sh"
       args = [
-        "--destination=us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
-        "--cache=true",
-        "--dockerfile=recidiviz/pipelines/Dockerfile.pipelines",
-        # For unknown reasons, Cloud Build does not respect these arguments in the format of `--build-arg=""`
-        "--build-arg",
-        format("GOOGLE_CLOUD_PROJECT=\"%s\"", var.project_id),
-        "--build-arg",
-        format("RECIDIVIZ_ENV=\"%s\"", var.project_id == "recidiviz-123" ? "production" : "staging")
+        "-c",
+        join(" && ", [
+          format("wget -O docker-credential-gcr.tar.gz %s", "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.1.22/docker-credential-gcr_linux_amd64-2.1.22.tar.gz"),
+          "tar xz -f docker-credential-gcr.tar.gz docker-credential-gcr",
+          "chmod +x docker-credential-gcr",
+          "mkdir /workspace/gcloud",
+          "mv docker-credential-gcr /workspace/gcloud"
+        ])
       ]
+      id = "download-docker-credential"
+    }
+    step {
+      name = "gcr.io/cloud-builders/docker"
+      args = [
+        "buildx",
+        "create",
+        "--name",
+        "dataflow"
+      ]
+      id       = "create-build-context-dataflow"
+      wait_for = ["download-docker-credential"]
+    }
+
+    step {
+      name = "gcr.io/cloud-builders/docker"
+      env  = ["DOCKER_BUILDKIT=1"]
+      args = [
+        "-c",
+        join(" && ", [
+          "export PATH=\"/workspace/gcloud:$$${PATH}\"",
+          "/workspace/gcloud/docker-credential-gcr configure-docker --registries=us-docker.pkg.dev",
+          join(" ", [
+            "docker buildx build . -f recidiviz/pipelines/Dockerfile.pipelines --builder dataflow",
+            "--tag=us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
+            "--cache-to",
+            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/dataflow/build:cache,mode=max",
+            "--cache-from",
+            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/dataflow/build:cache",
+            "--build-arg",
+            format("GOOGLE_CLOUD_PROJECT=\"%s\"", var.project_id),
+            "--build-arg",
+            format("RECIDIVIZ_ENV=\"%s\"", var.project_id == "recidiviz-123" ? "production" : "staging"),
+            "--push"
+          ])
+        ])
+      ]
+      id         = "build-dataflow"
+      wait_for   = ["create-build-context-dataflow"]
+      entrypoint = "sh"
     }
   }
 }
