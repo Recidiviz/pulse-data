@@ -1024,6 +1024,21 @@ WHERE
 """,
     (
         MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ): """SELECT
+    state_code,
+    email_address,
+    start_date,
+    end_date_exclusive,
+    staff_id AS unit_supervisor,
+FROM
+    `{project_id}.analyst_data.global_provisioned_user_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+    AND is_primary_user_supervisor_homepage_opportunities_module
+""",
+    (
+        MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER,
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
     ): """SELECT
     state_code,
