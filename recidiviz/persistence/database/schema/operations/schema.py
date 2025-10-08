@@ -18,6 +18,10 @@
 
 The below schema uses only generic SQLAlchemy types, and therefore should be
 portable between database implementations.
+
+When making updates to this schema, please ensure to generate a corresponding database migration using:
+
+python -m recidiviz.tools.migrations.autogenerate_migration --database OPERATIONS --message add_field_foo
 """
 from sqlalchemy import (
     Boolean,
@@ -539,3 +543,40 @@ class DirectIngestRawDataFlashStatus(OperationsBase):
     flashing_in_progress = Column(Boolean, nullable=False)
 
     __table_args__ = (PrimaryKeyConstraint(region_code, status_timestamp),)
+
+
+class DirectIngestRawDataPruningMetadata(OperationsBase):
+    """Metadata about the information used to run automatic raw data pruning for a given file_tag in a given state and instance."""
+
+    __tablename__ = "direct_ingest_raw_data_pruning_metadata"
+
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "region_code",
+            "raw_data_instance",
+            "file_tag",
+        ),
+    )
+
+    # The upper case region code associated with the raw data import
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The raw data instance associated with the raw data import
+    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag = Column(String(255), nullable=False, index=True)
+
+    # Timestamp of when this pruning metadata row was last updated
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    # Whether or not automatic pruning is enabled for this raw data table
+    automatic_pruning_enabled = Column(Boolean, nullable=False)
+
+    # Comma-separated list of primary key columns for this raw data table
+    # in alphabetical order
+    raw_file_primary_keys = Column(String(255), nullable=False, index=True)
+
+    # True iff the export lookback window for a raw file is FULL_HISTORICAL_LOOKBACK
+    # If False, we assume this file has an incremental lookback window
+    raw_files_contain_full_historical_lookback = Column(Boolean, nullable=False)

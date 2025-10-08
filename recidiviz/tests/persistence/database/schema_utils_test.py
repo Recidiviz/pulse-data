@@ -109,6 +109,7 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestRawFileImportRun",
             "DirectIngestRawFileImport",
             "DirectIngestRawDataFlashStatus",
+            "DirectIngestRawDataPruningMetadata",
         ]
 
         expected_qualified_names = _prefix_module_name(
@@ -222,6 +223,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_file_import_run",
             "direct_ingest_raw_file_import",
             "direct_ingest_raw_data_flash_status",
+            "direct_ingest_raw_data_pruning_metadata",
         ]
         workflows_table_names = ["opportunity", "opportunity_configuration"]
         insights_table_names = [

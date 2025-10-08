@@ -34,8 +34,12 @@ You can check your docker-compose version by running `docker-compose --version`.
 import logging
 import os
 
+from sqlalchemy import Table
 from sqlalchemy.engine import Engine
 
+from recidiviz.persistence.database.schema.operations.schema import (
+    DirectIngestRawDataPruningMetadata,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -46,16 +50,24 @@ from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 from recidiviz.utils.environment import in_development
 
 
+def get_all_operations_table_classes_with_fixtures() -> list[Table]:
+    """Returns a list of all operations table classes that have fixture data."""
+    return [
+        table_class
+        for table_class in get_all_table_classes_in_schema(SchemaType.OPERATIONS)
+        # TODO(#10214): Add admin panel fixtures for the SFTP table.
+        if "sftp" not in table_class.name
+        # Skip the direct_ingest_raw_data_pruning_metadata table
+        # since we don't currently use it in the admin panel
+        and DirectIngestRawDataPruningMetadata.__tablename__ != table_class.name
+    ]
+
+
 def reset_operations_db_fixtures(engine: Engine) -> None:
     """Deletes all operations DB data and re-imports data from our fixture files"""
     reset_fixtures(
         engine=engine,
-        # TODO(#10214): Add admin panel fixtures for the SFTP table.
-        tables=[
-            table
-            for table in get_all_table_classes_in_schema(SchemaType.OPERATIONS)
-            if "sftp" not in table.name
-        ],
+        tables=get_all_operations_table_classes_with_fixtures(),
         fixture_directory=os.path.join(
             os.path.dirname(__file__),
             "../../..",
