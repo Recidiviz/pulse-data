@@ -37,7 +37,7 @@ from recidiviz.utils.types import assert_type
 FIRESTORE_STAGING_PROJECT_ID = "recidiviz-dashboard-staging"
 FIRESTORE_PRODUCTION_PROJECT_ID = "recidiviz-dashboard-production"
 
-FIRESTORE_DELETE_BATCH_SIZE = 400
+FIRESTORE_DELETE_BATCH_SIZE = 100
 TIMESTAMP_KEY = "__loadedAt"
 
 
