@@ -175,7 +175,9 @@ from recidiviz.ingest.direct.dataset_config import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
-from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.metrics.export.exported_view_utils import (
+    get_all_metric_export_view_addresses,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
 from recidiviz.observations.event_observation_big_query_view_builder import (
@@ -474,13 +476,6 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
 }
 
 
-def _get_all_metric_export_addresses() -> Set[BigQueryAddress]:
-    export_addresses = set()
-    for export_config in VIEW_COLLECTION_EXPORT_INDEX.values():
-        export_addresses |= {vb.address for vb in export_config.view_builders_to_export}
-    return export_addresses
-
-
 def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
     """Returns true for views that may not be in use but can be ignored if they happen
     to be. These views are not tracked in UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON because
@@ -537,7 +532,7 @@ def _get_single_project_unused_addresses(
     """
 
     all_in_use_addresses = (
-        _get_all_metric_export_addresses() | LOOKER_REFERENCED_ADDRESSES
+        get_all_metric_export_view_addresses() | LOOKER_REFERENCED_ADDRESSES
     )
     if not ignore_exemptions:
         all_in_use_addresses = all_in_use_addresses | set(

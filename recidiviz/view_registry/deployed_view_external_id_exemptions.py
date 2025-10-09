@@ -25,8 +25,17 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.product_roster_archive_sessions import (
     PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
+    US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii_texting.jii_to_text import (
     JII_TO_TEXT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.us_ix_lsu import (
+    US_IX_LSU_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.us_tx_scheduled_contacts import (
+    US_TX_SCHEDULED_CONTACTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
@@ -81,6 +90,12 @@ from recidiviz.calculator.query.state.views.sentencing.staff_record import (
 )
 from recidiviz.calculator.query.state.views.sessions.state_staff_id_to_legacy_supervising_officer_external_id import (
     STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_me.us_me_incarceration_staff_assignment_sessions_preprocessed import (
+    US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_staff_assignment_sessions_preprocessed import (
+    US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_VIEWS_DATASET,
@@ -295,3 +310,39 @@ def get_known_views_with_unqualified_external_id(
         set(_KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN)
         | expected_views_with_unqualified_external_id
     )
+
+
+# Views that have *person_external_id columns but are NOT part of metric exports.
+# These should eventually be refactored so that person external IDs are only joined
+# at the very end (in the metric export views) rather than passed through internal
+# foundational views.
+_KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
+    # analyst_data views
+    US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    # jii_texting views
+    US_IX_LSU_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    US_TX_SCHEDULED_CONTACTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    # sessions views
+    US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+}
+
+
+@cache
+def get_known_non_export_views_with_person_external_id_column(
+    # We require project_id as an argument so that we don't return incorrect cached
+    # results when metadata.project_id() changes (e.g. in tests).
+    project_id: str,
+) -> set[BigQueryAddress]:
+    """Returns the addresses of every deployed BQ view that has a column matching
+    the pattern *person_external_id but is NOT part of a metric export. Generally,
+    we want person external ID columns to only exist in metric export views, since
+    we should not pass external id information through our internal, foundational
+    views but rather should join at the very end to get a relevant person external id.
+    """
+    if project_id != metadata.project_id():
+        raise ValueError(
+            f"Expected project_id [{project_id}] to match metadata.project_id() "
+            f"[{metadata.project_id()}]"
+        )
+    return set(_KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN)
