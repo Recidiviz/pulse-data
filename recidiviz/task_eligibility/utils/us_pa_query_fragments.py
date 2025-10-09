@@ -889,7 +889,6 @@ def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc 
         USING(person_id, charge_id)
     WHERE sen.state_code = 'US_PA' 
-      AND (sen.statute IS NOT NULL OR sen.description IS NOT NULL)
       AND CURRENT_DATE('US/Eastern') BETWEEN span.start_date AND {nonnull_end_date_exclusive_clause('span.end_date')} 
     """
     else:
@@ -898,7 +897,6 @@ def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_charge` sc 
         USING(person_id, charge_id) 
     WHERE sen.state_code = 'US_PA' 
-      AND (sen.statute IS NOT NULL OR sen.description IS NOT NULL)
     """
 
     return f"""
@@ -931,6 +929,9 @@ def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
             END as source_sorting_rank,
             sen.date_imposed,
           {from_clause}
+          -- where clause
+          AND (sen.statute IS NOT NULL OR sen.description IS NOT NULL)
+          AND sen.description IS DISTINCT FROM 'ALL OTHERS'
         ),
         -- here, we normalize the statute's title to make it easier to deduplicate, leaving
         -- everything after the title in place (such as *'s, which can represent the offense
@@ -956,6 +957,17 @@ def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
               LEFT JOIN UNNEST(SPLIT(REPLACE(statute, ',', ';'), ';')) AS statute_split -- split on commas and semicolons
             )
           )
+        ),
+        normalized_title_and_source_info_deduplicated_by_statute as (
+          SELECT *
+          FROM normalized_title_and_source_info
+          QUALIFY 
+            -- duplicates of the same statute/date imposed exist because we pull offenses from different systems, 
+            -- for each statue that has multiple entries on the same date, preferentially select
+            -- the source we think the agent will be most familiar w/
+            -- we use RANK instead of ROW_NUMBER since duplicate title/date imposed from the same source might 
+            -- be validly be two charges from the same date
+          RANK() OVER(PARTITION BY person_id, normalized_title, statute_after_title, date_imposed ORDER BY source_sorting_rank) = 1
         )
         SELECT 
           person_id, 
@@ -963,11 +975,15 @@ def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
           description, 
           source,
           date_imposed
-        FROM normalized_title_and_source_info
-        -- duplicates of the same statute/date imposed exist because we pull offenses from different systems, 
-        -- for each statue that has multiple entries on the same date, preferentially select
-        -- the source we think the agent will be most familiar w/
-        QUALIFY RANK() OVER(PARTITION BY person_id, normalized_title, statute_after_title, date_imposed, description ORDER BY source_sorting_rank) = 1
+        FROM normalized_title_and_source_info_deduplicated_by_statute
+        QUALIFY
+          -- duplicates of the same charge description/date imposed exist because we pull offenses from different systems, 
+          -- for each charge that has the same description that has multiple entries on the same date, preferentially select
+          -- the source we think the agent will be most familiar w/
+          -- we separately deduplicate on description since CAPTOR - Other lacks statue/title info
+          -- but will have a description for charges that sometimes don't exist in other systems. for overlapping
+          -- charges, however, deduplicating on statute/title alone will not filter them out properly
+        RANK() OVER(PARTITION BY person_id, description, date_imposed ORDER BY source_sorting_rank) = 1
       )
   """
 
