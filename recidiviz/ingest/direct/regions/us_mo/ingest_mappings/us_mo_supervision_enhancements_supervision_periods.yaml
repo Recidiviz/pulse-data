@@ -101,15 +101,16 @@ output:
                   - "ENH" # Enhanced
                 StateSupervisionLevel.MAXIMUM:
                   - "ISP" # Intensive Supervision (specialized programming + very high risk on ORAS)
-                  - "CPP" # Residential Community Placement (treatment)
-                  # The following codes are no longer used according to MO, but may appear in historical records
-                  - "RTF" # Residential Treatment facility
-                  - "VCT" # Residential Violator Center
                 StateSupervisionLevel.IN_CUSTODY:
                   - "ITC" # Institutional Treatment Center
                   - "JAL" # Incarceration/Jail
                   - "PRS" # Incarceration/Prison
                   - "SHK" # 120 Day Incarceration
+                StateSupervisionLevel.RESIDENTIAL_PROGRAM:
+                  - "CPP" # Residential Community Placement (treatment)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "RTF" # Residential Treatment facility
+                  - "VCT" # Residential Violator Center
           supervising_officer_staff_external_id: BDGNO
           supervising_officer_staff_external_id_type:
             $conditional:
