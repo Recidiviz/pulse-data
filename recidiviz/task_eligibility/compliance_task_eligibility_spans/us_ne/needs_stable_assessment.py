@@ -37,25 +37,36 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#50664): Remove extra top-level criteria group once we are properly handling
+# multiple criteria in the reasons extraction in tasks_record.
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_NE,
     task_name="needs_stable_assessment",
     candidate_population_view_builder=parole_active_supervision_including_null_supervision_level_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        meets_stable_assessment_event_triggers.VIEW_BUILDER,
-        StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=supervision_case_type_is_not_sex_offense.VIEW_BUILDER
-        ),
-        StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-            sub_criteria=on_parole_at_least_10_years.VIEW_BUILDER
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            criteria_name="US_NE_NEEDS_STABLE_ASSESSMENT",
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            sub_criteria_list=[
+                meets_stable_assessment_event_triggers.VIEW_BUILDER,
+                StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=supervision_case_type_is_not_sex_offense.VIEW_BUILDER
+                ),
+                StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+                    sub_criteria=on_parole_at_least_10_years.VIEW_BUILDER
+                ),
+            ],
         ),
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="assessment_due_date",
-    due_date_criteria_builder=meets_stable_assessment_event_triggers.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
