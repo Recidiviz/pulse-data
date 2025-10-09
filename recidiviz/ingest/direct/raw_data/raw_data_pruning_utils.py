@@ -23,6 +23,12 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_resources.platform_resource_labels import (
     RawDataImportStepResourceLabel,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import (
+    automatic_raw_data_pruning_enabled_for_state_and_instance,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 def get_pruned_table_row_counts(
@@ -64,3 +70,22 @@ def get_pruned_table_row_counts(
 
     row = list(results)[0]
     return row["net_new_or_updated_rows"] or 0, row["deleted_rows"] or 0
+
+
+# TODO(#12209) Update all existing pruning enabled/disabled checks to use this function
+def automatic_raw_data_pruning_enabled_for_file_config(
+    state_code: StateCode,
+    raw_data_instance: DirectIngestInstance,
+    raw_file_config: DirectIngestRawFileConfig,
+) -> bool:
+    """Boolean return for if automatic raw data pruning can be run for the given raw |file_tag|."""
+    # TODO(#12390): Delete once raw data pruning is live.
+    raw_data_pruning_enabled = (
+        automatic_raw_data_pruning_enabled_for_state_and_instance(
+            state_code, raw_data_instance
+        )
+    )
+    if not raw_data_pruning_enabled:
+        return False
+
+    return not raw_file_config.is_exempt_from_automatic_raw_data_pruning()
