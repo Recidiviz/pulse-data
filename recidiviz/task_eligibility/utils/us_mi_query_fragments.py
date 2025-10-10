@@ -349,7 +349,7 @@ SELECT
     DATE(pmi_sgt_min_date) AS form_information_min_release_date,
     si.facility AS form_information_facility,
     si.housing_unit AS form_information_lock,
-    (SMI.MMD = "Yes") AS form_information_OPT,
+    (COALESCE(SMI.MMD, "No") = "Yes") AS form_information_OPT,
     CASE WHEN stg.STG_Level = 'I' THEN "1"
          WHEN stg.STG_Level = 'II' THEN "2"
          ELSE stg.STG_Level 
