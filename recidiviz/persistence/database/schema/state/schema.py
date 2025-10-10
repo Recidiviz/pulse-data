@@ -2390,11 +2390,6 @@ class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
     sentence_group_lengths = relationship(
         "StateSentenceGroupLength", backref="sentence_group", lazy="selectin"
     )
-    sentence_group_metadata = Column(
-        String(255),
-        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
-        "a particular sentence group.",
-    )
 
 
 class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
@@ -2418,6 +2413,7 @@ class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
     projected_full_term_release_date_min_external = Column(Date, nullable=True)
     projected_full_term_release_date_max_external = Column(Date, nullable=True)
     sequence_num = Column(Integer, nullable=True)
+    sentence_group_length_metadata = Column(Text)
 
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)

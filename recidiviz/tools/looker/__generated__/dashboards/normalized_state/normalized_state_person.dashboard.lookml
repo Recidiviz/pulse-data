@@ -730,7 +730,6 @@
     type: looker_grid
     fields: [normalized_state_sentence_group.external_id,
       normalized_state_sentence_group.sentence_group_id,
-      normalized_state_sentence_group.sentence_group_metadata,
       normalized_state_sentence_group.sentence_inferred_group_id,
       normalized_state_sentence_group.state_code]
     sorts: []
@@ -756,6 +755,7 @@
       normalized_state_sentence_group_length.projected_parole_release_date_external_date,
       normalized_state_sentence_group_length.sentence_group_id,
       normalized_state_sentence_group_length.sentence_group_length_id,
+      normalized_state_sentence_group_length.sentence_group_length_metadata,
       normalized_state_sentence_group_length.sequence_num,
       normalized_state_sentence_group_length.state_code]
     sorts: [normalized_state_sentence_group_length.group_update_datetime_date desc, normalized_state_sentence_group_length.parole_eligibility_date_external_date desc, normalized_state_sentence_group_length.projected_full_term_release_date_max_external_date desc, normalized_state_sentence_group_length.projected_full_term_release_date_min_external_date desc, normalized_state_sentence_group_length.projected_parole_release_date_external_date desc]

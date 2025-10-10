@@ -982,6 +982,11 @@ class NormalizedStateSentenceGroupLength(
         ),
     )
 
+    # Metadata field with additional sentence group length attributes
+    sentence_group_length_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     # Primary key
     # in the criminal justice system.
     sentence_group_length_id: int = attr.ib(validator=attr_validators.is_int)
@@ -1205,10 +1210,6 @@ class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
     sentence_group_lengths: list["NormalizedStateSentenceGroupLength"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceGroupLength),
-    )
-    # Additional metadata field with additional sentence group attributes
-    sentence_group_metadata: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
     )
 
 

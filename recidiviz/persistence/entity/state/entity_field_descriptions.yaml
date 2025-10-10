@@ -462,10 +462,7 @@ state_sentence:
       It cannot be a future date because it must align with a serving status.
 
 state_sentence_group:
-  fields:
-    sentence_group_metadata: >-
-      Arbitrary JSON-formatted metadata relevant to a fine understanding of
-      a particular sentence group.
+  fields: {}
   normalization_only_fields:
     sentence_inferred_group_id: The unique ID of the StateSentenceInferredGroup that this sentence group belongs to.
 
@@ -491,6 +488,9 @@ state_sentence_group_length:
     sequence_num: >-
       The ordinal position of this observation in the sequence of StateSentenceGroupLength
       observations for this observation's StateSentenceGroup
+    sentence_group_length_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine understanding of
+      a particular sentence group length.
 
 state_sentence_length:
   fields:

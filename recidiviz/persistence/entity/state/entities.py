@@ -3871,10 +3871,6 @@ class StateSentenceGroup(
     sentence_group_lengths: List["StateSentenceGroupLength"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    # Additional metadata field with additional sentence group attributes
-    sentence_group_metadata: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -3964,6 +3960,11 @@ class StateSentenceGroupLength(
                 },
             ),
         ),
+    )
+
+    # Metadata field with additional sentence group length attributes
+    sentence_group_length_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     # Primary key - Only optional when parsing, before we have written this entity to the persistence layer.
