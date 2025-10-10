@@ -417,7 +417,7 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "LOCATION_ID",
             ],
         },
-        "CASE_NOTE": {"Foreign key to LOOKUP": ["NOTE_TYPE_ID", "ALERT_TYPE_ID"]},
+        "case_note": {"Foreign key to LOOKUP": ["NOTE_TYPE_ID", "ALERT_TYPE_ID"]},
         "AZ_DOC_HWD_WARRANT": {
             "fk to lookups": ["TYPE_ID", "STATUS_ID"],
             "Foreign key - PERSON": ["AGENT_ID", "SUPERVISOR_ID"],
