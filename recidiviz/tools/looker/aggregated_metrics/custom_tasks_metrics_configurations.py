@@ -52,6 +52,10 @@ TASKS_ASSIGNMENT_NAMES_TO_TYPES = {
     ),
 }
 
+TASKS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[str, list[str]] = {
+    "tasks_contact_type": [],
+}
+
 
 TASKS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION,
@@ -66,4 +70,6 @@ TASKS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
     metric_config.CONTACT_DUE_DATES,
     metric_config.CONTACT_DUE_DATES_MET,
+    metric_config.CONTACTS_ATTEMPTED,
+    metric_config.CONTACTS_COMPLETED,
 ]

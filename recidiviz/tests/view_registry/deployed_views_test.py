@@ -420,6 +420,12 @@ class ViewDagInvariantTests(unittest.TestCase):
                 dataset_id="observations__person_event",
                 table_id="supervision_contact_due",
             ),
+            # Views of all contact events with state-specific contact types for calculating
+            # contact compliance metrics.
+            BigQueryAddress(
+                dataset_id="observations__person_event",
+                table_id="supervision_contact",
+            ),
         }
 
         allowed_union_all_datasets_to_query_from = {
