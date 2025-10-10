@@ -161,11 +161,15 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
 
     def test_no_files(self) -> None:
         self.mock_operator.xcom_pull.return_value = []
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        assert errors == []
+        assert import_ready_metadata == []
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        assert call_args.kwargs["value"] == []
 
     def test_new_file_tag_with_pruning_one_existing_file(self) -> None:
         pruning_enabled_file_tag = "singlePrimaryKey"
@@ -177,11 +181,19 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         )
         self.mock_operator.xcom_pull.return_value = [bq_metadata.serialize()]
 
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        assert errors == []
+        assert len(import_ready_metadata) == 1
+        assert (
+            RawBigQueryFileMetadata.deserialize(import_ready_metadata[0]).file_tag
+            == pruning_enabled_file_tag
+        )
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        assert call_args.kwargs["value"] == []
 
         actual_metadata_config = self._get_pruning_metadata(pruning_enabled_file_tag)
         expected_metadata_config = self._get_expected_pruning_config(
@@ -207,11 +219,19 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         )
         self.mock_operator.xcom_pull.return_value = [bq_metadata.serialize()]
 
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        assert errors == []
+        assert len(import_ready_metadata) == 1
+        assert (
+            RawBigQueryFileMetadata.deserialize(import_ready_metadata[0]).file_tag
+            == pruning_enabled_file_tag
+        )
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        assert call_args.kwargs["value"] == []
 
         actual_metadata_config = self._get_pruning_metadata(pruning_enabled_file_tag)
         expected_metadata_config = self._get_expected_pruning_config(
@@ -241,11 +261,19 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
             bq_metadata_2.serialize(),
         ]
 
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        # Should have errors only for pruning enabled file
+        assert len(import_ready_metadata) == 1
+        assert (
+            RawBigQueryFileMetadata.deserialize(import_ready_metadata[0]).file_tag
+            == pruning_disabled_file_tag
+        )
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        errors = call_args.kwargs["value"]
         assert len(errors) == 1
         error = RawDataFilesSkippedError.deserialize(errors[0])
         assert error.file_tag == pruning_enabled_file_tag
@@ -299,10 +327,15 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
             bq_metadata_2.serialize(),
         ]
 
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
+        assert len(import_ready_metadata) == 0
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        errors = call_args.kwargs["value"]
         assert len(errors) == 2
         errors_deserialized = [
             RawDataFilesSkippedError.deserialize(error) for error in errors
@@ -373,11 +406,19 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         )
         self.mock_operator.xcom_pull.return_value = [bq_metadata.serialize()]
 
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        assert errors == []
+        assert len(import_ready_metadata) == 1
+        assert (
+            RawBigQueryFileMetadata.deserialize(import_ready_metadata[0]).file_tag
+            == pruning_disabled_file_tag
+        )
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        assert call_args.kwargs["value"] == []
 
         actual_metadata_config = self._get_pruning_metadata(pruning_disabled_file_tag)
         expected_metadata_config = self._get_expected_pruning_config(
@@ -404,11 +445,19 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         )
         self.mock_operator.xcom_pull.return_value = [bq_metadata.serialize()]
 
-        errors = self.generator.execute_postgres_query(
+        import_ready_metadata = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
         )
 
-        assert errors == []
+        assert len(import_ready_metadata) == 1
+        assert (
+            RawBigQueryFileMetadata.deserialize(import_ready_metadata[0]).file_tag
+            == pruning_enabled_file_tag
+        )
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        assert call_args.kwargs["value"] == []
 
         actual_metadata_config = self._get_pruning_metadata(pruning_enabled_file_tag)
         expected_metadata_config = self._get_expected_pruning_config(

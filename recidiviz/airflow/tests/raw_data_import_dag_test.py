@@ -206,6 +206,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             ["get_all_unprocessed_gcs_file_metadata"],
             ["get_all_unprocessed_bq_file_metadata"],
             [
+                "raise_operations_registration_errors",
+                "verify_raw_data_pruning_metadata",
+            ],
+            [
                 "has_files_to_import",
                 "raise_operations_registration_errors",
                 "get_files_to_import_this_run",
@@ -395,6 +399,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
         "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
         "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+        "raw_data_branching.us_xx_primary_import_branch.verify_raw_data_pruning_metadata",
         "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
         "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
         "raw_data_branching.us_xx_primary_import_branch.write_import_start",
@@ -664,6 +669,42 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 
             assert set(file_imports) == {(1, "STARTED"), (2, "STARTED"), (3, "STARTED")}
 
+            # (4) verify pruning metadata was created correctly
+            pruning_metadata = session.execute(
+                text(
+                    """
+                    SELECT region_code, raw_data_instance, file_tag,
+                           automatic_pruning_enabled, raw_file_primary_keys,
+                           raw_files_contain_full_historical_lookback
+                    FROM direct_ingest_raw_data_pruning_metadata
+                    """
+                )
+            )
+
+            metadata_rows = list(pruning_metadata)
+            assert len(metadata_rows) == 3
+
+            for row in metadata_rows:
+                assert row[0] == "US_XX"  # region_code
+                assert row[1] == "PRIMARY"  # raw_data_instance
+                assert row[2] in (
+                    "tagBasicData",
+                    "tagFileConfigHeaders",
+                    "tagCustomLineTerminatorNonUTF8",
+                )  # file_tag
+                if row[2] == "tagBasicData":
+                    assert row[3] is False  # automatic_pruning_enabled
+                    assert row[4] == "COL1"  # raw_file_primary_keys
+                    assert row[5] is True  # raw_files_contain_full_historical_lookback
+                elif row[2] == "tagFileConfigHeaders":
+                    assert row[3] is False  # automatic_pruning_enabled
+                    assert row[4] == "COL1"  # raw_file_primary_keys
+                    assert row[5] is False  # raw_files_contain_full_historical_lookback
+                elif row[2] == "tagCustomLineTerminatorNonUTF8":
+                    assert row[3] is False  # automatic_pruning_enabled
+                    assert row[4] == "PRIMARY_COL1"  # raw_file_primary_keys
+                    assert row[5] is False  # raw_files_contain_full_historical_lookback
+
     def test_chunked_files(self) -> None:
         # step 2 input
         self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
@@ -771,6 +812,27 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             assert not json.loads(assert_type(import_ready_files_jsonb, bytes))
 
             # --- validate persisted rows in operations db
+
+            pruning_metadata = session.execute(
+                text(
+                    """
+                    SELECT region_code, raw_data_instance, file_tag,
+                           automatic_pruning_enabled, raw_file_primary_keys,
+                           raw_files_contain_full_historical_lookback
+                    FROM direct_ingest_raw_data_pruning_metadata
+                    """
+                )
+            )
+
+            metadata_rows = list(pruning_metadata)
+            assert len(metadata_rows) == 1
+            row = metadata_rows[0]
+            assert row[0] == "US_XX"  # region_code
+            assert row[1] == "PRIMARY"  # raw_data_instance
+            assert row[2] == "tagChunkedFile"  # file_tag
+            assert row[3] is False  # automatic_pruning_enabled
+            assert row[4] == "id_column"  # raw_file_primary_keys
+            assert row[5] is False  # raw_files_contain_full_historical_lookback
 
             bq_metadata = session.execute(
                 text(
@@ -2677,6 +2739,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # downstream failures
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.verify_raw_data_pruning_metadata",
                     r".*_primary_import_branch\.has_files_to_import",
                     r".*_primary_import_branch\.get_files_to_import_this_run",
                     r".*_primary_import_branch\.write_import_start",

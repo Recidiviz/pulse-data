@@ -111,6 +111,9 @@ from recidiviz.airflow.dags.raw_data.sequencing_tasks import (
     maybe_trigger_dag_rerun,
     successfully_acquired_all_locks,
 )
+from recidiviz.airflow.dags.raw_data.verify_raw_data_pruning_metadata_sql_query_generator import (
+    VerifyRawDataPruningMetadataSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.raw_data.write_file_import_start_sql_query_generator import (
     WriteImportStartCloudSqlGenerator,
 )
@@ -233,27 +236,39 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        get_all_unprocessed_bq_file_metadata_with_valid_pruning_config = CloudSqlQueryOperator(
+            task_id="verify_raw_data_pruning_metadata",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=VerifyRawDataPruningMetadataSqlQueryGenerator(
+                state_code=state_code,
+                raw_data_instance=raw_data_instance,
+                get_all_unprocessed_bq_file_metadata_task_id=get_all_unprocessed_bq_file_metadata.task_id,
+            ),
+        )
         # should_run_import is upstream of (set further down in the dag):
         #   - files_to_import_this_run
         #   - serialized_import_ready_files
         #   - write_import_completions
         should_run_import = has_files_to_import(
-            get_all_unprocessed_bq_file_metadata.output
+            get_all_unprocessed_bq_file_metadata_with_valid_pruning_config.output
         )
 
         skipped_file_errors = raise_operations_registration_errors(
-            serialized_skipped_file_errors=get_all_unprocessed_bq_file_metadata.output[
+            serialized_bq_metadata_skipped_file_errors=get_all_unprocessed_bq_file_metadata.output[
                 SKIPPED_FILE_ERRORS
-            ]
+            ],
+            serialized_pruning_metadata_skipped_file_errors=get_all_unprocessed_bq_file_metadata_with_valid_pruning_config.output[
+                SKIPPED_FILE_ERRORS
+            ],
         )
 
         # here, we bifurcate between files we ARE importing and files we are deferring
         files_to_import_this_run = get_files_to_import_this_run(
             raw_data_instance=raw_data_instance,
-            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata_with_valid_pruning_config.output,
         )
 
-        get_all_unprocessed_bq_file_metadata >> [
+        get_all_unprocessed_bq_file_metadata_with_valid_pruning_config >> [
             should_run_import,
             skipped_file_errors,
             files_to_import_this_run,
@@ -293,6 +308,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             list_normalized_unprocessed_gcs_file_paths
             >> get_all_unprocessed_gcs_file_metadata
             >> get_all_unprocessed_bq_file_metadata
+            >> get_all_unprocessed_bq_file_metadata_with_valid_pruning_config
             >> files_to_import_this_run
             >> write_import_start
             >> file_headers

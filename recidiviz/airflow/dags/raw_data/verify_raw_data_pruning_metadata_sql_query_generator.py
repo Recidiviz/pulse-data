@@ -28,6 +28,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.raw_data.metadata import SKIPPED_FILE_ERRORS
 from recidiviz.airflow.dags.raw_data.utils import (
     get_direct_ingest_region_raw_config,
     logger,
@@ -216,13 +217,10 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
             )
         ]
 
-        if not unprocessed_bq_file_metadata:
-            logger.info("Found no bq file paths to process; skipping verification")
-            return []
-
         # --- verify pruning metadata for each unique file tag -------------------------
 
         skipped_file_errors: list[RawDataFilesSkippedError] = []
+        import_ready_bq_metadata: list[RawBigQueryFileMetadata] = []
 
         file_tag_to_bq_files = defaultdict(list)
         for bq_file in unprocessed_bq_file_metadata:
@@ -231,6 +229,7 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
         for file_tag, bq_files in file_tag_to_bq_files.items():
             try:
                 self._sync_file_tag_pruning_metadata(postgres_hook, file_tag)
+                import_ready_bq_metadata.extend(bq_files)
             except Exception as e:
                 logger.error(
                     "Error verifying pruning config for file tag [%s]: %s", file_tag, e
@@ -249,7 +248,14 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
                     ]
                 )
 
-        return [error.serialize() for error in skipped_file_errors]
+        # TODO(#33971) add multiple outputs here to automatically do this
+        operator.xcom_push(
+            context=context,
+            key=SKIPPED_FILE_ERRORS,
+            value=[skipped_error.serialize() for skipped_error in skipped_file_errors],
+        )
+
+        return [metadata.serialize() for metadata in import_ready_bq_metadata]
 
     def _sync_file_tag_pruning_metadata(
         self, postgres_hook: PostgresHook, file_tag: str
