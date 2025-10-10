@@ -18,7 +18,6 @@
 Helper SQL queries for Texas
 """
 
-from typing import Optional
 
 from google.cloud import bigquery
 
@@ -29,9 +28,6 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
 )
-from recidiviz.calculator.query.state.views.tasks.state_specific_tasks_criteria_builders import (
-    contact_compliance_builder,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -41,72 +37,6 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
     get_reason_json_fields_query_template_for_criteria,
 )
 from recidiviz.utils.string_formatting import fix_indent
-
-
-def get_contact_info_for_compliance_builder() -> str:
-    """Returns a query that creates a contact_info table with the necessary fields
-    for the contact compliance builder."""
-    return """
-    SELECT 
-        person_id,
-        contact_date,
-        CASE
-            WHEN contact_reason_raw_text LIKE "%UNSCHEDULED%"
-                THEN CONCAT("UNSCHEDULED " || contact_method_raw_text)
-            WHEN JSON_VALUE(supervision_contact_metadata, '$.VIRTUAL_FLAG') = "1"
-              AND contact_method_raw_text = 'OFFICE'
-              THEN 'SCHEDULED VIRTUAL OFFICE'
-            WHEN contact_method_raw_text = "EMPLOYMENT"
-                THEN "SCHEDULED FIELD"
-            ELSE
-                CONCAT("SCHEDULED " || contact_method_raw_text)
-        END AS contact_type,
-        external_id as contact_external_id
-    FROM `{project_id}.normalized_state.state_supervision_contact` 
-    WHERE state_code = "US_TX" AND status = "COMPLETED"
-      AND contact_type in ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")
-
-    UNION ALL
-    
-    SELECT 
-        person_id,
-        contact_date,
-        "SCHEDULED COLLATERAL" AS contact_type,
-        external_id,
-    FROM `{project_id}.normalized_state.state_supervision_contact` 
-    WHERE state_code = "US_TX" AND status = "COMPLETED"
-      AND contact_type IN ("COLLATERAL", "BOTH_COLLATERAL_AND_DIRECT")
-    """
-
-
-def us_tx_contact_compliance_builder(
-    criteria_name: str,
-    description: str,
-    contact_type: str,
-    custom_contact_cadence_spans: Optional[str] = None,
-) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
-    """Returns a state-specific criteria view builder indicating the spans of time when
-    a person has on supervision has not met the contact compliance cadence for a given
-    contact type.
-
-    Args:
-        criteria_name (str): The name of the criteria
-        description (str): The description of the criteria
-        contact_type (int): The type of contact
-        custom_contact_cadence_spans (str): The custom contact cadence spans query.
-            Must contain date fields for `month_start` and `month_end`, indicating
-            the start and end of the period of time over which a contact standard
-            is applicable to the person. If not provided, the default query will
-            pull from the `contact_cadence_spans_materialized` table.
-    """
-    return contact_compliance_builder(
-        criteria_name=criteria_name,
-        description=description,
-        contact_type=contact_type,
-        custom_contact_events=get_contact_info_for_compliance_builder(),
-        custom_contact_cadence_spans=custom_contact_cadence_spans,
-        state_code=StateCode.US_TX,
-    )
 
 
 def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
@@ -346,7 +276,15 @@ def contact_compliance_builder_type_agnostic(
 
     -- Creates table of all contacts and adds scheduled/unscheduled prefix
     contact_info AS (
-        {get_contact_info_for_compliance_builder()}
+        SELECT
+            person_id,
+            contact_external_id,
+            contact_date,
+            contact_type,
+        FROM
+            `{{project_id}}.tasks_views.us_tx_contact_events_preprocessed_materialized` 
+        WHERE
+            status = "COMPLETED"
     ),
     -- Looks back to connect contacts to a given contact period they were completed in
     lookback_cte AS
