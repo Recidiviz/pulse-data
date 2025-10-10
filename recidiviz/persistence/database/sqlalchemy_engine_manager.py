@@ -165,7 +165,24 @@ class SQLAlchemyEngineManager(BaseEngineManager):
             cls.init_engine(
                 database_key=database_key, secret_prefix_override=secret_prefix_override
             )
-        return cls._engine_for_database.get(database_key, None)
+
+        engine = cls._engine_for_database.get(database_key, None)
+
+        # Add pool monitoring logging
+        if engine and hasattr(engine, "pool"):
+            try:
+                pool_stats = {
+                    "pool_size": engine.pool.size(),
+                    "checked_out": engine.pool.checkedout(),
+                    "checked_in": engine.pool.checkedin(),
+                    "overflow": engine.pool.overflow(),
+                    "invalid": engine.pool.invalid(),
+                }
+                logging.info("Pool stats for %s: %s", database_key, pool_stats)
+            except Exception as e:
+                logging.warning("Failed to get pool stats for %s: %s", database_key, e)
+
+        return engine
 
     @classmethod
     def get_server_postgres_instance_url(
