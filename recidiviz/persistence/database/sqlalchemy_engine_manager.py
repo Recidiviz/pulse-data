@@ -169,7 +169,7 @@ class SQLAlchemyEngineManager(BaseEngineManager):
         engine = cls._engine_for_database.get(database_key, None)
 
         # Add pool monitoring logging
-        if engine and hasattr(engine, "pool"):
+        if engine:
             try:
                 pool_stats = {
                     "pool_size": engine.pool.size(),
