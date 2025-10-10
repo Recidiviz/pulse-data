@@ -456,13 +456,13 @@ def contact_compliance_builder_type_agnostic(
             END AS period_type,
             CASE 
                 WHEN frequency = 1 AND frequency_date_part = "MONTH"
-                    THEN "EVERY MONTH"
+                    THEN "1 EVERY MONTH"
                 WHEN frequency = 1 AND frequency_date_part = "WEEK"
-                    THEN "EVERY WEEK"
+                    THEN "1 EVERY WEEK"
                 WHEN frequency = 1 AND frequency_date_part = "DAY"
-                    THEN "EVERY DAY"
+                    THEN "1 EVERY DAY"
                 ELSE
-                    CONCAT("EVERY ", frequency, " ", frequency_date_part, "S") 
+                    CONCAT("1 EVERY ", frequency, " ", frequency_date_part, "S") 
             END AS contact_cadence,
             frequency,
             frequency_date_part
