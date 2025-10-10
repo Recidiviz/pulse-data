@@ -52,7 +52,7 @@ class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin)
         eg. /Recidiviz_File_2024_12_27_01_01_01.csv"""
 
         # Regex pattern to match the desired filename format with a date
-        pattern = r"^Recidiviz_([^_]+)(_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2})?\.csv$"
+        pattern = r"^Recidiviz_(.+?)_(\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2})\.csv$"
 
         # Check if the file matches the pattern
         if path and re.match(pattern, path):
