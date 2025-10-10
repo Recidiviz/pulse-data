@@ -212,7 +212,7 @@ def functional_literacy_enrollment_side_panel_notes() -> str:
     ON peid.person_id = spa.person_id
         AND peid.state_code = 'US_AZ'
         AND peid.id_type = 'US_AZ_PERSON_ID'
-    WHERE participation_status_raw_text IN ('PARTICIPATING')
+    WHERE participation_status = "IN_PROGRESS"
     AND program_id LIKE '%FUNCTIONAL LITERACY%' 
     AND discharge_date IS NULL
     #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
