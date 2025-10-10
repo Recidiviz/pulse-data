@@ -30,7 +30,7 @@ import ruamel.yaml
 from more_itertools import one
 from pytablewriter import MarkdownTableWriter
 
-from recidiviz.common.file_system import get_all_files_recursive
+from recidiviz.common.file_system import get_all_files_recursive, is_valid_code_path
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.tools.docs.summary_file_generator import (
     SUMMARY_PATH,
@@ -632,7 +632,7 @@ def generate_documentation() -> int:
         v
         for v in os.listdir(ALL_SCHEMAS_PATH)
         # Filter out hidden files like .DS_Store / __pycache__
-        if not v.startswith(".") and not v.startswith("__")
+        if is_valid_code_path(v)
     ]
     modified = False
 

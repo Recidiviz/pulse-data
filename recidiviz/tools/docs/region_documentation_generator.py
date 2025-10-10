@@ -32,7 +32,11 @@ from typing import List, Optional, Sequence, Set
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.file_system import delete_files, get_all_files_recursive
+from recidiviz.common.file_system import (
+    delete_files,
+    get_all_files_recursive,
+    is_valid_code_path,
+)
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     STATE_RAW_DATA_FILE_HEADER_PATH,
@@ -98,6 +102,8 @@ def _create_ingest_catalog_summary() -> List[str]:
             f.lower()
             for f in listdir(INGEST_CATALOG_ROOT)
             if isdir(join(INGEST_CATALOG_ROOT, f))
+            # Filter out hidden files like .DS_Store / __pycache__
+            and is_valid_code_path(f)
         ]
     )
 
