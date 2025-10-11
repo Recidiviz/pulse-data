@@ -20,7 +20,7 @@ import base64
 import hashlib
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from flask import request
 from sqlalchemy import inspect
@@ -29,9 +29,12 @@ from sqlalchemy.engine.row import Row
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.auth.constants import PREDEFINED_ROLES
 from recidiviz.persistence.database.schema.case_triage.schema import (
+    PermissionsOverride,
     Roster,
+    StateRolePermissions,
     UserOverride,
 )
+from recidiviz.persistence.database.session import Session
 from recidiviz.utils import metadata, validate_jwt
 from recidiviz.utils.secrets import get_secret
 
@@ -183,6 +186,21 @@ def validate_roles(user_dict: Dict[str, Any]) -> None:
         raise ValueError(
             f"User {email_address} must have at least one of the following roles: {', '.join(PREDEFINED_ROLES)}"
         )
+
+
+def bulk_delete_feature_variant(
+    session: Session,
+    table: Union[Type[StateRolePermissions], Type[PermissionsOverride]],
+    feature_variant: str,
+) -> int:
+    return (
+        session.query(table)
+        .filter(table.feature_variants.op("?")(feature_variant))
+        .update(
+            {table.feature_variants: table.feature_variants.op("-")(feature_variant)},
+            synchronize_session=False,
+        )
+    )
 
 
 def convert_user_object_to_dict(obj: Roster | UserOverride) -> dict[str, Any]:

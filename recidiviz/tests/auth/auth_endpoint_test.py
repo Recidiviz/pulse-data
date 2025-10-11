@@ -178,6 +178,12 @@ class AuthEndpointTests(TestCase):
                 state_code=state_code,
                 role=role,
             )
+            self.delete_feature_variant_from_state_roles = (
+                lambda feature_variant: flask.url_for(
+                    "auth_endpoint_blueprint.delete_feature_variant_from_state_roles",
+                    feature_variant=feature_variant,
+                )
+            )
             self.import_ingested_users_async = flask.url_for(
                 "auth_endpoint_blueprint.import_ingested_users_async"
             )
@@ -647,6 +653,68 @@ class AuthEndpointTests(TestCase):
                 for user in json.loads(response.data)
             ]
             self.assertCountEqual(expected_users, actual_users)
+
+    def test_delete_feature_variant_from_state_roles(self) -> None:
+        leadership_role = generate_fake_default_permissions(
+            state="US_MO",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True, "B": True, "C": False},
+            feature_variants={"A": True, "D": True},
+        )
+        supervision_staff_role = generate_fake_default_permissions(
+            state="US_MO",
+            role=SUPERVISION_STAFF,
+            routes={"A": True},
+            feature_variants={"D": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                leadership_role,
+                supervision_staff_role,
+            ],
+        )
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            response = self.client.delete(
+                self.delete_feature_variant_from_state_roles("D"),
+                headers=self.headers,
+                json={"reason": "test"},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertReasonLog(
+                log.output,
+                "removing feature variant D from 2 state roles with reason: test",
+            )
+
+            # Check that the feature variant no longer exists
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            expected_response = [
+                {
+                    "stateCode": "US_MO",
+                    "role": LEADERSHIP_ROLE,
+                    "routes": {"A": True, "B": True, "C": False},
+                    "featureVariants": {"A": True},
+                },
+                {
+                    "stateCode": "US_MO",
+                    "role": SUPERVISION_STAFF,
+                    "routes": {"A": True},
+                    "featureVariants": {},
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_delete_nonexistent_feature_variant_from_state_roles(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.delete(
+                self.delete_feature_variant_from_state_roles("D"),
+                headers=self.headers,
+                json={"reason": "test"},
+            )
+            self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
 
     @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
     def test_import_ingested_users_async(self, mock_task_manager: MagicMock) -> None:

@@ -185,6 +185,10 @@ class AuthUsersEndpointTestCase(TestCase):
             self.import_ingested_users = flask.url_for(
                 "auth_endpoint_blueprint.import_ingested_users"
             )
+            self.feature_variants = flask.url_for(
+                "users.FeatureVariantAPI",
+                feature_variant="E",
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
@@ -1871,3 +1875,79 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, updates.status_code)
             error_message = "User parameter@testdomain.com must have at least one of the following roles:"
             self.assertIn(error_message, json.loads(updates.data)["message"])
+
+    ########
+    # DELETE /users/feature_variants/...
+    ########
+
+    def test_delete_feature_variant_from_permissions_overrides(self) -> None:
+        leadership_user = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_MO",
+            roles=[LEADERSHIP_ROLE],
+        )
+        supervision_user = generate_fake_rosters(
+            email="user@testdomain.com",
+            region_code="US_MO",
+            roles=[SUPERVISION_STAFF],
+        )
+        leadership_role = generate_fake_default_permissions(
+            state="US_MO",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True, "B": True, "C": False},
+            feature_variants={"A": True, "D": True},
+        )
+        supervision_staff = generate_fake_default_permissions(
+            state="US_MO",
+            role=SUPERVISION_STAFF,
+            routes={"A": True},
+            feature_variants={"A": True, "B": True},
+        )
+        leadership_user_permissions_override = generate_fake_permissions_overrides(
+            email="parameter@testdomain.com",
+            feature_variants={"E": True},
+        )
+        supervision_user_permissions_override = generate_fake_permissions_overrides(
+            email="user@testdomain.com",
+            feature_variants={"E": True, "F": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                leadership_user,
+                supervision_user,
+                leadership_role,
+                supervision_staff,
+                leadership_user_permissions_override,
+                supervision_user_permissions_override,
+            ],
+        )
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            response = self.client.delete(
+                self.feature_variants,
+                headers=self.headers,
+                json={"reason": "test"},
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertReasonLog(
+                log.output,
+                "removing feature variant E from 2 user permissions overrides with reason: test",
+            )
+
+            # Check that the feature variant no longer exists
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.snapshot.assert_match(json.loads(response.data), name="test_delete_feature_variant_from_permissions_overrides")  # type: ignore[attr-defined]
+
+    def test_delete_nonexistent_feature_variant_from_permissions_overrides(
+        self,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.delete(
+                self.feature_variants,
+                headers=self.headers,
+                json={"reason": "test"},
+            )
+            self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)

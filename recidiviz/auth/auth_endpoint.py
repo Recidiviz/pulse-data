@@ -38,6 +38,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from recidiviz.auth.cleanup_user_overrides import cleanup_user_overrides
 from recidiviz.auth.helpers import (
+    bulk_delete_feature_variant,
     convert_user_object_to_dict,
     generate_pseudonymized_id,
     generate_user_hash,
@@ -522,6 +523,47 @@ def get_auth_endpoint_blueprint(
                 f"State {state_code.upper()} with role {role.lower()} does not exist in StateRolePermissions.",
                 HTTPStatus.NOT_FOUND,
             )
+        except ValueError as error:
+            return (f"{error}", HTTPStatus.BAD_REQUEST)
+
+    @auth_endpoint_blueprint.route(
+        "/feature_variants/<feature_variant>", methods=["DELETE"]
+    )
+    def delete_feature_variant_from_state_roles(
+        feature_variant: str,
+    ) -> Union[tuple[Response, int], tuple[str, int]]:
+        """Removes a feature variant from all roles in all states."""
+        database_key = SQLAlchemyDatabaseKey.for_schema(
+            schema_type=SchemaType.CASE_TRIAGE
+        )
+        try:
+            with SessionFactory.using_database(database_key) as session:
+                num_affected_roles = bulk_delete_feature_variant(
+                    session, StateRolePermissions, feature_variant
+                )
+
+                if num_affected_roles == 0:
+                    return (
+                        f"Feature variant {feature_variant} does not exist in StateRolePermissions.",
+                        HTTPStatus.NOT_FOUND,
+                    )
+
+                request_json = assert_type(request.json, dict)
+                request_dict = convert_nested_dictionary_keys(
+                    request_json, to_snake_case
+                )
+                log_reason(
+                    request_dict,
+                    f"removing feature variant {feature_variant} from {num_affected_roles} state roles",
+                )
+
+                session.commit()
+
+                return (
+                    jsonify({}),
+                    HTTPStatus.OK,
+                )
+
         except ValueError as error:
             return (f"{error}", HTTPStatus.BAD_REQUEST)
 

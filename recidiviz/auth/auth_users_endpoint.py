@@ -47,6 +47,7 @@ from recidiviz.auth.auth_api_schemas import (
 )
 from recidiviz.auth.auth_endpoint import _upsert_user_rows
 from recidiviz.auth.helpers import (
+    bulk_delete_feature_variant,
     convert_to_dict_multiple_results,
     convert_to_dict_single_result,
     generate_pseudonymized_id,
@@ -613,6 +614,39 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
 
                 overrides.delete(synchronize_session=False)
                 current_session.commit()
+            except ValueError as error:
+                abort(HTTPStatus.BAD_REQUEST, message=f"{error}")
+
+    @users_blueprint.route("feature_variants/<path:feature_variant>")
+    class FeatureVariantAPI(MethodView):  # pylint: disable=unused-variable
+        """CRUD endpoints for /users/feature_variants/<feature_variant>"""
+
+        @users_blueprint.arguments(
+            ReasonSchema,
+            # Return BAD_REQUEST on schema validation errors
+            error_status_code=HTTPStatus.BAD_REQUEST,
+        )
+        @users_blueprint.response(HTTPStatus.OK)
+        def delete(self, body: Dict[str, str], feature_variant: str) -> None:
+            """Removes a feature variant from all custom permissions for all users."""
+            try:
+                num_affected_users = bulk_delete_feature_variant(
+                    current_session, PermissionsOverride, feature_variant
+                )
+
+                if num_affected_users == 0:
+                    abort(
+                        HTTPStatus.NOT_FOUND,
+                        message=f"Feature variant {feature_variant} does not exist in PermissionsOverride.",
+                    )
+
+                log_reason(
+                    body,
+                    f"removing feature variant {feature_variant} from {num_affected_users} user permissions overrides",
+                )
+
+                current_session.commit()
+
             except ValueError as error:
                 abort(HTTPStatus.BAD_REQUEST, message=f"{error}")
 

@@ -3,7 +3,6 @@ Snapshots for recidiviz/tests/auth/auth_users_endpoint_test.py
 Update snapshots automatically by running `pytest recidiviz/tests/auth/auth_users_endpoint_test.py --snapshot-update`
 Remember to include a docstring like this after updating the snapshots for Pylint purposes
 """
-
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
@@ -98,6 +97,43 @@ snapshots[
     "stateCode": "US_ID",
     "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
 }
+
+snapshots[
+    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_delete_feature_variant_from_permissions_overrides"
+] = [
+    {
+        "allowedSupervisionLocationIds": None,
+        "allowedSupervisionLocationLevel": "",
+        "blockedOn": None,
+        "district": None,
+        "emailAddress": "parameter@testdomain.com",
+        "externalId": None,
+        "featureVariants": {"A": True, "D": True},
+        "firstName": None,
+        "lastName": None,
+        "pseudonymizedId": None,
+        "roles": ["supervision_leadership"],
+        "routes": {"A": True, "B": True, "C": False},
+        "stateCode": "US_MO",
+        "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
+    },
+    {
+        "allowedSupervisionLocationIds": None,
+        "allowedSupervisionLocationLevel": "",
+        "blockedOn": None,
+        "district": None,
+        "emailAddress": "user@testdomain.com",
+        "externalId": None,
+        "featureVariants": {"A": True, "B": True, "F": True},
+        "firstName": None,
+        "lastName": None,
+        "pseudonymizedId": None,
+        "roles": ["supervision_line_staff"],
+        "routes": {"A": True},
+        "stateCode": "US_MO",
+        "userHash": "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk=",
+    },
+]
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] = {
     "allowedSupervisionLocationIds": "",
