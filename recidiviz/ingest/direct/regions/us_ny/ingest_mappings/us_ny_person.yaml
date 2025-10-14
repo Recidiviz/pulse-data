@@ -5,7 +5,7 @@ manifest_language: 1.0.0
 input_columns:
   new_nysid: STRING
   birth: DATETIME
-  gendid: STRING
+  genid: STRING
   race: STRING
   ethnic: STRING
 unused_columns: []
@@ -17,11 +17,15 @@ output:
           id_type: $literal("US_NY_SID")
     gender:
       $enum_mapping:
-        $raw_text: gendid
+        $raw_text: genid
         $mappings:
-          StateGender.MALE: M
-          StateGender.FEMALE: F
-          StateGender.NON_BINARY: X
+          StateGender.MALE: "1"
+          StateGender.FEMALE: "2"
+          StateGender.NON_BINARY: "3"
+          # TODO(#50870): Find definition for this value. Also, figure out if we want to use
+          # the genid column to hydrate gender, or the more detailed gendid column. If we
+          # use gendid, we'll need additional code value definitions for that column as well.
+          StateGender.INTERNAL_UNKNOWN: "0"
     birthdate: birth
     races:
       - StatePersonRace:
