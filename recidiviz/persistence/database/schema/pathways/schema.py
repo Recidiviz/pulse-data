@@ -30,6 +30,7 @@ from sqlalchemy import (
     String,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
@@ -87,6 +88,7 @@ class MetricMetadata(PathwaysBase):
 
     metric = Column(String, primary_key=True, nullable=False)
     last_updated = Column(Date, nullable=False)
+    facility_id_name_map = Column(JSONB, nullable=True)
 
     def to_json(self) -> Dict[str, Any]:
         json_dict = {}
@@ -94,6 +96,8 @@ class MetricMetadata(PathwaysBase):
             json_dict["metric"] = self.metric
         if self.last_updated:
             json_dict["lastUpdated"] = self.last_updated.isoformat()
+        if self.facility_id_name_map:
+            json_dict["facilityIdNameMap"] = self.facility_id_name_map
         return json_dict
 
 
