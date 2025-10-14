@@ -98,7 +98,7 @@ from recidiviz.pipelines.ingest.dataset_config import (
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
     get_all_source_table_addresses,
-    get_source_table_datasets,
+    get_source_table_addresses,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -120,6 +120,9 @@ from recidiviz.view_registry.address_to_complexity_score_mapping import (
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
     deployed_view_builders,
+)
+from recidiviz.view_registry.deprecated_view_reference_exemptions import (
+    DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS,
 )
 from recidiviz.view_registry.query_complexity_score_2025 import (
     get_query_complexity_score_2025,
@@ -284,37 +287,90 @@ class DeployedViewsTest(unittest.TestCase):
 
     def test_views_have_valid_parents(self) -> None:
         for project_id in DATA_PLATFORM_GCP_PROJECTS:
+            errors: list[Exception] = []
+
             with local_project_id_override(project_id):
                 candidate_view_builders = deployed_view_builders()
 
-                source_table_datasets = get_source_table_datasets(project_id)
+                source_table_addresses = get_source_table_addresses(project_id)
 
                 views = build_views_to_update(
                     candidate_view_builders=candidate_view_builders,
                     sandbox_context=None,
                 )
+                dag_walker = BigQueryViewDagWalker(views)
 
-            view_addresses = set()
+            all_known_addresses = set()
+            all_known_addresses |= source_table_addresses
             for view in views:
-                view_addresses.add(view.address)
+                all_known_addresses.add(view.address)
                 if view.materialized_address:
-                    view_addresses.add(view.materialized_address)
+                    all_known_addresses.add(view.materialized_address)
+
             for view in views:
+                view_node = dag_walker.node_for_view(view)
                 invalid_parents = {
                     parent_address
                     for parent_address in view.parent_tables
-                    if (
-                        parent_address.dataset_id not in source_table_datasets
-                        and parent_address not in view_addresses
-                    )
+                    if parent_address not in all_known_addresses
                 }
                 if invalid_parents:
-                    parent_strs = sorted(a.to_str() for a in invalid_parents)
-                    raise ValueError(
-                        f"Found view {view.address.to_str()} that references parent "
-                        f"tables that are neither registered views nor tables in a "
-                        f"valid source table dataset: {parent_strs}"
+                    errors.append(
+                        ValueError(
+                            f"Found view {view.address.to_str()} that references parent "
+                            f"tables that are neither registered views nor tables in a "
+                            f"valid source table dataset: "
+                            f"{BigQueryAddress.addresses_to_str(invalid_parents)}"
+                        )
                     )
+                deprecated_parents = {
+                    parent_address
+                    for parent_address in view_node.parent_node_addresses
+                    if parent_address in DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS
+                    and (
+                        view.address
+                        not in DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS[parent_address]
+                    )
+                }
+                if deprecated_parents:
+                    errors.append(
+                        ValueError(
+                            f"Found view {view.address.to_str()} that references parent "
+                            f"tables that are DEPRECATED. Please find an alternate source "
+                            f"for this data or reach out to #platform-team if you are "
+                            f"unsure which views to use instead. Deprecated parent views: "
+                            f"{BigQueryAddress.addresses_to_str(deprecated_parents)}"
+                        )
+                    )
+
+            for (
+                deprecated_address,
+                exemptions,
+            ) in DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS.items():
+                exempted_addresses = set(exemptions.keys())
+
+                actual_children_of_deprecated_view = dag_walker.nodes_by_address[
+                    deprecated_address
+                ].child_node_addresses
+
+                stale_exemptions = (
+                    exempted_addresses - actual_children_of_deprecated_view
+                )
+                if stale_exemptions:
+                    errors.append(
+                        ValueError(
+                            f"Found child view exemptions for deprecated view "
+                            f"[{deprecated_address.to_str()}] that are no longer actual "
+                            f"references. These should be removed from the exemption list: "
+                            f"{BigQueryAddress.addresses_to_str(stale_exemptions)}"
+                        )
+                    )
+
+            if errors:
+                raise ExceptionGroup(
+                    f"Found view parent validation errors for project [{project_id}]",
+                    errors,
+                )
 
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
