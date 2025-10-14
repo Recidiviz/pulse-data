@@ -25,7 +25,7 @@ This module defines the data models used for create, read, update, and delete (C
 import uuid
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from shapely import Point  # type: ignore
 
 from recidiviz.resource_search.src.models.resource_enums import (
@@ -37,15 +37,13 @@ from recidiviz.resource_search.src.typez.base import PageQueryParams
 
 
 class ResourceQueryParams(PageQueryParams):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     category: ResourceCategory
     subcategory: ResourceSubcategory
     position: Point
     distance: int = 1000
     embedding: list[float]
-
-    # pylint: disable=R0903
-    class Config:  # pylint: disable=too-few-public-methods
-        arbitrary_types_allowed = True
 
 
 class ResourceCandidate(BaseModel):

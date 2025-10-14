@@ -178,7 +178,11 @@ def get_inner_type_from_optional_type(optional_type: Type) -> Type:
     if not is_optional_type(optional_type):
         raise ValueError(f"Expected list type, found [{optional_type}]")
 
-    return one(t for t in get_args(optional_type) if t is not type(None))
+    return one(
+        t
+        for t in get_args(optional_type)
+        if t is not type(None)  # pylint: disable=unidiomatic-typecheck
+    )
 
 
 def get_non_optional_type(maybe_optional_type: Type) -> Type:
