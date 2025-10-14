@@ -203,7 +203,7 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         assert actual_metadata_config == expected_metadata_config
 
     def test_config_change_primary_keys_one_file(self) -> None:
-        pruning_enabled_file_tag = "singlePrimaryKey"
+        pruning_enabled_file_tag = "multipleColPrimaryKeyHistorical"
 
         self._insert_pruning_metadata(
             file_tag=pruning_enabled_file_tag,

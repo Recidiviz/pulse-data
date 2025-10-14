@@ -329,7 +329,7 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
                 raise ValueError(error_msg)
 
         logger.info("Upserting pruning metadata for file_tag [%s]", file_tag)
-        self._upsert_pruning_metadata(postgres_hook, raw_file_config)
+        self._upsert_pruning_metadata(postgres_hook, current_raw_file_pruning_config)
 
     def _get_raw_data_pruning_metadata_sql_query(self, file_tag: str) -> str:
         """Returns SQL query to fetch pruning metadata for a file tag."""
@@ -352,20 +352,16 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
         return one(one(result))
 
     def _upsert_pruning_metadata(
-        self, postgres_hook: PostgresHook, raw_file_config: DirectIngestRawFileConfig
+        self, postgres_hook: PostgresHook, raw_data_pruning_config: RawDataPruningConfig
     ) -> None:
         """Upserts the pruning metadata for a file tag."""
         query = StrictStringFormatter().format(
             UPSERT_PRUNING_METADATA_QUERY,
             region_code=self._state_code.value,
             raw_data_instance=self._raw_data_instance.value,
-            file_tag=raw_file_config.file_tag,
-            automatic_pruning_enabled=automatic_raw_data_pruning_enabled_for_file_config(
-                state_code=self._state_code,
-                raw_data_instance=self._raw_data_instance,
-                raw_file_config=raw_file_config,
-            ),
-            primary_keys=raw_file_config.primary_key_str,
-            raw_files_contain_full_historical_lookback=raw_file_config.always_historical_export,
+            file_tag=raw_data_pruning_config.file_tag,
+            automatic_pruning_enabled=raw_data_pruning_config.automatic_pruning_enabled,
+            primary_keys=",".join(raw_data_pruning_config.primary_keys),
+            raw_files_contain_full_historical_lookback=raw_data_pruning_config.raw_files_contain_full_historical_lookback,
         )
         postgres_hook.run(query)
