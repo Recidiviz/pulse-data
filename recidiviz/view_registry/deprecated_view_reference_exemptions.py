@@ -58,6 +58,9 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
+    SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -96,6 +99,12 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 )
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_BUILDER,
+)
+from recidiviz.observations.views.events.person.incarceration_release import (
+    VIEW_BUILDER as INCARCERATION_RELEASE_OBSERVATIONS_VIEW_BUILDER,
+)
+from recidiviz.observations.views.events.person.supervision_release import (
+    VIEW_BUILDER as SUPERVISION_RELEASE_OBSERVATIONS_VIEW_BUILDER,
 )
 from recidiviz.observations.views.spans.person.sentence_span import (
     VIEW_BUILDER as SENTENCE_SPAN_OBSERVATIONS_VIEW_BUILDER,
@@ -388,6 +397,125 @@ DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+    },
+    SENTENCE_SPANS_VIEW_BUILDER.address: {
+        INCARCERATION_RELEASE_OBSERVATIONS_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        SUPERVISION_RELEASE_OBSERVATIONS_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        SENTENCE_SPAN_OBSERVATIONS_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
+            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
+        ),
+        SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
+            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
+        ),
+        SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_INELIGIBLE_OFFENSE_CONVICTION_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_SEXUAL_EXPLOITATION_OF_CHILDREN_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_SEXUAL_OFFENSE_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_VIOLENT_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
+            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_AR_RESIDENT_METADATA_VIEW_BUILDER.address: (
+            "TODO(#46254): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46256): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: (
