@@ -62,6 +62,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
 from recidiviz.tools.looker.aggregated_metrics.custom_tasks_metrics_configurations import (
     TASKS_ASSIGNMENT_NAMES_TO_TYPES,
     TASKS_IMPACT_LOOKER_METRICS,
+    TASKS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configurations import (
     WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES,
@@ -167,7 +168,7 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=TASKS_IMPACT_LOOKER_METRICS,
             assignment_types_dict=TASKS_ASSIGNMENT_NAMES_TO_TYPES,
-            json_field_filters_with_suggestions={},
+            json_field_filters_with_suggestions=TASKS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
         )
 
         # Global usage
