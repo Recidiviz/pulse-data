@@ -2040,6 +2040,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tx_ingest_view_results.scheduled_supervision_contacts",
     "us_tx_ingest_view_results.sots_assessment",
     "us_tx_ingest_view_results.state_person",
+    "us_tx_ingest_view_results.state_person_housing_status_period",
     "us_tx_ingest_view_results.state_sentence",
     "us_tx_ingest_view_results.state_staff",
     "us_tx_ingest_view_results.state_staff_location_period",
