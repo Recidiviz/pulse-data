@@ -356,6 +356,7 @@ def normalize_group_lengths(
                 projected_parole_release_date_external=length.projected_parole_release_date_external,
                 projected_full_term_release_date_min_external=full_term_min,
                 projected_full_term_release_date_max_external=full_term_max,
+                sentence_group_length_metadata=length.sentence_group_length_metadata,
             )
         )
     return normalized_lengths
