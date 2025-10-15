@@ -29,7 +29,7 @@ schema:
   - name: category_type
     type: STRING
     mode: NULLABLE
-  - name: caseload_type
+  - name: caseload_category
     type: STRING
     mode: NULLABLE
 clustering_fields: null
