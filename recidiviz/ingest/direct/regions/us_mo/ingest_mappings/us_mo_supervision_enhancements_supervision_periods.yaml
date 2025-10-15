@@ -69,34 +69,32 @@ output:
               $mappings:
                 StateSupervisionLevel.ABSCONSION:
                   - "ESC" # Absconder
+                  - "ABS" # Absconder/Escape
                 StateSupervisionLevel.INTAKE:
                   - "IAP" # Initial Assessment Phase
                   # The following codes are no longer used according to MO, but may appear in historical records
                   - "PSI" # Pre Sentence Investigation
                 StateSupervisionLevel.UNSUPERVISED:
+                  - "NUS" # Not under supervision
                   - "NSV" # Not Under Supervision (case closed by court/board but still open at district level)
-                StateSupervisionLevel.INTERNAL_UNKNOWN:
-                  - "LV1" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
-                  - "LV2" # TODO(#45186): Find definition for this value, which started showing up on 7/9/25
-                  - "LV3" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
-                  - "ABS" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
-                  - "NUS" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
-                  - "PSN" # TODO(#45186): Find definition for this value, which started showing up on 7/11/25
                 StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
                   - "EMP" # Electronic Monitoring
                 StateSupervisionLevel.MINIMUM:
                   - "OOI" # Low Risk (low risk on ORAS)
+                  - "LV1" # Level I
                   # The following codes are no longer used according to MO, but may appear in historical records
                   - "NOI" # No Contract Monitoring Level I
                   - "MIN" # Minimum
                   - "MSC" # Automated Minimum
                 StateSupervisionLevel.MEDIUM:
                   - "OII" # Moderate Risk (moderate/low or moderate on ORAS)
+                  - "LV2" # Level II
                   # The following codes are no longer used according to MO, but may appear in historical records
                   - "NII" # No Contract Monitoring Level II
                   - "REG" # Regular Supervision
                 StateSupervisionLevel.HIGH:
                   - "III" # High Risk (high risk on ORAS)
+                  - "LV3" # Level III
                   # The following codes are no longer used according to MO, but may appear in historical records
                   - "ENH" # Enhanced
                 StateSupervisionLevel.MAXIMUM:
@@ -106,6 +104,7 @@ output:
                   - "JAL" # Incarceration/Jail
                   - "PRS" # Incarceration/Prison
                   - "SHK" # 120 Day Incarceration
+                  - "PSN" # Prison
                 StateSupervisionLevel.RESIDENTIAL_PROGRAM:
                   - "CPP" # Residential Community Placement (treatment)
                   # The following codes are no longer used according to MO, but may appear in historical records
