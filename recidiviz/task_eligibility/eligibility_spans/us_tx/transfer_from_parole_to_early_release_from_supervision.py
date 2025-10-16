@@ -31,6 +31,8 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_minimum_for_3_years,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
+    after_ars_ers_policy_effective_date,
+    case_type_eligible_for_ars_ers,
     no_warrant_with_sustained_violation_within_2_years,
     not_supervision_within_6_months_of_release_date,
     served_at_least_half_of_remaining_supervision_sentence,
@@ -52,6 +54,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_sustained_violation_within_2_years.VIEW_BUILDER,
         no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
         not_supervision_within_6_months_of_release_date.VIEW_BUILDER,
+        case_type_eligible_for_ars_ers.VIEW_BUILDER,
+        after_ars_ers_policy_effective_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_unsupervised_parole.VIEW_BUILDER,
 )
