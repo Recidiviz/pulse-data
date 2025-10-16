@@ -79,7 +79,7 @@ class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin)
         # Regex pattern to match filenames starting with "Recidiviz_", ending with ".csv",
         # and potentially containing a timestamp before the extension.
         filename_pattern = (
-            r"^Recidiviz_([^_]+)(_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2})?\.csv$"
+            r"^Recidiviz_(.+?)_(\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2})\.csv$"
         )
 
         # Match the file name with the pattern
