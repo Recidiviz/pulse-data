@@ -118,6 +118,9 @@ output:
                   - "Jamaican"
                   - "Other Asian Not Listed"
                   - "Tongan"
+                  - "Sri Lankan"
+                  - "Guamanian or Chamorro"
+                  - "Pakistani"
                 StateEthnicity.EXTERNAL_UNKNOWN:
                   - "Unknown"
               $ignore:
@@ -135,6 +138,7 @@ output:
             - "Planned (after release)"
             - "Planned (after ISC Transfer)"
             - "Community Program"
+            - "School/College"
           StateResidencyStatus.TRANSIENT:
             - "Temporary"
             - "Shelter Transient"
