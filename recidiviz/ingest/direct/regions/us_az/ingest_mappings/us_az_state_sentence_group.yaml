@@ -49,15 +49,21 @@ output:
                   $normalized_values_json_dict:
                     # Store the name of the date that is hydrating each field as metadata
                     # so that we can disambiguate the different release dates downstream.
+                    # If a row does not have either of the toggled dates hydrated, it will
+                    # not have a value in the field.
                     parole_eligibility_date_external:
                       $conditional:
                         - $if:
-                            $is_null: CommunitySupervisionBeginDate
+                            $not_null: CommunitySupervisionBeginDate
+                          $then: $literal("Community Supervision Begin Date")
+                        - $else_if:
+                            $not_null: TransitionToAbsoluteDischargeDate
                           $then: $literal("Transition to Absolute Discharge Date")
-                        - $else: $literal("Community Supervision Begin Date")
                     projected_full_term_release_date_min_external:
                       $conditional:
                         - $if:
-                            $is_null: EarnedReleaseCreditDate
+                            $not_null: EarnedReleaseCreditDate
+                          $then: $literal("Earned Release Credit Date")
+                        - $else_if:
+                            $not_null: AbsoluteDischargeDate
                           $then: $literal("Absolute Discharge Date")
-                        - $else: $literal("Earned Release Credit Date")
