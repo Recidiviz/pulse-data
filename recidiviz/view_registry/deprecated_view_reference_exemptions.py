@@ -19,6 +19,15 @@ deprecated views.
 """
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q1 import (
+    US_IX_SLS_Q1_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q3 import (
+    US_IX_SLS_Q3_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
+    US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_projected_date_sessions_v1_states import (
     SENTENCE_PROJECTED_DATE_SESSIONS_V1_STATES_VIEW_BUILDER,
 )
@@ -33,6 +42,9 @@ from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_char
 )
 from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
     SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentencing.charge_record import (
+    SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
@@ -61,8 +73,32 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sentences_preprocessed import (
+    US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_me.us_me_consecutive_sentences_preprocessed import (
+    US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_consecutive_sentences_preprocessed import (
+    US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_sentences_preprocessed import (
+    US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sentences_preprocessed import (
+    US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
+    US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
     SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
+    CLIENT_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
+    RESIDENT_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
@@ -70,8 +106,20 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_d
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_transfer_to_limited_supervision_form_record import (
     US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_resident_worker_request_record import (
+    US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_work_release_request_record import (
+    US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_xcrc_request_record import (
+    US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
     US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
+    US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
@@ -103,6 +151,10 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_BUILDER,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
 from recidiviz.ingest.views.unioned_normalized_state_views import (
     normalized_state_view_address_for_entity_table,
 )
@@ -122,9 +174,13 @@ from recidiviz.observations.views.events.person.supervision_release import (
 from recidiviz.observations.views.spans.person.sentence_span import (
     VIEW_BUILDER as SENTENCE_SPAN_OBSERVATIONS_VIEW_BUILDER,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateSupervisionSentence,
+)
+from recidiviz.pipelines.ingest.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.utils.state_utils.us_mi.us_mi_sentence_normalization_delegate import (
     StateIncarcerationSentence,
@@ -180,6 +236,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_inelig
 from recidiviz.task_eligibility.criteria.state_specific.us_az.only_drug_offense_convictions import (
     VIEW_BUILDER as US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_nd.no_escape_offense_within_1_year import (
+    VIEW_BUILDER as US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_pa.meets_special_circumstances_criteria_for_time_served import (
     VIEW_BUILDER as US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER,
 )
@@ -202,6 +261,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_unknow
     VIEW_BUILDER as US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER,
 )
 from recidiviz.tools.find_unused_bq_views import PSA_RISK_SCORES_VIEW_BUILDER
+from recidiviz.utils.types import assert_subclass
 from recidiviz.validation.configured_validations import (
     NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
     SENTENCE_COMPARISON_VIEW_BUILDER,
@@ -217,6 +277,9 @@ from recidiviz.validation.views.state.sentences.sentences_missing_date_imposed i
 )
 from recidiviz.validation.views.state.sentences.session_liberty_releases_with_no_sentence_completion_date import (
     SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.us_mi_flag_new_offense_codes import (
+    US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
 )
 
 
@@ -239,6 +302,163 @@ _ALL_SCHEMA_TABLE_VIEWS = [
     ),
     PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
 ]
+
+# These are views that still reference state-specific sentences v1 tables and have been
+# exempted. For example the views listed under (StateCode.US_IX, StateCharge) are views
+# that reference the us_ix_normalized_state.state_charge table directly.
+_SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
+    (StateCode.US_IX, StateCharge): {
+        US_IX_SLS_Q1_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_SLS_Q3_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        SENTENCING_CHARGE_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+    },
+    (StateCode.US_IX, StateIncarcerationSentence): {
+        US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_incarceration_sentence reference as "
+            "part of the v2 sentences migration"
+        ),
+    },
+    (StateCode.US_IX, StateSupervisionSentence): {
+        US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+    },
+    (StateCode.US_ME, StateCharge): {
+        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46256): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+    },
+    (StateCode.US_ME, StateIncarcerationSentence): {
+        RESIDENT_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46256): Remove state_incarceration_sentence reference as "
+            "part of the v2 sentences migration"
+        ),
+        US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46256): Remove state_incarceration_sentence reference as "
+            "part of the v2 sentences migration"
+        ),
+    },
+    (StateCode.US_ME, StateSupervisionSentence): {
+        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46256): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+        US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46256): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+    },
+    (StateCode.US_ND, StateCharge): {
+        US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46257): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address: (
+            "TODO(#46257): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+    },
+    (StateCode.US_ND, StateIncarcerationSentence): {
+        US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46257): This view should be deleted once ND no longer "
+            "relies on v1 sentences"
+        ),
+        US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46257): This view should be deleted once ND no longer "
+            "relies on v1 sentences"
+        ),
+    },
+    (StateCode.US_ND, StateSupervisionSentence): {
+        US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address: (
+            "TODO(#46257): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+        US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46257): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+    },
+    (StateCode.US_PA, StateCharge): {
+        US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46260): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46260): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+    },
+    (StateCode.US_TN, StateCharge): {
+        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46261): This view should be deleted once TN no longer "
+            "relies on v1 sentences"
+        ),
+    },
+    (StateCode.US_TN, StateIncarcerationSentence): {
+        CLIENT_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove state_incarceration_sentence reference as "
+            "part of the v2 sentences migration"
+        ),
+        US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46261): This view should be deleted once TN no longer "
+            "relies on v1 sentences"
+        ),
+        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46261): This view should be deleted once TN no longer "
+            "relies on v1 sentences"
+        ),
+    },
+    (StateCode.US_TN, StateSupervisionSentence): {
+        CLIENT_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove state_supervision_sentence reference as part "
+            "of the v2 sentences migration"
+        ),
+        US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46261): This view should be deleted once TN no longer "
+            "relies on v1 sentences"
+        ),
+        US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#46261): This view should be deleted once TN no longer "
+            "relies on v1 sentences"
+        ),
+    },
+    (StateCode.US_MI, StateCharge): {
+        US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER.address: (
+            "TODO(#46258): Update validation to read from state_charge_v2"
+        ),
+    },
+}
 
 # Maps deprecated view addresses to a dict of views that are allowed to reference
 # them. The inner dict maps each exempted view address to a reason string explaining
@@ -579,6 +799,8 @@ DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
     },
+    # TODO(#33402): Delete StateIncarcerationSentence once all states are migrated
+    # to v2 infra
     normalized_state_view_address_for_entity_table(
         StateIncarcerationSentence.get_table_id()
     ): {
@@ -604,6 +826,8 @@ DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "all downstream views to read from sentences v2"
         ),
     },
+    # TODO(#33402): Delete StateSupervisionSentence once all states are migrated
+    # to v2 infra
     normalized_state_view_address_for_entity_table(
         StateSupervisionSentence.get_table_id()
     ): {
@@ -629,6 +853,8 @@ DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "all downstream views to read from sentences v2"
         ),
     },
+    # TODO(#33402): Delete StateCharge once all states are migrated
+    # to v2 infra
     normalized_state_view_address_for_entity_table(StateCharge.get_table_id()): {
         # Boilerplate views that will be deleted automatically
         **{
@@ -655,5 +881,31 @@ DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): This view will no longer be needed once we have migrated "
             "all downstream views to read from sentences v2"
         ),
+    },
+    # State-specific v1 sentences table reference exemptions
+    **{
+        BigQueryAddress(
+            dataset_id=normalized_state_dataset_for_state_code(state_code),
+            table_id=assert_subclass(entity_cls, Entity).get_table_id(),
+        ): (
+            {
+                normalized_state_view_address_for_entity_table(
+                    assert_subclass(entity_cls, Entity).get_table_id()
+                ): (
+                    f"TODO(#33402): This view will be deleted when "
+                    f"{assert_subclass(entity_cls, Entity).get_table_id()} is deleted"
+                ),
+                **_SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS.get(
+                    (state_code, entity_cls), {}
+                ),
+            }
+        )
+        for state_code in get_existing_direct_ingest_states()
+        if state_code != StateCode.US_OZ
+        for entity_cls in [
+            StateIncarcerationSentence,
+            StateSupervisionSentence,
+            StateCharge,
+        ]
     },
 }

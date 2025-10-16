@@ -323,9 +323,12 @@ class DeployedViewsTest(unittest.TestCase):
                             f"{BigQueryAddress.addresses_to_str(invalid_parents)}"
                         )
                     )
+
                 deprecated_parents = {
                     parent_address
-                    for parent_address in view_node.parent_node_addresses
+                    for parent_address in (
+                        view_node.parent_node_addresses | view_node.source_addresses
+                    )
                     if parent_address in DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS
                     and (
                         view.address
@@ -349,13 +352,21 @@ class DeployedViewsTest(unittest.TestCase):
             ) in DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS.items():
                 exempted_addresses = set(exemptions.keys())
 
-                actual_children_of_deprecated_view = dag_walker.nodes_by_address[
-                    deprecated_address
-                ].child_node_addresses
+                if deprecated_address in dag_walker.nodes_by_address:
+                    actual_children = dag_walker.nodes_by_address[
+                        deprecated_address
+                    ].child_node_addresses
+                else:
+                    # The DAG walker doesn't index children for source tables so we
+                    # must find them in a less efficient way
+                    actual_children = {
+                        view.address
+                        for view in views
+                        if deprecated_address
+                        in dag_walker.node_for_view(view).source_addresses
+                    }
 
-                stale_exemptions = (
-                    exempted_addresses - actual_children_of_deprecated_view
-                )
+                stale_exemptions = exempted_addresses - actual_children
                 if stale_exemptions:
                     errors.append(
                         ValueError(
