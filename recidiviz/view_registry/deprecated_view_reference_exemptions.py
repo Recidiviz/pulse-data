@@ -37,6 +37,9 @@ from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import (
+    CHARGES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -100,6 +103,16 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_BUILDER,
 )
+from recidiviz.ingest.views.unioned_normalized_state_views import (
+    normalized_state_view_address_for_entity_table,
+)
+from recidiviz.ingest.views.view_config import (
+    get_view_builders_for_views_to_update as get_ingest_infra_view_builders,
+)
+from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
+from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live_snapshot import (
+    NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_VIEW_ID,
+)
 from recidiviz.observations.views.events.person.incarceration_release import (
     VIEW_BUILDER as INCARCERATION_RELEASE_OBSERVATIONS_VIEW_BUILDER,
 )
@@ -108,6 +121,13 @@ from recidiviz.observations.views.events.person.supervision_release import (
 )
 from recidiviz.observations.views.spans.person.sentence_span import (
     VIEW_BUILDER as SENTENCE_SPAN_OBSERVATIONS_VIEW_BUILDER,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateCharge,
+    StateSupervisionSentence,
+)
+from recidiviz.pipelines.utils.state_utils.us_mi.us_mi_sentence_normalization_delegate import (
+    StateIncarcerationSentence,
 )
 from recidiviz.task_eligibility.criteria.general.incarceration_past_half_full_term_release_date import (
     VIEW_BUILDER as INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER,
@@ -182,12 +202,43 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_unknow
     VIEW_BUILDER as US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER,
 )
 from recidiviz.tools.find_unused_bq_views import PSA_RISK_SCORES_VIEW_BUILDER
+from recidiviz.validation.configured_validations import (
+    NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
+    SENTENCE_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
+    PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_uniform_offense_labels import (
+    NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentences.sentences_missing_date_imposed import (
     SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.sentences.session_liberty_releases_with_no_sentence_completion_date import (
     SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
 )
+
+
+def _get_ingest_metadata_addresses_table(
+    state_table_id: str,
+) -> list[BigQueryAddress]:
+    """Returns addresses for all ingest_metadata views that reference the given table."""
+    addresses = []
+    table_prefix = f"ingest_state_metadata__{state_table_id}__"
+    for builder in get_ingest_infra_view_builders():
+        if builder.address.table_id.startswith(table_prefix):
+            addresses.append(builder.address)
+    return addresses
+
+
+_ALL_SCHEMA_TABLE_VIEWS = [
+    BigQueryAddress(
+        dataset_id=PLATFORM_KPIS_DATASET,
+        table_id=NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_VIEW_ID,
+    ),
+    PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
+]
 
 # Maps deprecated view addresses to a dict of views that are allowed to reference
 # them. The inner dict maps each exempted view address to a reason string explaining
@@ -526,6 +577,83 @@ DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+    },
+    normalized_state_view_address_for_entity_table(
+        StateIncarcerationSentence.get_table_id()
+    ): {
+        # Boilerplate views that will be deleted automatically
+        **{
+            view_address: (
+                "TODO(#33402): This view will be deleted when "
+                "state_incarceration_sentence is deleted"
+            )
+            for view_address in (
+                _ALL_SCHEMA_TABLE_VIEWS
+                + _get_ingest_metadata_addresses_table(
+                    StateIncarcerationSentence.get_table_id()
+                )
+            )
+        },
+        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#33402): This view should be deleted as part of the v2 sentences "
+            "migration."
+        ),
+        SENTENCE_COMPARISON_VIEW_BUILDER.address: (
+            "TODO(#33402): This view will no longer be needed once we have migrated "
+            "all downstream views to read from sentences v2"
+        ),
+    },
+    normalized_state_view_address_for_entity_table(
+        StateSupervisionSentence.get_table_id()
+    ): {
+        # Boilerplate views that will be deleted automatically
+        **{
+            view_address: (
+                "TODO(#33402): This view will be deleted when "
+                "state_supervision_sentence is deleted"
+            )
+            for view_address in (
+                _ALL_SCHEMA_TABLE_VIEWS
+                + _get_ingest_metadata_addresses_table(
+                    StateSupervisionSentence.get_table_id()
+                )
+            )
+        },
+        SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#33402): This view should be deleted as part of the v2 sentences "
+            "migration."
+        ),
+        SENTENCE_COMPARISON_VIEW_BUILDER.address: (
+            "TODO(#33402): This view will no longer be needed once we have migrated "
+            "all downstream views to read from sentences v2"
+        ),
+    },
+    normalized_state_view_address_for_entity_table(StateCharge.get_table_id()): {
+        # Boilerplate views that will be deleted automatically
+        **{
+            view_address: (
+                "TODO(#33402): This view will be deleted when state_charge is deleted"
+            )
+            for view_address in (
+                _ALL_SCHEMA_TABLE_VIEWS
+                + _get_ingest_metadata_addresses_table(StateCharge.get_table_id())
+            )
+        },
+        CHARGES_PREPROCESSED_VIEW_BUILDER.address: (
+            "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
+        ),
+        NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER.address: (
+            "TODO(#33402): We need to make a state_charge_v2 equivalent of this "
+            "validation, then delete this once all states are migrated to v2."
+        ),
+        NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER.address: (
+            "TODO(#33402): We need to make a state_charge_v2 equivalent of this "
+            "validation, then delete this once all states are migrated to v2."
+        ),
+        SENTENCE_COMPARISON_VIEW_BUILDER.address: (
+            "TODO(#33402): This view will no longer be needed once we have migrated "
+            "all downstream views to read from sentences v2"
         ),
     },
 }

@@ -305,9 +305,6 @@ from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_
 from recidiviz.validation.views.state.workflows.client_record_duplicate_person_external_ids import (
     CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.workflows.flag_new_offense_codes import (
-    FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.workflows.missing_client_record_rows_null_full_name import (
     MISSING_CLIENT_RECORD_ROWS_NULL_FULL_NAME_VIEW_BUILDER,
 )
@@ -325,6 +322,9 @@ from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_mi
 )
 from recidiviz.validation.views.state.workflows.pseudonymized_id_to_person_id_valid_primary_key import (
     PSEUDONYMIZED_ID_TO_PERSON_ID_VALID_PRIMARY_KEY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.us_mi_flag_new_offense_codes import (
+    US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff import (
     WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
@@ -433,7 +433,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
+            view_builder=US_MI_FLAG_NEW_OFFENSE_CODES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
