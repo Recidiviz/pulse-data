@@ -171,14 +171,9 @@ class SQLAlchemyEngineManager(BaseEngineManager):
         # Add pool monitoring logging
         if engine:
             try:
-                pool_stats = {
-                    "pool_size": engine.pool.size(),
-                    "checked_out": engine.pool.checkedout(),
-                    "checked_in": engine.pool.checkedin(),
-                    "overflow": engine.pool.overflow(),
-                    "invalid": engine.pool.invalid(),
-                }
-                logging.info("Pool stats for %s: %s", database_key, pool_stats)
+                logging.info(
+                    "Pool stats for %s: %s", database_key, engine.pool.status()
+                )
             except Exception as e:
                 logging.warning("Failed to get pool stats for %s: %s", database_key, e)
 
