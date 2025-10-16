@@ -91,12 +91,6 @@ from recidiviz.calculator.query.state.views.sentencing.staff_record import (
 from recidiviz.calculator.query.state.views.sessions.state_staff_id_to_legacy_supervising_officer_external_id import (
     STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_me.us_me_incarceration_staff_assignment_sessions_preprocessed import (
-    US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_staff_assignment_sessions_preprocessed import (
-    US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_VIEWS_DATASET,
     STATE_BASE_VIEWS_DATASET,
@@ -322,9 +316,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, st
     # jii_texting views
     US_IX_LSU_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     US_TX_SCHEDULED_CONTACTS_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
-    # sessions views
-    US_ME_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
-    US_ND_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
 }
 
 
