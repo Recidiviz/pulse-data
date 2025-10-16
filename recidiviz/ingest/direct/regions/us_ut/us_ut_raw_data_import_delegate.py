@@ -21,6 +21,9 @@ from recidiviz.ingest.direct.raw_data.base_raw_data_import_delegate import (
     BaseRawDataImportDelegate,
     skipped_error_for_unrecognized_file_tag_for_chunked_files,
 )
+from recidiviz.ingest.direct.raw_data.mixins.non_chunked_file_mixin import (
+    NonChunkedFileMixin,
+)
 from recidiviz.ingest.direct.raw_data.mixins.sequential_chunked_file_mixin import (
     SequentialChunkedFileMixin,
 )
@@ -31,15 +34,23 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 )
 
 
-class UsUtRawDataImportDelegate(BaseRawDataImportDelegate, SequentialChunkedFileMixin):
+class UsUtRawDataImportDelegate(
+    BaseRawDataImportDelegate, NonChunkedFileMixin, SequentialChunkedFileMixin
+):
     def coalesce_chunked_files(
         self, file_tag: str, gcs_files: list[RawGCSFileMetadata]
     ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
         """Logic for handling chunked files in Utah."""
 
-        if file_tag == "sprvsn_cntc" and min(
-            gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
-        ).date() > datetime.date(2025, 2, 13):
+        if file_tag == "sprvsn_cntc":
+            # sprvsn_cntc started being sent in chunks after 2/13/2025
+            if min(
+                gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
+            ).date() <= datetime.date(2025, 2, 13):
+                return NonChunkedFileMixin.group_single_non_chunked_file(
+                    file_tag=file_tag, gcs_files=gcs_files
+                )
+
             return SequentialChunkedFileMixin.group_files_with_sequential_suffixes(
                 file_tag=file_tag, gcs_files=gcs_files, zero_indexed=True
             )

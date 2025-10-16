@@ -379,6 +379,7 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder",
         "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_transformation_query_builder",
         "recidiviz.ingest.direct.raw_data.documentation_exemptions",
+        "recidiviz.ingest.direct.raw_data.mixins.non_chunked_file_mixin",
         "recidiviz.ingest.direct.raw_data.mixins.sequential_chunked_file_mixin",
         "recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory",
         "recidiviz.ingest.direct.raw_data.raw_data_pruning_utils",
