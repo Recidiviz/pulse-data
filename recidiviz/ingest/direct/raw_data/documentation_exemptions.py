@@ -464,24 +464,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "OUT_OF_SERVICE_REASON_ID",
             ]
         },
-        "DOC_PERSONAL_INFORMATION": {
-            "Comments": ["OTHER_BRANCH_COMMENTS", "COMMENTS"],
-            "No description available in AZ data dictionary as of 10/31/23.": [
-                "VA_VERIFIED",
-                "SCHOOL_STATE",
-                "CRIME_HABIT_FLAG",
-                "ACTIVE_FLAG",
-                "COMPREHEND_ENGLISH_FLAG",
-            ],
-            "Who supplied information": ["MILITARY_SOURCE_ID", "EDUCATION_SOURCE_ID"],
-            "#NAME?": [
-                "CHILD_SUPPORT_FLAG",
-                "SERVE_ARMED_FORCES_FLAG",
-                "NOTIFIED_VETERANS_ARREST_FLAG",
-                "DD214_REQUESTED_FLAG",
-                "RAISED_SEAL_FLAG",
-            ],
-        },
         "LOCATION": {
             "Location name": ["NAME_OF_LOCATION", "NS_NAME_OF_LOCATION"],
             "Lookup category = ADDRESS_DIRECTION": [
