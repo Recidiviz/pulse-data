@@ -102,7 +102,7 @@ products:
       - state_code: US_IX
         environment: production
       - state_code: US_NY
-        environment: staging
+        environment: production
   - name: Pathways officer page
     description: Transitions from supervision to prison, broken down by officer.
     exports:

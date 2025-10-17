@@ -47,7 +47,6 @@ metric_pipelines:
     state_code: US_NY
     metric_types: INCARCERATION_POPULATION_SPAN
     machine_type: c4a-highcpu-32
-    staging_only: True
 
   # Full US_AR calculations with no time limit
   - pipeline: supervision_metrics
