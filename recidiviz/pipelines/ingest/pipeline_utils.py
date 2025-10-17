@@ -49,24 +49,22 @@ DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_NC: "us-east1",
     StateCode.US_NE: "us-east1",
     StateCode.US_UT: "us-east1",
-    StateCode.US_CO: "us-east1",
-    StateCode.US_IA: "us-east1",
     # us-east4 (3 zones w/ c4a-highcpu-32)
-    # TODO(#50681): Moving everything out of us-east4 for now because it keeps hitting
-    # stock-out problems
+    StateCode.US_CO: "us-east4",
+    StateCode.US_IA: "us-east4",
     StateCode.US_ID: "us-east4",  # doesn't run
+    StateCode.US_IX: "us-east4",
     StateCode.US_OR: "us-east4",  # doesn't run
+    StateCode.US_OZ: "us-east4",
+    StateCode.US_PA: "us-east4",
     # us-central1 (3 zones w/ c4a-highcpu-32)
     StateCode.US_AZ: "us-central1",
     StateCode.US_MA: "us-central1",
     StateCode.US_MI: "us-central1",
     StateCode.US_NY: "us-central1",
     StateCode.US_TX: "us-central1",
-    StateCode.US_IX: "us-central1",
-    StateCode.US_OZ: "us-central1",
     # us-west1 (2 zones w/ c4a-highcpu-32)
     StateCode.US_MO: "us-west1",
     StateCode.US_ND: "us-west1",
     StateCode.US_TN: "us-west1",
-    StateCode.US_PA: "us-west1",
 }
