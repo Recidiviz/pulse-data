@@ -28,7 +28,6 @@ class SchemaType(enum.Enum):
     PATHWAYS = "PATHWAYS"
     WORKFLOWS = "WORKFLOWS"
     INSIGHTS = "INSIGHTS"
-    RESOURCE_SEARCH = "RESOURCE_SEARCH"
 
     @property
     def is_multi_db_schema(self) -> bool:
@@ -38,7 +37,6 @@ class SchemaType(enum.Enum):
             SchemaType.PATHWAYS,
             SchemaType.WORKFLOWS,
             SchemaType.INSIGHTS,
-            SchemaType.RESOURCE_SEARCH,
         ]
 
     @property

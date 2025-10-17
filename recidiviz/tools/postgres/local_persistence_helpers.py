@@ -40,9 +40,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
-from recidiviz.persistence.database.schema.resource_search.schema import (
-    ResourceSearchBase,
-)
 from recidiviz.persistence.database.schema.state.schema import StateBase
 from recidiviz.persistence.database.schema.workflows.schema import WorkflowsBase
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -201,5 +198,4 @@ DECLARATIVE_BASES = [
     PathwaysBase,
     WorkflowsBase,
     InsightsBase,
-    ResourceSearchBase,
 ]

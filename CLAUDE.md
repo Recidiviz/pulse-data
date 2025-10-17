@@ -30,7 +30,6 @@ https://docs.claude.com/en/docs/claude-code/memory
 - Build dev image: `pipenv run docker-build-dev`
 - Admin panel: `pipenv run docker-admin`
 - Justice Counts: `pipenv run docker-jc`
-- Resource Search: `pipenv run docker-resource-search`
 
 ### Querying actual data 
 The BigQuery MCP server allows you to query for actual data. However, never

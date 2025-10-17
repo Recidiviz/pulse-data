@@ -4,7 +4,6 @@
 # DADS-owned code
 
 # R&D-owned code
-recidiviz/persistence/**/resource_search/** @nichelle-hall @roshcagra
 
 # Polaris-owned code
 recidiviz/persistence/**/case_triage/** @Recidiviz/polaris

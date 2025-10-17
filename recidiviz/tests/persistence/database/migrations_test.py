@@ -593,13 +593,6 @@ class MigrationsTestTest(TestCase):
             # longer deployed in BQ and we just use the SQLAlchemy schema definition
             # for certain schema introspection conveniences.
             SchemaType.STATE,
-            # Temporarily skipping migration test coverage for RESOURCE_SEARCH schema.
-            # This schema requires PostGIS to be installed locally for tests to pass,
-            # which isn't guaranteed across all developer machines and isn't installed
-            # in CI yet. Until we add full PostGIS support in test environments, we are
-            # skipping these tests to unblock development.
-            # TODO(#42714): Re-enable RESOURCE_SEARCH migration tests once PostGIS is supported in local + CI environments.
-            SchemaType.RESOURCE_SEARCH,
         }
 
         if missing_coverage := all_schemas - schemas_with_coverage - exempt_schemas:
