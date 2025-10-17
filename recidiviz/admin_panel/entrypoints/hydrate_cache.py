@@ -36,6 +36,17 @@ if __name__ == "__main__":
 
     initialize_engines(schema_types=[SchemaType.OPERATIONS])
 
+    exceptions = []
     for store in stores.all_stores:
         logging.info("Hydrating %s", store)
-        store.hydrate_cache()
+        try:
+            store.hydrate_cache()
+        except Exception as e:
+            logging.exception("Failed to hydrate cache for %s: %s", store, e)
+            exceptions.append(e)
+
+    if exceptions:
+        raise ExceptionGroup(
+            f"Failed to hydrate {len(exceptions)} store(s). See logs for details.",
+            exceptions,
+        )
