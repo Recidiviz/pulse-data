@@ -40,7 +40,9 @@ output:
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: "CUSTODY_CLASSIFICATION" # Recidiviz-generated code for non-admission custody level changes
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: "143" # RETURN ESCAPEE
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: "150" # RET ERROR DISCH
-                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: # TODO(#47465): Figure out how to map these values
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - "INFERRED_ENTRY"
+                  # TODO(#47465): Figure out how to map these values
                   - "101" # NT PAR VIOLATOR
                   - "102" # NT C-R VIOLATOR
                   - "103" # NT STAT VIOLATOR
@@ -114,6 +116,7 @@ output:
                         - "224" # COND REL TO FEDS
                       StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                         - "UNKNOWN_RELEASE" # Recidiviz-generated code for inferred releases, which don't have a known release reason.
+                        - "INFERRED_ENTRY"
                         # TODO(#47465): Figure out how to map these values
                         - "200" # COURT DISCHARGE
                         - "201" # OTHER DISCHARGE
