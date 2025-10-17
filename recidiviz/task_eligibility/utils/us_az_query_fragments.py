@@ -440,6 +440,16 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
             OR SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.recidiviz_{opp_name.lower()}_date') AS DATE)
                     > DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
         )
+    
+    UNION ALL
+    
+    -- Add in the Overdue for ACIS group
+    SELECT
+        *,
+        "OVERDUE" AS metadata_tab_description,
+        "OVERDUE" AS metadata_tab_name,
+    FROM 
+        acis_{opp_name.lower()}_date_overdue
     """
 
 
