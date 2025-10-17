@@ -93,8 +93,9 @@ def collect_and_build_custom_metrics_views_for_package(
     # Create subdirectory for all subquery views
     output_subdirectory = os.path.join(output_directory, "subqueries")
 
-    for unit_of_observation_type in set(
-        metric.unit_of_observation_type for metric in metrics
+    for unit_of_observation_type in sorted(
+        set(metric.unit_of_observation_type for metric in metrics),
+        key=lambda t: t.value,
     ):
         unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
         build_assignments_lookml_view(

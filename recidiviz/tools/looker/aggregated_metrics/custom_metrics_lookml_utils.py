@@ -910,8 +910,8 @@ def build_custom_metrics_lookml_view(
     {fix_indent(
         _generate_single_observation_type_aggregated_metric_lookml_query_template(
             lookml_views_package_name,
-            observation_type, 
-            metric_class, 
+            observation_type,
+            metric_class,
             metrics,
             list(json_field_filters_with_suggestions.keys()) if json_field_filters_with_suggestions else [],
             assignment_types_dict
@@ -920,10 +920,10 @@ def build_custom_metrics_lookml_view(
     )}
 )
         """
-        for (
-            observation_type,
-            metric_class,
-        ), metrics in metrics_by_unit_of_observation_type_and_metric_class.items()
+        for (observation_type, metric_class,), metrics in sorted(
+            metrics_by_unit_of_observation_type_and_metric_class.items(),
+            key=lambda item: (item[0][0].value, item[0][1].__name__),
+        )
     ]
     all_metric_ctes_query_fragment = "," + ",\n".join(all_metric_ctes)
 
