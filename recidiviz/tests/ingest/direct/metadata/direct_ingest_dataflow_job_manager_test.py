@@ -62,66 +62,68 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
 
     def test_get_latest_job(self) -> None:
         # most recent job
-        most_recent_job_id = "2020-10-01_00_00_00"
-        self.job_manager.add_job(
-            job_id=most_recent_job_id,
+        most_recent_job = self.job_manager.add_job(
+            job_id="2020-10-01_00_00_00",
             state_code=StateCode.US_XX,
+            location="us-east4",
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         # earlier
-        earlier_job_id = "2020-09-01_00_00_00"
-        self.job_manager.add_job(
-            job_id=earlier_job_id,
+        _earlier_job = self.job_manager.add_job(
+            job_id="2020-09-01_00_00_00",
             state_code=StateCode.US_XX,
+            location="us-east2",
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
         # earlier and invalidated
-        invalidated_job_id = "2020-09-01_00_00_00-invalidated"
-        self.job_manager.add_job(
-            job_id=invalidated_job_id,
+        _invalidated_job = self.job_manager.add_job(
+            job_id="2020-09-01_00_00_00-invalidated",
             state_code=StateCode.US_XX,
+            location="us-east1",
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
             is_invalidated=True,
         )
 
         # other instance
-        other_instance_job_id = "2020-12-01_01_01-other_instance"
-        self.job_manager.add_job(
-            job_id=other_instance_job_id,
+        other_instance_job = self.job_manager.add_job(
+            job_id="2020-12-01_01_01-other_instance",
             state_code=StateCode.US_XX,
+            location="us-east4",
             ingest_instance=DirectIngestInstance.SECONDARY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
 
         # other region
-        other_region_job_id = "2020-12-01_01_01-other_region"
-        self.job_manager.add_job(
-            job_id=other_region_job_id,
+        other_region_job = self.job_manager.add_job(
+            job_id="2020-12-01_01_01-other_region",
             state_code=StateCode.US_YY,
+            location="us-east4",
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
 
         # Act
-        actual = self.job_manager.get_job_id_for_most_recent_job(
+        actual = self.job_manager.get_most_recent_job(
             state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
         )
 
         # Assert
-        self.assertEqual(actual, most_recent_job_id)
+        self.assertEqual(actual, most_recent_job)
 
         # Act 2
-        all_jobs = self.job_manager.get_most_recent_job_ids_by_state_and_instance()
+        all_jobs = (
+            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance()
+        )
 
         # Assert 2
         expected = {
-            StateCode.US_YY: {DirectIngestInstance.PRIMARY: other_region_job_id},
+            StateCode.US_YY: {DirectIngestInstance.PRIMARY: other_region_job},
             StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: most_recent_job_id,
-                DirectIngestInstance.SECONDARY: other_instance_job_id,
+                DirectIngestInstance.PRIMARY: most_recent_job,
+                DirectIngestInstance.SECONDARY: other_instance_job,
             },
         }
 
@@ -129,16 +131,16 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
 
     def test_get_latest_job_doesnt_exist(self) -> None:
         # other instance
-        other_instance_job_id = "2020-12-01_01_01-other_instance"
-        self.job_manager.add_job(
-            job_id=other_instance_job_id,
+        other_instance_job = self.job_manager.add_job(
+            job_id="2020-12-01_01_01-other_instance",
             state_code=StateCode.US_XX,
+            location="us-east4",
             ingest_instance=DirectIngestInstance.SECONDARY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
 
         # Act
-        actual = self.job_manager.get_job_id_for_most_recent_job(
+        actual = self.job_manager.get_most_recent_job(
             state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
         )
 
@@ -146,12 +148,14 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
         self.assertEqual(actual, None)
 
         # Act 2
-        all_jobs = self.job_manager.get_most_recent_job_ids_by_state_and_instance()
+        all_jobs = (
+            self.job_manager.get_most_recent_jobs_location_and_id_by_state_and_instance()
+        )
 
         # Assert 2
         expected = {
             StateCode.US_XX: {
-                DirectIngestInstance.SECONDARY: other_instance_job_id,
+                DirectIngestInstance.SECONDARY: other_instance_job,
             },
         }
 

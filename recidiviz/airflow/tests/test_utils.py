@@ -26,15 +26,19 @@ from unittest.mock import patch
 
 import attr
 from airflow import DAG, settings
-from airflow.models import BaseOperator, DagRun, TaskInstance, XCom
+from airflow.models import BaseOperator, Connection, DagRun, TaskInstance, XCom
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils import timezone
 from airflow.utils.context import Context
 from airflow.utils.db import initdb, resetdb
 from airflow.utils.state import DagRunState, State, TaskInstanceState
 from airflow.utils.types import DagRunType
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeMeta, Session, close_all_sessions
 
 from recidiviz import airflow as recidiviz_airflow_module
+from recidiviz.persistence.database.schema_utils import schema_type_to_schema_base
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils.types import assert_type
@@ -81,11 +85,15 @@ class AirflowIntegrationTest(unittest.TestCase):
     metas: Optional[List[DeclarativeMeta]] = None
     conn_id: str = "local_test_db"
     project_id: str = "recidiviz-testing"
+    additional_databases_to_create: list[SQLAlchemyDatabaseKey] = []
+    postgres_hooks: dict[SQLAlchemyDatabaseKey, PostgresHook] = {}
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.postgres_launch_result = (
-            local_postgres_helpers.start_on_disk_postgresql_database()
+            local_postgres_helpers.start_on_disk_postgresql_database(
+                additional_databases_to_create=cls.additional_databases_to_create
+            )
         )
         cls.environment_patcher = patch(
             "os.environ",
@@ -100,9 +108,36 @@ class AirflowIntegrationTest(unittest.TestCase):
         # Configure settings.Session() to use the new on-disk postgres
         settings.initialize()
 
+        # Connections must be made after Airflow settings have been initialized
+        for database_key in cls.additional_databases_to_create:
+            url = cls.postgres_launch_result.url(database_name=database_key.db_name)
+
+            # Create a real PostgresHook connected to the local test operations database
+            postgres_hook = PostgresHook(
+                connection=Connection(
+                    host=url.host,
+                    login=url.username,
+                    password=url.password,
+                    schema=url.database,
+                    port=url.port,
+                ),
+                database=url.database,
+            )
+
+            cls.postgres_hooks[database_key] = postgres_hook
+
+            engine = create_engine(
+                cls.postgres_launch_result.url(database_name=database_key.db_name)
+            )
+            schema_type_to_schema_base(database_key.schema_type).metadata.create_all(
+                engine
+            )
+            engine.dispose()
+
     @classmethod
     def tearDownClass(cls) -> None:
         close_all_sessions()
+        settings.engine.dispose()
         cls.environment_patcher.stop()
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.postgres_launch_result

@@ -16,7 +16,8 @@
 # =============================================================================
 """Handles reading metadata about ingest pipeline jobs."""
 import datetime
-from typing import Dict, Optional
+from collections import defaultdict
+from typing import Optional, TypeAlias
 
 from sqlalchemy import func
 
@@ -28,6 +29,8 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment
 
+DataflowJobLocationID: TypeAlias = tuple[str | None, str]
+
 
 class DirectIngestDataflowJobManager:
     """Reads metadata about ingest pipeline jobs."""
@@ -35,46 +38,70 @@ class DirectIngestDataflowJobManager:
     def __init__(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
-    def get_most_recent_job_ids_by_state_and_instance(
+    def get_most_recent_jobs_location_and_id_by_state_and_instance(
         self,
-    ) -> Dict[StateCode, Dict[DirectIngestInstance, str]]:
-        """Returns a map with the job_id for the most recent successful ingest Dataflow
-        pipeline for each state_code and ingest instance that has ever had a successful
-        pipeline complete.
+    ) -> dict[StateCode, dict[DirectIngestInstance, DataflowJobLocationID]]:
+        """Returns a map with the (location, job_id) tuple for the most recent successful
+        ingest Dataflow pipeline for each state_code and ingest instance that has ever
+        had a successful pipeline complete.
         """
         with SessionFactory.using_database(self.database_key) as session:
-            subquery = session.query(
-                schema.DirectIngestDataflowJob.region_code,
-                schema.DirectIngestDataflowJob.ingest_instance,
-                schema.DirectIngestDataflowJob.job_id,
-                func.row_number()
-                .over(
-                    partition_by=[
-                        schema.DirectIngestDataflowJob.region_code,
-                        schema.DirectIngestDataflowJob.ingest_instance,
-                    ],
-                    order_by=schema.DirectIngestDataflowJob.completion_time.desc(),
+            # Get the maximum completion_time for each region_code and ingest_instance
+            max_completion_subquery = (
+                session.query(
+                    schema.DirectIngestDataflowJob.region_code,
+                    schema.DirectIngestDataflowJob.ingest_instance,
+                    func.max(schema.DirectIngestDataflowJob.completion_time).label(
+                        "max_completion_time"
+                    ),
                 )
-                .label("row_num"),
-            ).subquery()
-            results = session.query(subquery).filter(subquery.c.row_num == 1).all()
+                .group_by(
+                    schema.DirectIngestDataflowJob.region_code,
+                    schema.DirectIngestDataflowJob.ingest_instance,
+                )
+                .subquery()
+            )
 
-            jobs: Dict[StateCode, Dict[DirectIngestInstance, str]] = {}
-            for region_code_str, instance_str, job_id, _rn in results:
-                state_code = StateCode(region_code_str)
-                instance = DirectIngestInstance[instance_str]
-                if state_code not in jobs:
-                    jobs[state_code] = {}
-                jobs[state_code][instance] = job_id
+            # Join back to get the full job records for the most recent completion times
+            results = (
+                session.query(schema.DirectIngestDataflowJob)
+                .join(
+                    max_completion_subquery,
+                    (
+                        schema.DirectIngestDataflowJob.region_code
+                        == max_completion_subquery.c.region_code
+                    )
+                    & (
+                        schema.DirectIngestDataflowJob.ingest_instance
+                        == max_completion_subquery.c.ingest_instance
+                    )
+                    & (
+                        schema.DirectIngestDataflowJob.completion_time
+                        == max_completion_subquery.c.max_completion_time
+                    ),
+                )
+                .all()
+            )
+
+            jobs: dict[
+                StateCode, dict[DirectIngestInstance, DataflowJobLocationID]
+            ] = defaultdict(dict)
+            for job in results:
+                state_code = StateCode(job.region_code)
+                instance = DirectIngestInstance[job.ingest_instance]
+                jobs[state_code][instance] = (job.location, job.job_id)
+
             return jobs
 
-    def get_job_id_for_most_recent_job(
+    def get_most_recent_job(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
-    ) -> Optional[str]:
+    ) -> Optional[DataflowJobLocationID]:
         """For the provided state_code and ingest_instance, returns the ingest pipline
         Dataflow job id for the most recent successful run.
         """
-        all_most_recent = self.get_most_recent_job_ids_by_state_and_instance()
+        all_most_recent = (
+            self.get_most_recent_jobs_location_and_id_by_state_and_instance()
+        )
         if state_code not in all_most_recent:
             return None
 
@@ -100,18 +127,21 @@ class DirectIngestDataflowJobManager:
     def add_job(
         self,
         job_id: str,
+        location: str,
         state_code: StateCode,
         ingest_instance: DirectIngestInstance,
         completion_time: datetime.datetime = datetime.datetime.now(),
         is_invalidated: bool = False,
-    ) -> None:
+    ) -> DataflowJobLocationID:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(
                 schema.DirectIngestDataflowJob(
                     job_id=job_id,
                     region_code=state_code.value,
+                    location=location,
                     ingest_instance=ingest_instance.value,
                     completion_time=completion_time,
                     is_invalidated=is_invalidated,
                 )
             )
+        return location, job_id

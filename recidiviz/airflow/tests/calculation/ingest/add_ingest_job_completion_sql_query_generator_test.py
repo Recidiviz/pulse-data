@@ -23,6 +23,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_query_generator import (
+    ADD_INGEST_JOB_COMPLETION_SQL,
     AddIngestJobCompletionSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
@@ -34,17 +35,23 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
     """Unit tests for AddIngestJobCompletionSqlQueryGenerator"""
 
     def test_generates_sql_correctly(self) -> None:
-        expected_query = """
-            INSERT INTO direct_ingest_dataflow_job
-                (job_id, region_code, ingest_instance, completion_time , is_invalidated)
-            VALUES
-                ('test_job_id', 'US_XX', 'PRIMARY', NOW(), FALSE);
-        """
+        expected_query = ADD_INGEST_JOB_COMPLETION_SQL
+        expected_parameters = {
+            "job_id": "test_job_id",
+            "region_code": "US_XX",
+            "location": "test_location",
+            "ingest_instance": "PRIMARY",
+            "is_invalidated": False,
+        }
 
-        result = AddIngestJobCompletionSqlQueryGenerator.insert_sql_query(
-            job_id="test_job_id", region_code="US_XX", ingest_instance="PRIMARY"
+        query, parameters = AddIngestJobCompletionSqlQueryGenerator.insert_sql_query(
+            job_id="test_job_id",
+            region_code="US_XX",
+            location="test_location",
+            ingest_instance="PRIMARY",
         )
-        self.assertEqual(result, expected_query)
+        self.assertEqual(query, expected_query)
+        self.assertEqual(parameters, expected_parameters)
 
     def test_insert_statement_generated_correctly(self) -> None:
         generator = AddIngestJobCompletionSqlQueryGenerator(
@@ -67,15 +74,20 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
 
         mock_context.__getitem__.side_effect = _context_get
 
-        mock_operator.xcom_pull.return_value = {"id": "test_job_id"}
+        mock_operator.xcom_pull.return_value = {
+            "id": "test_job_id",
+            "location": "us-east1",
+        }
 
         generator.execute_postgres_query(mock_operator, mock_postgres, mock_context)
 
         mock_postgres.run.assert_called_with(
-            """
-            INSERT INTO direct_ingest_dataflow_job
-                (job_id, region_code, ingest_instance, completion_time , is_invalidated)
-            VALUES
-                ('test_job_id', 'US_XX', 'PRIMARY', NOW(), FALSE);
-        """
+            sql=ADD_INGEST_JOB_COMPLETION_SQL,
+            parameters={
+                "job_id": "test_job_id",
+                "ingest_instance": "PRIMARY",
+                "region_code": "US_XX",
+                "location": "us-east1",
+                "is_invalidated": False,
+            },
         )

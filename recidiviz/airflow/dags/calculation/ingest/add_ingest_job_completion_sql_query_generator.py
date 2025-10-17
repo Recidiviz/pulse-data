@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The CloudSQLQueryGenerator for adding job completion info to DirectIngestDataflowJob."""
-from typing import Any, Dict
+from typing import Any
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -25,6 +25,13 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+
+ADD_INGEST_JOB_COMPLETION_SQL = """
+    INSERT INTO direct_ingest_dataflow_job
+        (job_id, region_code, location, ingest_instance, completion_time, is_invalidated)
+    VALUES
+        (%(job_id)s, %(region_code)s, %(location)s, %(ingest_instance)s, NOW(), %(is_invalidated)s);
+"""
 
 
 class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
@@ -43,23 +50,28 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     ) -> None:
         """Inserts the job completion info into DirectIngestDataflowJob."""
 
-        pipeline: Dict[str, Any] = operator.xcom_pull(
+        pipeline: dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
 
-        postgres_hook.run(
-            self.insert_sql_query(
-                job_id=pipeline["id"],
-                region_code=self.region_code,
-                ingest_instance=DirectIngestInstance.PRIMARY.value,
-            )
+        query, parameters = self.insert_sql_query(
+            job_id=pipeline["id"],
+            location=pipeline["location"],
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY.value,
         )
+        postgres_hook.run(query, parameters=parameters)
 
     @staticmethod
-    def insert_sql_query(job_id: str, region_code: str, ingest_instance: str) -> str:
-        return f"""
-            INSERT INTO direct_ingest_dataflow_job
-                (job_id, region_code, ingest_instance, completion_time , is_invalidated)
-            VALUES
-                ('{job_id}', '{region_code.upper()}', '{ingest_instance.upper()}', NOW(), FALSE);
-        """
+    def insert_sql_query(
+        job_id: str, region_code: str, location: str, ingest_instance: str
+    ) -> tuple[str, dict[str, Any]]:
+        parameters = {
+            "job_id": job_id,
+            "region_code": region_code.upper(),
+            "location": location,
+            "ingest_instance": ingest_instance.upper(),
+            "is_invalidated": False,
+        }
+
+        return ADD_INGEST_JOB_COMPLETION_SQL, parameters

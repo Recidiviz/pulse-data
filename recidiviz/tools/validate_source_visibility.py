@@ -327,6 +327,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.persistence",
                 "recidiviz.tests.ingest.direct.fake_regions",
                 "recidiviz.tests.metrics.export.fixtures",
                 "recidiviz.tests.pipelines",
@@ -421,6 +422,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.persistence",
                 "recidiviz.cloud_storage.bytes_chunk_reader",
                 "recidiviz.cloud_storage.read_only_csv_normalizing_stream",
                 "recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder",
@@ -494,6 +496,8 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.common",
+                "recidiviz.persistence",
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.utils.script_helpers",
                 "recidiviz.tools.postgres.local_postgres_helpers",
@@ -535,6 +539,7 @@ def main() -> int:
             {
                 *valid_sftp_dag_prefixes,
                 "recidiviz.airflow.tests",
+                "recidiviz.persistence",
                 "recidiviz.persistence.database.schema.operations.schema",
                 "recidiviz.persistence.database.database_entity",
                 "recidiviz.persistence.entity.core_entity",

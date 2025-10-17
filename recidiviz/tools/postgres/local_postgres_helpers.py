@@ -30,6 +30,7 @@ from typing import Dict, Optional
 import attr
 from sqlalchemy.engine import URL
 
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.test_setup_utils import get_pytest_worker_id
 from recidiviz.tools.utils.script_helpers import (
     retry_on_exceptions_with_backoff,
@@ -139,7 +140,7 @@ class OnDiskPostgresLaunchResult:
 
 @environment.local_only
 def start_on_disk_postgresql_database(
-    additional_databases_to_create: list[str] | None = None,
+    additional_databases_to_create: list[SQLAlchemyDatabaseKey] | None = None,
 ) -> OnDiskPostgresLaunchResult:
     """Starts and initializes a local postgres database for use in tests.
     Clears all postgres instances in the tmp folder. Should be called in the setUpClass function so
@@ -221,7 +222,7 @@ def start_on_disk_postgresql_database(
     default_database_name = f"{TEST_POSTGRES_DB_NAME}{get_pytest_worker_id()}"
     databases_to_create = [
         default_database_name,
-        *additional_databases_to_create,
+        *[database.db_name for database in additional_databases_to_create],
     ]
     for database in databases_to_create:
         run_command(

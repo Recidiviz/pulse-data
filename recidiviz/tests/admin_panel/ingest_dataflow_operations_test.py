@@ -33,6 +33,7 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DataflowJobLocationID,
     DirectIngestDataflowJobManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
@@ -166,33 +167,35 @@ class IngestDataflowOperations(TestCase):
 
         most_recent_job_id_map = {
             StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: pipeline.id,
-                DirectIngestInstance.SECONDARY: pipeline2.id,
+                DirectIngestInstance.PRIMARY: (pipeline.location, pipeline.id),
+                DirectIngestInstance.SECONDARY: (pipeline2.location, pipeline2.id),
             },
             StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: pipeline3.id,
-                DirectIngestInstance.SECONDARY: pipeline4.id,
+                DirectIngestInstance.PRIMARY: (pipeline3.location, pipeline3.id),
+                DirectIngestInstance.SECONDARY: (pipeline4.location, pipeline4.id),
             },
         }
 
-        jobs_by_id = {
-            pipeline.id: pipeline,
-            pipeline2.id: pipeline2,
-            pipeline3.id: pipeline3,
-            pipeline4.id: pipeline4,
+        jobs_by_job_location_id: dict[
+            DataflowJobLocationID, DataflowPipelineMetadataResponse
+        ] = {
+            (pipeline.location, pipeline.id): pipeline,
+            (pipeline2.location, pipeline2.id): pipeline2,
+            (pipeline3.location, pipeline3.id): pipeline3,
+            (pipeline4.location, pipeline4.id): pipeline4,
         }
 
         def return_pipeline_by_id(
             state_code: StateCode,  # pylint: disable=unused-argument
-            job_id: str,
+            job: DataflowJobLocationID,
         ) -> Optional[DataflowPipelineMetadataResponse]:
-            if job_id:
-                return jobs_by_id[job_id]
+            if job:
+                return jobs_by_job_location_id[job]
             return None
 
         with (
             mock.patch(
-                "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_job_ids_by_state_and_instance",
+                "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_jobs_location_and_id_by_state_and_instance",
                 return_value=most_recent_job_id_map,
             ),
             mock.patch(
@@ -256,7 +259,7 @@ class IngestDataflowOperations(TestCase):
 
         with (
             mock.patch(
-                "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_job_ids_by_state_and_instance",
+                "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_jobs_location_and_id_by_state_and_instance",
                 return_value=most_recent_job_id_map,
             ),
             mock.patch(
@@ -270,6 +273,7 @@ class IngestDataflowOperations(TestCase):
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
         self.job_manager.add_job(
+            location="us-east1",
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -319,6 +323,7 @@ class IngestDataflowOperations(TestCase):
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
         self.job_manager.add_job(
+            location="us-east1",
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -367,6 +372,7 @@ class IngestDataflowOperations(TestCase):
     def test_get_stale_raw_data_watermarks_for_latest_run_multiple(self) -> None:
         most_recent_job_id = "2020-10-01_00_00_00"
         self.job_manager.add_job(
+            location="us-east1",
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,

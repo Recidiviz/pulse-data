@@ -27,6 +27,7 @@ from google.cloud import dataflow_v1beta3
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DataflowJobLocationID,
     DirectIngestDataflowJobManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
@@ -82,17 +83,20 @@ class DataflowPipelineMetadataResponse:
 
 
 def get_latest_job_for_state_instance(
-    state_code: StateCode, job_id: Optional[str]
+    state_code: StateCode, latest_job_location_and_id: Optional[DataflowJobLocationID]
 ) -> Optional[DataflowPipelineMetadataResponse]:
     """Get the latest job metadata for a state and instance from the Dataflow API."""
-    if job_id is None:
+    if latest_job_location_and_id is None:
         return None
+
+    location, job_id = latest_job_location_and_id
 
     # TODO(#209930): remove this check once dataflow is launched for all states
     if state_code not in DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE:
         return None
 
-    location = DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
+    # If a location has been recorded, use it, otherwise fall back to current configuration
+    location = location or DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
 
     if job_id:
@@ -129,7 +133,7 @@ def get_all_latest_ingest_jobs() -> Dict[
         ] = defaultdict()
 
         most_recent_job_ids_map = (
-            DirectIngestDataflowJobManager().get_most_recent_job_ids_by_state_and_instance()
+            DirectIngestDataflowJobManager().get_most_recent_jobs_location_and_id_by_state_and_instance()
         )
 
         locations_futures = {

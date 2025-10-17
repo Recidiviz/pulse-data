@@ -41,7 +41,11 @@ class InsightsDbTestCase(TestCase):
     def setUpClass(cls) -> None:
         cls.postgres_launch_result = (
             local_postgres_helpers.start_on_disk_postgresql_database(
-                additional_databases_to_create=[INSIGHTS_US_XX_DB]
+                additional_databases_to_create=[
+                    SQLAlchemyDatabaseKey(
+                        schema_type=SchemaType.INSIGHTS, db_name=INSIGHTS_US_XX_DB
+                    )
+                ],
             )
         )
 

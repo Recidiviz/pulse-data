@@ -177,6 +177,9 @@ class DirectIngestDataflowJob(OperationsBase):
     # The ingest instance that we are running for
     ingest_instance = Column(direct_ingest_instance, nullable=False, index=True)
 
+    # The location that the job ran in
+    location = Column(String(255), nullable=True, index=True)
+
     # When ingest in Dataflow Airflow DAG saw the job completed and wrote this row
     completion_time = Column(DateTime, nullable=False)
 
