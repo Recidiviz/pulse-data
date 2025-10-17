@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to the
+# corresponding ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Staff_ID_Number: STRING
+  role_type: STRING
+  start_date: DATE
+  end_date: DATE
+  session_id: INTEGER
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: Staff_ID_Number
+          id_type: $literal("US_TX_STAFF_ID")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - Staff_ID_Number
+                - session_id
+          start_date: start_date
+          end_date: end_date
+          role_type:
+            $enum_mapping:
+              $raw_text: role_type
+              $custom_parser: us_tx_custom_enum_parsers.parse_role_type
+          role_subtype:
+            $enum_mapping:
+              $raw_text: role_type
+              $custom_parser: us_tx_custom_enum_parsers.parse_role_subtype

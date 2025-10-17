@@ -23,8 +23,13 @@ my_enum_field:
     $custom_parser: us_tx_custom_enum_parsers.<function name>
 """
 import re
+from typing import Optional
 
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -140,3 +145,58 @@ def parse_supervision_level(
     # Mark as INTERNAL_UNKNOWN if no other conditions are met. eg are seeing a new
     # enum value for the first time.
     return StateSupervisionLevel.INTERNAL_UNKNOWN
+
+
+def parse_role_type(
+    raw_text: str,
+) -> Optional[StateStaffRoleType]:
+    """Parses the role type from the job title."""
+
+    # Parole Officer
+    if raw_text in [
+        "PAROLE OFFICER I",
+        "PAROLE OFFICER II",
+        "PAROLE OFFICER III",
+        "PAROLE OFFICER IV   (PAROLE SUPV.)",
+        "PAROLE OFFICER V",
+    ]:
+        return StateStaffRoleType.SUPERVISION_OFFICER
+
+    return StateStaffRoleType.INTERNAL_UNKNOWN
+
+
+def parse_role_subtype(
+    raw_text: str,
+) -> Optional[StateStaffRoleSubtype]:
+    """Parses the role subtype from the job title."""
+
+    # Parole Officer
+    if raw_text in ["PAROLE OFFICER I", "PAROLE OFFICER II", "PAROLE OFFICER III"]:
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER
+
+    # Parole Supervisor
+    if raw_text in ["PAROLE OFFICER IV   (PAROLE SUPV.)", "PAROLE OFFICER V"]:
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+
+    if raw_text in [
+        "MANAGER/SECTION DIRECTOR 4",
+        "MANAGER/SECTION DIRECTOR 3",
+        "MANAGER/SECTION DIRECTOR 2",
+        "MANAGER/SECTION DIRECTOR 1",
+    ]:
+        return StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER
+
+    if raw_text in ["ASSISTANT REGIONAL DIRECTOR", "REGIONAL DIRECTOR"]:
+        return StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER
+
+    if raw_text in [
+        "DEPUTY DIRECTOR",
+        "DIVISION DIRECTOR",
+        "DIRECTOR, CJAD",
+        "EXECUTIVE DIRECTOR",
+        "BOARD OF P&P, CHAIRMAN",
+        "DEPUTY DIRECTOR-TDCJ",
+    ]:
+        return StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP
+
+    return StateStaffRoleSubtype.INTERNAL_UNKNOWN if raw_text else None

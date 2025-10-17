@@ -2044,6 +2044,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tx_ingest_view_results.state_sentence",
     "us_tx_ingest_view_results.state_staff",
     "us_tx_ingest_view_results.state_staff_location_period",
+    "us_tx_ingest_view_results.state_staff_role_periods",
     "us_tx_ingest_view_results.state_staff_supervisor_period",
     "us_tx_ingest_view_results.supervision_contacts",
     "us_tx_ingest_view_results.supervision_period",
