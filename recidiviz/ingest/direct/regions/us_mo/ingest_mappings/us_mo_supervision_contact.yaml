@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_assessments_other` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  DOC: STRING
+  CONTACT_ID: STRING
+  CONTACT_DATE: DATE
+  OFFICER_ID: STRING
+  IS_COLLATERAL: BOOLEAN
+  CONTACT_TYPES: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id: CONTACT_ID
+          contact_date: CONTACT_DATE
+          contacting_staff_external_id: OFFICER_ID
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: OFFICER_ID
+                $then: $literal("US_MO_STAFF_BADGE_NUMBER")
+          contact_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - IS_COLLATERAL
+                    - $literal("True")
+                $then: $literal_enum(StateSupervisionContactType.COLLATERAL)
+              - $else: $literal_enum(StateSupervisionContactType.DIRECT)
+          # TODO(#51057): We don't have enough information about the various contact type codes
+          # to reliably hydrate most of the supervision_contact enums. The contact type codes
+          # themselves are what we need for Tasks currently, and are being stored in the
+          # metadata field, but when we have more information we should revisit the status,
+          # location, and type enums. Status is a mandatory field, so it's being set to INTERNAL_UNKNOWN
+          # while the other two fields are simply not being hydrated currently.
+          status: $literal_enum(StateSupervisionContactStatus.INTERNAL_UNKNOWN)
+          supervision_contact_metadata:
+            $normalized_values_json_dict:
+              CONTACT_TYPES: CONTACT_TYPES

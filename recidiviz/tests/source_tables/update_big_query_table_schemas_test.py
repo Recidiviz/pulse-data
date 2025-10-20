@@ -1101,6 +1101,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mo_ingest_view_results.sentence_group_length",
     "us_mo_ingest_view_results.sentence_length",
     "us_mo_ingest_view_results.sentence_status_snapshot",
+    "us_mo_ingest_view_results.supervision_contact",
     "us_mo_ingest_view_results.supervision_enhancements_supervision_periods",
     "us_mo_ingest_view_results.supervision_staff",
     "us_mo_ingest_view_results.supervision_staff_role_periods",
