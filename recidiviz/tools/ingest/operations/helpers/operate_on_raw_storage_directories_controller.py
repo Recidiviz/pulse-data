@@ -29,6 +29,7 @@ from progress.bar import Bar
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common import attr_validators
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.tools.gsutil_shell_helpers import (
     GSUTIL_DEFAULT_TIMEOUT_SEC,
     gsutil_cp,
@@ -120,10 +121,31 @@ class OperateOnRawStorageDirectoriesController:
     ) -> "OperateOnRawStorageDirectoriesController":
         """Creates a controller responsible for copying or moving ingest files from
         storage buckets across different paths."""
-        file_tag_filters = (
-            [f"*_{file_tag}[.]*" for file_tag in file_tags] if file_tags else None
+
+        def _build_file_tag_filters(file_tags: List[str]) -> List[str]:
+            """
+            Build file tag filters using URI wildcards
+            https://cloud.google.com/storage/docs/wildcards
+
+            Note that if a file is non-chunked and used to be chunked we may not correctly
+            match all files. We don't support this case for performance considerations.
+            """
+            region_raw_file_config = get_region_raw_file_config(region_code)
+            file_tag_filters: List[str] = []
+            for file_tag in file_tags:
+                raw_file_config = region_raw_file_config.raw_file_configs[file_tag]
+                if raw_file_config.is_chunked_file:
+                    file_tag_filters.append(f"*_{file_tag}-[0-9]*[.]*")
+                # Add normal file_tag syntax for all files
+                # in case a chunked file used to be non-chunked
+                file_tag_filters.append(f"*_{file_tag}[.]*")
+
+            return file_tag_filters
+
+        file_tag_filters = _build_file_tag_filters(file_tags) if file_tags else None
+        formatted_file_tag_regex = (
+            f"*{file_tag_regex.strip('*')}*" if file_tag_regex else None
         )
-        file_tag_regex = f"*{file_tag_regex.strip('*')}*" if file_tag_regex else None
 
         log_output_path = make_log_output_path(
             operation_name=f"{operation_type.value.lower()}_storage_raw_files",
@@ -138,7 +160,7 @@ class OperateOnRawStorageDirectoriesController:
             start_date_bound=start_date_bound,
             end_date_bound=end_date_bound,
             file_tag_filters=file_tag_filters,
-            file_tag_regex=file_tag_regex,
+            file_tag_regex=formatted_file_tag_regex,
             log_output_path=log_output_path,
             dry_run=dry_run,
         )
