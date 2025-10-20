@@ -21,13 +21,6 @@ This script should be run only after `docker-compose up` has been run.
 This will delete everything from the tables, re-add them from the fixture files or a GCS bucket, and
 update the local cache.
 
-Usage against default development database (docker-compose v1):
-docker exec pulse-data_case_triage_backend_1 pipenv run python -m recidiviz.tools.pathways.load_fixtures \
-    --data_type GCS \
-    --state_codes US_TN US_ID \
-    --tables liberty_to_prison_transitions supervision_to_prison_transitions \
-    --gcs_bucket recidiviz-staging-dashboard-event-level-data
-
 Usage against default development database (docker-compose v2):
 docker exec pulse-data-case_triage_backend-1 pipenv run python -m recidiviz.tools.pathways.load_fixtures \
     --data_type GCS \
@@ -132,13 +125,15 @@ def import_pathways_from_gcs(
             connection.commit()
         object_metadata = gcsfs.get_metadata(gcsfs_path) or {}
         last_updated = object_metadata.get("last_updated", None)
+        facility_id_name_map = object_metadata.get("facility_id_name_map", None)
+        # facility_id_name_map is nullable, so we will add it whether or not it exists
         if last_updated:
             cursor = connection.cursor()
             cursor.execute(
-                f"""INSERT INTO {MetricMetadata.__tablename__} (metric, last_updated)
-                VALUES(%s, %s)
-                ON CONFLICT (metric) DO UPDATE SET last_updated=EXCLUDED.last_updated""",
-                (table.__name__, last_updated),
+                f"""INSERT INTO {MetricMetadata.__tablename__} (metric, last_updated, facility_id_name_map)
+                VALUES(%s, %s, %s)
+                ON CONFLICT (metric) DO UPDATE SET last_updated=EXCLUDED.last_updated, facility_id_name_map=EXCLUDED.facility_id_name_map""",
+                (table.__name__, last_updated, facility_id_name_map),
             )
             cursor.close()
             connection.commit()

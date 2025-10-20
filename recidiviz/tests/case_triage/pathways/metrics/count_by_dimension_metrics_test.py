@@ -542,4 +542,7 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
 
     @property
     def expected_metadata(self) -> Dict[str, Any]:
-        return {"lastUpdated": "2022-08-02"}
+        return {
+            "lastUpdated": "2022-08-02",
+            "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
+        }

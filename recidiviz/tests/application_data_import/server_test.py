@@ -24,6 +24,7 @@ from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from fakeredis import FakeRedis
+from flask import json
 
 from recidiviz.application_data_import.server import _dashboard_event_level_bucket, app
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
@@ -277,7 +278,13 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
             )
         )
         self.fs.upload_from_string(filepath, "test", content_type="text/csv")
-        self.fs.update_metadata(filepath, {"last_updated": "2022-01-01"})
+        self.fs.update_metadata(
+            filepath,
+            {
+                "last_updated": "2022-01-01",
+                "facility_id_name_map": '[{"label": "Facility 1", "value": "1"}, {"label": "Facility 2", "value": "2"}]',
+            },
+        )
         with self.app.test_request_context():
             self.client.post(
                 f"/import/pathways/{self.state_code}/{self.pathways_view}.csv",
@@ -288,6 +295,15 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
                 result = session.query(MetricMetadata).one()
                 self.assertEqual(result.metric, self.metric)
                 self.assertEqual(result.last_updated, date(2022, 1, 1))
+                self.assertEqual(
+                    result.facility_id_name_map,
+                    json.dumps(
+                        [
+                            {"label": "Facility 1", "value": "1"},
+                            {"label": "Facility 2", "value": "2"},
+                        ]
+                    ),
+                )
 
     @patch(
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
@@ -307,6 +323,77 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
                 MetricMetadata(
                     metric=self.metric,
                     last_updated=date(2021, 6, 15),
+                    facility_id_name_map=[
+                        {"label": "Facility 3", "value": "3"},
+                        {"label": "Facility 4", "value": "4"},
+                    ],
+                )
+            )
+
+        filename = f"{self.pathways_view}.csv"
+        filepath = GcsfsFilePath.from_absolute_path(
+            os.path.join(
+                _dashboard_event_level_bucket(),
+                self.state_code + "/" + filename,
+            )
+        )
+        self.fs.upload_from_string(filepath, "test", content_type="text/csv")
+        self.fs.update_metadata(
+            filepath,
+            {
+                "last_updated": "2022-01-01",
+                "facility_id_name_map": json.dumps(
+                    [
+                        {"label": "Facility 1", "value": "1"},
+                        {"label": "Facility 2", "value": "2"},
+                    ]
+                ),
+            },
+        )
+        with self.app.test_request_context():
+            self.client.post(
+                f"/import/pathways/{self.state_code}/{self.pathways_view}.csv",
+            )
+            mock_import_csv.assert_called()
+            mock_redis.assert_called()
+            with SessionFactory.using_database(self.database_key) as session:
+                result = session.query(MetricMetadata).one()
+                self.assertEqual(result.metric, self.metric)
+                self.assertEqual(result.last_updated, date(2022, 1, 1))
+                self.assertEqual(
+                    result.facility_id_name_map,
+                    json.dumps(
+                        [
+                            {"value": "1", "label": "Facility 1"},
+                            {"value": "2", "label": "Facility 2"},
+                        ]
+                    ),
+                )
+
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_pathways_metadata_missing_facility_id_name_map(
+        self,
+        mock_redis: MagicMock,
+        mock_import_csv: MagicMock,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                MetricMetadata(
+                    metric=self.metric,
+                    last_updated=date(2021, 6, 15),
+                    facility_id_name_map=json.dumps(
+                        [
+                            {"label": "Facility 3", "value": "3"},
+                            {"label": "Facility 4", "value": "4"},
+                        ]
+                    ),
                 )
             )
 
@@ -329,6 +416,16 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
                 result = session.query(MetricMetadata).one()
                 self.assertEqual(result.metric, self.metric)
                 self.assertEqual(result.last_updated, date(2022, 1, 1))
+                # This is the previous value, which we will persist if the new value is missing
+                self.assertEqual(
+                    result.facility_id_name_map,
+                    json.dumps(
+                        [
+                            {"label": "Facility 3", "value": "3"},
+                            {"label": "Facility 4", "value": "4"},
+                        ]
+                    ),
+                )
 
     @patch(
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",

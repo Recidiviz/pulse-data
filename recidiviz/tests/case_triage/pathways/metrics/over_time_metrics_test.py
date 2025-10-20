@@ -146,7 +146,10 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
 
     @property
     def expected_metadata(self) -> Dict[str, Any]:
-        return {"lastUpdated": "2022-08-03"}
+        return {
+            "lastUpdated": "2022-08-03",
+            "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
+        }
 
     def test_demo(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
