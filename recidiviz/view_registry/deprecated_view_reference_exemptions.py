@@ -186,14 +186,8 @@ from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATA
 from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live_snapshot import (
     NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_VIEW_ID,
 )
-from recidiviz.observations.views.events.person.incarceration_release import (
-    VIEW_BUILDER as INCARCERATION_RELEASE_OBSERVATIONS_VIEW_BUILDER,
-)
 from recidiviz.observations.views.events.person.sentences_imposed import (
     VIEW_BUILDER as SENTENCES_IMPOSED_OBSERVATIONS_VIEW_BUILDER,
-)
-from recidiviz.observations.views.events.person.supervision_release import (
-    VIEW_BUILDER as SUPERVISION_RELEASE_OBSERVATIONS_VIEW_BUILDER,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -721,14 +715,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `sentence_spans` once all states are migrated
     # to v2 infra
     SENTENCE_SPANS_VIEW_BUILDER.address: {
-        INCARCERATION_RELEASE_OBSERVATIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SUPERVISION_RELEASE_OBSERVATIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
         ),
@@ -900,14 +886,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `sentence_deadline_spans` once all states are migrated
     # to v2 infra
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-        INCARCERATION_RELEASE_OBSERVATIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        SUPERVISION_RELEASE_OBSERVATIONS_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
         SENTENCE_SPANS_VIEW_BUILDER.address: (
             "TODO(#33402): This view should be deleted as part of the v2 sentences "
             "migration"

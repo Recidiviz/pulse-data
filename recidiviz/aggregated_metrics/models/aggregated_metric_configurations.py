@@ -1345,16 +1345,6 @@ INCARCERATION_INCIDENTS = EventCountMetric(
         event_conditions_dict={},
     ),
 )
-INCARCERATION_RELEASES_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
-    name="incarceration_releases_1_month_after_parole_eligibility_date",
-    display_name="Incarceration Releases 1 Month After Parole Eligibility Date",
-    description="Number of releases occurring at least 1 month after one's parole eligibility date",
-    event_selector=EventSelector(
-        event_type=EventType.INCARCERATION_RELEASE,
-        event_conditions_dict={"parole_release_1_month_flag": ["true"]},
-    ),
-)
-
 INCARCERATION_STARTS = EventCountMetric(
     name="incarceration_starts",
     display_name="Incarceration Starts",
@@ -1876,43 +1866,6 @@ SUPERVISION_STARTS_FROM_INCARCERATION = EventCountMetric(
     ),
 )
 
-INCARCERATION_RELEASES = EventCountMetric(
-    name="incarceration_releases",
-    display_name="Incarceration Releases",
-    description="Number of transitions from incarceration to liberty or supervision",
-    event_selector=EventSelector(
-        event_type=EventType.INCARCERATION_RELEASE,
-        event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
-    ),
-)
-
-PROP_SENTENCE_SERVED_AT_INCARCERATION_TO_SUPERVISION_TRANSITION = EventValueMetric(
-    name="prop_sentence_at_incarceration_outflow_to_supervision",
-    display_name="Proportion Sentence Served At Incarceration To Supervision "
-    "Transition",
-    description="Average proportion of sentence served at the transition from "
-    "incarceration to supervision",
-    event_selector=EventSelector(
-        event_type=EventType.INCARCERATION_RELEASE,
-        event_conditions_dict={"outflow_to_level_1": ["SUPERVISION"]},
-    ),
-    event_value_numeric="prop_sentence_served",
-    event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
-)
-
-PROP_SENTENCE_SERVED_AT_INCARCERATION_RELEASE = EventValueMetric(
-    name="prop_sentence_served_at_incarceration_release",
-    display_name="Proportion Sentence Served At Incarceration Release",
-    description="Average proportion of sentence served as of the release from "
-    "incarceration to liberty or supervision",
-    event_selector=EventSelector(
-        event_type=EventType.INCARCERATION_RELEASE,
-        event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
-    ),
-    event_value_numeric="prop_sentence_served",
-    event_count_metric=INCARCERATION_RELEASES,
-)
-
 PROP_SENTENCE_SERVED_AT_SUPERVISION_INFLOW_FROM_INCARCERATION = EventValueMetric(
     name="prop_sentence_at_supervision_inflow_from_incarceration",
     display_name="Proportion Sentence Served At Incarceration To Supervision "
@@ -2022,20 +1975,6 @@ SUPERVISION_STARTS = EventCountMetric(
         event_conditions_dict={},
     ),
 )
-
-SUPERVISION_STARTS_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
-    name="supervision_starts_1_month_after_parole_eligibility_date",
-    display_name="Supervision Starts One Month After Parole Eligibility",
-    description="Number of people who are delayed for parole by at least 1 month",
-    event_selector=EventSelector(
-        event_type=EventType.INCARCERATION_RELEASE,
-        event_conditions_dict={
-            "parole_release_1_month_flag": ["true"],
-            "outflow_to_level_1": ["SUPERVISION"],
-        },
-    ),
-)
-
 
 # get unique completion task types
 TASK_COMPLETED_METRICS_INCARCERATION = [

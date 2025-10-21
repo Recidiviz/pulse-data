@@ -131,13 +131,13 @@ class TestObservationSelector(unittest.TestCase):
         self,
     ) -> None:
         selector = EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
+            event_type=EventType.SUPERVISION_CONTACT,
+            event_conditions_dict={"status": ["ATTEMPTED", "COMPLETED"]},
         )
 
         self.assertEqual(
-            'event = "INCARCERATION_RELEASE"\n'
-            '        AND JSON_EXTRACT_SCALAR(event_attributes, "$.outflow_to_level_1") IN ("LIBERTY", "SUPERVISION")',
+            'event = "SUPERVISION_CONTACT"\n'
+            '        AND JSON_EXTRACT_SCALAR(event_attributes, "$.status") IN ("ATTEMPTED", "COMPLETED")',
             selector.generate_observation_conditions_query_fragment(
                 filter_by_observation_type=True,
                 read_attributes_from_json=True,
@@ -145,7 +145,7 @@ class TestObservationSelector(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            'JSON_EXTRACT_SCALAR(event_attributes, "$.outflow_to_level_1") IN ("LIBERTY", "SUPERVISION")',
+            'JSON_EXTRACT_SCALAR(event_attributes, "$.status") IN ("ATTEMPTED", "COMPLETED")',
             selector.generate_observation_conditions_query_fragment(
                 filter_by_observation_type=False,
                 read_attributes_from_json=True,
@@ -153,7 +153,7 @@ class TestObservationSelector(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            'outflow_to_level_1 IN ("LIBERTY", "SUPERVISION")',
+            'status IN ("ATTEMPTED", "COMPLETED")',
             selector.generate_observation_conditions_query_fragment(
                 filter_by_observation_type=False,
                 read_attributes_from_json=False,
