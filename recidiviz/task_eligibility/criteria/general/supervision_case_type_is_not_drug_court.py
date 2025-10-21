@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which clients does not have
-a supervision case type of "SEX_OFFENSE"."""
+a supervision case type of "DRUG_COURT"."""
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -28,7 +28,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    not_on_specific_supervision_case_type(StateSupervisionCaseType.SEX_OFFENSE)
+    not_on_specific_supervision_case_type(StateSupervisionCaseType.DRUG_COURT)
 )
 
 if __name__ == "__main__":

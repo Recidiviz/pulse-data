@@ -40,7 +40,9 @@ from recidiviz.calculator.query.state.views.sessions.state_sentence_configuratio
     STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
     STATES_WITH_NO_INFERRED_OPEN_SPANS,
 )
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -1720,6 +1722,62 @@ def on_negative_drug_screen_streak(
                 name="most_recent_test_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="The most recent negative result at this point in time",
+            ),
+        ],
+    )
+
+
+def not_on_specific_supervision_case_type(
+    case_type: StateSupervisionCaseType,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Creates criteria with spans of time when a client is supervised on a specific case
+    type in order to support "SUPERVISION_CASE_TYPE_IS_NOT_XX" style criteria.
+    """
+
+    vb_description = f"""Defines a criteria span view that shows spans of time during which clients does not have
+    a supervision case type of "{case_type.name}"."""
+
+    query_template = f"""
+    WITH case_type_spans AS (
+    /* pull spans of time where a client has a sex offense case type */
+        SELECT sp.state_code,
+          sp.person_id,
+          sp.start_date,
+          sp.termination_date AS end_date,
+          sc.case_type_raw_text,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` sc
+          USING(person_id, supervision_period_id)
+        WHERE sc.case_type = '{case_type.name}'
+          AND start_date IS DISTINCT FROM termination_date -- exclude 0-day spans
+    ),
+    /* sub-sessionize and aggregate for cases where a client has multiple case types at once */
+    {create_sub_sessions_with_attributes('case_type_spans')}
+    SELECT state_code,
+      person_id,
+      start_date,
+      end_date,
+      FALSE AS meets_criteria,
+      ARRAY_AGG(DISTINCT case_type_raw_text ORDER BY case_type_raw_text) AS raw_{case_type.name.lower()}_case_types,
+      TO_JSON(STRUCT(
+        ARRAY_AGG(DISTINCT case_type_raw_text ORDER BY case_type_raw_text) AS raw_{case_type.name.lower()}_case_types
+      )) AS reason,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1, 2, 3, 4
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=f"SUPERVISION_CASE_TYPE_IS_NOT_{case_type.name}",
+        description=vb_description,
+        criteria_spans_query_template=query_template,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name=f"raw_{case_type.name.lower()}_case_types",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description=f"Array of raw case type values for all {case_type.name} case types that a client is assigned during a given period.",
             ),
         ],
     )
