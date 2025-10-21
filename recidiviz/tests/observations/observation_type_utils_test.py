@@ -38,7 +38,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         )
         self.assertEqual(
             ["start_date", "end_date"],
-            date_column_names_for_observation_type(SpanType.SENTENCE_SPAN),
+            date_column_names_for_observation_type(SpanType.COMPARTMENT_SESSION),
         )
 
     def test_attributes_column_name_for_observation_type(self) -> None:
@@ -48,7 +48,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         )
         self.assertEqual(
             "span_attributes",
-            attributes_column_name_for_observation_type(SpanType.SENTENCE_SPAN),
+            attributes_column_name_for_observation_type(SpanType.COMPARTMENT_SESSION),
         )
 
     def test_observation_attribute_value_clause(self) -> None:
@@ -71,7 +71,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             'JSON_EXTRACT_SCALAR(span_attributes, "$.effective_date")',
             observation_attribute_value_clause(
-                observation_type=SpanType.SENTENCE_SPAN,
+                observation_type=SpanType.COMPARTMENT_SESSION,
                 attribute="effective_date",
                 read_attributes_from_json=True,
             ),
@@ -79,7 +79,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             "effective_date",
             observation_attribute_value_clause(
-                observation_type=SpanType.SENTENCE_SPAN,
+                observation_type=SpanType.COMPARTMENT_SESSION,
                 attribute="effective_date",
                 read_attributes_from_json=False,
             ),
@@ -102,7 +102,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         )
         self.assertEqual(
             BigQueryAddress.from_str(
-                "observations__person_span.sentence_span_materialized"
+                "observations__person_span.compartment_session_materialized"
             ),
-            materialized_view_address_for_observation(SpanType.SENTENCE_SPAN),
+            materialized_view_address_for_observation(SpanType.COMPARTMENT_SESSION),
         )

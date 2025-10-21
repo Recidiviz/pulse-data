@@ -35,19 +35,19 @@ class SpanSelectorTest(unittest.TestCase):
     def test_generate_span_selector_query_attribute_lists(self) -> None:
         self.maxDiff = None
         my_spans = SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
+            span_type=SpanType.COMPARTMENT_SESSION,
             span_conditions_dict={
-                "any_is_drug_uniform": ["True"],
-                "any_is_crime_against_person": ["False"],
+                "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
+                "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
             },
         )
         query_string = my_spans.generate_span_selector_query()
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.observations__person_span.sentence_span_materialized`
-    WHERE any_is_drug_uniform IN ("True")
-        AND any_is_crime_against_person IN ("False")
+    FROM `{{project_id}}.observations__person_span.compartment_session_materialized`
+    WHERE compartment_level_1 IN ("INCARCERATION", "SUPERVISION")
+        AND compartment_level_2 IN ("COMMUNITY_CONFINEMENT")
 )
 ,
 {create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive",index_columns=["person_id", "state_code"])}
@@ -106,19 +106,19 @@ sub_sessions_dedup AS (
     # Check that generate_span_selector_query returns intended output for attribute filters with string conditions
     def test_generate_span_selector_query_strings(self) -> None:
         my_spans = SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
+            span_type=SpanType.COMPARTMENT_SESSION,
             span_conditions_dict={
-                "any_is_drug_uniform": 'IN ("True")',
-                "any_is_crime_against_person": 'IN ("False")',
+                "compartment_level_1": 'IN ("INCARCERATION", "SUPERVISION")',
+                "compartment_level_2": 'IN ("COMMUNITY_CONFINEMENT")',
             },
         )
         query_string = my_spans.generate_span_selector_query()
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.observations__person_span.sentence_span_materialized`
-    WHERE any_is_drug_uniform IN ("True")
-        AND any_is_crime_against_person IN ("False")
+    FROM `{{project_id}}.observations__person_span.compartment_session_materialized`
+    WHERE compartment_level_1 IN ("INCARCERATION", "SUPERVISION")
+        AND compartment_level_2 IN ("COMMUNITY_CONFINEMENT")
 )
 ,
 {create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive", index_columns=["person_id", "state_code"])}
@@ -142,7 +142,7 @@ sub_sessions_dedup AS (
     # Test query construction for spans with empty attribute filter dicts
     def test_generate_span_selector_query_empty_attribute_filters(self) -> None:
         my_spans = SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
+            span_type=SpanType.COMPARTMENT_SESSION,
             span_conditions_dict={},
         )
         query_string = my_spans.generate_span_selector_query()
@@ -150,7 +150,7 @@ sub_sessions_dedup AS (
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.observations__person_span.sentence_span_materialized`
+    FROM `{{project_id}}.observations__person_span.compartment_session_materialized`
     
 )
 ,

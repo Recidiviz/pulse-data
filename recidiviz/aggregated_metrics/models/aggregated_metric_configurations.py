@@ -200,36 +200,6 @@ AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT = DailyAvgSpanCountMetric(
     ),
 )
 
-AVG_DAILY_POPULATION_CRIME_AGAINST_PERSON = DailyAvgSpanCountMetric(
-    name="avg_population_crime_against_person",
-    display_name="Average Population: Crime Against Person",
-    description="Average daily count of clients sentenced for a crime against person",
-    span_selector=SpanSelector(
-        span_type=SpanType.SENTENCE_SPAN,
-        span_conditions_dict={"any_is_crime_against_person": ["true"]},
-    ),
-)
-
-AVG_DAILY_POPULATION_CRIME_AGAINST_PROPERTY = DailyAvgSpanCountMetric(
-    name="avg_population_crime_against_property",
-    display_name="Average Population: Crime Against Property",
-    description="Average daily count of clients sentenced for crime against property",
-    span_selector=SpanSelector(
-        span_type=SpanType.SENTENCE_SPAN,
-        span_conditions_dict={"any_is_crime_against_property": ["true"]},
-    ),
-)
-
-AVG_DAILY_POPULATION_CRIME_AGAINST_SOCIETY = DailyAvgSpanCountMetric(
-    name="avg_population_crime_against_society",
-    display_name="Average Population: Crime Against Society",
-    description="Average daily count of clients sentenced for crime against society",
-    span_selector=SpanSelector(
-        span_type=SpanType.SENTENCE_SPAN,
-        span_conditions_dict={"any_is_crime_against_society": ["true"]},
-    ),
-)
-
 AVG_DAILY_POPULATION_DOMESTIC_VIOLENCE_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_domestic_violence_case_type",
     display_name="Average Population: Domestic Violence Case Type",
@@ -613,28 +583,6 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetr
         span_conditions_dict={
             "justice_impact_type": [JusticeImpactType.SOLITARY_CONFINEMENT.value]
         },
-    ),
-)
-
-AVG_DAILY_POPULATION_DRUG_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
-    name="avg_population_drug_offense_sentence",
-    display_name="Average Population: Drug Offense",
-    description="Average daily population of clients sentenced for at least one drug "
-    "offense",
-    span_selector=SpanSelector(
-        span_type=SpanType.SENTENCE_SPAN,
-        span_conditions_dict={"any_is_drug_uniform": ["true"]},
-    ),
-)
-
-AVG_DAILY_POPULATION_VIOLENT_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
-    name="avg_population_violent_offense_sentence",
-    display_name="Average Population: Violent Offense",
-    description="Average daily population of clients sentenced for at least one violent"
-    " offense",
-    span_selector=SpanSelector(
-        span_type=SpanType.SENTENCE_SPAN,
-        span_conditions_dict={"any_is_violent_uniform": ["true"]},
     ),
 )
 
@@ -1099,17 +1047,6 @@ DAYS_PENDING_CUSTODY_365 = AssignmentSpanDaysMetric(
         span_conditions_dict={"compartment_level_1": ["PENDING_CUSTODY"]},
     ),
     window_length_days=365,
-)
-
-DAYS_SINCE_MOST_RECENT_COMPLETED_CONTACT = DailyAvgTimeSinceSpanStartMetric(
-    name="avg_days_since_most_recent_completed_contact",
-    display_name="Days Since Most Recent Completed Contact",
-    description="Average number of days since a client's most recent completed "
-    "contact, across all days on which client is in population",
-    span_selector=SpanSelector(
-        span_type=SpanType.COMPLETED_CONTACT_SESSION,
-        span_conditions_dict={},
-    ),
 )
 
 DAYS_SINCE_MOST_RECENT_LSIR = DailyAvgTimeSinceSpanStartMetric(
@@ -1667,30 +1604,6 @@ LIBERTY_STARTS = EventCountMetric(
     ),
 )
 
-DAYS_SENTENCED_AT_LIBERTY_START = EventValueMetric(
-    name="days_sentenced_at_liberty_start",
-    display_name="Days Sentenced At Liberty Start",
-    description="Days sentenced as of the start of liberty",
-    event_selector=EventSelector(
-        event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
-        event_conditions_dict={},
-    ),
-    event_value_numeric="days_sentenced",
-    event_count_metric=LIBERTY_STARTS,
-)
-
-DAYS_SERVED_AT_LIBERTY_START = EventValueMetric(
-    name="days_served_at_liberty_start",
-    display_name="Days Served At Liberty Start",
-    description="Days served as of the start of liberty",
-    event_selector=EventSelector(
-        event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
-        event_conditions_dict={},
-    ),
-    event_value_numeric="days_served",
-    event_count_metric=LIBERTY_STARTS,
-)
-
 LSIR_ASSESSMENTS = EventCountMetric(
     name="lsir_assessments",
     display_name="LSI-R Assessments",
@@ -1985,18 +1898,6 @@ PROP_SENTENCE_SERVED_AT_INCARCERATION_TO_SUPERVISION_TRANSITION = EventValueMetr
     ),
     event_value_numeric="prop_sentence_served",
     event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
-)
-
-PROP_SENTENCE_SERVED_AT_LIBERTY_START = EventValueMetric(
-    name="prop_sentence_served_at_liberty_start",
-    display_name="Proportion Sentence Served At Liberty Start",
-    description="Average proportion of sentence served as of the release event",
-    event_selector=EventSelector(
-        event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
-        event_conditions_dict={},
-    ),
-    event_value_numeric="prop_sentence_served",
-    event_count_metric=LIBERTY_STARTS,
 )
 
 PROP_SENTENCE_SERVED_AT_INCARCERATION_RELEASE = EventValueMetric(
