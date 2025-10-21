@@ -32,9 +32,6 @@ from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
-    SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
     SENTENCE_SPANS_VIEW_BUILDER,
 )
@@ -58,15 +55,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_az_approachin
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_az_transfer_to_administrative_supervision_record import (
     US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_RECORD_VIEW_BUILDER,
-)
-from recidiviz.observations.views.events.person.incarceration_release import (
-    VIEW_BUILDER as INCARCERATION_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.observations.views.events.person.supervision_release import (
-    VIEW_BUILDER as SUPERVISION_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.observations.views.spans.person.sentence_span import (
-    VIEW_BUILDER as SENTENCE_SPAN_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az.no_arson_conviction import (
     VIEW_BUILDER as US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER,
@@ -157,11 +145,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
-            SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
@@ -178,9 +161,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 RESIDENT_RECORD_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,
@@ -194,7 +174,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,
@@ -212,11 +191,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
-            SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
@@ -233,9 +207,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 RESIDENT_RECORD_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,
@@ -249,7 +220,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,

@@ -32,15 +32,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
-    SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
-    SENTENCE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
-    SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -49,15 +40,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record im
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     RESIDENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.observations.views.events.person.incarceration_release import (
-    VIEW_BUILDER as INCARCERATION_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.observations.views.events.person.supervision_release import (
-    VIEW_BUILDER as SUPERVISION_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.observations.views.spans.person.sentence_span import (
-    VIEW_BUILDER as SENTENCE_SPAN_VIEW_BUILDER,
 )
 
 # For each US_TX metric export, for each product view in that export, a mapping of
@@ -77,19 +59,6 @@ US_TX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
-            SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
@@ -98,19 +67,6 @@ US_TX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
-            SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },

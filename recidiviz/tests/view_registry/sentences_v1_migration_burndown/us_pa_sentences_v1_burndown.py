@@ -53,9 +53,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closes
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
-    SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -90,15 +87,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_t
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.observations.views.events.person.incarceration_release import (
-    VIEW_BUILDER as INCARCERATION_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.observations.views.events.person.supervision_release import (
-    VIEW_BUILDER as SUPERVISION_RELEASE_VIEW_BUILDER,
-)
-from recidiviz.observations.views.spans.person.sentence_span import (
-    VIEW_BUILDER as SENTENCE_SPAN_VIEW_BUILDER,
-)
 from recidiviz.persistence.entity.state.entities import StateCharge
 from recidiviz.pipelines.ingest.dataset_config import (
     normalized_state_dataset_for_state_code,
@@ -144,20 +132,11 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
-            SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address,
                 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address,
                 US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
@@ -178,20 +157,11 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
-            SENTENCE_DEADLINE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
-            },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                INCARCERATION_RELEASE_VIEW_BUILDER.address,
-                SUPERVISION_RELEASE_VIEW_BUILDER.address,
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address,
                 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCE_SPAN_VIEW_BUILDER.address,
                 US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address,
                 US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
