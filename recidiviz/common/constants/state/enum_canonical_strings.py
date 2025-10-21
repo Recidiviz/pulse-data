@@ -315,6 +315,10 @@ state_person_alias_alias_type_given_name = "GIVEN_NAME"
 state_person_alias_alias_type_maiden_name = "MAIDEN_NAME"
 state_person_alias_alias_type_nickname = "NICKNAME"
 
+state_sex_female = "FEMALE"
+state_sex_male = "MALE"
+state_sex_other = "OTHER"
+
 state_gender_female = "FEMALE"
 state_gender_male = "MALE"
 state_gender_non_binary = "NON_BINARY"

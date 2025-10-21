@@ -474,6 +474,8 @@
       normalized_state_person.person_id,
       normalized_state_person.residency_status,
       normalized_state_person.residency_status_raw_text,
+      normalized_state_person.sex,
+      normalized_state_person.sex_raw_text,
       normalized_state_person.state_code,
       normalized_state_person_ethnicity.count,
       normalized_state_person_race.count]

@@ -188,6 +188,8 @@ class TestEntityFieldIndex(TestCase):
                     "person_id",
                     "residency_status",
                     "residency_status_raw_text",
+                    "sex",
+                    "sex_raw_text",
                     "state_code",
                 },
                 field_index_state.get_all_entity_fields(
@@ -212,6 +214,8 @@ class TestEntityFieldIndex(TestCase):
                     "person_id",
                     "residency_status",
                     "residency_status_raw_text",
+                    "sex",
+                    "sex_raw_text",
                     "state_code",
                 },
                 field_index_normalized_state.get_all_entity_fields(

@@ -80,6 +80,7 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
     StateResidencyStatus,
+    StateSex,
 )
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
@@ -3702,6 +3703,13 @@ class NormalizedStatePerson(
         default=None, validator=attr_validators.is_opt(StateGender)
     )
     gender_raw_text: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    sex: Optional[StateSex] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSex)
+    )
+    sex_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

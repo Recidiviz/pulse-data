@@ -22,6 +22,29 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
+class StateSex(StateEntityEnum):
+    FEMALE = state_enum_strings.state_sex_female
+    MALE = state_enum_strings.state_sex_male
+    OTHER = state_enum_strings.state_sex_other
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The sex of record of the person."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SEX_VALUE_DESCRIPTIONS
+
+
+_STATE_SEX_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSex.FEMALE: "Female",
+    StateSex.MALE: "Male",
+    StateSex.OTHER: "Other",
+}
+
+
 class StateGender(StateEntityEnum):
     FEMALE = state_enum_strings.state_gender_female
     MALE = state_enum_strings.state_gender_male

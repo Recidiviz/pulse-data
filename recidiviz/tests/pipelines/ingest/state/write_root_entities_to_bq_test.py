@@ -160,6 +160,8 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
                             "person_id": 123,
                             "residency_status": None,
                             "residency_status_raw_text": None,
+                            "sex": None,
+                            "sex_raw_text": None,
                             "state_code": "US_DD",
                         }
                     ],

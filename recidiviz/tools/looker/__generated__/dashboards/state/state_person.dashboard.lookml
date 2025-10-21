@@ -460,6 +460,8 @@
       state_person.person_id,
       state_person.residency_status,
       state_person.residency_status_raw_text,
+      state_person.sex,
+      state_person.sex_raw_text,
       state_person.state_code,
       state_person_ethnicity.count,
       state_person_race.count]

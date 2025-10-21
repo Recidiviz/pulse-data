@@ -314,6 +314,15 @@ state_gender = Enum(
     name="state_gender",
 )
 
+state_sex = Enum(
+    state_enum_strings.state_sex_female,
+    state_enum_strings.state_sex_male,
+    state_enum_strings.state_sex_other,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_sex",
+)
+
 state_race = Enum(
     state_enum_strings.state_race_american_indian,
     state_enum_strings.state_race_asian,
@@ -1153,6 +1162,9 @@ class StatePerson(StateBase):
 
     gender = Column(state_gender)
     gender_raw_text = Column(String(255))
+
+    sex = Column(state_sex)
+    sex_raw_text = Column(String(255))
 
     residency_status = Column(state_residency_status)
     residency_status_raw_text = Column(String(255))

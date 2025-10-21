@@ -151,6 +151,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_incarceration_period_housing_unit_type": state_incarceration_period.StateIncarcerationPeriodHousingUnitType,
             "state_incarceration_period_housing_unit_category": state_incarceration_period.StateIncarcerationPeriodHousingUnitCategory,
             "state_gender": state_person.StateGender,
+            "state_sex": state_person.StateSex,
             "state_race": state_person.StateRace,
             "state_ethnicity": state_person.StateEthnicity,
             "state_residency_status": state_person.StateResidencyStatus,

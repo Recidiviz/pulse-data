@@ -288,9 +288,11 @@ state_person:
     current_email_address: The current email address of the person.
     current_phone_number: The current phone number of the person.
     full_name: A person's name. Only use this when names are in a single field. Use surname and given_names when they are separate.
-    gender: A person's gender, as reported by the state."
-    gender_raw_text: The raw text value of the person's state-reported gender.
-    residency_status: A person's reported residency status.
+    gender: The person's gender of record.
+    gender_raw_text: The raw text value of the person's gender of record.
+    sex: The person's sex of record.
+    sex_raw_text: The raw text value of the person's sex of record.
+    residency_status: The person's reported residency status.
     residency_status_raw_text:
       The raw text used to derive a person's reported residency
       status.
