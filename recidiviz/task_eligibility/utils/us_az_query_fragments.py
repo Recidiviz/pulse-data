@@ -407,8 +407,8 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
                     <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
                 THEN CASE
                     -- Missing mandatory literacy (check criteria names for DTP & TPR)
-                    WHEN "US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY" IN UNNEST(ineligible_criteria)
-                            OR "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR" IN UNNEST(ineligible_criteria)
+                    WHEN "US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY_{opp_name.upper()}" IN UNNEST(ineligible_criteria)
+
                         THEN "ALMOST_ELIGIBLE_MISSING_MANLIT_BETWEEN_7_AND_180_DAYS"
                     -- Only missing the date requirement by 7-180 days
                     ELSE "ALMOST_ELIGIBLE_BETWEEN_7_AND_180_DAYS"
