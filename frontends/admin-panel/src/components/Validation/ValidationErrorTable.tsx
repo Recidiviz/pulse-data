@@ -21,8 +21,8 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 
 import {
-  LOOKER_PERSON_DETAILS_PROD,
-  LOOKER_PERSON_DETAILS_STAGING,
+  LOOKER_NORMALIZED_PERSON_DETAILS_PROD,
+  LOOKER_NORMALIZED_PERSON_DETAILS_STAGING,
 } from "../../navigation/looker";
 import {
   ValidationErrorTableProps,
@@ -95,8 +95,8 @@ const createPersonIdLinkToLookerPersonDetailsDashbaord = (personId: string) => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   return {
     pathname: isProduction
-      ? LOOKER_PERSON_DETAILS_PROD
-      : LOOKER_PERSON_DETAILS_STAGING,
+      ? LOOKER_NORMALIZED_PERSON_DETAILS_PROD
+      : LOOKER_NORMALIZED_PERSON_DETAILS_STAGING,
     search: `?Person+ID=${personId}`,
   };
 };
@@ -108,8 +108,8 @@ const createExternalPersonIdLinkToLookerPersonDetailsDashbaord = (
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   return {
     pathname: isProduction
-      ? LOOKER_PERSON_DETAILS_PROD
-      : LOOKER_PERSON_DETAILS_STAGING,
+      ? LOOKER_NORMALIZED_PERSON_DETAILS_PROD
+      : LOOKER_NORMALIZED_PERSON_DETAILS_STAGING,
     search: `?External+ID=${externalPersonId}&State+Code=${stateCode}`,
   };
 };
