@@ -54,6 +54,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_fu
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_supervision_tasks_record import (
+    US_MO_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ne_supervision_tasks_record import (
     US_NE_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
 )
@@ -477,6 +480,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
             # Compliance Tasks product export views pull from the unioned view of all tasks for a given state.
+            US_MO_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
             US_NE_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
             US_TX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
             # Views to help calculate compliance metrics pull from the unioned view of all tasks for a given state.
