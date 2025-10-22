@@ -988,6 +988,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_ingest_view_results.security_classification_assessments",
     "us_mi_ingest_view_results.sentence_status_snapshot",
     "us_mi_ingest_view_results.sentences",
+    "us_mi_ingest_view_results.staff_relationship_periods",
     "us_mi_ingest_view_results.state_charge",
     "us_mi_ingest_view_results.state_drug_screen",
     "us_mi_ingest_view_results.state_drug_screen_coms",

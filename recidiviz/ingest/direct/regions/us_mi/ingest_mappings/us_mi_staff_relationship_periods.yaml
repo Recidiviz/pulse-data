@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  Offender_Number: STRING
+  Case_Manager_Omnni_Employee_Id: STRING
+  Start_Date: DATE
+  End_Date: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          relationship_start_date: Start_Date
+          relationship_end_date_exclusive: End_Date
+          associated_staff_external_id: Case_Manager_Omnni_Employee_Id
+          associated_staff_external_id_type: $literal("US_MI_OMNI_USER")
+          system_type: $literal_enum(StateSystemType.INCARCERATION)
+          relationship_type: $literal_enum(StatePersonStaffRelationshipType.CASE_MANAGER)
