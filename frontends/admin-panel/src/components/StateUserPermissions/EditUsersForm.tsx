@@ -199,6 +199,16 @@ export const EditUserForm = ({
         </Form.Item>
         <hr />
         <Note>
+          In most cases, it&apos;s recommended to use an existing role or create
+          a new role to adjust a user&apos;s permissions. Custom permissions
+          should be reserved for:
+          <ul>
+            <li>A single user who needs unique permissions</li>
+            <li>Temporary exceptions or one-off scenarios</li>
+            <li>Testing and experimentation in staging</li>
+          </ul>
+        </Note>
+        <Note>
           To set custom permissions or feature variants for a user, select
           &quot;Add custom permissions&quot; in the dropdown. To revert to the
           default for the user&apos;s state+role, select &quot;Delete custom
