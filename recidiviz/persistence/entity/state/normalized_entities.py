@@ -4194,11 +4194,6 @@ class NormalizedStateStaff(
                     #  ingest so there are no longer duplicate emails across multiple
                     #  staff and remove this exemption.
                     StateCode.US_AZ,
-                    # TODO(#45912): As of 8/1/25 there are 173 distinct emails across 367
-                    #  staff which violate this constraint for US_IA. We should fix
-                    #  ingest so there are no longer duplicate emails across multiple
-                    #  staff and remove this exemption.
-                    StateCode.US_IA,
                     # TODO(#45914): As of 8/1/25 there are 28 distinct emails across 56
                     #  staff which violate this constraint for US_TX. We should fix
                     #  ingest so there are no longer duplicate emails across multiple
