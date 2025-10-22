@@ -41,7 +41,6 @@ from recidiviz.tools.deploy.cloud_build.build_configuration import (
     BuildConfiguration,
     DeploymentContext,
     build_step_for_shell_command,
-    secret_substitution_name,
 )
 from recidiviz.tools.deploy.cloud_build.constants import (
     BUILDER_GCLOUD,
@@ -54,7 +53,6 @@ from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
     DeploymentStageInterface,
 )
 from recidiviz.tools.gsutil_shell_helpers import gcloud_storage_rsync_airflow_command
-from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
 AIRFLOW_SOURCE_FILES_DIR = "/workspace/airflow_source_files"
@@ -79,7 +77,6 @@ def get_terraform_plan_step(
         "project_id": deployment_context.project_id,
         "docker_image_tag": deployment_context.version_tag,
         "git_hash": deployment_context.commit_ref,
-        "pagerduty_token": get_secret(PAGERDUTY_SECRET_NAME),
     }
     plan_args = [
         "plan",
@@ -96,7 +93,6 @@ def get_terraform_plan_step(
         dir_=TERRAFORM_WORKDIR,
         args=plan_args,
         env=[TERRAFORM_CLI_ARGS_ENV],
-        secret_env=[secret_substitution_name(PAGERDUTY_SECRET_NAME)],
         wait_for=wait_for,
         timeout="900s",  # 15 min timeout
     )
@@ -225,7 +221,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
                         dir_=TERRAFORM_WORKDIR,
                         args=["apply", "-parallelism=32", plan_path],
                         env=[TERRAFORM_CLI_ARGS_ENV],
-                        secret_env=[secret_substitution_name(PAGERDUTY_SECRET_NAME)],
                         wait_for=[terraform_plan.id],
                         # No timeout for this step - this could take a long time for certain
                         # upgrades, e.g. upgrades to Cloud Composer versions.
@@ -283,7 +278,6 @@ class CreateTerraformPlan(DeploymentStageInterface):
             # time than this, but some infrastructure updates may take a long time and
             # we don't want to fail those in the middle.
             timeout_seconds=4 * 60 * 60,
-            secrets=[PAGERDUTY_SECRET_NAME],
             machine_type=assert_type(
                 BuildOptions.MachineType.E2_HIGHCPU_32,
                 BuildOptions.MachineType,
