@@ -16,9 +16,6 @@
 # =============================================================================
 """Contains US_MI implementation of the StateSpecificSentenceNormalizationDelegate."""
 
-from datetime import timedelta
-
-from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
@@ -26,18 +23,3 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sente
 
 class UsMiSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelegate):
     """US_MI implementation of the StateSpecificSentenceNormalizationDelegate."""
-
-    def update_incarceration_sentence(
-        self, incarceration_sentence: StateIncarcerationSentence
-    ) -> StateIncarcerationSentence:
-        if (
-            incarceration_sentence.projected_max_release_date is None
-            and incarceration_sentence.effective_date is not None
-            and incarceration_sentence.max_length_days is not None
-        ):
-            incarceration_sentence.projected_max_release_date = (
-                incarceration_sentence.effective_date
-                + timedelta(days=incarceration_sentence.max_length_days)
-            )
-
-        return incarceration_sentence

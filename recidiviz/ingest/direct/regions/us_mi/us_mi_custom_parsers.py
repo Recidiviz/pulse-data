@@ -28,11 +28,8 @@ import datetime
 from re import findall, search
 from typing import Optional
 
-from dateutil.relativedelta import relativedelta
-
 from recidiviz.common.str_field_utils import (
     parse_datetime,
-    parse_duration_pieces,
     safe_parse_days_from_duration_pieces,
 )
 
@@ -73,32 +70,6 @@ def max_and_min_lengths_days(
         if result == 0:
             return None
         return str(result)
-    return None
-
-
-def calc_parole_elibility_date(
-    years_str: str,
-    months_str: str,
-    days_str: str,
-    start_date_str: str,
-) -> Optional[str]:
-    """Returns the duration in days from a start date with given number of years, months
-    and days."""
-
-    try:
-        parse_duration_pieces(
-            years_str=years_str, months_str=months_str, days_str=days_str
-        )
-    except ValueError:
-        return None
-
-    years, months, _, days, _ = parse_duration_pieces(
-        years_str=years_str, months_str=months_str, days_str=days_str
-    )
-    start_dt = parse_datetime(start_date_str)
-    if start_dt:
-        end_dt = start_dt + relativedelta(years=years, months=months, days=days)
-        return str(end_dt)
     return None
 
 

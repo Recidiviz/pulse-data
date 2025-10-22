@@ -192,13 +192,11 @@ from recidiviz.observations.views.events.person.sentences_imposed import (
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
+    StateIncarcerationSentence,
     StateSupervisionSentence,
 )
 from recidiviz.pipelines.ingest.dataset_config import (
     normalized_state_dataset_for_state_code,
-)
-from recidiviz.pipelines.utils.state_utils.us_mi.us_mi_sentence_normalization_delegate import (
-    StateIncarcerationSentence,
 )
 from recidiviz.task_eligibility.criteria.general.incarceration_past_half_full_term_release_date import (
     VIEW_BUILDER as INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER,

@@ -13,6 +13,8 @@ input_columns:
   effective_date: DATE
   closing_date: DATE
   expiration_date: DATE
+  earliest_release_date: DATE
+  maximum_release_date: DATE
   county: STRING
   min_length_days: STRING
   min_length_months: STRING
@@ -28,24 +30,7 @@ input_columns:
   min_life_flag: STRING
   max_life_flag: STRING
 unused_columns: []
-variables:
-  # we'll use parole eligibility date for projected_min_release_date as well
-  - ped:
-      $conditional:
-        - $if:
-            $or:
-              - $not_null: min_length_years
-              - $not_null: min_length_months
-              - $not_null: min_length_days
-          $then:
-            $custom:
-              # calculate parole eligibility date by taking the effective date and adding on the minimum term length
-              $function: us_mi_custom_parsers.calc_parole_elibility_date
-              $args:
-                years_str: min_length_years
-                months_str: min_length_months
-                days_str: min_length_days
-                start_date_str: effective_date
+variables: []
 output:
   StatePerson:
     external_ids:
@@ -426,13 +411,18 @@ output:
                 incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
                 date_imposed: sentenced_date
                 effective_date: effective_date
-                # TODO(#20115) In normalization, we're going to calculate projected_max_release_date as effective_date + max_length_days if expiration_date is null
-                #              We should move that logic from normalization to here the next time we do a full rerun
-                projected_max_release_date: expiration_date
                 completion_date: closing_date
+                # Per MI's guidance, for prison sentences, we should use maximum release date and minimum release dates
+                # (calculated using the pmi/pmx/ami/amx dates) rather than expiration date.  There are some individual sentences
+                # with missing maximum release date and earliest release dates, but it seems like for the most part, it seems
+                # like they have a different sentence with earliest and maximum release dates valued, which will be used to determine
+                # ERD/FTRD (validated against OTIS data).
+                # MI refers to the max date as FTRD
+                projected_max_release_date: maximum_release_date
                 # parole eligibility date and projected min release date are the same in US_MI
-                parole_eligibility_date: $variable(ped)
-                projected_min_release_date: $variable(ped)
+                # MI refers to the min date as ERD
+                parole_eligibility_date: earliest_release_date
+                projected_min_release_date: earliest_release_date
                 county_code: county
                 min_length_days:
                   $custom:
@@ -476,10 +466,12 @@ output:
                             - max_life_flag
                             - $literal("1")
                     # Let's also set it to true if we see an end date of 2999-12-31 (which we see a high count of in the data)
+                    # (We should use expiration date over maximum_release_date / earliest_release_date to determine is_life)
                     - $equal:
                         - expiration_date
                         - $literal("2999-12-31")
                     # Let's also set it to true if we see an end date of 9999-12-31 (which we see some cases of in the data)
+                    # (We should use expiration date over maximum_release_date / earliest_release_date to determine is_life)
                     - $equal:
                         - expiration_date
                         - $literal("9999-12-31")
