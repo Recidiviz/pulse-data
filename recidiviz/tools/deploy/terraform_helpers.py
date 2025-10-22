@@ -25,7 +25,6 @@ def terraform_import(resource_addr: str, resource_id: str) -> None:
         -var=project_id="" \
         -var=docker_image_tag="" \
         -var=git_hash="" \
-        -var=pagerduty_token="" \
         {resource_addr} {resource_id}
         """,
         shell=True,

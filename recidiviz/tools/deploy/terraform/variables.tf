@@ -87,13 +87,6 @@ variable "github_username" {
   description = "GitHub user to mirror the pulse-data repo from."
 }
 
-# The authentication token that allows us to connect to PagerDuty. See:
-# https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs#token
-variable "pagerduty_token" {
-  type      = string
-  sensitive = true
-}
-
 variable "direct_ingest_state_storage_secondary_bucket_name_suffix" {
   type        = string
   default     = "direct-ingest-state-storage-secondary"

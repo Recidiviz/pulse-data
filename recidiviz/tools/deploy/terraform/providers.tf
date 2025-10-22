@@ -48,7 +48,21 @@ provider "google-beta" {
   }
 }
 
+data "google_secret_manager_secret" "pagerduty_token" {
+  secret_id = "pagerduty_terraform_key"
+}
+
+data "google_secret_manager_secret_version" "pagerduty_token" {
+  secret  = data.google_secret_manager_secret.pagerduty_token.name
+  version = "latest"
+}
+
+locals {
+  pagerduty_token = data.google_secret_manager_secret_version.pagerduty_token.secret_data
+}
+
 provider "pagerduty" {
+  # The authentication token that allows us to connect to PagerDuty. See:
   # https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs#token
-  token = var.pagerduty_token
+  token = local.pagerduty_token
 }
