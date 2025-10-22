@@ -44,6 +44,8 @@ output:
               $surname: EK_ALN
               $name_suffix: EK_AGS
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
+    # been updated to read from state_person sex instead.
     gender:
       $enum_mapping:
         $raw_text: EK_SEX
@@ -51,6 +53,13 @@ output:
           StateGender.MALE: M
           StateGender.FEMALE: F
           StateGender.EXTERNAL_UNKNOWN: U
+    sex:
+      $enum_mapping:
+        $raw_text: EK_SEX
+        $mappings:
+          StateSex.MALE: M
+          StateSex.FEMALE: F
+          StateSex.EXTERNAL_UNKNOWN: U
     birthdate: DOB
     races:
       - StatePersonRace:

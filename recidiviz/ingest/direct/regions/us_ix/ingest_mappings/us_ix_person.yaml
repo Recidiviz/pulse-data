@@ -53,6 +53,17 @@ output:
           StateGender.TRANS_FEMALE: "Male to Female"
           StateGender.TRANS_MALE: "Female to Male"
           StateGender.EXTERNAL_UNKNOWN: "Unknown"
+    sex:
+      $enum_mapping:
+        $raw_text: GenderDesc
+        $mappings:
+          StateSex.MALE:
+            - "Male"
+            - "Male to Female"
+          StateSex.FEMALE:
+            - "Female"
+            - "Female to Male"
+          StateSex.EXTERNAL_UNKNOWN: "Unknown"
     races:
       - StatePersonRace:
           race:

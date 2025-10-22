@@ -29,6 +29,8 @@ output:
         $middle_names: INMATEMIDDLENAME
         $surname: INMATELASTNAME
         $name_suffix: INMATENAMESUFFIX
+    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
+    # been updated to read from state_person sex instead.
     gender:
       $enum_mapping:
         $raw_text: INMATESEXCODE
@@ -38,6 +40,14 @@ output:
           StateGender.EXTERNAL_UNKNOWN:
             - U
             - O
+    sex:
+      $enum_mapping:
+        $raw_text: INMATESEXCODE
+        $mappings:
+          StateSex.MALE: M
+          StateSex.FEMALE: F
+          StateSex.OTHER: O
+          StateSex.EXTERNAL_UNKNOWN: U
     races:
       - StatePersonRace:
           race:

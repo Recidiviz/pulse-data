@@ -64,12 +64,20 @@ output:
               - legal_address_2
             $include_nulls: False
         $custom_parser: us_pa_custom_enum_parsers.residency_status_from_address
+    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
+    # been updated to read from state_person sex instead.
     gender:
       $enum_mapping:
         $raw_text: sex
         $mappings:
           StateGender.MALE: MALE
           StateGender.FEMALE: FEMALE
+    sex:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateSex.MALE: MALE
+          StateSex.FEMALE: FEMALE
     races:
       # Race information from DOC tables assigns a single race to a single person. Conversely, race information from PBPP
       # tables assigns one to many races to a single person. Because we ingest both, we ingest one to many races for each

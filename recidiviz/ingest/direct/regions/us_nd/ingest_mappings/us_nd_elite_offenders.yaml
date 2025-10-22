@@ -28,12 +28,20 @@ output:
               $given_names: FIRST_NAME
               $surname: LAST_NAME
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
+    # been updated to read from state_person sex instead.
     gender:
       $enum_mapping:
         $raw_text: SEX_CODE
         $mappings:
           StateGender.MALE: "M"
           StateGender.FEMALE: "F"
+    sex:
+      $enum_mapping:
+        $raw_text: SEX_CODE
+        $mappings:
+          StateSex.MALE: "M"
+          StateSex.FEMALE: "F"
     races:
       - $conditional:
           - $if:

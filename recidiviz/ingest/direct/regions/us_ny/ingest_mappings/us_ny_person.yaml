@@ -6,6 +6,7 @@ input_columns:
   new_nysid: STRING
   birth: DATETIME
   genid: STRING
+  sex: STRING
   race: STRING
   ethnic: STRING
 unused_columns: []
@@ -19,9 +20,16 @@ output:
       $enum_mapping:
         $raw_text: genid
         $mappings:
-          StateGender.MALE: "1"
-          StateGender.FEMALE: "2"
-          StateGender.NON_BINARY: "3"
+          StateGender.MALE: "1" # MALE
+          StateGender.FEMALE: "2" # FEMALE
+          StateGender.NON_BINARY: "3" # NON-BINARY
+    sex:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateSex.MALE: "1" # MALE
+          StateSex.FEMALE: "2" # FEMALE
+          StateSex.OTHER: "9" # NOT CODED
     birthdate: birth
     races:
       - StatePersonRace:
