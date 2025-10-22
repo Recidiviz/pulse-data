@@ -18,6 +18,7 @@
 is eligible to be transferred to Annual Reporting Status (Limited Supervision). This status only
 affects their parole status, not their probation status.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_dual_active_supervision_population,
@@ -33,6 +34,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     case_type_eligible_for_ars_ers,
     no_warrant_with_sustained_violation_within_2_years,
     not_supervision_within_6_months_of_release_date,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    EligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -53,6 +59,41 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         after_ars_ers_policy_effective_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            TimeDependentCriteriaCondition(
+                criteria=supervision_level_is_minimum_for_3_years.VIEW_BUILDER,
+                reasons_date_field="minimum_time_served_date",
+                interval_length=1,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Within 1 month of being on minimum supervision for 3 years",
+            ),
+            EligibleCriteriaCondition(
+                criteria=supervision_level_is_minimum_for_3_years.VIEW_BUILDER,
+                description="On minimum or limited supervision for 3 years",
+            ),
+            TimeDependentCriteriaCondition(
+                criteria=no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
+                reasons_date_field="warrant_expiration_date",
+                interval_length=1,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Within 1 month of not having any sustained warrants in the last two years",
+            ),
+            EligibleCriteriaCondition(
+                criteria=no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
+                description="Has not sustained any warrants in the last two years",
+            ),
+        ],
+        # In the conditions above, a person wouldn't be able to meet both the
+        # `EligibleCriteriaCondition` and the 'TimeDependentCriteriaCondition' for a single
+        # criterion, and so each set of conditions related to a single criterion
+        # acts as its own category, in which a person cannot meet more than one
+        # condition in that category. This means that the below requirement
+        # effectively results in a person having to be eligible or almost-
+        # eligible within each of the criteria "categories" above in order to
+        # hit the minimum number of conditions.
+        at_least_n_conditions_true=2,
+    ),
 )
 
 if __name__ == "__main__":
