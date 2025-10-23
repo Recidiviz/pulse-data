@@ -165,13 +165,13 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
         self,
         state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
-        get_all_unprocessed_bq_file_metadata_task_id: str,
+        verify_big_query_postgres_alignment_task_id: str,
     ) -> None:
         super().__init__()
         self._state_code = state_code
         self._raw_data_instance = raw_data_instance
-        self._get_all_unprocessed_bq_file_metadata_task_id = (
-            get_all_unprocessed_bq_file_metadata_task_id
+        self._verify_big_query_postgres_alignment_task_id = (
+            verify_big_query_postgres_alignment_task_id
         )
         self._region_raw_file_config: DirectIngestRegionRawFileConfig | None = None
 
@@ -206,14 +206,14 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
         are allowed even with multiple imported files, since pruning config changes
         don't affect non-pruned tables.
         """
-        # --- get existing file info from xcom -----------------------------------------
+        # --- get existing files with congruent BigQuery and Postgres data from xcom -----------------------------------------
 
         unprocessed_bq_file_metadata: list[RawBigQueryFileMetadata] = [
             RawBigQueryFileMetadata.deserialize(xcom_metadata)
             for xcom_metadata in operator.xcom_pull(
                 context,
                 key="return_value",
-                task_ids=self._get_all_unprocessed_bq_file_metadata_task_id,
+                task_ids=self._verify_big_query_postgres_alignment_task_id,
             )
         ]
 

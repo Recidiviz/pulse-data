@@ -46,7 +46,6 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawDataFilesSkippedError,
 )
-from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
 POSTGRES_PROCESSED_BQ_FILE_IDS_QUERY = """
@@ -74,6 +73,7 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGenerator(
         self,
         state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
+        project_id: str,
         get_all_unprocessed_bq_file_metadata_task_id: str,
     ) -> None:
         super().__init__()
@@ -82,17 +82,30 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGenerator(
         self._get_all_unprocessed_bq_file_metadata_task_id = (
             get_all_unprocessed_bq_file_metadata_task_id
         )
-        self._big_query_client = BigQueryClientImpl(
-            default_job_labels=[
-                StateCodeResourceLabel(value=self._state_code.value.lower()),
-                IngestInstanceResourceLabel(value=raw_data_instance.value.lower()),
-                PlatformOrchestrationResourceLabel.RAW_DATA_IMPORT_DAG.value,
-            ]
-        )
-        self._project_id = metadata.project_id()
+        self._project_id = project_id
         self._raw_data_dataset_id = raw_tables_dataset_for_region(
             self._state_code, self._raw_data_instance
         )
+        self._big_query_client: BigQueryClientImpl | None = None
+
+    @property
+    def big_query_client(self) -> BigQueryClientImpl:
+        # BigQueryClientImpl is not pickle-able
+        # so it can't be set during initialization
+        # or else the raw data import dag integration tests will fail
+        if not self._big_query_client:
+            self._big_query_client = BigQueryClientImpl(
+                project_id=self._project_id,
+                default_job_labels=[
+                    StateCodeResourceLabel(value=self._state_code.value.lower()),
+                    IngestInstanceResourceLabel(
+                        value=self._raw_data_instance.value.lower()
+                    ),
+                    PlatformOrchestrationResourceLabel.RAW_DATA_IMPORT_DAG.value,
+                ],
+            )
+
+        return self._big_query_client
 
     def execute_postgres_query(
         self,
@@ -214,7 +227,7 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGenerator(
             raw_data_dataset_id=self._raw_data_dataset_id,
             raw_data_table_id=file_tag,
         )
-        rows = self._big_query_client.run_query_async(
+        rows = self.big_query_client.run_query_async(
             query_str=query,
             use_query_cache=True,
         ).result()

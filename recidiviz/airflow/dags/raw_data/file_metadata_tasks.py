@@ -687,11 +687,13 @@ def _deserialize_coalesce_results_and_errors_inputs(
 @task(task_id=RAISE_OPERATIONS_REGISTRATION_ERRORS)
 def raise_operations_registration_errors(
     serialized_bq_metadata_skipped_file_errors: List[str],
+    serialized_bq_postgres_alignment_skipped_file_errors: List[str],
     serialized_pruning_metadata_skipped_file_errors: List[str],
 ) -> None:
     skipped_file_errors = [
         RawDataFilesSkippedError.deserialize(serialized_skipped_file_error)
         for serialized_skipped_file_error in serialized_bq_metadata_skipped_file_errors
+        + serialized_bq_postgres_alignment_skipped_file_errors
         + serialized_pruning_metadata_skipped_file_errors
     ]
 

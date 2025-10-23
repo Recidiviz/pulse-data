@@ -70,7 +70,7 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         self.generator = VerifyRawDataPruningMetadataSqlQueryGenerator(
             state_code=self.state_code,
             raw_data_instance=self.raw_data_instance,
-            get_all_unprocessed_bq_file_metadata_task_id="test_id",
+            verify_big_query_postgres_alignment_task_id="test_id",
         )
         self.mock_operator = create_autospec(CloudSqlQueryOperator)
         self.mock_context = create_autospec(Context)

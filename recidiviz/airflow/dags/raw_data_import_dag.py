@@ -111,6 +111,9 @@ from recidiviz.airflow.dags.raw_data.sequencing_tasks import (
     maybe_trigger_dag_rerun,
     successfully_acquired_all_locks,
 )
+from recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator import (
+    VerifyBigQueryPostgresAlignmentSQLQueryGenerator,
+)
 from recidiviz.airflow.dags.raw_data.verify_raw_data_pruning_metadata_sql_query_generator import (
     VerifyRawDataPruningMetadataSqlQueryGenerator,
 )
@@ -236,13 +239,24 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        get_all_unprocessed_bq_file_metadata_with_congruous_raw_data = CloudSqlQueryOperator(
+            task_id="verify_big_query_postgres_alignment",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=VerifyBigQueryPostgresAlignmentSQLQueryGenerator(
+                state_code=state_code,
+                raw_data_instance=raw_data_instance,
+                project_id=get_project_id(),
+                get_all_unprocessed_bq_file_metadata_task_id=get_all_unprocessed_bq_file_metadata.task_id,
+            ),
+        )
+
         get_all_unprocessed_bq_file_metadata_with_valid_pruning_config = CloudSqlQueryOperator(
             task_id="verify_raw_data_pruning_metadata",
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=VerifyRawDataPruningMetadataSqlQueryGenerator(
                 state_code=state_code,
                 raw_data_instance=raw_data_instance,
-                get_all_unprocessed_bq_file_metadata_task_id=get_all_unprocessed_bq_file_metadata.task_id,
+                verify_big_query_postgres_alignment_task_id=get_all_unprocessed_bq_file_metadata_with_congruous_raw_data.task_id,
             ),
         )
         # should_run_import is upstream of (set further down in the dag):
@@ -255,6 +269,9 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         skipped_file_errors = raise_operations_registration_errors(
             serialized_bq_metadata_skipped_file_errors=get_all_unprocessed_bq_file_metadata.output[
+                SKIPPED_FILE_ERRORS
+            ],
+            serialized_bq_postgres_alignment_skipped_file_errors=get_all_unprocessed_bq_file_metadata_with_congruous_raw_data.output[
                 SKIPPED_FILE_ERRORS
             ],
             serialized_pruning_metadata_skipped_file_errors=get_all_unprocessed_bq_file_metadata_with_valid_pruning_config.output[
@@ -308,6 +325,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             list_normalized_unprocessed_gcs_file_paths
             >> get_all_unprocessed_gcs_file_metadata
             >> get_all_unprocessed_bq_file_metadata
+            >> get_all_unprocessed_bq_file_metadata_with_congruous_raw_data
             >> get_all_unprocessed_bq_file_metadata_with_valid_pruning_config
             >> files_to_import_this_run
             >> write_import_start

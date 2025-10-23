@@ -60,12 +60,6 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGeneratorTest(
         self.mock_operator.reset_mock()
         self.mock_context.reset_mock()
 
-        self.project_id_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.metadata.project_id"
-        )
-        self.mock_project_id = self.project_id_patcher.start()
-        self.mock_project_id.return_value = "recidiviz-testing"
-
         self.bq_client_patcher = patch(
             "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl"
         )
@@ -75,6 +69,7 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGeneratorTest(
 
         self.generator = VerifyBigQueryPostgresAlignmentSQLQueryGenerator(
             state_code=StateCode.US_XX,
+            project_id="recidiviz-testing",
             raw_data_instance=DirectIngestInstance.PRIMARY,
             get_all_unprocessed_bq_file_metadata_task_id="test_task_id",
         )
@@ -87,7 +82,6 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGeneratorTest(
 
     def tearDown(self) -> None:
         super().tearDown()
-        self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.pruning_enabled_patcher.stop()
 

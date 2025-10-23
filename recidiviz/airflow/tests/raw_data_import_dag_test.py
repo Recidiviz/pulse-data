@@ -42,6 +42,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     RAW_DATA_BRANCHING,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
+    SKIPPED_FILE_ERRORS,
 )
 from recidiviz.airflow.tests.fixtures import raw_data as raw_data_fixtures
 from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
@@ -91,6 +92,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
+    RawDataFilesSkippedError,
     RawFileBigQueryLoadConfig,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
@@ -205,6 +207,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         step_2_task_ids = [
             ["get_all_unprocessed_gcs_file_metadata"],
             ["get_all_unprocessed_bq_file_metadata"],
+            [
+                "raise_operations_registration_errors",
+                "verify_big_query_postgres_alignment",
+            ],
             [
                 "raise_operations_registration_errors",
                 "verify_raw_data_pruning_metadata",
@@ -399,6 +405,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
         "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
         "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+        "raw_data_branching.us_xx_primary_import_branch.verify_big_query_postgres_alignment",
         "raw_data_branching.us_xx_primary_import_branch.verify_raw_data_pruning_metadata",
         "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
         "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
@@ -907,6 +914,85 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             )
 
             assert set(file_imports) == {(1, "STARTED")}
+
+    def test_big_query_postgres_misalignment(self) -> None:
+        """Test that verify_big_query_postgres_alignment fails and import does not proceed when
+        BigQuery contains file_ids that don't have corresponding processed entries in Postgres.
+        """
+
+        self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
+            [
+                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagFileConfigHeaders.csv",
+            ]
+        )
+        self.header_reader_mock.return_value = ["col1", "col2", "col3"]
+
+        pruning_enabled_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.automatic_raw_data_pruning_enabled_for_state_and_instance",
+            return_value=True,
+        )
+        pruning_enabled_patcher.start()
+
+        bq_client_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl"
+        )
+        mock_bq_client_class = bq_client_patcher.start()
+        mock_bq_client = MagicMock()
+        mock_bq_client_class.return_value = mock_bq_client
+
+        def mock_run_query(
+            query_str: str, use_query_cache: bool  # pylint: disable=unused-argument
+        ) -> MagicMock:
+            mock_result = MagicMock()
+            if "tagBasicData" in query_str:
+                # Return file_id=999 which represents historical data in BigQuery
+                # that doesn't exist in Postgres
+                mock_result.result.return_value = [[999]]
+            elif "tagFileConfigHeaders" in query_str:
+                # Return empty - no historical data in BigQuery for this table
+                mock_result.result.return_value = []
+            else:
+                mock_result.result.return_value = []
+            return mock_result
+
+        mock_bq_client.run_query_async.side_effect = mock_run_query
+
+        try:
+            with Session(bind=self.engine) as session:
+                result = self.run_dag_test(
+                    self._create_operations_registration_only_dag(),
+                    session=session,
+                    expected_failure_task_id_regexes=[
+                        "raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors"
+                    ],
+                    expected_skipped_task_id_regexes=[],
+                )
+                self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+                skipped_errors_jsonb = self.get_xcom_for_task_id(
+                    "raw_data_branching.us_xx_primary_import_branch.verify_big_query_postgres_alignment",
+                    session=session,
+                    key=SKIPPED_FILE_ERRORS,
+                )
+
+                skipped_errors = [
+                    RawDataFilesSkippedError.deserialize(error_str)
+                    for error_str in json.loads(
+                        assert_type(skipped_errors_jsonb, bytes)
+                    )
+                ]
+
+                assert len(skipped_errors) == 1
+                assert skipped_errors[0].file_tag == "tagBasicData"
+                assert (
+                    "BigQuery raw data table [us_xx_raw_data.tagBasicData] contains file_ids [999] with no corresponding"
+                    " non-invalidated, processed entry in the `direct_ingest_raw_big_query_file_metadata` table"
+                    == skipped_errors[0].skipped_message
+                )
+        finally:
+            pruning_enabled_patcher.stop()
+            bq_client_patcher.stop()
 
 
 class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTest):
@@ -2739,6 +2825,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # downstream failures
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.verify_big_query_postgres_alignment",
                     r".*_primary_import_branch\.verify_raw_data_pruning_metadata",
                     r".*_primary_import_branch\.has_files_to_import",
                     r".*_primary_import_branch\.get_files_to_import_this_run",
