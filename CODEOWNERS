@@ -35,3 +35,4 @@ recidiviz/tests/view_registry/sentences_v1_migration_burndown/** @ageiduschek
 recidiviz/view_registry/deprecated_view_reference_exemptions.py @ageiduschek
 recidiviz/view_registry/deployed_view_external_id_exemptions.py @ageiduschek, @Recidiviz/doppler-codeowners
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
+recidiviz/view_registry/raw_data_table_reference_exemptions.py @Recidiviz/doppler-codeowners

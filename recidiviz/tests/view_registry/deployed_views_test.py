@@ -58,9 +58,19 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_supervisio
     US_MO_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    raw_data_views_dataset_for_region,
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.gating import (
     automatic_raw_data_pruning_enabled_for_state_and_instance,
 )
+from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
+    automatic_raw_data_pruning_enabled_for_file_config,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
 )
@@ -123,6 +133,9 @@ from recidiviz.view_registry.deprecated_view_reference_exemptions import (
 )
 from recidiviz.view_registry.query_complexity_score_2025 import (
     get_query_complexity_score_2025,
+)
+from recidiviz.view_registry.raw_data_table_reference_exemptions import (
+    RAW_DATA_TABLE_REFERENCE_EXEMPTIONS,
 )
 
 
@@ -744,24 +757,91 @@ The following views have less restrictive projects_to_deploy than their parents:
             # purposes.
             OPERATIONS_BASE_REGIONAL_DATASET,
             OPERATIONS_BASE_DATASET,
+            # raw table datasets potentially contain rows that are marked as deleted so should
+            # not be referenced directly. if a raw data reference is necessary, views should use
+            # the _all raw data view
+            *{
+                raw_tables_dataset_for_region(state_code, DirectIngestInstance.PRIMARY)
+                for state_code in StateCode
+            },
+            # views should not reference secondary data
+            *{
+                raw_tables_dataset_for_region(
+                    state_code, DirectIngestInstance.SECONDARY
+                )
+                for state_code in StateCode
+            },
+            *{
+                raw_latest_views_dataset_for_region(
+                    state_code, DirectIngestInstance.SECONDARY
+                )
+                for state_code in StateCode
+            },
+            *{
+                raw_data_views_dataset_for_region(
+                    state_code, DirectIngestInstance.SECONDARY
+                )
+                for state_code in StateCode
+            },
         }
 
-        # views that are allowed to references specific views in the datasets in disallowed_view_parent_datasets
-        # dict of exempt_view -> views in |disallowed_view_parent_datasets| it is allowed to reference
-        disallowed_view_parent_dataset_exceptions: dict[str, set] = {
+        # datasets that are allowed to reference datasets in disallowed_view_parent_datasets
+        # dict of exempt_dataset -> dataset in |disallowed_view_parent_datasets| it is allowed to reference
+        dataset_exceptions_to_disallowed_view_parent_datasets: dict[str, set] = {
             STATE_BASE_VIEWS_DATASET: {
                 state_dataset_for_state_code(state_code) for state_code in StateCode
             },
             STATE_BASE_DATASET: {STATE_BASE_VIEWS_DATASET},
+            **{
+                raw_latest_views_dataset_for_region(state_code, instance): {
+                    raw_tables_dataset_for_region(state_code, instance)
+                }
+                for state_code in StateCode
+                for instance in DirectIngestInstance
+            },
+            **{
+                raw_data_views_dataset_for_region(state_code, instance): {
+                    raw_tables_dataset_for_region(state_code, instance)
+                }
+                for state_code in StateCode
+                for instance in DirectIngestInstance
+            },
         }
+        # views that are allowed to references specific datasets in disallowed_view_parent_datasets
+        # dict of exempt_view_address -> datasets in |disallowed_view_parent_datasets| it is allowed to reference
+        view_exemptions_to_disallowed_view_parent_datasets: dict[
+            BigQueryAddress, set
+        ] = defaultdict(set)
+        for state_code, exemptions in RAW_DATA_TABLE_REFERENCE_EXEMPTIONS.items():
+            for address in exemptions:
+                view_exemptions_to_disallowed_view_parent_datasets[address].add(
+                    raw_tables_dataset_for_region(
+                        state_code, DirectIngestInstance.PRIMARY
+                    )
+                )
+
         views_with_issues = defaultdict(set)
         for view in self.dag_walker.views:
-            if view.dataset_id in disallowed_view_parent_dataset_exceptions:
-                continue
             for parent_address in view.parent_tables:
                 parent_dataset = parent_address.dataset_id
-                if parent_dataset not in disallowed_view_parent_datasets:
+
+                parent_allowed = parent_dataset not in disallowed_view_parent_datasets
+                dataset_exempt = (
+                    view.dataset_id
+                    in dataset_exceptions_to_disallowed_view_parent_datasets
+                    and parent_dataset
+                    in dataset_exceptions_to_disallowed_view_parent_datasets[
+                        view.dataset_id
+                    ]
+                )
+                view_exempt = (
+                    view.address in view_exemptions_to_disallowed_view_parent_datasets
+                    and parent_dataset
+                    in view_exemptions_to_disallowed_view_parent_datasets[view.address]
+                )
+                if parent_allowed or dataset_exempt or view_exempt:
                     continue
+
                 views_with_issues[parent_dataset].add(view.address)
 
         errors = []
@@ -778,10 +858,10 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         for (
             exempt_dataset,
-            allowed_disallowed_references,
-        ) in disallowed_view_parent_dataset_exceptions.items():
+            allowed_disallowed_dataset_refs,
+        ) in dataset_exceptions_to_disallowed_view_parent_datasets.items():
             if (
-                extra_datasets := allowed_disallowed_references
+                extra_datasets := allowed_disallowed_dataset_refs
                 - disallowed_view_parent_datasets
             ):
                 errors.append(
@@ -792,9 +872,77 @@ The following views have less restrictive projects_to_deploy than their parents:
                     )
                 )
 
+        for (
+            exempt_view_address,
+            allowed_disallowed_dataset_refs,
+        ) in view_exemptions_to_disallowed_view_parent_datasets.items():
+            view = self.dag_walker.view_for_address(exempt_view_address)
+            parent_datasets = {parent.dataset_id for parent in view.parent_tables}
+            if unrefed_dataset := allowed_disallowed_dataset_refs - parent_datasets:
+                errors.append(
+                    ValueError(
+                        f"View [{exempt_view_address.to_str()}] is exempted from not referencing "
+                        f"dataset(s) {unrefed_dataset}, but it does not reference them."
+                    )
+                )
+            if (
+                extra_datasets := allowed_disallowed_dataset_refs
+                - disallowed_view_parent_datasets
+            ):
+                errors.append(
+                    ValueError(
+                        f"View [{exempt_view_address.to_str()}] is exempted from not referencing "
+                        f"the following datasets that we are no longer enforcing as disallowed: "
+                        f"{extra_datasets}"
+                    )
+                )
+
         if errors:
             raise ExceptionGroup(
                 "Found the following failures while enforcing disallowed parent datasets references:",
+                errors,
+            )
+
+    def test_raw_data_table_reference_exemptions_no_automatic_pruning(self) -> None:
+        """Test that views in RAW_DATA_TABLE_REFERENCE_EXEMPTIONS don't reference
+        raw tables with automatic pruning enabled."""
+        errors = []
+        for (
+            state_code,
+            exempted_views,
+        ) in RAW_DATA_TABLE_REFERENCE_EXEMPTIONS.items():
+            region_raw_file_config = get_region_raw_file_config(state_code.value)
+            raw_table_dataset = raw_tables_dataset_for_region(
+                state_code, DirectIngestInstance.PRIMARY
+            )
+
+            for view_address in exempted_views:
+                view = self.dag_walker.view_for_address(view_address)
+
+                for parent_address in view.parent_tables:
+                    if parent_address.dataset_id != raw_table_dataset:
+                        continue
+
+                    file_tag = parent_address.table_id
+                    raw_file_config = region_raw_file_config.raw_file_configs[file_tag]
+
+                    if automatic_raw_data_pruning_enabled_for_file_config(
+                        state_code, DirectIngestInstance.PRIMARY, raw_file_config
+                    ):
+                        errors.append(
+                            ValueError(
+                                f"View [{view_address.to_str()}] is exempted from using raw data views "
+                                f"but references raw table [{parent_address.to_str()}] which has "
+                                f"automatic pruning enabled. Views that reference raw tables with "
+                                f"automatic pruning enabled must use _all raw data views "
+                                f"instead of raw tables directly."
+                            )
+                        )
+
+        if errors:
+            raise ExceptionGroup(
+                "Found views in RAW_DATA_TABLE_REFERENCE_EXEMPTIONS that reference "
+                "raw tables with automatic pruning enabled:",
                 errors,
             )
 
