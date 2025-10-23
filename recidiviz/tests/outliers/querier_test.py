@@ -1079,7 +1079,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
             StateCode.US_XX, self.test_user_context.feature_variants
         )
         user_context = None
-        result = querier.get_configuration_for_user(user_context)
+        with querier.insights_database_session() as session:
+            result = querier.get_configuration_for_user(session, user_context)
 
         self.assertEqual(result.id, 1)
 
@@ -1096,7 +1097,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
             can_access_supervision_workflows=True,
             feature_variants=["fv1", "random"],
         )
-        result = querier.get_configuration_for_user(user_context)
+        with querier.insights_database_session() as session:
+            result = querier.get_configuration_for_user(session, user_context)
 
         self.assertEqual(result.id, 3)
 
@@ -1113,7 +1115,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
             can_access_supervision_workflows=True,
             feature_variants=["randomfv"],
         )
-        result = querier.get_configuration_for_user(user_context)
+        with querier.insights_database_session() as session:
+            result = querier.get_configuration_for_user(session, user_context)
 
         self.assertEqual(result.id, 1)
 
@@ -1132,7 +1135,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
 
         with patch("logging.Logger.error") as mock_logger:
-            result = querier.get_configuration_for_user(user_context)
+            with querier.insights_database_session() as session:
+                result = querier.get_configuration_for_user(session, user_context)
 
             self.assertEqual(result.id, 1)
             mock_logger.assert_has_calls(

@@ -163,7 +163,7 @@ class OutliersQuerier:
                 .all()
             )
 
-            state_config = self.get_product_configuration()
+            state_config = self.get_product_configuration(session=session)
 
             metric_name_to_metric_context = {
                 metric: self._get_metric_context_from_db(
@@ -575,12 +575,14 @@ class OutliersQuerier:
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
         :rtype: List[SupervisionOfficerEntity]
         """
-        id_to_entities = self.get_id_to_supervision_officer_entities(
-            category_type_to_compare=category_type_to_compare,
-            num_lookback_periods=num_lookback_periods,
-            supervisor_external_id=supervisor_external_id,
-            include_workflows_info=include_workflows_info,
-        )
+        with self.insights_database_session() as session:
+            id_to_entities = self.get_id_to_supervision_officer_entities(
+                session,
+                category_type_to_compare=category_type_to_compare,
+                num_lookback_periods=num_lookback_periods,
+                supervisor_external_id=supervisor_external_id,
+                include_workflows_info=include_workflows_info,
+            )
         return list(id_to_entities.values())
 
     def get_officer_outcomes_for_supervisor(
@@ -600,12 +602,14 @@ class OutliersQuerier:
         :param period_end_date: The end date of the period to get outcomes info for. If not provided, use the latest end date available.
         :rtype: List[SupervisionOfficerOutcomes]
         """
-        id_to_entities = self.get_id_to_supervision_officer_outcomes_entities(
-            category_type_to_compare=category_type_to_compare,
-            num_lookback_periods=num_lookback_periods,
-            period_end_date=period_end_date,
-            supervisor_external_id=supervisor_external_id,
-        )
+        with self.insights_database_session() as session:
+            id_to_entities = self._get_id_to_supervision_officer_outcomes_entities(
+                session,
+                category_type_to_compare=category_type_to_compare,
+                num_lookback_periods=num_lookback_periods,
+                period_end_date=period_end_date,
+                supervisor_external_id=supervisor_external_id,
+            )
         return list(id_to_entities.values())
 
     def get_supervisor_entity_from_pseudonymized_id(
@@ -898,6 +902,7 @@ class OutliersQuerier:
                 return None
 
             id_to_entities = self.get_id_to_supervision_officer_entities(
+                session,
                 category_type_to_compare=category_type_to_compare,
                 num_lookback_periods=num_lookback_periods,
                 officer_external_id=officer_external_id,
@@ -913,24 +918,23 @@ class OutliersQuerier:
 
             return id_to_entities[officer_external_id]
 
-    def _include_in_outcomes_subquery(self) -> Any:
+    def _include_in_outcomes_subquery(self, session: Session) -> Any:
         """
         Returns a subquery for pulling the current include_in_outcomes values for all
         supervision officers.
         """
-        with self.insights_database_session() as session:
-            return (
-                session.query(
-                    SupervisionOfficerMetric.officer_id,
-                    SupervisionOfficerMetric.metric_value.label("include_in_outcomes"),
-                )
-                .filter(
-                    SupervisionOfficerMetric.end_date
-                    == self._get_latest_period_end_date(session),
-                    SupervisionOfficerMetric.metric_id == "include_in_outcomes",
-                )
-                .subquery()
+        return (
+            session.query(
+                SupervisionOfficerMetric.officer_id,
+                SupervisionOfficerMetric.metric_value.label("include_in_outcomes"),
             )
+            .filter(
+                SupervisionOfficerMetric.end_date
+                == self._get_latest_period_end_date(session),
+                SupervisionOfficerMetric.metric_id == "include_in_outcomes",
+            )
+            .subquery()
+        )
 
     def get_all_supervision_officers_required_info_only(
         self,
@@ -943,7 +947,7 @@ class OutliersQuerier:
             List[SupervisionOfficerEntity]: A list of SupervisionOfficerEntity instances.
         """
         with self.insights_database_session() as session:
-            include_in_outcomes_subquery = self._include_in_outcomes_subquery()
+            include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
             officers = (
                 session.query(SupervisionOfficer)
                 .join(
@@ -1012,7 +1016,8 @@ class OutliersQuerier:
                 )
                 return None
 
-            id_to_entities = self.get_id_to_supervision_officer_outcomes_entities(
+            id_to_entities = self._get_id_to_supervision_officer_outcomes_entities(
+                session,
                 category_type_to_compare=category_type_to_compare,
                 num_lookback_periods=num_lookback_periods,
                 period_end_date=period_end_date,
@@ -1066,23 +1071,23 @@ class OutliersQuerier:
         self, external_ids: List[str]
     ) -> List[SupervisionOfficer]:
         """Retrieve supervision officers by their external IDs."""
-        return (
-            self.insights_database_session()
-            .query(SupervisionOfficer)
-            .filter(SupervisionOfficer.external_id.in_(external_ids))
-            .all()
-        )
+        with self.insights_database_session() as session:
+            return (
+                session.query(SupervisionOfficer)
+                .filter(SupervisionOfficer.external_id.in_(external_ids))
+                .all()
+            )
 
     def get_supervision_officer_supervisors_by_external_ids(
         self, external_ids: List[str]
     ) -> List[SupervisionOfficerSupervisor]:
         """Retrieve supervisors for supervision officers by their external IDs."""
-        return (
-            self.insights_database_session()
-            .query(SupervisionOfficerSupervisor)
-            .filter(SupervisionOfficerSupervisor.external_id.in_(external_ids))
-            .all()
-        )
+        with self.insights_database_session() as session:
+            return (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id.in_(external_ids))
+                .all()
+            )
 
     def _init_vitals_metrics_dict_for_query(self) -> Dict[str, VitalsMetric]:
         return {
@@ -1091,7 +1096,9 @@ class OutliersQuerier:
         }
 
     def _get_vitals_metrics_from_officer_pseudonymized_ids(
-        self, supervision_officer_pseudonymized_ids: Optional[List[str]]
+        self,
+        session: Session,
+        supervision_officer_pseudonymized_ids: Optional[List[str]],
     ) -> List[VitalsMetric]:
         """
         Retrieve vitals metrics for officers by officer or supervisor ID.
@@ -1114,138 +1121,134 @@ class OutliersQuerier:
         DAY_PERIOD_DATE_CUTOFF = TODAY - relativedelta(days=30)
         MONTH_PERIOD_DATE_CUTOFF = TODAY - relativedelta(months=1)
 
-        with self.insights_database_session() as session:
-            # Subquery: Get the current metric value and (if it exists) previous metric
-            # value for each officer, filtering by the provided pseudonymized IDs and
-            # vitals metrics IDs.
-            #
-            # NOTE: We assume that there will be up to two calculated metric values,
-            # and that those values will represent the most recent two periods.
-            # In other words, we assume there are up to two rows per officer ID and metric ID
-            # combination in the source table, where the end_dates are:
-            # - for metrics calculated with a period of DAY, such as assessments,
-            #   1) the day before the current date and
-            #   2) the day 30 days before the current date
-            # - for metrics calculated with a period of MONTH, such as timely_contact_due_date_based,
-            #   1) the 1st of the current month and
-            #   2) the 1st of the previous month
-            # (where "the current date" is the date the aggregated metrics collection was last refreshed.)
-            #
-            # https://github.com/Recidiviz/pulse-data/pull/35760#discussion_r1882412306
+        # Subquery: Get the current metric value and (if it exists) previous metric
+        # value for each officer, filtering by the provided pseudonymized IDs and
+        # vitals metrics IDs.
+        #
+        # NOTE: We assume that there will be up to two calculated metric values,
+        # and that those values will represent the most recent two periods.
+        # In other words, we assume there are up to two rows per officer ID and metric ID
+        # combination in the source table, where the end_dates are:
+        # - for metrics calculated with a period of DAY, such as assessments,
+        #   1) the day before the current date and
+        #   2) the day 30 days before the current date
+        # - for metrics calculated with a period of MONTH, such as timely_contact_due_date_based,
+        #   1) the 1st of the current month and
+        #   2) the 1st of the previous month
+        # (where "the current date" is the date the aggregated metrics collection was last refreshed.)
+        #
+        # https://github.com/Recidiviz/pulse-data/pull/35760#discussion_r1882412306
 
-            metric_ids = list(vitals_metrics_by_metric_id.keys())
+        metric_ids = list(vitals_metrics_by_metric_id.keys())
 
-            MainMetric = aliased(SupervisionOfficerMetric)
-            NumeratorMetric = aliased(SupervisionOfficerMetric)
-            DenominatorMetric = aliased(SupervisionOfficerMetric)
+        MainMetric = aliased(SupervisionOfficerMetric)
+        NumeratorMetric = aliased(SupervisionOfficerMetric)
+        DenominatorMetric = aliased(SupervisionOfficerMetric)
 
-            filtered_officers_and_metrics = (
-                session.query(
-                    MainMetric.metric_id,
-                    MainMetric.metric_value,
-                    MainMetric.period,
-                    MainMetric.end_date,
-                    SupervisionOfficer.pseudonymized_id,
-                    func.lag(MainMetric.metric_value)
-                    .over(
-                        partition_by=[MainMetric.metric_id, MainMetric.officer_id],
-                        order_by=MainMetric.end_date,
-                    )
-                    .label("previous_metric_value"),
-                    func.lag(MainMetric.end_date)
-                    .over(
-                        partition_by=[MainMetric.metric_id, MainMetric.officer_id],
-                        order_by=MainMetric.end_date,
-                    )
-                    .label("previous_end_date"),
-                    NumeratorMetric.metric_value.label("metric_numerator"),
-                    DenominatorMetric.metric_value.label("metric_denominator"),
+        filtered_officers_and_metrics = (
+            session.query(
+                MainMetric.metric_id,
+                MainMetric.metric_value,
+                MainMetric.period,
+                MainMetric.end_date,
+                SupervisionOfficer.pseudonymized_id,
+                func.lag(MainMetric.metric_value)
+                .over(
+                    partition_by=[MainMetric.metric_id, MainMetric.officer_id],
+                    order_by=MainMetric.end_date,
                 )
-                .join(
-                    SupervisionOfficer,
-                    MainMetric.officer_id == SupervisionOfficer.external_id,
+                .label("previous_metric_value"),
+                func.lag(MainMetric.end_date)
+                .over(
+                    partition_by=[MainMetric.metric_id, MainMetric.officer_id],
+                    order_by=MainMetric.end_date,
                 )
-                .outerjoin(
-                    NumeratorMetric,
-                    and_(
-                        NumeratorMetric.officer_id == MainMetric.officer_id,
-                        NumeratorMetric.metric_id
-                        == (MainMetric.metric_id + "_numerator"),
-                        NumeratorMetric.end_date == MainMetric.end_date,
-                    ),
-                )
-                .outerjoin(
-                    DenominatorMetric,
-                    and_(
-                        DenominatorMetric.officer_id == MainMetric.officer_id,
-                        DenominatorMetric.metric_id
-                        == (MainMetric.metric_id + "_denominator"),
-                        DenominatorMetric.end_date == MainMetric.end_date,
-                    ),
-                )
-                .filter(
-                    MainMetric.metric_id.in_(metric_ids),
-                    (
-                        SupervisionOfficer.pseudonymized_id.in_(
-                            supervision_officer_pseudonymized_ids
-                        )
-                        if supervision_officer_pseudonymized_ids is not None
-                        else True
-                    ),
-                )
-                .subquery()
+                .label("previous_end_date"),
+                NumeratorMetric.metric_value.label("metric_numerator"),
+                DenominatorMetric.metric_value.label("metric_denominator"),
             )
-
-            # Query: Get the pseudo ID, metric ID, current period metric value,
-            # and the delta between the current and previous period metric values as
-            # metric_30d_delta.
-            #
-            # NOTE: This will only calculate a difference for the provided
-            # pseudonymized IDs that have a metric value for the current period.
-            vitals_metrics_for_officers_query = session.query(
-                filtered_officers_and_metrics.c.pseudonymized_id,
-                filtered_officers_and_metrics.c.metric_id,
-                filtered_officers_and_metrics.c.metric_value,
-                filtered_officers_and_metrics.c.end_date,
-                filtered_officers_and_metrics.c.previous_end_date,
-                func.round(
-                    func.coalesce(
-                        filtered_officers_and_metrics.c.metric_value
-                        - filtered_officers_and_metrics.c.previous_metric_value,
-                        0,
-                    )
-                ).label("metric_30d_delta"),
-                filtered_officers_and_metrics.c.metric_numerator,
-                filtered_officers_and_metrics.c.metric_denominator,
-            ).filter(
-                filtered_officers_and_metrics.c.metric_value.isnot(None),
-                case(
-                    (
-                        filtered_officers_and_metrics.c.period == "DAY",
-                        filtered_officers_and_metrics.c.end_date
-                        > DAY_PERIOD_DATE_CUTOFF,
-                    ),
-                    (
-                        filtered_officers_and_metrics.c.period == "MONTH",
-                        filtered_officers_and_metrics.c.end_date
-                        > MONTH_PERIOD_DATE_CUTOFF,
-                    ),
-                    else_=False,
+            .join(
+                SupervisionOfficer,
+                MainMetric.officer_id == SupervisionOfficer.external_id,
+            )
+            .outerjoin(
+                NumeratorMetric,
+                and_(
+                    NumeratorMetric.officer_id == MainMetric.officer_id,
+                    NumeratorMetric.metric_id == (MainMetric.metric_id + "_numerator"),
+                    NumeratorMetric.end_date == MainMetric.end_date,
                 ),
             )
+            .outerjoin(
+                DenominatorMetric,
+                and_(
+                    DenominatorMetric.officer_id == MainMetric.officer_id,
+                    DenominatorMetric.metric_id
+                    == (MainMetric.metric_id + "_denominator"),
+                    DenominatorMetric.end_date == MainMetric.end_date,
+                ),
+            )
+            .filter(
+                MainMetric.metric_id.in_(metric_ids),
+                (
+                    SupervisionOfficer.pseudonymized_id.in_(
+                        supervision_officer_pseudonymized_ids
+                    )
+                    if supervision_officer_pseudonymized_ids is not None
+                    else True
+                ),
+            )
+            .subquery()
+        )
 
-            results = vitals_metrics_for_officers_query.all()
-
-            for row in results:
-                vitals_metrics_by_metric_id[row.metric_id].add_officer_vitals_entity(
-                    row.pseudonymized_id,
-                    row.metric_value,
-                    row.metric_30d_delta,
-                    row.end_date,
-                    row.previous_end_date,
-                    row.metric_numerator,
-                    row.metric_denominator,
+        # Query: Get the pseudo ID, metric ID, current period metric value,
+        # and the delta between the current and previous period metric values as
+        # metric_30d_delta.
+        #
+        # NOTE: This will only calculate a difference for the provided
+        # pseudonymized IDs that have a metric value for the current period.
+        vitals_metrics_for_officers_query = session.query(
+            filtered_officers_and_metrics.c.pseudonymized_id,
+            filtered_officers_and_metrics.c.metric_id,
+            filtered_officers_and_metrics.c.metric_value,
+            filtered_officers_and_metrics.c.end_date,
+            filtered_officers_and_metrics.c.previous_end_date,
+            func.round(
+                func.coalesce(
+                    filtered_officers_and_metrics.c.metric_value
+                    - filtered_officers_and_metrics.c.previous_metric_value,
+                    0,
                 )
+            ).label("metric_30d_delta"),
+            filtered_officers_and_metrics.c.metric_numerator,
+            filtered_officers_and_metrics.c.metric_denominator,
+        ).filter(
+            filtered_officers_and_metrics.c.metric_value.isnot(None),
+            case(
+                (
+                    filtered_officers_and_metrics.c.period == "DAY",
+                    filtered_officers_and_metrics.c.end_date > DAY_PERIOD_DATE_CUTOFF,
+                ),
+                (
+                    filtered_officers_and_metrics.c.period == "MONTH",
+                    filtered_officers_and_metrics.c.end_date > MONTH_PERIOD_DATE_CUTOFF,
+                ),
+                else_=False,
+            ),
+        )
+
+        results = vitals_metrics_for_officers_query.all()
+
+        for row in results:
+            vitals_metrics_by_metric_id[row.metric_id].add_officer_vitals_entity(
+                row.pseudonymized_id,
+                row.metric_value,
+                row.metric_30d_delta,
+                row.end_date,
+                row.previous_end_date,
+                row.metric_numerator,
+                row.metric_denominator,
+            )
         return sorted(vitals_metrics_by_metric_id.values())
 
     def get_vitals_metrics_for_supervision_officer(
@@ -1255,10 +1258,11 @@ class OutliersQuerier:
         """
         Retrieve vitals metrics for officers by officer pseudo ID.
         """
-
-        return self._get_vitals_metrics_from_officer_pseudonymized_ids(
-            supervision_officer_pseudonymized_ids=[officer_pseudonymized_id]
-        )
+        with self.insights_database_session() as session:
+            return self._get_vitals_metrics_from_officer_pseudonymized_ids(
+                session,
+                supervision_officer_pseudonymized_ids=[officer_pseudonymized_id],
+            )
 
     def get_vitals_metrics_for_supervision_officer_supervisor(
         self,
@@ -1297,11 +1301,13 @@ class OutliersQuerier:
                     return sorted(self._init_vitals_metrics_dict_for_query().values())
 
             return self._get_vitals_metrics_from_officer_pseudonymized_ids(
-                supervision_officer_pseudonymized_ids=officer_pseudonymized_ids_filter
+                session,
+                supervision_officer_pseudonymized_ids=officer_pseudonymized_ids_filter,
             )
 
     def get_id_to_supervision_officer_entities(
         self,
+        session: Session,
         category_type_to_compare: InsightsCaseloadCategoryType,
         include_workflows_info: bool,
         num_lookback_periods: Optional[int],
@@ -1328,34 +1334,58 @@ class OutliersQuerier:
                 "Should provide either an external id for the officer or supervisor to filter on."
             )
 
-        with self.insights_database_session() as session:
-            zero_grants_metrics_end_date = self._get_latest_period_end_date(
-                session, daily_metric=True
+        zero_grants_metrics_end_date = self._get_latest_period_end_date(
+            session, daily_metric=True
+        )
+
+        avgs_subquery = (
+            session.query(
+                SupervisionOfficerMetric.officer_id,
+                func.array_agg(
+                    aggregate_order_by(
+                        SupervisionOfficerMetric.metric_value,
+                        SupervisionOfficerMetric.end_date.desc(),
+                    )
+                )[1].label("avg_daily_population"),
             )
-
-            avgs_subquery = (
-                session.query(
-                    SupervisionOfficerMetric.officer_id,
-                    func.array_agg(
-                        aggregate_order_by(
-                            SupervisionOfficerMetric.metric_value,
-                            SupervisionOfficerMetric.end_date.desc(),
-                        )
-                    )[1].label("avg_daily_population"),
-                )
-                .filter(
-                    SupervisionOfficerMetric.metric_id == "avg_daily_population",
-                    SupervisionOfficerMetric.category_type
-                    == category_type_to_compare.value,
-                )
-                .group_by(SupervisionOfficerMetric.officer_id)
-                .subquery()
+            .filter(
+                SupervisionOfficerMetric.metric_id == "avg_daily_population",
+                SupervisionOfficerMetric.category_type
+                == category_type_to_compare.value,
             )
+            .group_by(SupervisionOfficerMetric.officer_id)
+            .subquery()
+        )
 
-            include_in_outcomes_subquery = self._include_in_outcomes_subquery()
+        include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
 
-            # The entities we'll be selecting from our query
-            query_entities = [
+        # The entities we'll be selecting from our query
+        query_entities = [
+            SupervisionOfficer.external_id,
+            SupervisionOfficer.full_name,
+            SupervisionOfficer.pseudonymized_id,
+            SupervisionOfficer.supervisor_external_id,
+            SupervisionOfficer.supervisor_external_ids,
+            SupervisionOfficer.supervision_district,
+            SupervisionOfficer.email,
+            SupervisionOfficer.earliest_person_assignment_date,
+            SupervisionOfficer.latest_login_date,
+            avgs_subquery.c.avg_daily_population,
+            include_in_outcomes_subquery.c.include_in_outcomes,
+        ]
+
+        officer_status_query = (
+            session.query(SupervisionOfficer)
+            .join(
+                avgs_subquery,
+                avgs_subquery.c.officer_id == SupervisionOfficer.external_id,
+            )
+            .join(
+                include_in_outcomes_subquery,
+                include_in_outcomes_subquery.c.officer_id
+                == SupervisionOfficer.external_id,
+            )
+            .group_by(
                 SupervisionOfficer.external_id,
                 SupervisionOfficer.full_name,
                 SupervisionOfficer.pseudonymized_id,
@@ -1367,149 +1397,150 @@ class OutliersQuerier:
                 SupervisionOfficer.latest_login_date,
                 avgs_subquery.c.avg_daily_population,
                 include_in_outcomes_subquery.c.include_in_outcomes,
-            ]
+            )
+            .with_entities(*query_entities)
+        )
 
-            officer_status_query = (
-                session.query(SupervisionOfficer)
-                .join(
-                    avgs_subquery,
-                    avgs_subquery.c.officer_id == SupervisionOfficer.external_id,
+        # We only query workflows_info for authorized users
+        if include_workflows_info:
+
+            # Get officers who've been active all year
+            active_officers_subquery = (
+                session.query(
+                    SupervisionOfficerMetric.officer_id,
+                )
+                .filter(
+                    # filter for officers who have had a caseload the whole year
+                    SupervisionOfficerMetric.metric_id
+                    == "prop_period_with_critical_caseload",
+                    # Because this metric is calculated as a float value, it sometimes
+                    # has a value slightly over 1.0 (e.g. 1.000002).
+                    SupervisionOfficerMetric.metric_value >= 1.0,
+                    SupervisionOfficerMetric.category_type == "ALL",
+                    # Look at relevant end_date
+                    SupervisionOfficerMetric.end_date == zero_grants_metrics_end_date,
+                )
+                .subquery()
+            )
+
+            # Get zero grant opportunities list for active officers
+            task_completions_subquery = (
+                session.query(
+                    SupervisionOfficerMetric.officer_id,
+                    func.array_agg(SupervisionOfficerMetric.metric_id).label(
+                        "zero_grant_opportunities"
+                    ),
                 )
                 .join(
-                    include_in_outcomes_subquery,
-                    include_in_outcomes_subquery.c.officer_id
-                    == SupervisionOfficer.external_id,
+                    active_officers_subquery,
+                    active_officers_subquery.c.officer_id
+                    == SupervisionOfficerMetric.officer_id,
+                )
+                .filter(
+                    # Filter for completion metrics
+                    SupervisionOfficerMetric.metric_id.like("task_completions%"),
+                    # Filter for zero grants
+                    SupervisionOfficerMetric.metric_value == 0,
+                    SupervisionOfficerMetric.category_type == "ALL",
+                    SupervisionOfficerMetric.end_date == zero_grants_metrics_end_date,
+                )
+                .group_by(SupervisionOfficerMetric.officer_id)
+                .subquery()
+            )
+
+            query_entities.append(
+                task_completions_subquery.c.zero_grant_opportunities,
+            )
+
+            # Update the officer status query to include workflows info
+            officer_status_query = (
+                officer_status_query.join(
+                    task_completions_subquery,
+                    SupervisionOfficer.external_id
+                    == task_completions_subquery.c.officer_id,
+                    # use a LEFT OUTER JOIN
+                    isouter=True,
                 )
                 .group_by(
-                    SupervisionOfficer.external_id,
-                    SupervisionOfficer.full_name,
-                    SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficer.supervisor_external_id,
-                    SupervisionOfficer.supervisor_external_ids,
-                    SupervisionOfficer.supervision_district,
-                    SupervisionOfficer.email,
-                    SupervisionOfficer.earliest_person_assignment_date,
-                    SupervisionOfficer.latest_login_date,
-                    avgs_subquery.c.avg_daily_population,
-                    include_in_outcomes_subquery.c.include_in_outcomes,
+                    task_completions_subquery.c.zero_grant_opportunities,
                 )
                 .with_entities(*query_entities)
             )
 
-            # We only query workflows_info for authorized users
-            if include_workflows_info:
+        if officer_external_id:
+            # If the officer external id is specified, filter by the officer external id.
+            officer_status_query = officer_status_query.filter(
+                SupervisionOfficer.external_id == officer_external_id
+            )
 
-                # Get officers who've been active all year
-                active_officers_subquery = (
-                    session.query(
-                        SupervisionOfficerMetric.officer_id,
-                    )
-                    .filter(
-                        # filter for officers who have had a caseload the whole year
-                        SupervisionOfficerMetric.metric_id
-                        == "prop_period_with_critical_caseload",
-                        # Because this metric is calculated as a float value, it sometimes
-                        # has a value slightly over 1.0 (e.g. 1.000002).
-                        SupervisionOfficerMetric.metric_value >= 1.0,
-                        SupervisionOfficerMetric.category_type == "ALL",
-                        # Look at relevant end_date
-                        SupervisionOfficerMetric.end_date
-                        == zero_grants_metrics_end_date,
-                    )
-                    .subquery()
-                )
+        if supervisor_external_id:
+            # If the supervisor external id is specified, filter by the supervisor external id.
+            officer_status_query = officer_status_query.filter(
+                SupervisionOfficer.supervisor_external_ids.any(supervisor_external_id)
+            )
 
-                # Get zero grant opportunities list for active officers
-                task_completions_subquery = (
-                    session.query(
-                        SupervisionOfficerMetric.officer_id,
-                        func.array_agg(SupervisionOfficerMetric.metric_id).label(
-                            "zero_grant_opportunities"
-                        ),
-                    )
-                    .join(
-                        active_officers_subquery,
-                        active_officers_subquery.c.officer_id
-                        == SupervisionOfficerMetric.officer_id,
-                    )
-                    .filter(
-                        # Filter for completion metrics
-                        SupervisionOfficerMetric.metric_id.like("task_completions%"),
-                        # Filter for zero grants
-                        SupervisionOfficerMetric.metric_value == 0,
-                        SupervisionOfficerMetric.category_type == "ALL",
-                        SupervisionOfficerMetric.end_date
-                        == zero_grants_metrics_end_date,
-                    )
-                    .group_by(SupervisionOfficerMetric.officer_id)
-                    .subquery()
-                )
+        officer_status_records = officer_status_query.all()
 
-                query_entities.append(
-                    task_completions_subquery.c.zero_grant_opportunities,
-                )
+        officer_external_id_to_entity: Dict[str, SupervisionOfficerEntity] = {}
 
-                # Update the officer status query to include workflows info
-                officer_status_query = (
-                    officer_status_query.join(
-                        task_completions_subquery,
-                        SupervisionOfficer.external_id
-                        == task_completions_subquery.c.officer_id,
-                        # use a LEFT OUTER JOIN
-                        isouter=True,
-                    )
-                    .group_by(
-                        task_completions_subquery.c.zero_grant_opportunities,
-                    )
-                    .with_entities(*query_entities)
-                )
+        for record in officer_status_records:
+            external_id = record.external_id
+            officer_external_id_to_entity[external_id] = SupervisionOfficerEntity(
+                full_name=PersonName(**record.full_name),
+                external_id=record.external_id,
+                pseudonymized_id=record.pseudonymized_id,
+                supervisor_external_id=record.supervisor_external_id,
+                supervisor_external_ids=record.supervisor_external_ids,
+                district=record.supervision_district,
+                email=record.email,
+                earliest_person_assignment_date=record.earliest_person_assignment_date,
+                avg_daily_population=record.avg_daily_population,
+                zero_grant_opportunities=(
+                    [
+                        x.replace("task_completions_", "")
+                        for x in record.zero_grant_opportunities or []
+                    ]
+                    if include_workflows_info
+                    else None
+                ),
+                include_in_outcomes=bool(record.include_in_outcomes),
+                latest_login_date=record.latest_login_date,
+            )
 
-            if officer_external_id:
-                # If the officer external id is specified, filter by the officer external id.
-                officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.external_id == officer_external_id
-                )
-
-            if supervisor_external_id:
-                # If the supervisor external id is specified, filter by the supervisor external id.
-                officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.supervisor_external_ids.any(
-                        supervisor_external_id
-                    )
-                )
-
-            officer_status_records = officer_status_query.all()
-
-            officer_external_id_to_entity: Dict[str, SupervisionOfficerEntity] = {}
-
-            for record in officer_status_records:
-                external_id = record.external_id
-                officer_external_id_to_entity[external_id] = SupervisionOfficerEntity(
-                    full_name=PersonName(**record.full_name),
-                    external_id=record.external_id,
-                    pseudonymized_id=record.pseudonymized_id,
-                    supervisor_external_id=record.supervisor_external_id,
-                    supervisor_external_ids=record.supervisor_external_ids,
-                    district=record.supervision_district,
-                    email=record.email,
-                    earliest_person_assignment_date=record.earliest_person_assignment_date,
-                    avg_daily_population=record.avg_daily_population,
-                    zero_grant_opportunities=(
-                        [
-                            x.replace("task_completions_", "")
-                            for x in record.zero_grant_opportunities or []
-                        ]
-                        if include_workflows_info
-                        else None
-                    ),
-                    include_in_outcomes=bool(record.include_in_outcomes),
-                    latest_login_date=record.latest_login_date,
-                )
-
-            return officer_external_id_to_entity
+        return officer_external_id_to_entity
 
     def get_id_to_supervision_officer_outcomes_entities(
         self,
+        category_type_to_compare: InsightsCaseloadCategoryType,
+        num_lookback_periods: Optional[int] = None,
+        period_end_date: Optional[date] = None,
+        officer_external_id: Optional[str] = None,
+        supervisor_external_id: Optional[str] = None,
+    ) -> Dict[str, SupervisionOfficerOutcomes]:
+        """
+        Returns a dictionary of officer external id to SupervisionOfficerOutcomes objects that includes information
+        on the state's metrics that the officer may be an outlier for or is in the top x% for.
+
+        :param category_type_to_compare: The category type to use to determine the officers' caseload categories
+        :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
+        :param period_end_date: The end date of the period to get outcomes info for. If not provided, use the latest end date available.
+        :param officer_external_id: The external id of an officer to filter by.
+        :param supervisor_external_id: The external id of the supervisor to get officer outcomes info for
+        :rtype: Dict[str, SupervisionOfficerOutcomes]
+        """
+        with self.insights_database_session() as session:
+            return self._get_id_to_supervision_officer_outcomes_entities(
+                session,
+                category_type_to_compare,
+                num_lookback_periods,
+                period_end_date,
+                officer_external_id,
+                supervisor_external_id,
+            )
+
+    def _get_id_to_supervision_officer_outcomes_entities(
+        self,
+        session: Session,
         category_type_to_compare: InsightsCaseloadCategoryType,
         num_lookback_periods: Optional[int] = None,
         period_end_date: Optional[date] = None,
@@ -1538,186 +1569,174 @@ class OutliersQuerier:
                 "Should provide either an external id for the officer or supervisor to filter on."
             )
 
-        with self.insights_database_session() as session:
-            end_date = (
-                self._get_latest_period_end_date(session)
-                if period_end_date is None
-                else period_end_date
+        end_date = (
+            self._get_latest_period_end_date(session)
+            if period_end_date is None
+            else period_end_date
+        )
+
+        earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
+
+        officer_status_query = (
+            session.query(SupervisionOfficer)
+            .join(
+                SupervisionOfficerOutlierStatus,
+                SupervisionOfficer.external_id
+                == SupervisionOfficerOutlierStatus.officer_id,
             )
-
-            earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
-
-            officer_status_query = (
-                session.query(SupervisionOfficer)
-                .join(
-                    SupervisionOfficerOutlierStatus,
-                    SupervisionOfficer.external_id
-                    == SupervisionOfficerOutlierStatus.officer_id,
-                )
-                .filter(
-                    # Get the statuses for all periods between requested or latest end_date and earliest end date
-                    SupervisionOfficerOutlierStatus.end_date.between(
-                        earliest_end_date, end_date
-                    ),
-                    SupervisionOfficerOutlierStatus.category_type
-                    == category_type_to_compare.value,
-                    SupervisionOfficerOutlierStatus.metric_id.in_(
-                        [m.name for m in self.get_outcomes_metrics()]
-                    ),
-                )
-                .group_by(
-                    SupervisionOfficer.external_id,
-                    SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficerOutlierStatus.metric_id,
-                )
-                .with_entities(
-                    SupervisionOfficer.external_id,
-                    SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficerOutlierStatus.metric_id,
-                    # Get an array of JSON objects for the officer's rates and statuses in the selected periods
-                    func.array_agg(
-                        aggregate_order_by(
-                            func.jsonb_build_object(
-                                "end_date",
-                                SupervisionOfficerOutlierStatus.end_date,
-                                "metric_rate",
-                                SupervisionOfficerOutlierStatus.metric_rate,
-                                "status",
-                                SupervisionOfficerOutlierStatus.status,
-                                "caseload_category",
-                                SupervisionOfficerOutlierStatus.caseload_category,
-                            ),
-                            SupervisionOfficerOutlierStatus.end_date.desc(),
-                        )
-                    ).label("statuses_over_time"),
-                    # Get an array of JSON objects for the officer's rates and statuses in the selected periods
-                    func.array_agg(
-                        aggregate_order_by(
-                            func.jsonb_build_object(
-                                "is_top_x_pct",
-                                SupervisionOfficerOutlierStatus.is_top_x_pct,
-                                "top_x_pct",
-                                SupervisionOfficerOutlierStatus.top_x_pct,
-                                "end_date",
-                                SupervisionOfficerOutlierStatus.end_date,
-                            ),
-                            SupervisionOfficerOutlierStatus.end_date.desc(),
-                        )
-                    ).label("is_top_x_pct_over_time"),
-                )
+            .filter(
+                # Get the statuses for all periods between requested or latest end_date and earliest end date
+                SupervisionOfficerOutlierStatus.end_date.between(
+                    earliest_end_date, end_date
+                ),
+                SupervisionOfficerOutlierStatus.category_type
+                == category_type_to_compare.value,
+                SupervisionOfficerOutlierStatus.metric_id.in_(
+                    [m.name for m in self.get_outcomes_metrics()]
+                ),
             )
-
-            if officer_external_id:
-                # If the officer external id is specified, filter by the officer external id.
-                officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.external_id == officer_external_id
-                )
-
-            if supervisor_external_id:
-                # If the supervisor external id is specified, filter by the supervisor external id.
-                officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.supervisor_external_ids.any(
-                        supervisor_external_id
+            .group_by(
+                SupervisionOfficer.external_id,
+                SupervisionOfficer.pseudonymized_id,
+                SupervisionOfficerOutlierStatus.metric_id,
+            )
+            .with_entities(
+                SupervisionOfficer.external_id,
+                SupervisionOfficer.pseudonymized_id,
+                SupervisionOfficerOutlierStatus.metric_id,
+                # Get an array of JSON objects for the officer's rates and statuses in the selected periods
+                func.array_agg(
+                    aggregate_order_by(
+                        func.jsonb_build_object(
+                            "end_date",
+                            SupervisionOfficerOutlierStatus.end_date,
+                            "metric_rate",
+                            SupervisionOfficerOutlierStatus.metric_rate,
+                            "status",
+                            SupervisionOfficerOutlierStatus.status,
+                            "caseload_category",
+                            SupervisionOfficerOutlierStatus.caseload_category,
+                        ),
+                        SupervisionOfficerOutlierStatus.end_date.desc(),
                     )
-                )
+                ).label("statuses_over_time"),
+                # Get an array of JSON objects for the officer's rates and statuses in the selected periods
+                func.array_agg(
+                    aggregate_order_by(
+                        func.jsonb_build_object(
+                            "is_top_x_pct",
+                            SupervisionOfficerOutlierStatus.is_top_x_pct,
+                            "top_x_pct",
+                            SupervisionOfficerOutlierStatus.top_x_pct,
+                            "end_date",
+                            SupervisionOfficerOutlierStatus.end_date,
+                        ),
+                        SupervisionOfficerOutlierStatus.end_date.desc(),
+                    )
+                ).label("is_top_x_pct_over_time"),
+            )
+        )
 
-            officer_status_records = officer_status_query.all()
+        if officer_external_id:
+            # If the officer external id is specified, filter by the officer external id.
+            officer_status_query = officer_status_query.filter(
+                SupervisionOfficer.external_id == officer_external_id
+            )
 
-            officer_external_id_to_entity: Dict[str, SupervisionOfficerOutcomes] = {}
+        if supervisor_external_id:
+            # If the supervisor external id is specified, filter by the supervisor external id.
+            officer_status_query = officer_status_query.filter(
+                SupervisionOfficer.supervisor_external_ids.any(supervisor_external_id)
+            )
 
-            for record in officer_status_records:
-                external_id = record.external_id
+        officer_status_records = officer_status_query.all()
 
-                # Get whether or not the officer was an outlier for the period with the requested end date
+        officer_external_id_to_entity: Dict[str, SupervisionOfficerOutcomes] = {}
 
-                # If the officer doesn't have any status between the earliest_end_date and end_date, skip this row.
-                if not record.statuses_over_time:
-                    continue
-                # Since statuses_over_time is sorted by end_date descending, the first item should be the latest.
-                latest_period_status_obj = record.statuses_over_time[0]
+        for record in officer_status_records:
+            external_id = record.external_id
 
-                if latest_period_status_obj["end_date"] != str(end_date):
-                    # If the latest status for the officer isn't the same as the requested end date, skip this row.
-                    continue
+            # Get whether or not the officer was an outlier for the period with the requested end date
 
-                # Get the caseload category for the latest period so we can put it directly on the outcomes info entity
-                latest_period_caseload_category = latest_period_status_obj[
-                    "caseload_category"
-                ]
-                is_outlier = latest_period_status_obj["status"] == "FAR"
+            # If the officer doesn't have any status between the earliest_end_date and end_date, skip this row.
+            if not record.statuses_over_time:
+                continue
+            # Since statuses_over_time is sorted by end_date descending, the first item should be the latest.
+            latest_period_status_obj = record.statuses_over_time[0]
 
-                # Get whether or not the officer is in the top x% of a metric for the period with the requested end date
+            if latest_period_status_obj["end_date"] != str(end_date):
+                # If the latest status for the officer isn't the same as the requested end date, skip this row.
+                continue
 
-                # If is_top_x_pct_over_time is empty, the metric is not configured to calculate top x% officers.
-                if not record.is_top_x_pct_over_time:
+            # Get the caseload category for the latest period so we can put it directly on the outcomes info entity
+            latest_period_caseload_category = latest_period_status_obj[
+                "caseload_category"
+            ]
+            is_outlier = latest_period_status_obj["status"] == "FAR"
+
+            # Get whether or not the officer is in the top x% of a metric for the period with the requested end date
+
+            # If is_top_x_pct_over_time is empty, the metric is not configured to calculate top x% officers.
+            if not record.is_top_x_pct_over_time:
+                is_top_x_pct = False
+            else:
+                # Since is_top_x_pct_over_time is sorted by end_date descending, the first item should be the latest.
+                latest_is_top_x_pct_obj = record.is_top_x_pct_over_time[0]
+
+                if latest_is_top_x_pct_obj["end_date"] != str(end_date):
+                    # If the officer doesn't have any is_top_x_pct between the earliest_end_date and end_date, skip this row.
                     is_top_x_pct = False
                 else:
-                    # Since is_top_x_pct_over_time is sorted by end_date descending, the first item should be the latest.
-                    latest_is_top_x_pct_obj = record.is_top_x_pct_over_time[0]
+                    is_top_x_pct = latest_is_top_x_pct_obj.get("is_top_x_pct", False)
 
-                    if latest_is_top_x_pct_obj["end_date"] != str(end_date):
-                        # If the officer doesn't have any is_top_x_pct between the earliest_end_date and end_date, skip this row.
-                        is_top_x_pct = False
-                    else:
-                        is_top_x_pct = latest_is_top_x_pct_obj.get(
-                            "is_top_x_pct", False
-                        )
-
-                if external_id in officer_external_id_to_entity:
-                    existing_entity = officer_external_id_to_entity[external_id]
-                    if is_outlier:
-                        existing_entity.outlier_metrics.append(
+            if external_id in officer_external_id_to_entity:
+                existing_entity = officer_external_id_to_entity[external_id]
+                if is_outlier:
+                    existing_entity.outlier_metrics.append(
+                        {
+                            "metric_id": record.metric_id,
+                            "statuses_over_time": record.statuses_over_time,
+                        }
+                    )
+                if is_top_x_pct:
+                    existing_entity.top_x_pct_metrics.append(
+                        {
+                            "metric_id": record.metric_id,
+                            "top_x_pct": record.is_top_x_pct_over_time[0]["top_x_pct"],
+                        }
+                    )
+                if existing_entity.caseload_category != latest_period_caseload_category:
+                    raise ValueError(
+                        f"Officer with pseudonymized id {existing_entity.pseudonymized_id} has multiple caseload_category values for the latest period"
+                    )
+            else:
+                officer_external_id_to_entity[external_id] = SupervisionOfficerOutcomes(
+                    external_id=record.external_id,
+                    pseudonymized_id=record.pseudonymized_id,
+                    caseload_category=latest_period_caseload_category,
+                    outlier_metrics=(
+                        [
                             {
                                 "metric_id": record.metric_id,
                                 "statuses_over_time": record.statuses_over_time,
                             }
-                        )
-                    if is_top_x_pct:
-                        existing_entity.top_x_pct_metrics.append(
+                        ]
+                        if is_outlier
+                        else []
+                    ),
+                    top_x_pct_metrics=(
+                        [
                             {
                                 "metric_id": record.metric_id,
-                                "top_x_pct": record.is_top_x_pct_over_time[0][
-                                    "top_x_pct"
-                                ],
+                                "top_x_pct": record.statuses_over_time,
                             }
-                        )
-                    if (
-                        existing_entity.caseload_category
-                        != latest_period_caseload_category
-                    ):
-                        raise ValueError(
-                            f"Officer with pseudonymized id {existing_entity.pseudonymized_id} has multiple caseload_category values for the latest period"
-                        )
-                else:
-                    officer_external_id_to_entity[
-                        external_id
-                    ] = SupervisionOfficerOutcomes(
-                        external_id=record.external_id,
-                        pseudonymized_id=record.pseudonymized_id,
-                        caseload_category=latest_period_caseload_category,
-                        outlier_metrics=(
-                            [
-                                {
-                                    "metric_id": record.metric_id,
-                                    "statuses_over_time": record.statuses_over_time,
-                                }
-                            ]
-                            if is_outlier
-                            else []
-                        ),
-                        top_x_pct_metrics=(
-                            [
-                                {
-                                    "metric_id": record.metric_id,
-                                    "top_x_pct": record.statuses_over_time,
-                                }
-                            ]
-                            if is_top_x_pct
-                            else []
-                        ),
-                    )
+                        ]
+                        if is_top_x_pct
+                        else []
+                    ),
+                )
 
-            return officer_external_id_to_entity
+        return officer_external_id_to_entity
 
     def get_client_from_pseudonymized_id(
         self, pseudonymized_id: str
@@ -1827,7 +1846,7 @@ class OutliersQuerier:
         )
 
     def get_configuration_for_user(
-        self, user_context: Optional[UserContext]
+        self, session: Session, user_context: Optional[UserContext]
     ) -> Configuration:
         """
         Gets the relevant Configuration database entity for the user.
@@ -1836,37 +1855,34 @@ class OutliersQuerier:
         emails will always use the latest, active Configuration object set for the
         entire state, i.e. there is no feature variant.
         """
-        with self.insights_database_session() as session:
-            user_feature_variants = (
-                user_context.feature_variants if user_context else []
-            )
+        user_feature_variants = user_context.feature_variants if user_context else []
 
-            # Get all active configurations
-            active_configs_query = session.query(Configuration).filter(
-                Configuration.status == ConfigurationStatus.ACTIVE.value,
-            )
+        # Get all active configurations
+        active_configs_query = session.query(Configuration).filter(
+            Configuration.status == ConfigurationStatus.ACTIVE.value,
+        )
 
-            if user_feature_variants:
-                # Get all active configurations with feature variants that line up with the user's feature variants
-                fv_configs = active_configs_query.filter(
-                    Configuration.feature_variant.in_(user_feature_variants)
-                ).all()
+        if user_feature_variants:
+            # Get all active configurations with feature variants that line up with the user's feature variants
+            fv_configs = active_configs_query.filter(
+                Configuration.feature_variant.in_(user_feature_variants)
+            ).all()
 
-                if len(fv_configs) > 1:
-                    # If there are multiple active configurations relevant to the user's feature
-                    # variants, log an error and return the default configuration.
-                    logging.error(
-                        "Multiple configurations and feature variants may apply to this user, however only one should apply. The default configuration will be shown instead."
-                    )
-                elif len(fv_configs) == 1:
-                    # If there is a single match, return the configuration
-                    return fv_configs[0]
+            if len(fv_configs) > 1:
+                # If there are multiple active configurations relevant to the user's feature
+                # variants, log an error and return the default configuration.
+                logging.error(
+                    "Multiple configurations and feature variants may apply to this user, however only one should apply. The default configuration will be shown instead."
+                )
+            elif len(fv_configs) == 1:
+                # If there is a single match, return the configuration
+                return fv_configs[0]
 
-            default_config = active_configs_query.filter(
-                Configuration.feature_variant.is_(None)
-            ).one()
+        default_config = active_configs_query.filter(
+            Configuration.feature_variant.is_(None)
+        ).one()
 
-            return default_config
+        return default_config
 
     def get_configurations(
         self,
@@ -1971,7 +1987,9 @@ class OutliersQuerier:
             session.commit()
 
     def get_product_configuration(
-        self, user_context: Optional[UserContext] = None
+        self,
+        user_context: Optional[UserContext] = None,
+        session: Optional[Session] = None,
     ) -> OutliersProductConfiguration:
         """
         Gets the configuration information used externally, i.e. copy, for products for
@@ -2016,7 +2034,15 @@ class OutliersQuerier:
 
         config_dict.update(backend_config)
 
-        user_config = self.get_configuration_for_user(user_context).to_dict()
+        if session is None:
+            with self.insights_database_session() as new_session:
+                user_config = self.get_configuration_for_user(
+                    new_session, user_context
+                ).to_dict()
+        else:
+            user_config = self.get_configuration_for_user(
+                session, user_context
+            ).to_dict()
         config_dict.update(user_config)
 
         # The below fields are only used internally, so omit them from the result
