@@ -58,7 +58,7 @@ output:
               ViolationComments: ViolationComments
           supervision_violation_types:
             - StateSupervisionViolationTypeEntry:
-                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN)
+                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN) #TODO(#51149) Hydrate properly if data becomes available
           supervision_violation_responses:
             - $conditional:
                 - $if:

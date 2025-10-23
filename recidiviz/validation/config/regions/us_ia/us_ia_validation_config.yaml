@@ -8,6 +8,24 @@ exclusions:
   - validation_name: overlapping_supervision_periods
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: In IA, we ingest SPs on the term level and not the person level, so someone serving concurrent sentences would have overlapping periods.
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: This validation is still running off of V1 sentences but we only have V2 sentences ingested.  TODO(#51147) Remove this from exemptions once all validations are migrated to V2 sentences.
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: This validation is still running off of V1 sentences but we only have V2 sentences ingested.  TODO(#51147) Remove this from exemptions once all validations are migrated to V2 sentences.
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: This validation is still running off of V1 sentences but we only have V2 sentences ingested.  TODO(#51147) Remove this from exemptions once all validations are migrated to V2 sentences.
+  - validation_name: invalid_admission_reason_and_pfi
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: We don't rely on PFI in IA and this validation was written a long time ago when we thought about PFI differently.  TODO(#51148) Clean up PFI in ingest if we end up needing it for products.
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: We don't rely on PFI in IA and this validation was written a long time ago when we thought about PFI differently.  TODO(#51148) Clean up PFI in ingest if we end up needing it for products.
+  - validation_name: dataflow_metrics_violation_type_all_internal_unknown
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: IA does not have reliable violation type data but we needed violations to show up in the metric pipelines for other analyses.  TODO(#51149) Clean up violation type ingest if IA data ever improves.
 max_allowed_error_overrides:
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.0093
