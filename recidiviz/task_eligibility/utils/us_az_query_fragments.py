@@ -231,8 +231,11 @@ def agreement_form_status_side_panel_notes(opp_name: str) -> str:
       "Agreement Form Signature Status" AS criteria,
       CASE WHEN (SIG_STATUS = 'SIGNED')
             THEN 'Signed'
-        WHEN (SIG_STATUS = 'NOT SIGNED, NOT DECLINED')
-            THEN 'Not Signed'
+        -- Cutoff value for a resident to reconsider signing the agreement if they are eligible for early release
+        WHEN (SIG_STATUS = 'NOT SIGNED, NOT DECLINED') AND  DATE_DIFF(CURRENT_DATE('EST'),start_date, DAY) >= 180
+            THEN 'Not Signed' 
+        WHEN (SIG_STATUS = 'NOT SIGNED, NOT DECLINED') AND  DATE_DIFF(CURRENT_DATE('EST'),start_date, DAY) < 180
+            THEN 'Not Signed' 
         WHEN (SIG_STATUS = 'REFUSED TO SIGN')
             THEN 'Refusal to Sign'
         WHEN (SIG_STATUS = 'DECLINED TO PARTICIPATE')
@@ -248,8 +251,6 @@ def agreement_form_status_side_panel_notes(opp_name: str) -> str:
       (DOC_ID)
     WHERE end_date_exclusive IS NULL 
         AND program = '{opp_name.upper()}'
-        -- Cutoff value for a resident to reconsider signing the agreement if they are eligible for early release
-        AND DATE_DIFF(CURRENT_DATE('EST'),start_date, DAY) >= 180
     """
 
 
