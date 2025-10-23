@@ -797,7 +797,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                     new_instance_manager=new_import_run_manager, session=session
                 )
 
-                # then the two metadata db
+                # then the metadata tables for bq files, gcs files, and raw data pruning
                 raw_data_manager.transfer_metadata_to_new_instance(
                     new_instance_manager=new_instance_manager, session=session
                 )

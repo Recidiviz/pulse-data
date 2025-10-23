@@ -649,7 +649,7 @@ class DirectIngestRawFileMetadataManager:
         session: Session,
     ) -> None:
         """Take all rows where `is_invalidated=False` and transfer to the instance
-        associated with the new_instance_manager
+        associated with the new_instance_manager. Also transfers pruning metadata.
         """
         if (
             new_instance_manager.raw_data_instance == self.raw_data_instance
@@ -661,6 +661,8 @@ class DirectIngestRawFileMetadataManager:
 
         bq_table_cls = schema.DirectIngestRawBigQueryFileMetadata
         gcs_table_cls = schema.DirectIngestRawGCSFileMetadata
+        pruning_table_cls = schema.DirectIngestRawDataPruningMetadata
+
         # check destination instance does not have any valid metadata rows
         check_query = (
             session.query(bq_table_cls)
@@ -674,6 +676,20 @@ class DirectIngestRawFileMetadataManager:
         if check_query:
             raise ValueError(
                 "Destination instance should not have any valid raw file metadata rows."
+            )
+
+        # check destination instance does not have any pruning metadata rows
+        pruning_check_query = (
+            session.query(pruning_table_cls)
+            .filter_by(
+                region_code=self.region_code.upper(),
+                raw_data_instance=new_instance_manager.raw_data_instance.value,
+            )
+            .all()
+        )
+        if pruning_check_query:
+            raise ValueError(
+                "Destination instance should not have any raw data pruning metadata rows."
             )
 
         file_id_subquery = (
@@ -718,11 +734,25 @@ class DirectIngestRawFileMetadataManager:
             )
         )
 
+        pruning_update_query = (
+            pruning_table_cls.__table__.update()
+            .where(
+                and_(
+                    pruning_table_cls.region_code == self.region_code.upper(),
+                    pruning_table_cls.raw_data_instance == self.raw_data_instance.value,
+                )
+            )
+            .values(
+                raw_data_instance=new_instance_manager.raw_data_instance.value,
+            )
+        )
+
         session.execute(gcs_update_query)
         session.execute(bq_update_query)
+        session.execute(pruning_update_query)
 
     def mark_instance_data_invalidated(self) -> None:
-        """Sets the is_invalidated on all rows for the state/instance"""
+        """Sets the is_invalidated on all rows for the state/instance and deletes pruning metadata"""
         with SessionFactory.using_database(
             self.database_key,
         ) as session:
@@ -750,6 +780,16 @@ class DirectIngestRawFileMetadataManager:
                 .values(is_invalidated=True)
             )
             session.execute(gcs_update_query)
+
+            # delete any existing pruning metadata rows for this instance
+            pruning_table_cls = schema.DirectIngestRawDataPruningMetadata
+            pruning_delete_query = pruning_table_cls.__table__.delete().where(
+                and_(
+                    pruning_table_cls.region_code == self.region_code.upper(),
+                    pruning_table_cls.raw_data_instance == self.raw_data_instance.value,
+                )
+            )
+            session.execute(pruning_delete_query)
 
     def _earliest_file_discovery_time(
         self, session: Session

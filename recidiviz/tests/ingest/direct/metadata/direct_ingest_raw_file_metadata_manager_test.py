@@ -609,6 +609,18 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             raw_unprocessed_path_1
         )
 
+        with SessionFactory.using_database(self.database_key) as session:
+            pruning_metadata_secondary = schema.DirectIngestRawDataPruningMetadata(
+                region_code=self.raw_metadata_manager_secondary.region_code,
+                raw_data_instance=self.raw_metadata_manager_secondary.raw_data_instance.value,
+                file_tag="test_file_tag",
+                updated_at=datetime.datetime.now(tz=datetime.UTC),
+                automatic_pruning_enabled=True,
+                raw_file_primary_keys="col1,col2",
+                raw_files_contain_full_historical_lookback=False,
+            )
+            session.add(pruning_metadata_secondary)
+
         expected_gcs_metadata = DirectIngestRawGCSFileMetadata.new_with_defaults(
             gcs_file_id=1,
             region_code="US_XX",
@@ -704,6 +716,33 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                     )
                     .one()
                 )
+
+            primary_pruning_metadata = (
+                session.query(schema.DirectIngestRawDataPruningMetadata)
+                .filter_by(
+                    region_code=self.raw_metadata_manager.region_code.upper(),
+                    raw_data_instance=self.raw_metadata_manager.raw_data_instance.value,
+                )
+                .all()
+            )
+            self.assertEqual(len(primary_pruning_metadata), 1)
+            self.assertEqual(primary_pruning_metadata[0].file_tag, "test_file_tag")
+            self.assertEqual(
+                primary_pruning_metadata[0].automatic_pruning_enabled, True
+            )
+            self.assertEqual(
+                primary_pruning_metadata[0].raw_file_primary_keys, "col1,col2"
+            )
+
+            secondary_pruning_metadata = (
+                session.query(schema.DirectIngestRawDataPruningMetadata)
+                .filter_by(
+                    region_code=self.raw_metadata_manager_secondary.region_code.upper(),
+                    raw_data_instance=self.raw_metadata_manager_secondary.raw_data_instance.value,
+                )
+                .all()
+            )
+            self.assertEqual(len(secondary_pruning_metadata), 0)
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_primary_to_secondary(self) -> None:
@@ -911,6 +950,39 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                     self.raw_metadata_manager, session
                 )
 
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_existing_pruning_metadata_fails(
+        self,
+    ) -> None:
+        raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=datetime.UTC),
+        )
+        self.raw_metadata_manager_secondary.mark_raw_gcs_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            pruning_metadata_primary = schema.DirectIngestRawDataPruningMetadata(
+                region_code=self.raw_metadata_manager.region_code,
+                raw_data_instance=self.raw_metadata_manager.raw_data_instance.value,
+                file_tag="test_file_tag",
+                updated_at=datetime.datetime.now(tz=datetime.UTC),
+                automatic_pruning_enabled=True,
+                raw_file_primary_keys="col1,col2",
+                raw_files_contain_full_historical_lookback=False,
+            )
+            session.add(pruning_metadata_primary)
+
+        expected_error = (
+            r"Destination instance should not have any raw data pruning metadata rows."
+        )
+        with self.assertRaisesRegex(ValueError, expected_error):
+            with SessionFactory.using_database(self.database_key) as session:
+                self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                    self.raw_metadata_manager, session
+                )
+
     def test_mark_instance_as_invalidated(self) -> None:
         raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
@@ -923,6 +995,18 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             1, len(self.raw_metadata_manager.get_non_invalidated_raw_big_query_files())
         )
 
+        with SessionFactory.using_database(self.database_key) as session:
+            pruning_metadata = schema.DirectIngestRawDataPruningMetadata(
+                region_code=self.raw_metadata_manager.region_code,
+                raw_data_instance=self.raw_metadata_manager.raw_data_instance.value,
+                file_tag="test_file_tag",
+                updated_at=datetime.datetime.now(tz=datetime.UTC),
+                automatic_pruning_enabled=True,
+                raw_file_primary_keys="col1,col2",
+                raw_files_contain_full_historical_lookback=False,
+            )
+            session.add(pruning_metadata)
+
         self.raw_metadata_manager.mark_instance_data_invalidated()
         self.assertEqual(
             0, len(self.raw_metadata_manager.get_non_invalidated_raw_big_query_files())
@@ -933,6 +1017,19 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             ).is_invalidated
             is True
         )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            pruning_metadata_after = (
+                session.query(schema.DirectIngestRawDataPruningMetadata)
+                .filter_by(
+                    region_code=self.raw_metadata_manager.region_code.upper(),
+                    raw_data_instance=self.raw_metadata_manager.raw_data_instance.value,
+                )
+                .all()
+            )
+            self.assertEqual(len(pruning_metadata_after), 0)
 
     def test_mark_instance_as_invalidated_ungrouped(self) -> None:
         raw_unprocessed_path_1 = make_unprocessed_raw_data_path(
