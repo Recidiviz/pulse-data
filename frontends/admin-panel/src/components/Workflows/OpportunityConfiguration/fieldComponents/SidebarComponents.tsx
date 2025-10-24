@@ -22,6 +22,7 @@ import { StaticValue } from "../../formUtils/StaticValue";
 
 const sidebarComponentNames = [
   // Opportunity-related components
+  "ActionHistory",
   "CaseNotes",
   "EligibilityDate",
   "SentenceDates",
@@ -30,6 +31,8 @@ const sidebarComponentNames = [
   "UsMoRestrictiveHousing",
   "UsTnCommonlyUsedOverrideCodes",
   "UsMiRestrictiveHousing",
+  "UsMiSecondaryOfficersAndDockets",
+  "UsMiLastAssessment",
   "UsNeORASScores",
   "UsNeSpecialConditions",
   "UsIaActionPlansAndNotes",
