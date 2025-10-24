@@ -197,26 +197,72 @@ def home_plan_information_for_side_panel_notes() -> str:
     WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date, '9999-12-31')"""
 
 
-def functional_literacy_enrollment_side_panel_notes() -> str:
-    return """
+def functional_literacy_enrollment_side_panel_notes(opp_name: str) -> str:
+    assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
+    return f"""
     SELECT
-        peid.external_id,
-        "Mandatory Literacy Enrollment Information" AS criteria,
-        "Currently Enrolled" AS note_title,
-        " " AS note_body,
-        start_date AS event_date,
-    FROM
-    #TODO(#33858): Ingest into state task deadline or find some way to view this historically
-      `{project_id}.normalized_state.state_program_assignment` spa
-    LEFT JOIN `{project_id}.normalized_state.state_person_external_id` peid
-    ON peid.person_id = spa.person_id
-        AND peid.state_code = 'US_AZ'
-        AND peid.id_type = 'US_AZ_PERSON_ID'
-    WHERE participation_status = "IN_PROGRESS"
-    AND program_id LIKE '%FUNCTIONAL LITERACY%' 
-    AND discharge_date IS NULL
-    #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY peid.external_id ORDER BY start_date ASC) = 1
+        external_id,
+        criteria,
+        note_title,
+        note_body,
+        event_date,
+    FROM 
+        (
+        WITH union_cte AS (
+            SELECT
+                peid.external_id,
+                "Mandatory Literacy Enrollment Information" AS criteria,
+                "Currently Enrolled" AS note_title,
+                " " AS note_body,
+                start_date AS event_date,
+            FROM
+            #TODO(#33858): Ingest into state task deadline or find some way to view this historically
+              `{{project_id}}.normalized_state.state_program_assignment` spa
+            LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+            ON peid.person_id = spa.person_id
+                AND peid.state_code = 'US_AZ'
+                AND peid.id_type = 'US_AZ_PERSON_ID'
+            WHERE participation_status = "IN_PROGRESS"
+            AND program_id LIKE '%FUNCTIONAL LITERACY%' 
+            AND discharge_date IS NULL
+            #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY peid.external_id ORDER BY start_date ASC) = 1
+            
+            UNION ALL 
+            
+            SELECT
+                peid.external_id,
+                "Mandatory Literacy Enrollment Information" AS criteria,
+                "Completed" AS note_title,
+                " " AS note_body,
+                start_date AS event_date,
+            FROM ({meets_mandatory_literacy(opp_name)} ) comp
+            LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` peid
+            ON peid.person_id = comp.person_id
+                AND peid.state_code = 'US_AZ'
+                AND peid.id_type = 'US_AZ_PERSON_ID'
+            WHERE CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+            -- Adding this in to take the most recent case, in the odd case where current date = start/end date
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY peid.external_id ORDER BY start_date) = 1
+            )
+            # We create an ordering so that in any case where someone has both enrollment & completion exist, it always
+            # prioritizes the row indicating completion of mandatory literacy
+            SELECT
+                *
+            FROM
+                (SELECT
+                    union_cte.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY external_id
+                        ORDER BY CASE
+                            WHEN note_title = "Completed" THEN 1
+                            ELSE 2 # WHEN note_title = "Currently Enrolled"
+                            END
+                        ) AS rn,
+                    FROM union_cte
+                )
+            WHERE rn = 1
+        )
     """
 
 
@@ -510,7 +556,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           'Program Assignment' AS data_location
         #TODO(#33858): Ingest into state task deadline or find some way to view this historically
         FROM
-          `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment`
+          `{{project_id}}.normalized_state.state_program_assignment`
         WHERE state_code = 'US_AZ'
         AND (participation_status_raw_text IN ('COMPLETED')
             -- This catches cases where a resident has been exempted from Mandatory Literacy for any reason
@@ -532,15 +578,15 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           MIN(PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)] )) AS latest_functional_literacy_date,
           'PRG_EVAL' AS data_location,
         FROM
-          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_TABLE}_latest` eval
+          `{{project_id}}.us_az_raw_data_up_to_date_views.{_TABLE}_latest` eval
         INNER JOIN 
-        `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_ELIG_TABLE}_latest` map_to_docid
+        `{{project_id}}.us_az_raw_data_up_to_date_views.{_ELIG_TABLE}_latest` map_to_docid
         USING ({_ID_MAP})
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
+        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
         USING(DOC_ID)
-        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.PERSON_latest` person
+        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.PERSON_latest` person
         USING(PERSON_ID)
-        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON ADC_NUMBER = external_id 
             AND pei.state_code = 'US_AZ'
             AND pei.id_type = 'US_AZ_ADC_NUMBER'
@@ -558,12 +604,12 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         MIN(CAST(SPLIT(priority_report.DATE_CREATED, ' ')[OFFSET(0)] AS DATE)) AS latest_functional_literacy_date,
         'PRIORITY_REPORT' AS data_location,
     FROM
-        `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_PRIORITY_REPORT_latest` priority_report
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
+        `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_PRIORITY_REPORT_latest` priority_report
+    LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
     USING(DOC_ID)
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.PERSON_latest` person
+    LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.PERSON_latest` person
     USING(PERSON_ID)
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
         ON ADC_NUMBER = external_id 
         AND pei.state_code = 'US_AZ'
         AND pei.id_type = 'US_AZ_ADC_NUMBER'
@@ -588,7 +634,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
                     CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.LANGUAGE_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_language_flag,
                     CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.MATH_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_math_flag
                 FROM
-                    `{{project_id}}.{{normalized_state_dataset}}.state_assessment` sa
+                    `{{project_id}}.normalized_state.state_assessment` sa
                 WHERE
                     state_code = 'US_AZ'
                     AND sa.assessment_class = 'EDUCATION'
