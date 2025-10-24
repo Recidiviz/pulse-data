@@ -214,7 +214,7 @@ products:
       - state_code: US_IX
         environment: production
       - state_code: US_TX
-        environment: staging
+        environment: production
   - name: Reentry
     description: Views that back the Reentry product
     exports:
