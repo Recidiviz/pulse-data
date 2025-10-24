@@ -19,14 +19,13 @@ import unittest
 
 from recidiviz.looker.lookml_dashboard_element import (
     FULL_SCREEN_WIDTH,
+    SMALL_ELEMENT_HEIGHT,
     LookMLDashboardElement,
     LookMLElementType,
     LookMLListen,
     LookMLSort,
 )
 from recidiviz.tools.looker.entity.entity_dashboard_element_factory import (
-    ACTIONS_ELEMENT_HEIGHT,
-    INFO_ELEMENT_HEIGHT,
     EntityDashboardElementFactory,
 )
 
@@ -40,7 +39,7 @@ class TestEntityDashboardElementFactory(unittest.TestCase):
         self.assertEqual(element.title, "Info")
         self.assertEqual(element.name, "info")
         self.assertEqual(element.type, LookMLElementType.TEXT)
-        self.assertEqual(element.height, INFO_ELEMENT_HEIGHT)
+        self.assertEqual(element.height, SMALL_ELEMENT_HEIGHT)
         self.assertEqual(element.width, FULL_SCREEN_WIDTH)
 
     def test_actions_element(self) -> None:
@@ -54,7 +53,7 @@ class TestEntityDashboardElementFactory(unittest.TestCase):
         self.assertEqual(element.explore, explore)
         self.assertEqual(element.type, LookMLElementType.SINGLE_VALUE)
         self.assertEqual(element.fields, [f"{explore}.actions"])
-        self.assertEqual(element.height, ACTIONS_ELEMENT_HEIGHT)
+        self.assertEqual(element.height, SMALL_ELEMENT_HEIGHT)
         self.assertEqual(element.width, FULL_SCREEN_WIDTH)
 
     def test_person_periods_timeline_element(self) -> None:

@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a class representing a element as part of the `elements`
-   parameter on a LookML Dashboard, which define parts of the dashboard:
-   data visualizations, text tiles, and buttons.
+parameter on a LookML Dashboard, which define parts of the dashboard:
+data visualizations, text tiles, and buttons.
 
-   Documentation:
-   https://cloud.google.com/looker/docs/reference/param-lookml-dashboard-element
-   """
+Documentation:
+https://cloud.google.com/looker/docs/reference/param-lookml-dashboard-element
+"""
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -33,6 +33,7 @@ from recidiviz.looker.lookml_view import LookMLView
 FULL_SCREEN_WIDTH = 24
 SPLIT_SCREEN_WIDTH = int(FULL_SCREEN_WIDTH / 2)
 DEFAULT_HEIGHT = 6
+SMALL_ELEMENT_HEIGHT = 2
 
 
 def dict_to_scoped_field_names(d: dict[str, list[str]]) -> list[str]:

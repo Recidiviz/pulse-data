@@ -49,6 +49,8 @@ class StatePersonLookMLDashboardElementsProvider(LookMLDashboardElementsProvider
     ) -> list[LookMLDashboardElement]:
         return [
             EntityDashboardElementFactory.info_element(),
+            # TODO(#51203) Remove once multiparent entities are supported or fully deprecated
+            EntityDashboardElementFactory.multiparent_disclaimer_element(),
             EntityDashboardElementFactory.actions_element(
                 explore_name, all_filters_listen, model
             ),

@@ -46,6 +46,15 @@ from recidiviz.tools.looker.entity.entity_views_builder import (
 )
 
 STATE_GROUP_LABEL = "State"
+DEPRECATED_MULTIPARENT_ENTITIES = {
+    # TODO(#51203) Remove once multi-parent entities are supported or state_charge is fully deprecated
+    "state_charge",
+    "normalized_state_charge",
+    # TODO(#20526) Remove once multi-parent entities are supported or state_early_discharge is migrated
+    # to hang off state_person
+    "state_early_discharge",
+    "normalized_state_early_discharge",
+}
 
 
 def explore_name_for_root_entity(root_entity_cls: Type[Entity]) -> str:
@@ -113,8 +122,19 @@ class EntityLookMLExploreBuilder:
     ) -> None:
         """Builds LookML explores for the given entity class and its related entities."""
         view_name = entity_cls.get_entity_name()
-        if view_name in self._view_name_to_explore:
-            return
+        if (
+            view_name in self._view_name_to_explore
+            # It's a non-trivial fix to allow for multiparent entities
+            # since the only offending entities are in the process of being
+            # deprecated, we can just note that the results may be incorrect
+            # on the dashboard
+            and view_name not in DEPRECATED_MULTIPARENT_ENTITIES
+        ):
+            raise ValueError(
+                f"Looker view [{view_name}] should not have multiple parents."
+                " Looker only joins a view to the root entity via a single path when"
+                " pulling data into a dashboard, which may result in missing rows"
+            )
 
         explore = LookMLExplore(
             explore_name=view_name, parameters=[], extension_required=True

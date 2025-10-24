@@ -19,15 +19,13 @@ import attr
 
 from recidiviz.looker.lookml_dashboard_element import (
     FULL_SCREEN_WIDTH,
+    SMALL_ELEMENT_HEIGHT,
     LookMLColorApplication,
     LookMLDashboardElement,
     LookMLElementType,
     LookMLListen,
     LookMLSort,
 )
-
-INFO_ELEMENT_HEIGHT = 2
-ACTIONS_ELEMENT_HEIGHT = 2
 
 
 @attr.define
@@ -46,7 +44,20 @@ class EntityDashboardElementFactory:
             body_text="__Info:__ ❇️ - Indicates an open incarceration/supervision period in respective tables."
             " __Note:__ Person_id is not consistent between production and staging environments,"
             " make sure to filter by external id and state if you want to compare a person between the two environments.",
-            height=INFO_ELEMENT_HEIGHT,
+            height=SMALL_ELEMENT_HEIGHT,
+            width=FULL_SCREEN_WIDTH,
+        )
+
+    @staticmethod
+    def multiparent_disclaimer_element() -> LookMLDashboardElement:
+        """Element to display a disclaimer regarding multiparent tables."""
+        return LookMLDashboardElement(
+            title="Disclaimer",
+            name="disclaimer",
+            type=LookMLElementType.TEXT,
+            body_text="__Note:__ Multi-parent tables state_charge and state_early_discharge may be missing results."
+            " Please migrate to sentences v2 and charges v2 for accurate results.",
+            height=SMALL_ELEMENT_HEIGHT,
             width=FULL_SCREEN_WIDTH,
         )
 
@@ -64,7 +75,7 @@ class EntityDashboardElementFactory:
             type=LookMLElementType.SINGLE_VALUE,
             fields=[f"{explore}.actions"],
             listen=listen,
-            height=ACTIONS_ELEMENT_HEIGHT,
+            height=SMALL_ELEMENT_HEIGHT,
             width=FULL_SCREEN_WIDTH,
         )
 
