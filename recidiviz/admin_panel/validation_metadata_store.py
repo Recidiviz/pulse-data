@@ -66,7 +66,6 @@ from recidiviz.validation.validation_output_views import (
 )
 
 # TODO(#8687): Remove the extra case statements with the old result detail class names.
-from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 
 
 class ResultDetailsTypes(Enum):
@@ -491,19 +490,13 @@ class ValidationStatusStore(AdminPanelStore):
         limit = 500
         query_str = validation_error_table_query(
             metadata.project_id(),
-            BigQueryAddress(
-                dataset_id=VIEWS_DATASET,
-                table_id=validation.error_view_builder.view_id,
-            ),
+            validation.error_view_builder.address,
             state_code,
             limit,
         )
         count_query_str = validation_error_table_count_query(
             metadata.project_id(),
-            BigQueryAddress(
-                dataset_id=VIEWS_DATASET,
-                table_id=validation.error_view_builder.view_id,
-            ),
+            validation.error_view_builder.address,
             state_code,
         )
 

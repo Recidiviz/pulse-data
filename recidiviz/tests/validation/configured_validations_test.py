@@ -43,7 +43,10 @@ from recidiviz.validation.validation_models import (
     ValidationCategory,
     ValidationCheckType,
 )
-from recidiviz.validation.views.dataset_config import VIEWS_DATASET
+from recidiviz.validation.views.dataset_config import (
+    TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET,
+    VIEWS_DATASET,
+)
 from recidiviz.validation.views.state.prod_staging_comparison.experiments_assigments_large_prod_staging_comparison import (
     EXPERIMENT_ASSIGNMENTS_LARGE_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
@@ -64,6 +67,9 @@ from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_
 )
 from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
     SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.task_eligibility.configured_validations import (
+    get_all_task_eligibility_validations,
 )
 
 
@@ -94,6 +100,14 @@ class TestConfiguredValidations(unittest.TestCase):
             self.assertIsNotNone(
                 builder.materialized_address,
                 f"Found validation view that is not materialized: {builder.address}",
+            )
+
+    def test_configured_tes_validations_all_have_tes_specific_dataset(self) -> None:
+        validations = get_all_task_eligibility_validations()
+        for validation in validations:
+            assert (
+                validation.view_builder.address.dataset_id
+                == TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET
             )
 
     def test_validations_projects_subset_of_views_projects(self) -> None:
@@ -134,7 +148,8 @@ class TestConfiguredValidations(unittest.TestCase):
         found_validation_builders = set(
             builder.address
             for builder in found_builders
-            if builder.address.dataset_id == VIEWS_DATASET
+            if builder.address.dataset_id
+            in (VIEWS_DATASET, TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET)
             # TODO(#15080): Configure validations for these views which were
             #  created without an associated configured validation, or move
             #  out of the validation_views dataset.

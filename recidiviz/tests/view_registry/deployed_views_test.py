@@ -119,6 +119,9 @@ from recidiviz.validation.views.dataset_config import (
     METADATA_DATASET as VALIDATION_METADATA_DATASET,
 )
 from recidiviz.validation.views.dataset_config import (
+    TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET as TES_VALIDATION_VIEWS_DATASET,
+)
+from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
 from recidiviz.view_registry.address_to_complexity_score_mapping import (
@@ -533,6 +536,7 @@ class ViewDagInvariantTests(unittest.TestCase):
                     continue
                 if child_address.dataset_id in {
                     VALIDATION_VIEWS_DATASET,
+                    TES_VALIDATION_VIEWS_DATASET,
                     VALIDATION_METADATA_DATASET,
                 }:
                     # Validation views may look for generic issues in, for example,
@@ -622,7 +626,8 @@ class ViewDagInvariantTests(unittest.TestCase):
             # We do not care if validation views point to data in the legacy pipeline
             a
             for a in descendant_addresses
-            if a.dataset_id != "validation_views"
+            if a.dataset_id
+            not in (VALIDATION_VIEWS_DATASET, TES_VALIDATION_VIEWS_DATASET)
         } - valid_descendants
 
         if invalid_descendants:
