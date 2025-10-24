@@ -146,7 +146,7 @@ SELECT * FROM `{project_id}.sessions.supervision_officer_caseload_count_spans_ma
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """
 SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE is_supervision_officer
+WHERE is_supervision_officer_with_caseload
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
@@ -157,7 +157,7 @@ WHERE is_supervision_officer
     supervision_district_id AS district,
 FROM
     `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE is_supervision_officer
+WHERE is_supervision_officer_with_caseload
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
@@ -166,7 +166,7 @@ WHERE is_supervision_officer
     *, supervision_district_id AS district,
 FROM
     `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE is_supervision_officer
+WHERE is_supervision_officer_with_caseload
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
@@ -177,14 +177,14 @@ WHERE is_supervision_officer
 FROM
     `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`,
     UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
-WHERE is_supervision_officer
+WHERE is_supervision_officer_with_caseload
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """
 SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE is_supervision_officer
+WHERE is_supervision_officer_with_caseload
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
@@ -192,7 +192,7 @@ WHERE is_supervision_officer
     ): """
 SELECT *, TRUE AS in_signed_state
 FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE is_supervision_officer
+WHERE is_supervision_officer_with_caseload
 """,
     (
         MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
