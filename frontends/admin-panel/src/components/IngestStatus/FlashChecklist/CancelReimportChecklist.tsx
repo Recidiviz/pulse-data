@@ -220,6 +220,9 @@ const CancelReimportChecklist = (): JSX.Element => {
                   <code>direct_ingest_raw_gcs_file_metadata</code>
                 </li>
                 <li>
+                  <code>direct_ingest_raw_data_pruning_metadata</code>
+                </li>
+                <li>
                   <code>direct_ingest_raw_file_import_run</code>
                 </li>
                 <li>

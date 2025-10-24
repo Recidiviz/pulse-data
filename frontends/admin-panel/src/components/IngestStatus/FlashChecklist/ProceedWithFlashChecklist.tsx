@@ -214,8 +214,10 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
           description={
             <p>
               Mark all <code>PRIMARY</code> instance rows in
-              <code>direct_ingest_raw_big_query_file_metadata</code> as
-              invalidated.
+              <code>direct_ingest_raw_big_query_file_metadata</code> and
+              <code>direct_ingest_raw_gcs_file_metadata</code> as invalidated.
+              Delete <code>PRIMARY</code> instance rows in
+              <code>direct_ingest_raw_data_pruning_metadata</code>.
             </p>
           }
           actionButtonEnabled={isFlashInProgress}
@@ -248,6 +250,9 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
                 </li>
                 <li>
                   <code>direct_ingest_raw_gcs_file_metadata</code>
+                </li>
+                <li>
+                  <code>direct_ingest_raw_data_pruning_metadata</code>
                 </li>
                 <li>
                   <code>direct_ingest_raw_file_import_run</code>
