@@ -240,3 +240,4 @@ release.out
 # AI Tools
 .gemini/
 .claude/
+.mcp.json

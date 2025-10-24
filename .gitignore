@@ -207,3 +207,4 @@ release.out
 # AI Tools
 .gemini/
 .claude/settings.local.json
+.mcp.json
