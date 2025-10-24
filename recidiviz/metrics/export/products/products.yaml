@@ -232,4 +232,4 @@ products:
       - MEETINGS
     states:
       - state_code: US_NE
-        environment: staging
+        environment: production
