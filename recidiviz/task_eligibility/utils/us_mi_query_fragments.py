@@ -211,18 +211,11 @@ recent_misconduct_codes AS (
         CURRENT_DATE('US/Eastern') BETWEEN h.start_date AND {nonnull_end_date_exclusive_clause('h.end_date_exclusive')}
     GROUP BY 1
 ),
-previous_ad_seg_stays AS (
-/* Queries all previous ad seg stays from the past three years, and the associates the closest incarceration incident.
-30 days in ad seg is used a proxy to determine "true" ad seg stays, vs. time spent in an ad seg cell */
-SELECT 
-  person_id,
-  ARRAY_AGG(
-    CONCAT('(', STRING(start_date), ',', offenses, ')') IGNORE NULLS ORDER BY start_date, offenses
-  ) AS ad_seg_stays_and_reasons_within_3_yrs
-FROM (
+ad_seg_stays AS (
   SELECT 
     h.person_id,
     h.start_date,
+    h.end_date_exclusive,
     --concatenate nonbondable and bondable offenses 
     COALESCE(IF(JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES') != "", 
         CONCAT(JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES'), ",", 
@@ -258,7 +251,30 @@ FROM (
         -- pick one arbitrarily
         JSON_EXTRACT_SCALAR(i.incident_metadata, '$.NONBONDABLE_OFFENSES')
   ) = 1
-)
+),
+previous_ad_seg_stays_for_form AS (
+/* Used for form filling:
+Queries all previous ad seg stays from the past three years, and the associates the closest incarceration incident.
+30 days in ad seg is used a proxy to determine "true" ad seg stays, vs. time spent in an ad seg cell */
+SELECT 
+  person_id,
+  ARRAY_AGG(
+    CONCAT('(', STRING(start_date), ',', offenses, ')') IGNORE NULLS ORDER BY start_date, offenses
+  ) AS form_ad_seg_stays_and_reasons_within_3_yrs
+FROM ad_seg_stays
+GROUP BY person_id
+),
+previous_ad_seg_stays AS (
+/* Used for sidebar component: 
+Queries all previous ad seg stays from the past three years, and the associates the closest incarceration incident.
+30 days in ad seg is used a proxy to determine "true" ad seg stays, vs. time spent in an ad seg cell */
+SELECT 
+  person_id,
+  ARRAY_AGG(TO_JSON(STRUCT(start_date AS stay_start_date,
+                end_date_exclusive AS stay_end_date,
+                offenses AS stay_offenses))
+                IGNORE NULLS ORDER BY start_date, end_date_exclusive, offenses) AS json_ad_seg_stays_and_reasons_within_3_yrs
+FROM ad_seg_stays
 GROUP BY person_id
 ),
 reasons_for_eligibility AS (
@@ -379,7 +395,7 @@ SELECT
     h.start_date AS form_information_segregation_classification_date,
     m.bondable_offenses_within_6_months AS form_information_bondable_offenses_within_6_months,
     m.nonbondable_offenses_within_1_year AS form_information_nonbondable_offenses_within_1_year,
-    p.ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
+    pf.form_ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
     --metadata 
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
     DATE(maximum_release_date) AS metadata_max_release_date,
@@ -397,7 +413,9 @@ SELECT
     (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
     rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
     rm.nonbondable_offenses_within_1_year AS metadata_recent_nonbondable_offenses,
-    p.ad_seg_stays_and_reasons_within_3_yrs AS metadata_ad_seg_stays_and_reasons_within_3_yrs,
+    #TODO(#51218) remove once frontend is updated to json field
+    pf.form_ad_seg_stays_and_reasons_within_3_yrs AS metadata_ad_seg_stays_and_reasons_within_3_yrs,
+    p.json_ad_seg_stays_and_reasons_within_3_yrs AS metadata_json_ad_seg_stays_and_reasons_within_3_yrs,
     #TODO(#28298) add in missing info when we receive data
     NULL AS metadata_needed_programming,
     NULL AS metadata_completed_programming,
@@ -435,6 +453,8 @@ LEFT JOIN release_dates sgt
 LEFT JOIN form_misconduct_codes m
     USING (person_id)
 LEFT JOIN recent_misconduct_codes rm
+    USING (person_id)
+LEFT JOIN previous_ad_seg_stays_for_form pf
     USING (person_id)
 LEFT JOIN previous_ad_seg_stays p
     USING (person_id)
