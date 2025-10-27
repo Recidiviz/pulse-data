@@ -73,9 +73,6 @@ from recidiviz.calculator.query.state.views.shared_metric.single_day_incarcerati
 from recidiviz.calculator.query.state.views.shared_metric.single_day_supervision_population_for_spotlight import (
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.shared_metric.supervision_case_compliance_metrics import (
-    SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.supervision_officer_caseload import (
     SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER,
 )
@@ -145,7 +142,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
     EVENT_BASED_SUPERVISION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # validation_views views
