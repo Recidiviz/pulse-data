@@ -19,7 +19,6 @@ input_columns:
 unused_columns:
   - recidiviz_primary_person_id # Internal Recidiviz person ID
   - inmate_numbers # Already ingested in the `person_external_ids` ingest view.
-  - Mid_Nm # TODO(#18543): temporarily unused -- see below
 output:
   StatePerson:
     external_ids:
@@ -30,10 +29,7 @@ output:
     full_name:
       $person_name:
         $given_names: Frst_Nm
-        # TODO(#18543): We don't ingest middle names so that these line up with the names from
-        # parole data. Include middle names once we have a parole source that also has
-        # middle names.
-        # $middle_names: Mid_Nm
+        $middle_names: Mid_Nm
         $surname: Lst_Nm
         $name_suffix: Nm_Suff
     aliases:
@@ -41,10 +37,7 @@ output:
           full_name:
             $person_name:
               $given_names: Frst_Nm
-              # TODO(#18543): We don't ingest middle names so that these line up with the names from
-              # parole data. Include middle names once we have a parole source that also has
-              # middle names.
-              # $middle_names: Mid_Nm
+              $middle_names: Mid_Nm
               $surname: Lst_Nm
               $name_suffix: Nm_Suff
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)

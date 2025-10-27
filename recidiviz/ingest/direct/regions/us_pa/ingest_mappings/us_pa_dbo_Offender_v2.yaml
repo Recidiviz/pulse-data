@@ -7,6 +7,7 @@ input_columns:
   first_name: STRING
   last_name: STRING
   suffix: STRING
+  middle_initial: STRING
   DOB: DATE
 unused_columns: []
 output:
@@ -20,6 +21,7 @@ output:
         $given_names: first_name
         $surname: last_name
         $name_suffix: suffix
+        $middle_names: middle_initial
     aliases:
       - StatePersonAlias:
           full_name:
@@ -27,6 +29,7 @@ output:
               $given_names: first_name
               $surname: last_name
               $name_suffix: suffix
+              $middle_names: middle_initial
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
     # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
     # been updated to read from state_person sex instead.
