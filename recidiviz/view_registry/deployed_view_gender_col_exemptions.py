@@ -64,21 +64,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sessions import
 from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions import (
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions_preprocessed import (
-    COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_co.us_co_incarceration_population_metrics_preprocessed import (
-    US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_incarceration_population_metrics_preprocessed import (
-    US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_pa.us_pa_supervision_population_metrics_preprocessed import (
-    US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_population_metrics_preprocessed import (
-    US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.event_based_commitments_from_supervision import (
     EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
 )
@@ -159,11 +144,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
     # sessions views
     COMPARTMENT_SESSIONS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # shared_metric_views views
     EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     EVENT_BASED_SUPERVISION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
