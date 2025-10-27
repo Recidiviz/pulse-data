@@ -12,6 +12,9 @@ exclusions:
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+  - validation_name: open_sessions_without_active_sentences
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: we haven't finished ingesting new sentencing entities yet TODO(#28865)
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 1.0
@@ -83,3 +86,6 @@ num_allowed_rows_overrides:
   - validation_name: officer_monthly_usage_report_actions_without_logins
     hard_num_allowed_rows_override: 10
     override_reason: Will be resolved with the Polaris segment ad blocker work around
+  - validation_name: zero_tasks_completed_while_eligible
+    hard_num_allowed_rows_override: 1
+    override_reason: we haven't finished ingesting new sentencing entities yet TODO(#28865) and until we do, we would expect this validation to fail for FTRD
