@@ -44,7 +44,6 @@ python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest
     --test_characteristic revocation \
     --skip_code_files
 
-
 """
 import argparse
 import os

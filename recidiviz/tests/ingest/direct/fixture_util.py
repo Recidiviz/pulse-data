@@ -88,8 +88,6 @@ def fixture_path_for_raw_file_config(
     file_name: str,
 ) -> str:
     if raw_file_config.is_code_file and state_code not in {
-        # TODO(#40113) Update code file fixtures and remove this exemption
-        StateCode.US_IX,
         # TODO(#40114) Update code file fixtures and remove this exemption
         StateCode.US_PA,
     }:
