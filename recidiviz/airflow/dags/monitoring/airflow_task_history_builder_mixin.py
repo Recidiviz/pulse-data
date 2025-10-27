@@ -51,6 +51,7 @@ class AirflowTaskHistoryBuilderMixin:
                 # map_index will be -1 for all non-mapped tasks
                 task_model.map_index,
                 task_model.try_number,
+                task_model.max_tries,
                 task_model.state.label("task_state"),
                 task_model.start_date,
                 task_model.end_date,

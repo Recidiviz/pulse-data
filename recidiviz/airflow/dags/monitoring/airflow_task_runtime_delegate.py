@@ -277,6 +277,7 @@ class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate, AirflowTaskHistoryBuilde
                 filtered_tasks_with_state.c.conf,
                 filtered_tasks_with_state.c.execution_date,
                 filtered_tasks_with_state.c.try_number,
+                filtered_tasks_with_state.c.max_tries,
                 func.max(filtered_tasks_with_state.c.task_duration).label(
                     "max_duration"
                 ),
@@ -290,6 +291,7 @@ class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate, AirflowTaskHistoryBuilde
                 filtered_tasks_with_state.c.conf,
                 filtered_tasks_with_state.c.execution_date,
                 filtered_tasks_with_state.c.try_number,
+                filtered_tasks_with_state.c.max_tries,
             )
 
             return [
@@ -300,6 +302,7 @@ class AirflowTaskRuntimeDelegate(JobRunHistoryDelegate, AirflowTaskHistoryBuilde
                     task_id=task_instance_run.task_id,
                     state=task_instance_run.state,
                     try_number=task_instance_run.try_number,
+                    max_tries=task_instance_run.max_tries,
                     error_message=self.task_runtime_error_message(
                         max_duration=task_instance_run.max_duration,
                         threshold_exceeded=task_instance_run.threshold_exceeded,

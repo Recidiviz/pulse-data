@@ -95,6 +95,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             error_message=None,
             job_type=JobRunType.AIRFLOW_TASK_RUN,
             job_run_num=int(row.get("try_number", 0)),
+            max_tries=int(row.get("max_tries", -1)),
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }
@@ -119,15 +120,23 @@ def dummy_dag_run(dag: DAG, date: str, *, conf: Any | None = None) -> DagRun:
 
 
 def dummy_ti(
-    task: PythonOperator, dag_run: DagRun, state: str, **kwargs: Any
+    task: PythonOperator,
+    dag_run: DagRun,
+    state: str,
+    try_number: int = 0,
+    max_tries: int = -1,
+    **kwargs: Any,
 ) -> TaskInstance:
-    return TaskInstance(
+    ti = TaskInstance(
         task=task,
         run_id=dag_run.run_id,
         execution_date=dag_run.execution_date,
         state=state,
         **kwargs,
     )
+    ti.try_number = try_number
+    ti.max_tries = max_tries
+    return ti
 
 
 def dummy_ti_retry(
@@ -141,10 +150,21 @@ def dummy_ti_retry(
 
 
 def dummy_mapped_tis(
-    task: PythonOperator, dag_run: DagRun, states: List[str]
+    task: PythonOperator,
+    dag_run: DagRun,
+    states: List[str],
+    try_number: int = 0,
+    max_tries: int = -1,
 ) -> List[TaskInstance]:
     return [
-        dummy_ti(task=task, dag_run=dag_run, state=state, map_index=index)
+        dummy_ti(
+            task=task,
+            dag_run=dag_run,
+            state=state,
+            try_number=try_number,
+            max_tries=max_tries,
+            map_index=index,
+        )
         for index, state in enumerate(states)
     ]
 
@@ -1179,3 +1199,315 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 incident.failed_execution_dates,
                 [july_ninth.execution_date, july_thirteenth.execution_date],
             )
+
+    def test_retry_exhaustion_filtering(self) -> None:
+        """
+        Given a task that fails but has not exhausted retries, then succeeds on retry
+
+                    2023-07-09         2023-07-10
+        parent_task 🟥(try 1)         🟩
+                    🟥(try 2)
+                    🟩(try 3)
+
+        Assert that no incident is created because retries were not exhausted
+        (max_tries=3, final try_number=3 succeeded)
+        """
+        with self._get_session() as session:
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_ti_try_1 = dummy_ti(
+                parent_task, july_ninth, "failed", try_number=1, max_tries=3
+            )
+            july_ninth_ti_try_2_history = TaskInstanceHistory(
+                july_ninth_ti_try_1, state="failed"
+            )
+            july_ninth_ti_try_1.try_number = 2
+            july_ninth_ti_try_1.max_tries = 3
+
+            july_ninth_ti_try_3_history = TaskInstanceHistory(
+                july_ninth_ti_try_1, state="failed"
+            )
+            july_ninth_ti_try_1.try_number = 3
+            july_ninth_ti_try_1.state = "success"
+            july_ninth_ti_try_1.max_tries = 3
+
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_parent = dummy_ti(
+                parent_task, july_tenth, "success", try_number=1, max_tries=3
+            )
+
+            session.add_all(
+                [july_ninth, july_ninth_ti_try_1, july_tenth, july_tenth_parent]
+            )
+            session.commit()
+
+            # Add history entries
+            session.add_all([july_ninth_ti_try_2_history, july_ninth_ti_try_3_history])
+            session.commit()
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            # No incidents should be created since retries were not exhausted
+            self.assertEqual({}, history)
+
+    def test_retry_exhaustion_creates_incident(self) -> None:
+        """
+        Given a task that fails and exhausts all retries
+
+                    2023-07-09         2023-07-10
+        parent_task 🟥(try 1)         🟩
+                    🟥(try 2)
+                    🟥(try 3)
+
+        Assert that an incident IS created because retries were exhausted
+        (max_tries=3, final try_number=3 failed)
+        """
+        with self._get_session() as session:
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_ti = dummy_ti(
+                parent_task, july_ninth, "failed", try_number=1, max_tries=3
+            )
+            july_ninth_ti_try_1_history = TaskInstanceHistory(
+                july_ninth_ti, state="failed"
+            )
+
+            july_ninth_ti.try_number = 2
+            july_ninth_ti_try_2_history = TaskInstanceHistory(
+                july_ninth_ti, state="failed"
+            )
+
+            july_ninth_ti.try_number = 3
+            july_ninth_ti.state = "failed"  # Exhausted all retries
+
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_parent = dummy_ti(
+                parent_task, july_tenth, "success", try_number=1, max_tries=3
+            )
+
+            session.add_all([july_ninth, july_ninth_ti, july_tenth, july_tenth_parent])
+            session.commit()
+
+            # Add history entries
+            session.add_all([july_ninth_ti_try_1_history, july_ninth_ti_try_2_history])
+            session.commit()
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            # An incident should be created since all retries were exhausted
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            )
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+            self.assertEqual(
+                incident.failed_execution_dates, [july_ninth.execution_date]
+            )
+            self.assertEqual(incident.next_success_date, july_tenth.execution_date)
+
+    def test_retry_exhaustion_different_max_tries_per_task(self) -> None:
+        """
+        Given multiple tasks with different retry configurations
+
+                    2023-07-09
+        task_a      🟥(try 2/2) EXHAUSTED
+        task_b      🟥(try 2/5) NOT EXHAUSTED
+
+        Assert that incident is created for task_a but not task_b
+        """
+        # Create independent tasks (not parent/child)
+        task_a = dummy_task(test_dag, "task_a")
+        task_b = dummy_task(test_dag, "task_b")
+
+        with self._get_session() as session:
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+
+            # task_a: exhausts retries at try 2
+            july_ninth_task_a = dummy_ti(
+                task_a, july_ninth, "failed", try_number=2, max_tries=2
+            )
+
+            # task_b: fails at try 2 but has more retries available
+            july_ninth_task_b = dummy_ti(
+                task_b, july_ninth, "failed", try_number=2, max_tries=5
+            )
+
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_task_a = dummy_ti(
+                task_a, july_tenth, "success", try_number=1, max_tries=2
+            )
+            july_tenth_task_b = dummy_ti(
+                task_b, july_tenth, "success", try_number=1, max_tries=5
+            )
+
+            session.add_all(
+                [
+                    july_ninth,
+                    july_ninth_task_a,
+                    july_ninth_task_b,
+                    july_tenth,
+                    july_tenth_task_a,
+                    july_tenth_task_b,
+                ]
+            )
+            session.commit()
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            # task_a should have an incident (2 >= 2, exhausted)
+            task_a_incident_key = (
+                "Task Run: test_dag.task_a, started: 2023-07-09 12:00 UTC"
+            )
+            self.assertIn(task_a_incident_key, history)
+            task_a_incident = history[task_a_incident_key]
+            self.assertEqual(
+                task_a_incident.failed_execution_dates, [july_ninth.execution_date]
+            )
+
+            # task_b should NOT have an incident (2 < 5, not exhausted)
+            task_b_incident_key = (
+                "Task Run: test_dag.task_b, started: 2023-07-09 12:00 UTC"
+            )
+            self.assertNotIn(task_b_incident_key, history)
+
+    def test_retry_exhaustion_in_progress_retries_dont_count(self) -> None:
+        """
+        7/10 hasn't completed so doesn't count as a failed execution date
+
+                    2023-07-09         2023-07-10
+        parent_task 🟥(try 1)         🟥 (try 1)
+                    🟥(try 2)         🟥 (try 2) (hasn't completed all retries yet)
+                    🟥(try 3)
+
+        Assert that only 2023-07-09 appears in failed_execution_dates
+        """
+        with self._get_session() as session:
+            # July 9th: All retries exhausted
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_ti = dummy_ti(
+                parent_task, july_ninth, "failed", try_number=1, max_tries=3
+            )
+            july_ninth_ti_try_1_history = TaskInstanceHistory(
+                july_ninth_ti, state="failed"
+            )
+            july_ninth_ti.try_number = 2
+            july_ninth_ti_try_2_history = TaskInstanceHistory(
+                july_ninth_ti, state="failed"
+            )
+            july_ninth_ti.try_number = 3
+            july_ninth_ti.state = "failed"  # Exhausted at try 3
+
+            # July 10th: Still retrying (only at try 2 of 3)
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_ti = dummy_ti(
+                parent_task, july_tenth, "failed", try_number=1, max_tries=3
+            )
+            july_tenth_ti_try_1_history = TaskInstanceHistory(
+                july_tenth_ti, state="failed"
+            )
+            july_tenth_ti.try_number = 2
+            july_tenth_ti.state = "failed"  # Still has try 3 available
+
+            session.add_all([july_ninth, july_ninth_ti, july_tenth, july_tenth_ti])
+            session.commit()
+
+            # Add history entries
+            session.add_all(
+                [
+                    july_ninth_ti_try_1_history,
+                    july_ninth_ti_try_2_history,
+                    july_tenth_ti_try_1_history,
+                ]
+            )
+            session.commit()
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            # Should have incident starting on July 9th
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            )
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+
+            # Only July 9th should be in failed_execution_dates (July 10th is still retrying)
+            self.assertEqual(
+                incident.failed_execution_dates, [july_ninth.execution_date]
+            )
+            # No next success yet
+            self.assertIsNone(incident.next_success_date)
+
+    def test_retry_exhaustion_success_after_partial_failure_second_day(self) -> None:
+        """
+        Success after failure on the second day
+
+                    2023-07-09         2023-07-10
+        parent_task 🟥(try 1)         🟥 (try 1)
+                    🟥(try 2)         🟩 (try 2)
+                    🟥(try 3)
+
+        Assert that only 2023-07-09 appears in failed_execution_dates
+        """
+        with self._get_session() as session:
+            # July 9th: All retries exhausted
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_ti = dummy_ti(
+                parent_task, july_ninth, "failed", try_number=1, max_tries=3
+            )
+            july_ninth_ti_try_1_history = TaskInstanceHistory(
+                july_ninth_ti, state="failed"
+            )
+            july_ninth_ti.try_number = 2
+            july_ninth_ti_try_2_history = TaskInstanceHistory(
+                july_ninth_ti, state="failed"
+            )
+            july_ninth_ti.try_number = 3
+            july_ninth_ti.state = "failed"  # Exhausted at try 3
+
+            # July 10th: Fails once, then succeeds on retry
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_ti = dummy_ti(
+                parent_task, july_tenth, "failed", try_number=1, max_tries=3
+            )
+            july_tenth_ti_try_1_history = TaskInstanceHistory(
+                july_tenth_ti, state="failed"
+            )
+            july_tenth_ti.try_number = 2
+            july_tenth_ti.state = "success"  # Succeeds on try 2
+
+            session.add_all([july_ninth, july_ninth_ti, july_tenth, july_tenth_ti])
+            session.commit()
+
+            # Add history entries
+            session.add_all(
+                [
+                    july_ninth_ti_try_1_history,
+                    july_ninth_ti_try_2_history,
+                    july_tenth_ti_try_1_history,
+                ]
+            )
+            session.commit()
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+            # Should have incident starting on July 9th
+            incident_key = (
+                "Task Run: test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            )
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+
+            # Only July 9th should be in failed_execution_dates (July 10th succeeded on retry)
+            self.assertEqual(
+                incident.failed_execution_dates, [july_ninth.execution_date]
+            )
+            # July 10th is the next success
+            self.assertEqual(incident.next_success_date, july_tenth.execution_date)

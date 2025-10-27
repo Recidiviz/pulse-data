@@ -23,10 +23,7 @@ import attr
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
-from recidiviz.airflow.dags.monitoring.dag_registry import (
-    get_raw_data_import_dag_id,
-    get_sftp_dag_id,
-)
+from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
 from recidiviz.airflow.dags.utils.branch_utils import BRANCH_END_TASK_NAME
 from recidiviz.airflow.dags.utils.constants import RAW_DATA_TASKS_ALLOWED_TO_FAIL
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -80,15 +77,6 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
             method=TriggerPredicateMethod.SILENCE,
             condition=lambda incident: incident.job_id.endswith(BRANCH_END_TASK_NAME),
             failure_message="branch_end is not an actionable failure",
-        ),
-        AlertingIncidentTriggerPredicate(
-            method=TriggerPredicateMethod.SILENCE,
-            dag_id=get_sftp_dag_id(project_id),
-            condition=lambda incident: (
-                incident.job_id == "US_IX.remote_file_download.download_sftp_files"
-                and len(incident.failed_execution_dates) == 1
-            ),
-            failure_message="must fail at least twice",
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,

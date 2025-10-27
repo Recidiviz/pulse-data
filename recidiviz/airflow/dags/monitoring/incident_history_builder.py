@@ -74,6 +74,15 @@ class IncidentHistoryBuilder:
             # Filter down to job runs in a failed or success state.
             df = df[df.state.isin([JobRunState.FAILED, JobRunState.SUCCESS])]
 
+            # Filter failed runs to only include those where retries have been exhausted.
+            # A task has exhausted retries when job_run_num >= max_tries.
+            # Keep all SUCCESS runs (no filtering needed).
+            # Tasks with max_tries=-1 (legacy data where max_tries was not tracked)
+            # will always pass the >= check and be included for backwards compatibility.
+            df = df[
+                (df.state == JobRunState.SUCCESS) | (df.job_run_num >= df.max_tries)
+            ]
+
             # Skip if we have no runs or they are all SUCCESS.
             if df.empty or df.state.unique().tolist() == [JobRunState.SUCCESS]:
                 continue

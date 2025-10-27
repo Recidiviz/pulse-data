@@ -52,6 +52,7 @@ class MixinResult:
     task_id: str = attr.field()
     map_index: int = attr.field()
     try_number: int = attr.field()
+    max_tries: int = attr.field()
     task_state: str = attr.field()
     start_date: datetime.datetime | None = attr.field()
     end_date: datetime.datetime | None = attr.field()
@@ -66,6 +67,7 @@ class MixinResult:
             task_id=row["task_id"],
             task_state=row["task_state"],
             try_number=int(row["try_number"]),
+            max_tries=int(row["max_tries"]),
             map_index=int(row["map_index"]),
             start_date=(
                 datetime.datetime.fromisoformat(row["start_date"])
@@ -128,6 +130,8 @@ def dummy_ti(
     task: PythonOperator,
     dag_run: DagRun,
     state: str,
+    try_number: int,
+    max_tries: int,
     map_index: int = -1,
     **kwargs: Any,
 ) -> TaskInstance:
@@ -138,6 +142,8 @@ def dummy_ti(
         state=state,
         map_index=map_index,
     )
+    ti.try_number = try_number
+    ti.max_tries = max_tries
 
     if kwargs:
         for k, v in kwargs.items():
@@ -146,9 +152,9 @@ def dummy_ti(
     return ti
 
 
-def dummy_task(dag: DAG, name: str) -> PythonOperator:
+def dummy_task(dag: DAG, name: str, retries: int) -> PythonOperator:
     return PythonOperator(
-        dag=dag, task_id=name, python_callable=lambda: None, retries=-1
+        dag=dag, task_id=name, python_callable=lambda: None, retries=retries
     )
 
 
@@ -158,8 +164,8 @@ test_dag = DAG(
     schedule=None,
 )
 
-parent_task = dummy_task(test_dag, "parent_task")
-child_task = dummy_task(test_dag, "child_task")
+parent_task = dummy_task(test_dag, "parent_task", retries=2)
+child_task = dummy_task(test_dag, "child_task", retries=2)
 parent_task >> child_task
 
 test_dag_2 = DAG(
@@ -168,8 +174,8 @@ test_dag_2 = DAG(
     schedule=None,
 )
 
-parent_task_2 = dummy_task(test_dag_2, "parent_task")
-child_task_2 = dummy_task(test_dag_2, "child_task")
+parent_task_2 = dummy_task(test_dag_2, "parent_task", retries=2)
+child_task_2 = dummy_task(test_dag_2, "child_task", retries=2)
 parent_task_2 >> child_task_2
 
 
@@ -216,13 +222,17 @@ class AirflowTaskHistoryBuilderMixinTest(AirflowIntegrationTest):
 
         with self._get_session() as session:
             july_sixth = dummy_dag_run(test_dag, "2023-07-06")
-            july_sixth_parent = dummy_ti(parent_task, july_sixth, "success")
+            july_sixth_parent = dummy_ti(
+                parent_task, july_sixth, "success", try_number=0, max_tries=2
+            )
             july_sixth_parent, july_sixth_parent_first_try = dummy_ti_retry(
                 july_sixth_parent, "running"
             )
 
             july_sixth_two = dummy_dag_run(test_dag_2, "2023-07-06")
-            july_sixth_two_parent = dummy_ti(parent_task_2, july_sixth_two, "success")
+            july_sixth_two_parent = dummy_ti(
+                parent_task_2, july_sixth_two, "success", try_number=0, max_tries=2
+            )
             july_sixth_two_parent, july_sixth_two_parent_first_try = dummy_ti_retry(
                 july_sixth_two_parent, "running"
             )
@@ -262,12 +272,45 @@ class AirflowTaskHistoryBuilderMixinTest(AirflowIntegrationTest):
                 set(second_dag_tasks),
             )
 
+    def test_mixin_with_no_retries(self) -> None:
+        """Test tasks with retries=0 (max_tries=1) are handled correctly"""
+        # Create a test DAG with a task that has no retries
+        test_dag_no_retries = DAG(
+            dag_id="test_dag_no_retries",
+            start_date=datetime.datetime(year=2023, month=6, day=21),
+            schedule=None,
+        )
+        no_retry_task = dummy_task(test_dag_no_retries, "no_retry_task", retries=0)
+
+        results = read_csv_fixture_for_delegate("test_mixin_with_no_retries.csv")
+
+        with self._get_session() as session:
+            july_sixth = dummy_dag_run(test_dag_no_retries, "2023-07-06")
+            july_sixth_task = dummy_ti(
+                no_retry_task, july_sixth, "failed", try_number=0, max_tries=-1
+            )
+
+            session.add_all([july_sixth, july_sixth_task])
+            session.commit()
+
+            builder = AirflowTaskHistoryBuilderMixin.build_task_history(
+                dag_id="test_dag_no_retries", lookback=TEST_START_DATE_LOOKBACK
+            )
+            tasks = [MixinResult(**row) for row in session.execute(builder).all()]
+
+            self.assertEqual(
+                set(results),
+                set(tasks),
+            )
+
     def test_mixin_applies_lookback(self) -> None:
 
         with self._get_session() as session:
             for day in range(6, 10):
                 july_day = dummy_dag_run(test_dag, f"2023-07-0{day}")
-                july_day_parent = dummy_ti(parent_task, july_day, "success")
+                july_day_parent = dummy_ti(
+                    parent_task, july_day, "success", try_number=0, max_tries=2
+                )
                 july_day_parent, july_day_parent_first_try = dummy_ti_retry(
                     july_day_parent, "running"
                 )

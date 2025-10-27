@@ -20,8 +20,6 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
-import attr
-
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
@@ -46,31 +44,6 @@ class TestPredicates(unittest.TestCase):
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
         self.assertTrue(should_trigger, messages)
-
-    def test_sftp(self) -> None:
-        incident = AirflowAlertingIncident(
-            dag_id="test_project_sftp_dag",
-            dag_run_config="{}",
-            job_id="US_IX.remote_file_download.download_sftp_files",
-            failed_execution_dates=[datetime.now(tz=timezone.utc)],
-            incident_type="Task Run",
-        )
-
-        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
-        self.assertFalse(should_trigger, messages)
-        self.assertIn("must fail at least twice", messages)
-
-        incident = attr.evolve(
-            incident,
-            failed_execution_dates=[
-                datetime.now(tz=timezone.utc),
-                datetime.now(tz=timezone.utc),
-            ],
-        )
-
-        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
-        self.assertTrue(should_trigger, messages)
-        self.assertEqual(len(messages), 0)
 
     def test_state_code_branch_end(self) -> None:
         incident = AirflowAlertingIncident(

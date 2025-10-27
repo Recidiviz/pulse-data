@@ -1,0 +1,2 @@
+dag_id,execution_date,conf,dag_end_date,task_id,map_index,try_number,max_tries,task_state,start_date,end_date
+test_dag_no_retries,2023-07-06 00:00:00+00:00,"{}",,no_retry_task,-1,0,-1,failed,,

@@ -75,6 +75,8 @@ class JobRun:
         - job_run_num (int): the run / attempt number of this job run. Used to represent
             and properly order cases with multiple runs with the same JobRun.unique_keys
             and the same |execution_date|.
+        - max_tries (int | None): the maximum number of retry attempts configured for this
+            task. A task has exhausted retries when job_run_num >= max_tries.
     """
 
     dag_id: str = attr.field(validator=attr_validators.is_str)
@@ -89,6 +91,7 @@ class JobRun:
     error_message: str | None = attr.field(validator=attr_validators.is_opt_str)
     job_type: JobRunType = attr.field(validator=attr.validators.in_(JobRunType))
     job_run_num: int = attr.field(validator=attr_validators.is_int)
+    max_tries: int = attr.field(default=-1, validator=attr_validators.is_int)
 
     @classmethod
     def unique_keys(cls) -> list[str]:
@@ -119,6 +122,7 @@ class JobRun:
         state: int,
         job_type: JobRunType,
         try_number: int | None,
+        max_tries: int | None,
         error_message: str | None
     ) -> "JobRun":
         # sort dag run config to make sure that two different parameter orderings
@@ -139,4 +143,5 @@ class JobRun:
             job_run_num=try_number or 0,
             job_type=job_type,
             error_message=error_message,
+            max_tries=max_tries if max_tries is not None else -1,
         )

@@ -83,6 +83,7 @@ class AirflowTaskRunHistoryDelegate(
                 filtered_tasks_with_state.c.conf,
                 filtered_tasks_with_state.c.task_id,
                 filtered_tasks_with_state.c.try_number,
+                filtered_tasks_with_state.c.max_tries,
                 func.max(filtered_tasks_with_state.c.state).label("state"),
             ).group_by(
                 filtered_tasks_with_state.c.dag_id,
@@ -90,6 +91,7 @@ class AirflowTaskRunHistoryDelegate(
                 filtered_tasks_with_state.c.conf,
                 filtered_tasks_with_state.c.task_id,
                 filtered_tasks_with_state.c.try_number,
+                filtered_tasks_with_state.c.max_tries,
             )
             return [
                 JobRun.from_airflow_task_instance(
@@ -99,6 +101,7 @@ class AirflowTaskRunHistoryDelegate(
                     task_id=task_instance_run.task_id,
                     state=task_instance_run.state,
                     try_number=task_instance_run.try_number,
+                    max_tries=task_instance_run.max_tries,
                     job_type=JobRunType.AIRFLOW_TASK_RUN,
                     error_message=None,
                 )
