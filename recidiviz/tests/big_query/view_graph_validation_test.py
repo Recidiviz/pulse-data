@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.views.reference.product_display_person_ext
 from recidiviz.calculator.query.state.views.reference.product_stable_person_external_ids import (
     PRODUCT_STABLE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.person_demographics import (
+    PERSON_DEMOGRAPHICS_VIEW_BUILDER,
+)
 from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.ingest.views.dataset_config import (
     VIEWS_DATASET as INGEST_METADATA_VIEWS_DATASET,
@@ -82,6 +85,9 @@ from recidiviz.view_registry.deployed_view_external_id_exemptions import (
     NORMALIZED_STATE_VIEWS_DATASET,
     get_known_non_export_views_with_person_external_id_column,
     get_known_views_with_unqualified_external_id,
+)
+from recidiviz.view_registry.deployed_view_gender_col_exemptions import (
+    get_known_non_export_views_with_gender_column,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
@@ -173,6 +179,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     _known_no_state_col_addresses: set[BigQueryAddress] = set()
     _known_has_external_id_addresses: set[BigQueryAddress] = set()
     _known_non_export_views_with_person_external_id: set[BigQueryAddress] = set()
+    _known_non_export_views_with_gender: set[BigQueryAddress] = set()
     _metric_export_view_addresses: set[BigQueryAddress] = set()
     _validation_view_addresses: set[BigQueryAddress] = set()
 
@@ -207,6 +214,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 get_known_non_export_views_with_person_external_id_column(
                     cls._get_gcp_project_id()
                 )
+            )
+            cls._known_non_export_views_with_gender = (
+                get_known_non_export_views_with_gender_column(cls._get_gcp_project_id())
             )
             cls._metric_export_view_addresses = get_all_metric_export_view_addresses()
             cls._validation_view_addresses = {
@@ -337,6 +347,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             filtered_view_address_to_schema, skipped_view_addresses
         )
         self._verify_non_export_views_have_no_person_external_id_columns(
+            filtered_view_address_to_schema, skipped_view_addresses
+        )
+        self._verify_non_export_views_have_no_gender_columns(
             filtered_view_address_to_schema, skipped_view_addresses
         )
 
@@ -506,6 +519,98 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 f"Found views / tables that do not have an external_id columns but are "
                 f"listed in _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN:"
                 f"{addresses_list}\nThese should be removed from that list (yay!)."
+            )
+
+    @classmethod
+    def _allowed_has_gender_addresses(cls) -> set[BigQueryAddress]:
+        return (
+            # Views that are part of metric exports are allowed to have
+            # gender columns for backwards compatibility with the frontend.
+            cls._metric_export_view_addresses
+            | {PERSON_DEMOGRAPHICS_VIEW_BUILDER.address}
+            | {
+                # These views just mirror our state/normalized_state schemas
+                BigQueryAddress(
+                    dataset_id=dataset,
+                    table_id="state_person_view",
+                )
+                for dataset in [
+                    NORMALIZED_STATE_VIEWS_DATASET,
+                    STATE_BASE_VIEWS_DATASET,
+                ]
+            }
+            # Raw data views can have a gender column because they are just reflecting
+            # the structure of the table data we receive
+            | {
+                BigQueryAddress.from_str(
+                    "us_mi_raw_data_views.ADH_OFFENDER_PROFILE_SUMMARY_WRK_all"
+                ),
+                BigQueryAddress.from_str(
+                    "us_ne_raw_data_up_to_date_views.PIMSCasePlan_latest"
+                ),
+                BigQueryAddress.from_str(
+                    "us_ne_raw_data_views.ORASClientRiskLevelAndNeeds_all"
+                ),
+                BigQueryAddress.from_str("us_ne_raw_data_views.PIMSCasePlan_all"),
+                BigQueryAddress.from_str(
+                    "us_ut_raw_data_views.validation_app_hrchy_listing_all"
+                ),
+                BigQueryAddress.from_str(
+                    "us_ut_raw_data_views.validation_dpo_listing_all"
+                ),
+            }
+        )
+
+    # TODO(#50972): Delete this test once we're confident we've threaded sex through to
+    #  as many places as possible
+    def _verify_non_export_views_have_no_gender_columns(
+        self,
+        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
+        skipped_addresses: set[BigQueryAddress],
+    ) -> None:
+        """Validates that views not part of metric exports don't have columns matching
+        the name "gender".
+        """
+        has_gender_addresses, no_gender_addresses = self._split_by_has_field(
+            view_address_to_schema, "gender", match_type="exact"
+        )
+
+        # Some views are allowed to have gender columns, including raw data tables
+        # (this is just a name we got from the state), state dataset views, and metric
+        # export views.
+        expected_has_gender_addresses = {
+            a
+            for a in (
+                self._allowed_has_gender_addresses()
+                | self._known_non_export_views_with_gender
+            )
+            if a not in skipped_addresses
+        }
+
+        unexpected_has_gender_addresses = (
+            has_gender_addresses - expected_has_gender_addresses
+        )
+        if unexpected_has_gender_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                unexpected_has_gender_addresses, indent_level=2
+            )
+            raise ValueError(
+                f"Found unexpected views with a *gender column that are "
+                f"not part of metric exports:{addresses_list}\n"
+            )
+
+        unexpected_no_gender_addresses = no_gender_addresses.intersection(
+            self._known_non_export_views_with_gender
+        )
+        if unexpected_no_gender_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                unexpected_no_gender_addresses, indent_level=2
+            )
+            raise ValueError(
+                f"Found views / tables that do not have a *gender column "
+                f"but are listed in _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN:"
+                f"{addresses_list}\nThese should be removed from that list in "
+                f"recidiviz/view_registry/deployed_view_gender_col_exemptions.py (yay!)."
             )
 
     def _verify_non_export_views_have_no_person_external_id_columns(
