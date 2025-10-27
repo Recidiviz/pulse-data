@@ -54,3 +54,12 @@ components:
               - 0 2 * * 6,7
             config:
               ingest_instance: PRIMARY
+
+    apps/pagerduty-alert-forwarder:
+      vars:
+        alert_notification_email: s-on-call-engineer
+        pagerduty_services:
+          - "GCP Infrastructure"
+          - "[STAGING] Data Platform Infrastructure"
+          - "[PRODUCTION] Data Platform Infrastructure"
+          - "[Polaris] General Infrastructure"

@@ -1,0 +1,36 @@
+# Configuration for alert forwarder service
+# This file defines rules for routing and transforming Cloud Monitoring alerts to PagerDuty
+
+# Default configuration applied when no rules match
+default:
+  # Default PagerDuty service for unmatched alerts
+  pagerduty_service: "GCP Infrastructure"
+  # Default severity for unmatched alerts
+  severity: info
+
+# Rules are evaluated in order; ALL matching rules are applied
+# Later rules can override actions from earlier rules
+rules:
+  - name: "Stale Metric Exports"
+    match:
+      incident.policy_name: "[OTL] GCS: Metric exports have not been uploaded in 24 hours"
+    actions:
+      title_transform: "[{incident.condition.metric.labels.region}] Stale Metric Exports"
+
+  # Production-specific alerts
+  - name: "Production Alerts"
+    match:
+      incident.resource.labels.project_id: "recidiviz-123"
+    actions:
+      severity: error
+      pagerduty_service: "[PRODUCTION] Data Platform Infrastructure"
+      title_prefix: "🚨 [PRODUCTION]"
+
+  # Staging/test alerts - lower priority
+  - name: "Staging Alerts"
+    match:
+      incident.resource.labels.project_id: "recidiviz-staging"
+    actions:
+      severity: warning
+      pagerduty_service: "[STAGING] Data Platform Infrastructure"
+      title_prefix: "[STAGING]"
