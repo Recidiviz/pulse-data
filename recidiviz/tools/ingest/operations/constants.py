@@ -21,3 +21,4 @@ FILL_CHAR = "-"
 LINE_SEPARATOR = "#" * LINE_WIDTH
 
 RAW_DATA_DIFF_RESULTS_DATASET_ID = "raw_data_comparison_output"
+INGEST_VIEW_DIFF_RESULTS_DATASET_ID = "ingest_view_comparison_output"
