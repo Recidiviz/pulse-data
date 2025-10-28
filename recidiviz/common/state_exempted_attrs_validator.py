@@ -17,7 +17,6 @@
 """Defines a wrapper around any attr field validator that can be used to exempt certain
 states from the validation.
 """
-import logging
 from typing import Any, Callable, Set
 
 import attr
@@ -47,9 +46,5 @@ def state_exempted_validator(
         except Exception as e:
             if state_code not in exempted_states:
                 raise e
-
-            logging.warning(
-                "Found exempted validation error for state [%s]: %s", state_code, e
-            )
 
     return _wrapper

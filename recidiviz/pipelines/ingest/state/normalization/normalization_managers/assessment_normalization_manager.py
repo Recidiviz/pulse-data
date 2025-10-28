@@ -17,7 +17,6 @@
 """Contains the logic for a AssessmentNormalizationManager that manages the normalization
 of StateAssessment entities in the calculation pipelines."""
 import datetime
-import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple, Type
 
@@ -241,10 +240,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.UT_SECURITY_ASSESS,
                 StateAssessmentType.IA_CUSTODY_CLASS,
             ]:
-                logging.warning(
-                    "Cannot determine assessment score bucket - assessment type %s is unsupported.",
-                    assessment_type,
-                )
+                pass
             else:
                 raise ValueError(
                     f"Unexpected unsupported StateAssessmentType: {assessment_type}"
