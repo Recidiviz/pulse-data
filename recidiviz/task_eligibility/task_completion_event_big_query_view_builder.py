@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ class TaskCompletionEventType(Enum):
     CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE = (
         "CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE"
     )
+    CUSTODY_LEVEL_UPGRADE = "CUSTODY_LEVEL_UPGRADE"
     SECURITY_CLASSIFICATION_COMMITTEE_REVIEW = (
         "SECURITY_CLASSIFICATION_COMMITTEE_REVIEW"
     )
@@ -130,6 +131,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM_NOT_OVERDUE,
@@ -205,6 +207,10 @@ class TaskCompletionEventType(Enum):
         ]:
             return DecarceralImpactType.DOWNGRADE_CUSTODY_LEVEL
         if self in [
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
+        ]:
+            return DecarceralImpactType.NO_DECARCERAL_IMPACT
+        if self in [
             TaskCompletionEventType.GRANTED_FURLOUGH,
         ]:
             return DecarceralImpactType.FURLOUGH
@@ -278,6 +284,7 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
             TaskCompletionEventType.EARLY_DISCHARGE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,
@@ -347,6 +354,7 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
             TaskCompletionEventType.EARLY_DISCHARGE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,

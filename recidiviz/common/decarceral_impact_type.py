@@ -21,11 +21,14 @@ from typing import Dict
 
 class DecarceralImpactType(Enum):
     """Represents an overarching type of decarceral impact (defined as a meaningful movement of
-    a justice-impacted individual toward greater liberty), based on the theory of change of Recidiviz tools."""
+    a justice-impacted individual toward greater liberty), based on the theory of change of Recidiviz tools.
+    """
 
     DOWNGRADE_CUSTODY_LEVEL = "DOWNGRADE_CUSTODY_LEVEL"
     DOWNGRADE_SUPERVISION_LEVEL = "DOWNGRADE_SUPERVISION_LEVEL"
     FURLOUGH = "FURLOUGH"
+    # TODO(#50728): Update to reflect appropriate impact type for this completion event
+    NO_DECARCERAL_IMPACT = "NO_DECARCERAL_IMPACT"
     RELEASE_TO_LIBERTY_FROM_SUPERVISION = "RELEASE_TO_LIBERTY_FROM_SUPERVISION"
     RELEASE_TO_PAROLE = "RELEASE_TO_PAROLE"
     SENTENCE_TO_PROBATION = "SENTENCE_TO_PROBATION"
@@ -52,6 +55,8 @@ _DECARCERAL_IMPACT_TYPE_DESCRIPTIONS: Dict[DecarceralImpactType, str] = {
     " downgrade as controlled by state-mandated assessment/classification levels.",
     DecarceralImpactType.FURLOUGH: "Events related to a short-term release to community enabled"
     " by a temporary release policy (e.g., furlough).",
+    DecarceralImpactType.NO_DECARCERAL_IMPACT: "Events related to transitions that do not"
+    " have a decarceral impact.",
     DecarceralImpactType.RELEASE_TO_LIBERTY_FROM_SUPERVISION: "Events related to discharge from"
     " supervision to liberty.",
     DecarceralImpactType.RELEASE_TO_PAROLE: "Events related to release from incarceration"
