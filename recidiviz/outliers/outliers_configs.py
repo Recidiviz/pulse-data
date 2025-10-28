@@ -101,6 +101,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
             ),
         ],
+        # TODO(#51130): Replace with TIMELY_CONTACT_DUE_DATE_BASED once migration is complete
         vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_F2F_CONTACT],
         include_in_outcomes_condition="""COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER', 'TRANSITIONAL')
         AND avg_daily_population BETWEEN 10 AND 150

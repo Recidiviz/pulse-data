@@ -92,8 +92,8 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
             )
         },
         time_periods=[
-            MetricTimePeriodConfig.month_periods(
-                lookback_months=VITALS_METRICS_LOOKBACK_MONTHS
+            MetricTimePeriodConfig.month_periods_rolling_daily(
+                lookback_days=VITALS_METRICS_LOOKBACK_DAYS
             ),
             MetricTimePeriodConfig.day_periods(
                 lookback_days=VITALS_METRICS_LOOKBACK_DAYS
