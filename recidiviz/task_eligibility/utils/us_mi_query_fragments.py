@@ -179,6 +179,14 @@ recent_misconduct_codes AS (
 /* Queries bondable and nonbondable codes within the current housing_unit_session for metadata. */
     SELECT 
         h.person_id,
+        ARRAY_AGG(
+        TO_JSON(STRUCT(bondable_offense AS bondable_offense,
+                b.incident_date AS bondable_incident_date))
+                IGNORE NULLS ORDER BY bondable_offense, b.incident_date) AS json_bondable_offenses_within_6_months,
+        ARRAY_AGG(
+        TO_JSON(STRUCT(nonbondable_offense AS nonbondable_offense,
+                n.incident_date AS nonbondable_incident_date))
+                IGNORE NULLS ORDER BY nonbondable_offense, n.incident_date) AS json_nonbondable_offenses_within_1_year,
         CONCAT('(',
             STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(b.incident_date))),
         ')') AS bondable_offenses_within_6_months,
@@ -411,6 +419,9 @@ SELECT
             ELSE 'Other Segregation'
     END AS metadata_solitary_session_type,
     (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
+    rm.json_bondable_offenses_within_6_months AS metadata_json_bondable_offenses_within_6_months,
+    rm.json_nonbondable_offenses_within_1_year AS metadata_json_nonbondable_offenses_within_1_year,
+    #TODO(#51218) remove once frontend is updated to json field
     rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
     rm.nonbondable_offenses_within_1_year AS metadata_recent_nonbondable_offenses,
     #TODO(#51218) remove once frontend is updated to json field
