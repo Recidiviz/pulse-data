@@ -52,10 +52,7 @@ ROOT_ENTITY_IDS_KEY = "root_entity_ids"
 # These states actually have issues in real ingested data where we are
 # referencing supervisors that are not real. They need to be fixed before we can
 # strictly hydrate supervisor_staff_id on StateStaffSupervisorPeriods
-_STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS: set[StateCode] = {
-    # TODO(#46144): Fix invalid supervisors for US_TN and then remove this exemption.
-    StateCode.US_TN,
-}
+_STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS: set[StateCode] = set()
 
 
 class CreateRootEntityIdToStaffIdMapping(beam.PTransform, Generic[RootEntityT]):
