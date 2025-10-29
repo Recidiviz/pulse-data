@@ -728,7 +728,10 @@ def eligible_and_almost_eligible_minus_referrals(
 
 
 def get_warrants_and_detainers_query(
-    order_types: list, criteria_name: str, description: str
+    order_types: list,
+    criteria_name: str,
+    description: str,
+    remove_misdemeanor_detainers: bool = False,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """
     Returns a SQL query that creates a warrants and detainers criteria.
@@ -761,6 +764,8 @@ def get_warrants_and_detainers_query(
         AND SAFE_CAST(LEFT(e.OFFENSE_DATE, 10) AS DATE) < {nonnull_end_date_exclusive_clause('iss.end_date')}
     WHERE e.ORDER_TYPE IN {tuple(order_types)}
         AND e.OFFENSE_STATUS != 'C'
+        -- Removing misdemeanor detainers if specified
+        {"AND e.OFFENSE_DESC NOT LIKE '%(M)%'" if remove_misdemeanor_detainers else ""}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id, e.OFFENSE_DATE ORDER BY {nonnull_end_date_exclusive_clause('iss.end_date')} ASC) = 1
     
 ),
