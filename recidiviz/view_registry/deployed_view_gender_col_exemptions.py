@@ -34,15 +34,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_single_day_dataflow_metrics import (
     MOST_RECENT_SINGLE_DAY_METRICS_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.lantern_revocations_matrix.revocations_matrix_by_person import (
-    REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.lantern_revocations_matrix.supervision_matrix_by_person import (
-    SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.lantern_revocations_matrix.supervision_termination_matrix_by_person import (
-    SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_resident_population import (
     STATE_RESIDENT_POPULATION_VIEW_BUILDER,
 )
@@ -117,10 +108,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
         dataset_id="externally_shared_views",
         table_id="csg_compartment_sessions",
     ): "TODO(#50972): This is auto-generated - will be fixed when compartment_sessions is migrated",
-    # lantern_revocations_matrix views
-    REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # observations views
     VIOLATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     COMPARTMENT_SUB_SESSION_OBSERVATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
