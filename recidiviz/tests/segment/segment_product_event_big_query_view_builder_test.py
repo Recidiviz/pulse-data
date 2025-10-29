@@ -20,6 +20,7 @@ import unittest
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_config import (
     SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS,
+    get_product_types_for_event,
 )
 from recidiviz.segment.segment_product_event_big_query_view_collector import (
     SegmentProductEventBigQueryViewCollector,
@@ -34,10 +35,11 @@ class SegmentProductEventBigQueryViewBuilderTest(unittest.TestCase):
 
     def test_segment_event_source_table_is_valid_source_table_address(self) -> None:
         """Test that the segment_event_source_table is a valid source table address for all segment event builders."""
+        valid_source_table_addresses = get_all_source_table_addresses()
         for (
             builder
         ) in SegmentProductEventBigQueryViewCollector().collect_view_builders():
-            if builder.segment_table_sql_source not in get_all_source_table_addresses():
+            if builder.segment_table_sql_source not in valid_source_table_addresses:
                 raise ValueError(
                     f"Invalid source table `{builder.segment_table_sql_source.to_str()}` "
                     f"found as segment_event_source_table for `{builder.view_id}` "
@@ -85,9 +87,7 @@ class SegmentProductEventBigQueryViewBuilderTest(unittest.TestCase):
             event_name,
             relevant_products,
         ) in configured_segment_events_to_products.items():
-            expected_relevant_products = (
-                SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS.get(event_name) or []
-            )
+            expected_relevant_products = get_product_types_for_event(event_name)
             if set(relevant_products) != set(expected_relevant_products):
                 raise ValueError(
                     f"Mismatch for segment event name `{event_name}`: "

@@ -15,19 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines segment event names and their associated product types."""
-from collections import defaultdict
-
 from recidiviz.segment.product_type import ProductType
 
 
-def get_segment_event_types_by_product() -> dict[ProductType, list[str]]:
-    """Collects event types by product type."""
-    event_types_by_product = defaultdict(list)
-    for event, product_types in SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS.items():
-        for product_type in product_types:
-            event_types_by_product[product_type].append(event)
-
-    return event_types_by_product
+def get_product_types_for_event(event: str) -> list[ProductType]:
+    """Return the list of supported product types based on the event name."""
+    return SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS[event]
 
 
 SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
@@ -55,7 +48,9 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
         ProductType.WORKFLOWS,
     ],
     "frontend_milestones_congratulations_sent": [ProductType.MILESTONES],
+    "frontend_milestones_congratulated_another_way": [ProductType.MILESTONES],
     "frontend_milestones_message_declined": [ProductType.MILESTONES],
+    "frontend_milestones_side_panel_opened": [ProductType.MILESTONES],
     "frontend_milestones_tab_clicked": [ProductType.MILESTONES],
     "frontend_opportunity_approval_actions": [
         ProductType.CLIENT_PAGE,

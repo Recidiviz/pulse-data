@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.segment.product_type import ProductType
-from recidiviz.segment.segment_event_config import get_segment_event_types_by_product
+from recidiviz.segment.segment_event_config import get_product_types_for_event
 
 # The first US_IX export for workflows was on 1/11 in staging and 1/17 in prod.
 # For simplicity, use the prod date.
@@ -43,14 +43,13 @@ def _get_product_type_case_when_statement_pages() -> str:
     return product_type_query_fragment
 
 
-def _get_product_type_case_when_statement_usage_event() -> str:
+def _get_product_type_case_when_statement_usage_event(event_name: str) -> str:
     """Loops through products having segment usage events and uses a combination of
     context page and event type to assign the correct product."""
     product_type_conditionals = [
         f"""WHEN {product_type.context_page_filter_query_fragment(context_page_url_col_name='context_page_url')}
-    AND event in ({list_to_query_string(events, quoted=True)})
   THEN '{product_type.value}'"""
-        for product_type, events in get_segment_event_types_by_product().items()
+        for product_type in get_product_types_for_event(event_name)
     ]
     product_type_conditionals.append('ELSE "UNKNOWN_PRODUCT_TYPE"')
     product_type_query_fragment = (
@@ -85,9 +84,12 @@ def build_segment_event_view_query_template(
         # If JII ID columns are specified, only include events with non-null ID's
         person_id_join_type = "INNER"
 
-    product_type_clause = _get_product_type_case_when_statement_usage_event()
     if segment_table_sql_source.table_id == "pages":
         product_type_clause = _get_product_type_case_when_statement_pages()
+    else:
+        product_type_clause = _get_product_type_case_when_statement_usage_event(
+            segment_table_sql_source.table_id
+        )
     template = f"""
 SELECT
     state_code,
