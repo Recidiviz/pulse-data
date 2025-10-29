@@ -95,6 +95,12 @@ const getAllVersionChanges = (
   }, {} as { [systemVersion: string]: string });
 };
 
+const getLineageNodeLink = (validationName: string): string => {
+  const env = gcpEnvironment.isProduction ? "production" : "staging";
+  const datasetId = "validation_views";
+  return `https://go/lineage-${env}/${datasetId}.${validationName}`;
+};
+
 const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   validationName,
   stateCode,
@@ -148,6 +154,8 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   const validationLogLink =
     latestRecord &&
     getValidationLogLink(validationName, stateCode, latestRecord.getTraceId());
+
+  const lineageNodeLink = getLineageNodeLink(validationName);
 
   // Note, this will still show a version change even if the view update failed and so
   // not all the changes from that version had taken effect.
@@ -204,6 +212,11 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
             </Descriptions.Item>
             <Descriptions.Item label="Description" span={3}>
               {validationDescription}
+            </Descriptions.Item>
+            <Descriptions.Item label="Lineage" span={3}>
+              <Link to={{ pathname: lineageNodeLink }} target="_blank">
+                Lineage Explorer
+              </Link>
             </Descriptions.Item>
             {validationLogLink && (
               <Descriptions.Item label="Log" span={3}>
