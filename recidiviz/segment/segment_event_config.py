@@ -57,6 +57,10 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_milestones_congratulations_sent": [ProductType.MILESTONES],
     "frontend_milestones_message_declined": [ProductType.MILESTONES],
     "frontend_milestones_tab_clicked": [ProductType.MILESTONES],
+    "frontend_opportunity_approval_actions": [
+        ProductType.CLIENT_PAGE,
+        ProductType.WORKFLOWS,
+    ],
     "frontend_opportunity_marked_eligible": [
         ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
