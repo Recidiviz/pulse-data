@@ -85,9 +85,6 @@ from recidiviz.observations.views.events.person.violation import (
 from recidiviz.observations.views.spans.person.compartment_sub_session import (
     VIEW_BUILDER as COMPARTMENT_SUB_SESSION_OBSERVATION_VIEW_BUILDER,
 )
-from recidiviz.observations.views.spans.person.person_demographics import (
-    VIEW_BUILDER as PERSON_DEMOGRAPHICS_OBSERVATION_VIEW_BUILDER,
-)
 from recidiviz.utils import metadata
 from recidiviz.validation.views.state.incarceration_population_by_demographic_internal_comparison import (
     INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER,
@@ -127,7 +124,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
     # observations views
     VIOLATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     COMPARTMENT_SUB_SESSION_OBSERVATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    PERSON_DEMOGRAPHICS_OBSERVATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # reference_views views
     STATE_RESIDENT_POPULATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",

@@ -244,7 +244,7 @@ AVG_DAILY_POPULATION_FEMALE = DailyAvgSpanCountMetric(
     description="Average daily count of female clients in the population",
     span_selector=SpanSelector(
         span_type=SpanType.PERSON_DEMOGRAPHICS,
-        span_conditions_dict={"gender": ["FEMALE"]},
+        span_conditions_dict={"sex": ["FEMALE"]},
     ),
 )
 
