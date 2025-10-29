@@ -115,7 +115,7 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
         return "", HTTPStatus.OK
 
     @workflows_etl_blueprint.route("/_run_firestore_etl", methods=["POST"])
-    def _run_firestore_etl() -> Tuple[str, HTTPStatus]:
+    async def _run_firestore_etl() -> Tuple[str, HTTPStatus]:
         """This endpoint is triggered by a CloudTask created by _handle_workflows_firestore_etl"""
         body = get_cloud_task_json_body()
         filename = body.get("filename")
@@ -130,7 +130,7 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
         for delegate in get_workflows_delegates(StateCode(state_code)):
             try:
                 if delegate.supports_file(filename):
-                    delegate.run_etl(filename)
+                    await delegate.run_etl(filename)
             except ValueError as e:
                 logging.error(str(e))
                 logging.info(

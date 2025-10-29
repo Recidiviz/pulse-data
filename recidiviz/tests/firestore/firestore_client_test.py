@@ -36,6 +36,9 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.client_patcher = mock.patch(
             "recidiviz.firestore.firestore_client.firestore_v1.Client"
         )
+        self.async_client_patcher = mock.patch(
+            "recidiviz.firestore.firestore_client.firestore_v1.AsyncClient"
+        )
         self.admin_client_patcher = mock.patch(
             "recidiviz.firestore.firestore_client.firestore_admin_v1.FirestoreAdminClient"
         )
@@ -45,6 +48,7 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.client_fn.return_value = self.mock_client
         self.admin_client_fn = self.admin_client_patcher.start()
         self.admin_client_fn.return_value = self.mock_admin_client
+        self.async_client_patcher.start()
 
         self.firestore_client = FirestoreClientImpl(project_id=self.mock_project_id)
 
@@ -52,6 +56,7 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.client_patcher.stop()
         self.metadata_patcher.stop()
         self.admin_client_fn.stop()
+        self.async_client_patcher.stop()
 
     @mock.patch(
         "recidiviz.firestore.firestore_client.assert_type",

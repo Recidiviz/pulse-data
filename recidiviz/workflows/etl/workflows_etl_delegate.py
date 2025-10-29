@@ -20,11 +20,13 @@ import abc
 import logging
 import os
 import re
+from asyncio import TaskGroup
 from datetime import datetime, timezone
 from typing import IO, Dict, Iterator, List, Optional, Tuple
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.firestore_admin_v1 import CreateIndexRequest, Index
+from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -34,9 +36,11 @@ from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECT
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
-# Firestore client caps us at 500 records per batch. We've run into transaction size limits with
-# this being set to 499, 400, 200 and 100 so it's now set to 50.
-MAX_FIRESTORE_RECORDS_PER_BATCH = 50
+# batches can be up to 500 documents but writes are more stable with smaller batches.
+# effect on speed is not that significant for async ops anyway. 20 is a default elsewhere
+# in the Firestore SDK (e.g. the BulkWriter, which we are not using here because it is too
+# unstable in other ways)
+MAX_FIRESTORE_RECORDS_PER_BATCH = 20
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -50,7 +54,7 @@ class WorkflowsETLDelegate(abc.ABC):
         """Provides list of source files supported for the given state."""
 
     @abc.abstractmethod
-    def run_etl(self, filename: str) -> None:
+    async def run_etl(self, filename: str) -> None:
         """Runs the ETL logic for the provided filename and state_code."""
 
     def supports_file(self, filename: str) -> bool:
@@ -128,7 +132,13 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         doc_id = re.sub(r"[^a-z0-9_-]", "", doc_id)
         return doc_id
 
-    def run_etl(self, filename: str) -> None:
+    total_records_written = 0
+
+    async def _send_batch(self, batch: AsyncWriteBatch) -> None:
+        await batch.commit()
+        self.total_records_written += len(batch)
+
+    async def run_etl(self, filename: str) -> None:
         collection_name = self.COLLECTION_BY_FILENAME[filename]
 
         logging.info(
@@ -137,52 +147,50 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
             collection_name,
         )
         firestore_client = FirestoreClientImpl()
-        batch = firestore_client.batch()
         firestore_collection = firestore_client.get_collection(collection_name)
         num_records_to_write = 0
-        total_records_written = 0
+        self.total_records_written = 0
 
         etl_timestamp = datetime.now(timezone.utc)
 
         # step 1: Load new documents
-        for file_stream in self.get_file_stream(filename):
-            while line := file_stream.readline():
-                try:
-                    row_id, document_fields = self.transform_row(line)
-                except Exception as e:
-                    logging.error(
-                        "Transform row failed on [%s] due to: %s", line, str(e)
-                    )
-                    continue
+        try:
+            async with TaskGroup() as tg:
+                batch = firestore_client.async_batch()
+                for file_stream in self.get_file_stream(filename):
+                    while line := file_stream.readline():
+                        try:
+                            row_id, document_fields = self.transform_row(line)
+                        except Exception as e:
+                            logging.error(
+                                "Transform row failed on [%s] due to: %s", line, str(e)
+                            )
+                            continue
 
-                if row_id is None or document_fields is None:
-                    continue
-                document_id = self.doc_id_for_row_id(row_id)
-                new_document = {
-                    **document_fields,
-                    self.timestamp_key: etl_timestamp,
-                }
-                batch.set(firestore_collection.document(document_id), new_document)
-                num_records_to_write += 1
-                total_records_written += 1
+                        if row_id is None or document_fields is None:
+                            continue
+                        document_id = self.doc_id_for_row_id(row_id)
+                        new_document = {
+                            **document_fields,
+                            self.timestamp_key: etl_timestamp,
+                        }
+                        batch.set(
+                            firestore_collection.document(document_id), new_document
+                        )
+                        num_records_to_write += 1
 
-                if num_records_to_write >= MAX_FIRESTORE_RECORDS_PER_BATCH:
-                    batch.commit()
-                    batch = firestore_client.batch()
-                    logging.info(
-                        '%d total records written to Firestore collection "%s".',
-                        total_records_written,
-                        collection_name,
-                    )
-                    num_records_to_write = 0
+                        if num_records_to_write >= MAX_FIRESTORE_RECORDS_PER_BATCH:
+                            tg.create_task(self._send_batch(batch))
+                            batch = firestore_client.async_batch()
+                            num_records_to_write = 0
 
-        batch.commit()
-        logging.info(
-            '%d total records written to Firestore collection "%s".',
-            total_records_written,
-            collection_name,
-        )
-
+                tg.create_task(self._send_batch(batch))
+        finally:
+            logging.info(
+                '%d total records written to Firestore collection "%s".',
+                self.total_records_written,
+                collection_name,
+            )
         # step 2: Create composite indexes if they do not exist
         if not firestore_client.index_exists_for_collection(collection_name):
             try:

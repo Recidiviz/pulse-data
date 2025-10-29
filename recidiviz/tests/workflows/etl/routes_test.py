@@ -27,6 +27,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
+from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
 
 
 class TestWorkflowsETLRoutes(unittest.TestCase):
@@ -160,7 +161,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
 
     @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
     def test_run_firestore_etl(self, mock_get_delegates: MagicMock) -> None:
-        mock_delegate = MagicMock()
+        mock_delegate = MagicMock(WorkflowsETLDelegate)
         mock_get_delegates.return_value = [mock_delegate]
         state_code = "US_XX"
         filename = "test_file.json"

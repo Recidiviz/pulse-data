@@ -18,10 +18,11 @@
 import json
 import os
 from datetime import datetime, timezone
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
+from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
@@ -33,7 +34,7 @@ from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
 )
 
 
-class WorkflowsResidentETLDelegateTest(TestCase):
+class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
     """
     Test class for the WorkflowsResidentETLDelegate
     """
@@ -295,17 +296,18 @@ class WorkflowsResidentETLDelegateTest(TestCase):
         self.assertEqual(doc_id, "TEST123")
         self.assertIsNone(row["gender"])
 
+    @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
     @patch("google.cloud.firestore_v1.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
-    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.async_batch")
     @patch(
         "recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents"
     )
     @patch(
         "recidiviz.workflows.etl.workflows_etl_delegate.WorkflowsETLDelegate.get_file_stream"
     )
-    def test_run_etl_imports_with_document_id(
+    async def test_run_etl_imports_with_document_id(
         self,
         mock_get_file_stream: MagicMock,
         _mock_delete_old_documents: MagicMock,
@@ -313,9 +315,10 @@ class WorkflowsResidentETLDelegateTest(TestCase):
         mock_get_collection: MagicMock,
         _mock_firestore_resident: MagicMock,
         _mock_firestore_admin_resident: MagicMock,
+        _mock_firestore_async_client: MagicMock,
     ) -> None:
         """Tests that the ETL Delegate for Resident imports the collection with the document ID."""
-        mock_batch_set = MagicMock()
+        mock_batch_set = MagicMock(AsyncWriteBatch)
         mock_batch_writer.return_value = mock_batch_set
         mock_get_file_stream.return_value = [FakeFileStream(1)]
         mock_collection = MagicMock()
@@ -331,7 +334,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
         ) as mock_transform:
             mock_transform.return_value = (123, {"personExternalId": 123})
             delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
-            delegate.run_etl("resident_record.json")
+            await delegate.run_etl("resident_record.json")
             mock_collection.document.assert_called_once_with(document_id)
             mock_batch_set.set.assert_called_once_with(
                 mock_document_ref,

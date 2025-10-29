@@ -16,10 +16,11 @@
 #  =============================================================================
 """Tests for the Firestore Demo ETL Delegate."""
 from typing import Dict, List, Optional, Tuple
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import mock_open, patch
 
 import mock.mock
+from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
 
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.demo_data import load_all_demo_data, load_demo_fixture
@@ -51,41 +52,45 @@ class FakeFileStream:
         return str(self.values_written)
 
 
+@patch("google.cloud.firestore_v1.AsyncClient")
 @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
 @patch("google.cloud.firestore_v1.Client")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
-@patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
+@patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.async_batch")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents")
-class WorkflowsDemoDataTest(TestCase):
+class WorkflowsDemoDataTest(IsolatedAsyncioTestCase):
     """Tests for the Firestore demo ETL feature."""
 
     @patch("recidiviz.workflows.etl.demo_data.open", mock_open())
-    def test_uses_demo_collection(
+    async def test_uses_demo_collection(
         self,
         _mock_delete_old_documents: mock.MagicMock,
-        _mock_batch_method: mock.MagicMock,
+        mock_batch_method: mock.MagicMock,
         mock_get_collection: mock.MagicMock,
         _mock_firestore_client: mock.MagicMock,
         _mock_firestore_admin_client: mock.MagicMock,
+        _mock_firestore_async_client: mock.MagicMock,
     ) -> None:
         """Tests that the ETL Delegate uses collection with a demo prefix"""
+        mock_batch_method.return_value = mock.MagicMock(AsyncWriteBatch)
 
         with local_project_id_override("test-project"):
-            load_demo_fixture(TestETLDelegate, "US_TN", "test_export.json")
+            await load_demo_fixture(TestETLDelegate, "US_TN", "test_export.json")
 
         mock_get_collection.assert_called_once_with("DEMO_test_collection")
 
-    def test_fixtures(
+    async def test_fixtures(
         self,
         _mock_delete_old_documents: mock.MagicMock,
         mock_batch_method: mock.MagicMock,
         _mock_get_collection: mock.MagicMock,
         _mock_firestore_client: mock.MagicMock,
         _mock_firestore_admin_client: mock.MagicMock,
+        _mock_firestore_async_client: mock.MagicMock,
     ) -> None:
         """Verifies that the delegates used for demo data can process their fixtures successfully"""
 
-        mock_batch_writer = mock.MagicMock()
+        mock_batch_writer = mock.MagicMock(AsyncWriteBatch)
         mock_batch_method.return_value = mock_batch_writer
 
         with local_project_id_override("test-project"):
@@ -93,7 +98,7 @@ class WorkflowsDemoDataTest(TestCase):
             # not a 100% guarantee that the demo data will be OK but should at least catch
             # the nastiest surprises (like there are new expected fields that haven't been
             #  added to the fixture)
-            load_all_demo_data()
+            await load_all_demo_data()
 
         # sanity check that all the pipelines ran: there are three fixtures,
         # we expect one commit for each since they are within the batch limit

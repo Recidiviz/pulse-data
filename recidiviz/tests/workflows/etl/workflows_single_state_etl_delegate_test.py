@@ -34,7 +34,7 @@ class TestSingleStateETLDelegate(WorkflowsSingleStateETLDelegate):
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         return (None, None)
 
-    def run_etl(self, _filename: str) -> None:
+    async def run_etl(self, _filename: str) -> None:
         pass
 
 

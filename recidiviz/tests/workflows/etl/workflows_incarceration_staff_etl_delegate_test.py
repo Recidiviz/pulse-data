@@ -17,10 +17,11 @@
 """Tests the ability for IncarcerationStaffRecordEtlDelegate to parse json rows."""
 import os
 from datetime import datetime, timezone
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
+from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
@@ -32,7 +33,7 @@ from recidiviz.workflows.etl.workflows_incarceration_staff_etl_delegate import (
 )
 
 
-class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
+class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
     """
     Test class for the WorkflowsIncarcerationStaffETLDelegate
     """
@@ -135,17 +136,18 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
                 },
             )
 
+    @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
     @patch("google.cloud.firestore_v1.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
-    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.async_batch")
     @patch(
         "recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents"
     )
     @patch(
         "recidiviz.workflows.etl.workflows_etl_delegate.WorkflowsETLDelegate.get_file_stream"
     )
-    def test_run_etl_imports_with_document_id(
+    async def test_run_etl_imports_with_document_id(
         self,
         mock_get_file_stream: MagicMock,
         _mock_delete_old_documents: MagicMock,
@@ -153,9 +155,10 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
         mock_get_collection: MagicMock,
         _mock_firestore_client: MagicMock,
         _mock_firestore_admin_client: MagicMock,
+        _mock_firestore_async_client: MagicMock,
     ) -> None:
         """Tests that the ETL Delegate for Staff imports the collection with the document ID."""
-        mock_batch_set = MagicMock()
+        mock_batch_set = MagicMock(AsyncWriteBatch)
         mock_batch_writer.return_value = mock_batch_set
         mock_get_file_stream.return_value = [FakeFileStream(1)]
         mock_collection = MagicMock()
@@ -171,7 +174,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(TestCase):
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
                     delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_TN)
-                    delegate.run_etl("incarceration_staff_record.json")
+                    await delegate.run_etl("incarceration_staff_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

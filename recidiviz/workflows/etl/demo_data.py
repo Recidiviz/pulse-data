@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Classes defining delegate interface and implementations for ETLing demo data into Firestore."""
+import asyncio
 import logging
 from pathlib import Path
 from typing import IO, Dict, Iterator
@@ -31,7 +32,7 @@ from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
 )
 
 
-def load_demo_fixture(
+async def load_demo_fixture(
     delegate_cls: type[WorkflowsFirestoreETLDelegate], state_code: str, filename: str
 ) -> None:
     """Uses the ETL logic in the delegate, but substitutes a local fixture file as the data source
@@ -59,17 +60,17 @@ def load_demo_fixture(
             return {k: f"DEMO_{v}" for k, v in originalMapping.items()}
 
     delegate = DemoDelegate(StateCode(state_code))
-    delegate.run_etl(filename)
+    await delegate.run_etl(filename)
 
 
-def load_all_demo_data() -> None:
-    load_demo_fixture(WorkflowsClientETLDelegate, "US_TN", "client_record.json")
-    load_demo_fixture(
+async def load_all_demo_data() -> None:
+    await load_demo_fixture(WorkflowsClientETLDelegate, "US_TN", "client_record.json")
+    await load_demo_fixture(
         WorkflowsOpportunityETLDelegate,
         "US_TN",
         "us_tn_supervision_level_downgrade_record.json",
     )
-    load_demo_fixture(
+    await load_demo_fixture(
         WorkflowsOpportunityETLDelegate,
         "US_TN",
         "us_tn_full_term_supervision_discharge_record.json",
@@ -79,4 +80,4 @@ def load_all_demo_data() -> None:
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        load_all_demo_data()
+        asyncio.run(load_all_demo_data())

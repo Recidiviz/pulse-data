@@ -28,7 +28,7 @@ class TestETLDelegate(WorkflowsETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["export_filename.json"]
 
-    def run_etl(self, _filename: str) -> None:
+    async def run_etl(self, _filename: str) -> None:
         pass
 
 

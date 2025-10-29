@@ -23,7 +23,7 @@ from typing import Dict, List, Optional, Union
 
 from google.api_core.operation import Operation
 from google.cloud import firestore_admin_v1, firestore_v1
-from google.cloud.firestore_v1 import FieldFilter
+from google.cloud.firestore_v1 import AsyncWriteBatch, FieldFilter
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
 from google.cloud.firestore_v1.query import BaseQuery, CollectionGroup
@@ -68,6 +68,10 @@ class FirestoreClient(abc.ABC):
     @abc.abstractmethod
     def batch(self) -> firestore_v1.WriteBatch:
         """Returns a batch for writing to Firestore."""
+
+    @abc.abstractmethod
+    def async_batch(self) -> AsyncWriteBatch:
+        """Returns a batch for writing to Firestore async."""
 
     @abc.abstractmethod
     def list_collections_with_indexes(self) -> List[str]:
@@ -122,6 +126,7 @@ class FirestoreClientImpl(FirestoreClient):
         # (default) is the database name automatically assigned by Firestore to the default database in a project.
         self.database_name = "(default)"
         self.client = firestore_v1.Client(project=self.project_id)
+        self.async_client = firestore_v1.AsyncClient(project=self.project_id)
         self.admin_client = firestore_admin_v1.FirestoreAdminClient()
 
     @property
@@ -152,6 +157,9 @@ class FirestoreClientImpl(FirestoreClient):
 
     def batch(self) -> firestore_v1.WriteBatch:
         return self.client.batch()
+
+    def async_batch(self) -> AsyncWriteBatch:
+        return self.async_client.batch()
 
     def list_collections_with_indexes(self) -> List[str]:
         # Collection ID is set to 'all' in the request because `list_indexes` always prints all the

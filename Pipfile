@@ -145,7 +145,7 @@ alembic = "*"
 # if this version is bumped or changed, the sqlalchmey version in
 # recidiviz/pipelines/dataflow_flex_setup.py must be changed as well.
 sqlalchemy = ">=1.4.25, <2.0.0"
-flask = ">=2.0.0"
+flask = { extras = ["async"], version = ">=2.0.0" }
 Flask-Limiter = "*"
 Flask-SQLAlchemy-Session = "*"
 Flask-WTF = "*"
