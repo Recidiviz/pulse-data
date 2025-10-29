@@ -88,7 +88,7 @@ meets_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         is_missing_annual_assessment.VIEW_BUILDER,
     ],
 )
-
+# TODO(#51098): Rethink our candidate population
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_assessment",
