@@ -25,8 +25,10 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -34,7 +36,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
-    critical_date_spans_cte,
 )
 
 
@@ -318,88 +319,44 @@ def acis_date_not_set_criteria_builder(
         "STANDARD TRANSITION RELEASE",
         "DRUG TRANSITION RELEASE",
     ], "task_subtype must be 'STANDARD TRANSITION RELEASE' or 'DRUG TRANSITION RELEASE'"
-
     if task_subtype == "STANDARD TRANSITION RELEASE":
         task = "TPR"
+        acis_date = "acis_tpr_date"
     else:
         task = "DTP"
+        acis_date = "acis_dtp_date"
 
     _REASONS_FIELDS = [
         ReasonsField(
-            name=f"{task.lower()}_statutes",
-            type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description=f"{task}: Relevant statutes associated with the transition release",
-        ),
-        ReasonsField(
-            name=f"{task.lower()}_descriptions",
-            type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description=f"{task}: Descriptions of relevant statutes associated with the transition release",
-        ),
-        ReasonsField(
             name=f"{task.lower()}_latest_acis_update_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description=f"{task}: Most recent date ACIS date was set",
+            description=f"{task}: Most recent datetime ACIS date was set",
+        ),
+        ReasonsField(
+            name=f"{task.lower()}_latest_acis_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description=f"{task}: Most recent ACIS date",
         ),
     ]
-
+    _TBL = "`{project_id}.{analyst_data}.us_az_projected_dates_materialized`"
     _QUERY_TEMPLATE = f"""
-    WITH acis_set_date AS (
-        SELECT
-            state_code,
-            person_id,
-            JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') AS sentence_group_external_id,
-            SAFE_CAST(MIN(update_datetime) AS DATE) AS acis_set_date,
-        FROM `{{project_id}}.normalized_state.state_task_deadline`
-        WHERE task_type = 'DISCHARGE_FROM_INCARCERATION_MIN' 
-            AND task_subtype = '{task_subtype}'
-            AND state_code = 'US_AZ' 
-            AND eligible_date IS NOT NULL 
-            AND eligible_date > '1900-01-01'
-        GROUP BY state_code, person_id, task_metadata, sentence_group_external_id
-    ),
-
-    sentences_preprocessed AS (
-        {us_az_sentences_preprocessed_query_template()}
-    ),
-
-    sentences_with_an_acis_date AS (
-        -- This identifies all sentences who have already had a TPR date set.
-        SELECT 
-            sent.person_id,
-            sent.state_code,
-            # Add 1 day to the acis_set_date to account for the ingest delay
-            DATE_ADD(asd.acis_set_date, INTERVAL 1 DAY) AS start_date,
-            sent.end_date,
-            sent.statute,
-            sent.description,
-            asd.acis_set_date,
-        FROM sentences_preprocessed sent
-        INNER JOIN acis_set_date asd
-            ON sent.person_id = asd.person_id
-                AND sent.state_code = asd.state_code
-                and sent.sentence_group_external_id = asd.sentence_group_external_id
-        -- We don't pull sentences where their end_date is the same date as the acis_set_date
-        WHERE DATE_ADD(asd.acis_set_date, INTERVAL 1 DAY) != {nonnull_end_date_clause('sent.end_date')}
-    ),
-
-    {create_sub_sessions_with_attributes('sentences_with_an_acis_date')}
-    
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        False AS meets_criteria,
-        TO_JSON(STRUCT(
-            STRING_AGG(statute, ', ' ORDER BY statute) AS {task.lower()}_statutes,
-            STRING_AGG(description, ', ' ORDER BY description) AS {task.lower()}_descriptions,
-            MAX(acis_set_date) AS {task.lower()}_latest_acis_update_date
+    SELECT
+      state_code,
+      person_id,
+      start_date,
+      end_date,
+      FALSE AS meets_criteria,
+      TO_JSON(STRUCT(
+            {acis_date} AS {task.lower()}_latest_acis_date,
+            start_date AS {task.lower()}_latest_acis_update_date
         )) AS reason,
-        STRING_AGG(statute, ', ' ORDER BY statute) AS {task.lower()}_statutes,
-        STRING_AGG(description, ', ' ORDER BY description) AS {task.lower()}_descriptions,
-        MAX(acis_set_date) AS {task.lower()}_latest_acis_update_date
-    FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4
+     start_date AS {task.lower()}_latest_acis_update_date,
+     {acis_date} AS {task.lower()}_latest_acis_date,
+    FROM
+      # We want to aggregate over our projected dates view to focus aggregation over the ACIS date rather than all dates
+      # as is done in the original view
+      ({aggregate_adjacent_spans(_TBL, attribute=acis_date)})
+    WHERE {acis_date} IS NOT NULL
     """
 
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -409,6 +366,7 @@ def acis_date_not_set_criteria_builder(
         criteria_spans_query_template=_QUERY_TEMPLATE,
         meets_criteria_default=True,
         reasons_fields=_REASONS_FIELDS,
+        analyst_data=ANALYST_VIEWS_DATASET,
     )
 
 
@@ -861,77 +819,46 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
         """
 
 
-def incarceration_past_early_release_date(opp_name: str) -> str:
+def incarceration_past_early_release_date(
+    opp_name: str, leading_window_time: int = 0, date_part: str = "DAY"
+) -> str:
+    """
+    Args:
+        opp_name: Name of the opportunity
+        leading_window_time: X time before someone can be eligible
+        date_part: one of ["MONTH", "DAY", "YEAR"]
+
+    Returns:
+        Spans of time when someone is within x months of their critical date. This defaults to spans of time
+        before and after a critical date.
+    """
     assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
     if opp_name.upper() == "TPR":
-        task_subtype = "STANDARD TRANSITION RELEASE"
+        acis_date = "acis_tpr_date"
     else:
-        task_subtype = "DRUG TRANSITION RELEASE"
+        acis_date = "acis_dtp_date"
     return f"""
-    WITH
-      most_recent_acis_date_status AS (
-            SELECT
-                std.state_code,
-                std.person_id,
-                std.eligible_date AS critical_date,
-                CAST(DATE_ADD(std.update_datetime, INTERVAL 1 DAY) AS DATE) AS update_datetime
-            FROM `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline` std
-            INNER JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
-                ON iss.person_id = std.person_id
-                    AND iss.state_code = std.state_code
-                    AND std.update_datetime BETWEEN iss.start_date AND IFNULL(iss.end_date_exclusive, '9999-12-31')
-            WHERE task_type = 'DISCHARGE_FROM_INCARCERATION_MIN' 
-                    AND task_subtype = "{task_subtype}"
-                    AND std.state_code = 'US_AZ' 
-             -- Filters to grab the most recent ACIS date status for a given resident in a given incarceration stint
-            QUALIFY ROW_NUMBER() OVER (PARTITION BY std.person_id, std.state_code, iss.incarceration_super_session_id 
-                                            ORDER BY std.update_datetime DESC ) = 1
-        ),
-        critical_date_update_datetimes AS (
-        SELECT
-            state_code,
-            person_id,
-            critical_date,
-            update_datetime
-        FROM most_recent_acis_date_status
-        -- After filtering to get the most recent ACIS status, we only want folks who currently have an active ACIS date
-        WHERE critical_date IS NOT NULL 
-                AND critical_date > '1900-01-01'
-        ),
-        {critical_date_spans_cte()},
-        critical_date_spans_within_100_days_of_date AS (
-            SELECT 
-                state_code,
-                person_id,
-                critical_date,
-                start_datetime,
-                -- If the end_datetime is within 100 days of the critical_date, use the end_datetime
-                -- Otherwise, use the critical_date + 100 days. That way people only stay eligible
-                -- for 100 days after their relevant date. After that, they've likely loss their 
-                -- eligibility for a transition release.
-                IF(
-                    DATE_ADD(critical_date, INTERVAL 100 DAY) BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31'),
-                    LEAST(IFNULL(end_datetime, '9999-12-31'), 
-                          DATE_ADD(critical_date, INTERVAL 100 DAY)),
-                    end_datetime
-                ) AS end_datetime,
-            FROM critical_date_spans
-            -- Drop row if critical_date or critical_date + 100 is not between start and end_date
-            WHERE (critical_date BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31') 
-                OR DATE_ADD(critical_date, INTERVAL 100 DAY) BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31'))
-                -- The critical_date + 100 cannot be the start_datetime, this would create zero day spans
-                AND DATE_ADD(critical_date, INTERVAL 100 DAY) != start_datetime
-        ),
-        {critical_date_has_passed_spans_cte(table_name='critical_date_spans_within_100_days_of_date')}
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            critical_date_has_passed AS meets_criteria,
-            TO_JSON(STRUCT(critical_date AS acis_{opp_name.lower()}_date)) AS reason,
-            critical_date AS acis_{opp_name.lower()}_date,
-        FROM critical_date_has_passed_spans
+    WITH critical_date_spans AS
+    (
+    SELECT
+        state_code,
+        person_id,
+        start_date AS start_datetime,
+        end_date AS end_datetime,
+        {acis_date} as critical_date
+    FROM `{{project_id}}.analyst_data.us_az_projected_dates_materialized` dates
+    WHERE {acis_date} IS NOT NULL
+    ),
+    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=leading_window_time, date_part=date_part)}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT(critical_date AS {acis_date})) AS reason,
+        critical_date AS {acis_date},
+    FROM critical_date_has_passed_spans
     """
 
 
