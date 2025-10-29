@@ -83,6 +83,7 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
                 "type_of_contact",
                 "contact_type",
                 "contact_cadence",
+                "scheduled_contact_dates",
                 "officer_in_critically_understaffed_location",
             ],
         ),
@@ -116,6 +117,7 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
         "period_type",
         "override_contact_type",
         "contact_cadence",
+        "scheduled_contact_dates",
     ],
 )
 

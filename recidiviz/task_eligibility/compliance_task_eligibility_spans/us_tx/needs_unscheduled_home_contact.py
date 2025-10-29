@@ -57,6 +57,7 @@ US_TX_NEEDS_UNSCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = (
             "overdue_flag",
             "period_type",
             "contact_cadence",
+            "scheduled_contact_dates",
         ],
     )
 )

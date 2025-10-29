@@ -18,7 +18,6 @@
 Helper SQL queries for Texas
 """
 
-
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
@@ -501,6 +500,35 @@ def contact_compliance_builder_type_agnostic(
             AND ci.contact_type IN UNNEST(SPLIT(contact_types_accepted, ','))
             AND ci.contact_date < start_date
         QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, contact_types_accepted, start_date ORDER BY contact_date DESC) = 1
+    ),
+    join_scheduled_contacts AS (
+        SELECT 
+            periods.person_id,
+            periods.start_date, 
+            ARRAY_TO_STRING(
+                ARRAY_AGG(
+                    CAST(scheduled_contacts.scheduled_contact_date AS STRING)
+                    IGNORE NULLS 
+                    ORDER BY scheduled_contacts.scheduled_contact_date ASC
+                ), ', '
+            ) as scheduled_contact_dates,
+            TO_JSON_STRING(ARRAY_AGG(
+            STRUCT(
+                scheduled_contacts.scheduled_contact_date,
+                scheduled_contacts.contact_type
+            )
+            IGNORE NULLS 
+            ORDER BY scheduled_contacts.scheduled_contact_date ASC
+            )) AS scheduled_contacts_info
+        FROM finalized_periods as periods
+        LEFT JOIN `{{project_id}}.tasks_views.us_tx_scheduled_contacts_preprocessed_materialized` as scheduled_contacts
+            ON scheduled_contacts.person_id = periods.person_id
+            AND scheduled_contacts.scheduled_contact_date BETWEEN periods.start_date and periods.contact_due_date
+            AND scheduled_contacts.contact_type IN UNNEST(SPLIT(periods.contact_types_accepted, ','))
+        WHERE scheduled_contacts.status = 'SCHEDULED'
+        GROUP BY
+            periods.person_id,
+            periods.start_date
     )
     SELECT 
       *,
@@ -515,9 +543,13 @@ def contact_compliance_builder_type_agnostic(
         contact_cadence,
         contact_types_accepted,
         supervision_level,
-        case_type
+        case_type,
+        scheduled_contact_dates,
+        scheduled_contacts_info
       )) AS reason,
     FROM finalized_periods
+    LEFT JOIN join_scheduled_contacts
+      USING (person_id, start_date)
     """
 
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -585,6 +617,16 @@ def contact_compliance_builder_type_agnostic(
                 name="contact_cadence",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Contact cadence requirement.",
+            ),
+            ReasonsField(
+                name="scheduled_contact_dates",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="String list dates of scheduled contacts between start date and contact due date",
+            ),
+            ReasonsField(
+                name="scheduled_contacts_info",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="JSON string that shows the contact type is for each scheduled contact date",
             ),
         ],
     )
