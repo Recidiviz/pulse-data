@@ -17,10 +17,10 @@
 """
 This script compares raw data latest views to a sandbox load of the latest views, outputting comparison results to BigQuery tables.
 
-The script is intended to be used after running load_raw_data_latest_views_to_sandbox.py
+The script is intended to be used after running load_raw_data_views_to_sandbox.py
 
 Example usage:
-    python -m recidiviz.tools.ingest.operations.compare_referenced_raw_data_latest_views \
+    python -m recidiviz.tools.ingest.operations.compare_raw_data_latest_views \
         --state-code US_OZ \
         --sandbox-dataset-prefix my_sandbox \
         --sandbox-raw-data-instance SECONDARY \
@@ -170,7 +170,7 @@ def compare_latest_views_to_sandbox(
         project_id: The GCP project ID containing both datasets
         comparison_output_dataset_id: The dataset ID to write comparison results to
     """
-    referenced_file_tags = _collect_file_tags(state_code, referenced_views_only)
+    file_tags_to_compare = _collect_file_tags(state_code, referenced_views_only)
 
     latest_dataset_id = raw_latest_views_dataset_for_region(
         state_code=state_code,
@@ -184,7 +184,7 @@ def compare_latest_views_to_sandbox(
 
     view_names = [
         f"{file_tag}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}"
-        for file_tag in sorted(referenced_file_tags)
+        for file_tag in sorted(file_tags_to_compare)
     ]
     logging.info(
         "Comparing %d latest views for state [%s] between datasets [%s] and [%s]",
@@ -298,7 +298,7 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--referenced-views-only",
         action="store_true",
-        help="Compare only views for raw data files that are referenced by ingest views",
+        help="Compare only views for raw data files that are referenced by ingest views or deployed BQ views",
         default=False,
     )
     return parser.parse_args()

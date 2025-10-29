@@ -474,7 +474,7 @@ class DirectIngestRegionDirStructureBase:
                 f"[{raw_file_config.file_tag}] with description [{description}]: "
                 f"{columns}. If you are adding placeholder descriptions so that "
                 f"someone  can explore that data in a *_latest view, they should "
-                f"instead use recidiviz.tools.load_raw_data_latest_views_to_sandbox to "
+                f"instead use recidiviz.tools.load_raw_data_views_to_sandbox to "
                 f"load the sandbox versions of the views with all columns included. If "
                 f"this description is a meaningful / useful comment but is still the "
                 f"same as another column in the file, try to update the description to "

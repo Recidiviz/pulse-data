@@ -22,12 +22,12 @@ used to allow you to explore raw data that has been uploaded before you understa
 enough to document the column so that you can use it in a downstream view.
 
 Basic usage:
-python -m recidiviz.tools.load_raw_data_latest_views_to_sandbox \
+python -m recidiviz.tools.load_raw_data_views_to_sandbox \
    --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
    --state_code US_OZ
 
 To load what will actually be loaded as part of our normal view deploy:
-python -m recidiviz.tools.load_raw_data_latest_views_to_sandbox \
+python -m recidiviz.tools.load_raw_data_views_to_sandbox \
    --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
    --state_code US_OZ \
    --exclude_undocumented_views_and_columns
