@@ -207,4 +207,5 @@ release.out
 # AI Tools
 .gemini/
 .claude/settings.local.json
+.claude/pulse-data-local-settings.md
 .mcp.json

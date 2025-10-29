@@ -236,8 +236,8 @@ recidiviz/tools/deploy/terraform/.terraform
 .decrypted*
 release.out
 
-
 # AI Tools
 .gemini/
-.claude/
+.claude/settings.local.json
+.claude/pulse-data-local-settings.md
 .mcp.json

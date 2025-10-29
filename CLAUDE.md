@@ -82,3 +82,6 @@ they confirm before running the query.
 For detailed information about how raw data is imported, transformed through ingest views, and normalized into Recidiviz entities, see:
 
 - [Ingest Process Documentation](./recidiviz/ingest/CLAUDE.md)
+
+# Personal preferences
+- @.claude/pulse-data-local-settings.md

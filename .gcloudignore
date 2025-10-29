@@ -214,8 +214,8 @@ get-pip.py
 .decrypted*
 release.out
 
-
 # AI Tools
 .gemini/
-.claude/
+.claude/settings.local.json
+.claude/pulse-data-local-settings.md
 .mcp.json
