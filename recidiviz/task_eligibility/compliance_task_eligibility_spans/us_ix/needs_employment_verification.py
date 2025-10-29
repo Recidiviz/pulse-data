@@ -29,6 +29,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_case_type_is_general_or_sex_offense,
+    supervision_level_is_high_medium_or_minimum,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     is_able_to_work,
     meets_employment_reverification_trigger,
@@ -64,6 +68,8 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         is_able_to_work.VIEW_BUILDER,
         employment_verification_trigger_view_builder,
+        supervision_case_type_is_general_or_sex_offense.VIEW_BUILDER,
+        supervision_level_is_high_medium_or_minimum.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
     due_date_field="contact_due_date",
