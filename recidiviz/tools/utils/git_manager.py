@@ -85,9 +85,40 @@ class GitManager:
         """Checkout the given branch name."""
         self._run_git_command(f"git checkout {branch_name}")
 
-    def _create_branch(self, new_branch_name: str, base_branch: str) -> None:
-        """Create a new branch from the base branch."""
-        self._run_git_command(f"git checkout -b {new_branch_name} {base_branch}")
+    def _local_branch_exists(self, branch_name: str) -> bool:
+        """Check if a local branch exists."""
+        local_branches_output = self._run_git_command("git branch")
+        local_branches = {
+            b.strip().lstrip("* ") for b in local_branches_output.splitlines()
+        }
+        return branch_name in local_branches
+
+    def _create_branch(self, new_branch_name: str, base_branch_name: str) -> None:
+        """Create a new branch from the base branch.
+
+        Args:
+            new_branch_name: Name of the new branch to create
+            base_branch_name: Name of the base branch. If not found locally, will attempt
+                to use the remote branch (origin/base_branch_name).
+        """
+        if self._local_branch_exists(base_branch_name):
+            self._run_git_command(
+                f"git checkout -b {new_branch_name} {base_branch_name}"
+            )
+        elif self.remote_branch_exists(base_branch_name):
+            logging.info(
+                "Local branch [%s] not found, creating from remote [origin/%s].",
+                base_branch_name,
+                base_branch_name,
+            )
+            self._run_git_command(
+                f"git checkout -b {new_branch_name} origin/{base_branch_name}"
+            )
+        else:
+            raise ValueError(
+                f"Cannot create branch [{new_branch_name}] from base branch [{base_branch_name}]."
+                " Base branch does not exist in local or remote."
+            )
 
     def delete_branch_if_exists(self, branch_name: str) -> None:
         """Delete the given branch name if it exists (both local and remote)."""
@@ -95,12 +126,7 @@ class GitManager:
             logging.info("Deleting remote branch [%s].", branch_name)
             self._delete_remote_branch(branch_name)
 
-        local_branches_output = self._run_git_command("git branch")
-        local_branches = {
-            b.strip().lstrip("* ") for b in local_branches_output.splitlines()
-        }
-
-        if branch_name in local_branches:
+        if self._local_branch_exists(branch_name):
             logging.info("Deleting local branch [%s].", branch_name)
             self._delete_local_branch(branch_name)
 
