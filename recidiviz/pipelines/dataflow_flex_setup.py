@@ -101,7 +101,6 @@ setuptools.setup(
             "supplemental/template_metadata.json",
             "metrics/template_metadata.json",
         ],
-        "recidiviz.tools": ["deploy/terraform/config/*.yaml"],
         "recidiviz.validation.views.metadata.config": ["*.yaml"],
     },
 )

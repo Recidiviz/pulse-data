@@ -10,6 +10,9 @@ recidiviz/tests/
 # Ignore all research code (never used by pipelines)
 recidiviz/research/
 
+# Ignore all tools code (never used by pipelines)
+recidiviz/tools/
+
 # Ignore all frontend code
 frontends/
 

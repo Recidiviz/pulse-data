@@ -241,3 +241,6 @@ release.out
 .claude/settings.local.json
 .claude/pulse-data-local-settings.md
 .mcp.json
+
+# MCP tools (not needed in Docker images)
+recidiviz/tools/mcp/
