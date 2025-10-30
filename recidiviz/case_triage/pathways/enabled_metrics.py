@@ -19,7 +19,7 @@
 from typing import Dict, List
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import ALL_METRICS
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
@@ -29,7 +29,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
 ENABLED_METRICS_BY_STATE: Dict[StateCode, List[MetricQueryBuilder]] = {
-    StateCode(state_code): ALL_METRICS for state_code in get_pathways_enabled_states()
+    StateCode(state_code): ALL_METRICS
+    for state_code in get_pathways_enabled_states_for_cloud_sql()
 }
 
 ENABLED_METRICS_BY_STATE_BY_NAME = {

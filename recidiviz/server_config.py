@@ -21,7 +21,7 @@ from typing import Iterable, List
 from flask import Flask
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
@@ -57,7 +57,7 @@ def database_keys_for_schema_type(
         case SchemaType.PATHWAYS:
             return [
                 PathwaysDatabaseManager.database_key_for_state(state_code)
-                for state_code in get_pathways_enabled_states()
+                for state_code in get_pathways_enabled_states_for_cloud_sql()
             ]
 
         case SchemaType.WORKFLOWS:
@@ -92,7 +92,7 @@ def state_codes_for_schema_type(
 
     match schema_type:
         case SchemaType.PATHWAYS:
-            return get_pathways_enabled_states()
+            return get_pathways_enabled_states_for_cloud_sql()
 
         case SchemaType.WORKFLOWS:
             return get_workflows_enabled_states()

@@ -46,7 +46,7 @@ from typing import List, Tuple
 from sqlalchemy.engine import Engine
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_local_development,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
@@ -210,8 +210,8 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="Space-separated state codes to load data for. If unset, will load data for all states.",
         type=str,
         nargs="*",
-        choices=get_pathways_enabled_states(),
-        default=get_pathways_enabled_states(),
+        choices=get_pathways_enabled_states_for_local_development(),
+        default=get_pathways_enabled_states_for_local_development(),
     )
 
     parser.add_argument(

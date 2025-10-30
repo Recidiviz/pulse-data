@@ -20,7 +20,7 @@ from typing import Dict
 from sqlalchemy.orm import sessionmaker
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -39,7 +39,7 @@ class PathwaysDatabaseManager:
     def __init__(self) -> None:
         self.database_keys = {
             state_code: self.database_key_for_state(state_code)
-            for state_code in get_pathways_enabled_states()
+            for state_code in get_pathways_enabled_states_for_cloud_sql()
         }
 
         # Initialize engines. Silently no-ops if engines have already been initialized,
@@ -56,7 +56,7 @@ class PathwaysDatabaseManager:
         }
 
     def get_pathways_session(self, state_code: StateCode) -> sessionmaker:
-        if state_code.value not in get_pathways_enabled_states():
+        if state_code.value not in get_pathways_enabled_states_for_cloud_sql():
             raise ValueError(f"StateCode {state_code} does not have Pathways enabled")
 
         return self.pathways_session_factories[state_code.value]

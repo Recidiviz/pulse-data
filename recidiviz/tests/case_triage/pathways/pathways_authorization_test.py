@@ -82,7 +82,7 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         return cls._process_claims(path, {}, offline_mode=True)
 
     @mock.patch(
-        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
+        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states_for_cloud_sql",
         return_value=["US_CA", "US_OR"],
     )
     def test_recidiviz_auth(self, _mock_enabled_states: MagicMock) -> None:
@@ -137,7 +137,7 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         )
 
     @mock.patch(
-        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
+        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states_for_cloud_sql",
         return_value=["US_CA", "US_OR"],
     )
     def test_on_successful_authorization(self, _mock_enabled_states: MagicMock) -> None:
@@ -192,7 +192,7 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         )
 
     @mock.patch(
-        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
+        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states_for_cloud_sql",
         return_value=["US_CA", "US_TN"],
     )
     def test_csg_auth(self, _mock_enabled_states: MagicMock) -> None:

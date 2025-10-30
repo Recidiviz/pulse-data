@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 from flask import request
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.case_triage.authorization_utils import (
     on_successful_authorization_requested_state,
@@ -42,7 +42,7 @@ def on_successful_authorization(
     """
     on_successful_authorization_requested_state(
         claims=claims,
-        enabled_states=get_pathways_enabled_states(),
+        enabled_states=get_pathways_enabled_states_for_cloud_sql(),
         offline_mode=offline_mode,
         csg_enabled_states=CSG_ALLOWED_PATHWAYS_STATES,
     )

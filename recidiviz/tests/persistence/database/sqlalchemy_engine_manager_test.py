@@ -56,7 +56,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         )
 
     @patch(
-        f"{server_config.__name__}.get_pathways_enabled_states",
+        f"{server_config.__name__}.get_pathways_enabled_states_for_cloud_sql",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch(
@@ -240,7 +240,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         )
 
     @patch(
-        f"{server_config.__name__}.get_pathways_enabled_states",
+        f"{server_config.__name__}.get_pathways_enabled_states_for_cloud_sql",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch(
