@@ -131,3 +131,8 @@ export type FeatureVariantRecord = Partial<FeatureVariants>;
 export type Route = keyof typeof ROUTES_PERMISSIONS_LABELS;
 export type Routes = Record<Route, boolean>;
 export type RouteRecord = Partial<Routes>;
+
+export interface RemoveFeatureVariantForm {
+  fvName: string;
+  reason: string;
+}

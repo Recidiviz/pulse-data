@@ -20,15 +20,21 @@ import React, { useState } from "react";
 
 import {
   createStateRolePermissions,
+  deleteFeatureVariant,
   deleteStateRole,
   getStateRoleDefaultPermissions,
   updateStateRolePermissions,
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
-import { StateRoleForm, StateRolePermissionsResponse } from "../../types";
+import {
+  RemoveFeatureVariantForm,
+  StateRoleForm,
+  StateRolePermissionsResponse,
+} from "../../types";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import { CreateEditStateRoleForm } from "./EditStateRoleForm";
 import { ReasonsLogButton } from "./ReasonsLogButton";
+import { RemoveFeatureVariantsForm } from "./RemoveFeatureVariantsForm";
 import {
   aggregateFormPermissionResults,
   checkResponse,
@@ -46,6 +52,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+  const [removeFvVisible, setRemoveFvVisible] = useState(false);
 
   // control row selection
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -171,6 +178,22 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     finishPromises(results, `Removed`);
   };
 
+  const onRemoveFv = async ({ fvName, reason }: RemoveFeatureVariantForm) => {
+    try {
+      const response = await deleteFeatureVariant({
+        fvName,
+        reason,
+        entityType: "ROLES",
+      });
+      await checkResponse(response);
+      setRemoveFvVisible(false);
+      message.success(`${fvName} removed successfully!`);
+      updateTable();
+    } catch (err) {
+      message.error(`Error removing ${fvName}: ${err}`);
+    }
+  };
+
   const resetFilters = () => {
     setTableKey(() => tableKey + 1);
   };
@@ -203,6 +226,20 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         >
           Update Permissions
         </Button>
+        <Button
+          onClick={() => {
+            setRemoveFvVisible(true);
+          }}
+        >
+          Remove Feature Variant
+        </Button>
+        <RemoveFeatureVariantsForm
+          removeFvVisible={removeFvVisible}
+          removeFvOnCancel={() => {
+            setRemoveFvVisible(false);
+          }}
+          removeFvOnCreate={onRemoveFv}
+        />
         <ReasonsLogButton />
         <Button onClick={() => resetFilters()}>Reset Filters</Button>
         <CreateEditStateRoleForm

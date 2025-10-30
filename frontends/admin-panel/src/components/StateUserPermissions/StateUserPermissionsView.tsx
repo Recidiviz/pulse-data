@@ -28,12 +28,14 @@ import {
   updateUserPermissions,
 } from "../../AdminPanelAPI";
 import {
+  deleteFeatureVariant,
   getStateRoleDefaultPermissions,
   updateUsers,
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
   AddUserRequest,
+  RemoveFeatureVariantForm,
   StateRolePermissionsResponse,
   StateUserForm,
   StateUserPermissionsResponse,
@@ -42,6 +44,7 @@ import { AddUserForm } from "./AddUserForm";
 import { EditUserForm } from "./EditUsersForm";
 import { CreateEnableUserForm } from "./EnableUserForm";
 import { ReasonsLogButton } from "./ReasonsLogButton";
+import { RemoveFeatureVariantsForm } from "./RemoveFeatureVariantsForm";
 import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
 import {
   aggregateFormPermissionResults,
@@ -60,6 +63,7 @@ const StateUserPermissionsView = (): JSX.Element => {
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+  const [removeFvVisible, setRemoveFvVisible] = useState(false);
   const [uploadRosterVisible, setUploadRosterVisible] = useState(false);
   const [tableKey, setTableKey] = useState(0);
   const [userToEnable, setUserToEnable] = useState<
@@ -241,6 +245,22 @@ const StateUserPermissionsView = (): JSX.Element => {
     finishPromises(results, `Blocked`);
   };
 
+  const onRemoveFv = async ({ fvName, reason }: RemoveFeatureVariantForm) => {
+    try {
+      const response = await deleteFeatureVariant({
+        fvName,
+        reason,
+        entityType: "USERS",
+      });
+      await checkResponse(response);
+      setRemoveFvVisible(false);
+      message.success(`${fvName} removed successfully!`);
+      updateTable();
+    } catch (err) {
+      message.error(`Error removing ${fvName}: ${err}`);
+    }
+  };
+
   const resetFilters = () => {
     setTableKey(() => tableKey + 1);
   };
@@ -288,6 +308,20 @@ const StateUserPermissionsView = (): JSX.Element => {
         >
           Upload Roster
         </Button>
+        <Button
+          onClick={() => {
+            setRemoveFvVisible(true);
+          }}
+        >
+          Remove Feature Variant
+        </Button>
+        <RemoveFeatureVariantsForm
+          removeFvVisible={removeFvVisible}
+          removeFvOnCancel={() => {
+            setRemoveFvVisible(false);
+          }}
+          removeFvOnCreate={onRemoveFv}
+        />
         <ReasonsLogButton />
         <Button onClick={() => resetFilters()}>Reset Filters</Button>
         <EditUserForm

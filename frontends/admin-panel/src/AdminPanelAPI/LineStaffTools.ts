@@ -215,3 +215,17 @@ export const deleteDemoClientUpdatesV2 = async (
   if (stateCode) url += `/${stateCode.toLowerCase()}`;
   return deleteWithUrlAndBody(url);
 };
+
+export const deleteFeatureVariant = async ({
+  fvName,
+  reason,
+  entityType,
+}: {
+  fvName: string;
+  reason: string;
+  entityType: "ROLES" | "USERS";
+}): Promise<Response> => {
+  let url = `/feature_variants/${fvName}`;
+  if (entityType === "USERS") url = `/users${url}`;
+  return deleteResource(url, { reason });
+};
