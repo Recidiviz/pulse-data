@@ -1535,7 +1535,9 @@ class DirectIngestRegionRawFileConfig:
         """List of configs in this region that have regularly updated data"""
         return [
             config
-            for config in self.raw_file_configs.values()
+            for config in sorted(
+                self.raw_file_configs.values(), key=lambda c: c.file_tag
+            )
             if config.has_regularly_updated_data()
         ]
 
