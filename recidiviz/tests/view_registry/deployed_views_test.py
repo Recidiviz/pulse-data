@@ -63,17 +63,11 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
-from recidiviz.ingest.direct.gating import (
-    automatic_raw_data_pruning_enabled_for_state_and_instance,
-)
 from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
     automatic_raw_data_pruning_enabled_for_file_config,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
-    DirectIngestRawDataTableLatestViewBuilder,
-)
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_VIEWS_DATASET,
     STATE_BASE_DATASET,
@@ -211,29 +205,6 @@ class DeployedViewsTest(unittest.TestCase):
             # to vary by project, so the view template may change.
             if isinstance(staging_builder, UnionAllBigQueryViewBuilder):
                 continue
-
-            # Skip the check for identical templates on latest views where raw data
-            # pruning gating is different between projects. That feature flag helps
-            # determine the latest view query structure.
-            # TODO(#12390): Delete once raw data pruning is live and the pruning feature
-            #  gate can be deleted.
-            if isinstance(staging_builder, DirectIngestRawDataTableLatestViewBuilder):
-                state_code = StateCode(staging_builder.region_code.upper())
-                instance = staging_builder.raw_data_source_instance
-                with local_project_id_override(GCP_PROJECT_STAGING):
-                    staging_is_pruning_enabled = (
-                        automatic_raw_data_pruning_enabled_for_state_and_instance(
-                            state_code, instance
-                        )
-                    )
-                with local_project_id_override(GCP_PROJECT_PRODUCTION):
-                    prod_is_pruning_enabled = (
-                        automatic_raw_data_pruning_enabled_for_state_and_instance(
-                            state_code, instance
-                        )
-                    )
-                if staging_is_pruning_enabled != prod_is_pruning_enabled:
-                    continue
 
             self.assertEqual(
                 staging_view.view_query_template,

@@ -31,13 +31,13 @@ import argparse
 import logging
 import re
 import sys
-from typing import FrozenSet, Optional, Set
+from typing import FrozenSet, NamedTuple, Optional, Set
 
 import yaml
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import (
-    automatic_raw_data_pruning_enabled_for_state_and_instance,
+    file_tag_exempt_from_automatic_raw_data_pruning,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.validation.git_validation_utils import (
@@ -48,32 +48,53 @@ from recidiviz.tools.validation.git_validation_utils import (
 )
 
 RAW_DATA_YAML_PATTERN = re.compile(
-    r"recidiviz/ingest/direct/regions/([^/]+)/raw_data/.*\.yaml$"
+    r"recidiviz/ingest/direct/regions/([^/]+)/raw_data/(.*)\.yaml$"
 )
 ALLOW_PRIMARY_KEY_UPDATES_TAG = "[ALLOW_PK_UPDATES]"
 PRIMARY_KEYS_YAML_KEY = "primary_key_cols"
 
 
-def _parse_raw_data_file_path(file_path: str) -> Optional[str]:
-    """Extracts region code from a raw data YAML file path.
+class RawDataFileInfo(NamedTuple):
+    """Information parsed from a raw data YAML file path."""
+
+    region_code: str
+    file_tag: str
+
+
+def _parse_raw_data_file_path(file_path: str) -> Optional[RawDataFileInfo]:
+    """Extracts region code and file tag from a raw data YAML file path.
 
     Args:
-        file_path: Path like 'recidiviz/ingest/direct/regions/us_ca/raw_data/test_file.yaml'
+        file_path: Path like 'recidiviz/ingest/direct/regions/us_xx/raw_data/us_xx_test_file.yaml'
 
     Returns:
-        Region code or None if path doesn't match expected pattern.
+        RawDataFileInfo with region code and file tag, or None if path doesn't match expected pattern.
     """
     match = RAW_DATA_YAML_PATTERN.match(file_path)
     if not match:
         return None
 
-    return match.group(1)
+    region_code = match.group(1)
+    filename = match.group(2)
+
+    # Remove the region_code prefix from filename to get the file_tag
+    # e.g., "us_xx_test_file" -> "test_file"
+    prefix = f"{region_code}_"
+    if not filename.startswith(prefix):
+        logging.warning(
+            "Filename %s does not start with expected prefix %s", filename, prefix
+        )
+        return None
+
+    file_tag = filename[len(prefix) :]
+
+    return RawDataFileInfo(region_code=region_code, file_tag=file_tag)
 
 
 def _is_file_exempt_from_validation(file_path: str) -> bool:
     """Checks if a raw data file is exempt from primary key validation.
 
-    Files are exempt if automatic raw data pruning is not enabled for the state.
+    Files are exempt if automatic raw data pruning is not enabled for the state/file.
 
     Args:
         file_path: Path to the raw data YAML file
@@ -81,16 +102,18 @@ def _is_file_exempt_from_validation(file_path: str) -> bool:
     Returns:
         True if the file is exempt from validation, False otherwise.
     """
-    region_code = _parse_raw_data_file_path(file_path)
-    if not region_code:
-        logging.warning("Could not parse region code from path: %s", file_path)
+    file_info = _parse_raw_data_file_path(file_path)
+    if not file_info:
+        logging.warning("Could not parse file info from path: %s", file_path)
         return False
 
-    return not any(
-        automatic_raw_data_pruning_enabled_for_state_and_instance(
-            StateCode(region_code.upper()), raw_data_instance
+    return all(
+        file_tag_exempt_from_automatic_raw_data_pruning(
+            StateCode(file_info.region_code.upper()),
+            instance,
+            file_info.file_tag,
         )
-        for raw_data_instance in DirectIngestInstance
+        for instance in DirectIngestInstance
     )
 
 

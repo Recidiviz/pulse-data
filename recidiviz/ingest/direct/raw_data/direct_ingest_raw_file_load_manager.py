@@ -36,9 +36,6 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_data_temp_load_dataset,
     raw_tables_dataset_for_region,
 )
-from recidiviz.ingest.direct.gating import (
-    automatic_raw_data_pruning_enabled_for_state_and_instance,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
@@ -48,8 +45,11 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validat
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_transformation_query_builder import (
     DirectIngestTempRawTablePreMigrationTransformationQueryBuilder,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
+from recidiviz.ingest.direct.raw_data.raw_data_pruning_bq_utils import (
     get_pruned_table_row_counts,
+)
+from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
+    automatic_raw_data_pruning_enabled_for_file_config,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -404,19 +404,13 @@ class DirectIngestRawFileLoadManager:
         """Returns whether or not we should apply historical diffs to this file during
         raw data import.
         """
-        raw_data_pruning_enabled = (
-            automatic_raw_data_pruning_enabled_for_state_and_instance(
-                self.state_code, self.raw_data_instance
-            )
-        )
-        if not raw_data_pruning_enabled:
-            return False
-
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
-        is_exempt_from_raw_data_pruning = (
-            file_config.is_exempt_from_automatic_raw_data_pruning()
+
+        return automatic_raw_data_pruning_enabled_for_file_config(
+            state_code=self.state_code,
+            raw_data_instance=self.raw_data_instance,
+            raw_file_config=file_config,
         )
-        return not is_exempt_from_raw_data_pruning
 
     def _append_data_to_raw_table(
         self, source_table: BigQueryAddress, destination_table: BigQueryAddress

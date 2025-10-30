@@ -27,8 +27,8 @@ import attr
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import raw_data
-from recidiviz.ingest.direct.gating import (
-    automatic_raw_data_pruning_enabled_for_state_and_instance,
+from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
+    automatic_raw_data_pruning_enabled_for_file_config,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
@@ -905,21 +905,22 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
 
     def test_exempt_from_automatic_raw_data_pruning(self) -> None:
         """Assert that the config is exempt from automatic raw data pruning."""
-        historical_config = self.sparse_config
-        incremental_config = attr.evolve(
-            historical_config,
+        historical_config = attr.evolve(
+            self.sparse_config,
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
                     state_code=StateCode.US_XX,
-                    file_tag=historical_config.file_tag,
+                    file_tag=self.sparse_config.file_tag,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             primary_key_cols=["Col1"],
-            no_valid_primary_keys=False,
+        )
+        incremental_config = attr.evolve(
+            historical_config,
             export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
         )
         no_valid_pks_config = attr.evolve(
@@ -927,10 +928,15 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             primary_key_cols=[],
             no_valid_primary_keys=True,
         )
+        missing_pks_config = attr.evolve(
+            incremental_config,
+            primary_key_cols=[],
+        )
 
-        self.assertFalse(historical_config.is_exempt_from_automatic_raw_data_pruning())
-        self.assertFalse(incremental_config.is_exempt_from_automatic_raw_data_pruning())
-        self.assertTrue(no_valid_pks_config.is_exempt_from_automatic_raw_data_pruning())
+        self.assertTrue(historical_config.eligible_for_automatic_raw_data_pruning())
+        self.assertTrue(incremental_config.eligible_for_automatic_raw_data_pruning())
+        self.assertFalse(no_valid_pks_config.eligible_for_automatic_raw_data_pruning())
+        self.assertFalse(missing_pks_config.eligible_for_automatic_raw_data_pruning())
 
     def test_default_always_historical(self) -> None:
         """Assert that if the file sets always historical to False that is used, even
@@ -2384,25 +2390,20 @@ def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation
     None
 ):
     for region_code in get_existing_region_codes():
-        pruning_enabled = False
-        for instance in DirectIngestInstance:
-            pruning_enabled |= (
-                automatic_raw_data_pruning_enabled_for_state_and_instance(
-                    StateCode(region_code.upper()), instance
-                )
-            )
-        if not pruning_enabled:
-            continue
         region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        state_code = StateCode(region_code.upper())
         for file_tag, config in region_raw_file_config.raw_file_configs.items():
-            if (
-                not config.is_exempt_from_automatic_raw_data_pruning()
-                and config.file_is_exempt_from_validation(
-                    RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
+            pruning_enabled = any(
+                automatic_raw_data_pruning_enabled_for_file_config(
+                    state_code, instance, config
                 )
+                for instance in DirectIngestInstance
+            )
+            if pruning_enabled and config.file_is_exempt_from_validation(
+                RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
             ):
                 raise ValueError(
-                    f"[{region_code.upper()}][{file_tag}]: Cannot be exempt from DISTINCT_PRIMARY_KEYS pre-import validation "
+                    f"[{state_code.value}][{file_tag}]: Cannot be exempt from DISTINCT_PRIMARY_KEYS pre-import validation "
                     "when automatic raw data pruning is enabled"
                 )
 
@@ -2410,23 +2411,18 @@ def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation
 # TODO(#47750) Maybe remove supplemental_order_by clause entirely
 def test_automatic_raw_data_pruning_files_do_not_have_supplemental_order_by() -> None:
     for region_code in get_existing_region_codes():
-        pruning_enabled = False
-        for instance in DirectIngestInstance:
-            pruning_enabled |= (
-                automatic_raw_data_pruning_enabled_for_state_and_instance(
-                    StateCode(region_code.upper()), instance
-                )
-            )
-        if not pruning_enabled:
-            continue
         region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
+        state_code = StateCode(region_code.upper())
         for file_tag, config in region_raw_file_config.raw_file_configs.items():
-            if (
-                not config.is_exempt_from_automatic_raw_data_pruning()
-                and config.supplemental_order_by_clause
-            ):
+            pruning_enabled = any(
+                automatic_raw_data_pruning_enabled_for_file_config(
+                    state_code, instance, config
+                )
+                for instance in DirectIngestInstance
+            )
+            if pruning_enabled and config.supplemental_order_by_clause:
                 raise ValueError(
-                    f"[{region_code.upper()}][{file_tag}]: Cannot have supplemental_order_by_clause when automatic raw data pruning is enabled"
+                    f"[{state_code.value}][{file_tag}]: Cannot have supplemental_order_by_clause when automatic raw data pruning is enabled"
                 )
 
 

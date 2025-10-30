@@ -31,7 +31,9 @@ from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
-from recidiviz.ingest.direct.gating import FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE
+from recidiviz.ingest.direct.gating import (
+    FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE,
+)
 from recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions import (
     is_column_exempt_from_datetime_parsers,
 )
@@ -860,7 +862,7 @@ class DirectIngestRawFileConfig:
     def is_exempt_from_legacy_manual_raw_data_pruning(self) -> bool:
         """Returns True if this file is exempt from raw data pruning."""
 
-        if self.file_tag in FILES_EXEMPT_FROM_RAW_DATA_PRUNING_BY_STATE.get(
+        if self.file_tag in FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE.get(
             self.state_code, {}
         ):
             return True
@@ -871,9 +873,9 @@ class DirectIngestRawFileConfig:
 
         return self.no_valid_primary_keys
 
-    def is_exempt_from_automatic_raw_data_pruning(self) -> bool:
-        """Returns True if this file is exempt from automatic raw data pruning."""
-        return self.no_valid_primary_keys
+    def eligible_for_automatic_raw_data_pruning(self) -> bool:
+        """Returns True if this file is eligible for automatic raw data pruning."""
+        return not self.no_valid_primary_keys and bool(self.primary_key_cols)
 
     def has_regularly_updated_data(self) -> bool:
         """Returns whether or not we think the data in this file is regularly updated;

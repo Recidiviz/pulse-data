@@ -60,12 +60,6 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         )
         self.region_module_patch.start()
 
-        self.pruning_enabled_patch = patch(
-            "recidiviz.ingest.direct.raw_data.raw_data_pruning_utils.automatic_raw_data_pruning_enabled_for_state_and_instance",
-            return_value=True,
-        )
-        self.pruning_enabled_patch.start()
-
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
         self.generator = VerifyRawDataPruningMetadataSqlQueryGenerator(
             state_code=self.state_code,
@@ -80,7 +74,6 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
 
     def tearDown(self) -> None:
         self.region_module_patch.stop()
-        self.pruning_enabled_patch.stop()
         return super().tearDown()
 
     def _create_bq_metadata_for_file_being_imported(

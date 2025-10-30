@@ -70,9 +70,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.pruning_patches = [
             patch(path)
             for path in [
-                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.automatic_raw_data_pruning_enabled_for_state_and_instance",
-                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.automatic_raw_data_pruning_enabled_for_state_and_instance",
-                "recidiviz.ingest.direct.views.raw_table_query_builder.automatic_raw_data_pruning_enabled_for_state_and_instance",
+                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.automatic_raw_data_pruning_enabled_for_file_config",
+                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.automatic_raw_data_pruning_enabled_for_file_config",
+                "recidiviz.ingest.direct.views.raw_table_query_builder.automatic_raw_data_pruning_enabled_for_file_config",
             ]
         ]
         self.pruning_mocks = [p.start() for p in self.pruning_patches]

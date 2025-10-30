@@ -60,6 +60,7 @@ from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
     fake_k8s_operator_with_return_value,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
@@ -469,6 +470,13 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
         self.header_reader_mock = self.header_reader_patcher.start()
 
+        self.mock_bq_client = MagicMock()
+        self.bq_client_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl",
+            return_value=self.mock_bq_client,
+        )
+        self.bq_client_patcher.start()
+
     def tearDown(self) -> None:
         self.ingest_states_patcher.stop()
         self.cloud_sql_db_hook_patcher.stop()
@@ -478,6 +486,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         self.gcsfs_patcher.stop()
         self.region_module_patch.stop()
         self.header_reader_patcher.stop()
+        self.bq_client_patcher.stop()
         super().tearDown()
 
     def _create_operations_registration_only_dag(self) -> DAG:
@@ -700,15 +709,15 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                     "tagCustomLineTerminatorNonUTF8",
                 )  # file_tag
                 if row[2] == "tagBasicData":
-                    assert row[3] is False  # automatic_pruning_enabled
+                    assert row[3] is True  # automatic_pruning_enabled
                     assert row[4] == "COL1"  # raw_file_primary_keys
                     assert row[5] is True  # raw_files_contain_full_historical_lookback
                 elif row[2] == "tagFileConfigHeaders":
-                    assert row[3] is False  # automatic_pruning_enabled
+                    assert row[3] is True  # automatic_pruning_enabled
                     assert row[4] == "COL1"  # raw_file_primary_keys
                     assert row[5] is False  # raw_files_contain_full_historical_lookback
                 elif row[2] == "tagCustomLineTerminatorNonUTF8":
-                    assert row[3] is False  # automatic_pruning_enabled
+                    assert row[3] is True  # automatic_pruning_enabled
                     assert row[4] == "PRIMARY_COL1"  # raw_file_primary_keys
                     assert row[5] is False  # raw_files_contain_full_historical_lookback
 
@@ -837,7 +846,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             assert row[0] == "US_XX"  # region_code
             assert row[1] == "PRIMARY"  # raw_data_instance
             assert row[2] == "tagChunkedFile"  # file_tag
-            assert row[3] is False  # automatic_pruning_enabled
+            assert row[3] is True  # automatic_pruning_enabled
             assert row[4] == "id_column"  # raw_file_primary_keys
             assert row[5] is False  # raw_files_contain_full_historical_lookback
 
@@ -928,19 +937,6 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
         self.header_reader_mock.return_value = ["col1", "col2", "col3"]
 
-        pruning_enabled_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.automatic_raw_data_pruning_enabled_for_state_and_instance",
-            return_value=True,
-        )
-        pruning_enabled_patcher.start()
-
-        bq_client_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl"
-        )
-        mock_bq_client_class = bq_client_patcher.start()
-        mock_bq_client = MagicMock()
-        mock_bq_client_class.return_value = mock_bq_client
-
         def mock_run_query(
             query_str: str, use_query_cache: bool  # pylint: disable=unused-argument
         ) -> MagicMock:
@@ -956,43 +952,37 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 mock_result.result.return_value = []
             return mock_result
 
-        mock_bq_client.run_query_async.side_effect = mock_run_query
+        self.mock_bq_client.run_query_async.side_effect = mock_run_query
 
-        try:
-            with Session(bind=self.engine) as session:
-                result = self.run_dag_test(
-                    self._create_operations_registration_only_dag(),
-                    session=session,
-                    expected_failure_task_id_regexes=[
-                        "raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors"
-                    ],
-                    expected_skipped_task_id_regexes=[],
-                )
-                self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_operations_registration_only_dag(),
+                session=session,
+                expected_failure_task_id_regexes=[
+                    "raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors"
+                ],
+                expected_skipped_task_id_regexes=[],
+            )
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
-                skipped_errors_jsonb = self.get_xcom_for_task_id(
-                    "raw_data_branching.us_xx_primary_import_branch.verify_big_query_postgres_alignment",
-                    session=session,
-                    key=SKIPPED_FILE_ERRORS,
-                )
+            skipped_errors_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.verify_big_query_postgres_alignment",
+                session=session,
+                key=SKIPPED_FILE_ERRORS,
+            )
 
-                skipped_errors = [
-                    RawDataFilesSkippedError.deserialize(error_str)
-                    for error_str in json.loads(
-                        assert_type(skipped_errors_jsonb, bytes)
-                    )
-                ]
+            skipped_errors = [
+                RawDataFilesSkippedError.deserialize(error_str)
+                for error_str in json.loads(assert_type(skipped_errors_jsonb, bytes))
+            ]
 
-                assert len(skipped_errors) == 1
-                assert skipped_errors[0].file_tag == "tagBasicData"
-                assert (
-                    "BigQuery raw data table [us_xx_raw_data.tagBasicData] contains file_ids [999] with no corresponding"
-                    " non-invalidated, processed entry in the `direct_ingest_raw_big_query_file_metadata` table"
-                    == skipped_errors[0].skipped_message
-                )
-        finally:
-            pruning_enabled_patcher.stop()
-            bq_client_patcher.stop()
+            assert len(skipped_errors) == 1
+            assert skipped_errors[0].file_tag == "tagBasicData"
+            assert (
+                "BigQuery raw data table [us_xx_raw_data.tagBasicData] contains file_ids [999] with no corresponding"
+                " non-invalidated, processed entry in the `direct_ingest_raw_big_query_file_metadata` table"
+                == skipped_errors[0].skipped_message
+            )
 
 
 class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTest):
@@ -1093,6 +1083,11 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.fake_gcs_mock = self.fake_gcs_patch.start()
         self.fake_gcs_mock().get_file_size.return_value = 10000
         self.fake_gcs_mock().get_crc32c.return_value = "E6KYdQ=="
+        self.operations_registration_bq_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl",
+            return_value=MagicMock(),
+        )
+        self.operations_registration_bq_patcher.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
@@ -1104,6 +1099,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.fake_gcs_patch.stop()
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
+        self.operations_registration_bq_patcher.stop()
         super().tearDown()
 
     def _fake_k8s_operator_wrapper(self, *args: Any, **kwargs: Any) -> OperatorPartial:
@@ -2642,10 +2638,47 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.start()
 
+        self.operations_registrations_bq_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl",
+            return_value=MagicMock(),
+        )
+        self.operations_registrations_bq_patcher.start()
+
         self.load_tasks_bq_patcher = patch(
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
         )
         self.load_bq_mock = self.load_tasks_bq_patcher.start()
+
+        row_counts_result_data = [{"net_new_or_updated_rows": 20, "deleted_rows": 0}]
+        self.bq_result_row_counts_mock = MagicMock()
+        self.bq_result_row_counts_mock.total_rows = 1
+        self.bq_result_row_counts_mock.__iter__ = lambda self: iter(
+            row_counts_result_data
+        )
+
+        self.bq_job_row_counts_mock = MagicMock()
+        self.bq_job_row_counts_mock.result.return_value = self.bq_result_row_counts_mock
+
+        self.pre_import_validations_mock = MagicMock()
+
+        def _run_query_result(
+            query_str: str,
+            use_query_cache: bool,  # pylint: disable=unused-argument
+            job_labels: (  # pylint: disable=unused-argument
+                list[ResourceLabel] | None
+            ) = None,
+        ) -> MagicMock:
+            if (
+                """SELECT
+            SUM(CASE WHEN is_deleted THEN 1 ELSE 0 END) AS deleted_rows,
+            SUM(CASE WHEN NOT is_deleted THEN 1 ELSE 0 END) AS net_new_or_updated_rows
+        FROM"""
+                in query_str
+            ):
+                return self.bq_job_row_counts_mock
+            return self.pre_import_validations_mock
+
+        self.load_bq_mock.return_value.run_query_async.side_effect = _run_query_result
 
         # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
         self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)
@@ -2669,6 +2702,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
         self.load_tasks_bq_patcher.stop()
+        self.operations_registrations_bq_patcher.stop()
         self.processed_time_patcher.stop()
         super().tearDown()
 
@@ -2926,7 +2960,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
             self.load_bq_mock().create_table_from_query.assert_has_calls(
                 [
                     call(),
@@ -3034,7 +3069,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -3343,7 +3378,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -3460,7 +3496,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 3
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 3
+            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 6
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 3
             assert self.load_bq_mock().delete_table.call_count == 3 * 3
@@ -3570,7 +3606,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -3672,7 +3709,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
+            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 4
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 2
             assert self.load_bq_mock().delete_table.call_count == 3 * 2
@@ -3801,7 +3838,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -3918,7 +3956,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls from last time
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -4014,7 +4053,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls from last time
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
+            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 4
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
             assert self.load_bq_mock().delete_table.call_count == 3 * 2
@@ -4143,7 +4182,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -4256,7 +4296,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls from last time
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -4352,7 +4393,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls from last time
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
+            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 4
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
             assert self.load_bq_mock().delete_table.call_count == 3 * 2
@@ -4483,7 +4524,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             # we shouldn't delete the tables for the failed files
@@ -4602,7 +4644,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls from last time
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 3
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # create temp table, temp transformed table, temp pruning results table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -4697,7 +4740,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls from last time
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 3
-            assert self.load_bq_mock().create_table_from_query.call_count == 3
+            assert self.load_bq_mock().create_table_from_query.call_count == 5
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
             assert self.load_bq_mock().delete_table.call_count == 6
@@ -4830,7 +4873,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
+            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 4
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
             # we should only delete the original temp table for the failed file
@@ -4931,7 +4974,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 self.load_bq_mock().load_table_from_cloud_storage.call_count
                 == 1 + 2 + 1
             )
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2 + 1
+            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 4 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2 + 1
             assert self.load_bq_mock().delete_table.call_count == (3 * 1) + (1 * 2)
@@ -5031,7 +5074,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 == 1 + 2 + 1 + 1
             )
             assert (
-                self.load_bq_mock().create_table_from_query.call_count == 1 + 2 + 1 + 1
+                self.load_bq_mock().create_table_from_query.call_count == 1 + 4 + 2 + 2
             )
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2 + 1 + 1

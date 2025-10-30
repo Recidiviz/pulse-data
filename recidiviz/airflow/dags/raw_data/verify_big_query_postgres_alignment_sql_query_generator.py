@@ -39,7 +39,7 @@ from recidiviz.cloud_resources.platform_resource_labels import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.gating import (
-    automatic_raw_data_pruning_enabled_for_state_and_instance,
+    file_tag_exempt_from_automatic_raw_data_pruning,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -134,17 +134,13 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGenerator(
 
         skipped_file_errors: list[RawDataFilesSkippedError] = []
         import_ready_bq_metadata: list[RawBigQueryFileMetadata] = []
-        # TODO(#8554) Run for all files once existing errors are fixed
-        # more immediate TODO(#50894) Gate on a per-file tag basis
-        should_run_validation = (
-            automatic_raw_data_pruning_enabled_for_state_and_instance(
-                self._state_code, self._raw_data_instance
-            )
-        )
 
         for file_tag, bq_files in file_tag_to_bq_files.items():
             try:
-                if should_run_validation:
+                # TODO(#8554) Remove this check once there are no longer any exempted files
+                if not file_tag_exempt_from_automatic_raw_data_pruning(
+                    self._state_code, self._raw_data_instance, file_tag
+                ):
                     self._validate_bq_table_bq_metadata_alignment_for_file_tag(
                         postgres_hook, file_tag
                     )

@@ -74,16 +74,9 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGeneratorTest(
             get_all_unprocessed_bq_file_metadata_task_id="test_task_id",
         )
 
-        self.pruning_enabled_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.automatic_raw_data_pruning_enabled_for_state_and_instance"
-        )
-        self.mock_pruning_enabled = self.pruning_enabled_patcher.start()
-        self.mock_pruning_enabled.return_value = True
-
     def tearDown(self) -> None:
         super().tearDown()
         self.bq_client_patcher.stop()
-        self.pruning_enabled_patcher.stop()
 
     def _seed_bq_metadata(
         self,
@@ -137,14 +130,12 @@ class VerifyBigQueryPostgresAlignmentSQLQueryGeneratorTest(
         assert call_args[1]["key"] == SKIPPED_FILE_ERRORS
         assert call_args[1]["value"] == []
 
-    def test_pruning_not_enabled(self) -> None:
+    @patch(
+        "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.file_tag_exempt_from_automatic_raw_data_pruning",
+        return_value=True,
+    )
+    def test_pruning_not_enabled(self, _mock_pruning_enabled: MagicMock) -> None:
         """Test that when pruning is not enabled, validation is skipped and all files are returned"""
-        self.mock_pruning_enabled.return_value = False
-
-        mock_query_job = MagicMock(spec=QueryJob)
-        mock_query_job.result.return_value = [[1], [2]]
-        self.mock_bq_client.run_query_async.return_value = mock_query_job
-
         bq_files = [
             self._create_bq_file_metadata(3, "test_tag"),
             self._create_bq_file_metadata(4, "test_tag"),

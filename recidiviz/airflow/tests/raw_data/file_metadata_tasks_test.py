@@ -508,7 +508,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
     def setUp(self) -> None:
         self.pruning_patch = patch(
-            "recidiviz.airflow.dags.raw_data.file_metadata_tasks.automatic_raw_data_pruning_enabled_for_state_and_instance"
+            "recidiviz.airflow.dags.raw_data.file_metadata_tasks.automatic_raw_data_pruning_enabled_for_file_config"
         )
         self.pruning_mock = self.pruning_patch.start()
         self.pruning_mock.return_value = False
@@ -888,7 +888,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv"
+                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                         ),
                     ),
                     RawGCSFileMetadata(
@@ -908,7 +908,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
         processing_errors = [
             RawFileProcessingError(
                 original_file_path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv"
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                 ),
                 temporary_file_paths=[
                     GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_1.csv"),
@@ -960,7 +960,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                         gcs_file_id=2,
                         file_id=2,
                         path=GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
+                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                         ),
                     )
                 ],
@@ -973,7 +973,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
         processing_errors = [
             RawFileProcessingError(
                 original_file_path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                 ),
                 temporary_file_paths=[
                     GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_1.csv"),
@@ -982,7 +982,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ),
             RawFileProcessingError(
                 original_file_path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                 ),
                 temporary_file_paths=[
                     GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_2.csv"),
@@ -991,7 +991,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ),
             RawFileProcessingError(
                 original_file_path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag_1.csv"
+                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
                 ),
                 temporary_file_paths=[
                     GcsfsFilePath(bucket_name="temp", blob_name="temp_blob1_1_3.csv"),

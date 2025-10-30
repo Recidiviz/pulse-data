@@ -92,14 +92,14 @@ docs/readme.md
         self.assertFalse(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
     def test_raw_data_files_modified_no_pk_changes(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
+        self, mock_run: Mock, mock_file_exempt: Mock
     ) -> None:
         """Test when raw data files are modified but no primary key changes."""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -126,14 +126,14 @@ recidiviz/ingest/direct/regions/us_ca/raw_data/test_file.yaml
         self.assertFalse(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
     def test_primary_key_changes_with_allow_flag(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
+        self, mock_run: Mock, mock_file_exempt: Mock
     ) -> None:
         """Test when primary keys change but [ALLOW_PK_UPDATES] flag is present."""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -167,14 +167,14 @@ recidiviz/ingest/direct/regions/us_ca/raw_data/test_file.yaml
         self.assertFalse(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
     def test_primary_key_changes_without_allow_flag(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
+        self, mock_run: Mock, mock_file_exempt: Mock
     ) -> None:
         """Test when primary keys change but no [ALLOW_PK_UPDATES] flag."""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -208,14 +208,14 @@ recidiviz/ingest/direct/regions/us_ca/raw_data/test_file.yaml
         self.assertTrue(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
     def test_new_file_with_primary_keys(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
+        self, mock_run: Mock, mock_file_exempt: Mock
     ) -> None:
         """Test when a new file is added with primary keys but no allow flag"""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -243,12 +243,12 @@ recidiviz/ingest/direct/regions/us_ca/raw_data/new_file.yaml
         self.assertFalse(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
-    def test_deleted_file(self, mock_run: Mock, mock_pruning_enabled: Mock) -> None:
+    def test_deleted_file(self, mock_run: Mock, mock_file_exempt: Mock) -> None:
         """Test when a file is deleted, should not trigger validation failure."""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -283,14 +283,14 @@ recidiviz/ingest/direct/regions/us_ca/raw_data/deleted_file.yaml
         self.assertFalse(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
     def test_keys_removed_without_allow_flag(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
+        self, mock_run: Mock, mock_file_exempt: Mock
     ) -> None:
         """Test when primary keys are removed without allow flag."""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -324,14 +324,14 @@ recidiviz/ingest/direct/regions/us_ca/raw_data/test_file.yaml
         self.assertTrue(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
     def test_multiple_files_mixed_changes(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
+        self, mock_run: Mock, mock_file_exempt: Mock
     ) -> None:
         """Test multiple files with some having PK changes."""
-        mock_pruning_enabled.return_value = True
+        mock_file_exempt.return_value = False
         git_responses = {
             (
                 "git",
@@ -373,15 +373,13 @@ recidiviz/ingest/direct/regions/us_co/raw_data/file2.yaml
         self.assertTrue(result)
 
     @patch(
-        "recidiviz.tools.validate_raw_file_primary_key_updates.automatic_raw_data_pruning_enabled_for_state_and_instance"
+        "recidiviz.tools.validate_raw_file_primary_key_updates.file_tag_exempt_from_automatic_raw_data_pruning"
     )
     @patch("subprocess.run")
-    def test_exempt_file_skipped(
-        self, mock_run: Mock, mock_pruning_enabled: Mock
-    ) -> None:
+    def test_exempt_file_skipped(self, mock_run: Mock, mock_file_exempt: Mock) -> None:
         """Test that files exempt from pruning are skipped from validation."""
-        # Mock automatic pruning to be disabled (so file is exempt)
-        mock_pruning_enabled.return_value = False
+        # Mock file to be exempt from automatic pruning
+        mock_file_exempt.return_value = True
 
         git_responses = {
             (

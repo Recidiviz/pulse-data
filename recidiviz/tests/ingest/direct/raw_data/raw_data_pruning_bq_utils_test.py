@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for raw_data_pruning_utils"""
+"""Tests for raw_data_pruning_bq_utils"""
 import pandas as pd
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
+from recidiviz.ingest.direct.raw_data.raw_data_pruning_bq_utils import (
     get_pruned_table_row_counts,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -27,8 +27,8 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 
 
-class TestRawDataPruningUtils(BigQueryEmulatorTestCase):
-    """Tests for raw data pruning utilities"""
+class TestRawDataPruningBQUtils(BigQueryEmulatorTestCase):
+    """Tests for raw data pruning BQ utilities"""
 
     def setUp(self) -> None:
         super().setUp()

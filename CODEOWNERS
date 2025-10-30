@@ -20,6 +20,7 @@ recidiviz/persistence/**/workflows/** @Recidiviz/polaris-workflows
 recidiviz/airflow/** @Recidiviz/doppler
 recidiviz/big_query/** @Recidiviz/doppler
 recidiviz/calculator/query/state/views/reference/product_person_external_id_helpers.py @Recidiviz/doppler
+recidiviz/ingest/direct/gating.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/raw_data/documentation_exemptions.py @Recidiviz/doppler
 recidiviz/ingest/direct/raw_data/datetime_sql_parser_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/persistence/** @Recidiviz/doppler

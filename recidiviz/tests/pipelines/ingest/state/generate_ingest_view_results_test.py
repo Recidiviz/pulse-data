@@ -194,27 +194,21 @@ file_tag_first_generated_view AS (
 ),
 -- Pulls the latest data from tagFullHistoricalExport received on or before 2020-07-20 01:02:03.000004
 tagFullHistoricalExport_generated_view AS (
-    WITH max_update_datetime AS (
+    WITH filtered_rows AS (
         SELECT
-            MAX(update_datetime) AS update_datetime
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
-    ),
-    max_file_id AS (
-        SELECT
-            MAX(file_id) AS file_id
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                COL_1, file_id, update_datetime, is_deleted,
+                ROW_NUMBER() OVER (PARTITION BY COL_1
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
+        ) a
         WHERE
-            update_datetime = (SELECT update_datetime FROM max_update_datetime)
-    ),
-    filtered_rows AS (
-        SELECT COL_1, file_id, update_datetime, is_deleted
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            recency_rank = 1
+            AND is_deleted = False
     )
     SELECT COL_1
     FROM filtered_rows
@@ -264,27 +258,21 @@ file_tag_first_generated_view AS (
 ),
 -- Pulls the latest data from tagFullHistoricalExport received on or before 2020-07-20 01:02:03.000004
 tagFullHistoricalExport_generated_view AS (
-    WITH max_update_datetime AS (
+    WITH filtered_rows AS (
         SELECT
-            MAX(update_datetime) AS update_datetime
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
-    ),
-    max_file_id AS (
-        SELECT
-            MAX(file_id) AS file_id
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                COL_1, file_id, update_datetime, is_deleted,
+                ROW_NUMBER() OVER (PARTITION BY COL_1
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
+        ) a
         WHERE
-            update_datetime = (SELECT update_datetime FROM max_update_datetime)
-    ),
-    filtered_rows AS (
-        SELECT COL_1, file_id, update_datetime, is_deleted
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
+            recency_rank = 1
+            AND is_deleted = False
     )
     SELECT COL_1
     FROM filtered_rows
