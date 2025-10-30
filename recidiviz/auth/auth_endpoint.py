@@ -37,6 +37,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from recidiviz.auth.cleanup_user_overrides import cleanup_user_overrides
+from recidiviz.auth.constants import PREDEFINED_ROLES
 from recidiviz.auth.helpers import (
     bulk_delete_feature_variant,
     convert_user_object_to_dict,
@@ -525,6 +526,69 @@ def get_auth_endpoint_blueprint(
             )
         except ValueError as error:
             return (f"{error}", HTTPStatus.BAD_REQUEST)
+
+    @auth_endpoint_blueprint.route("/states/<state_code>/roles", methods=["POST"])
+    def add_standard_state_roles(
+        state_code: str,
+    ) -> Union[tuple[Response, int], tuple[str, int]]:
+        """Adds default permissions for all standard roles in a state."""
+        if not StateCode.is_state_code(state_code.upper()):
+            return (
+                f"Unknown state_code [{state_code}] received, must be a valid state code.",
+                HTTPStatus.BAD_REQUEST,
+            )
+        database_key = SQLAlchemyDatabaseKey.for_schema(
+            schema_type=SchemaType.CASE_TRIAGE
+        )
+        try:
+            with SessionFactory.using_database(database_key) as session:
+                request_dict = {
+                    # convert request keys to snake_case to match DB columns. Don't convert nested keys
+                    # because we expect 'routes' to be JSON with keys that contain uppercase letters.
+                    to_snake_case(k): v
+                    for k, v in assert_type(request.json, dict).items()
+                }
+                request_dict["state_code"] = state_code.upper()
+
+                log_reason(
+                    request_dict,
+                    f"adding standard role permissions for state {request_dict['state_code']}",
+                )
+
+                existing_roles = (
+                    session.query(StateRolePermissions.role)
+                    .where(StateRolePermissions.state_code == state_code.upper())
+                    .all()
+                )
+                existing_role_names = [role[0] for role in existing_roles]
+
+                state_roles = [
+                    StateRolePermissions(state_code=state_code.upper(), role=role)
+                    for role in PREDEFINED_ROLES
+                    if role not in existing_role_names
+                ]
+                session.add_all(state_roles)
+                session.commit()
+
+                return (
+                    jsonify(
+                        [
+                            {
+                                "stateCode": role.state_code,
+                                "role": role.role,
+                                "routes": role.routes,
+                                "featureVariants": role.feature_variants,
+                            }
+                            for role in state_roles
+                        ],
+                    ),
+                    HTTPStatus.OK,
+                )
+        except (ProgrammingError, ValueError) as error:
+            return (
+                f"{error}",
+                HTTPStatus.BAD_REQUEST,
+            )
 
     @auth_endpoint_blueprint.route(
         "/feature_variants/<feature_variant>", methods=["DELETE"]

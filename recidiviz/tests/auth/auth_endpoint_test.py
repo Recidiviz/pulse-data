@@ -20,7 +20,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -34,6 +34,7 @@ from sqlalchemy import select
 
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
+from recidiviz.auth.constants import PREDEFINED_ROLES
 from recidiviz.auth.helpers import convert_user_object_to_dict, replace_char_0_slash
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -177,6 +178,10 @@ class AuthEndpointTests(TestCase):
                 "auth_endpoint_blueprint.delete_state_role",
                 state_code=state_code,
                 role=role,
+            )
+            self.add_standard_state_roles = lambda state_code: flask.url_for(
+                "auth_endpoint_blueprint.add_standard_state_roles",
+                state_code=state_code,
             )
             self.delete_feature_variant_from_state_roles = (
                 lambda feature_variant: flask.url_for(
@@ -653,6 +658,84 @@ class AuthEndpointTests(TestCase):
                 for user in json.loads(response.data)
             ]
             self.assertCountEqual(expected_users, actual_users)
+
+    def test_add_standard_state_roles(self) -> None:
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            self.client.post(
+                self.add_standard_state_roles("US_MO"),
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertReasonLog(
+                log.output,
+                "adding standard role permissions for state US_MO with reason: test",
+            )
+            expected = sorted(
+                [
+                    {
+                        "role": role,
+                        "stateCode": "US_MO",
+                        "routes": {},
+                        "featureVariants": {},
+                    }
+                    for role in PREDEFINED_ROLES
+                ],
+                key=lambda x: cast(str, x["role"]),
+            )
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_add_standard_state_roles_existing(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True, "B": True, "C": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            self.client.post(
+                self.add_standard_state_roles("US_MO"),
+                headers=self.headers,
+                json={
+                    "reason": "test",
+                },
+            )
+            self.assertReasonLog(
+                log.output,
+                "adding standard role permissions for state US_MO with reason: test",
+            )
+            existing_roles = [LEADERSHIP_ROLE]
+            expected = sorted(
+                [
+                    {
+                        "role": role,
+                        "stateCode": "US_MO",
+                        "routes": {},
+                        "featureVariants": {},
+                    }
+                    for role in PREDEFINED_ROLES
+                    if role not in existing_roles
+                ]
+                + [
+                    {
+                        "role": LEADERSHIP_ROLE,
+                        "stateCode": "US_MO",
+                        "routes": {"A": True, "B": True, "C": False},
+                        "featureVariants": {},
+                    }
+                ],
+                key=lambda x: cast(str, x["role"]),
+            )
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
 
     def test_delete_feature_variant_from_state_roles(self) -> None:
         leadership_role = generate_fake_default_permissions(
