@@ -1622,7 +1622,7 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "SupervisionContact": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "SupervisionPeriod": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "SupervisionSentence": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
-        "TAMASTER": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "TAMaster": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "TPCASE_CAT_Description": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "TPCASE_CAT_HIST": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "TPFCTY_INVESTG": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
