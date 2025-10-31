@@ -310,16 +310,30 @@ class RunValidations(beam.PTransform):
         ) -> int:
             return entity_names.index(entity_name_and_fields[0])
 
+        entity_critical_fields_with_names: beam.PCollection[
+            Tuple[EntityClassName, EntityCriticalFieldsDict]
+        ] = input_or_inputs | "Generate entity critical fields" >> beam.ParDo(
+            GetEntityCriticalFields(
+                constraints_by_entity_type=self.constraints_by_entity_type
+            )
+        )
+
+        # Validate expected entities have hydrated at least one entity
+        # of that type (fail here if any entity type has zero count).
+        # We collect all counts into a dict before validating so we can show all
+        # missing entity types at once rather than failing on the first one.
+        entity_type_count_error = (
+            entity_critical_fields_with_names
+            | "Count entities by class" >> beam.combiners.Count.PerKey()
+            | "Convert counts to dict" >> beam.combiners.ToDict()
+            | "Validate entity type counts"
+            >> beam.Map(self.validate_entity_type_counts)
+        )
+
         entity_type_partitions: List[
             beam.PCollection[Tuple[EntityClassName, EntityCriticalFieldsDict]]
         ] = (
-            input_or_inputs
-            | "Generate entity critical fields"
-            >> beam.ParDo(
-                GetEntityCriticalFields(
-                    constraints_by_entity_type=self.constraints_by_entity_type
-                )
-            )
+            entity_critical_fields_with_names
             | "Partition all entities by type"
             >> beam.Partition(
                 # apache-beam expects this type to be "WithTypeHints"
@@ -328,24 +342,18 @@ class RunValidations(beam.PTransform):
             )
         )
 
-        hydrated_entity_counts_by_entity_name: Dict[
-            EntityClassName, beam.PCollection[int]
-        ] = {}
         unique_constraint_failure_pcollections: List[
             beam.PCollection[
                 Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
             ]
         ] = []
+
         for i, entity_infos_for_entity_cls in enumerate(entity_type_partitions):
             entity_name = entity_names[i]
             entity_cls = self.expected_output_entity_name_to_class[entity_name]
             root_entity_cls = get_entity_class_to_root_entity_class(
                 entities_module=self.entities_module
             )[entity_cls]
-            hydrated_entity_counts_by_entity_name[entity_name] = (
-                entity_infos_for_entity_cls
-                | f"Count {entity_name} objects" >> beam.combiners.Count.Globally()
-            )
 
             # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
             # pylint: disable=E1120
@@ -392,41 +400,45 @@ class RunValidations(beam.PTransform):
                 UNIQUENESS_CONSTRAINT_ERRORS: unique_constraint_failures,
             }
             | "Group by root entity key" >> beam.CoGroupByKey()
-            | beam.Map(
+            | "Validate and return root entities"
+            >> beam.Map(
                 self.raise_errors_or_return_root_entity,
-                **{
-                    entity_name: beam.pvalue.AsSingleton(count)
-                    for entity_name, count in hydrated_entity_counts_by_entity_name.items()
-                },
+                # Pass the entity count errors as a side input so that all output
+                # is blocked on these validations being checked.
+                entity_type_count_error=beam.pvalue.AsSingleton(
+                    entity_type_count_error
+                ),
             )
         )
         return final_entities
 
-    def get_hydrated_entities_errors(
-        self, hydrated_entity_counts_by_entity_name: Dict[str, int]
-    ) -> List[str]:
-        return [
+    def validate_entity_type_counts(
+        self, entity_counts: Dict[EntityClassName, int]
+    ) -> str | None:
+        """Validates that all expected entity types have non-zero counts.
+
+        Returns an error string if any entity type has zero entities, None otherwise.
+        """
+        errors = [
             f"Expected non-zero {entity_cls.__name__} entities to be produced, but none were produced."
             for entity_name, entity_cls in self.expected_output_entity_name_to_class.items()
-            if assert_type(hydrated_entity_counts_by_entity_name[entity_name], int) == 0
+            if entity_counts.get(entity_name, 0) == 0
         ]
+        if errors:
+            return f"Found errors: {errors}"
+        return None
 
     def raise_errors_or_return_root_entity(
         self,
         element: Tuple[RootEntityPrimaryKey, Dict[str, Any]],
-        **hydrated_entity_counts_by_entity_name: int,
+        entity_type_count_error: str | None,
     ) -> RootEntity:
         """For the provided root entity and associated information, raises if there are
         any validation errors associated with this root entity. Returns the root entity
         if there are no errors.
-
-        Will also raise if for any expected entity type we find no output entities.
         """
-        entity_type_level_errors = self.get_hydrated_entities_errors(
-            hydrated_entity_counts_by_entity_name
-        )
-        if entity_type_level_errors:
-            raise ValueError(f"Found errors: {entity_type_level_errors}")
+        if entity_type_count_error:
+            raise ValueError(entity_type_count_error)
 
         _, grouped_elements = element
 
