@@ -1,58 +1,7 @@
 # Configuration for which validations to run for region US_CO.
 
 region_code: US_CO
-exclusions:
-  - validation_name: dataflow_metrics_supervising_officer_staff_id_all_null
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: There is no supervision data in CO so all supervising officer external id should be null.
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#28861) Hydrate new sentencing entities
-  - validation_name: us_co_stale_raw_data_tables
-    exclusion_type: BROKEN
-    exclusion_reason:
-      We are not presently receiving new transfers from US_CO, so we want to silence all
-      validations until there is a path forward #TODO(#23733)
-  - validation_name: case_insights_rates_missing_charges
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
-max_allowed_error_overrides:
-  - validation_name: state_incarceration_period_by_admission_date_stable_counts
-    hard_max_allowed_error_override: 1.00
-    override_reason: Needs investigation.
-  - validation_name: state_incarceration_period_by_release_date_stable_counts
-    hard_max_allowed_error_override: 1.00
-    override_reason: Needs investigation.
-  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: 0.03
-    override_reason: Data from the old system is causing more errors, need to find more conversions.
-num_allowed_rows_overrides:
-  - validation_name: session_new_admissions_with_no_sentence_date_imposed
-    hard_num_allowed_rows_override: 60000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 47,807 rows #TODO(#16229)
-  - validation_name: session_liberty_releases_with_no_sentence_completion_date
-    hard_num_allowed_rows_override: 3000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 2,144 rows #TODO(#16240)
-  - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 280
-    override_reason: Current failing level as of 4/5/23 is 82 rows (0.02%)
-  - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 200000
-    override_reason: Current failing level as of 4/20/23 is 157,462 rows (56%) #TODO(#20401)
-  - validation_name: sessions_persons_in_incarceration_or_supervision
-    hard_num_allowed_rows_override: 20
-    override_reason: Have a gap in time for receiving data between 04-06 2023.
-  - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 580
-    override_reason:
-      We don't have accurate sentence data from CO. Modest increase starting on 8/2/23 requires
-      a bump from the previous level (550), and probably further invetigation. #TODO(#23226)
-  - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 20
-    override_reason: Needs investigation. Current failing level as of 8/15/23 is 14 periods. #TODO(#23226)
-  - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 5
-    override_reason: Needs investigation. Started failing on 6/16/23; current failing level as of 8/15/23 is 4 admissions. #TODO(#23226)
-  - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 450
-    override_reason: Current failing level as of 12/20/23 is 332 rows, not necessary currently and will be automated in future
+dev_mode: False
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []

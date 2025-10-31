@@ -91,6 +91,7 @@ output:
                   - AY # Warehouse/Pantry
                   - AZ # Contracted Canteen
                   - B0 # State Prison - Intake Only Facility
+                  - BO # Not documented, but exists in raw data, probably a typo for B0
                   - B1 # State Prison - Major
                   - B2 # State Prison - Minimum
                   - B3 # Boot Camp
@@ -275,6 +276,7 @@ output:
                   - Z3 # Victim Restitution (TBD)
                   - Z5 # Not Applicable
                   - Z9 # Unknown
+                  - ZW # Not documented, but exists in raw data
                   - ZZ # Not Used
           admission_date: start_datetime
           release_date: end_datetime
