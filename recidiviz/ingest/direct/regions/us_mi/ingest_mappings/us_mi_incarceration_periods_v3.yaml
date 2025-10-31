@@ -327,6 +327,7 @@ output:
               $mappings:
                 StateIncarcerationPeriodCustodyLevel.MINIMUM:
                   - "11539" # Security level I
+                  - "12551" # Security level IS (Level 1 Secure)
                 StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM:
                   - "11538" # Security level II
                 StateIncarcerationPeriodCustodyLevel.MEDIUM:
@@ -336,8 +337,6 @@ output:
                 StateIncarcerationPeriodCustodyLevel.MAXIMUM:
                   - "11535" # Security level V
                   - "11540" # Security level VI (no longer used)
-                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
-                  - "12551" # Security level IS
           housing_unit_type:
             $conditional:
               # If the housing unit is part of the START unit, map to OTHER_SOLITARY_CONFINEMENT
