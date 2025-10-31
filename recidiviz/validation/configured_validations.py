@@ -21,7 +21,6 @@ from functools import cache
 from typing import Dict, List, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
-from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.validation import config
@@ -355,22 +354,20 @@ def _get_validation_region_module_paths() -> List[Tuple[str, str]]:
     return validation_region_module_paths
 
 
+@cache
 def get_validation_region_configs() -> Dict[str, ValidationRegionConfig]:
-    """Reads all region configs for regions with configs defined in the recidiviz.validation.config.regions module. This
-    is the set of regions we will run validations for, subject to the constraints defined in their validation config
-    files.
+    """Reads all region configs for regions with configs defined in the
+    recidiviz.validation.config.regions module.
     """
 
     validation_region_configs = {}
     for region_code, region_module_path in _get_validation_region_module_paths():
-        region = direct_ingest_regions.get_direct_ingest_region(region_code.lower())
-        if region.is_ingest_launched_in_env():
-            config_path = os.path.join(
-                region_module_path, f"{region_code.lower()}_validation_config.yaml"
-            )
-            validation_region_configs[
-                region_code.upper()
-            ] = ValidationRegionConfig.from_yaml(config_path)
+        config_path = os.path.join(
+            region_module_path, f"{region_code.lower()}_validation_config.yaml"
+        )
+        validation_region_configs[
+            region_code.upper()
+        ] = ValidationRegionConfig.from_yaml(config_path)
 
     return validation_region_configs
 

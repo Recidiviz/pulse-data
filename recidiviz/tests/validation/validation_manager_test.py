@@ -726,7 +726,7 @@ class TestFetchValidations(TestCase):
         all_validations_not_deployed_in_prod = (
             all_validations - all_deployed_validations
         )
-        region_configs_to_validate = get_validation_region_configs()
+        region_configs = get_validation_region_configs()
         global_config = get_validation_global_config()
         # exclude globlal exclusions for validations not set to run in prod
         global_exclusions_in_prod = {
@@ -735,21 +735,20 @@ class TestFetchValidations(TestCase):
             if e not in all_validations_not_deployed_in_prod
         }
 
-        launched_state_codes = [
-            region
-            for region, config in region_configs_to_validate.items()
-            if not config.dev_mode
+        state_codes_with_configs = [
+            region for region, config in region_configs.items() if not config.dev_mode
         ]
 
         # When you promote a state to production, we will start running validations against that state - add it to this
         # list to confirm you've updated all relevant external data validation tables in production to include
         # validation data for the newly promoted region.
         self.assertCountEqual(
-            launched_state_codes,
+            state_codes_with_configs,
             [
                 "US_AR",
                 "US_AZ",
                 "US_CA",
+                "US_CO",
                 "US_IA",
                 "US_IX",
                 "US_ME",
@@ -757,6 +756,7 @@ class TestFetchValidations(TestCase):
                 "US_MO",
                 "US_ND",
                 "US_NE",
+                "US_OR",
                 "US_PA",
                 "US_TN",
                 "US_TX",
@@ -764,7 +764,7 @@ class TestFetchValidations(TestCase):
             ],
         )
 
-        for state_code, config in region_configs_to_validate.items():
+        for state_code, config in region_configs.items():
             # exclude state-specific exclusions for validations not set to run in prod
             region_exclusions_in_prod = {
                 e
