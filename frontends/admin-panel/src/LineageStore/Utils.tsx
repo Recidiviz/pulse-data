@@ -19,7 +19,6 @@ import { Tooltip } from "antd";
 import { BaseOptionType, DefaultOptionType } from "antd/lib/select";
 
 import { HydrationState } from "../InsightsStore/types";
-import { NodeFilter } from "./NodeFilter/NodeFilter";
 import { BigQueryLineageNode } from "./types";
 
 /**
@@ -38,8 +37,8 @@ export function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
-export function buildSelectOptionForFilter(filter: NodeFilter): BaseOptionType {
-  return { value: filter.value, filter };
+export function buildSelectOption(value: string): BaseOptionType {
+  return { value };
 }
 
 function createBigQueryNodeLabel(viewId: string, urn: string) {

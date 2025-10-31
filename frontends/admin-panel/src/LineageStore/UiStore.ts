@@ -16,26 +16,23 @@
 // =============================================================================
 
 import { Node } from "@xyflow/react";
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 
 import { findLargestConnectedGraphOfPossibleUnconnectedGraphs } from "./GraphHelpers";
 import { LineageRootStore } from "./LineageRootStore";
 import { NodeFilter } from "./NodeFilter/NodeFilter";
 import {
   applyFiltersToExistingNodes,
-  buildNodeFilter,
   NodeFilteringResult,
 } from "./NodeFilter/Utils";
 import {
   BigQueryGraphDisplayNode,
   BigQueryLineageNode,
   NodeDetailDrawerTab,
-  NodeFilterKey,
-  NodeFilterType,
   NodeUrn,
 } from "./types";
 import {
-  buildSelectOptionForFilter,
+  buildSelectOption,
   createBigQueryNodeAutoCompleteGroups,
   throwExpression,
 } from "./Utils";
@@ -110,15 +107,7 @@ export class UiStore {
         },
         new Set<string>()
       )
-    )
-      .map((d) =>
-        buildNodeFilter(
-          NodeFilterType.EXCLUDE,
-          NodeFilterKey.DATASET_ID_FILTER,
-          d
-        )
-      )
-      .map(buildSelectOptionForFilter);
+    ).map(buildSelectOption);
   }
 
   // builds one select option for each state code
@@ -133,15 +122,7 @@ export class UiStore {
         },
         new Set<string>()
       )
-    )
-      .map((s) =>
-        buildNodeFilter(
-          NodeFilterType.INCLUDE,
-          NodeFilterKey.STATE_CODE_FILTER,
-          s
-        )
-      )
-      .map(buildSelectOptionForFilter);
+    ).map(buildSelectOption);
   }
 
   get areFiltersActive(): boolean {
@@ -239,7 +220,9 @@ export class UiStore {
       hiddenNodes,
       undefined
     );
-    this.nodeFilters = newFilters;
+    runInAction(() => {
+      this.nodeFilters = newFilters;
+    });
   };
 
   applyActiveFiltersToExistingNodes = (

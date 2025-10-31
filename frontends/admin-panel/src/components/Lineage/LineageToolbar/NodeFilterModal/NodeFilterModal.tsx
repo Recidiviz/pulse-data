@@ -52,17 +52,21 @@ export const NodeFilterModal: React.FC = observer(() => {
     setCandidateFilters([filter, ...candidateFilters]);
   };
 
-  const removeCandidateFilter = (type: NodeFilterType, filter?: NodeFilter) => {
-    if (filter !== undefined) {
+  const removeCandidateFilter = (
+    key: NodeFilterKey,
+    type?: NodeFilterType,
+    value?: string
+  ) => {
+    if (value !== undefined) {
       // remove this specific filter
       setCandidateFilters(
         candidateFilters.filter(
-          (f) => !(f.type === filter.type && f.value === filter.value)
+          (f) => !(f.type === type && f.value === value && f.key === key)
         )
       );
     } else {
       // remove this specific type
-      setCandidateFilters(candidateFilters.filter((f) => f.type !== type));
+      setCandidateFilters(candidateFilters.filter((f) => f.key !== key));
     }
   };
 
@@ -106,6 +110,7 @@ export const NodeFilterModal: React.FC = observer(() => {
       </Paragraph>
       <Space direction="vertical" size="middle" style={{ display: "flex" }}>
         <NodeFilterSelect
+          mode="multiple"
           title="State Codes to Include"
           placeholder="e.g. US_XX"
           options={allStateCodeFilterOptions}
@@ -116,11 +121,23 @@ export const NodeFilterModal: React.FC = observer(() => {
           initialFilters={nodeFilters}
         />
         <NodeFilterSelect
+          mode="multiple"
           title="Datasets to Exclude"
           placeholder="e.g. fake_dataset"
           options={allDatasetFilterOptions}
           type={NodeFilterType.EXCLUDE}
           filterKey={NodeFilterKey.DATASET_ID_FILTER}
+          addCandidateFilter={addCandidateFilter}
+          removeCandidateFilter={removeCandidateFilter}
+          initialFilters={nodeFilters}
+        />
+        <NodeFilterSelect
+          mode="tags"
+          title="Dataset Prefixes to Exclude"
+          placeholder="(type and hit enter to add new options) e.g. fake_"
+          options={[]}
+          type={NodeFilterType.EXCLUDE}
+          filterKey={NodeFilterKey.DATASET_ID_STARTS_WITH_FILTER}
           addCandidateFilter={addCandidateFilter}
           removeCandidateFilter={removeCandidateFilter}
           initialFilters={nodeFilters}

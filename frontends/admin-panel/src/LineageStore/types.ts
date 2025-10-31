@@ -85,6 +85,7 @@ export enum NodeFilterType {
 export enum NodeFilterKey {
   STATE_CODE_FILTER = "STATE_CODE",
   DATASET_ID_FILTER = "DATASET_ID",
+  DATASET_ID_STARTS_WITH_FILTER = "DATASET_ID_STARTS_WITH",
 }
 
 export enum NodeDetailDrawerTab {

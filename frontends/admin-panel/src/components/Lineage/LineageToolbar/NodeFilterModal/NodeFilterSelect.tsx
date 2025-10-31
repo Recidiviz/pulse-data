@@ -19,21 +19,28 @@ import Title from "antd/lib/typography/Title";
 import { observer } from "mobx-react-lite";
 
 import { NodeFilter } from "../../../../LineageStore/NodeFilter/NodeFilter";
+import { buildNodeFilter } from "../../../../LineageStore/NodeFilter/Utils";
 import { NodeFilterKey, NodeFilterType } from "../../../../LineageStore/types";
-import { buildSelectOptionForFilter } from "../../../../LineageStore/Utils";
+import { buildSelectOption } from "../../../../LineageStore/Utils";
 
 type NodeFilterSelectProps = {
+  mode: "multiple" | "tags";
   title: string;
   placeholder: string;
   options: BaseOptionType[];
   type: NodeFilterType;
   filterKey: NodeFilterKey;
   addCandidateFilter(filter: NodeFilter): void;
-  removeCandidateFilter(type: NodeFilterType, filter?: NodeFilter): void;
+  removeCandidateFilter(
+    key: NodeFilterKey,
+    type?: NodeFilterType,
+    value?: string
+  ): void;
   initialFilters: NodeFilter[];
 };
 export const NodeFilterSelect: React.FC<NodeFilterSelectProps> = observer(
   ({
+    mode,
     title,
     placeholder,
     options,
@@ -47,20 +54,28 @@ export const NodeFilterSelect: React.FC<NodeFilterSelectProps> = observer(
       <>
         <Title level={5}> {title} Filter </Title>
         <Select
-          mode="multiple"
+          mode={mode}
           allowClear
           style={{ width: "100%" }}
           placeholder={placeholder}
-          onSelect={(value: BaseOptionType, option: BaseOptionType) => {
-            addCandidateFilter(option.filter);
+          // typing is wrong here for value -- even though it claims to be an BaseOptionType
+          // it is not -- it's always a string
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          onSelect={(value: string) => {
+            addCandidateFilter(buildNodeFilter(type, filterKey, value));
           }}
-          onClear={() => removeCandidateFilter(type)}
-          onDeselect={(value: BaseOptionType, option: BaseOptionType) => {
-            removeCandidateFilter(type, option.filter);
+          onClear={() => removeCandidateFilter(filterKey)}
+          // typing is wrong here for value -- even though it claims to be an BaseOptionType
+          // it is not -- it's always a string
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          onDeselect={(value: string) => {
+            removeCandidateFilter(filterKey, type, value);
           }}
           defaultValue={initialFilters
             .filter((f) => f.type === type && f.key === filterKey)
-            .map(buildSelectOptionForFilter)}
+            .map((f) => buildSelectOption(f.value))}
           options={options}
         />
       </>

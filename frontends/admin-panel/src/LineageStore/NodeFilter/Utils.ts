@@ -23,6 +23,7 @@ import {
   NodeFilterType,
 } from "../types";
 import { ExcludeDatasetNodeFilter } from "./ExcludeDatasetNodeFilter";
+import { ExcludeDatasetPrefixNodeFilter } from "./ExcludeDatasetPrefixNodeFilter";
 import { IncludeStateCodeNodeFilter } from "./IncludeStateCodeNodeFilter";
 import { NodeFilter } from "./NodeFilter";
 
@@ -47,6 +48,12 @@ export function buildNodeFilter(
     key === NodeFilterKey.STATE_CODE_FILTER
   ) {
     return new IncludeStateCodeNodeFilter(value);
+  }
+  if (
+    type === NodeFilterType.EXCLUDE &&
+    key === NodeFilterKey.DATASET_ID_STARTS_WITH_FILTER
+  ) {
+    return new ExcludeDatasetPrefixNodeFilter(value);
   }
   throw new Error(`Unknown node filter type [${type}] and key [${key}] combo`);
 }
