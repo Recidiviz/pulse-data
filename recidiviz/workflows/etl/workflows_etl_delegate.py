@@ -41,6 +41,8 @@ from recidiviz.utils.string import StrictStringFormatter
 # in the Firestore SDK (e.g. the BulkWriter, which we are not using here because it is too
 # unstable in other ways)
 MAX_FIRESTORE_RECORDS_PER_BATCH = 20
+# to prevent memory overruns we don't want to stream in too much input all at once
+INPUT_CHUNK_SIZE = 32 * 1024 * 1024  # 32 mb
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -154,16 +156,19 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         etl_timestamp = datetime.now(timezone.utc)
 
         # step 1: Load new documents
-        try:
-            async with TaskGroup() as tg:
-                batch = firestore_client.async_batch()
-                for file_stream in self.get_file_stream(filename):
-                    while line := file_stream.readline():
+        for file_stream in self.get_file_stream(filename):
+            while rows := file_stream.readlines(INPUT_CHUNK_SIZE):
+                # wait for all writes in this chunk to finish before starting the next one
+                async with TaskGroup() as tg:
+                    batch = firestore_client.async_batch()
+                    for line in rows:
                         try:
                             row_id, document_fields = self.transform_row(line)
                         except Exception as e:
                             logging.error(
-                                "Transform row failed on [%s] due to: %s", line, str(e)
+                                "Transform row failed on [%s] due to: %s",
+                                line,
+                                str(e),
                             )
                             continue
 
@@ -184,13 +189,15 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                             batch = firestore_client.async_batch()
                             num_records_to_write = 0
 
-                tg.create_task(self._send_batch(batch))
-        finally:
-            logging.info(
-                '%d total records written to Firestore collection "%s".',
-                self.total_records_written,
-                collection_name,
-            )
+                    # send whatever's left over at the end of this chunk
+                    tg.create_task(self._send_batch(batch))
+
+                logging.info(
+                    '%d total records written to Firestore collection "%s".',
+                    self.total_records_written,
+                    collection_name,
+                )
+
         # step 2: Create composite indexes if they do not exist
         if not firestore_client.index_exists_for_collection(collection_name):
             try:

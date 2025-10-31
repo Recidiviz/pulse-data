@@ -75,12 +75,12 @@ class FakeFileStream:
         self.total_values = total_values
         self.values_written = 0
 
-    def readline(self) -> Optional[str]:
+    def readlines(self, _hint: int) -> Optional[list]:
         if self.values_written >= self.total_values:
             return None
 
         self.values_written += 1
-        return str(self.values_written)
+        return [str(self.values_written)]
 
 
 # Because we are testing an abstract class, we need to subclass it within this test,
