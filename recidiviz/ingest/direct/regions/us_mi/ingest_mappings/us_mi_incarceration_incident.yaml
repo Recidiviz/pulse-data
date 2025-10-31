@@ -29,6 +29,32 @@ output:
             $enum_mapping:
               $raw_text: _offense_description_list
               $custom_parser: us_mi_custom_enum_parsers.map_incident_type
+          incident_severity:
+            $conditional:
+              - $if:
+                  $equal:
+                    - $literal("True")
+                    - $custom:
+                        $function: us_mi_custom_parsers.parse_class_i
+                        $args:
+                          offense_codes: _offense_code_list
+                $then: $literal_enum(StateIncarcerationIncidentSeverity.HIGHEST)
+              - $else_if:
+                  $equal:
+                    - $literal("True")
+                    - $custom:
+                        $function: us_mi_custom_parsers.parse_class_ii
+                        $args:
+                          offense_codes: _offense_code_list
+                $then: $literal_enum(StateIncarcerationIncidentSeverity.SECOND_HIGHEST)
+              - $else_if:
+                  $equal:
+                    - $literal("True")
+                    - $custom:
+                        $function: us_mi_custom_parsers.parse_class_iii
+                        $args:
+                          offense_codes: _offense_code_list
+                $then: $literal_enum(StateIncarcerationIncidentSeverity.THIRD_HIGHEST)
           incident_metadata:
             $normalized_values_json_dict:
               NONBONDABLE_OFFENSES:
