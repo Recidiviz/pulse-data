@@ -128,7 +128,7 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
                 {rawFileConfigSummary.manuallyPruned ? "Yes" : "No"}
               </Descriptions.Item>
               <Descriptions.Item label="Has Headers?">
-                {rawFileConfigSummary.inferColumns ? "Yes" : "No"}
+                {rawFileConfigSummary.inferColumns ? "No" : "Yes"}
               </Descriptions.Item>
             </Descriptions>
           </Card>
