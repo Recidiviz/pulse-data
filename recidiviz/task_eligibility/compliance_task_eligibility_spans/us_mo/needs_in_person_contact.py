@@ -20,8 +20,8 @@ contact to meet contact standards.
 
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_parole_dual_active_supervision_population,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_mo import (
+    supervision_tasks_eligible_population,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -36,9 +36,8 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_in_person_contact",
-    # TODO(#50537): Update/refine candidate population. (This is just a placeholder for
-    # now.)
-    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
+    # TODO(#50537): Update/refine candidate population to ensure it's correct.
+    candidate_population_view_builder=supervision_tasks_eligible_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_in_person_contact_triggers.VIEW_BUILDER,
     ],

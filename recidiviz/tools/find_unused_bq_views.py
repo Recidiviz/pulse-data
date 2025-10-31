@@ -144,12 +144,6 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.tasks.us_mo.us_mo_contact_cadence_spans_type_agnostic import (
     US_MO_CONTACT_CADENCE_SPANS_TYPE_AGNOSTIC_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.tasks.us_mo.us_mo_contact_cadence_spans_type_specific import (
-    US_MO_CONTACT_CADENCE_SPANS_TYPE_SPECIFIC_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.tasks.us_mo.us_mo_contact_events_preprocessed import (
-    US_MO_CONTACT_EVENTS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -448,18 +442,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_supervision_locations"
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
-    # TODO(#50536): Finish setting up the contact-cadence views and incorporate them
-    # into downstream infra for MO Tasks.
+    # TODO(#50536): Finish setting up this contact-cadence view and incorporate it into
+    # downstream infra for MO Tasks.
     US_MO_CONTACT_CADENCE_SPANS_TYPE_AGNOSTIC_VIEW_BUILDER.address: (
         "Will be used for MO Tasks once more dev work is completed - see #50536 (Maggie Hilderbran, 10/8/2025)"
-    ),
-    US_MO_CONTACT_CADENCE_SPANS_TYPE_SPECIFIC_VIEW_BUILDER.address: (
-        "Will be used for MO Tasks once more dev work is completed - see #50536 (Maggie Hilderbran, 10/8/2025)"
-    ),
-    # TODO(#50610): Finish setting up this view and incorporate it into downstream views
-    # for use in MO Tasks.
-    US_MO_CONTACT_EVENTS_PREPROCESSED_VIEW_BUILDER.address: (
-        "Will be used for MO Tasks once more dev work is completed - see #50610 (Maggie Hilderbran, 10/8/2025)"
     ),
 }
 

@@ -54,9 +54,6 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_fu
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_supervision_tasks_record import (
-    US_MO_SUPERVISION_TASKS_RECORD_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
@@ -460,8 +457,6 @@ class ViewDagInvariantTests(unittest.TestCase):
             # Funnel analysis requires referencing all unioned segment events.
             INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
-            # Compliance Tasks product export views pull from the unioned view of all tasks for a given state.
-            US_MO_SUPERVISION_TASKS_RECORD_VIEW_BUILDER.address,
             # Views to help calculate compliance metrics pull from the unioned view of all tasks for a given state.
             BigQueryAddress(
                 dataset_id="analyst_data", table_id="assessment_compliance_spans"
