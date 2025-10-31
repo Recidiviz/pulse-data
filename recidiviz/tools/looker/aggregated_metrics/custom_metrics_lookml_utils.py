@@ -489,24 +489,6 @@ NULL -- will throw error, should never happen
 WHERE
 {attribute_columns_conditional}
     """
-    assignment_type_parameter = ParameterLookMLViewField(
-        field_name="assignment_type",
-        parameters=[
-            LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
-            LookMLFieldParameter.description(
-                "The type of assignment that partially determines the unit of analysis and sets "
-                "the relative date for time-since-assignment metrics"
-            ),
-            LookMLFieldParameter.view_label("Units of Analysis"),
-            *[
-                LookMLFieldParameter.allowed_value(
-                    snake_to_title(assignment_type), assignment_type
-                )
-                for assignment_type in assignment_types_dict
-            ],
-            LookMLFieldParameter.default_value(sorted(assignment_types_dict)[0]),
-        ],
-    )
 
     unit_of_analysis_dimension = DimensionLookMLViewField(
         field_name="assignment_unit_of_analysis",
@@ -542,7 +524,6 @@ WHERE
         ),
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[
-            assignment_type_parameter,
             unit_of_analysis_dimension,
             *all_unit_of_analysis_dimensions,
         ],
@@ -1025,6 +1006,24 @@ USING
     metric_value_measure = get_metric_value_measure(
         lookml_views_package_name, metric_filter_parameter
     )
+    assignment_type_parameter = ParameterLookMLViewField(
+        field_name="assignment_type",
+        parameters=[
+            LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
+            LookMLFieldParameter.description(
+                "The type of assignment that partially determines the unit of analysis and sets "
+                "the relative date for time-since-assignment metrics"
+            ),
+            LookMLFieldParameter.view_label("Units of Analysis"),
+            *[
+                LookMLFieldParameter.allowed_value(
+                    snake_to_title(assignment_type), assignment_type
+                )
+                for assignment_type in assignment_types_dict
+            ],
+            LookMLFieldParameter.default_value(sorted(assignment_types_dict)[0]),
+        ],
+    )
     measure_type_parameter = ParameterLookMLViewField(
         field_name="measure_type",
         parameters=[
@@ -1124,6 +1123,7 @@ CROSS JOIN
         view_name=lookml_views_package_name,
         fields=[
             *metric_measures,
+            assignment_type_parameter,
             measure_type_parameter,
             metric_filter_parameter,
             metric_value_measure,
