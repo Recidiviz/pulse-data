@@ -177,7 +177,8 @@
       normalized_state_staff_supervisor_period.start_date,
       normalized_state_staff_supervisor_period.state_code,
       normalized_state_staff_supervisor_period.supervisor_staff_external_id,
-      normalized_state_staff_supervisor_period.supervisor_staff_external_id_type]
+      normalized_state_staff_supervisor_period.supervisor_staff_external_id_type,
+      normalized_state_staff_supervisor_period.supervisor_staff_id]
     sorts: [normalized_state_staff_supervisor_period.end_date desc, normalized_state_staff_supervisor_period.start_date desc]
     listen: 
       Staff Id: normalized_state_staff.staff_id

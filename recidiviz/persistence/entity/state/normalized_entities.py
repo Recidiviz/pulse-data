@@ -3999,6 +3999,7 @@ class NormalizedStateStaffSupervisorPeriod(NormalizedStateEntity, HasExternalIdE
     #   - What
     supervisor_staff_external_id: str = attr.ib(validator=attr_validators.is_str)
     supervisor_staff_external_id_type: str = attr.ib(validator=attr_validators.is_str)
+    supervisor_staff_id: int = attr.ib(validator=attr_validators.is_int)
 
     # Primary key
     staff_supervisor_period_id: int = attr.ib(validator=attr_validators.is_int)

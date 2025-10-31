@@ -20,8 +20,14 @@ NormalizedStateStaff.
 from typing import Mapping, Sequence
 
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StateStaff
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
+from recidiviz.persistence.entity.state.entities import (
+    StateStaff,
+    StateStaffSupervisorPeriod,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateStaff,
+    NormalizedStateStaffSupervisorPeriod,
+)
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -40,12 +46,43 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
 from recidiviz.utils.types import assert_type
 
 
+def get_normalized_staff_supervisor_periods(
+    staff_supervisor_periods: list[StateStaffSupervisorPeriod],
+    staff_external_id_to_staff_id: StaffExternalIdToIdMap,
+) -> list[NormalizedStateStaffSupervisorPeriod]:
+    """Normalizes all StateStaffSupervisorPeriods by:
+    * Adding a supervisor_staff_id field corresponding to the
+      supervisor_staff_external_id/type
+    """
+    normalized_supervisor_periods = []
+    for supervisor_period in staff_supervisor_periods:
+        normalized_supervisor_periods.append(
+            NormalizedStateStaffSupervisorPeriod(
+                staff_supervisor_period_id=assert_type(
+                    supervisor_period.staff_supervisor_period_id, int
+                ),
+                state_code=supervisor_period.state_code,
+                external_id=supervisor_period.external_id,
+                start_date=supervisor_period.start_date,
+                end_date=supervisor_period.end_date,
+                supervisor_staff_external_id=supervisor_period.supervisor_staff_external_id,
+                supervisor_staff_external_id_type=supervisor_period.supervisor_staff_external_id_type,
+                supervisor_staff_id=staff_external_id_to_staff_id[
+                    (
+                        supervisor_period.supervisor_staff_external_id,
+                        supervisor_period.supervisor_staff_external_id_type,
+                    )
+                ],
+            )
+        )
+
+    return normalized_supervisor_periods
+
+
 def build_normalized_state_staff(
     staff: StateStaff,
-    # TODO(#45401): Actually use these args to normalize supervisor periods and remove
-    #  the pylint ignore
-    # pylint: disable=unused-argument
     staff_external_id_to_staff_id: StaffExternalIdToIdMap,
+    # pylint: disable=unused-argument
     expected_output_entities: set[type[Entity]],
 ) -> NormalizedStateStaff:
     """Normalizes the given StateStaff root entity into a NormalizedStateStaff."""
@@ -57,8 +94,14 @@ def build_normalized_state_staff(
     )
     role_periods = staff_role_period_normalization_manager.get_normalized_role_periods()
 
+    supervisor_periods = get_normalized_staff_supervisor_periods(
+        staff_supervisor_periods=staff.supervisor_periods,
+        staff_external_id_to_staff_id=staff_external_id_to_staff_id,
+    )
+
     staff_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
         "role_periods": role_periods,
+        "supervisor_periods": supervisor_periods,
     }
 
     return assert_type(

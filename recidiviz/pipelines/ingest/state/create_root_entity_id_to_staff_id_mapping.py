@@ -32,7 +32,6 @@ from recidiviz.persistence.entity.state.entities import StateStaff
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
-from recidiviz.utils import environment
 from recidiviz.utils.types import assert_type
 
 PersonId = int
@@ -126,15 +125,6 @@ class CreateRootEntityIdToStaffIdMapping(beam.PTransform, Generic[RootEntityT]):
         """Extract (external_id, id_type) tuples for all staff external ids referenced
         by the given root_entity.
         """
-        # TODO(#45401): Remove this exemption logic once data for all states has been
-        #  corrected and _STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS is empty.
-        if self.root_entity_cls is StateStaff:
-            if (
-                not environment.in_test()
-                and StateCode(root_entity.state_code)
-                in _STATES_WITH_INVALID_STAFF_SUPERVISOR_MAPPINGS
-            ):
-                return []
 
         def _get_referenced_staff_external_id(
             entity: Entity, _dag_edges: list[EntityDagEdge]

@@ -600,6 +600,8 @@ state_staff_supervisor_period:
       this day.
     supervisor_staff_external_id: The external id of this staff member's supervisor.
     supervisor_staff_external_id_type: The id type associated with the supervisor_staff_external_id field.
+  normalization_only_fields:
+    supervisor_staff_id: StateStaff ID for the supervisor.
 
 state_supervision_case_type_entry:
   fields:

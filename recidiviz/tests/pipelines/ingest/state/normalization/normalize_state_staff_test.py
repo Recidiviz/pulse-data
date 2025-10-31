@@ -110,6 +110,7 @@ class TestNormalizeStateStaff(unittest.TestCase):
                     end_date=datetime.date(2023, 6, 1),
                     supervisor_staff_external_id="S1",
                     supervisor_staff_external_id_type="SUPERVISOR",
+                    supervisor_staff_id=7890,
                 )
             ],
         )
