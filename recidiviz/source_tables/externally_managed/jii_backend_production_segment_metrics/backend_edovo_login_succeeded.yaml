@@ -1,0 +1,66 @@
+address:
+  dataset_id: jii_backend_production_segment_metrics
+  table_id: backend_edovo_login_succeeded
+description: "Segment events emitted when a user successfully logs in via Edovo"
+schema:
+  - name: anonymous_id
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: encrypted_edovo_token
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: is_internal_user
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: is_recidiviz
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: is_demo_user
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: pseudonymized_id
+    type: STRING
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false
