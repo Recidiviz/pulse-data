@@ -390,7 +390,13 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
             [
                 (
                     f"NULL AS {col}"
-                    if col in ["person_id", "facility_counselor_id", "unit_supervisor"]
+                    if col
+                    in [
+                        "person_id",
+                        "facility_counselor_id",
+                        "unit_supervisor",
+                        "staff_id",
+                    ]
                     else (
                         f"CAST(NULL AS DATE) AS {col}"
                         if col == "cohort_month_end_date"

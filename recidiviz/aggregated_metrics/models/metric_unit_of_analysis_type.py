@@ -233,13 +233,13 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
                     primary_key_columns=["state_code", "email_address"],
-                    static_attribute_columns=[],
+                    static_attribute_columns=["staff_id", "user_full_name"],
                 )
             case MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
                     primary_key_columns=["state_code", "email_address"],
-                    static_attribute_columns=[],
+                    static_attribute_columns=["staff_id", "user_full_name"],
                 )
             case MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT:
                 return MetricUnitOfAnalysis(
@@ -256,7 +256,7 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER,
                     primary_key_columns=["state_code", "email_address"],
-                    static_attribute_columns=[],
+                    static_attribute_columns=["staff_id", "user_full_name"],
                 )
             case MetricUnitOfAnalysisType.PRODUCT_ACCESS:
                 return MetricUnitOfAnalysis(
@@ -348,6 +348,36 @@ SELECT
     staff_id AS unit_supervisor,
     full_name_clean AS unit_supervisor_name,
     LOWER(email) AS unit_supervisor_email_address,
+FROM
+    `{project_id}.reference_views.state_staff_with_names`
+""",
+    MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER: """
+
+SELECT
+    state_code,
+    LOWER(email) AS email_address,
+    staff_id,
+    full_name_clean AS user_full_name,
+FROM
+    `{project_id}.reference_views.state_staff_with_names`
+""",
+    MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER: """
+
+SELECT
+    state_code,
+    LOWER(email) AS email_address,
+    staff_id,
+    full_name_clean AS user_full_name,
+FROM
+    `{project_id}.reference_views.state_staff_with_names`
+""",
+    MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER: """
+
+SELECT
+    state_code,
+    LOWER(email) AS email_address,
+    staff_id,
+    full_name_clean AS user_full_name,
 FROM
     `{project_id}.reference_views.state_staff_with_names`
 """,
