@@ -265,8 +265,8 @@ resource "google_cloud_run_service" "application-data-import" {
 
         resources {
           limits = {
-            cpu    = "1000m"
-            memory = "2048Mi"
+            cpu    = "4"
+            memory = "4096Mi"
           }
         }
       }
