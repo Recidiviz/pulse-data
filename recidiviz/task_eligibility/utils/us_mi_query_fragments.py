@@ -144,79 +144,80 @@ nonbondable_codes AS (
         AND DATE_ADD(incident_date, INTERVAL 1 YEAR) >= CURRENT_DATE('US/Eastern')
         AND JSON_EXTRACT_SCALAR(incident_metadata, '$.NONBONDABLE_OFFENSES') != ''
 ),
+all_offenses_unnested AS (
+/* Unnest all bondable and nonbondable offenses for reuse across queries */
+    SELECT 
+        b.person_id,
+        b.incident_date,
+        bondable_offense,
+        NULL AS nonbondable_offense
+    FROM bondable_codes b,
+        UNNEST(b.bondable_offenses) AS bondable_offense
+    
+    UNION ALL
+    
+    SELECT 
+        n.person_id,
+        n.incident_date,
+        NULL AS bondable_offense,
+        nonbondable_offense
+    FROM nonbondable_codes n,
+        UNNEST(n.nonbondable_offenses) AS nonbondable_offense
+),
 form_misconduct_codes AS (
 /* Queries bondable and nonbondable codes to include on the scc form. 
 For bondable codes, the resident can remain in their current cell. 
 For nonbondable code, the resident must be moved to segregation until ticket is heard. */
     SELECT
-        COALESCE(b.person_id, n.person_id) AS person_id,
+        person_id,
         CONCAT('(', 
-            STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(b.incident_date))),
+            STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(incident_date))),
         ')') AS bondable_offenses_within_6_months,
         CONCAT('(',
-            STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(n.incident_date))),
+            STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(incident_date))),
         ')') AS nonbondable_offenses_within_1_year
-    FROM (
-        SELECT 
-            person_id,
-            incident_date,
-            bondable_offense
-        FROM bondable_codes,
-            UNNEST(bondable_offenses) AS bondable_offense
-    ) b
-    FULL OUTER JOIN (
-        SELECT 
-            person_id,
-            incident_date,
-            nonbondable_offense
-        FROM nonbondable_codes,
-            UNNEST(nonbondable_offenses) AS nonbondable_offense
-    ) n
-        ON n.person_id = b.person_id
-    GROUP BY COALESCE(b.person_id, n.person_id)
+    FROM all_offenses_unnested
+    GROUP BY person_id
+),
+recent_misconduct_distinct_offenses AS (
+/* Distinct offenses within current housing sessions for metadata */
+    SELECT DISTINCT
+        h.person_id,
+        o.bondable_offense,
+        o.incident_date AS bondable_incident_date,
+        o.nonbondable_offense,
+        o.incident_date AS nonbondable_incident_date
+    FROM  all_offenses_unnested o
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
+        ON o.person_id = h.person_id 
+        AND o.incident_date >= h.start_date 
+        AND CURRENT_DATE('US/Eastern') BETWEEN h.start_date AND {nonnull_end_date_exclusive_clause('h.end_date_exclusive')}
 ),
 recent_misconduct_codes AS (
 /* Queries bondable and nonbondable codes within the current housing_unit_session for metadata. */
     SELECT 
-        h.person_id,
+        person_id,
         ARRAY_AGG(
-        TO_JSON(STRUCT(bondable_offense AS bondable_offense,
-                b.incident_date AS bondable_incident_date))
-                IGNORE NULLS ORDER BY bondable_offense, b.incident_date) AS json_bondable_offenses_within_6_months,
+            IF(bondable_offense IS NOT NULL, 
+               TO_JSON(STRUCT(bondable_offense AS bondable_offense,
+                       bondable_incident_date AS bondable_incident_date)), 
+               NULL)
+            IGNORE NULLS ORDER BY bondable_offense, bondable_incident_date) 
+            AS json_bondable_offenses_within_6_months,
         ARRAY_AGG(
-        TO_JSON(STRUCT(nonbondable_offense AS nonbondable_offense,
-                n.incident_date AS nonbondable_incident_date))
-                IGNORE NULLS ORDER BY nonbondable_offense, n.incident_date) AS json_nonbondable_offenses_within_1_year,
+            IF(nonbondable_offense IS NOT NULL, 
+               TO_JSON(STRUCT(nonbondable_offense AS nonbondable_offense,
+                       nonbondable_incident_date AS nonbondable_incident_date)), 
+               NULL)
+            IGNORE NULLS ORDER BY nonbondable_offense, nonbondable_incident_date) 
+            AS json_nonbondable_offenses_within_1_year,
         CONCAT('(',
-            STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(b.incident_date))),
+            STRING_AGG(CONCAT(bondable_offense, ', ', STRING(bondable_incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(bondable_incident_date))),
         ')') AS bondable_offenses_within_6_months,
         CONCAT('(',
-            STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(n.incident_date))),
+            STRING_AGG(CONCAT(nonbondable_offense, ', ', STRING(nonbondable_incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(nonbondable_incident_date))),
         ')') AS nonbondable_offenses_within_1_year,
-    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
-    LEFT JOIN (
-        SELECT 
-            person_id,
-            incident_date,
-            bondable_offense
-        FROM bondable_codes,
-            UNNEST(bondable_offenses) AS bondable_offense
-        ) b
-        ON b.person_id = h.person_id 
-        AND b.incident_date >= h.start_date 
-    LEFT JOIN (
-        SELECT 
-            person_id,
-            incident_date,
-            nonbondable_offense
-        FROM nonbondable_codes,
-            UNNEST(nonbondable_offenses) AS nonbondable_offense
-        ) n
-        ON n.person_id = h.person_id
-        AND n.incident_date >= h.start_date 
-    WHERE 
-        --only select current housing_unit_sessions
-        CURRENT_DATE('US/Eastern') BETWEEN h.start_date AND {nonnull_end_date_exclusive_clause('h.end_date_exclusive')}
+    FROM recent_misconduct_distinct_offenses
     GROUP BY 1
 ),
 ad_seg_stays AS (
@@ -419,8 +420,8 @@ SELECT
             ELSE 'Other Segregation'
     END AS metadata_solitary_session_type,
     (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
-    rm.json_bondable_offenses_within_6_months AS metadata_json_bondable_offenses_within_6_months,
-    rm.json_nonbondable_offenses_within_1_year AS metadata_json_nonbondable_offenses_within_1_year,
+    rm.json_bondable_offenses_within_6_months AS metadata_json_recent_bondable_offenses,
+    rm.json_nonbondable_offenses_within_1_year AS metadata_json_recent_nonbondable_offenses,
     #TODO(#51218) remove once frontend is updated to json field
     rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
     rm.nonbondable_offenses_within_1_year AS metadata_recent_nonbondable_offenses,
