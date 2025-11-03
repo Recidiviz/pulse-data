@@ -27,10 +27,17 @@ in the sandbox dataset can be compared against existing raw data tables more eas
 Usage:
 
 python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
-    --state-code US_PA --sandbox-dataset-prefix my_prefix \
+    --state-code US_PA \
+    --sandbox-dataset-prefix my_prefix \
     --source-bucket recidiviz-staging-my-test-bucket \
     [--file-tag-filter-regex "tagA|otherTagB"] \
     [--allow-incomplete-configs False]
+    [--infer-schema-from-csv] \
+    [--skip-blocking-validations] \
+    [--skip-raw-data-migrations] \
+    [--persist-intermediary-tables] \
+    [--allow-incomplete-chunked-files] \
+    [--skip-raw-data-pruning]
 """
 
 import argparse
