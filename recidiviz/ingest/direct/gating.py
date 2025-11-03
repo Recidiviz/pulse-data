@@ -1903,7 +1903,7 @@ def file_tag_exempt_from_automatic_raw_data_pruning(
 ) -> bool:
     """Returns True if the given file tag is exempt from automatic raw data pruning for the given state code."""
     if raw_data_instance == DirectIngestInstance.SECONDARY:
-        return True
+        return False
     return (
         state_code in FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE
         and file_tag

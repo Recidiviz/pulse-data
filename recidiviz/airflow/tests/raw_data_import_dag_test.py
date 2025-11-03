@@ -2640,9 +2640,10 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
         self.operations_registrations_bq_patcher = patch(
             "recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator.BigQueryClientImpl",
-            return_value=MagicMock(),
         )
-        self.operations_registrations_bq_patcher.start()
+        self.operations_registrations_bq_mock = (
+            self.operations_registrations_bq_patcher.start()
+        )
 
         self.load_tasks_bq_patcher = patch(
             "recidiviz.airflow.dags.raw_data.bq_load_tasks.BigQueryClientImpl",
@@ -3136,6 +3137,14 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagMoreBasicData",
         )
 
+        empty_table_mock = MagicMock()
+        single_file_id_imported_mock = MagicMock()
+        single_file_id_imported_mock.result.return_value = [[1]]
+        self.operations_registrations_bq_mock.return_value.run_query_async.side_effect = [
+            empty_table_mock,
+            single_file_id_imported_mock,
+        ]
+
         self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
@@ -3170,7 +3179,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 2
+            # for temp table, transformed table, and pruning diff table
+            assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             assert self.load_bq_mock().delete_table.call_count == 3
@@ -3257,7 +3267,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
-            assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
+            assert self.load_bq_mock().create_table_from_query.call_count == 2 + 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 2
             assert self.load_bq_mock().delete_table.call_count == 3 * 2

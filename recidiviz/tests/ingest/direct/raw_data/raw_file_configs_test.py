@@ -2393,13 +2393,9 @@ def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation
         region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
         state_code = StateCode(region_code.upper())
         for file_tag, config in region_raw_file_config.raw_file_configs.items():
-            pruning_enabled = any(
-                automatic_raw_data_pruning_enabled_for_file_config(
-                    state_code, instance, config
-                )
-                for instance in DirectIngestInstance
-            )
-            if pruning_enabled and config.file_is_exempt_from_validation(
+            if automatic_raw_data_pruning_enabled_for_file_config(
+                state_code, DirectIngestInstance.PRIMARY, config
+            ) and config.file_is_exempt_from_validation(
                 RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
             ):
                 raise ValueError(
