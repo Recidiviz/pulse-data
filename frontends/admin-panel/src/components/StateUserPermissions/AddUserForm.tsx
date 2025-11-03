@@ -162,7 +162,14 @@ export const AddUserForm = ({
         </Row>
         <Row gutter={gutter}>
           <Col span={colSpan}>
-            <Form.Item name="externalId" label="External ID">
+            <Form.Item
+              name="externalId"
+              label="External ID"
+              validateStatus="warning"
+              required={false}
+              validateTrigger="onChange"
+              help="While not required, providing an External ID is STRONGLY recommended for most tools. Do add the external ID when possible; ask the relevant state DA/SWE/PG if unsure of where to find it."
+            >
               <Input />
             </Form.Item>
           </Col>
