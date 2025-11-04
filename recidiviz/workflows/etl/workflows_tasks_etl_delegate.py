@@ -25,9 +25,10 @@ from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETL
 
 COLLECTION_BY_FILENAME = {
     "us_ix_supervision_tasks_record.json": "US_ID-supervisionTasks",
-    "us_tx_supervision_tasks_record.json": "US_TX-supervisionTasks",
+    "us_mo_supervision_tasks_record.json": "US_MO-supervisionTasks",
     "us_nd_supervision_tasks_record.json": "US_ND-supervisionTasks",
     "us_ne_supervision_tasks_record.json": "US_NE-supervisionTasks",
+    "us_tx_supervision_tasks_record.json": "US_TX-supervisionTasks",
 }
 
 
