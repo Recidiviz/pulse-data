@@ -209,3 +209,7 @@ release.out
 .claude/settings.local.json
 .claude/pulse-data-local-settings.md
 .mcp.json
+
+# Don't accidentally commit data files that our notebooks depend on / produce
+recidiviz/research/notebooks/astromberg/input/*
+recidiviz/research/notebooks/astromberg/output/*

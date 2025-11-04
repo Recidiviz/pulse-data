@@ -244,3 +244,7 @@ release.out
 
 # MCP tools (not needed in Docker images)
 recidiviz/tools/mcp/
+
+# Don't accidentally commit data files that our notebooks depend on / produce
+recidiviz/research/notebooks/astromberg/input/*
+recidiviz/research/notebooks/astromberg/output/*
