@@ -438,8 +438,16 @@ output:
                       StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
                         - "7827" # 7856: DS - Detention (Punitive Segregation)
                       StateIncarcerationPeriodHousingUnitType.GENERAL:
-                        - "11319" # Regular
                         - "12550" # G1S - General Population - Level 1 Secure
+                        - "7829" # G1 - General Population - Level 1
+                        - "7830" # G2 - General Population - Level 2
+                        - "7831" # G3 - General Population - Level 3
+                        - "7832" # G4 - General Population - Level 4
+                        - "7833" # G5 - General Population - Level 5
+                      StateIncarcerationPeriodHousingUnitType.HOSPITAL:
+                        - "7834" # HO - Hospital (Temporary - ON or OFF site)
+                      StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN:
+                        - "11319" # Regular
                         - "12820" # QU - Quarantine
                         - "13005" # H1 - Observation
                         - "13006" # H2 - Seclusion
@@ -453,12 +461,6 @@ output:
                         - "7822" # AC - Acute Care Unit
                         - "7825" # CS - Crisis Stabilization Unit
                         - "7826" # DF - Default
-                        - "7829" # G1 - General Population - Level 1
-                        - "7830" # G2 - General Population - Level 2
-                        - "7831" # G3 - General Population - Level 3
-                        - "7832" # G4 - General Population - Level 4
-                        - "7833" # G5 - General Population - Level 5
-                        - "7834" # HO - Hospital (Temporary - ON or OFF site)
                         - "7835" # IC - Intermediate Care Program
                         - "7836" # IH - Intake Housing
                         - "7844" # RT - Residential Treatment Program
