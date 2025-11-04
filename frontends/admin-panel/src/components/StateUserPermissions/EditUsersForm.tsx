@@ -150,6 +150,15 @@ export const EditUserForm = ({
       <Form form={form} layout="horizontal" onFinish={editOnCreate}>
         <ReasonInput label="Reason for modification" />
         <hr />
+        <Form.Item name="firstName" label="First Name" labelCol={{ span: 5 }}>
+          <Input disabled={!singleUserEdit} />
+        </Form.Item>
+        <Form.Item name="lastName" label="Last Name" labelCol={{ span: 5 }}>
+          <Input disabled={!singleUserEdit} />
+        </Form.Item>
+        <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
+          <Input disabled={!singleUserEdit} />
+        </Form.Item>
         <Form.Item
           name="roles"
           label="Roles"
@@ -169,9 +178,13 @@ export const EditUserForm = ({
             disabled={roles.length === 0 || stateCodes.length > 1}
           />
         </Form.Item>
-        <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
-          <Input disabled={!singleUserEdit} />
-        </Form.Item>
+        <Note>
+          Note that editing the user&apos;s district in the Admin Panel{" "}
+          <b>
+            may not actually affect the districts they are able to search in
+          </b>
+          . See go/user-districts for more details.
+        </Note>
         <Form.Item name="district" label="District" labelCol={{ span: 5 }}>
           <Select
             // eslint-disable-next-line react/no-unstable-nested-components
@@ -191,13 +204,8 @@ export const EditUserForm = ({
             allowClear
           />
         </Form.Item>
-        <Form.Item name="firstName" label="First Name" labelCol={{ span: 5 }}>
-          <Input disabled={!singleUserEdit} />
-        </Form.Item>
-        <Form.Item name="lastName" label="Last Name" labelCol={{ span: 5 }}>
-          <Input disabled={!singleUserEdit} />
-        </Form.Item>
         <hr />
+        <h3>Custom Permissions:</h3>
         <Note>
           In most cases, it&apos;s recommended to use an existing role or create
           a new role to adjust a user&apos;s permissions. Custom permissions

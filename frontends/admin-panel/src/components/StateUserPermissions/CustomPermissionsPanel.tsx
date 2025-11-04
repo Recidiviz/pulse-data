@@ -89,8 +89,6 @@ export const CustomPermissionsPanel = ({
   selectedUsers?: StateUserPermissionsResponse[];
 }): JSX.Element => (
   <>
-    <h3>Custom Permissions</h3>
-
     <h4>Workflows:</h4>
     <BasicPermissionList
       labels={WORKFLOWS_PERMISSIONS_LABELS}
@@ -184,8 +182,8 @@ export const CustomPermissionsPanel = ({
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
-
-    <h4>Feature Variants:</h4>
+    <hr />
+    <h3>Feature Variants:</h3>
     <Note>Notes:</Note>
     <Note>- Enter feature variant id to enable/disable it.</Note>
     <Note>
