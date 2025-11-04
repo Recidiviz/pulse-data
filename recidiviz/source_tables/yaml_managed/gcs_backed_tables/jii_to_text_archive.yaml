@@ -1,0 +1,59 @@
+address:
+  dataset_id: export_archives
+  table_id: jii_to_text_archive
+description:
+  This table contains daily archives of the jii_to_text export for JII Texting
+  products, which are read directly from GCS
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: external_id
+    type: STRING
+    mode: NULLABLE
+  - name: person_name
+    type: STRING
+    mode: NULLABLE
+  - name: pseudonymized_id
+    type: string
+    mode: NULLABLE
+  - name: phone_number
+    type: INTEGER
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: po_name
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: launch_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: group_id
+    type: STRING
+    mode: NULLABLE
+  - name: group_ids
+    type: STRING
+    mode: NULLABLE
+  - name: topic
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id_type
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+source_project_mapping:
+  recidiviz-staging: recidiviz-dashboard-staging
+  recidiviz-123: recidiviz-dashboard-production
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-jii-texting-etl-data-archive/*/jii_to_text.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE
