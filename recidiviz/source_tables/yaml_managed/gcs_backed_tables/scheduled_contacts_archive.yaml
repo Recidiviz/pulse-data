@@ -1,0 +1,53 @@
+address:
+  dataset_id: export_archives
+  table_id: scheduled_contacts_archive
+description:
+  This table contains daily archives of the scheduled_contacts export for JII
+  Texting products, which are read directly from GCS
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: contact_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id_type
+    type: STRING
+    mode: NULLABLE
+  - name: contacting_officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: contacting_po_name
+    type: STRING
+    mode: NULLABLE
+  - name: contact_method
+    type: STRING
+    mode: NULLABLE
+  - name: contact_location_type
+    type: STRING
+    mode: NULLABLE
+  - name: contact_address
+    type: STRING
+    mode: NULLABLE
+  - name: contact_datetime
+    type: DATETIME
+    mode: NULLABLE
+  - name: reminder_type
+    type: STRING
+    mode: NULLABLE
+  - name: update_datetime
+    type: DATETIME
+    mode: NULLABLE
+clustering_fields: null
+source_project_mapping:
+  recidiviz-staging: recidiviz-dashboard-staging
+  recidiviz-123: recidiviz-dashboard-production
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-jii-texting-etl-data-archive/*/scheduled_contacts.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE

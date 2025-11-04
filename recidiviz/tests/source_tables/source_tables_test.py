@@ -46,6 +46,8 @@ COMMON_VESTIGES = [
     "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
     #  TODO(#50601): Create an archive view for these exports and use in monitoring views
     "export_archives.jii_to_text_archive",
+    #  TODO(#50601): Create an archive view for these exports and use in monitoring views
+    "export_archives.scheduled_contacts_archive",
     # This is a potentially useful general reference table for getting information about
     # a given zip code.
     "static_reference_tables.zip_city_county_state",
