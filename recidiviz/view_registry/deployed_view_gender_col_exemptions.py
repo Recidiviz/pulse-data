@@ -70,9 +70,6 @@ from recidiviz.calculator.query.state.views.shared_metric.supervision_officer_ca
 from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
     SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
-from recidiviz.observations.views.events.person.violation import (
-    VIEW_BUILDER as VIOLATION_VIEW_BUILDER,
-)
 from recidiviz.observations.views.spans.person.compartment_sub_session import (
     VIEW_BUILDER as COMPARTMENT_SUB_SESSION_OBSERVATION_VIEW_BUILDER,
 )
@@ -109,7 +106,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
         table_id="csg_compartment_sessions",
     ): "TODO(#50972): This is auto-generated - will be fixed when compartment_sessions is migrated",
     # observations views
-    VIOLATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     COMPARTMENT_SUB_SESSION_OBSERVATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # reference_views views
     STATE_RESIDENT_POPULATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
