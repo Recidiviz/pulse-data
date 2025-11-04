@@ -18,10 +18,11 @@
 import io
 import re
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Tuple
 from zipfile import ZipFile, is_zipfile
 
 import paramiko
+import pytz
 from more_itertools import one
 
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE, GCSFileSystem
@@ -131,3 +132,47 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
         self, *, sftp_client: paramiko.SFTPClient, remote_path: str
     ) -> None:
         pass
+
+    def validate_file_discovery(
+        self,
+        discovered_file_to_timestamp_set: Set[Tuple[str, int]],
+        already_downloaded_file_to_timestamp_set: Set[Tuple[str, int]],
+    ) -> None:
+        """Validates that all discovered files have not already been downloaded. In MI,
+        we expect all downloaded files to immediately get moved out of the SFTP folder
+        as soon as we download them. This is important because the MI SFTP server has
+        a filesystem that allows for multiple files with the exact same name, but ls
+        operations on the folder only return one file (the least recent one) with that
+        name. If a file on 1/1 is downloaded by for some reason not moved out of the
+        way, we'll keep discovering (and skipping) the 1/1 file and never discover the
+        new files that come in on 1/2, 1/3 etc.
+
+        This validation ensures we catch this issue early and alert rather than
+        silently skipping files and waiting for our stale data validations to trigger.
+        """
+        discovered_already_downloaded_files = (
+            already_downloaded_file_to_timestamp_set.intersection(
+                discovered_file_to_timestamp_set
+            )
+        )
+
+        if discovered_already_downloaded_files:
+            michigan_tz = pytz.timezone("America/Detroit")
+            rediscovered_files = []
+            for file, timestamp in sorted(discovered_already_downloaded_files):
+                dt_utc = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+                dt_mi = dt_utc.astimezone(michigan_tz)
+                rediscovered_files.append(
+                    f"  * {file} (timestamp: {timestamp}, {dt_mi.strftime('%Y-%m-%d %H:%M:%S %Z')})"
+                )
+            rediscovered_files_str = "\n".join(rediscovered_files)
+            raise ValueError(
+                f"US_MI SFTP server is exposing {len(rediscovered_files)} file(s) that "
+                f"were already downloaded. If these files are not properly moved to "
+                f"the downloaded folder or deleted, then we will fail to download all "
+                f"newer versions of each of these files. Files:\n"
+                f"{rediscovered_files_str}\n\n"
+                f"To resolve: Manually download each of these files via the MI SFTP UI "
+                f"(see 1Password for login) or contact Michigan to get them to delete "
+                f"the files."
+            )

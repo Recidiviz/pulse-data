@@ -17,7 +17,7 @@
 """Unit tests for FilterDownloadedFilesSqlQueryGenerator"""
 import unittest
 from typing import Set, Tuple
-from unittest.mock import create_autospec
+from unittest.mock import create_autospec, patch
 
 import pandas as pd
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -29,6 +29,12 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
     FilterDownloadedFilesSqlQueryGenerator,
 )
+from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
+    FakeUsXxSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
+    SftpDownloadDelegateFactory,
+)
 
 
 class TestFilterDownloadedFilesSqlQueryGenerator(unittest.TestCase):
@@ -39,7 +45,12 @@ class TestFilterDownloadedFilesSqlQueryGenerator(unittest.TestCase):
             region_code="US_XX", find_sftp_files_task_id="test_task_id"
         )
 
-    def test_generates_sql_correctly(self) -> None:
+    @patch.object(
+        SftpDownloadDelegateFactory,
+        "build",
+        return_value=FakeUsXxSftpDownloadDelegate(),
+    )
+    def test_generates_sql_correctly(self, _mock_delegate_factory: None) -> None:
         sample_data_set: Set[Tuple[str, int]] = {("file1.csv", 1), ("file2.csv", 1)}
         expected_query = """
 SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
@@ -48,7 +59,14 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
 
         self.assertEqual(self.generator.sql_query(sample_data_set), expected_query)
 
-    def test_filters_files_and_timestamps_correctly(self) -> None:
+    @patch.object(
+        SftpDownloadDelegateFactory,
+        "build",
+        return_value=FakeUsXxSftpDownloadDelegate(),
+    )
+    def test_filters_files_and_timestamps_correctly(
+        self, _mock_delegate_factory: None
+    ) -> None:
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
@@ -72,7 +90,14 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
 
         self.assertListEqual(results, expected_results)
 
-    def test_filters_files_and_timestamps_no_prior_values(self) -> None:
+    @patch.object(
+        SftpDownloadDelegateFactory,
+        "build",
+        return_value=FakeUsXxSftpDownloadDelegate(),
+    )
+    def test_filters_files_and_timestamps_no_prior_values(
+        self, _mock_delegate_factory: None
+    ) -> None:
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
@@ -84,3 +109,50 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
         )
         self.assertEqual(len(results), 0)
         mock_postgres.get_pandas_df.assert_not_called()
+
+    def test_us_mi_fails_when_rediscovering_already_downloaded_files(self) -> None:
+        """Test that US_MI raises an error when discovering already-downloaded files."""
+        generator = FilterDownloadedFilesSqlQueryGenerator(
+            region_code="US_MI", find_sftp_files_task_id="test_task_id"
+        )
+
+        mock_operator = create_autospec(CloudSqlQueryOperator)
+        mock_postgres = create_autospec(PostgresHook)
+        mock_context = create_autospec(Context)
+
+        # Simulate discovering files on SFTP
+        mock_operator.xcom_pull.return_value = [
+            {
+                "remote_file_path": "/CORrecidiviz/ADH_OFFENDER_SENTENCE.zip",
+                "sftp_timestamp": 1760805474,
+            },
+            {
+                "remote_file_path": "/CORrecidiviz/ADH_EMPLOYEE.zip",
+                "sftp_timestamp": 1760805500,
+            },
+        ]
+
+        # Simulate that this file was already downloaded
+        mock_postgres.get_pandas_df.return_value = pd.DataFrame(
+            [
+                {
+                    "remote_file_path": "/CORrecidiviz/ADH_OFFENDER_SENTENCE.zip",
+                    "sftp_timestamp": 1760805474,
+                }
+            ]
+        )
+
+        # Should raise ValueError due to MI-specific validation
+        with self.assertRaises(ValueError) as context:
+            generator.execute_postgres_query(mock_operator, mock_postgres, mock_context)
+
+        expected_exception = (
+            "US_MI SFTP server is exposing 1 file(s) that were already downloaded. If "
+            "these files are not properly moved to the downloaded folder or deleted, then "
+            "we will fail to download all newer versions of each of these files. Files:\n"
+            "  * /CORrecidiviz/ADH_OFFENDER_SENTENCE.zip (timestamp: 1760805474, 2025-10-18 12:37:54 EDT)\n"
+            "\n"
+            "To resolve: Manually download each of these files via the MI SFTP UI (see "
+            "1Password for login) or contact Michigan to get them to delete the files."
+        )
+        self.assertEqual(expected_exception, str(context.exception))

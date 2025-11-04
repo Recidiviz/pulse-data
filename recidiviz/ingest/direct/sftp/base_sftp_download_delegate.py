@@ -16,7 +16,7 @@
 # =============================================================================
 """Base delegate class for handling SFTP downloads"""
 import abc
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Tuple
 
 import paramiko
 
@@ -78,3 +78,22 @@ class BaseSftpDownloadDelegate(abc.ABC):
         indicates that no files have every been uploaded, we have a connection issue,
         or we have the incorrect root directory.
         """
+
+    def validate_file_discovery(
+        self,
+        discovered_file_to_timestamp_set: Set[Tuple[str, int]],
+        already_downloaded_file_to_timestamp_set: Set[Tuple[str, int]],
+    ) -> None:
+        """Validates that the discovered files are appropriate for download.
+
+        Args:
+            discovered_file_to_timestamp_set: Set of (remote_file_path, sftp_timestamp)
+                tuples found on SFTP
+            already_downloaded_file_to_timestamp_set: Set of
+                (remote_file_path, sftp_timestamp) tuples that have already been
+                downloaded according to the metadata table
+
+        Raises:
+            ValueError: If the discovered files are invalid for state-specific reasons
+        """
+        # Default implementation does nothing - states can override for custom validation

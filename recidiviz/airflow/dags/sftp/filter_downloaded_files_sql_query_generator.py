@@ -26,6 +26,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
+from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
+    SftpDownloadDelegateFactory,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -53,7 +56,7 @@ class FilterDownloadedFilesSqlQueryGenerator(
         ] = operator.xcom_pull(
             context, key="return_value", task_ids=self.find_sftp_files_task_id
         )
-        file_to_timestamp_set: Set[Tuple[str, int]] = {
+        discovered_file_to_timestamp_set: Set[Tuple[str, int]] = {
             (
                 assert_type(metadata[REMOTE_FILE_PATH], str),
                 assert_type(metadata[SFTP_TIMESTAMP], int),
@@ -65,17 +68,27 @@ class FilterDownloadedFilesSqlQueryGenerator(
             {
                 (row[REMOTE_FILE_PATH], int(row[SFTP_TIMESTAMP]))
                 for _, row in postgres_hook.get_pandas_df(
-                    self.sql_query(file_to_timestamp_set)
+                    self.sql_query(discovered_file_to_timestamp_set)
                 ).iterrows()
             }
-            if file_to_timestamp_set
+            if discovered_file_to_timestamp_set
             else set()
+        )
+
+        discovered_not_yet_downloaded_files = (
+            discovered_file_to_timestamp_set - downloaded_file_to_timestamp_set
+        )
+
+        # Allow state-specific validation of discovered files
+        delegate = SftpDownloadDelegateFactory.build(region_code=self.region_code)
+        delegate.validate_file_discovery(
+            discovered_file_to_timestamp_set=discovered_file_to_timestamp_set,
+            already_downloaded_file_to_timestamp_set=downloaded_file_to_timestamp_set,
         )
 
         return [
             {REMOTE_FILE_PATH: file, SFTP_TIMESTAMP: timestamp}
-            for file, timestamp in file_to_timestamp_set
-            - downloaded_file_to_timestamp_set
+            for file, timestamp in discovered_not_yet_downloaded_files
         ]
 
     def sql_query(self, file_to_timestamp_set: Set[Tuple[str, int]]) -> str:
