@@ -40,7 +40,21 @@ const VALID_USER_TYPES = [
 
 // Global EMAIL_SETTINGS that applies to all types of email reminders
 const EMAIL_SETTINGS = {
-  EXCLUDED_DISTRICTS: ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"],
+  EXCLUDED_DISTRICTS: {
+    US_TN: [
+      // Consider normalizing the districts in the admin panel and updating this
+      "10",
+      "61",
+      "70",
+      "71",
+      "80",
+      "District 10",
+      "District 61",
+      "District 70",
+      "District 71",
+      "District 80",
+    ],
+  },
 
   EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
   FEEDBACK_EMAIL: "feedback@recidiviz.org",
@@ -596,6 +610,14 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
   } = info;
   const loggedIn = loggedInThisMonth(lastLogin);
 
+  // If someone logged in within the past 2 days, we should not email them
+  // as recent tool actions may not be reflected in the aggregated metrics
+  const dateCutoff = new Date();
+  dateCutoff.setDate(dateCutoff.getDate() - 2);
+  if (lastLogin > dateCutoff) {
+    return false;
+  }
+
   // We don't want to email non-supervision line staff who have logged in
   if (userType !== SUPERVISION_LINESTAFF && loggedIn) {
     return false;
@@ -619,7 +641,11 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
 
   // If the staff's district is known and excluded, don't email them
   const { EXCLUDED_DISTRICTS } = settings;
-  if (district && EXCLUDED_DISTRICTS.includes(district)) {
+  if (
+    district &&
+    EXCLUDED_DISTRICTS[stateCode] &&
+    EXCLUDED_DISTRICTS[stateCode].includes(district)
+  ) {
     return false;
   }
 
