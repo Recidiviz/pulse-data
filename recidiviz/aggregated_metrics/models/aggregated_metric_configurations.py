@@ -587,15 +587,14 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetr
 )
 
 _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT: Dict[str, Union[str, List[str]]] = {
+    "unsupervised": ["UNSUPERVISED"],
     "limited": ["LIMITED"],
     "minimum": ["MINIMUM"],
     "medium": ["MEDIUM"],
-    "maximum": ["HIGH", "MAXIMUM"],
-    "unsupervised": ["UNSUPERVISED"],
-    "diversion": ["DIVERSION"],
-    "unknown": 'NOT IN ("LIMITED", "MINIMUM", "MEDIUM", "HIGH", "MAXIMUM", '
-    '"EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN")',
-    "other": ["EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN"],
+    "maximum": ["MAXIMUM"],
+    "high": ["HIGH"],
+    "other": 'NOT IN ("UNSUPERVISED", "LIMITED", "MINIMUM", "MEDIUM", "MAXIMUM", "HIGH", "EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN")',
+    "unknown": 'IN ("EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN") OR supervision_level IS NULL',
 }
 AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS = [
     DailyAvgSpanCountMetric(
@@ -667,6 +666,28 @@ AVG_DAILY_POPULATION_TREATMENT_IN_PRISON = DailyAvgSpanCountMetric(
     ),
 )
 
+_CUSTODY_LEVEL_SPAN_ATTRIBUTE_DICT: Dict[str, Union[str, List[str]]] = {
+    "min": ["MINIMUM"],
+    "medium": ["MEDIUM"],
+    "max": ["MAXIMUM"],
+    "close": ["CLOSE"],
+    "other": 'NOT IN ("MINIMUM", "MEDIUM", "MAXIMUM", "CLOSE", "EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN")',
+    "unknown": 'IN ("EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN") OR custody_level IS NULL',
+}
+AVG_DAILY_POPULATION_CUSTODY_LEVEL_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_{level}_custody",
+        display_name=f"Average Population: {level.capitalize()} Custody Level",
+        description=f"Average daily count of residents with "
+        f"{'an' if level[0] in 'aeiou' else 'a'} {level} custody level",
+        span_selector=SpanSelector(
+            span_type=SpanType.CUSTODY_LEVEL_SESSION,
+            span_conditions_dict={"custody_level": conditions},
+        ),
+    )
+    for level, conditions in _CUSTODY_LEVEL_SPAN_ATTRIBUTE_DICT.items()
+]
+
 AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_unknown_case_type",
     display_name="Average Population: Unknown Case Type",
@@ -677,16 +698,6 @@ AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE = DailyAvgSpanCountMetric(
             "compartment_level_1": ["SUPERVISION"],
             "case_type_start": "IS NULL",
         },
-    ),
-)
-
-AVG_DAILY_POPULATION_MAXIMUM_CUSTODY = DailyAvgSpanCountMetric(
-    name="avg_population_max_custody",
-    display_name="Average Population: Maximum Custody",
-    description="Average daily population of individuals in maximum custody",
-    span_selector=SpanSelector(
-        span_type=SpanType.CUSTODY_LEVEL_SESSION,
-        span_conditions_dict={"custody_level": ["MAXIMUM"]},
     ),
 )
 
@@ -703,16 +714,6 @@ AVG_DAILY_POPULATION_MAXIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     ),
 )
 
-AVG_DAILY_POPULATION_MEDIUM_CUSTODY = DailyAvgSpanCountMetric(
-    name="avg_population_medium_custody",
-    display_name="Average Population: Medium Custody",
-    description="Average daily population of individuals in medium custody",
-    span_selector=SpanSelector(
-        span_type=SpanType.CUSTODY_LEVEL_SESSION,
-        span_conditions_dict={"custody_level": ["MEDIUM", "CLOSE"]},
-    ),
-)
-
 AVG_DAILY_POPULATION_MEDIUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     name="avg_population_medium_custody_justice_impact",
     display_name="Average Population: Medium Custody (Justice Impact Type)",
@@ -722,22 +723,6 @@ AVG_DAILY_POPULATION_MEDIUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
         span_type=SpanType.JUSTICE_IMPACT_SESSION,
         span_conditions_dict={
             "justice_impact_type": [JusticeImpactType.MEDIUM_CUSTODY.value],
-        },
-    ),
-)
-
-AVG_DAILY_POPULATION_MINIMUM_CUSTODY = DailyAvgSpanCountMetric(
-    name="avg_population_min_custody",
-    display_name="Average Population: Minimum Custody",
-    description="Average daily population of individuals in minimum custody",
-    span_selector=SpanSelector(
-        span_type=SpanType.CUSTODY_LEVEL_SESSION,
-        span_conditions_dict={
-            "custody_level": [
-                "MINIMUM",
-                "RESTRICTIVE_MINIMUM",
-                "INTERNAL_UNKNOWN",
-            ],
         },
     ),
 )
