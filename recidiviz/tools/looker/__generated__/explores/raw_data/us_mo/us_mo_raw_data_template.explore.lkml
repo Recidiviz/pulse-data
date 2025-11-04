@@ -108,6 +108,13 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK244"
   }
 
+  join: us_mo_LBAKRDTA_TAK019 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK019.BP_DOC};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mo_LBAKRDTA_TAK019"
+  }
+
   join: us_mo_LBAKRDTA_TAK028 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK028.BY_DOC};;
     type: full_outer
@@ -176,6 +183,13 @@ explore: us_mo_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mo_LBAKRDTA_TAK237"
+  }
+
+  join: us_mo_LBAKRDTA_TAK245 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK245.T3_DOC};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mo_LBAKRDTA_TAK245"
   }
 
   join: us_mo_LBAKRDTA_TAK291 {
