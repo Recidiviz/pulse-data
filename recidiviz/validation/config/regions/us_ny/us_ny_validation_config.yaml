@@ -7,5 +7,18 @@ exclusions:
   - validation_name: sessions_missing_closest_sentence_imposed_group
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: NY doesn't have sentences ingested.
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: NY doesn't have sentences ingested.
+  - validation_name: state_incarceration_period_by_release_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      Because the incarceration data we receive for NY is limited to population
+      snapshots, release dates are generally inferred and are not expected to be accurate.
+  - validation_name: state_incarceration_period_by_admission_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      Because the incarceration data we receive for NY is limited to population
+      snapshots, admission dates are generally inferred and are not expected to be accurate.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides: []
