@@ -26,6 +26,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_case_type_is_general_or_sex_offense,
+    supervision_level_is_high_medium_or_minimum,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     meets_address_changes_triggers,
     meets_home_visit_triggers,
@@ -37,22 +41,29 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+meets_home_visit_or_address_changes_triggers = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
+        criteria_name="US_IX_MEETS_HOME_VISIT_OR_ADDRESS_CHANGES_TRIGGERS",
+        sub_criteria_list=[
+            meets_home_visit_triggers.VIEW_BUILDER,
+            meets_address_changes_triggers.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=["contact_due_date", "last_contact_date"],
+    )
+)
+# TODO(#51098): Change candidate population so it filters to relevant case types and supervision levels
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_home_visit",
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_IX_MEETS_HOME_VISIT_OR_ADDRESS_CHANGES_TRIGGERS",
-            sub_criteria_list=[
-                meets_home_visit_triggers.VIEW_BUILDER,
-                meets_address_changes_triggers.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=["contact_due_date", "last_contact_date"],
-        ),
+        meets_home_visit_or_address_changes_triggers,
+        supervision_case_type_is_general_or_sex_offense.VIEW_BUILDER,
+        supervision_level_is_high_medium_or_minimum.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
+    due_date_criteria_builder=meets_home_visit_or_address_changes_triggers,
     due_date_field="contact_due_date",
 )
 
