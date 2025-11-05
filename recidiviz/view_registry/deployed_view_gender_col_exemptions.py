@@ -52,9 +52,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sessions import
 from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions import (
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.shared_metric.event_based_commitments_from_supervision import (
-    EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.event_based_supervision_populations import (
     EVENT_BASED_SUPERVISION_VIEW_BUILDER,
 )
@@ -117,7 +114,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
     COMPARTMENT_SESSIONS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # shared_metric_views views
-    EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     EVENT_BASED_SUPERVISION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
