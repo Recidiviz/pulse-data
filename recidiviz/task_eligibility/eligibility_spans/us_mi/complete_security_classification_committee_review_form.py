@@ -81,9 +81,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         reasons_date_field="next_scc_date",
-        interval_length=7,
+        interval_length=14,
         interval_date_part=BigQueryDateInterval.DAY,
-        description="Within 7 days of the next security classification committee review due date",
+        description="Within 14 days of the next security classification committee review due date",
     ),
 )
 
