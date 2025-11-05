@@ -586,7 +586,7 @@ def adm_form_information_helper() -> str:
     """
 
 
-def case_notes_helper() -> str:
+def case_notes_helper(current_offense_history_only: bool) -> str:
     """custom PA function that returns case notes for admin and special circ opportunities related to special conditions,
     treatment, and employment"""
     return f"""
@@ -698,6 +698,10 @@ def case_notes_helper() -> str:
       start_date AS event_date,
     FROM `{{project_id}}.us_pa_normalized_state.state_employment_period` emp
     WHERE end_date IS NULL
+
+    UNION ALL
+
+    {build_and_deduplicate_offense_history(filter_to_current_charges=current_offense_history_only)}
     """
 
 
@@ -710,190 +714,14 @@ def dui_indicator() -> str:
             OR (description LIKE '%DRI%' AND description LIKE '%INF%'))"""
 
 
-def adm_case_notes_helper() -> str:
-    """this pulls all pa case notes and adds a few that should only be displayed for the admin supervision opportunity"""
-    return f"""
-    SELECT * FROM ({case_notes_helper()})
-    
-    UNION ALL 
-    
-    -- pulls in all offenses we have from our 5 sources that have either a description
-    -- or statute
-
-    {build_and_deduplicate_offense_history(filter_to_current=False)}
-    
-    UNION ALL
-    
-    -- pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
-    -- we don't have all the information we need to determine whether it should change eligibility
-
-    -- first, as it relates to DUIs
-    
-    (WITH sentences AS (
-        SELECT * 
-        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-        WHERE state_code = 'US_PA'
-    ), sentences_clean AS (
-        {clean_and_split_statute('sentences')}
-    )
-    SELECT DISTINCT person_id,
-      'Potential Barriers to Eligibility' AS criteria,
-      'DUI' AS note_title,
-      'This reentrant has a DUI charge on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' AS note_body,
-      sc.date_imposed AS event_date,
-    FROM sentences_clean sc
-    WHERE {dui_indicator()}
-    )
-
-    UNION ALL 
-
-    -- second, as it related to specific drug charges
-
-    SELECT DISTINCT person_id,
-      'Potential Barriers to Eligibility' AS criteria,
-      'DRUG' AS note_title,
-      CASE WHEN form_information_statute_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.' 
-        WHEN form_information_statute_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
-        WHEN form_information_statute_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
-        END AS note_body,
-      date_imposed AS event_date,
-    FROM ({adm_form_information_helper()}) form
-    WHERE (form.form_information_statute_14
-      OR form.form_information_statute_30
-      OR form.form_information_statute_37)
-    
-    UNION ALL 
-    
-    -- third, as it relates to all pending charges from criminal history
-    -- note - flagging these in sidebar instead of building into eligibility criteria due to TT's recommendation & concerns with data quality
-    (
-    WITH pending_charges AS (
-    /* pull all pending charges */
-        SELECT person_id,
-          UPPER(code) AS statute,
-          UPPER(description) AS description,
-          'Pending' AS status,
-          DATE(Disposition_Date) AS event_date,
-          CAST(NULL AS STRING) AS classification_type,
-          Grade AS classification_subtype,
-        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
-        INNER JOIN `{{project_id}}.us_pa_normalized_state.state_person_external_id` pei
-            ON cr.Parole_No = pei.external_id
-            AND id_type = 'US_PA_PBPP'
-        WHERE Disposition = 'Active Case'
-    ), pending_charges_clean AS (
-    /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
-        which offenses are admin-ineligible later */ 
-        SELECT person_id,
-            statute,
-            description,
-            status,
-            event_date,
-            classification_type,
-            classification_subtype,
-            title,
-            section,
-            subsection,
-        FROM ({clean_and_split_statute('pending_charges')})
-    ), pending_charges_with_admin_indicator AS (
-    /* pulls whether the pending charge is admin-ineligible */
-        SELECT *,
-            {offense_is_admin_ineligible()} AS is_admin_ineligible
-        FROM pending_charges_clean
-    )
-    SELECT DISTINCT
-      person_id,
-      'Potential Barriers to Eligibility' AS criteria,
-      'PENDING CHARGE' AS note_title,
-      CASE WHEN is_admin_ineligible THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
-        ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for administrative supervision.') -- otherwise, they just can't have new pending charges
-        END AS note_body,
-      event_date,
-    FROM pending_charges_with_admin_indicator pc
-    LEFT JOIN ({us_pa_supervision_super_sessions()}) ss
-        USING(person_id)
-    WHERE is_admin_ineligible
-      OR event_date >= release_date -- only include admin ineligible charges OR newly incurred charges while on supervision
-    )
-    """
-
-
-def spc_case_notes_helper() -> str:
-    """this pulls all pa case notes and adds one that should only be displayed for the special circumstances opportunity"""
-    return f"""
-    SELECT * FROM ({case_notes_helper()})
-        
-    UNION ALL 
-    
-    {build_and_deduplicate_offense_history(filter_to_current=True)}
-    
-    UNION ALL 
-    
-    /* pulls all cases where someone we consider non-violent has a violent pending charge
-       note - flagging these in sidebar instead of building into eligibility criteria due to TT's recommendation & concerns with data quality */
-    (
-    WITH pending_charges AS (
-        /* pull all pending charges */
-        SELECT person_id,
-          UPPER(active_cases.Code) AS statute,
-          UPPER(active_cases.Description) AS description,
-          'Pending' AS status,
-          DATE(active_cases.Disposition_Date) AS event_date,
-          CAST(NULL AS STRING) AS classification_type,
-          active_cases.Grade AS classification_subtype,
-          JSON_EXTRACT_SCALAR(crit.reason, "$.case_type") AS case_type, -- pull whether they are currently considered a violent or non-violent case according to SPC criteria 
-        FROM (
-            SELECT person_id, cr.* EXCEPT(Parole_No)
-            FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
-            INNER JOIN `{{project_id}}.us_pa_normalized_state.state_person_external_id` pei
-                ON cr.Parole_No = pei.external_id
-                AND id_type = 'US_PA_PBPP'
-            WHERE Disposition = 'Active Case'
-        ) active_cases
-        INNER JOIN (
-            -- Select current criteria periods
-            SELECT *
-            FROM `{{project_id}}.{{criteria_dataset}}.meets_special_circumstances_criteria_for_time_served_materialized` crit
-            WHERE CURRENT_DATE('US/Eastern') BETWEEN crit.start_date AND {nonnull_end_date_exclusive_clause('crit.end_date')}
-        ) crit
-        USING (person_id)
-    ), pending_charges_clean AS (
-        /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
-        which offenses are violent later */ 
-        SELECT person_id,
-            statute,
-            description,
-            status,
-            event_date,
-            classification_type,
-            classification_subtype,
-            case_type,
-            title,
-            section,
-            subsection,
-        FROM ({clean_and_split_statute('pending_charges')})
-    ) 
-    SELECT DISTINCT
-      person_id,
-      'Potential Barriers to Eligibility' AS criteria,
-      'PENDING CHARGE' AS note_title,
-      CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If the reentrant is found guilty of this offense, they could be considered a violent case and must serve 5 years rather than 3 years on supervision before being eligible for Special Circumstances Supervision.') AS note_body,
-      event_date,
-    FROM pending_charges_clean
-    WHERE {offense_is_violent()}
-        AND case_type = 'non-life sentence (non-violent case)' -- only pull cases with a violent pending charge that would otherwise be considered non-violent
-    )
-"""
-
-
-def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
+def build_and_deduplicate_offense_history(filter_to_current_charges: bool) -> str:
     """builds offense history, filtering to just offenses for currently serving sentences
-    if |filter_to_current| is True, or including all offenses if it is False. as we
+    if |filter_to_current_charges| is True, or including all offenses if it is False. as we
     receive offense/charge history from 5 different sources, we also deduplicate
     offenses that have the same statue and imposed date that appear in multiple sources
     """
 
-    if filter_to_current:
+    if filter_to_current_charges:
         # in order to filter to _just_ current charges, we pull in sentences to
         # filter out any sentences that are not currently being served
         from_clause = f"""FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
@@ -1002,6 +830,39 @@ def build_and_deduplicate_offense_history(filter_to_current: bool) -> str:
   """
 
 
+def us_pa_pending_charges_cte() -> str:
+    return f"""
+    pending_charges AS (
+    /* pull all pending charges */
+        SELECT person_id,
+          UPPER(code) AS statute,
+          UPPER(description) AS description,
+          'Pending' AS status,
+          DATE(Disposition_Date) AS event_date,
+          CAST(NULL AS STRING) AS classification_type,
+          Grade AS classification_subtype,
+        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
+        INNER JOIN `{{project_id}}.us_pa_normalized_state.state_person_external_id` pei
+            ON cr.Parole_No = pei.external_id
+            AND id_type = 'US_PA_PBPP'
+        WHERE Disposition = 'Active Case'
+    ), pending_charges_clean AS (
+    /* takes PA pending charges and splits the statute codes into titles, sections, and subsections, which we use to determine
+        which offenses are admin-ineligible later */ 
+        SELECT person_id,
+            statute,
+            description,
+            status,
+            event_date,
+            classification_type,
+            classification_subtype,
+            title,
+            section,
+            subsection,
+        FROM ({clean_and_split_statute('pending_charges')})
+    )"""
+
+
 def contains_nae(column: str) -> str:
     """helper function to determine if a string value contains NAE (not admin eligible) not surrounded by other letters.
     This helps ensure we include NAE but not names like SHANAE, which sometimes end up in notes fields"""
@@ -1067,7 +928,7 @@ class StatueMatchingMode(Enum):
     #     - 18.4502(b): no match
     MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION = auto()
     # in this mode, we want to _only_ match the statue where we are confident that the
-    # the statue's title, section and entire subsection is an exact match. a few examples:
+    # the statue's title, section and entire subsection is an exact match.
     # a few examples:
     # -> statue 18.4501:
     #     + 18.4501: match!
@@ -1114,7 +975,9 @@ class StatueMatchingMode(Enum):
         return "TRUE"
 
     def subsection_matching_statement(self, subsection: str) -> str:
-        """SQL statement used for"""
+        """Returns an SQL boolean expression for matching a statute subsection according
+        to the matching mode.
+        """
         match self:
             case StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION:
                 return f"STARTS_WITH('{subsection}', subsection) AND NOT STARTS_WITH(subsection, '{subsection}')"
@@ -1170,6 +1033,7 @@ def adm_eligibility_unclear_helper() -> str:
         SELECT person_id,
             statute,
             date_imposed,
+            description,
             classification_type
         FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         WHERE state_code = 'US_PA'
@@ -1180,6 +1044,7 @@ def adm_eligibility_unclear_helper() -> str:
             title,
             section,
             subsection,
+            description,
             classification_type,
         FROM ({clean_and_split_statute('sentences')})
         /* if duplicates of the same section/date imposed exist because we pull offenses from different systems, 
@@ -1187,13 +1052,16 @@ def adm_eligibility_unclear_helper() -> str:
             here because we want to keep ALL subsection information */
         QUALIFY RANK() OVER(PARTITION BY person_id, section, date_imposed ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
     ), all_eligibility_unclear_text AS (
+      -- this cte is one row for each case where a person's eligibility might be unclear
       {adm_missing_subsection_helper()}
       UNION ALL
       {violent_offenses_missing_felony_information(contextual_information=ADM_VIOLENT_OFFENSE_CONTEXT)}
+      UNION ALL 
+      {adm_pending_charges_helper()}
+      UNION ALL 
+      {adm_drug_charges_helper()}
       -- TODO(#47689) Add reentrants with NAE to eligibility unclear tab 
-      -- TODO(#47691) Add reentrants with DUI/pending charges to eligibility unclear tab
       -- TODO(#47692) Add reentrants with DV flag to eligibility unclear tab
-      -- TODO(#47703) Add reentrants with specific drug charges to eligibility unclear tab
     )
     SELECT person_id,
       ARRAY_AGG(DISTINCT metadata_eligibility_unclear_text ORDER BY metadata_eligibility_unclear_text) AS metadata_eligibility_unclear_text
@@ -1238,14 +1106,96 @@ def adm_missing_subsection_helper() -> str:
         ORDER BY 1, 2, 3
     )
     /* pulls flagged subsections and de-duplicates so that the relevant unclear eligibility flag is only displayed once */
-    SELECT person_id,
-        CONCAT('Client has offense ', statute, ' on record with no clear sub-statute. Sub-statute ', subsection_explanation, ' Please confirm if this sub-statute applies.') AS metadata_eligibility_unclear_text,
+    SELECT 
+      person_id,
+      CONCAT('Client has offense ', statute, ' on record with no clear sub-statute. Sub-statute ', subsection_explanation, ' Please confirm if this sub-statute applies.') AS metadata_eligibility_unclear_text,
     FROM missing_subsections
     WHERE subsection_explanation IS NOT NULL
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, subsection_explanation ORDER BY LENGTH(statute) DESC) = 1
     -- doesn't super matter, but preferentially display the statute with more information when deduplicating
     )
-  
+    """
+
+
+def adm_dui_helper() -> str:
+    """helper that returns copy for the eligibility unclear tab if somebody has a DUI, which
+    required additional agent screening.
+    """
+    return f"""
+    SELECT 
+      person_id,
+      'Potential Barriers to Eligibility' AS criteria,
+      'DUI' AS note_title,
+      'This reentrant has a DUI charge on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' AS note_body,
+      sc.date_imposed AS event_date
+    FROM (
+       WITH sentences AS (
+    /* pulls all PA sentences */ 
+        SELECT person_id,
+            statute,
+            date_imposed,
+            description,
+            classification_type
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        WHERE state_code = 'US_PA'
+    )
+    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */ 
+        SELECT person_id,
+            statute,
+            title,
+            section,
+            subsection,
+            description,
+            classification_type,
+            date_imposed
+        FROM ({clean_and_split_statute('sentences')})
+        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems, 
+            preferentially select the records where we have information on subsections. using RANK instead of ROW_NUMBER
+            here because we want to keep ALL subsection information */
+        QUALIFY RANK() OVER(PARTITION BY person_id, section, date_imposed ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
+    ) sc
+    WHERE {dui_indicator()}
+  """
+
+
+def adm_pending_charges_helper() -> str:
+    """helper that returns copy for the eligibility unclear tab if somebody has charges
+    pending that might impact their eligibility.
+    """
+    return f"""
+    SELECT
+      person_id, 
+      CASE WHEN is_admin_ineligible THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
+        ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for administrative supervision.') -- otherwise, they just can't have new pending charges
+      END AS metadata_eligibility_unclear_text
+    FROM (
+      WITH {us_pa_pending_charges_cte()}
+      SELECT *, {offense_is_admin_ineligible()} AS is_admin_ineligible
+      FROM pending_charges_clean
+      LEFT JOIN ({us_pa_supervision_super_sessions()}) ss
+        USING(person_id)
+    )
+    WHERE 
+    -- only include admin ineligible charges OR newly incurred charges while on supervision
+    is_admin_ineligible
+    OR event_date >= release_date  
+  """
+
+
+def adm_drug_charges_helper() -> str:
+    """helper that returns copy for the eligibility tab for when somebody has specific drug charges that, per form 402,
+    require an additional addendum.
+    """
+    return f"""
+    SELECT DISTINCT person_id,
+      CASE WHEN form_information_statute_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.' 
+        WHEN form_information_statute_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
+        WHEN form_information_statute_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
+        END AS metadata_eligibility_unclear_text
+    FROM ({adm_form_information_helper()}) form
+    WHERE (form.form_information_statute_14
+      OR form.form_information_statute_30
+      OR form.form_information_statute_37)
     """
 
 
@@ -1285,7 +1235,8 @@ def spc_eligibility_unclear_helper() -> str:
       {spc_violent_offenses_missing_subsection_helper()}
       UNION ALL
       {violent_offenses_missing_felony_information(contextual_information=SPC_VIOLENT_OFFENSE_CONTEXT)}
-      -- TODO(#47684) Add reentrants with pending charges to eligibility unclear tab
+      UNION ALL
+      {spc_pending_charges_helper()}
     ),
     eligibility_unclear_grouped AS (
       SELECT person_id,
@@ -1360,7 +1311,7 @@ def spc_violent_offenses_missing_subsection_helper() -> str:
                 ({statute_code_is_like('18', '3701', 'A12', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}) OR
                 ({statute_code_is_like('18', '3701', 'A13', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
             )
-              THEN '3502(a)(i), (ii) and (iii), Robbery - Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree, is a violent offense per 42 Pa. C.S. 9714(g).'
+              THEN '3701(a)(i), (ii) and (iii), Robbery - Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree, is a violent offense per 42 Pa. C.S. 9714(g).'
             ELSE NULL
           END AS subsection_explanation,
         FROM sentences_clean
@@ -1374,6 +1325,23 @@ def spc_violent_offenses_missing_subsection_helper() -> str:
       QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, subsection_explanation ORDER BY LENGTH(statute) DESC) = 1
       -- doesn't super matter, but preferentially display the statute with more information when deduplicating
 )
+  """
+
+
+def spc_pending_charges_helper() -> str:
+    """helper that returns copy for the eligibility tab for when somebody has pending charges that
+    might impact their eligibility
+    """
+    return f"""
+    SELECT
+      person_id, 
+      CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If the reentrant is found guilty of this offense, they could be considered a violent case and must serve 5 years rather than 3 years on supervision before being eligible for Special Circumstances Supervision.') AS metadata_eligibility_unclear_text
+    FROM (
+      WITH {us_pa_pending_charges_cte()}
+      SELECT *
+      FROM pending_charges_clean
+      WHERE {offense_is_violent()}
+    )
   """
 
 

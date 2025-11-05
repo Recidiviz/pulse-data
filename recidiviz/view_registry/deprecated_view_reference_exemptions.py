@@ -445,11 +445,11 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
     },
     (StateCode.US_PA, StateCharge): {
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove state_charge reference as part of the v2 "
+            "TODO(#50859): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove state_charge reference as part of the v2 "
+            "TODO(#50859): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
     },
@@ -683,10 +683,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46256): Remove this reference as part of the v2 sentences migration"
         ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
+            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
+            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
@@ -780,7 +780,7 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "sentence_sessions view"
         ),
         US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
+            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
@@ -804,7 +804,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46256): Remove this reference as part of the v2 sentences migration"
         ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46260): Remove this reference as part of the v2 sentences migration"
+            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
