@@ -80,49 +80,59 @@ class TestPAQueryFragments(BigQueryEmulatorTestCase):
                 ELSE "NO MATCH"
             END AS include_subsections_strict,
             CASE 
+                WHEN {statute_code_is_like('18', '2702', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_LENIENT)} 
+                THEN "MATCH"
+                ELSE "NO MATCH"
+            END AS include_subsections_lenient,
+            CASE 
                 WHEN {statute_code_is_like('18', '2702', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} 
                 THEN "MATCH"
                 ELSE "NO MATCH"
-            END AS exclude_subsections
+            END AS exclude_subsections,
         FROM parsed_statutes
         """
-
-        print(query)
 
         expected_results = [
             {
                 "test_case_name": "18.2702.A1",
                 "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "18.2702.A",
                 "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "MATCH",
                 "exclude_subsections": "MATCH",
             },
             {
                 "test_case_name": "18.2702.A11",
                 "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "18.2702.A2",
                 "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "18.2702",
                 "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "MATCH",
                 "exclude_subsections": "MATCH",
             },
             {
                 "test_case_name": "19.2702",
                 "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "19.2702.A1",
                 "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
         ]
