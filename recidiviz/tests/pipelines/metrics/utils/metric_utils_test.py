@@ -62,7 +62,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("age", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField("created_on", bigquery.enums.SqlTypeNames.DATE.value),
-            SchemaField("updated_on", bigquery.enums.SqlTypeNames.DATE.value),
             SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField("year", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField("month", bigquery.enums.SqlTypeNames.INTEGER.value),

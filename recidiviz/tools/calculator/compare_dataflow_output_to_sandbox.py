@@ -151,7 +151,6 @@ OUTPUT_COMPARISON_TEMPLATE = """
 # Date columns in the metric tables that should not be included in the dimensions
 DATE_COLUMNS_TO_EXCLUDE = [
     "created_on",
-    "updated_on",
 ]
 
 

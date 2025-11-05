@@ -67,9 +67,6 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
     # A date for when this metric was created
     created_on: Optional[date] = attr.ib(default=None)
 
-    # A date for when this metric was last updated
-    updated_on: Optional[date] = attr.ib(default=None)
-
     @classmethod
     def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
         """Returns the necessary BigQuery schema for the RecidivizMetric, which is a
