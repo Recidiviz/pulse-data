@@ -8,6 +8,22 @@ A Node.JS application for data-driven asset generation with server-side React.
 
 Run `yarn` for package dependencies.
 
+#### Yarn Security Configuration
+
+This project includes a security configuration that requires npm packages to be at least 72 hours old before installation (to help prevent supply chain attacks). To enable this security feature:
+
+```bash
+corepack enable
+corepack prepare yarn@stable --activate
+```
+
+You can verify the security gate is active with:
+```bash
+yarn config get npmMinimalAgeGate  # Should return: 4320
+```
+
+See `YARN_SECURITY_MIGRATION.md` in the repository root for more details.
+
 Running the server or tests locally requires the "Public Sans" font, which can be installed by opening the
 [font file](./src/fonts/PublicSans-Medium.ttf) locally and clicking Install.
 

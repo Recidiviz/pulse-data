@@ -13,6 +13,22 @@ brew install yarn
 brew install node
 ```
 
+## Yarn Security Configuration
+
+This project includes a security configuration that requires npm packages to be at least 72 hours old before installation (to help prevent supply chain attacks). To enable this security feature:
+
+```bash
+corepack enable
+corepack prepare yarn@stable --activate
+```
+
+You can verify the security gate is active with:
+```bash
+yarn config get npmMinimalAgeGate  # Should return: 4320
+```
+
+See `YARN_SECURITY_MIGRATION.md` in the repository root for more details.
+
 # Running the app
 
 ### Spin up the backend

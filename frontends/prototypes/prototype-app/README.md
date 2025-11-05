@@ -6,6 +6,22 @@ A React application for rapid prototyping.
 
 `yarn install`. That's it! No other configuration required thus far.
 
+### Yarn Security Configuration
+
+This project includes a security configuration that requires npm packages to be at least 72 hours old before installation (to help prevent supply chain attacks). To enable this security feature:
+
+```bash
+corepack enable
+corepack prepare yarn@stable --activate
+```
+
+You can verify the security gate is active with:
+```bash
+yarn config get npmMinimalAgeGate  # Should return: 4320
+```
+
+See `YARN_SECURITY_MIGRATION.md` in the repository root for more details.
+
 ## Development
 
 This application uses [Vite](https://vitejs.dev/) as its build system. `yarn dev` will start a local development server.

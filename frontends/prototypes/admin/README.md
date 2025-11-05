@@ -1,5 +1,21 @@
 # Prototypes Admin
 
+## Yarn Security Configuration
+
+This project includes a security configuration that requires npm packages to be at least 72 hours old before installation (to help prevent supply chain attacks). To enable this security feature:
+
+```bash
+corepack enable
+corepack prepare yarn@stable --activate
+```
+
+You can verify the security gate is active with:
+```bash
+yarn config get npmMinimalAgeGate  # Should return: 4320
+```
+
+See `YARN_SECURITY_MIGRATION.md` in the repository root for more details.
+
 ## Environment
 
 Copy the value of the "service_account" entry in `../functions/.runtimeconfig.json` into a file in this directory called `service_account.json` (it will be untracked).
