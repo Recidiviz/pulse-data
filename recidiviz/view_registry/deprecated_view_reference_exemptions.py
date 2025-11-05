@@ -103,6 +103,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_incarceration_s
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sentences_preprocessed import (
     US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentence_status_raw_text_sessions import (
+    US_TN_SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -272,21 +275,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_pa.meets_special_circ
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_pa.not_serving_ineligible_offense_for_admin_supervision import (
     VIEW_BUILDER as US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_on_community_supervision_for_life import (
-    VIEW_BUILDER as US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_on_life_sentence_or_lifetime_supervision import (
-    VIEW_BUILDER as US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_ineligible_cr_offense import (
-    VIEW_BUILDER as US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_ineligible_cr_offense_policy_b import (
-    VIEW_BUILDER as US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_unknown_cr_offense import (
-    VIEW_BUILDER as US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER,
 )
 from recidiviz.tools.find_unused_bq_views import PSA_RISK_SCORES_VIEW_BUILDER
 from recidiviz.utils.types import assert_subclass
@@ -647,21 +635,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
             "TODO(#46260): Remove this reference as part of the v2 sentences migration"
         ),
-        US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
         SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -698,6 +671,9 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
+        ),
+        US_TN_SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: (
@@ -781,15 +757,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
         US_AR_RESIDENT_METADATA_VIEW_BUILDER.address: (
             "TODO(#46254): Remove this reference as part of the v2 sentences migration"
@@ -1096,6 +1063,17 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46261): Remove this reference as part of the v2 sentences migration"
         ),
+    },
+    # TODO(#46261): Delete `us_tn_sentence_status_raw_text_sessions` once US_TN is migrated to v2
+    #  infra
+    US_TN_SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: {
+        SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
+            "TODO(#46261): Remove this reference when we flip the TN gate to v2"
+        ),
+        BigQueryAddress(
+            dataset_id="sentence_sessions_v2_all",
+            table_id="sentence_status_raw_text_sessions",
+        ): "TODO(#46261): Remove this reference when we flip the TN gate to v2",
     },
     # TODO(#33402): Delete StateIncarcerationSentence once all states are migrated
     # to v2 infra

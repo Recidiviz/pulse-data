@@ -82,21 +82,6 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.pipelines.ingest.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_on_community_supervision_for_life import (
-    VIEW_BUILDER as US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_on_life_sentence_or_lifetime_supervision import (
-    VIEW_BUILDER as US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_ineligible_cr_offense import (
-    VIEW_BUILDER as US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_ineligible_cr_offense_policy_b import (
-    VIEW_BUILDER as US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.not_serving_unknown_cr_offense import (
-    VIEW_BUILDER as US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER,
-)
 
 # For each US_TN metric export, for each product view in that export, a mapping of
 #   deprecated v1 sentences views that are a) referenced directly without going through
@@ -111,20 +96,12 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 RESIDENT_RECORD_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER.address,
-                US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address,
                 US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
@@ -154,20 +131,12 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 RESIDENT_RECORD_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER.address,
-                US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address,
                 US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
@@ -197,20 +166,12 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 RESIDENT_RECORD_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER.address,
-                US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address,
                 US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
@@ -274,18 +235,14 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
         },
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: {
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_POLICY_B_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
             },
         },
@@ -294,20 +251,14 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER.address,
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
             },
         },
         US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address: {
             SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_INELIGIBLE_CR_OFFENSE_VIEW_BUILDER.address,
-                US_TN_NOT_SERVING_UNKNOWN_CR_OFFENSE_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
         },
