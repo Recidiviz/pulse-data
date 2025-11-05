@@ -25,15 +25,6 @@ from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarc
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions_raw import (
     SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
-    MOST_RECENT_METRICS_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_population_span_to_single_day_metrics import (
-    MOST_RECENT_POPULATION_SPAN_TO_SINGLE_DAY_METRICS_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_single_day_dataflow_metrics import (
-    MOST_RECENT_SINGLE_DAY_METRICS_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.reference.state_resident_population import (
     STATE_RESIDENT_POPULATION_VIEW_BUILDER,
 )
@@ -84,19 +75,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # dashboard_views views
     SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    # dataflow_metrics_materialized views - all most_recent_* views
-    **{
-        vb.address: "TODO(#50972): Migrate to use sex instead of gender"
-        for vb in MOST_RECENT_METRICS_VIEW_BUILDERS
-    },
-    **{
-        vb.address: "TODO(#50972): Migrate to use sex instead of gender"
-        for vb in MOST_RECENT_POPULATION_SPAN_TO_SINGLE_DAY_METRICS_VIEW_BUILDERS
-    },
-    **{
-        vb.address: "TODO(#50972): Migrate to use sex instead of gender"
-        for vb in MOST_RECENT_SINGLE_DAY_METRICS_VIEW_BUILDERS
-    },
     # externally_shared views
     BigQueryAddress(
         dataset_id="externally_shared_views",
