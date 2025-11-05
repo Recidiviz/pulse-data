@@ -194,7 +194,7 @@ these offenses. */
 
 -- 18 Pa.C.S. § 3502(a)(1) Burglary- Adapted for Overnight Accommodation and Person Present (Felony of the First Degree)
 -- TODO(#47684): move to STRICT mode once we've implemented felony considerations for eligibility unclear 3502
-    OR ({statute_code_is_like('18','3502', 'A1', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_LENIENT)}
+    OR ({statute_code_is_like('18','3502', 'A1')}
       OR ((description LIKE '%BURG%'
           AND (REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OVERNIGHTACCOMMODATIONPERSONPRESENT%'
               OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OVERNIGHTACCOMMODATIONSPERSONPRESENT%' 
@@ -204,9 +204,9 @@ these offenses. */
 
 -- 18 Pa.C.S. § 3701(a)(1)(i), (ii) or (iii) Robbery- Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree (Felony of the First Degree)
 -- TODO(#47684): move to STRICT mode once we've implemented felony considerations for eligibility unclear 3502
-   OR ({statute_code_is_like('18','3701', 'A11', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_LENIENT)}
-      OR {statute_code_is_like('18','3701', 'A12', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_LENIENT)}
-      OR {statute_code_is_like('18','3701', 'A13', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_LENIENT)}
+   OR ({statute_code_is_like('18','3701', 'A11')}
+      OR {statute_code_is_like('18','3701', 'A12')}
+      OR {statute_code_is_like('18','3701', 'A13')}
       OR ((description LIKE '%ROB%' AND description NOT LIKE '%PROB%') -- refers to robbery
           AND ({description_refers_to_serious_bodily_injury()} -- 3701(a)(1)(i) & (ii) refer to serious bodily injury
               OR description LIKE '%FEL%'))) -- 3701(a)(1)(iii) refers to committing or threatening to commit a felony
@@ -1219,7 +1219,7 @@ def spc_violent_offenses_missing_subsection_helper() -> str:
           listed in policy due to TT feedback.
         - 18.2507(c) or (d) is not included here as we check for 2507 in it's entirety
         - 18.2604(c) is not included here as we check for 2604 in it's entirety
-        - 18.2717(b)(2), 18.3502(a)(1), 18.3311(b)(3), 3701(a)(1),(ii)and(iii) are not included here as the agent should check 
+        - 18.2717(b)(2), 18.3311(b)(3) and  are not included here as the agent should check 
           for felony information, see TODO(#47684)
     */
         SELECT person_id,
@@ -1243,6 +1243,16 @@ def spc_violent_offenses_missing_subsection_helper() -> str:
               -- Drug Delivery Resulting in Death
               WHEN {statute_code_is_like('18', '2506', 'A', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
                 THEN '2506(a) is a violent offense per 42 Pa. C.S. 9714(g).'      
+              -- 18 Pa.C.S. § 3502(a)(1) Burglary - Adapted for Overnight Accommodation and Person Present (Felony of the First Degree)
+              WHEN ({statute_code_is_like('18', '3502', 'A1', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
+                THEN '3502(a)(1), Burglary - Adapted for Overnight Accommodation and Person Present, is a violent offense per 42 Pa. C.S. 9714(g).'
+              -- 18 Pa.C.S. § 3701(a)(1)(i), (ii) or (iii) Robbery- Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree (Felony of the First Degree)
+              WHEN (
+                ({statute_code_is_like('18', '3701', 'A11', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}) OR
+                ({statute_code_is_like('18', '3701', 'A12', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}) OR
+                ({statute_code_is_like('18', '3701', 'A13', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
+              )
+                THEN '3701(a)(i), (ii) and (iii), Robbery - Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree, is a violent offense per 42 Pa. C.S. 9714(g).'
               ELSE NULL
             END AS subsection_explanation,
         FROM sentences_clean
