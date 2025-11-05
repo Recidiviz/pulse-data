@@ -1511,14 +1511,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         ],
     },
     StateCode.US_MI: {
-        "COMS_Program_Recommendations": [
-            "Create_Date",
-            "End_Date",
-            "Entered_Date",
-            "Program_Status_Date",
-            "Referral_Date",
-            "Start_Date",
-        ],
         "COMS_dm_Staff_Specialized_Types": ["Entered_Date"],
     },
     StateCode.US_NC: {
