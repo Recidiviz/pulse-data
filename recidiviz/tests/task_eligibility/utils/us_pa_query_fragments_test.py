@@ -27,7 +27,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 class TestPAQueryFragments(BigQueryEmulatorTestCase):
     """unit tests for query fragments for US_PA"""
 
-    def test_statute_like(self) -> None:
+    def test_statute_like_subsection(self) -> None:
         query = f"""
             WITH parsed_statutes AS (
             SELECT
@@ -85,6 +85,11 @@ class TestPAQueryFragments(BigQueryEmulatorTestCase):
                 ELSE "NO MATCH"
             END AS include_subsections_lenient,
             CASE 
+                WHEN {statute_code_is_like('18', '2702', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_EXACT)} 
+                THEN "MATCH"
+                ELSE "NO MATCH"
+            END AS include_subsections_exact,
+            CASE 
                 WHEN {statute_code_is_like('18', '2702', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} 
                 THEN "MATCH"
                 ELSE "NO MATCH"
@@ -97,42 +102,173 @@ class TestPAQueryFragments(BigQueryEmulatorTestCase):
                 "test_case_name": "18.2702.A1",
                 "include_subsections_strict": "MATCH",
                 "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "18.2702.A",
                 "include_subsections_strict": "NO MATCH",
                 "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
                 "exclude_subsections": "MATCH",
             },
             {
                 "test_case_name": "18.2702.A11",
                 "include_subsections_strict": "MATCH",
                 "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "18.2702.A2",
                 "include_subsections_strict": "NO MATCH",
                 "include_subsections_lenient": "NO MATCH",
+                "include_subsections_exact": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "18.2702",
                 "include_subsections_strict": "NO MATCH",
                 "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
                 "exclude_subsections": "MATCH",
             },
             {
                 "test_case_name": "19.2702",
                 "include_subsections_strict": "NO MATCH",
                 "include_subsections_lenient": "NO MATCH",
+                "include_subsections_exact": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
             {
                 "test_case_name": "19.2702.A1",
                 "include_subsections_strict": "NO MATCH",
                 "include_subsections_lenient": "NO MATCH",
+                "include_subsections_exact": "NO MATCH",
+                "exclude_subsections": "NO MATCH",
+            },
+        ]
+
+        self.run_query_test(query, expected_result=expected_results)
+
+    def test_statute_like_no_subsection(self) -> None:
+        query = f"""
+            WITH parsed_statutes AS (
+            SELECT
+                '18.2702.A1' AS id,
+                '18' AS title,
+                '2702' AS section,
+                'A1' AS subsection
+            UNION ALL
+                SELECT
+                '18.2702.A' AS id,
+                '18' AS title,
+                '2702' AS section,
+                'A' AS subsection
+            UNION ALL
+                SELECT
+                '18.2702.A11' AS id,
+                '18' AS title,
+                '2702' AS section,
+                'A11' AS subsection
+            UNION ALL
+                SELECT
+                '18.2702.A2' AS id,
+                '18' AS title,
+                '2702' AS section,
+                'A2' AS subsection
+            UNION ALL
+            SELECT
+                '18.2702' AS id,
+                '18' AS title,
+                '2702' AS section,
+                '' AS subsection 
+            UNION ALL
+            SELECT
+                '19.2702' AS id,
+                '19' AS title,
+                '2702' AS section,
+                '' AS subsection 
+            UNION ALL
+            SELECT
+                '19.2702.A1' AS id,
+                '19' AS title,
+                '2702' AS section,
+                'A1' AS subsection 
+            )
+        SELECT
+            id as test_case_name,
+            CASE 
+                WHEN {statute_code_is_like('18', '2702', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_STRICT)} 
+                THEN "MATCH"
+                ELSE "NO MATCH"
+            END AS include_subsections_strict,
+            CASE 
+                WHEN {statute_code_is_like('18', '2702', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_LENIENT)} 
+                THEN "MATCH"
+                ELSE "NO MATCH"
+            END AS include_subsections_lenient,
+            CASE 
+                WHEN {statute_code_is_like('18', '2702', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_EXACT)} 
+                THEN "MATCH"
+                ELSE "NO MATCH"
+            END AS include_subsections_exact,
+            CASE 
+                WHEN {statute_code_is_like('18', '2702', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} 
+                THEN "MATCH"
+                ELSE "NO MATCH"
+            END AS exclude_subsections,
+        FROM parsed_statutes
+        """
+
+        expected_results = [
+            {
+                "test_case_name": "18.2702.A1",
+                "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
+                "exclude_subsections": "MATCH",
+            },
+            {
+                "test_case_name": "18.2702.A",
+                "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
+                "exclude_subsections": "MATCH",
+            },
+            {
+                "test_case_name": "18.2702.A11",
+                "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
+                "exclude_subsections": "MATCH",
+            },
+            {
+                "test_case_name": "18.2702.A2",
+                "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "NO MATCH",
+                "exclude_subsections": "MATCH",
+            },
+            {
+                "test_case_name": "18.2702",
+                "include_subsections_strict": "MATCH",
+                "include_subsections_lenient": "MATCH",
+                "include_subsections_exact": "MATCH",
+                "exclude_subsections": "MATCH",
+            },
+            {
+                "test_case_name": "19.2702",
+                "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "NO MATCH",
+                "include_subsections_exact": "NO MATCH",
+                "exclude_subsections": "NO MATCH",
+            },
+            {
+                "test_case_name": "19.2702.A1",
+                "include_subsections_strict": "NO MATCH",
+                "include_subsections_lenient": "NO MATCH",
+                "include_subsections_exact": "NO MATCH",
                 "exclude_subsections": "NO MATCH",
             },
         ]
