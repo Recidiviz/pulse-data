@@ -77,3 +77,11 @@ custom:
               add a data-bounded exclusion from the first case of a file being
               received --> today, which will exclude those dates from validation & from
               being used to calculate the median historical row count"
+
+  US_IA:
+    file_tags:
+      IA_DOC_SupervisionStatuses:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-09-17T00:00:00Z"
+            datetime_end_exclusive: "2025-10-21T00:00:00Z"
+            reason: "This table was modified on 2025-10-21 to be full historical instead of a 14 day diff"
