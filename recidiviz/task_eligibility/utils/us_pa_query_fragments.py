@@ -16,6 +16,8 @@
 # =============================================================================
 """Helper fragments to import data for case notes in PA"""
 
+from enum import Enum, auto
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     nonnull_end_date_exclusive_clause,
@@ -165,6 +167,8 @@ these offenses. */
 -- What the policy says: 18 Pa.C.S. § 3124.1 Sexual Assault
 -- What we're going to check for: 18 Pa.C.S. § 3124.1 Sexual Assault, 3124.2 Institutional Sexual Assault, 3124.3 Sexual assault by sports official, volunteer or employee of nonprofit association.
     OR({statute_code_is_like('18','3124', '1')}
+      OR {statute_code_is_like('18','3124', '2')}
+      OR {statute_code_is_like('18','3124', '3')}
       OR ({description_refers_to_assault()}
           AND description LIKE '%SEX%'
           AND description NOT LIKE '%STAT%')) -- stat sexual assault is covered in 3122
@@ -176,6 +180,7 @@ these offenses. */
             OR (description like '%INJ%' OR description LIKE '%DEA%' OR description LIKE '%DTH%')))) -- places another person in danger of death or bodily injury 3301(a)(1)(i)
 
 -- 18 Pa.C.S. § 3311(b)(3) Ecoterrorism
+-- (b)(3) specifies the grading of ecoterrorism as a first degree felony 
     OR ({statute_code_is_like('18','3311', 'B3')}) -- no examples of this actually occurring
 
 -- 18 Pa.C.S § 2901 Kidnapping
@@ -999,19 +1004,67 @@ def contains_nae(column: str) -> str:
     """
 
 
+class StatueMatchingMode(Enum):
+    """Configurations for how we want to match statues we find in the policy docs to those
+    that come through charge information.
+    """
+
+    # in this mode, we want to _only_ match the statue where we are confident that the
+    # the statue, inclusive of the entire subsection, is included. a few examples:
+    # -> statue 18.4501:
+    #     + 18.4501: match!
+    #     + 18.4501(a): match!
+    #     - 18.4502: no match
+    # -> statue 18.4502(a)(i):
+    #     - 18.4502: no match
+    #     - 18.4502(a): no match
+    #     + 18.4502(a)(i): match!
+    #     - 18.4502(a)(i)(i): match!
+    #     - 18.4502(a)(ii): no match
+    #     - 18.4502(b): no match
+    MATCH_ON_TITLE_SECTION_SUBSECTION_STRICT = auto()
+    # in this mode, we want to match the statue where we are potentially missing information
+    # about the statute that we want clarification on. thus, we want to match on title and
+    # section, but exclude cases that either (1) have matching subsection information or
+    # (2) have subsections that we know conflict with the subsection information we have;
+    # a few examples:
+    # -> statue 18.4501:
+    #     + 18.4501: match!
+    #     + 18.4501(a): match!
+    #     - 18.4502: no match
+    # -> statue 18.4502(a)(i):
+    #     + 18.4502: match!
+    #     + 18.4502(a): match!
+    #     - 18.4502(a)(i): no match
+    #     - 18.4502(a)(i)(i): match
+    #     - 18.4502(a)(ii): no match
+    #     - 18.4502(b): no match
+    MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION = auto()
+
+
 def statute_code_is_like(
     title: str,
     section: str,
-    subsection: str = "",
+    subsection: str | None = None,
+    mode: StatueMatchingMode = StatueMatchingMode.MATCH_ON_TITLE_SECTION_SUBSECTION_STRICT,
 ) -> str:
-    """Custom PA function that checks for a match in the title, section, and subsection(s) of statute codes
-    Note about checking subsections: this gets tricky because there can be multiple layers of subsections and we
-    want to match as much we can, but also default to including offenses when we are missing information (per user feedback).
-    We achieve this by truncating the input subsection and the actual subsection to the same length.
-    Some examples of how this works:
-        1. the policy states 4502(a)(1)(iv), but the data only says 4502(a). We truncate to 4502(a) = 4502(a) and determine this is a match
-        2. the policy states 4502(a)(1)(iv), but the data says 4502(a)(2). We truncate to 4502(a)(1) != 4502(a)(2) and determine this is not a match
-        3.  the policy states 4502(a)(1), but the data says 4502(a)(1)(i). We truncate to 4502(a)(1) = 4502(a)(1) and determine this is a match"""
+    """Custom PA function that checks for a match in the title, section, and subsection
+    of"""
+
+    subsection_str = subsection or ""
+
+    no_subsection_return = (
+        "TRUE"
+        if mode == StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION
+        else "FALSE"
+    )
+
+    subsection_matching_statement = (
+        f"STARTS_WITH('{subsection_str}', subsection) AND NOT STARTS_WITH(subsection, '{subsection_str}')"
+        if mode == StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION
+        else f"STARTS_WITH(subsection, '{subsection_str}')"
+    )
+
     return f"""(
     /* check that title is correct */ 
     CASE WHEN '{title}' = '18' THEN title IN ('18', 'CC', 'CS') -- different prefixes are used for offense codes depending on the title. title 18 = criminal offenses = CC or CS 
@@ -1022,10 +1075,9 @@ def statute_code_is_like(
     /* check that section is correct */
     AND section LIKE '{section}'
     /* optional: check that subsection is correct */
-    AND CASE WHEN COALESCE('{subsection}', '') = '' THEN TRUE -- if no subsection is input, return true
-        WHEN COALESCE(subsection, '') = '' THEN TRUE -- if no subsection is present in the data, return true
-        ELSE SUBSTR('{subsection}', 0, LEAST(LENGTH('{subsection}'), LENGTH(subsection)))
-             = SUBSTR(subsection, 0, LEAST(LENGTH('{subsection}'), LENGTH(subsection))) -- else check that subsection matches per above logic
+    AND CASE WHEN COALESCE('{subsection_str or ""}', '') = '' THEN TRUE -- if no subsection listed in policy, don't check subsection and return true
+        WHEN COALESCE(subsection, '') = '' THEN {no_subsection_return} -- if subsection listed in policy but none in data, return input value for include_missing_subsections
+        WHEN {subsection_matching_statement} THEN TRUE
     END
     )"""
 
@@ -1039,3 +1091,69 @@ def convert_roman_numerals(string: str) -> str:
                         WHEN REGEXP_EXTRACT(UPPER({string}), r'(IV|III|II|I)') = 'II' THEN '2'
                         WHEN REGEXP_EXTRACT(UPPER({string}), r'(IV|III|II|I)') = 'I' THEN '1'
                         ELSE '' END)"""
+
+
+def adm_missing_subsection_helper() -> str:
+    """CTE that returns information on people who should be in admin eligibility unclear tab due to missing/incomplete subsections"""
+    return f"""
+    WITH sentences AS (
+    /* pulls all PA sentences */ 
+        SELECT person_id,
+            statute,
+            date_imposed,
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        WHERE state_code = 'US_PA'
+    ), sentences_clean AS (
+    /* takes PA sentences and splits the statute codes into titles, sections, and subsections */ 
+        SELECT person_id,
+            statute,
+            title,
+            section,
+            subsection,
+        FROM ({clean_and_split_statute('sentences')})
+        /* if duplicates of the same section/date imposed exist because we pull offenses from different systems, 
+            preferentially select the records where we have information on subsections. using RANK instead of ROW_NUMBER
+            here because we want to keep ALL subsection information */
+        QUALIFY RANK() OVER(PARTITION BY person_id, section, date_imposed ORDER BY CASE WHEN subsection <> '' THEN 0 ELSE 1 END) = 1
+    ), subsections AS (
+    /* checks for relevant missing subsections and labels each with the statute specified in policy */
+    /* notes: statute 7507.1 is not included here because 7507 (breach of privacy) and 7507.1 (invasion of privacy) are explicitly specified as different offenses in PA code
+              similarly, statutes 5502.1-4 are not included because 5502 (operating a watercraft under the influence) is its own offense, separate from 5502.1-4 (homicide/assault by watercraft)
+              statutes 2717, 3011, & 3311 are not included because the agent should check for felony information, not just subsection information (see TODO(#47684)) */
+        SELECT person_id,
+            statute,
+            CASE 
+                /* 402 form offenses */
+                WHEN {statute_code_is_like('18', '5902', 'B',StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} 
+                    THEN '5902(b) is ineligible because it is listed in form 402'
+                /* sex offenses */
+                WHEN ({statute_code_is_like('18','5903', 'A32', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
+                        OR {statute_code_is_like('18','5903', 'A42', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
+                        OR {statute_code_is_like('18','5903', 'A52', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
+                    THEN '5903(3)(ii), 4(ii), 5(ii), and 6 are ineligible because they are sex offenses involving minor victims per 42 Pa. C.S. 9799.14.'
+                WHEN {statute_code_is_like('18','6301', 'A12', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
+                    THEN '6301(a)(1)(ii) is ineligible because it is a sex offense per 42 Pa. C.S. 9799.14.'
+                /* violent offenses (that aren't already covered by 402 form) */
+                WHEN {statute_code_is_like('18', '2716', 'B', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
+                    THEN '2716(b) is ineligible because it is a violent offense per 42 Pa. C.S. 9714(g).'
+                WHEN {statute_code_is_like('18','3502', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
+                    THEN '3502(a)(1) is ineligible because it is a violent offense per 42 Pa. C.S. 9714(g).'
+                ELSE NULL
+                END AS subsection_explanation,
+        FROM sentences_clean
+        ORDER BY 1, 2, 3
+    ), subsections_dd AS (
+    /* pulls flagged subsections and de-duplicates so that the relevant unclear eligibility flag is only displayed once */
+        SELECT person_id,
+            CONCAT('Client has offense ', statute, ' on record with no clear sub-statute. Sub-statute ', subsection_explanation, ' Please confirm if this sub-statute applies.') AS metadata_eligibility_unclear_text,
+        FROM subsections
+        WHERE subsection_explanation IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, subsection_explanation ORDER BY LENGTH(statute) DESC) = 1
+        -- doesn't super matter, but preferentially display the statute with more information when deduplicating
+    )
+    /* aggs all flags for one reentrant together */
+    SELECT person_id,
+        ARRAY_AGG(DISTINCT metadata_eligibility_unclear_text ORDER BY metadata_eligibility_unclear_text) AS metadata_eligibility_unclear_text
+    FROM subsections_dd
+    GROUP BY 1
+    """
