@@ -899,7 +899,6 @@ class MetricGroup:
         state_code="US_XX",
         release_cohort=2015,
         follow_up_period=1,
-        gender=StateGender.MALE,
         did_recidivate=True,
     )
 

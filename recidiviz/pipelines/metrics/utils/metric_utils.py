@@ -26,7 +26,6 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
-from recidiviz.common.constants.state.state_person import StateGender
 
 
 class RecidivizMetricType(Enum):
@@ -62,9 +61,6 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
 
     # The age of the person the metric describes
     age: Optional[int] = attr.ib(default=None)
-
-    # The gender of the persons the metric describes
-    gender: Optional[StateGender] = attr.ib(default=None)
 
     # Record keeping fields
 

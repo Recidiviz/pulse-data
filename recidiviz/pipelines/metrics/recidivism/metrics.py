@@ -81,7 +81,7 @@ With this metric, we can answer questions like:
 
 - How many people that were released from prison in 2015 had returned to prison within the next 3 years?
 - Over the last 10 years, what was the average rate of recidivism within 1 year of release?
-- How does the 5 year recidivism rate differ by gender in this state?
+- How does the 5 year recidivism rate differ by release facility in this state?
 
 This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility.
 

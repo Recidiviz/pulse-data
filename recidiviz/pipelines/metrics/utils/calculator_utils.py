@@ -46,8 +46,6 @@ def person_characteristics(
 
     if person_age is not None:
         characteristics["age"] = person_age
-    if person.gender is not None:
-        characteristics["gender"] = person.gender
 
     characteristics["person_id"] = person.person_id
 

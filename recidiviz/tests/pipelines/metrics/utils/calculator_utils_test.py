@@ -107,7 +107,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         expected_output = {
             "person_id": person.person_id,
             "age": 26,
-            "gender": StateGender.FEMALE,
         }
 
         self.assertEqual(updated_characteristics, expected_output)
@@ -128,7 +127,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "gender": StateGender.FEMALE,
             "person_id": person.person_id,
         }
 
