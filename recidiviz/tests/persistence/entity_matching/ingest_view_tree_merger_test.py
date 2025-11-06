@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_staff_role_period import StateStaffR
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
+    EntityMergingError,
     IngestViewTreeMerger,
 )
 from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
@@ -356,6 +357,40 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         merge_result = tree_merger.merge(ingested_persons)
 
         self.assertCountEqual(expected_people, merge_result)
+
+    def test_entity_merging_error_shows_conflicting_fields(self) -> None:
+        """Test that EntityMergingError shows which fields have conflicts."""
+        # Create two staff entities with the same external_id but different full_name
+        ingested_staff = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                full_name="John Doe",
+            ),
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                full_name="Jane Doe",
+            ),
+        ]
+
+        tree_merger = IngestViewTreeMerger()
+
+        with self.assertRaises(EntityMergingError) as context:
+            tree_merger.merge(ingested_staff)
+
+        error_message = str(context.exception)
+
+        expected_error_message = """Found multiple different ingested entities of type [StateStaff]
+with conflicting information in fields: full_name
+
+Entities with conflicts:
+  Entity 1: StateStaff(staff_id=None, external_ids=[StateStaffExternalId(external_id='ID_1', id_type='ID_TYPE_1', staff_external_id_id=None)])
+  Entity 2: StateStaff(staff_id=None, external_ids=[StateStaffExternalId(external_id='ID_1', id_type='ID_TYPE_1', staff_external_id_id=None)])"""
+
+        self.assertEqual(expected_error_message, error_message)
 
 
 class TestBucketIngestedRootEntities(unittest.TestCase):

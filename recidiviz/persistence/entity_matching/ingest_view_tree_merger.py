@@ -17,9 +17,10 @@
 """Class responsible for merging hydrated entity trees from a *single ingest view
 on a single day* into as few trees as possible.
 """
+import json
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from recidiviz.persistence.entity.base_entity import EntityT, ExternalIdEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
@@ -135,6 +136,32 @@ class IngestViewTreeMerger:
 
         return result_buckets
 
+    def _get_conflicting_fields(self, flat_field_reprs: set[str]) -> Set[str]:
+        """Returns the set of field names that have conflicting values by comparing
+        the JSON representations of flat fields.
+        """
+        if len(flat_field_reprs) <= 1:
+            raise ValueError(
+                f"Expected multiple flat_field_reprs, found [{len(flat_field_reprs)}]."
+            )
+        parsed_reprs = [json.loads(repr_str) for repr_str in flat_field_reprs]
+
+        # Assume all flat field repr maps have the same keys
+        all_fields = set(parsed_reprs[0].keys())
+
+        # Find distinct values for each field
+        field_to_values: dict[str, set[Any]] = defaultdict(set)
+        for field_name in all_fields:
+            for parsed in parsed_reprs:
+                field_to_values[field_name].add(parsed[field_name])
+
+        # Filter to fields with multiple values
+        return {
+            field_name
+            for field_name, distinct_values in field_to_values.items()
+            if len(distinct_values) > 1
+        }
+
     def _merge_matched_tree_group(
         self, entity_group: List[EntityT], should_throw_on_conflicts: bool = True
     ) -> Tuple[Optional[EntityT], Set[int]]:
@@ -162,11 +189,23 @@ class IngestViewTreeMerger:
         if len(flat_field_reprs) > 1:
             # If there is more than one string representation of the flat fields, then
             # we have objects with conflicting info that we are trying to merge.
-            error_message = (
-                f"Found multiple different ingested entities of type "
-                f"[{primary_entity.__class__.__name__}] with conflicting "
-                f"information: {[e.limited_pii_repr() for e in entity_group]}"
-            )
+            conflicting_fields = self._get_conflicting_fields(flat_field_reprs)
+
+            entity_type = primary_entity.__class__.__name__
+            fields_str = ", ".join(sorted(conflicting_fields))
+
+            error_message_parts = [
+                f"Found multiple different ingested entities of type [{entity_type}]",
+                f"with conflicting information in fields: {fields_str}",
+                "",
+                "Entities with conflicts:",
+            ]
+
+            for i, entity in enumerate(entity_group, 1):
+                error_message_parts.append(f"  Entity {i}: {entity.limited_pii_repr()}")
+
+            error_message = "\n".join(error_message_parts)
+
             if should_throw_on_conflicts:
                 raise EntityMergingError(
                     error_message,
