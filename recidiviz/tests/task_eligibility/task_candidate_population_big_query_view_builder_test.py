@@ -28,6 +28,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
+    aggregate_adjacent_candidate_population_spans,
 )
 
 
@@ -64,7 +65,12 @@ class TestStateSpecificTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             ),
         )
 
-        self.assertEqual(view.view_query, "SELECT * FROM `recidiviz-456.raw_data.foo`;")
+        self.assertEqual(
+            view.view_query,
+            aggregate_adjacent_candidate_population_spans(
+                query_template="SELECT * FROM `recidiviz-456.raw_data.foo`;"
+            ),
+        )
 
     def test_build_with_address_overrides(self) -> None:
         builder = StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
@@ -106,7 +112,10 @@ class TestStateSpecificTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
         )
 
         self.assertEqual(
-            view.view_query, "SELECT * FROM `recidiviz-456.my_prefix_raw_data.foo`;"
+            view.view_query,
+            aggregate_adjacent_candidate_population_spans(
+                query_template="SELECT * FROM `recidiviz-456.my_prefix_raw_data.foo`;"
+            ),
         )
 
     def test_no_state_prefix_on_population_throws(self) -> None:
@@ -184,7 +193,10 @@ class TestStateAgnosticTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
         )
 
         self.assertEqual(
-            view.view_query, "SELECT * FROM `recidiviz-456.ingested_data.foo`;"
+            view.view_query,
+            aggregate_adjacent_candidate_population_spans(
+                query_template="SELECT * FROM `recidiviz-456.ingested_data.foo`;"
+            ),
         )
 
     def test_build_with_address_overrides(self) -> None:
@@ -228,7 +240,9 @@ class TestStateAgnosticTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
 
         self.assertEqual(
             view.view_query,
-            "SELECT * FROM `recidiviz-456.my_prefix_ingested_data.foo`;",
+            aggregate_adjacent_candidate_population_spans(
+                query_template="SELECT * FROM `recidiviz-456.my_prefix_ingested_data.foo`;"
+            ),
         )
 
     def test_lowercase_population_name_throws(self) -> None:

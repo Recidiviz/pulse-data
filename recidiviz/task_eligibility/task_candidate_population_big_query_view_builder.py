@@ -20,7 +20,25 @@ These views are used as inputs to a task eligibility spans view.
 from typing import Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
+
+
+def aggregate_adjacent_candidate_population_spans(query_template: str) -> str:
+    """
+    Wraps a candidate population query template to aggregate adjacent spans
+    for the same person into a single span."""
+
+    return f"""WITH candidate_population_query_base AS (
+    {query_template.rstrip().rstrip(";")}
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date
+    FROM ({aggregate_adjacent_spans(table_name = 'candidate_population_query_base')})
+"""
 
 
 class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
@@ -54,7 +72,9 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
             dataset_id=f"task_eligibility_candidates_{state_code.value.lower()}",
             view_id=view_id,
             description=description,
-            view_query_template=population_spans_query_template,
+            view_query_template=aggregate_adjacent_candidate_population_spans(
+                query_template=population_spans_query_template
+            ),
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
@@ -90,7 +110,9 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             dataset_id="task_eligibility_candidates_general",
             view_id=population_name.lower(),
             description=description,
-            view_query_template=population_spans_query_template,
+            view_query_template=aggregate_adjacent_candidate_population_spans(
+                query_template=population_spans_query_template
+            ),
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
