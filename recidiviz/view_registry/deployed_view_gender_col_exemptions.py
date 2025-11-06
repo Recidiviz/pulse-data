@@ -31,12 +31,6 @@ from recidiviz.calculator.query.state.views.reference.state_resident_population 
 from recidiviz.calculator.query.state.views.reference.state_resident_population_combined_race_ethnicity import (
     STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.client_record_historical import (
-    SENTENCING_CLIENT_RECORD_HISTORICAL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
-    SENTENCE_COHORT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
@@ -85,9 +79,6 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_GENDER_COLUMN: dict[BigQueryAddress, str] = {
     # reference_views views
     STATE_RESIDENT_POPULATION_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    # sentencing_views views
-    SENTENCE_COHORT_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
-    SENTENCING_CLIENT_RECORD_HISTORICAL_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     # sessions views
     COMPARTMENT_SESSIONS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.address: "TODO(#50972): Migrate to use sex instead of gender",
