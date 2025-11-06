@@ -25,8 +25,8 @@ need an LSI-R assessment. Specifically:
 
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_parole_dual_active_supervision_population,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
+    active_supervision_population_for_tasks,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans.us_ne.needs_stable_assessment import (
     StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
@@ -92,7 +92,7 @@ meets_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_assessment",
-    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,

@@ -20,15 +20,11 @@ need a home visit (i.e. are not compliant with scheduled home visits)
 
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_parole_dual_active_supervision_population,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
+    active_supervision_population_for_tasks,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.criteria.general import (
-    supervision_case_type_is_general_or_sex_offense,
-    supervision_level_is_high_medium_or_minimum,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     meets_address_changes_triggers,
@@ -56,11 +52,9 @@ meets_home_visit_or_address_changes_triggers = (
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_home_visit",
-    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_home_visit_or_address_changes_triggers,
-        supervision_case_type_is_general_or_sex_offense.VIEW_BUILDER,
-        supervision_level_is_high_medium_or_minimum.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
     due_date_criteria_builder=meets_home_visit_or_address_changes_triggers,
