@@ -15,6 +15,7 @@ input_columns:
   assessment_update_count: INTEGER
   sc_type: STRING
   management_raw_score: INTEGER
+  latest_screen_version: BOOLEAN
 unused_columns: []
 output:
   StatePerson:
@@ -57,3 +58,4 @@ output:
               calculated_result: calculated_result
               screen_type: sc_type
               management_raw_score: management_raw_score
+              latest_screen_version: latest_screen_version
