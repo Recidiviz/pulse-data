@@ -53,6 +53,10 @@ export const PSI_PERMISSIONS_LABELS = {
   psiSupervision: "PSI Supervisor View",
 };
 
+export const CPA_PERMISSIONS_LABELS = {
+  cpa: "CPA",
+};
+
 export const LANTERN_PERMISSIONS_LABELS = {
   lantern: "Lantern (legacy)",
 };
@@ -63,6 +67,7 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...INSIGHTS_PERMISSIONS_LABELS,
   ...PATHWAYS_PERMISSIONS_LABELS,
   ...PSI_PERMISSIONS_LABELS,
+  ...CPA_PERMISSIONS_LABELS,
   ...LANTERN_PERMISSIONS_LABELS,
 };
 

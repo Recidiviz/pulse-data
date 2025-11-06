@@ -18,6 +18,7 @@ import { FormInstance } from "antd";
 
 import { Route, StateUserPermissionsResponse } from "../../types";
 import {
+  CPA_PERMISSIONS_LABELS,
   INSIGHTS_PERMISSIONS_LABELS,
   LANTERN_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
@@ -172,6 +173,13 @@ export const CustomPermissionsPanel = ({
     <h4>PSI Pages:</h4>
     <BasicPermissionList
       labels={PSI_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
+
+    <h4>Case Planning Assistant (CPA) Pages:</h4>
+    <BasicPermissionList
+      labels={CPA_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
