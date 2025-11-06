@@ -128,6 +128,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER],
     compliance_type=ComplianceType.CONTACT,
     due_date_field="contact_due_date",
+    last_task_completed_date_field="last_contact_date",
 )
 
 if __name__ == "__main__":

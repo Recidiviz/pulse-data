@@ -30,6 +30,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.task_eligibility.single_task_eligibility_spans_view_builder_test import (
     TEST_CRITERIA_BUILDER_1,
     TEST_CRITERIA_BUILDER_3,
+    TEST_CRITERIA_BUILDER_5,
     TEST_POPULATION_BUILDER,
 )
 from recidiviz.tests.task_eligibility.task_eligibility_big_query_emulator_utils import (
@@ -42,11 +43,13 @@ COMPLIANCE_ELIGIBILITY_VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryView
     task_name="my_task_name",
     candidate_population_view_builder=TEST_POPULATION_BUILDER,
     criteria_spans_view_builders=[
-        TEST_CRITERIA_BUILDER_3,
+        TEST_CRITERIA_BUILDER_5,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="test_reason_date",
-    due_date_criteria_builder=TEST_CRITERIA_BUILDER_3,
+    due_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
+    last_task_completed_date_field="last_contacted_date",
+    last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
 )
 
 COMPLIANCE_ELIGIBILITY_VIEW_BUILDER_NO_DUE_DATE_CRITERIA = (
@@ -55,10 +58,11 @@ COMPLIANCE_ELIGIBILITY_VIEW_BUILDER_NO_DUE_DATE_CRITERIA = (
         task_name="my_task_name",
         candidate_population_view_builder=TEST_POPULATION_BUILDER,
         criteria_spans_view_builders=[
-            TEST_CRITERIA_BUILDER_3,
+            TEST_CRITERIA_BUILDER_5,
         ],
         compliance_type=ComplianceType.ASSESSMENT,
         due_date_field="test_reason_date",
+        last_task_completed_date_field="last_contacted_date",
     )
 )
 
@@ -100,10 +104,13 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 candidate_population_view_builder=TEST_POPULATION_BUILDER,
                 criteria_spans_view_builders=[
                     TEST_CRITERIA_BUILDER_1,
+                    TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
                 due_date_field="test_reason_date",
                 due_date_criteria_builder=TEST_CRITERIA_BUILDER_1,
+                last_task_completed_date_field="last_contacted_date",
+                last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
             )
 
     def test_raises_error_when_due_date_criteria_missing_in_criteria_builders(
@@ -121,19 +128,22 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 candidate_population_view_builder=TEST_POPULATION_BUILDER,
                 criteria_spans_view_builders=[
                     TEST_CRITERIA_BUILDER_1,
+                    TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
                 due_date_field="test_reason_date",
                 due_date_criteria_builder=TEST_CRITERIA_BUILDER_3,
+                last_task_completed_date_field="last_contacted_date",
+                last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_1,
             )
 
-    def test_raises_error_when_due_date_criteria_not_provided_and_multiple_criteria_builders(
+    def test_raises_error_when_last_task_completed_date_criteria_missing_in_criteria_builders(
         self,
     ) -> None:
         with self.assertRaisesRegex(
             ValueError,
             re.escape(
-                "Must specify due_date_criteria_builder when providing multiple criteria_spans_view_builders."
+                "The last_task_completed_date_criteria_builder US_XX_SIMPLE_CRITERIA not found among criteria_spans_view_builders."
             ),
         ):
             _ = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
@@ -142,10 +152,57 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 candidate_population_view_builder=TEST_POPULATION_BUILDER,
                 criteria_spans_view_builders=[
                     TEST_CRITERIA_BUILDER_1,
-                    TEST_CRITERIA_BUILDER_3,
+                    TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
                 due_date_field="test_reason_date",
+                due_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
+                last_task_completed_date_field="last_contacted_date",
+                last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_3,
+            )
+
+    def test_raises_error_when_due_date_criteria_not_provided_and_multiple_criteria_builders(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "Must specify due_date_criteria_builder when providing multiple criteria_spans_view_builders.",
+        ):
+            _ = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[
+                    TEST_CRITERIA_BUILDER_1,
+                    TEST_CRITERIA_BUILDER_3,
+                    TEST_CRITERIA_BUILDER_5,
+                ],
+                compliance_type=ComplianceType.ASSESSMENT,
+                due_date_field="test_reason_date",
+                last_task_completed_date_field="last_contacted_date",
+                last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
+            )
+
+    def test_raises_error_when_last_task_completed_criteria_not_provided_and_multiple_criteria_builders(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "Must specify last_task_completed_date_criteria_builder when providing multiple criteria_spans_view_builders.",
+        ):
+            _ = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[
+                    TEST_CRITERIA_BUILDER_1,
+                    TEST_CRITERIA_BUILDER_3,
+                    TEST_CRITERIA_BUILDER_5,
+                ],
+                compliance_type=ComplianceType.ASSESSMENT,
+                due_date_field="test_reason_date",
+                due_date_criteria_builder=TEST_CRITERIA_BUILDER_3,
+                last_task_completed_date_field="last_contacted_date",
             )
 
     def test_simple_compliance_tes_query(self) -> None:
@@ -155,7 +212,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
         """
         load_data_for_task_criteria_view(
             emulator=self,
-            criteria_view_builder=TEST_CRITERIA_BUILDER_3,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_5,
             criteria_data=[
                 {
                     "state_code": "US_XX",
@@ -163,8 +220,14 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     "start_date": date(2024, 1, 1),
                     "end_date": date(2024, 2, 6),
                     "meets_criteria": False,
-                    "reason": {"test_reason_date": "2024-02-08"},
-                    "reason_v2": {"test_reason_date": "2024-02-08"},
+                    "reason": {
+                        "test_reason_date": "2024-02-08",
+                        "last_contacted_date": "2024-01-01",
+                    },
+                    "reason_v2": {
+                        "test_reason_date": "2024-02-08",
+                        "last_contacted_date": "2024-01-01",
+                    },
                 },
                 {
                     "state_code": "US_XX",
@@ -172,8 +235,14 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     "start_date": date(2024, 2, 6),
                     "end_date": date(2024, 3, 18),
                     "meets_criteria": False,
-                    "reason": {"test_reason_date": "2024-04-03"},
-                    "reason_v2": {"test_reason_date": "2024-04-03"},
+                    "reason": {
+                        "test_reason_date": "2024-04-03",
+                        "last_contacted_date": "2024-04-01",
+                    },
+                    "reason_v2": {
+                        "test_reason_date": "2024-04-03",
+                        "last_contacted_date": "2024-04-01",
+                    },
                 },
                 {
                     "state_code": "US_XX",
@@ -181,8 +250,14 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     "start_date": date(2024, 3, 18),
                     "end_date": date(2024, 4, 8),
                     "meets_criteria": True,
-                    "reason": {"test_reason_date": "2024-04-10"},
-                    "reason_v2": {"test_reason_date": "2024-04-10"},
+                    "reason": {
+                        "test_reason_date": "2024-04-10",
+                        "last_contacted_date": "2024-04-01",
+                    },
+                    "reason_v2": {
+                        "test_reason_date": "2024-04-10",
+                        "last_contacted_date": "2024-04-01",
+                    },
                 },
             ],
         )
@@ -199,18 +274,25 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "is_eligible": False,
                 "reasons": [
                     {
-                        "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                        "reason": {"test_reason_date": "2024-02-08"},
+                        "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                        "reason": {
+                            "test_reason_date": "2024-02-08",
+                            "last_contacted_date": "2024-01-01",
+                        },
                     }
                 ],
                 "reasons_v2": [
                     {
-                        "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                        "reason": {"test_reason_date": "2024-02-08"},
+                        "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                        "reason": {
+                            "test_reason_date": "2024-02-08",
+                            "last_contacted_date": "2024-01-01",
+                        },
                     }
                 ],
-                "ineligible_criteria": [TEST_CRITERIA_BUILDER_3.criteria_name],
+                "ineligible_criteria": [TEST_CRITERIA_BUILDER_5.criteria_name],
                 "due_date": date(2024, 2, 8),
+                "last_task_completed_date": date(2024, 1, 1),
             },
             {
                 "state_code": "US_XX",
@@ -220,18 +302,25 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "is_eligible": False,
                 "reasons": [
                     {
-                        "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                        "reason": {"test_reason_date": "2024-04-03"},
+                        "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                        "reason": {
+                            "test_reason_date": "2024-04-03",
+                            "last_contacted_date": "2024-04-01",
+                        },
                     }
                 ],
                 "reasons_v2": [
                     {
-                        "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                        "reason": {"test_reason_date": "2024-04-03"},
+                        "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                        "reason": {
+                            "test_reason_date": "2024-04-03",
+                            "last_contacted_date": "2024-04-01",
+                        },
                     }
                 ],
-                "ineligible_criteria": [TEST_CRITERIA_BUILDER_3.criteria_name],
+                "ineligible_criteria": [TEST_CRITERIA_BUILDER_5.criteria_name],
                 "due_date": date(2024, 4, 3),
+                "last_task_completed_date": date(2024, 4, 1),
             },
             {
                 "state_code": "US_XX",
@@ -241,18 +330,25 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "is_eligible": True,
                 "reasons": [
                     {
-                        "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                        "reason": {"test_reason_date": "2024-04-10"},
+                        "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                        "reason": {
+                            "test_reason_date": "2024-04-10",
+                            "last_contacted_date": "2024-04-01",
+                        },
                     }
                 ],
                 "reasons_v2": [
                     {
-                        "criteria_name": TEST_CRITERIA_BUILDER_3.criteria_name,
-                        "reason": {"test_reason_date": "2024-04-10"},
+                        "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                        "reason": {
+                            "test_reason_date": "2024-04-10",
+                            "last_contacted_date": "2024-04-01",
+                        },
                     }
                 ],
                 "ineligible_criteria": [],
                 "due_date": date(2024, 4, 10),
+                "last_task_completed_date": date(2024, 4, 1),
             },
         ]
 

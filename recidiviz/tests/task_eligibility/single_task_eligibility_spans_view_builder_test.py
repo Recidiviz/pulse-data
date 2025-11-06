@@ -112,6 +112,25 @@ TEST_CRITERIA_BUILDER_4 = StateSpecificTaskCriteriaBigQueryViewBuilder(
     ],
 )
 
+TEST_CRITERIA_BUILDER_5 = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_XX,
+    criteria_name="US_XX_SIMPLE_CRITERIA_3",
+    criteria_spans_query_template="SELECT * FROM `{project_id}.test_dataset.state_foo`;",
+    description="Other simple state specific criteria description",
+    reasons_fields=[
+        ReasonsField(
+            name="test_reason_date",
+            type=bigquery.StandardSqlTypeNames.DATE,
+            description="Simple reason description",
+        ),
+        ReasonsField(
+            name="last_contacted_date",
+            type=bigquery.StandardSqlTypeNames.DATE,
+            description="Simple reason description",
+        ),
+    ],
+)
+
 TES_QUERY_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_XX,
     task_name="my_task_name",

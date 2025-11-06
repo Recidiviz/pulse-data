@@ -58,7 +58,11 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
         compliance_type: ComplianceType,
         due_date_field: str,
+        last_task_completed_date_field: str,
         due_date_criteria_builder: Optional[TaskCriteriaBigQueryViewBuilder] = None,
+        last_task_completed_date_criteria_builder: Optional[
+            TaskCriteriaBigQueryViewBuilder
+        ] = None,
     ) -> None:
         super().__init__(
             state_code=state_code,
@@ -73,6 +77,14 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             )
 
         if (
+            last_task_completed_date_criteria_builder is None
+            and len(criteria_spans_view_builders) != 1
+        ):
+            raise ValueError(
+                "Must specify last_task_completed_date_criteria_builder when providing multiple criteria_spans_view_builders."
+            )
+
+        if (
             due_date_criteria_builder is not None
             and due_date_criteria_builder not in criteria_spans_view_builders
         ):
@@ -80,8 +92,18 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
                 f"The due_date_criteria_builder {due_date_criteria_builder.criteria_name} not found among criteria_spans_view_builders."
             )
 
+        if (
+            last_task_completed_date_criteria_builder is not None
+            and last_task_completed_date_criteria_builder
+            not in criteria_spans_view_builders
+        ):
+            raise ValueError(
+                f"The last_task_completed_date_criteria_builder {last_task_completed_date_criteria_builder.criteria_name} not found among criteria_spans_view_builders."
+            )
+
         self.compliance_type = compliance_type
         self.due_date_field = due_date_field
+        self.last_task_completed_date_field = last_task_completed_date_field
 
         # Use the provided due_date_criteria_builder or default to the only criteria builder
         # in criteria_spans_view_builders
@@ -89,10 +111,20 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             due_date_criteria_builder = criteria_spans_view_builders[0]
         self.due_date_criteria_builder = due_date_criteria_builder
 
+        # Use the provided last_task_completed_date_criteria_builder or default to the only criteria builder
+        # in criteria_spans_view_builders
+        if last_task_completed_date_criteria_builder is None:
+            last_task_completed_date_criteria_builder = criteria_spans_view_builders[0]
+        self.last_task_completed_date_criteria_builder = (
+            last_task_completed_date_criteria_builder
+        )
+
         self.view_query_template = self._wrap_query_template(
             base_tes_builder=self,
             due_date_field=self.due_date_field,
+            last_task_completed_date_field=self.last_task_completed_date_field,
             due_date_criteria_builder=due_date_criteria_builder,
+            last_task_completed_date_criteria_builder=last_task_completed_date_criteria_builder,
         )
 
     @classmethod
@@ -112,17 +144,37 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         base_tes_builder: BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
         due_date_field: str,
         due_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
+        last_task_completed_date_field: str,
+        last_task_completed_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
     ) -> str:
+
+        # If both reason fields correspond to the same criteria builder, we pass
+        # consolidate `due_date_field` and `last_task_completed_date_field` into a
+        # single dict that can be passed into extract_reasons_from_criteria.
+        if last_task_completed_date_criteria_builder == due_date_criteria_builder:
+            criteria_reason_fields_dict = {
+                due_date_criteria_builder: [
+                    due_date_field,
+                    last_task_completed_date_field,
+                ]
+            }
+        else:
+            criteria_reason_fields_dict = {
+                due_date_criteria_builder: [due_date_field],
+                last_task_completed_date_criteria_builder: [
+                    last_task_completed_date_field
+                ],
+            }
         return f"""
 WITH base_tes AS (
 {fix_indent(base_tes_builder.view_query_template, indent_level=4)}
 )
 ,
--- Extract the due date from the specified criteria builder
-due_date_extract AS (
+-- Extract the due date and last contact date from the specified criteria builder
+reasons_extract AS (
 {fix_indent(
     extract_reasons_from_criteria(
-        criteria_reason_fields={due_date_criteria_builder: [due_date_field]},
+        criteria_reason_fields=criteria_reason_fields_dict,
         tes_view_builder=base_tes_builder,
         tes_table_name="base_tes",
         index_columns=["state_code", "person_id", "start_date"]
@@ -140,9 +192,10 @@ SELECT
     base_tes.reasons_v2 AS reasons,
     base_tes.reasons_v2,
     base_tes.ineligible_criteria,
-    due_date_extract.{due_date_field} AS due_date,
+    reasons_extract.{due_date_field} AS due_date,
+    reasons_extract.{last_task_completed_date_field} AS last_task_completed_date,
 FROM base_tes
-LEFT JOIN due_date_extract
+LEFT JOIN reasons_extract
 USING (state_code, person_id, start_date)
 """
 

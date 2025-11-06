@@ -43,6 +43,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     ],
     compliance_type=ComplianceType.CONTACT,
     due_date_field="contact_due_date",
+    last_task_completed_date_field="last_contact_date",
 )
 
 if __name__ == "__main__":

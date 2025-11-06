@@ -55,7 +55,9 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="assessment_due_date",
+    last_task_completed_date_field="most_recent_assessment_date",
     due_date_criteria_builder=meets_stable_assessment_event_triggers.VIEW_BUILDER,
+    last_task_completed_date_criteria_builder=meets_stable_assessment_event_triggers.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

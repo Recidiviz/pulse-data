@@ -60,6 +60,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_contacts_drilldown_due_date_based import (
+    SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
 )
@@ -446,6 +449,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     # downstream infra for MO Tasks.
     US_MO_CONTACT_CADENCE_SPANS_TYPE_AGNOSTIC_VIEW_BUILDER.address: (
         "Will be used for MO Tasks once more dev work is completed - see #50536 (Maggie Hilderbran, 10/8/2025)"
+    ),
+    SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER.address: (
+        "Will be exported to power Operations module drilldown view in Supervisor Homepage (Mayuka Sarukkai, 11/6/2025)"
     ),
 }
 

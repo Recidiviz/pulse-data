@@ -76,7 +76,7 @@ def get_compliance_eligiblity_spans_unioned_view_builders() -> Sequence[
         def get_criteria_select_statement(
             vb: ComplianceTaskEligibilitySpansBigQueryViewBuilder,
         ) -> str:
-            return f"SELECT state_code, person_id, '{vb.task_name}' AS task_name, start_date, end_date, is_eligible, reasons, reasons_v2, ineligible_criteria, due_date,"
+            return f"SELECT state_code, person_id, '{vb.task_name}' AS task_name, start_date, end_date, is_eligible, reasons, reasons_v2, ineligible_criteria, due_date, last_task_completed_date"
 
         dataset_id = compliance_task_eligibility_spans_state_specific_dataset(
             state_code
