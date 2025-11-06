@@ -1781,3 +1781,35 @@ def not_on_specific_supervision_case_type(
             ),
         ],
     )
+
+
+def supervision_case_type_is_criteria_builder(
+    case_types: List[str], criteria_name: str, description: str
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    query = f"""
+    SELECT
+        ctsl.state_code,
+        ctsl.person_id,
+        ctsl.start_date,
+        ctsl.end_date,
+        TRUE AS meets_criteria,
+        TO_JSON(
+            STRUCT(
+                ctsl.case_type AS case_type
+        )) AS reason,
+        ctsl.case_type
+    FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized` ctsl
+        WHERE {f"ctsl.case_type IN {custom_tuple(case_types)}" if case_types else "FALSE"}
+"""
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query,
+        description=description,
+        reasons_fields=[
+            ReasonsField(
+                name="case_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="The supervision case type.",
+            ),
+        ],
+    )

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that checks if a client's supervision case type is GENERAL or SEX OFFENSE.
+Defines a criteria view that checks if a client's supervision case type is SEX_OFFENSE.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -27,13 +27,11 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_CASE_TYPE_IS_GENERAL_OR_SEX_OFFENSE"
+_CRITERIA_NAME = "SUPERVISION_CASE_TYPE_IS_SEX_OFFENSE"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     supervision_case_type_is_criteria_builder(
-        case_types=["GENERAL", "SEX_OFFENSE"],
-        criteria_name=_CRITERIA_NAME,
-        description=__doc__,
+        case_types=["SEX_OFFENSE"], criteria_name=_CRITERIA_NAME, description=__doc__
     )
 )
 if __name__ == "__main__":

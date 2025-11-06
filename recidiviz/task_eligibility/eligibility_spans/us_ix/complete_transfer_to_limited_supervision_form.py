@@ -25,13 +25,19 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
+from recidiviz.task_eligibility.compliance_task_eligibility_spans.us_ix.needs_assessment import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_case_type_is_sex_offense,
     supervision_level_is_not_diversion,
     supervision_level_is_not_limited,
     supervision_not_past_full_term_completion_date,
     under_supervision_custodial_authority_at_least_one_year,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    income_verified_after_employment_change,
     income_verified_within_3_months,
     lsir_level_low_for_90_days,
     no_active_nco,
@@ -52,6 +58,27 @@ _DESCRIPTION = """Shows the spans of time during which someone in ID is eligible
 to complete the form for transfer to limited unit supervision.
 """
 
+# If a person has a supervision case type of sexual offense, they only need their income
+# verified after an employment change to be eligible for this opportunity.
+sex_offender_with_verified_employment = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="US_IX_IS_SEX_OFFENDER_WITH_VERIFIED_EMPLOYMENT",
+        sub_criteria_list=[
+            supervision_case_type_is_sex_offense.VIEW_BUILDER,
+            income_verified_after_employment_change.VIEW_BUILDER,
+        ],
+    )
+)
+income_verified_for_lsu = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_IX_INCOME_VERIFIED_FOR_LSU",
+    sub_criteria_list=[
+        sex_offender_with_verified_employment,
+        income_verified_within_3_months.VIEW_BUILDER,
+    ],
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM",
@@ -60,7 +87,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         lsir_level_low_for_90_days.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
-        income_verified_within_3_months.VIEW_BUILDER,
+        income_verified_for_lsu,
         under_supervision_custodial_authority_at_least_one_year.VIEW_BUILDER,
         no_active_nco.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
@@ -71,7 +98,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             NotEligibleCriteriaCondition(
-                criteria=income_verified_within_3_months.VIEW_BUILDER,
+                criteria=income_verified_for_lsu,
                 description="Only missing income verification",
             ),
             TimeDependentCriteriaCondition(
