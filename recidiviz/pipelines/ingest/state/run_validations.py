@@ -21,6 +21,7 @@ from typing import Any, Dict, Generator, Iterable, List, Tuple, cast
 import apache_beam as beam
 import attr
 from apache_beam.typehints import with_input_types, with_output_types
+from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import (
@@ -31,10 +32,7 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
-from recidiviz.persistence.entity.entity_utils import (
-    get_all_entities_from_tree,
-    get_all_entity_classes_in_module,
-)
+from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.root_entity_utils import (
     get_entity_class_to_root_entity_class,
     get_root_entity_id,
@@ -127,26 +125,37 @@ class UniqueConstraintFailure:
         )
 
 
-class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
-    """Given an input PCollection with one "critical fields" dictionary per entity of
-    the provided |entity_class_name|, returns a PCollection with all root entities
-    that violate the given |unique_constraint|, along with info about what entity in the
-    tree violated that constraint.
+ConstraintName = str
+ConstraintKeyWithMetadata = Tuple[
+    UniqueConstraintKey, RootEntityPrimaryKey, ConstraintName, EntityClassName
+]
+
+
+class FindUniqueConstraintFailures(beam.PTransform):
+    """Given an input PCollection with (entity_name, critical_fields_dict) tuples for
+    all entities, returns a PCollection with all root entities that violate any
+    uniqueness constraint, along with info about what entity violated what constraint.
+
+    This processes all entity types and all constraints in a unified way, avoiding the
+    need to partition by entity type.
     """
 
     def __init__(
         self,
-        entity_cls: type[Entity],
-        root_entity_cls: type[Entity],
-        unique_constraint: UniqueConstraint,
+        constraints_by_entity_name: Dict[EntityClassName, List[UniqueConstraint]],
+        entity_name_to_root_entity_name: Dict[EntityClassName, EntityClassName],
+        entity_name_to_cls: Dict[EntityClassName, type[Entity]],
     ) -> None:
         super().__init__()
-        self.entity_cls = entity_cls
-        self.root_entity_cls = root_entity_cls
-        self.unique_constraint = unique_constraint
+        self.constraints_by_entity_name = constraints_by_entity_name
+        self.entity_name_to_root_entity_name = entity_name_to_root_entity_name
+        self.entity_name_to_cls = entity_name_to_cls
 
     def expand(
-        self, input_or_inputs: beam.PCollection[EntityCriticalFieldsDict]
+        self,
+        input_or_inputs: beam.PCollection[
+            Tuple[EntityClassName, EntityCriticalFieldsDict]
+        ],
     ) -> beam.PCollection[
         Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
     ]:
@@ -154,15 +163,8 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
             Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
         ] = (
             input_or_inputs
-            | "Convert entity info to keys for the specific constraint"
-            >> beam.Map(
-                lambda d: (
-                    self._generate_constraint_key(d),
-                    self._generate_root_entity_key(d),
-                )
-            )
-            | "Filter out keys where the constraint does not apply (e.g. constraints with nulls)"
-            >> beam.Filter(self._should_include_constraint_key)
+            | "Generate constraint keys for all constraints"
+            >> beam.FlatMap(self._generate_all_constraint_keys)
             | "Group constraint keys to find all referencing root entities"
             >> beam.GroupByKey()
             | "Filter down to keys with more than one reference"
@@ -173,72 +175,102 @@ class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
         )
         return failures_by_root_entity
 
-    def _generate_constraint_key(
-        self, entity_fields: EntityCriticalFieldsDict
-    ) -> UniqueConstraintKey:
-        """Returns a tuple with the values of the fields checked by the uniqueness
-        constraint, in the same order as the fields are listed in the constraint
-        definition.
-        """
-        key_values = []
-        for field in self.unique_constraint.fields:
-            key_value = entity_fields[field]
-            if field in self.unique_constraint.transforms_dict:
-                key_value = self.unique_constraint.transforms_dict[field](key_value)
-            key_values.append(key_value)
+    def _generate_all_constraint_keys(
+        self, element: Tuple[EntityClassName, EntityCriticalFieldsDict]
+    ) -> List[
+        Tuple[
+            Tuple[ConstraintName, UniqueConstraintKey],
+            Tuple[RootEntityPrimaryKey, EntityClassName],
+        ]
+    ]:
+        """For a single entity's critical fields, generate constraint key tuples for ALL
+        applicable uniqueness constraints on that entity type.
 
-        return tuple(key_values)
-
-    def _generate_root_entity_key(
-        self, entity_fields: EntityCriticalFieldsDict
-    ) -> RootEntityPrimaryKey:
-        """For the entity represented by the provided fields, returns the entity key
-        (i.e. (primary key, entity name) tuple) for the root entity associated with
-        this entity.
+        Returns a list of ((constraint_name, constraint_key), (root_entity_key, entity_name)) tuples.
         """
-        return (
+        entity_name, entity_fields = element
+        root_entity_name = self.entity_name_to_root_entity_name[entity_name]
+        root_entity_key: RootEntityPrimaryKey = (
             assert_type(entity_fields[CRITICAL_FIELDS_ROOT_ENTITY_ID], int),
-            self.root_entity_cls.get_entity_name(),
+            root_entity_name,
         )
 
-    def _should_include_constraint_key(
-        self, element: Tuple[UniqueConstraintKey, RootEntityPrimaryKey]
-    ) -> bool:
-        """Returns True if we should not skip uniqueness constraint checks on all
-        elements with the given key. We use this to allow multiple rows to have a NULL
-        value in a field that is otherwise unique.
-        """
-        constraint_key, _ = element
-        if self.unique_constraint.ignore_nulls and any(
-            k is None for k in constraint_key
-        ):
-            return False
+        results = []
+        for constraint in self.constraints_by_entity_name[entity_name]:
+            constraint_key = self._generate_constraint_key(entity_fields, constraint)
 
-        # Proceed with uniqueness constraint checks for this key
-        return True
+            # Skip if constraint doesn't apply (e.g., has nulls)
+            if constraint.ignore_nulls and any(k is None for k in constraint_key):
+                continue
+
+            # Key by (constraint_name, constraint_key) to allow us group identical
+            # tuples for the same constraint.
+            results.append(
+                ((constraint.name, constraint_key), (root_entity_key, entity_name))
+            )
+
+        return results
+
+    def _generate_constraint_key(
+        self, entity_fields: EntityCriticalFieldsDict, constraint: UniqueConstraint
+    ) -> UniqueConstraintKey:
+        """Returns a tuple with the values of the fields checked by the uniqueness
+        constraint, in the same order as the fields are listed in the constraint definition.
+        """
+        key_values = []
+        for field in constraint.fields:
+            key_value = entity_fields[field]
+            if field in constraint.transforms_dict:
+                key_value = constraint.transforms_dict[field](key_value)
+            key_values.append(key_value)
+        return tuple(key_values)
 
     @staticmethod
     def _has_more_than_one_reference(
-        element: Tuple[UniqueConstraintKey, Iterable[RootEntityPrimaryKey]]
+        element: Tuple[
+            Tuple[ConstraintName, UniqueConstraintKey],
+            Iterable[Tuple[RootEntityPrimaryKey, EntityClassName]],
+        ]
     ) -> bool:
-        _constraint_key, referencing_root_entities = element
-        return len(list(referencing_root_entities)) > 1
+        _constraint_info, referencing_entities = element
+        return len(list(referencing_entities)) > 1
 
     def _generate_failure_objects(
-        self, element: Tuple[UniqueConstraintKey, Iterable[RootEntityPrimaryKey]]
+        self,
+        element: Tuple[
+            Tuple[ConstraintName, UniqueConstraintKey],
+            Iterable[Tuple[RootEntityPrimaryKey, EntityClassName]],
+        ],
     ) -> List[Tuple[RootEntityPrimaryKey, UniqueConstraintFailure]]:
-        constraint_key, referencing_root_entities = element
+        (constraint_name, constraint_key), referencing_entities = element
+        referencing_root_entity_keys = sorted(
+            {root_entity_key for root_entity_key, _ in referencing_entities}
+        )
+        # All entity class names should be the same for the given constraint we're
+        # inspecting.
+        entity_class_name = one(
+            {entity_class_name for _, entity_class_name in referencing_entities}
+        )
+        entity_cls = self.entity_name_to_cls[entity_class_name]
+
+        # Find the constraint object
+        constraint = one(
+            c
+            for c in self.constraints_by_entity_name[entity_class_name]
+            if c.name == constraint_name
+        )
+
         return [
             (
                 root_entity_key,
                 UniqueConstraintFailure(
-                    entity_cls=self.entity_cls,
-                    unique_constraint=self.unique_constraint,
+                    entity_cls=entity_cls,
+                    unique_constraint=constraint,
                     violating_unique_constraint_key=constraint_key,
-                    referencing_root_entities=list(referencing_root_entities),
+                    referencing_root_entities=referencing_root_entity_keys,
                 ),
             )
-            for root_entity_key in referencing_root_entities
+            for root_entity_key in referencing_root_entity_keys
         ]
 
 
@@ -260,16 +292,23 @@ class RunValidations(beam.PTransform):
             for entity_cls in expected_output_entity_classes
         }
         self.entities_module = entities_module
-        self.constraints_by_entity_type = self._get_constraints_by_entity_type(
-            state_code, self.expected_output_entity_classes, entities_module
+        self.constraints_by_entity_type = self._get_constraints_by_entity_name(
+            state_code, self.expected_output_entity_classes
         )
         self.state_code = state_code
 
+        # Build helper maps for unified constraint checking
+        entity_class_to_root_entity_class = get_entity_class_to_root_entity_class(
+            entities_module=entities_module
+        )
+        self.entity_name_to_root_entity_name = {
+            entity_name: entity_class_to_root_entity_class[entity_cls].get_entity_name()
+            for entity_name, entity_cls in self.expected_output_entity_name_to_class.items()
+        }
+
     @staticmethod
-    def _get_constraints_by_entity_type(
-        state_code: StateCode,
-        expected_output_entity_classes: List[type[Entity]],
-        entities_module: ModuleType,
+    def _get_constraints_by_entity_name(
+        state_code: StateCode, expected_output_entity_classes: List[type[Entity]]
     ) -> Dict[EntityClassName, List[UniqueConstraint]]:
         """Returns a dictionary mapping entity name (e.g. 'state_assessment') for all
         expected output entities to the list of unique constraints that should be
@@ -277,10 +316,7 @@ class RunValidations(beam.PTransform):
         the primary key column for that entity (e.g. person_id for StatePerson).
         """
         constraints_by_entity_type = {}
-        for entity_cls in get_all_entity_classes_in_module(entities_module):
-            if entity_cls not in expected_output_entity_classes:
-                continue
-
+        for entity_cls in expected_output_entity_classes:
             unique_constraints_for_state = [
                 c
                 for c in entity_cls.global_unique_constraints()
@@ -300,16 +336,6 @@ class RunValidations(beam.PTransform):
     def expand(
         self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[RootEntity]:
-        entity_names = sorted(self.expected_output_entity_name_to_class.keys())
-
-        @with_input_types(Tuple[EntityClassName, EntityCriticalFieldsDict], int)
-        @with_output_types(int)
-        def partition_fn(
-            entity_name_and_fields: Tuple[EntityClassName, EntityCriticalFieldsDict],
-            num_partitions: int,  # pylint: disable=unused-argument
-        ) -> int:
-            return entity_names.index(entity_name_and_fields[0])
-
         entity_critical_fields_with_names: beam.PCollection[
             Tuple[EntityClassName, EntityCriticalFieldsDict]
         ] = input_or_inputs | "Generate entity critical fields" >> beam.ParDo(
@@ -330,62 +356,16 @@ class RunValidations(beam.PTransform):
             >> beam.Map(self.validate_entity_type_counts)
         )
 
-        entity_type_partitions: List[
-            beam.PCollection[Tuple[EntityClassName, EntityCriticalFieldsDict]]
-        ] = (
-            entity_critical_fields_with_names
-            | "Partition all entities by type"
-            >> beam.Partition(
-                # apache-beam expects this type to be "WithTypeHints"
-                partition_fn,  # type: ignore[arg-type]
-                len(entity_names),
-            )
-        )
-
-        unique_constraint_failure_pcollections: List[
-            beam.PCollection[
-                Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
-            ]
-        ] = []
-
-        for i, entity_infos_for_entity_cls in enumerate(entity_type_partitions):
-            entity_name = entity_names[i]
-            entity_cls = self.expected_output_entity_name_to_class[entity_name]
-            root_entity_cls = get_entity_class_to_root_entity_class(
-                entities_module=self.entities_module
-            )[entity_cls]
-
-            # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
-            # pylint: disable=E1120
-            entity_critical_dicts: beam.PCollection[EntityCriticalFieldsDict] = (
-                entity_infos_for_entity_cls
-                | f"Remove {entity_name} entity names" >> beam.Values()
-            )
-
-            if entity_name not in self.constraints_by_entity_type:
-                raise ValueError(
-                    f"{entity_name} not in {sorted(self.constraints_by_entity_type.keys())}"
-                )
-
-            for constraint in self.constraints_by_entity_type[entity_name]:
-                root_entity_to_child_constraint_failures = (
-                    entity_critical_dicts
-                    | f"Find all {constraint.name} failures"
-                    >> FindUniqueConstraintFailuresByRootEntity(
-                        entity_cls=entity_cls,
-                        root_entity_cls=root_entity_cls,
-                        unique_constraint=constraint,
-                    )
-                )
-                unique_constraint_failure_pcollections.append(
-                    root_entity_to_child_constraint_failures
-                )
-
         unique_constraint_failures: beam.PCollection[
             Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
         ] = (
-            unique_constraint_failure_pcollections
-            | "Merge all constraint failures into one list" >> beam.Flatten()
+            entity_critical_fields_with_names
+            | "Find all unique constraint failures"
+            >> FindUniqueConstraintFailures(
+                constraints_by_entity_name=self.constraints_by_entity_type,
+                entity_name_to_root_entity_name=self.entity_name_to_root_entity_name,
+                entity_name_to_cls=self.expected_output_entity_name_to_class,
+            )
         )
 
         root_entity_by_key: beam.PCollection[
