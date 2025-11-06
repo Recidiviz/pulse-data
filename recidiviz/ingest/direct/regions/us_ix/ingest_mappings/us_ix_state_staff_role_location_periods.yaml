@@ -47,6 +47,8 @@ output:
                   - "INTERSTATE COMPACT"
                   - "BUSINESS OPERATIONS MANAGER"
                   - "REENTRY MANAGER"
+                  - "CASE MANAGER"
+                  - "PROGRAM MANAGER"
     location_periods:
       - StateStaffLocationPeriod:
           external_id:
