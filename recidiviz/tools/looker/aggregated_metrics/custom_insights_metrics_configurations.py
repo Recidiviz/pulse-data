@@ -66,6 +66,7 @@ INSIGHTS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION_PROBATION,
     # All outcome metrics reference in outliers configs
     *OutliersAggregatedMetricsCollector().get_metrics(),
+    metric_config.DISTINCT_OUTLIER_OFFICERS,
     metric_config.DISTINCT_PROVISIONED_INSIGHTS_USERS,
     metric_config.DISTINCT_REGISTERED_PROVISIONED_INSIGHTS_USERS,
     metric_config.DISTINCT_PROVISIONED_PRIMARY_INSIGHTS_USERS,
