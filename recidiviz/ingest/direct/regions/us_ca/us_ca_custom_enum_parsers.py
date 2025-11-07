@@ -45,6 +45,12 @@ def parse_supervision_violation_response_decision_type(
         response_decision_type,
     ) = raw_text.upper().split("@@")
 
+    # If someone dies while there is a violation being levied against them, we mark this
+    # as OTHER. To me, this is intended to reflect the fact that the violation wasn't
+    # withdrawn, but is no longer going to proceed.
+    if response_decision_type == "DEATH":
+        return StateSupervisionViolationResponseDecision.OTHER
+
     # We always expect "COP@@COP", but overspecifying so that if something unexpected
     # comes through, we will fail.
     if response_type == "COP" and response_decision_type == "COP":
@@ -52,12 +58,6 @@ def parse_supervision_violation_response_decision_type(
 
     if response_type == "DISMISS" and response_decision_type == "DISMISS":
         return StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED
-
-    # If someone dies while there is a violation being levied against them, we mark this
-    # as OTHER. To me, this is intended to reflect the fact that the violation wasn't
-    # withdrawn, but is no longer going to proceed.
-    if response_type == "DEATH":
-        return StateSupervisionViolationResponseDecision.OTHER
 
     # If someone is referred for revocation, that violation can be dismissed, they can
     # be returned to parole but found guilty of the violation, or they can be revoked
