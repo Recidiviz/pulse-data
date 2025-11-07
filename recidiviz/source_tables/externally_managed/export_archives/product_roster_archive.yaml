@@ -87,9 +87,6 @@ schema:
   - name: routes_lantern
     type: BOOLEAN
     mode: NULLABLE
-  - name: routes_cpa
-    type: BOOLEAN
-    mode: NULLABLE
   - name: default_feature_variants
     type: STRING
     mode: NULLABLE
