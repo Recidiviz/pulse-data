@@ -22,7 +22,9 @@ input_columns:
   conditions: STRING
   ViolationComments: STRING
 
-unused_columns: []
+unused_columns:
+  - ReviewCompleted
+  - HearingCompleted
 
 output:
   StatePerson:
@@ -82,18 +84,6 @@ output:
                       - ParoleViolationReviewReportId
                 response_date: ReportDt
                 response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
-                is_draft:
-                  $conditional:
-                    - $if:
-                        $and:
-                          - $equal:
-                              - HearingCompleted
-                              - $literal("Yes")
-                          - $equal:
-                              - ReviewCompleted
-                              - $literal("1")
-                      $then: $literal_bool(False)
-                    - $else: $literal_bool(True)
                 deciding_staff_external_id: CompletedByStaffId
                 deciding_staff_external_id_type:
                   $conditional:
