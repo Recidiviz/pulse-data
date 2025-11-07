@@ -6,11 +6,9 @@ input_columns:
   PERSON_ID: STRING
   DOC_ID: STRING
   custody_level: STRING
-  hospital_location: STRING
   period_seq: INTEGER
   location_name: STRING
   prison_name: STRING
-  housing_unit_detail: STRING
   jail_location: STRING
   start_date: DATETIME
   end_date: DATETIME
@@ -89,6 +87,12 @@ output:
                   - In Custody - Other
                 StateIncarcerationPeriodAdmissionReason.TRANSFER:
                   - Received From
+                  - Unassigned from bed
+                  - Approved-No Conflict
+                  - Override Other Reason
+                  - 1-for-1
+                  - 2-for-2
+                  - Routine
                   - Transferred To
                   - Transfer In - Unit Arrival
                   - Transfer In - Prison/CIP Arrival
@@ -100,6 +104,11 @@ output:
                   - Return Deport 1/2 Term
                   - Transfer WICC/ICC
                   - Received from Overcrowding
+                  - Higher Custody Unit/Facility Override
+                  - Intake
+                  - Detention Pending PC Review-8
+                  - Max/Close Custody in Detention
+                  - In Detention pending Max Custody
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
                   - Release in Error Return
                   - Deactivated in Error
@@ -220,6 +229,17 @@ output:
                   - Return from Bond
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
                   - Received From
+                  - Routine
+                  - 1-for-1
+                  - Intake
+                  - Detention Pending PC Review-8
+                  - Max/Close Custody in Detention
+                  - In Detention pending Max Custody
+                  - Higher Custody Unit/Facility Override
+                  - Approved-No Conflict
+                  - Unassigned from bed
+                  - 2-for-2
+                  - Override Other Reason
                   - Transferred To
                   - Transfer In - Unit Arrival
                   - Transfer Out - Unit Departure
@@ -247,23 +267,6 @@ output:
                   - SHOCK Incarceration Violator
           facility: prison_name
           housing_unit: location_name
-          # All housing and custody level mappings rely on the assumption that a documented
-          # custody level of "detention" OR a unit's current use being "Detention" or
-          # "Protective Custody" means a person in that unit is in restrictive housing (solitary).
-          # TODO(#27201): Clarify housing unit, custody level, and "current use" specifics with AZ.
-          housing_unit_category:
-            $enum_mapping:
-              $raw_text: housing_unit_detail
-              $custom_parser: us_az_custom_enum_parsers.parse_housing_unit_category
-          housing_unit_type:
-            $conditional:
-              - $if:
-                  $not_null: hospital_location
-                $then: $literal_enum(StateIncarcerationPeriodHousingUnitType.HOSPITAL)
-              - $else:
-                  $enum_mapping:
-                    $raw_text: housing_unit_detail
-                    $custom_parser: us_az_custom_enum_parsers.parse_housing_unit_type
           custody_level:
             $enum_mapping:
               $raw_text: custody_level
