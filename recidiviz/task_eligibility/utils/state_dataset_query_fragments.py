@@ -159,6 +159,7 @@ def get_sentences_current_span(in_projected_completion_array: bool = True) -> st
         sentences.date_imposed AS sentence_start_date,
         sentences.status,
         sentences.projected_completion_date_max AS expiration_date,
+        sentences.sentence_sub_type,
     FROM (
         SELECT *
         FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`
