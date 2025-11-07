@@ -102,6 +102,9 @@ from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses i
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key import (
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.cohort_month_index import (
+    COHORT_MONTH_INDEX_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -230,6 +233,7 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     OFFICER_ASSIGNMENTS_VIEW_BUILDER.address,
     STATE_ASSIGNMENTS_VIEW_BUILDER.address,
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address,
+    COHORT_MONTH_INDEX_VIEW_BUILDER.address,
     # These views are referenced by a sessions validation dashboard in Looker
     SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
