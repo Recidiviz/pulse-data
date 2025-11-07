@@ -5,10 +5,10 @@ manifest_language: 1.0.0
 input_columns:
   period_id: INTEGER
   OFFENDERID: STRING
-  start_datetime: STRING
+  start_datetime: DATETIME
   start_code: STRING
   start_reason: STRING
-  end_datetime: STRING
+  end_datetime: DATETIME
   end_code: STRING
   end_reason: STRING
   JURISDICTIONALAGENCY: STRING
@@ -33,7 +33,7 @@ output:
     external_ids:
       - StatePersonExternalId:
           external_id: OFFENDERID
-          id_type: $literal("US_CO_PID")
+          id_type: $literal("US_CO_OFFENDERID")
     incarceration_periods:
       - StateIncarcerationPeriod:
           external_id:

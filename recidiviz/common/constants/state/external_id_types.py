@@ -17,15 +17,12 @@
 
 """Strings representing different types of external ids ingested by our system.
 
-NOTE: Changing ANY STRING VALUE in this file will require a database migration.
-The Python values pointing to the strings can be renamed without issue.
-
-At present, these are specifically for cataloging the kinds of ids ingested into
-the StatePersonExternalId entity. In this context, the id types represent the
-source that actually creates the id in the real world.
+At present, these are for cataloging the kinds of ids ingested into both the
+StatePersonExternalId and StateStaffExternalId entities. In this context, the id types
+represent the source that actually creates the id in the real world.
 """
 
-# StatePersonExternalId.id_type
+# External ID types used by StatePersonExternalId and/or StateStaffExternalId
 
 
 # US_AR
@@ -53,13 +50,15 @@ US_CA_STAFF_EMAIL = "US_CA_STAFF_EMAIL"
 
 
 # US_CO
-# OffenderId
-US_CO_DOC = "US_CO_DOC"
-# PersonId
-US_CO_PID = "US_CO_PID"
+# OffenderId - primary JII ID for EOMIS system
+US_CO_OFFENDERID = "US_CO_OFFENDERID"
+# Legacy ID - primarily used within the Informix system
+US_CO_ADCNUMBER = "US_CO_ADCNUMBER"
 # Badge number for CO staff
 US_CO_DOC_BADGE_NUMBER = "US_CO_DOC_BADGE_NUMBER"
-# Database key for users, residents, and organizations in the eomis system
+# Eomis User ID for staff
+US_CO_USER_ID = "US_CO_USER_ID"
+# Database key for users and organizations in the eomis system
 US_CO_PARTYID = "US_CO_PARTYID"
 
 # US_IA

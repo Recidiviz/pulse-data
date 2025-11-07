@@ -377,15 +377,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         "ageid_staff_supervisor": ["critical_dates"],
     },
     StateCode.US_CO: {
-        "IncarcerationIncident": [
-            "id",
-            "inc_and_out",
-            "inc_type",
-            "incident_base",
-            "incidents",
-            "loc",
-            "outcome",
-        ],
         "IncarcerationPeriod": [
             "classified_movements",
             "final",
@@ -397,7 +388,5 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "periods",
             "permanent_moves",
         ],
-        "IncarcerationSentence": ["commitprefix", "sequences"],
-        "StatePerson": ["normalized_rows"],
     },
 }

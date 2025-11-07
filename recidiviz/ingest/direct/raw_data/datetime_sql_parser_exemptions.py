@@ -1253,9 +1253,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "RVRSanctions": ["ORIGINALVIOLATIONDATE"],
         "SupervisionContact": ["CONTACTDATE"],
     },
-    StateCode.US_CO: {
-        "eomis_bedassignment": ["BEDASSIGNMENTDATE"],
-    },
     StateCode.US_IA: {
         "Base_Pop_T_DeID": ["SupervisionStatusEndDt", "SupervisionStatusStartDt"],
         "Base_Population_Demographics_T_DeID": ["DeceasedDt"],

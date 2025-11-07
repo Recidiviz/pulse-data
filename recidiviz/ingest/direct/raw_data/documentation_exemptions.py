@@ -93,11 +93,6 @@ COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS: dict[StateCode, set[str]] = {
         # The OffenderId column here seems like it does have a docstring?
         "PersonParole",
     },
-    # TODO(#39244): Document columns used in these files and remove this exemption for US_CO
-    StateCode.US_CO: {
-        "eomis_sentencecompute",
-        "eomis_organizationprof",
-    },
     # TODO(#39246): Document columns used in these files and remove this exemption for US_MI
     StateCode.US_MI: {"ADH_OFFENDER_SCHEDULE"},
     # TODO(#39247): Document columns used in these files and remove this exemption for US_MO
@@ -590,37 +585,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "WomenParentalStress",
                 "WomenParentalInvolvementScore",
             ],
-        },
-    },
-    StateCode.US_CO: {
-        "eomis_inmateprofile": {
-            "Number sequence indicating current facility, related to PARTYID in ORGANIZATIONPROF.": [
-                "INMCURRENTUNIT",
-                "INMCURRLOCATION",
-            ]
-        },
-        "eomis_bedassignment": {
-            "#TODO(#12372)": [
-                "INMATEHOUSINGAREAID",
-                "BEDUSE",
-                "BEDASSIGNMENTREASON",
-                "BEDASSIGNAPPRBY",
-                "BEDASSIGNMENTSTATUS",
-                "INMBEDSTATUSDATE",
-                "INMBEDSTATUSTIME",
-                "INMBEDCOMMENTS",
-                "DATELASTUPDATE",
-                "TIMELASTUPDATE",
-                "STAFFLASTUPDATE",
-                "HOLDBEDFLAG",
-                "UNASSIGNHELDBEDFLAG",
-            ]
-        },
-        "eomis_sentencecomponent": {
-            "CMOFFSPCLID code for special offense ids.": [
-                "OFFENSESPECIALID",
-                "OFFENSESPECIALID2",
-            ]
         },
     },
     StateCode.US_IA: {

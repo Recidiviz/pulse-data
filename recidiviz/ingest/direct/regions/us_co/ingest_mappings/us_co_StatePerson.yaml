@@ -18,10 +18,10 @@ output:
     external_ids:
       - StatePersonExternalId:
           external_id: OFFENDERID
-          id_type: $literal("US_CO_PID")
+          id_type: $literal("US_CO_OFFENDERID")
       - StatePersonExternalId:
           external_id: ADCNUMBER
-          id_type: $literal("US_CO_DOC")
+          id_type: $literal("US_CO_ADCNUMBER")
     birthdate: INMATEDATEOFBIRTH
     full_name:
       $person_name:
