@@ -28,8 +28,8 @@ Usage:
 Examples:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project recidiviz-staging \
-        --state_code US_XX \
-        --output_sandbox_prefix my_prefix
+        --state_code US_TX \
+        --output_sandbox_prefix santy_staff
 
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project recidiviz-staging \

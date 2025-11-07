@@ -9,7 +9,6 @@ input_columns:
   OFCR_SUFFIX: STRING
   staff_id_list: STRING
   OFCR_EMAIL: STRING
-  OFCR_EMP_NO: STRING
 unused_columns: []
 output:
   StateStaff:
@@ -20,9 +19,6 @@ output:
             StateStaffExternalId:
               external_id: $iter_item
               id_type: $literal("US_TX_STAFF_ID")
-      - StateStaffExternalId:
-          external_id: OFCR_EMP_NO
-          id_type: $literal("US_TX_EMPLOYEE_NO")
     full_name:
       $person_name:
         $given_names: OFCR_FIRST_NAME

@@ -194,8 +194,6 @@ US_TX_SID = "US_TX_SID"
 US_TX_EMAIL = "US_TX_EMAIL"
 # Identifier for the type of state staff id provided by the TDCJ
 US_TX_STAFF_ID = "US_TX_STAFF_ID"
-# Primary employee number for TX state staff
-US_TX_EMPLOYEE_NO = "US_TX_EMPLOYEE_NO"
 
 
 # US_UT
