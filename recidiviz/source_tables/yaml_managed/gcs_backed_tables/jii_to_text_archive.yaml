@@ -37,7 +37,7 @@ schema:
     mode: NULLABLE
   - name: group_ids
     type: STRING
-    mode: NULLABLE
+    mode: REPEATED
   - name: topic
     type: STRING
     mode: NULLABLE
