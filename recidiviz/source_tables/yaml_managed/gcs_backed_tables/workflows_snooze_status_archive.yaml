@@ -29,6 +29,9 @@ schema:
   - name: as_of
     type: DATE
     mode: NULLABLE
+  - name: user_input
+    type: JSON
+    mode: NULLABLE
 clustering_fields: null
 external_data_configuration:
   sourceUris:
