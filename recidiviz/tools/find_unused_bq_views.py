@@ -147,9 +147,6 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.tasks.us_mo.us_mo_contact_cadence_spans_type_agnostic import (
-    US_MO_CONTACT_CADENCE_SPANS_TYPE_AGNOSTIC_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -449,11 +446,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_supervision_locations"
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
-    # TODO(#50536): Finish setting up this contact-cadence view and incorporate it into
-    # downstream infra for MO Tasks.
-    US_MO_CONTACT_CADENCE_SPANS_TYPE_AGNOSTIC_VIEW_BUILDER.address: (
-        "Will be used for MO Tasks once more dev work is completed - see #50536 (Maggie Hilderbran, 10/8/2025)"
-    ),
     SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER.address: (
         "Will be exported to power Operations module drilldown view in Supervisor Homepage (Mayuka Sarukkai, 11/6/2025)"
     ),
