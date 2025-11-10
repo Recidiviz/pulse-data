@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builder for a task eligibility spans view that shows the spans of time during which
-a resident in MI is eligible for a custody level downgrade because they have gone 6 months without a
-class I or II misconduct and meet other eligibility criteria.
+a resident in MI is eligible for a security assessment to facilitate a custody level downgrade because they have gone 6
+months without a class I or II misconduct and meet other eligibility criteria.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    general_incarceration_population,
+    general_housing_unit_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
@@ -59,9 +59,9 @@ _NO_CLASS_I_OR_II_MISCONDUCT_OR_ASSESSMENT_AFTER_MISCONDUCT = StateSpecificTaskC
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
-    task_name="CUSTODY_LEVEL_DOWNGRADE",
+    task_name="CUSTODY_LEVEL_DOWNGRADE_NEEDS_ASSESSMENT",
     description=__doc__,
-    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_housing_unit_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         management_level_greater_than_confinement_level.VIEW_BUILDER,
         management_level_within_six_points_of_lower_level.VIEW_BUILDER,
