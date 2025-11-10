@@ -40,6 +40,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ne.us_ne_latest_aggr
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_comments_preprocessed import (
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_raw_data_update_date import (
+    US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_tools_date_aligned__OffenderCredit_latest import (
+    US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_jii_tools_date_aligned__OffenderSentenceSummary_latest import (
+    US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_relevant_contact_codes import (
     US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER,
 )
@@ -230,6 +239,9 @@ def state_specific_deployed_views_without_state_code_columns(
         US_NE_CLIENT_METADATA_VIEW_BUILDER.address,
         US_NE_LATEST_AGGREGATE_SENTENCE_ENTRY_WITHOUT_HOLD_FOR_REVIEW_VIEW_BUILDER.address,
         US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
+        US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER.address,
+        US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER.address,
+        US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_CREDIT_LATEST_VIEW_BUILDER.address,
         US_TN_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.address,
         US_UT_CLIENT_METADATA_VIEW_BUILDER.address,
