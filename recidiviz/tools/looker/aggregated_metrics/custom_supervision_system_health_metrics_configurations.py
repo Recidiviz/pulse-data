@@ -16,12 +16,9 @@
 # =============================================================================
 """
 Additional configurations for autogeneration of LookML for a custom aggregated
-metrics explore
+metrics explore for supervision system health metrics
 """
 
-from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
-    relevant_units_of_analysis_for_population_type,
-)
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
@@ -29,24 +26,29 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 
-# Loops through all configured population <> unit of analysis combinations and generates a dictionary
-# that maps their combined name (assignment type) to a tuple with population and unit of analysis type
-ASSIGNMENT_NAME_TO_TYPES: dict[
-    str, tuple[MetricPopulationType, MetricUnitOfAnalysisType]
-] = {
-    f"{population_type.population_name_short}_{unit_of_analysis_type.short_name}".upper(): (
-        population_type,
-        unit_of_analysis_type,
-    )
-    for population_type in MetricPopulationType
-    if population_type != MetricPopulationType.CUSTOM
-    for unit_of_analysis_type in relevant_units_of_analysis_for_population_type(
-        population_type
-    )
+SUPERVISION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES = {
+    "ALL_SUPERVISION_STATES": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ),
+    "SUPERVISION_STATE": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ),
+    "SUPERVISION_DISTRICT": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ),
+    "SUPERVISION_OFFICE": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ),
+    "SUPERVISION_UNIT_SUPERVISOR": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ),
+    "SUPERVISION_OFFICER": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ),
 }
-
-# Special case: add person unit of analysis for the whole justice involved population
-ASSIGNMENT_NAME_TO_TYPES["PERSON"] = (
-    MetricPopulationType.JUSTICE_INVOLVED,
-    MetricUnitOfAnalysisType.PERSON_ID,
-)

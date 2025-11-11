@@ -38,12 +38,12 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
-from recidiviz.tools.looker.aggregated_metrics.custom_aggregated_metrics_configurations import (
-    ASSIGNMENT_NAME_TO_TYPES,
-)
 from recidiviz.tools.looker.aggregated_metrics.custom_global_metrics_configurations import (
     GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
     GLOBAL_IMPACT_LOOKER_METRICS,
+)
+from recidiviz.tools.looker.aggregated_metrics.custom_incarceration_system_health_metrics_configurations import (
+    INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configurations import (
     INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
@@ -58,6 +58,13 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     build_assignments_lookml_view,
     build_custom_metrics_lookml_view,
     build_time_periods_lookml_view,
+)
+from recidiviz.tools.looker.aggregated_metrics.custom_supervision_system_health_metrics_configurations import (
+    SUPERVISION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
+)
+from recidiviz.tools.looker.aggregated_metrics.custom_system_metrics_configurations import (
+    ASSIGNMENT_NAME_TO_TYPES,
+    CUSTOM_SYSTEM_IMPACT_LOOKER_METRICS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_tasks_metrics_configurations import (
     TASKS_ASSIGNMENT_NAMES_TO_TYPES,
@@ -136,12 +143,30 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_dir=output_dir, module_name="aggregated_metrics"
         )
 
-        # Standard
+        # TODO(#53131): Deprecate this explore in favor of `experiment_kpi_metrics`
         collect_and_build_custom_metrics_views_for_package(
             lookml_views_package_name="custom_metrics",
             output_directory=output_subdir,
-            metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
+            metrics=CUSTOM_SYSTEM_IMPACT_LOOKER_METRICS,
             assignment_types_dict=ASSIGNMENT_NAME_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        ## Supervision System Health
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="supervision_system_health_metrics",
+            output_directory=output_subdir,
+            metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
+            assignment_types_dict=SUPERVISION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        ## Incarceration System Health
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="incarceration_system_health_metrics",
+            output_directory=output_subdir,
+            metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.INCARCERATION],
+            assignment_types_dict=INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
         )
 
