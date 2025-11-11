@@ -399,7 +399,6 @@ class DirectIngestRawFileLoadManager:
             )
             raise e
 
-    # TODO(#12209): Delete once raw data pruning is live.
     def _should_generate_historical_diffs(self, file_tag: str) -> bool:
         """Returns whether or not we should apply historical diffs to this file during
         raw data import.
