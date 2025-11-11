@@ -19,9 +19,6 @@
 from typing import Dict
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
-    US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
     US_IX_DETAINER_SPANS_VIEW_BUILDER,
 )
@@ -94,9 +91,6 @@ from recidiviz.validation.views.state.parole_agent_badge_number_changes import (
 # not be referenced directly. if a raw data reference is necessary, views should use
 # the _all raw data view
 RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]] = {
-    StateCode.US_AZ: {
-        US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address: "TODO(#51174) Update to use raw data _all view"
-    },
     StateCode.US_CA: {
         US_CA_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(#51176) Update to use raw data _all view",
         CLIENT_RECORD_VIEW_BUILDER.address: "TODO(#51176) Update to use raw data _all view",
