@@ -51,7 +51,14 @@ repos:
         entry: pipenv run python -m recidiviz.research.export_notebooks_pre_commit
         language: system
         always_run: true
-        files: ^recidiviz/research/notebooks/.*\.ipynb$
+        files: ^recidiviz/research/.*notebooks/.*\.ipynb$
+        require_serial: true
+      - id: validate_scripts_and_notebooks_are_changed_together
+        name: validate_scripts_and_notebooks_are_changed_together
+        entry: pipenv run python -m
+          recidiviz.research.validate_script_changes_pre_commit
+        language: system
+        files: ^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$
         require_serial: true
       - id: generate_docs_for_region
         name: generate_docs_for_region
