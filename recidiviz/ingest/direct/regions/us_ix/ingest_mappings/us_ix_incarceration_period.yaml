@@ -164,7 +164,6 @@ output:
               $mappings:
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - Release to Parole
-                  - Granted Early Discharge - Parole
                 StateIncarcerationPeriodReleaseReason.DEATH:
                   - Death - Natural
                   - Death - Unnatural
@@ -190,6 +189,8 @@ output:
                   - Substance Abuse And Therapeutic Program Assignment
                   - Temporary Remand To Custody
                   - Wellness Hold
+                  - Granted Early Discharge - Parole
+                  - Granted Early Discharge - Probation
                 StateIncarcerationPeriodReleaseReason.PARDONED:
                   - Release Clemency/Pardon
                   - Commuted
