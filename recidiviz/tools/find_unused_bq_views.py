@@ -60,6 +60,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii_texting.jii_to_text_archive import (
+    JII_TO_TEXT_ARCHIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
+    SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_contacts_drilldown_due_date_based import (
     SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER,
 )
@@ -448,6 +454,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): "TODO(#46196): This is unused, will need to check with TN team to confirm it can be deleted (Anna Geiduschek, 8/26/2025)",
     SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER.address: (
         "Will be exported to power Operations module drilldown view in Supervisor Homepage (Mayuka Sarukkai, 11/6/2025)"
+    ),
+    JII_TO_TEXT_ARCHIVE_VIEW_BUILDER.address: (
+        "TODO(#51760): These views will be used in validation views created in the next pr (Samantha Norcia, 11/10/2025)"
+    ),
+    SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
+        "TODO(#51760): These views will be used in validation views created in the next pr (Samantha Norcia, 11/10/2025)"
     ),
 }
 
