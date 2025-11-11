@@ -75,6 +75,7 @@ SELECT
     event_ts,
     person_id,
     context_page_path,
+    session_id,
     {_get_shared_columns_statement(vb)}
 """
 
@@ -166,6 +167,7 @@ SELECT
     person_id,
     context_page_path,
     product_type,
+    session_id,
 """,
     )
 
