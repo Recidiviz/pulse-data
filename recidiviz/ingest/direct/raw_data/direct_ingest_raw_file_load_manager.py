@@ -406,11 +406,27 @@ class DirectIngestRawFileLoadManager:
         """
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
 
-        return automatic_raw_data_pruning_enabled_for_file_config(
+        if not automatic_raw_data_pruning_enabled_for_file_config(
             state_code=self.state_code,
             raw_data_instance=self.raw_data_instance,
             raw_file_config=file_config,
-        )
+        ):
+            return False
+
+        # If this is a sandbox import and the actual raw data table doesn't exist yet,
+        # skip diff generation since there is no table to diff against
+        if self.sandbox_dataset_prefix:
+            actual_raw_data_table = BigQueryAddress(
+                dataset_id=raw_tables_dataset_for_region(
+                    state_code=self.state_code,
+                    instance=self.raw_data_instance,
+                    sandbox_dataset_prefix=None,
+                ),
+                table_id=file_tag,
+            )
+            return self.big_query_client.table_exists(actual_raw_data_table)
+
+        return True
 
     def _append_data_to_raw_table(
         self, source_table: BigQueryAddress, destination_table: BigQueryAddress
