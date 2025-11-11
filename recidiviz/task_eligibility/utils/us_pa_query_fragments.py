@@ -25,7 +25,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 
 SPC_VIOLENT_OFFENSE_CONTEXT = "If it does, they would be considered a violent case and must serve 5 years rather than 3 on supervision before being eligible for Special Circumstances Supervision."
-ADM_VIOLENT_OFFENSE_CONTEXT = "If it does, they would be considered a violent case and would be ineligible for Administrative Parole."
+ADM_VIOLENT_OFFENSE_CONTEXT = "If it does, they would be considered a violent case and would be ineligible for Administrative Supervision."
 
 
 def case_when_special_case() -> str:
@@ -1087,19 +1087,19 @@ def adm_missing_subsection_helper() -> str:
             CASE 
                 /* 402 form offenses */
                 WHEN {statute_code_is_like('18', '5902', 'B',StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} 
-                    THEN '5902(b) is ineligible because it is listed in form 402'
+                    THEN ' 18.5902(b) is ineligible because it is listed in form 402'
                 /* sex offenses */
                 WHEN ({statute_code_is_like('18','5903', 'A32', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
                         OR {statute_code_is_like('18','5903', 'A42', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
                         OR {statute_code_is_like('18','5903', 'A52', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
-                    THEN '5903(3)(ii), 4(ii), 5(ii), and 6 are ineligible because they are sex offenses involving minor victims per 42 Pa. C.S. 9799.14.'
+                    THEN 's 18.5903(3)(ii), 4(ii), 5(ii), and 6 are ineligible because they are sex offenses involving minor victims per 42 Pa. C.S. 9799.14.'
                 WHEN {statute_code_is_like('18','6301', 'A12', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
-                    THEN '6301(a)(1)(ii) is ineligible because it is a sex offense per 42 Pa. C.S. 9799.14.'
+                    THEN ' 18.6301(a)(1)(ii) is ineligible because it is a sex offense per 42 Pa. C.S. 9799.14.'
                 /* violent offenses (that aren't already covered by 402 form) */
                 WHEN {statute_code_is_like('18', '2716', 'B', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
-                    THEN '2716(b) is ineligible because it is a violent offense per 42 Pa. C.S. 9714(g).'
+                    THEN ' 18.2716(b) is ineligible because it is a violent offense per 42 Pa. C.S. 9714(g).'
                 WHEN {statute_code_is_like('18','3502', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
-                    THEN '3502(a)(1) is ineligible because it is a violent offense per 42 Pa. C.S. 9714(g).'
+                    THEN ' 18.3502(a)(1) is ineligible because it is a violent offense per 42 Pa. C.S. 9714(g).'
                 ELSE NULL
                 END AS subsection_explanation,
         FROM sentences_clean
@@ -1108,7 +1108,7 @@ def adm_missing_subsection_helper() -> str:
     /* pulls flagged subsections and de-duplicates so that the relevant unclear eligibility flag is only displayed once */
     SELECT 
       person_id,
-      CONCAT('Client has offense ', statute, ' on record with no clear sub-statute. Sub-statute ', subsection_explanation, ' Please confirm if this sub-statute applies.') AS metadata_eligibility_unclear_text,
+      CONCAT('Reentrant has offense ', statute, ' on record with no clear sub-statute. Sub-statute', subsection_explanation, ' Please confirm if any sub-statute applies.') AS metadata_eligibility_unclear_text,
     FROM missing_subsections
     WHERE subsection_explanation IS NOT NULL
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, subsection_explanation ORDER BY LENGTH(statute) DESC) = 1
@@ -1122,7 +1122,7 @@ def adm_dui_helper() -> str:
     required additional agent screening.
     """
     return f"""
-    SELECT 
+    SELECT DISTINCT
       person_id,
       'Potential Barriers to Eligibility' AS criteria,
       'DUI' AS note_title,
@@ -1165,8 +1165,8 @@ def adm_pending_charges_helper() -> str:
     return f"""
     SELECT
       person_id, 
-      CASE WHEN is_admin_ineligible THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for administrative supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
-        ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for administrative supervision.') -- otherwise, they just can't have new pending charges
+      CASE WHEN is_admin_ineligible THEN CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending or if the reentrant has been found guilty, they would not be eligible for Administrative Supervision.') -- for admin ineligible charges, they would be ineligible if pending or found guilty 
+        ELSE CONCAT('This reentrant has an active case of ', statute, ' - ', description, ' on their criminal history. If this charge is still pending, they would not be eligible for Administrative Supervision.') -- otherwise, they just can't have new pending charges
       END AS metadata_eligibility_unclear_text
     FROM (
       WITH {us_pa_pending_charges_cte()}
@@ -1188,9 +1188,9 @@ def adm_drug_charges_helper() -> str:
     """
     return f"""
     SELECT DISTINCT person_id,
-      CASE WHEN form_information_statute_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.' 
-        WHEN form_information_statute_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
-        WHEN form_information_statute_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
+      CASE WHEN form_information_statute_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for Administrative Supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.' 
+        WHEN form_information_statute_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for Administrative Supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
+        WHEN form_information_statute_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for Administrative Supervision if certain sentencing enhancements apply. Click "Complete 402 Forms" and scroll down to the drug addendum to determine eligibility.'
         END AS metadata_eligibility_unclear_text
     FROM ({adm_form_information_helper()}) form
     WHERE (form.form_information_statute_14
@@ -1286,25 +1286,25 @@ def spc_violent_offenses_missing_subsection_helper() -> str:
           CASE 
             -- Aggravated Assault - Serious Bodily Injury
             WHEN ({statute_code_is_like('18', '2702', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} OR {statute_code_is_like('18', '2702', 'A2', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
-              THEN '2702(a)(1) and (2) is a violent offense per 42 Pa. C.S. 9714(g).'
+              THEN ' 18.2702(a)(1) and (2) are violent offenses per 42 Pa. C.S. 9714(g).'
             -- Assault of Law Enforcement Officer
             WHEN {statute_code_is_like('18', '2702', '1A1',StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} 
-              THEN '2702.1(a)(1) is a violent offense per 42 Pa. C.S. 9714(g).'
+              THEN ' 18.2702.1(a)(1) is a violent offense per 42 Pa. C.S. 9714(g).'
             -- Use of Weapons of Mass Destruction
             WHEN {statute_code_is_like('18', '2716', 'B', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
-              THEN '2716(b) is a violent offense per 42 Pa. C.S. 9714(g).' 
+              THEN ' 18.2716(b) is a violent offense per 42 Pa. C.S. 9714(g).' 
             -- Sexual assault
             WHEN ({statute_code_is_like('18', '3124', '1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} OR {statute_code_is_like('18', '3124', '2', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
-              THEN '3124.1 is a violent offense per 42 Pa. C.S. 9714(g).' 
+              THEN ' 18.3124.1 is a violent offense per 42 Pa. C.S. 9714(g).' 
             -- Arson Endangering Persons OR Aggravated Arson
             WHEN ({statute_code_is_like('18', '3301', 'A', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} OR {statute_code_is_like('18', '3301', 'A1', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
-              THEN '3301(a) and (a.1) is a violent offense per 42 Pa. C.S. 9714(g).'
+              THEN 's 18.3301(a) and (a.1) are violent offenses per 42 Pa. C.S. 9714(g).'
             -- Drug Delivery Resulting in Death
             WHEN {statute_code_is_like('18', '2506', 'A', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}
-              THEN '2506(a) is a violent offense per 42 Pa. C.S. 9714(g).'      
+              THEN ' 18.2506(a) is a violent offense per 42 Pa. C.S. 9714(g).'      
             -- 18 Pa.C.S. § 3502(a)(1) Burglary - Adapted for Overnight Accommodation and Person Present (Felony of the First Degree)
             WHEN ({statute_code_is_like('18', '3502', 'A1', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)})
-                THEN '3502(a)(1), Burglary - Adapted for Overnight Accommodation and Person Present, is a violent offense per 42 Pa. C.S. 9714(g).'
+                THEN ' 18.3502(a)(1), Burglary - Adapted for Overnight Accommodation and Person Present, is a violent offense per 42 Pa. C.S. 9714(g).'
             -- 18 Pa.C.S. § 3701(a)(1)(i), (ii) or (iii) Robbery- Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree (Felony of the First Degree)
             WHEN (
                 ({statute_code_is_like('18', '3701', 'A11', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)}) OR
@@ -1319,7 +1319,7 @@ def spc_violent_offenses_missing_subsection_helper() -> str:
       )
       /* pulls flagged subsections and de-duplicates so that the relevant unclear eligibility flag is only displayed once */
       SELECT person_id,
-          CONCAT('Client has offense ', statute, ' on record with no clear sub-statute. Sub-statute ', subsection_explanation, ' Please confirm if this sub-statute applies. {SPC_VIOLENT_OFFENSE_CONTEXT}') AS metadata_eligibility_unclear_text,
+          CONCAT('Reentrant has offense ', statute, ' on record with no clear sub-statute. Sub-statute', subsection_explanation, ' Please confirm if any sub-statute applies. {SPC_VIOLENT_OFFENSE_CONTEXT}') AS metadata_eligibility_unclear_text,
       FROM is_violent_missing_subsections
       WHERE subsection_explanation IS NOT NULL
       QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, subsection_explanation ORDER BY LENGTH(statute) DESC) = 1
@@ -1359,20 +1359,20 @@ def violent_offenses_missing_felony_information(contextual_information: str) -> 
           -- 18 Pa.C.S. § 2717(b)(2) Terrorism When Graded as a Felony in the First Degree -- B2 specifies the grading, but it's possible for there to be a statute w/ A1 that carries
           -- a felony grade. in cases where we are missing felony information and have a vague statute, we want to ask for more info.
           WHEN ({statute_code_is_like('18', '2717', 'B2', StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} AND ENDS_WITH(classification_type, 'UNKNOWN'))
-            THEN '2717, Terrorism, when graded as a Felony in the First Degree either by use of subsection (b)(2) or a different subsection with a felony grade, is a violent offense per 42 Pa. C.S. 9714(g).'      
+            THEN '18.2717, Terrorism, when graded as a Felony in the First Degree either by use of subsection (b)(2) or a different subsection with a felony grade, is a violent offense per 42 Pa. C.S. 9714(g).'      
           -- 18 Pa.C.S. § 2718 Strangulation When Graded as a Felony -- for cases where we have not grading information, we will surface as eligibility unknown
           WHEN ({statute_code_is_like('18', '2718', mode=StatueMatchingMode.MATCH_ON_TITLE_SECTION_EXCLUDE_ON_SUBSECTION)} AND ENDS_WITH(classification_type, 'UNKNOWN'))
-            THEN '2718, when graded as a Felony in the First Degree, is a violent offense per 42 Pa. C.S. 9714(g).'      
+            THEN '18.2718, when graded as a Felony in the First Degree, is a violent offense per 42 Pa. C.S. 9714(g).'      
           -- 18 Pa.C.S. § 3311 Ecoterrorism when Graded as a Felony
           WHEN ({statute_code_is_like('18', '3311')} AND ENDS_WITH(classification_type, 'UNKNOWN'))
-            THEN '3311, when graded as a Felony in the First Degree, is a violent offense per 42 Pa. C.S. 9714(g).'     
+            THEN '18.3311, when graded as a Felony in the First Degree, is a violent offense per 42 Pa. C.S. 9714(g).'     
         END AS subsection_explanation,
       FROM sentences_clean
       ORDER BY 1, 2, 3
       )
       /* pulls flagged subsections and de-duplicates so that the relevant unclear eligibility flag is only displayed once */
         SELECT person_id,
-            CONCAT('Client has offense ', statute, ' on record without a clear record if it was graded as a felony. Statute ', subsection_explanation, ' Please confirm if this offense was graded as a felony. {contextual_information}') AS metadata_eligibility_unclear_text,
+            CONCAT('Reentrant has offense ', statute, ' on record without a clear record if it was graded as a felony. Statute ', subsection_explanation, ' Please confirm if this offense was graded as a felony. {contextual_information}') AS metadata_eligibility_unclear_text,
         FROM is_felony
         WHERE subsection_explanation IS NOT NULL
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, subsection_explanation ORDER BY LENGTH(statute) DESC) = 1
