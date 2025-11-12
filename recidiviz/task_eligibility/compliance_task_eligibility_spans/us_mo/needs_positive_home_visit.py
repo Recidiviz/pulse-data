@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies spans of time during which supervision clients in MO require a home visit
-to meet contact standards.
+"""Identifies spans of time during which supervision clients in MO require a positive
+home visit to meet contact standards.
 """
 
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
@@ -27,18 +27,18 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
-    meets_home_visit_triggers,
+    meets_positive_home_visit_triggers,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
-    task_name="needs_home_visit",
+    task_name="needs_positive_home_visit",
     # TODO(#50537): Update/refine candidate population to ensure it's correct.
     candidate_population_view_builder=supervision_tasks_eligible_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        meets_home_visit_triggers.VIEW_BUILDER,
+        meets_positive_home_visit_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
     due_date_field="contact_due_date",
