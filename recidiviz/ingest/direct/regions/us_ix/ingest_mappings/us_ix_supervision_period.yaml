@@ -365,6 +365,16 @@ output:
                     - PhysicalLocationTypeDesc
                     - $literal("Absconded")
                 $then: $literal_enum(StateSupervisionLevel.ABSCONSION)
+              - $else_if:
+                  $equal:
+                    - PhysicalLocationTypeDesc
+                    - $literal("Adult Residential Programs")
+                $then: $literal_enum(StateSupervisionLevel.RESIDENTIAL_PROGRAM)
+              - $else_if:
+                  $equal:
+                    - PhysicalLocationTypeDesc
+                    - $literal("Jail")
+                $then: $literal_enum(StateSupervisionLevel.IN_CUSTODY)
               - $else:
                   $enum_mapping:
                     $raw_text: RequestedSupervisionAssignmentLevel
