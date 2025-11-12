@@ -265,10 +265,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         ],
         "Violations": ["ContactNoteDate"],
     },
-    StateCode.US_TX: {
-        "ClientData": ["Creation_Date"],
-        "OfficeDescription": ["OFFC_END_DATE", "OFFC_START_DATE"],
-    },
     StateCode.US_UT: {
         "crt_case": [
             "convict_dt",

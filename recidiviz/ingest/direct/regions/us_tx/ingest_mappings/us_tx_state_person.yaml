@@ -7,23 +7,25 @@ input_columns:
   MiddleName: STRING
   LastName: STRING
   Suffix: STRING
-  SID_Number: STRING
+  OIMS_SID_NO: STRING
   RESI_STREET: STRING
   RESI_STREET2: STRING
   RESI_CITY: STRING
   RESI_STATE: STRING
   RESI_ZIP: STRING
   Phone_Number: STRING
-  TDCJ_Numbers: STRING
+  TDCJ_NOs: STRING
+  race: STRING
+  sex: STRING
 unused_columns: []
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: SID_Number
+          external_id: OIMS_SID_NO
           id_type: $literal("US_TX_SID")
       - $foreach:
-          $iterable: TDCJ_Numbers
+          $iterable: TDCJ_NOs
           $result:
             StatePersonExternalId:
               external_id: $iter_item
@@ -42,3 +44,40 @@ output:
         $state: RESI_STATE
         $zip: RESI_ZIP
     current_phone_number: Phone_Number
+    sex:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateSex.MALE:
+            - "MALE"
+          StateSex.FEMALE:
+            - "FEMALE"
+          StateSex.EXTERNAL_UNKNOWN: "UNKNOWN"
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                StateRace.ASIAN: "ASIAN OR PACIFIC ISLANDER"
+                StateRace.BLACK: "BLACK"
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN OR ALASKAN"
+                StateRace.EXTERNAL_UNKNOWN: "UNKNOWN"
+                StateRace.WHITE:
+                  - "WHITE"
+                  - "HISPANIC"
+                StateRace.OTHER: "OTHER"
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                StateEthnicity.HISPANIC: "HISPANIC"
+                StateEthnicity.NOT_HISPANIC:
+                  - "ASIAN OR PACIFIC ISLANDER"
+                  - "BLACK"
+                  - "AMERICAN INDIAN OR ALASKAN"
+                  - "WHITE"
+                  - "OTHER"
+                StateEthnicity.EXTERNAL_UNKNOWN: "UNKNOWN"
