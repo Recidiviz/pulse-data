@@ -456,10 +456,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Will be exported to power Operations module drilldown view in Supervisor Homepage (Mayuka Sarukkai, 11/6/2025)"
     ),
     JII_TO_TEXT_ARCHIVE_VIEW_BUILDER.address: (
-        "TODO(#51760): These views will be used in validation views created in the next pr (Samantha Norcia, 11/10/2025)"
+        "This view will be used just for validation of the jii_to_text view and we'd only want to delete the archive / validation if we delete or stop using the jii_to_text view itself (Samantha Norcia, 11/10/2025)"
     ),
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
-        "TODO(#51760): These views will be used in validation views created in the next pr (Samantha Norcia, 11/10/2025)"
+        "TODO(#50601) This view will be used in product/validation views (Samantha Norcia, 11/10/2025)"
     ),
 }
 

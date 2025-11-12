@@ -137,6 +137,9 @@ from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissio
 from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
     INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.jii_to_text_percent_change_exceeded import (
+    JII_TO_TEXT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.location_ids_to_names_unique_ids import (
     LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
 )
@@ -972,6 +975,17 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=[
                 "prev_eligibility_count",
                 "current_eligibility_count",
+            ],
+            soft_max_allowed_error=0.10,
+            hard_max_allowed_error=0.30,
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=JII_TO_TEXT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
+            comparison_columns=[
+                "prev_jii_count",
+                "current_jii_count",
             ],
             soft_max_allowed_error=0.10,
             hard_max_allowed_error=0.30,
