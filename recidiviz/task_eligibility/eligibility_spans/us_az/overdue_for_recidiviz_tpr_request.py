@@ -22,8 +22,8 @@ considered eligible or almost eligible for this opportunity.
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.candidate_populations.general import (
-    general_incarceration_population,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_az import (
+    tpr_eligible_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     early_release_to_community_confinement_supervision_not_overdue,
@@ -76,7 +76,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="OVERDUE_FOR_RECIDIVIZ_TPR_REQUEST",
     description=__doc__,
-    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=tpr_eligible_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         ### Criteria shared in both TPR and DTP
         *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,

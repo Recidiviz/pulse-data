@@ -331,6 +331,11 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
             all_descendants.add(criteria_builder)
             all_descendants |= criteria_builder.get_descendant_criteria()
 
+        # Add criteria from candidate_population_view_builder if available
+        candidate_criteria = (
+            self.candidate_population_view_builder.get_descendant_criteria()
+        )
+        all_descendants |= candidate_criteria
         return sorted(all_descendants, key=lambda c: c.criteria_name)
 
     @staticmethod

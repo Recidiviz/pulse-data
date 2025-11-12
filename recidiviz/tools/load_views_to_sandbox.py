@@ -33,9 +33,8 @@ To load all views that have changed since the last view deploy and views
 downstream of those views, stopping once we've loaded all views specified by
 --load_up_to_addresses and --load_up_to_datasets, run:
     python -m recidiviz.tools.load_views_to_sandbox \
-       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto
-       --load_up_to_addresses [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...]
-       --load_up_to_datasets [DATASET_ID_1,DATASET_ID_2,...]
+       --sandbox_dataset_prefix agaidus --prompt auto \
+       --load_up_to_addresses workflows_views.resident_record,workflows_views.client_record
 
 To load all views that have changed since the last view deploy, but exclude some
 datasets when considering which views have changed, run:

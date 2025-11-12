@@ -21,7 +21,6 @@ in Texas. This includes people who meet the following criteria:
 - Not critical understaffing TRAS exempt
 """
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     meets_risk_assessment_applicable_conditions,
     not_critical_understaffing_tras_exempt,
@@ -39,8 +38,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _POPULATION_NAME = "US_TX_TRAS_ELIGIBLE_POPULATION"
 
-# TODO(#47494): Refactor once criteria groups can be transformed in candidate populations
-_CRITERIA_GROUP_QUERY_TEMPLATE = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_POPULATION_NAME,
     sub_criteria_list=[
@@ -52,27 +50,11 @@ _CRITERIA_GROUP_QUERY_TEMPLATE = StateSpecificTaskCriteriaGroupBigQueryViewBuild
         "case_type",
         "supervision_level",
     ],
-).view_query_template
-
-_QUERY_TEMPLATE = f"""
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-FROM (
-    {_CRITERIA_GROUP_QUERY_TEMPLATE}
 )
-WHERE
-    meets_criteria
-"""
 
 VIEW_BUILDER: StateSpecificTaskCandidatePopulationBigQueryViewBuilder = (
-    StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
-        state_code=StateCode.US_TX,
-        population_name=_POPULATION_NAME,
-        population_spans_query_template=_QUERY_TEMPLATE,
-        description=__doc__,
+    StateSpecificTaskCandidatePopulationBigQueryViewBuilder.from_criteria_group(
+        criteria_group=_CRITERIA_GROUP, population_name=_POPULATION_NAME
     )
 )
 

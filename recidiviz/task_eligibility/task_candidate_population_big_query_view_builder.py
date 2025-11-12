@@ -17,11 +17,24 @@
 """Defines BigQueryViewBuilders that can be used to define single population span views.
 These views are used as inputs to a task eligibility spans view.
 """
-from typing import Union
+
+from typing import Optional, Union
+
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+    TaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+)
 
 
 def aggregate_adjacent_candidate_population_spans(query_template: str) -> str:
@@ -41,6 +54,39 @@ def aggregate_adjacent_candidate_population_spans(query_template: str) -> str:
 """
 
 
+def _get_candidate_population_query_from_criteria_group(
+    criteria_group: Union[
+        StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    ]
+) -> str:
+    return f"""
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+        FROM (
+            {criteria_group.view_query_template}
+        )
+        WHERE
+            meets_criteria
+    """
+
+
+def _get_criteria_query_from_candidate_population(
+    view_query_template: str, population_name: str
+) -> str:
+    return f"""
+        SELECT
+            *,
+            TRUE AS meets_criteria,
+            "{population_name}" AS population_name,
+            TO_JSON(STRUCT("{population_name}" AS population_name)) AS reason,
+        FROM ({view_query_template})
+    """
+
+
 class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
     SimpleBigQueryViewBuilder
 ):
@@ -56,6 +102,9 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
         population_name: str,
         population_spans_query_template: str,
         description: str,
+        criteria_group: Optional[
+            StateSpecificTaskCriteriaGroupBigQueryViewBuilder
+        ] = None,
         **query_format_kwargs: str,
     ) -> None:
         if population_name.upper() != population_name:
@@ -85,6 +134,61 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
         )
         self.state_code = state_code
         self.population_name = population_name
+        self.criteria_group = criteria_group
+
+    @classmethod
+    def from_criteria_group(
+        cls,
+        criteria_group: StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+        population_name: str,
+        **query_format_kwargs: str,
+    ) -> "StateSpecificTaskCandidatePopulationBigQueryViewBuilder":
+        query_template = _get_candidate_population_query_from_criteria_group(
+            criteria_group
+        )
+
+        return cls(
+            state_code=criteria_group.state_code,
+            population_name=population_name,
+            population_spans_query_template=query_template,
+            description=__doc__,
+            criteria_group=criteria_group,
+            **query_format_kwargs,
+        )
+
+    def get_descendant_criteria(self) -> set[TaskCriteriaBigQueryViewBuilder]:
+        if self.criteria_group:
+            return self.criteria_group.get_descendant_criteria()
+        return set()
+
+    def as_criteria(
+        self,
+        criteria_name: Optional[str] = None,
+        **query_format_kwargs: str,
+    ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+        """Creates a StateSpecificTaskCriteriaBigQueryViewBuilder that uses this candidate
+        population as its criteria."""
+
+        name = criteria_name or self.population_name
+        query_template = _get_criteria_query_from_candidate_population(
+            self.view_query_template, self.population_name
+        )
+
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            state_code=self.state_code,
+            criteria_name=f"{self.state_code.value}_{name}",
+            criteria_spans_query_template=query_template,
+            description=__doc__,
+            reasons_fields=[
+                ReasonsField(
+                    name="population_name",
+                    type=bigquery.enums.StandardSqlTypeNames.STRING,
+                    description="Candidate population name",
+                ),
+            ],
+            meets_criteria_default=False,
+            **query_format_kwargs,
+        )
 
 
 class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
@@ -101,6 +205,9 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
         population_name: str,
         population_spans_query_template: str,
         description: str,
+        criteria_group: Optional[
+            StateAgnosticTaskCriteriaGroupBigQueryViewBuilder
+        ] = None,
         # All keyword args must have string values
         **query_format_kwargs: str,
     ) -> None:
@@ -122,6 +229,62 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             **query_format_kwargs,
         )
         self.population_name = population_name
+        self.criteria_group = criteria_group
+
+    @classmethod
+    def from_criteria_group(
+        cls,
+        criteria_group: StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+        population_name: str,
+        **query_format_kwargs: str,
+    ) -> "StateAgnosticTaskCandidatePopulationBigQueryViewBuilder":
+        query_template = _get_candidate_population_query_from_criteria_group(
+            criteria_group
+        )
+
+        return cls(
+            population_name=population_name,
+            population_spans_query_template=query_template,
+            description=__doc__,
+            criteria_group=criteria_group,
+            **query_format_kwargs,
+        )
+
+    def get_descendant_criteria(
+        self,
+    ) -> set[StateAgnosticTaskCriteriaBigQueryViewBuilder]:
+        if self.criteria_group:
+            return self.criteria_group.get_descendant_criteria()
+        return set()
+
+    def as_criteria(
+        self,
+        criteria_name: Optional[str] = None,
+        **query_format_kwargs: str,
+    ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+        """Creates a StateAgnosticTaskCriteriaBigQueryViewBuilder that uses this candidate
+        population as its criteria."""
+
+        name = criteria_name or self.population_name
+
+        query_template = _get_criteria_query_from_candidate_population(
+            self.view_query_template, self.population_name
+        )
+
+        return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+            criteria_name=name,
+            criteria_spans_query_template=query_template,
+            description=__doc__,
+            reasons_fields=[
+                ReasonsField(
+                    name="population_name",
+                    type=bigquery.enums.StandardSqlTypeNames.STRING,
+                    description="Candidate population name",
+                ),
+            ],
+            meets_criteria_default=False,
+            **query_format_kwargs,
+        )
 
 
 TaskCandidatePopulationBigQueryViewBuilder = Union[
