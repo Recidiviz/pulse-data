@@ -258,10 +258,7 @@ class StateIngestViewAndMappingTestCase(
             f"{ingest_view_name} does not match the actual output of the view query.",
         )
 
-    def run_ingest_view_test(
-        self,
-        create_expected_output: bool = False,
-    ) -> None:
+    def run_ingest_view_test(self, create_expected_output: bool = False) -> None:
         """Runs the ingest view query for this test's IngestViewBuilder and compares against expected results."""
         if in_ci() and create_expected_output:
             raise ValueError("Cannot have create_expected_output=True in the CI.")

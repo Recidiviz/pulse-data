@@ -412,7 +412,12 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     def compare_expected_and_result_dfs(
         cls, *, expected: pd.DataFrame, results: pd.DataFrame
     ) -> None:
-        """Compares the results in the |expected| dataframe to |results|."""
+        """Compares the results in the |expected| dataframe to |results|.
+
+        Args:
+            expected: The expected dataframe from the fixture.
+            results: The actual results dataframe.
+        """
         if sorted(results.columns) != sorted(expected.columns):
             raise ValueError(
                 f"Columns in expected and actual results do not match (order "
@@ -442,13 +447,79 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
 
         results = cls.apply_types_and_sort(results, data_types, dimensions)
 
-        print("**** EXPECTED ****")
-        print(expected.info())
-        print(expected)
-        print("**** ACTUAL ****")
-        print(results.info())
-        print(results)
-        assert_frame_equal(expected, results)
+        try:
+            assert_frame_equal(expected, results)
+        except Exception:
+            print("**** EXPECTED ****")
+            print(expected.to_csv(index=False))
+            print("**** ACTUAL ****")
+            print(results.to_csv(index=False))
+            print("\n**** DETAILED ROW-BY-ROW DIFF ****")
+            cls._print_row_by_row_diff(expected, results)
+            raise
+
+    @staticmethod
+    def _print_row_by_row_diff(expected: pd.DataFrame, actual: pd.DataFrame) -> None:
+        """Prints a detailed row-by-row diff showing which rows and columns differ.
+
+        This method assumes both dataframes have already been normalized via
+        apply_types_and_sort(), which ensures consistent data types and null handling.
+
+        Args:
+            expected: The expected dataframe.
+            actual: The actual dataframe.
+        """
+        if len(expected) != len(actual):
+            print(
+                f"Row count mismatch: expected {len(expected)} rows, got {len(actual)} rows"
+            )
+
+        # Compare rows at matching indices
+        matching_rows = 0
+        differing_rows = []
+        for idx in range(min(len(expected), len(actual))):
+            expected_row = expected.iloc[idx]
+            actual_row = actual.iloc[idx]
+
+            # Check if rows are equal
+            if expected_row.equals(actual_row):
+                matching_rows += 1
+            else:
+                # Find which columns differ
+                differing_cols = []
+                for col in expected.columns:
+                    exp_val = expected_row[col]
+                    act_val = actual_row[col]
+
+                    # Both nulls are considered equal
+                    if pd.isna(exp_val) and pd.isna(act_val):
+                        continue
+
+                    # If one is null, or they're different, they're different
+                    if (pd.isna(exp_val) or pd.isna(act_val)) or exp_val != act_val:
+                        differing_cols.append((col, exp_val, act_val))
+
+                differing_rows.append((idx, differing_cols))
+
+        # Print summary
+        print(f"Rows matching: {matching_rows} / {min(len(expected), len(actual))}")
+        print(f"Rows differing: {len(differing_rows)}")
+
+        if len(expected) != len(actual):
+            print("  (Note: DataFrames have different lengths)")
+
+        # Print details for differing rows (limit to first 20 for readability)
+        if differing_rows:
+            print("\nFirst differing rows:")
+            for idx, differing_cols in differing_rows[:20]:
+                print(f"\n  Row {idx}:")
+                for col, exp_val, act_val in differing_cols:
+                    print(f"    {col}:")
+                    print(f"      Expected: {exp_val!r}")
+                    print(f"      Actual:   {act_val!r}")
+
+            if len(differing_rows) > 20:
+                print(f"\n  ... and {len(differing_rows) - 20} more differing rows")
 
     @staticmethod
     def apply_types_and_sort(
