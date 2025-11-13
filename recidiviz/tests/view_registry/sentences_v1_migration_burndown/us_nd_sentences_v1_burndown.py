@@ -59,9 +59,6 @@ from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervi
 from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_terminations_by_period_by_demographics import (
     SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
-    SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
@@ -315,19 +312,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "SENTENCING": {
-        SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address,
             },
         },
     },

@@ -46,9 +46,6 @@ from recidiviz.calculator.query.state.views.sentence_sessions.sentence_status_ra
 from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_charges import (
     SENTENCES_AND_CHARGES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
-    SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentencing.charge_record import (
     SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
 )
@@ -57,6 +54,9 @@ from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
 )
 from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
     SENTENCE_COHORT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentencing.us_ix.us_ix_sentencing_case_disposition_preprocessed import (
+    US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import (
     CHARGES_PREPROCESSED_VIEW_BUILDER,
@@ -532,7 +532,7 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: (
+        US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
@@ -897,7 +897,7 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: (
+        US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
@@ -921,7 +921,7 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: (
+        US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),

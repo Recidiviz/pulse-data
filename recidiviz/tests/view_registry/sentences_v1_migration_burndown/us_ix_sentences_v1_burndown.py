@@ -53,6 +53,9 @@ from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
 from recidiviz.calculator.query.state.views.sentencing.charge_record import (
     SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_ix.us_ix_sentencing_case_disposition_preprocessed import (
+    US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
@@ -267,13 +270,13 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address: {
             COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address,
+                US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
             },
             SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address,
+                US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SENTENCING_CASE_DISPOSITION_VIEW_BUILDER.address,
+                US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address,
             },
         },
     },
