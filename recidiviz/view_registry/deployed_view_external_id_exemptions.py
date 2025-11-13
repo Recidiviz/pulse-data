@@ -58,9 +58,6 @@ from recidiviz.calculator.query.state.views.reentry.client import (
 from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.current_staff import (
-    CURRENT_STAFF_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -69,6 +66,9 @@ from recidiviz.calculator.query.state.views.reference.product_roster import (
 )
 from recidiviz.calculator.query.state.views.reference.product_roster_archive import (
     PRODUCT_ROSTER_ARCHIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.supervision_current_staff import (
+    SUPERVISION_CURRENT_STAFF_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
@@ -175,7 +175,7 @@ _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
         "TODO(#45253): Remove external_id column once it is no longer referenced "
         "in the Reentry tools repo."
     ),
-    CURRENT_STAFF_VIEW_BUILDER.address: (
+    SUPERVISION_CURRENT_STAFF_VIEW_BUILDER.address: (
         "TODO(#45176): Remove external_id column once it is no longer referenced in "
         "Looker (will be migrated to staff_external_id)"
     ),
