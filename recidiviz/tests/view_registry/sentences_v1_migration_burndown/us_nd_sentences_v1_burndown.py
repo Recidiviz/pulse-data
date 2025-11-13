@@ -121,14 +121,8 @@ from recidiviz.task_eligibility.criteria.general.incarceration_within_3_months_o
 from recidiviz.task_eligibility.criteria.general.incarceration_within_42_months_of_full_term_completion_date import (
     VIEW_BUILDER as INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.general.no_escape_in_current_incarceration import (
-    VIEW_BUILDER as NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.general.supervision_early_discharge_before_full_term_completion_date import (
     VIEW_BUILDER as SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_nd.no_escape_offense_within_1_year import (
-    VIEW_BUILDER as US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER,
 )
 
 # For each US_ND metric export, for each product view in that export, a mapping of
@@ -161,7 +155,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
@@ -171,7 +164,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateCharge.get_table_id(),
             ): {
-                US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address,
                 US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
             BigQueryAddress(
@@ -194,7 +186,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
@@ -204,7 +195,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateCharge.get_table_id(),
             ): {
-                US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address,
                 US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
             BigQueryAddress(
@@ -227,7 +217,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
@@ -237,7 +226,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateCharge.get_table_id(),
             ): {
-                US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address,
                 US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
             BigQueryAddress(
@@ -331,9 +319,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
             },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
-            },
         },
         US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
@@ -358,9 +343,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
             },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
-            },
         },
     },
     "VITALS": {
@@ -371,7 +353,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
@@ -379,12 +360,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address,
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
@@ -400,7 +375,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address,
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
@@ -408,12 +382,6 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address,
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),

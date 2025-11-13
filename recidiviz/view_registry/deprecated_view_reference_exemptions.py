@@ -204,9 +204,6 @@ from recidiviz.task_eligibility.criteria.general.incarceration_within_3_months_o
 from recidiviz.task_eligibility.criteria.general.incarceration_within_42_months_of_full_term_completion_date import (
     VIEW_BUILDER as INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.general.no_escape_in_current_incarceration import (
-    VIEW_BUILDER as NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.general.serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state import (
     VIEW_BUILDER as SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER,
 )
@@ -257,9 +254,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.only_drug_offense_
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me.supervision_past_half_full_term_release_date_from_probation_start import (
     VIEW_BUILDER as US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_nd.no_escape_offense_within_1_year import (
-    VIEW_BUILDER as US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_pa.meets_special_circumstances_criteria_for_time_served import (
     VIEW_BUILDER as US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER,
@@ -394,10 +388,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
     },
     (StateCode.US_ND, StateCharge): {
         US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46257): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_ND_NO_ESCAPE_OFFENSE_WITHIN_1_YEAR_VIEW_BUILDER.address: (
             "TODO(#46257): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
@@ -555,10 +545,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): This view should be deleted as part of the v2 sentences migration"
         ),
         INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        NO_ESCAPE_IN_CURRENT_INCARCERATION_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),

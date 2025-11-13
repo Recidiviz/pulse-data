@@ -20,7 +20,10 @@ an escape sentence in their current incarceration.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_V2_ALL_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -39,11 +42,11 @@ WITH escape_related_sentences AS (
   SELECT 
     sis.state_code,
     sis.person_id,
-    sis.date_imposed,
+    sis.imposed_date,
     sis.description,
-  FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sis
+  FROM `{project_id}.{sentence_sessions_dataset}.sentences_and_charges_materialized` sis
   WHERE REGEXP_CONTAINS(UPPER(sis.description), r'ESCAPE')
-      AND date_imposed IS NOT NULL
+      AND imposed_date IS NOT NULL
 )
 
 SELECT 
@@ -54,15 +57,15 @@ SELECT
   False AS meets_criteria,
   TO_JSON(STRUCT(
       ARRAY_AGG(e.description ORDER BY e.description) AS ineligible_offenses_descriptions,
-      MAX(e.date_imposed) AS most_recent_escape_date
+      MAX(e.imposed_date) AS most_recent_escape_date
   )) AS reason,
   ARRAY_AGG(e.description ORDER BY e.description) AS ineligible_offenses_descriptions,
-  MAX(e.date_imposed) AS most_recent_escape_date
+  MAX(e.imposed_date) AS most_recent_escape_date
 FROM `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized` cs
 INNER JOIN escape_related_sentences e
   ON cs.person_id = e.person_id
     AND cs.state_code = e.state_code
-    AND e.date_imposed BETWEEN cs.start_date AND IFNULL(cs.end_date, '9999-12-31')
+    AND e.imposed_date BETWEEN cs.start_date AND IFNULL(cs.end_date, '9999-12-31')
 WHERE cs.start_date != cs.end_date
 GROUP BY 1,2,3,4,5
 ORDER BY start_date
@@ -73,6 +76,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     description=_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
     reasons_fields=[
         ReasonsField(
             name="ineligible_offenses_descriptions",
