@@ -27,7 +27,12 @@ Closes #XXXX
 - [ ] **Double- and triple-checked that there is no Personally Identifiable Information (PII) being mistakenly added in this pull request**
 
 These boxes should be checked by the submitter prior to merging:
-- [ ] Tests have been written to cover the code changed/added as part of this pull request
+- [ ] Tests have been written to cover the code changed/added as part of this pull request  
+
+  
+   
+### ⚠️ Changing an opportunity record?
+Please [consult this document](https://www.notion.so/recidiviz/How-to-make-a-change-to-the-Opportunity-Record-1d67889f4d19807f8109f9f2f007dde3) first to see if additional changes might be required in the admin panel or a Zod schema. You can confirm with Polaris if unsure.
 
 ### Code review
 
