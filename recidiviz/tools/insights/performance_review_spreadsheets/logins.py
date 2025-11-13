@@ -28,7 +28,7 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_claus
 _LOGINS_QUERY = f"""
 SELECT staff_external_id, DATE_TRUNC(login_date, MONTH) AS month, COUNT(*) AS num_logins
 FROM `recidiviz-123.analyst_data.all_auth0_login_events_materialized` logins
-INNER JOIN `recidiviz-123.reference_views.product_staff_materialized` staff
+INNER JOIN `recidiviz-123.reference_views.supervision_product_staff_materialized` staff
     ON LOWER(logins.email_address) = LOWER(staff.email)
     AND login_date BETWEEN staff.start_date AND {nonnull_end_date_exclusive_clause("staff.end_date_exclusive")}
 -- Keep events before 2024 so we know whether for a month with no logins if they hadn't logged in
