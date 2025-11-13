@@ -61,7 +61,9 @@ output:
               $mappings:
                 StateRace.ASIAN: "ASIAN OR PACIFIC ISLANDER"
                 StateRace.BLACK: "BLACK"
-                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "AMERICAN INDIAN OR ALASKAN"
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
+                  - "AMERICAN INDIAN OR ALASKAN"
+                  - "AMERICAN INDIAN/ALASKAN"
                 StateRace.EXTERNAL_UNKNOWN: "UNKNOWN"
                 StateRace.WHITE:
                   - "WHITE"
@@ -80,4 +82,5 @@ output:
                   - "AMERICAN INDIAN OR ALASKAN"
                   - "WHITE"
                   - "OTHER"
+                  - "AMERICAN INDIAN/ALASKAN"
                 StateEthnicity.EXTERNAL_UNKNOWN: "UNKNOWN"
