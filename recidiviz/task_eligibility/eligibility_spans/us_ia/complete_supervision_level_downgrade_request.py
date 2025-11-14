@@ -21,7 +21,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events.general import (
-    supervision_level_downgrade_from_medium_or_minimum,
+    transfer_to_limited_supervision_from_minimum,
 )
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_level_downgrade_within_6_months,
@@ -86,7 +86,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # TODO(#48523): remove this once we are allowed to show L3 eligible clients again
         supervision_level_is_minimum.VIEW_BUILDER,
     ],
-    completion_event_builder=supervision_level_downgrade_from_medium_or_minimum.VIEW_BUILDER,
+    # TODO(#48523): update this once we are allowed to show L3 eligible clients again
+    completion_event_builder=transfer_to_limited_supervision_from_minimum.VIEW_BUILDER,
     almost_eligible_condition=NotEligibleCriteriaCondition(
         criteria=us_ia_not_eligible_or_marked_ineligible_for_early_discharge_view_builder,
         description="If eligible for early discharge, mark as almost eligible for supervision level downgrade."
