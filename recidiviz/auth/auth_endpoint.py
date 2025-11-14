@@ -46,8 +46,8 @@ from recidiviz.auth.helpers import (
     log_reason,
     validate_roles,
 )
-from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
-    INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.reference.ingested_supervision_product_users import (
+    INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
@@ -653,7 +653,7 @@ def get_auth_endpoint_blueprint(
         # It would be nice if we could do this as a filter in the GCS notification instead of as logic
         # here, but as of Jan 2023, the available filters are not expressive enough for our needs:
         # https://cloud.google.com/pubsub/docs/filtering#filtering_syntax
-        if filename != "ingested_product_users.csv":
+        if filename != "ingested_supervision_product_users.csv":
             logging.info("Unknown filename %s, ignoring", filename)
             # We want to ignore these instead of erroring because Pub/Sub will retry the request if it
             # doesn't return a successful status code, and this is a permanent failure instead of a
@@ -684,7 +684,7 @@ def get_auth_endpoint_blueprint(
             self.state_code = state_code
 
         def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
-            df.columns = INGESTED_PRODUCT_USERS_VIEW_BUILDER.columns
+            df.columns = INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns
             # df.to_dict exports missing values as 'nan', so export to json instead
             rows = json.loads(df.to_json(orient="records"))
             _upsert_user_rows(self.session, self.state_code, rows, Roster)
@@ -719,7 +719,7 @@ def get_auth_endpoint_blueprint(
                         project_id=metadata.project_id(),
                     ),
                     state_code,
-                    f"{INGESTED_PRODUCT_USERS_VIEW_BUILDER.view_id}.csv",
+                    f"{INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.view_id}.csv",
                 )
             )
             database_key = SQLAlchemyDatabaseKey.for_schema(

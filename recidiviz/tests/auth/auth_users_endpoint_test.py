@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -161,7 +161,7 @@ class AuthUsersEndpointTestCase(TestCase):
         self.fs_patcher.start()
         self.ingested_users_bucket = "test-project-product-user-import"
         self.ingested_users_gcs_csv_uri = GcsfsFilePath.from_absolute_path(
-            f"{self.ingested_users_bucket}/US_XX/ingested_product_users.csv"
+            f"{self.ingested_users_bucket}/US_XX/ingested_supervision_product_users.csv"
         )
 
         self.active_date1 = "2024-04-30T14:45:09.865Z"
@@ -1621,7 +1621,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 self.ingested_users_gcs_csv_uri,
                 contents_handle=LocalFileContentsHandle(
                     local_file_path=os.path.join(
-                        _FIXTURE_PATH, "us_xx_ingested_users.csv"
+                        _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
                     ),
                     cleanup_file=False,
                 ),

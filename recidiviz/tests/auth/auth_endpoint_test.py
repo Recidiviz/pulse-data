@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -137,7 +137,7 @@ class AuthEndpointTests(TestCase):
         self.bucket = "test-project-dashboard-user-restrictions"
         self.ingested_users_bucket = "test-project-product-user-import"
         self.ingested_users_gcs_csv_uri = GcsfsFilePath.from_absolute_path(
-            f"{self.ingested_users_bucket}/US_XX/ingested_product_users.csv"
+            f"{self.ingested_users_bucket}/US_XX/ingested_supervision_product_users.csv"
         )
         self.fs = FakeGCSFileSystem()
         self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
@@ -809,7 +809,7 @@ class AuthEndpointTests(TestCase):
                     "message": {
                         "attributes": {
                             "bucketId": self.bucket,
-                            "objectId": f"{self.region_code}/ingested_product_users.csv",
+                            "objectId": f"{self.region_code}/ingested_supervision_product_users.csv",
                         },
                     }
                 },
@@ -849,7 +849,7 @@ class AuthEndpointTests(TestCase):
                     "message": {
                         "attributes": {
                             "bucketId": self.bucket,
-                            "objectId": "ingested_product_users.csv",
+                            "objectId": "ingested_supervision_product_users.csv",
                         },
                     }
                 },
@@ -897,7 +897,9 @@ class AuthEndpointTests(TestCase):
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
-                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
+                ),
                 cleanup_file=False,
             ),
             content_type="text/csv",
@@ -945,7 +947,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"CSV US_XX/ingested_supervision_product_users.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
@@ -1017,7 +1019,9 @@ class AuthEndpointTests(TestCase):
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
-                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
+                ),
                 cleanup_file=False,
             ),
             content_type="text/csv",
@@ -1065,7 +1069,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"CSV US_XX/ingested_supervision_product_users.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
@@ -1138,7 +1142,9 @@ class AuthEndpointTests(TestCase):
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
-                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
+                ),
                 cleanup_file=False,
             ),
             content_type="text/csv",
@@ -1179,7 +1185,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"CSV US_XX/ingested_supervision_product_users.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
@@ -1270,7 +1276,9 @@ class AuthEndpointTests(TestCase):
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
-                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
+                ),
                 cleanup_file=False,
             ),
             content_type="text/csv",
@@ -1319,7 +1327,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"CSV US_XX/ingested_supervision_product_users.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
@@ -1409,7 +1417,9 @@ class AuthEndpointTests(TestCase):
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
-                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
+                ),
                 cleanup_file=False,
             ),
             content_type="text/csv",
@@ -1463,7 +1473,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"CSV US_XX/ingested_supervision_product_users.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
@@ -1551,7 +1561,9 @@ class AuthEndpointTests(TestCase):
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
-                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                local_file_path=os.path.join(
+                    _FIXTURE_PATH, "us_xx_ingested_supervision_product_users.csv"
+                ),
                 cleanup_file=False,
             ),
             content_type="text/csv",
@@ -1603,7 +1615,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"CSV US_XX/ingested_supervision_product_users.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )

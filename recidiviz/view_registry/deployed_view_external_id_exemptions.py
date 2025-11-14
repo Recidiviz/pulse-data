@@ -58,8 +58,8 @@ from recidiviz.calculator.query.state.views.reentry.client import (
 from recidiviz.calculator.query.state.views.reentry.supervision_officer import (
     REENTRY_SUPERVISION_OFFICER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
-    INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.reference.ingested_supervision_product_users import (
+    INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.product_roster import (
     PRODUCT_ROSTER_VIEW_BUILDER,
@@ -180,7 +180,7 @@ _KNOWN_VIEWS_WITH_UNQUALIFIED_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, str] = {
         "Looker (will be migrated to staff_external_id)"
     ),
     # reference_views views
-    INGESTED_PRODUCT_USERS_VIEW_BUILDER.address: (
+    INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.address: (
         "TODO(#45176): Remove external_id column once a new, "
         "more specifically named column is introduced and referenced downstream. As of "
         "7/17/25, this view is exported via the PRODUCT_USER_IMPORT metric export."

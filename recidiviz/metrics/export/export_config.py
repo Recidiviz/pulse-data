@@ -56,8 +56,8 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
 from recidiviz.calculator.query.state.views.reentry.reentry_views import (
     REENTRY_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
-    INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.reference.ingested_supervision_product_users import (
+    INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
@@ -378,7 +378,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Product users
     ExportViewCollectionConfig(
-        view_builders_to_export=[INGESTED_PRODUCT_USERS_VIEW_BUILDER],
+        view_builders_to_export=[INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER],
         output_directory_uri_template=PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
         export_name="PRODUCT_USER_IMPORT",
         export_output_formats_and_validations={
