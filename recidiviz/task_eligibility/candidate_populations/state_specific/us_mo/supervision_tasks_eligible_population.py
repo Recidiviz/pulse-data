@@ -30,6 +30,7 @@ _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_POPULATION"
 # TODO(#50537): Update/refine candidate population to ensure it's correct.
 # TODO(#50537): Add SMI cases to candidate population once we have contact standards for
 # those clients we can add in.
+# TODO(#50537): Exclude clients residing in Community Supervision Centers (CSCs).
 _QUERY_TEMPLATE = """
 SELECT
     state_code,
@@ -43,15 +44,10 @@ WHERE state_code = 'US_MO'
     -- we only support Tasks for clients at these levels
     AND correctional_level IN ('MEDIUM', 'HIGH', 'MAXIMUM')
     AND case_type IN ('GENERAL', 'DOMESTIC_VIOLENCE', 'SEX_OFFENSE')
-    /* Exclude clients in Community Supervision Centers (CSCs) and Transition Centers
-    (TCs). */
-    /* TODO(#50537): Should we do the CSC & TC exclusions via `location_metadata` at
-    some point, if we can add the necessary info to the metadata there? */
-    /* TODO(#50537): Are there any other locations to exclude, or did we capture all of
-    them here? */
+    -- exclude clients in Transition Centers (TCs)
+    /* TODO(#50537): Should we do the TC exclusions via `location_metadata` at some
+    point, if we can add the necessary info to the metadata there? */
     AND supervision_office NOT IN (
-        -- CSCs
-        '01', '03', '12', '23', '25', '26',
         -- TCs
         'TCKC', 'TCSTL'
     )
