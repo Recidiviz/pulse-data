@@ -125,6 +125,52 @@ class TestProcessUsNeDatabaseExport(unittest.TestCase):
         self.assertEqual(successful_exports, export_tasks)
         self.assertEqual(failed_exports, [])
 
+    def test_process_database_export_retry_on_open_connection_error(self) -> None:
+        mock_exporter = MagicMock(spec=UsNeSqlTableToRawFileExporter)
+        mock_exporter.dry_run = False
+        mock_uploader = MagicMock(spec=UsNeGCSFileUploader)
+
+        export_tasks = [
+            UsNeSqltoGCSExportTask.for_qualified_table_name(
+                qualified_table_name="DCS_WEB.table_1",
+                update_datetime=datetime.datetime(2023, 1, 1),
+                region_raw_file_config=DirectIngestRegionRawFileConfig(
+                    StateCode.US_NE.value
+                ),
+            )
+        ]
+
+        open_call_count = 0
+
+        def side_effect_open_connection() -> None:
+            nonlocal open_call_count
+            open_call_count += 1
+            if open_call_count == 1:
+                raise pymssql.OperationalError("Connection refused: could not open")
+
+        mock_exporter.open_connection = MagicMock(
+            side_effect=side_effect_open_connection
+        )
+        mock_exporter.export_data_to_csv.return_value = export_tasks[0].file_name
+
+        with patch("time.sleep") as _mock_sleep:
+            successful_exports, failed_exports = process_us_ne_database_export(
+                export_tasks, mock_exporter, mock_uploader
+            )
+
+        self.assertEqual(len(successful_exports), 1)
+        self.assertEqual(successful_exports[0], export_tasks[0])
+        self.assertEqual(len(failed_exports), 0)
+
+        # Verify open_connection was retried
+        self.assertEqual(mock_exporter.open_connection.call_count, 2)
+
+        mock_exporter.begin_transaction.assert_called_once()
+        mock_exporter.export_data_to_csv.assert_called_once_with(export_tasks[0])
+        mock_uploader.upload_csv_raw_file.assert_called_once()
+        mock_exporter.commit_transaction.assert_called_once()
+        mock_exporter.close_connection.assert_called_once()
+
 
 class TestUsNeSqlServerConnectionManager(unittest.TestCase):
     """Tests for the UsNeSqlServerConnectionManager."""

@@ -37,7 +37,6 @@ import argparse
 import datetime
 import logging
 import os
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
@@ -46,6 +45,13 @@ from typing import Any, Iterator
 import attr
 import pymssql
 from sshtunnel import SSHTunnelForwarder
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -74,7 +80,7 @@ US_NE_RAW_FILES_BUCKET = "recidiviz-ingest-us-ne-raw-files"
 US_NE_INGEST_PROJECT_ID = "recidiviz-ingest-us-ne"
 
 MAX_ROWS_PER_CURSOR_FETCH = 1000
-MAX_RETRIES = 3
+
 
 EXPORT_QUERY = "SELECT {columns} FROM {table_name}"
 BEGIN_TRANSACTION_QUERY = "BEGIN TRANSACTION"
@@ -294,29 +300,28 @@ class UsNeSqlTableToRawFileExporter:
                     for row in rows:
                         write_csv_row(row)
 
-        retries = 0
-        while retries < MAX_RETRIES:
-            try:
-                write_csv_file()
-                break
-            except pymssql.OperationalError as e:
-                logging.error("OperationalError on attempt %d: %s", retries + 1, e)
-                retries += 1
+        @retry(
+            retry=retry_if_exception_type(pymssql.OperationalError),
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=2, min=2, max=8),
+            before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
+            reraise=True,
+        )
+        def write_csv_file_with_retry() -> None:
+            """Write CSV file with automatic retry and cleanup on transient errors."""
+            # Clear the file if it exists (will be recreated below)
+            if os.path.exists(output_path):
+                try:
+                    os.remove(output_path)
+                except OSError as remove_error:
+                    logging.warning(
+                        "Failed to remove partial file %s: %s",
+                        output_path,
+                        remove_error,
+                    )
+            write_csv_file()
 
-                if retries >= MAX_RETRIES:
-                    raise
-
-                # Clear the file if it exists (will be recreated on next attempt)
-                if os.path.exists(output_path):
-                    try:
-                        os.remove(output_path)
-                    except OSError as remove_error:
-                        logging.warning(
-                            "Failed to remove partial file %s: %s",
-                            output_path,
-                            remove_error,
-                        )
-                time.sleep(2**retries)
+        write_csv_file_with_retry()
 
         return str(output_path)
 
@@ -350,13 +355,25 @@ class UsNeGCSFileUploader:
 @contextmanager
 def exporter_connection(exporter: UsNeSqlTableToRawFileExporter) -> Iterator[None]:
     """Manage the connection to the database for the exporter in order to ensure
-    that the connection is opened and closed properly.
+    that the connection is opened and closed properly. Includes retry logic for
+    transient connection failures.
     """
     if exporter.dry_run:
         yield
         return
 
-    exporter.open_connection()
+    @retry(
+        retry=retry_if_exception_type(pymssql.OperationalError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=2, min=2, max=8),
+        before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
+        reraise=True,
+    )
+    def open_connection_with_retry() -> None:
+        exporter.open_connection()
+
+    open_connection_with_retry()
+
     try:
         yield
     finally:
