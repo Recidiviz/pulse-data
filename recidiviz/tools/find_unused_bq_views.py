@@ -84,6 +84,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.ingested_incarceration_product_users import (
+    INGESTED_INCARCERATION_PRODUCT_USERS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.most_severe_sentence_and_charge_spans import (
     MOST_SEVERE_SENTENCE_AND_CHARGE_SPANS_VIEW_BUILDER,
 )
@@ -460,6 +463,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
         "TODO(#50601) This view will be used in product/validation views (Samantha Norcia, 11/10/2025)"
+    ),
+    INGESTED_INCARCERATION_PRODUCT_USERS_VIEW_BUILDER.address: (
+        "Will be used in auth_endpoint to support the facilities roster sync - see #51776 (Jen Overgaag, 11/4/2025)"
     ),
 }
 
