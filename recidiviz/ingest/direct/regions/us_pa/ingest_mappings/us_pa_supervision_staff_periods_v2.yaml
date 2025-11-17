@@ -170,6 +170,7 @@ output:
                         - "Records Specialist 2"
                         - "Non-Commonwealth Traveler/Board Member"
                         - "Corrections Officer 4"
+                        - "Dir Bur Ctrl Srvs Corr"
                 role_subtype:
                   $enum_mapping:
                     $raw_text: role_description
@@ -283,6 +284,7 @@ output:
                         - "Records Specialist 2"
                         - "Non-Commonwealth Traveler/Board Member"
                         - "Corrections Officer 4"
+                        - "Dir Bur Ctrl Srvs Corr"
                       StateStaffRoleSubtype.SUPERVISION_OFFICER:
                         - "Parole Agent 1"
                         - "Parole Agent 2"
