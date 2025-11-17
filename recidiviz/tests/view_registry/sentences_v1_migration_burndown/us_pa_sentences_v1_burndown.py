@@ -86,6 +86,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
+    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateCharge
 from recidiviz.pipelines.ingest.dataset_config import (
@@ -111,7 +114,7 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 # TODO(#50859): migrate these usages to sentence_sessions
@@ -153,7 +156,7 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
@@ -182,7 +185,7 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
@@ -268,7 +271,7 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         # TODO(#50859): migrate these usages to sentence_sessions

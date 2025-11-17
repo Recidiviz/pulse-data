@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record im
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     RESIDENT_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
+    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+)
 
 # For each US_MA metric export, for each product view in that export, a mapping of
 #   deprecated v1 sentences views that are a) referenced directly without going through
@@ -45,7 +48,7 @@ US_MA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },

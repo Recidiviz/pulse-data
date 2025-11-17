@@ -47,6 +47,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.resident_record 
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_discharge_early_from_supervision_request_record import (
     US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
+    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.general.serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state import (
     VIEW_BUILDER as SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER,
 )
@@ -64,7 +67,7 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,
@@ -84,7 +87,7 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
@@ -98,7 +101,7 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },
@@ -110,7 +113,7 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: {

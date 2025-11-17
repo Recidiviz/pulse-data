@@ -41,6 +41,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ar_institutio
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ar_work_release_record import (
     US_AR_WORK_RELEASE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
+    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_BUILDER,
 )
@@ -84,7 +87,7 @@ US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_VIEW_BUILDER.address,
+                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,

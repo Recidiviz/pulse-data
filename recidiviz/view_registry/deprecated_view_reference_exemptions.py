@@ -121,9 +121,6 @@ from recidiviz.calculator.query.state.views.shared_metric.supervision_terminatio
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -163,8 +160,17 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
+    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_me.resident_record_incarceration_cases_with_dates import (
+    US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_tn.resident_record_incarceration_cases_with_dates import (
+    US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -367,7 +373,7 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
         ),
     },
     (StateCode.US_ME, StateIncarcerationSentence): {
-        RESIDENT_RECORD_VIEW_BUILDER.address: (
+        US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
             "TODO(#46256): Remove state_incarceration_sentence reference as "
             "part of the v2 sentences migration"
         ),
@@ -931,7 +937,11 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
     # TODO(#33402): Delete `incarceration_projected_completion_date_spans` once all
     # states are migrated to v2 infra
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-        RESIDENT_RECORD_VIEW_BUILDER.address: (
+        RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
