@@ -1056,6 +1056,37 @@
     width: 24
     height: 6
 
+  - name: LBAKRDTA_TAK077
+    title: LBAKRDTA_TAK077
+    explore: us_mo_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mo_LBAKRDTA_TAK077.primary_key,
+      us_mo_LBAKRDTA_TAK077.DA_DOC,
+      us_mo_LBAKRDTA_TAK077.DA_CYC,
+      us_mo_LBAKRDTA_TAK077.DA_VAR,
+      us_mo_LBAKRDTA_TAK077.DA_OFF,
+      us_mo_LBAKRDTA_TAK077.DA_SEO,
+      us_mo_LBAKRDTA_TAK077.DA_DCR,
+      us_mo_LBAKRDTA_TAK077.DA_TCR,
+      us_mo_LBAKRDTA_TAK077.DA_DLU,
+      us_mo_LBAKRDTA_TAK077.DA_TLU,
+      us_mo_LBAKRDTA_TAK077.file_id,
+      us_mo_LBAKRDTA_TAK077.is_deleted]
+    sorts: [us_mo_LBAKRDTA_TAK077.DA_DOC, us_mo_LBAKRDTA_TAK077.DA_CYC, us_mo_LBAKRDTA_TAK077.DA_VAR, us_mo_LBAKRDTA_TAK077.DA_OFF, us_mo_LBAKRDTA_TAK077.DA_SEO]
+    note_display: hover
+    note_text: "Officials Xref. Column prefix: DA."
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 132
+    col: 0
+    width: 24
+    height: 6
+
   - name: LBAKRDTA_TAK142
     title: LBAKRDTA_TAK142
     explore: us_mo_raw_data
@@ -1086,7 +1117,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1139,7 +1170,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1179,7 +1210,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1224,7 +1255,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 150
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1259,7 +1290,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1292,7 +1323,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1327,7 +1358,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1356,7 +1387,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 174
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1394,7 +1425,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 180
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1433,7 +1464,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 186
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1465,7 +1496,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 192
+    row: 198
     col: 0
     width: 24
     height: 6
