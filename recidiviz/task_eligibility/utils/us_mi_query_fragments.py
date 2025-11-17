@@ -21,10 +21,12 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
-    today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     TaskEligibilitySpansSubsetType,
     array_agg_case_notes_by_person_id,
@@ -43,40 +45,6 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
 from recidiviz.utils.string_formatting import fix_indent
-
-
-# TODO(#51104) Sub in state-agnostic v2 incarceration_projected_completion_date_spans as the source
-# of this query once that's created
-def incarceration_sentence_release_dates() -> str:
-    return f"""
-        WITH sentence_dates AS (
-            SELECT
-                person_id,
-                MAX(s.sentence_projected_full_term_release_date_min) AS earliest_release_date,
-                MAX(s.sentence_projected_full_term_release_date_max) AS maximum_release_date,
-                LOGICAL_OR(sc.is_life) AS is_life,
-            FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` p, 
-            UNNEST(sentence_array) AS s 
-            LEFT JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sc
-            USING(state_code, person_id, sentence_id)
-            WHERE state_code = "US_MI"
-                -- Only pull active/serving sentences
-                AND {today_between_start_date_and_nullable_end_date_exclusive_clause(
-                        start_date_column="p.start_date",
-                        end_date_column="p.end_date_exclusive"
-                    )}
-                -- Only pull prison sentences for calculating life sentence
-                AND sentence_type = 'STATE_PRISON'
-            GROUP BY
-                1
-        )
-        SELECT
-            person_id,
-            earliest_release_date,
-            maximum_release_date,
-            is_life,
-        FROM sentence_dates
-    """
 
 
 def generate_sccp_form_opportunity_record_view_builder(
@@ -116,9 +84,6 @@ def generate_sccp_form_opportunity_record_view_builder(
     query_template = f"""
 WITH eligible_and_almost_eligible AS (
 {fix_indent(filtered_tes_query, indent_level=4)}
-),
-release_dates AS (
-    {incarceration_sentence_release_dates()}
 ),
 bondable_codes AS (
 /* Queries all bondable codes for misconduct reports in the last 6 months */
@@ -391,8 +356,8 @@ SELECT
     INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.given_names'))
             || " " 
             || INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.surname')) AS form_information_prisoner_name,
-    DATE(maximum_release_date) AS form_information_max_release_date,
-    DATE(earliest_release_date) AS form_information_min_release_date,
+    DATE(sgt.person_projected_full_term_release_date_max) AS form_information_max_release_date,
+    DATE(sgt.person_projected_full_term_release_date_min) AS form_information_min_release_date,
     si.facility AS form_information_facility,
     si.housing_unit AS form_information_lock,
     (COALESCE(SMI.MMD, "No") = "Yes") AS form_information_OPT,
@@ -407,9 +372,9 @@ SELECT
     pf.form_ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
     --metadata 
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
-    DATE(maximum_release_date) AS metadata_max_release_date,
-    DATE(earliest_release_date) AS metadata_min_release_date,
-    DATE_DIFF(DATE(earliest_release_date), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
+    DATE(sgt.person_projected_full_term_release_date_max) AS metadata_max_release_date,
+    DATE(sgt.person_projected_full_term_release_date_min) AS metadata_min_release_date,
+    DATE_DIFF(DATE(sgt.person_projected_full_term_release_date_min), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), h.start_date, DAY) AS metadata_days_in_solitary_session,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), hc.start_date, DAY) AS metadata_days_in_collapsed_solitary_session,
     h.start_date AS metadata_solitary_session_start_date,
@@ -460,8 +425,8 @@ LEFT JOIN (
     WHERE CURRENT_DATE('US/Eastern') BETWEEN admission_date AND {nonnull_end_date_clause('release_date')}
 ) si
 USING (state_code, person_id)
-LEFT JOIN release_dates sgt
-    USING (person_id)
+LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.current_person_prison_projected_dates_materialized` sgt
+    USING (state_code, person_id)
 LEFT JOIN form_misconduct_codes m
     USING (person_id)
 LEFT JOIN recent_misconduct_codes rm
@@ -502,6 +467,7 @@ LEFT JOIN array_case_notes_cte a
         view_query_template=query_template,
         description=description,
         sessions_dataset=SESSIONS_DATASET,
+        sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
         ),

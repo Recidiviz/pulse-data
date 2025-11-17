@@ -290,6 +290,7 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "sentence_id_to_consecutive_sentence_id",
             "sentence_imposed_group_summary",
             "most_severe_sentence_and_charge_spans",
+            "current_person_prison_projected_dates",
         ]
     },
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (

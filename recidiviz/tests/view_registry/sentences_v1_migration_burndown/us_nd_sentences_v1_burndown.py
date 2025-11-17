@@ -101,8 +101,8 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_to_minimum_facility_form_record import (
     US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
-    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
+    US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
@@ -151,7 +151,7 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
@@ -182,7 +182,7 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
@@ -213,7 +213,7 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
                 INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 INCARCERATION_PAST_HALF_FULL_TERM_RELEASE_DATE_VIEW_BUILDER.address,
@@ -314,7 +314,7 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER.address: {

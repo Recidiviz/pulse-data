@@ -50,9 +50,6 @@ from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervi
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -77,17 +74,11 @@ from recidiviz.calculator.query.state.views.shared_metric.supervision_terminatio
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
-    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateCharge
@@ -112,9 +103,6 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 # TODO(#50859): migrate these usages to sentence_sessions
@@ -155,9 +143,6 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
                 table_id=StateCharge.get_table_id(),
@@ -183,9 +168,6 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
@@ -267,11 +249,6 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        RESIDENT_RECORD_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         # TODO(#50859): migrate these usages to sentence_sessions

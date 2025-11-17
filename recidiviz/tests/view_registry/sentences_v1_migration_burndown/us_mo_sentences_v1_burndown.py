@@ -23,9 +23,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liber
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -34,12 +31,6 @@ from recidiviz.calculator.query.state.views.sessions.supervision_projected_compl
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
-    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 
 # For each US_MO metric export, for each product view in that export, a mapping of
@@ -63,11 +54,6 @@ US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        RESIDENT_RECORD_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },

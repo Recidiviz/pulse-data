@@ -17,9 +17,6 @@
 """US_ME exemptions for deprecated sentence v1 view references in product views."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
     SENTENCE_SPANS_VIEW_BUILDER,
 )
@@ -40,9 +37,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_e
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
     US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
-    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_me.resident_record_incarceration_cases_with_dates import (
     US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
@@ -74,9 +68,6 @@ US_ME_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
                 table_id=StateIncarcerationSentence.get_table_id(),

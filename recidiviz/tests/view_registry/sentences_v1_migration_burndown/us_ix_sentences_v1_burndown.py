@@ -104,8 +104,8 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_xcrc_request_record import (
     US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
-    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.workflows.us_ix.resident_record_incarceration_cases_with_dates import (
+    US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateCharge
@@ -129,7 +129,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
@@ -171,7 +171,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
@@ -205,7 +205,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
             US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
@@ -291,7 +291,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: {

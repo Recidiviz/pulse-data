@@ -26,20 +26,11 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.resident_record_incarceration_cases_with_dates import (
-    RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 
 # For each US_CA metric export, for each product view in that export, a mapping of
@@ -54,24 +45,15 @@ US_CA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },
@@ -79,11 +61,6 @@ US_CA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        RESIDENT_RECORD_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },
