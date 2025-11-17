@@ -59,7 +59,9 @@ output:
             $enum_mapping:
               $raw_text: race
               $mappings:
-                StateRace.ASIAN: "ASIAN OR PACIFIC ISLANDER"
+                StateRace.ASIAN:
+                  - "ASIAN OR PACIFIC ISLANDER"
+                  - "ASIAN/PACIFIC ISLANDER"
                 StateRace.BLACK: "BLACK"
                 StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
                   - "AMERICAN INDIAN OR ALASKAN"
@@ -81,6 +83,7 @@ output:
                   - "BLACK"
                   - "AMERICAN INDIAN OR ALASKAN"
                   - "WHITE"
+                  - "ASIAN/PACIFIC ISLANDER"
                   - "OTHER"
                   - "AMERICAN INDIAN/ALASKAN"
                 StateEthnicity.EXTERNAL_UNKNOWN: "UNKNOWN"
