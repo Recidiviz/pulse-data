@@ -165,7 +165,8 @@ def _unique_constraint_check(
 
 
 def _sentence_group_checks(
-    state_person: state_entities.StatePerson,
+    state_person: state_entities.StatePerson
+    | normalized_entities.NormalizedStatePerson,
 ) -> Iterable[Error]:
     """Yields errors related to StateSentenceGroup and StateSentenceGroupLength:
     - If this person has StateSentenceGroup entities, then the external ID must be associated with a sentence.
@@ -175,6 +176,12 @@ def _sentence_group_checks(
         if sentence.sentence_group_external_id:
             sentences_by_group[sentence.sentence_group_external_id].append(sentence)
 
+    sentence_group_type = (
+        normalized_entities.NormalizedStateSentenceGroup
+        if isinstance(state_person, normalized_entities.NormalizedStatePerson)
+        else state_entities.StateSentenceGroup
+    )
+
     # All StateSentenceGroup.external_id values should match against
     # a StateSentence.sentence_group_external_id value
     # If you get this error and StateSentenceGroup is not hydrated,
@@ -183,14 +190,14 @@ def _sentence_group_checks(
     ids_from_groups = {sg.external_id for sg in state_person.sentence_groups}
     for sgid in set(sentences_by_group.keys()).difference(ids_from_groups):
         sentence_ext_ids = [s.external_id for s in sentences_by_group[sgid]]
-        yield f"Found {sentence_ext_ids=} referencing non-existent StateSentenceGroup {sgid}."
+        yield f"Found {sentence_ext_ids=} referencing non-existent {sentence_group_type.__name__} {sgid}."
 
     # Every StateSentenceGroup should have at least one associated StateSentence
     # If all sentences do not have parole possible, then all group level projected parole dates should be None
     for sg in state_person.sentence_groups:
         sentences = sentences_by_group.get(sg.external_id)
         if not sentences:
-            yield f"Found StateSentenceGroup {sg.external_id} without an associated sentence."
+            yield f"Found {sentence_group_type.__name__} {sg.external_id} without an associated sentence."
         elif {s.parole_possible for s in sentences} == {False}:
             for length in sg.sentence_group_lengths:
                 if length.parole_eligibility_date_external is not None:
@@ -207,17 +214,28 @@ def _sentence_group_checks(
 
 
 def _check_sentence_status_snapshots(
-    state_person: state_entities.StatePerson,
-    sentence: state_entities.StateSentence,
+    state_person: state_entities.StatePerson
+    | normalized_entities.NormalizedStatePerson,
+    sentence: state_entities.StateSentence
+    | normalized_entities.NormalizedStateSentence,
 ) -> Iterable[Error]:
     """
     Yields errors if StateSentenceStatusSnapshots:
       - do not conform to the LedgerEntityMixin protocol
       - are REVOKED on StateSentenceType that can't be revoked.
     """
+    snapshot_class: Type[state_entities.StateSentenceStatusSnapshot] | Type[
+        normalized_entities.NormalizedStateSentenceStatusSnapshot
+    ]
+    if isinstance(sentence, state_entities.StateSentence):
+        snapshot_class = state_entities.StateSentenceStatusSnapshot
+    elif isinstance(sentence, normalized_entities.NormalizedStateSentence):
+        snapshot_class = normalized_entities.NormalizedStateSentenceStatusSnapshot
+    else:
+        raise TypeError("sentence was not StateSentence or NormalizedStateSentence")
     if err := ledger_entity_checks(
         state_person,
-        state_entities.StateSentenceStatusSnapshot,
+        snapshot_class,
         sentence.sentence_status_snapshots,
     ):
         yield err
@@ -234,18 +252,27 @@ def _check_sentence_status_snapshots(
 
 
 def _check_sentence_lengths(
-    state_person: state_entities.StatePerson,
-    sentence: state_entities.StateSentence,
+    state_person: state_entities.StatePerson
+    | normalized_entities.NormalizedStatePerson,
+    sentence: state_entities.StateSentence
+    | normalized_entities.NormalizedStateSentence,
 ) -> Iterable[Error]:
     """
     Yields errors if StateSentenceLength entities:
       - do not conform to the LedgerEntityMixin protocol
       - have parole projected dates on a sentence without possible parole
     """
+    length_class: Type[state_entities.StateSentenceLength] | Type[
+        normalized_entities.NormalizedStateSentenceLength
+    ]
+    if isinstance(sentence, state_entities.StateSentence):
+        length_class = state_entities.StateSentenceLength
+    elif isinstance(sentence, normalized_entities.NormalizedStateSentence):
+        length_class = normalized_entities.NormalizedStateSentenceLength
+    else:
+        raise TypeError("sentence was not StateSentence or NormalizedStateSentence")
     if err := ledger_entity_checks(
-        state_person,
-        state_entities.StateSentenceLength,
-        sentence.sentence_lengths,
+        state_person, length_class, sentence.sentence_lengths
     ):
         yield err
     if sentence.parole_possible is False and any(
@@ -260,7 +287,8 @@ def _check_sentence_lengths(
 
 
 def _sentencing_entities_checks(
-    state_person: state_entities.StatePerson,
+    state_person: state_entities.StatePerson
+    | normalized_entities.NormalizedStatePerson,
 ) -> Iterable[Error]:
     """Yields errors for entities related to the sentencing schema, namely:
     - If a StateSentence does not have a sentence_type or imposed_date (from partially hydrated entities).
@@ -596,7 +624,6 @@ def _get_state_person_specific_errors(
 ) -> List[str]:
     """Yields errors for entities related to StatePerson objects."""
     error_messages: list[str] = []
-    error_messages.extend(_sentencing_entities_checks(root_entity))
 
     if root_entity.state_code not in STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS:
         error_messages.extend(_person_address_period_checks(root_entity))
@@ -671,8 +698,7 @@ def _get_normalized_state_person_specific_errors(
     error_messages.extend(
         _normalized_person_staff_relationship_period_checks(root_entity)
     )
-
-    # TODO(#26136): Add validation logic for normalized sentence entities here
+    error_messages.extend(_sentencing_entities_checks(root_entity))
     return error_messages
 
 

@@ -46,7 +46,13 @@ from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    set_backedges,
+)
 from recidiviz.persistence.entity.state import entities as entities_schema
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -60,7 +66,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePersonExternalId,
     NormalizedStatePersonStaffRelationshipPeriod,
 )
-from recidiviz.pipelines.ingest.state.validator import validate_root_entity
+from recidiviz.pipelines.ingest.state.validator import Error, validate_root_entity
 from recidiviz.utils.types import assert_type
 
 
@@ -637,17 +643,31 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
 
     def setUp(self) -> None:
         self.state_code = "US_XX"
-        self.state_person = state_entities.StatePerson(
+        self.state_person = normalized_entities.NormalizedStatePerson(
             state_code=self.state_code,
             person_id=1,
             external_ids=[
-                StatePersonExternalId(
+                NormalizedStatePersonExternalId(
                     external_id="1",
+                    person_external_id_id=1,
                     state_code="US_XX",
                     id_type="US_XX_TEST_PERSON",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                    id_active_from_datetime=None,
+                    id_active_to_datetime=None,
                 ),
             ],
         )
+
+    def set_backedges_and_run_validations(
+        self, person: normalized_entities.NormalizedStatePerson
+    ) -> list[Error]:
+        context = entities_module_context_for_module(normalized_entities)
+        person = assert_type(
+            set_backedges(person, context), normalized_entities.NormalizedStatePerson
+        )
+        return validate_root_entity(self.state_person)
 
     def test_consecutive_sentences_check(
         self,
@@ -656,7 +676,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         If a sentence has parent_sentence_external_id_array,
         then those sentences should exist for the StatePerson.
         """
-        child_sentence = state_entities.StateSentence(
+        child_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="CHILD",
             person=self.state_person,
@@ -665,48 +685,52 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=42,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             parent_sentence_external_id_array=None,
+            sentence_id=1,
+            sentence_inferred_group_id=1,
+            sentence_imposed_group_id=1,
         )
 
         # No parents, valid
         self.state_person.sentences = [child_sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
         # One parent, invalid
         child_sentence.parent_sentence_external_id_array = "NOT-REAL"
         self.state_person.sentences = [child_sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors,
             [
-                "Found sentence StateSentence(external_id='CHILD', sentence_id=None) with parent sentence external ID NOT-REAL, but no sentence with that external ID exists."
+                "Found sentence NormalizedStateSentence(external_id='CHILD', sentence_id=1) with parent sentence external ID NOT-REAL, but no sentence with that external ID exists."
             ],
         )
 
         # Multiple parents, invalid
         child_sentence.parent_sentence_external_id_array = "NOT-REAL||NOT-HERE"
         self.state_person.sentences = [child_sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors,
             [
                 # 1st error
-                "Found sentence StateSentence(external_id='CHILD', sentence_id=None) with parent sentence external ID NOT-REAL, "
+                "Found sentence NormalizedStateSentence(external_id='CHILD', sentence_id=1) with parent sentence external ID NOT-REAL, "
                 "but no sentence with that external ID exists.",
                 # 2nd error
-                "Found sentence StateSentence(external_id='CHILD', sentence_id=None) with parent sentence external ID NOT-HERE, "
+                "Found sentence NormalizedStateSentence(external_id='CHILD', sentence_id=1) with parent sentence external ID NOT-HERE, "
                 "but no sentence with that external ID exists.",
             ],
         )
 
-        parent_sentence = state_entities.StateSentence(
+        parent_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="PARENT",
             person=self.state_person,
@@ -715,26 +739,30 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=201,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             parent_sentence_external_id_array=None,
+            sentence_id=101,
+            sentence_inferred_group_id=1,
+            sentence_imposed_group_id=1,
         )
         child_sentence.parent_sentence_external_id_array = parent_sentence.external_id
         parent_sentence.parent_sentence_external_id_array = child_sentence.external_id
         self.state_person.sentences = [child_sentence, parent_sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors,
             [
-                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: PARENT -> as child of -> CHILD; CHILD -> as child of -> PARENT. Did you intend to hydrate these a concurrent sentences?"
+                "NormalizedStatePerson(person_id=1, external_ids=[NormalizedStatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=1)]) has an invalid set of consecutive sentences that form a cycle: PARENT -> as child of -> CHILD; CHILD -> as child of -> PARENT. Did you intend to hydrate these a concurrent sentences?"
             ],
         )
 
-        grand_parent_sentence = state_entities.StateSentence(
+        grand_parent_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="GRAND_PARENT",
             person=self.state_person,
@@ -743,13 +771,17 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=202,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             parent_sentence_external_id_array=None,
+            sentence_id=102,
+            sentence_inferred_group_id=1,
+            sentence_imposed_group_id=1,
         )
 
         # A sentence can still have two children
@@ -764,7 +796,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             parent_sentence,
             grand_parent_sentence,
         ]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
         # Multi-level tree also works (child -> parent -> grandparent)
@@ -777,7 +809,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             parent_sentence,
             grand_parent_sentence,
         ]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
         # A cycle from the top breaks though
@@ -791,11 +823,11 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         ]
         assert child_sentence.parent_sentence_external_id_array == "PARENT"
         assert parent_sentence.parent_sentence_external_id_array == "GRAND_PARENT"
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors,
             [
-                "StatePerson(person_id=1, external_ids=[StatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) has an invalid set of consecutive sentences that form a cycle: GRAND_PARENT -> as child of -> CHILD; PARENT -> as child of -> GRAND_PARENT; CHILD -> as child of -> PARENT. Did you intend to hydrate these a concurrent sentences?",
+                "NormalizedStatePerson(person_id=1, external_ids=[NormalizedStatePersonExternalId(external_id='1', id_type='US_XX_TEST_PERSON', person_external_id_id=1)]) has an invalid set of consecutive sentences that form a cycle: GRAND_PARENT -> as child of -> CHILD; PARENT -> as child of -> GRAND_PARENT; CHILD -> as child of -> PARENT. Did you intend to hydrate these a concurrent sentences?",
             ],
         )
 
@@ -806,7 +838,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         If a sentence has parole_possible=False, then there should be no parole related
         projected dates on all sentence_length entities.
         """
-        sentence = state_entities.StateSentence(
+        sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             person=self.state_person,
@@ -815,239 +847,284 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=1,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             sentence_lengths=[
-                state_entities.StateSentenceLength(
+                normalized_entities.NormalizedStateSentenceLength(
+                    sentence_length_id=1,
                     state_code=self.state_code,
                     length_update_datetime=datetime(2022, 1, 1),
                     parole_eligibility_date_external=date(2025, 1, 1),
                 ),
             ],
+            sentence_id=1,
+            sentence_inferred_group_id=1,
+            sentence_imposed_group_id=1,
         )
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
         sentence.parole_possible = True
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
         sentence.parole_possible = False
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors[0],
             (
-                "Sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) "
+                "Sentence NormalizedStateSentence(external_id='SENT-EXTERNAL-1', sentence_id=1) "
                 "has parole projected dates, despite denoting that parole is not possible."
             ),
         )
 
     def test_sentences_have_charge_invalid(self) -> None:
         """Tests that sentences post root entity merge all have a sentence_type and imposed_date."""
-        sentence = state_entities.StateSentence(
+        sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
+            sentence_id=1,
+            sentence_inferred_group_id=1,
+            sentence_imposed_group_id=1,
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no CONVICTED charges.",
+            "Found sentence NormalizedStateSentence(external_id='SENT-EXTERNAL-1', sentence_id=1) with no CONVICTED charges.",
             errors[0],
         )
         sentence.charges = [
-            state_entities.StateChargeV2(
+            normalized_entities.NormalizedStateChargeV2(
+                charge_v2_id=200,
                 external_id="CHARGE",
                 state_code=self.state_code,
                 status=StateChargeV2Status.DROPPED,
             ),
-            state_entities.StateChargeV2(
+            normalized_entities.NormalizedStateChargeV2(
+                charge_v2_id=201,
                 external_id="CHARGE",
                 state_code=self.state_code,
                 status=StateChargeV2Status.ACQUITTED,
             ),
-            state_entities.StateChargeV2(
+            normalized_entities.NormalizedStateChargeV2(
+                charge_v2_id=202,
                 external_id="CHARGE",
                 state_code=self.state_code,
                 status=StateChargeV2Status.PENDING,
             ),
         ]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no CONVICTED charges.",
+            "Found sentence NormalizedStateSentence(external_id='SENT-EXTERNAL-1', sentence_id=1) with no CONVICTED charges.",
             errors[0],
         )
 
     def test_sentences_have_sentencing_authority_invalid(self) -> None:
         """Tests that sentences post root entity merge all have a sentencing_authority."""
-        sentence = state_entities.StateSentence(
-            state_code=self.state_code,
-            external_id="SENT-EXTERNAL-1",
-            person=self.state_person,
-            sentence_type=StateSentenceType.PROBATION,
-            imposed_date=date(2022, 1, 1),
-            charges=[
-                state_entities.StateChargeV2(
-                    external_id="CHARGE",
-                    state_code=self.state_code,
-                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
-                )
-            ],
-        )
-        self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person)
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(
-            "Found entity [StateSentence(external_id='SENT-EXTERNAL-1', "
-            "sentence_id=None)] with null [sentencing_authority]. The "
-            "[sentencing_authority] field must be set by the time we reach the "
-            "validations step.",
-            errors[0],
-        )
+        with self.assertRaisesRegex(TypeError, r"'sentencing_authority' must be <enum"):
+            normalized_entities.NormalizedStateSentence(
+                state_code=self.state_code,
+                external_id="SENT-EXTERNAL-1",
+                person=self.state_person,
+                sentence_type=StateSentenceType.PROBATION,
+                imposed_date=date(2022, 1, 1),
+                sentencing_authority=None,  # type: ignore
+                charges=[
+                    normalized_entities.NormalizedStateChargeV2(
+                        charge_v2_id=200,
+                        external_id="CHARGE",
+                        state_code=self.state_code,
+                        status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                    )
+                ],
+                sentence_id=1,
+                sentence_inferred_group_id=1,
+                sentence_imposed_group_id=1,
+            )
 
     def test_sentences_have_type_and_imposed_date_invalid(self) -> None:
-        """Tests that sentences post root entity merge all have a sentence_type and imposed_date."""
-        sentence = state_entities.StateSentence(
+        """Tests that sentences post root entity merge all have a sentence_type and in state sentences have an imposed_date."""
+        with self.assertRaisesRegex(TypeError, r"'sentence_type' must be <enum"):
+            normalized_entities.NormalizedStateSentence(
+                state_code=self.state_code,
+                external_id="SENT-EXTERNAL-1",
+                person=self.state_person,
+                sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+                sentence_type=None,  # type: ignore
+                imposed_date=None,
+                charges=[
+                    normalized_entities.NormalizedStateChargeV2(
+                        charge_v2_id=200,
+                        external_id="CHARGE",
+                        state_code=self.state_code,
+                        status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                    )
+                ],
+                sentence_id=100,
+                sentence_inferred_group_id=300,
+                sentence_imposed_group_id=400,
+            )
+
+        sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             person=self.state_person,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=200,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=100,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person)
-        self.assertEqual(len(errors), 2)
-        self.assertEqual(
-            errors[0],
-            "Found entity [StateSentence(external_id='SENT-EXTERNAL-1', "
-            "sentence_id=None)] with null [sentence_type]. The [sentence_type] field "
-            "must be set by the time we reach the validations step.",
-        )
-        self.assertEqual(
-            errors[1],
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no imposed_date.",
-        )
+        errors = self.set_backedges_and_run_validations(self.state_person)
+        assert errors == [
+            r"Found sentence NormalizedStateSentence(external_id='SENT-EXTERNAL-1', sentence_id=100) with no imposed_date."
+        ]
 
     def test_revoked_sentence_status_check_valid(self) -> None:
-        probation_sentence = state_entities.StateSentence(
+        probation_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_type=StateSentenceType.PROBATION,
             imposed_date=date(2022, 1, 1),
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=200,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             sentence_status_snapshots=[
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=500,
                     state_code=self.state_code,
                     status=StateSentenceStatus.SERVING,
                     status_update_datetime=datetime(2022, 1, 1),
                 ),
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=501,
                     state_code=self.state_code,
                     status=StateSentenceStatus.REVOKED,
                     status_update_datetime=datetime(2022, 4, 1),
                 ),
             ],
             person=self.state_person,
+            sentence_id=100,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences.append(probation_sentence)
-        parole_sentence = state_entities.StateSentence(
+        parole_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-4",
             sentence_type=StateSentenceType.PAROLE,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2023, 1, 1),
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=201,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             sentence_status_snapshots=[
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=502,
                     state_code=self.state_code,
                     status=StateSentenceStatus.SERVING,
                     status_update_datetime=datetime(2023, 1, 1),
                 ),
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=503,
                     state_code=self.state_code,
                     status=StateSentenceStatus.REVOKED,
                     status_update_datetime=datetime(2023, 4, 1),
                 ),
             ],
             person=self.state_person,
+            sentence_id=101,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences.append(parole_sentence)
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 0)
 
     def test_revoked_sentence_status_check_invalid(self) -> None:
-        state_prison_sentence = state_entities.StateSentence(
+        state_prison_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-2",
             sentence_type=StateSentenceType.STATE_PRISON,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=200,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             sentence_status_snapshots=[
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=500,
                     state_code=self.state_code,
                     status=StateSentenceStatus.SERVING,
                     status_update_datetime=datetime(2022, 1, 1),
                 ),
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=501,
                     state_code=self.state_code,
                     status=StateSentenceStatus.REVOKED,
                     status_update_datetime=datetime(2022, 4, 1),
                 ),
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=502,
                     state_code=self.state_code,
                     status=StateSentenceStatus.COMPLETED,
                     status_update_datetime=datetime(2022, 5, 1),
                 ),
             ],
             person=self.state_person,
+            sentence_id=100,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences.append(state_prison_sentence)
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
             (
-                "Found person StatePerson(person_id=1, "
-                "external_ids=[StatePersonExternalId(external_id='1', "
-                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) with REVOKED "
+                "Found person NormalizedStatePerson(person_id=1, "
+                "external_ids=[NormalizedStatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=1)]) with REVOKED "
                 "status on StateSentenceType.STATE_PRISON sentence. REVOKED statuses are "
                 "only allowed on sentences with one of the following types: "
                 "StateSentenceType.PAROLE, StateSentenceType.PROBATION, "
@@ -1056,27 +1133,30 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
 
     def test_sequence_num_are_unique_for_each_sentence(self) -> None:
-        probation_sentence = state_entities.StateSentence(
+        probation_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_type=StateSentenceType.PROBATION,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=200,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             sentence_status_snapshots=[
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=500,
                     sequence_num=1,
                     state_code=self.state_code,
                     status=StateSentenceStatus.SERVING,
                     status_update_datetime=datetime(2022, 1, 1),
                 ),
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=501,
                     sequence_num=2,
                     state_code=self.state_code,
                     status=StateSentenceStatus.REVOKED,
@@ -1084,29 +1164,35 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
                 ),
             ],
             person=self.state_person,
+            sentence_id=100,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences.append(probation_sentence)
-        incarceration_sentence = state_entities.StateSentence(
+        incarceration_sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-2",
             sentence_type=StateSentenceType.PROBATION,
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=201,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
             sentence_status_snapshots=[
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=502,
                     sequence_num=1,
                     state_code=self.state_code,
                     status=StateSentenceStatus.SERVING,
                     status_update_datetime=datetime(2022, 1, 1),
                 ),
-                state_entities.StateSentenceStatusSnapshot(
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    sentence_status_snapshot_id=503,
                     sequence_num=2,
                     state_code=self.state_code,
                     status=StateSentenceStatus.REVOKED,
@@ -1114,20 +1200,25 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
                 ),
             ],
             person=self.state_person,
+            sentence_id=101,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences.append(incarceration_sentence)
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 0)
 
     def test_sentence_to_sentence_group_reference(self) -> None:
         """Tests that StateSentenceGroup entities have a reference from a sentence."""
         self.state_person.sentence_groups.append(
-            state_entities.StateSentenceGroup(
+            normalized_entities.NormalizedStateSentenceGroup(
+                sentence_group_id=700,
                 state_code=self.state_code,
                 external_id="TEST-SG",
+                sentence_inferred_group_id=1,
             )
         )
-        sentence = state_entities.StateSentence(
+        sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_group_external_id="TEST-SG",
@@ -1136,49 +1227,53 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=200,
                     state_code=self.state_code,
                     external_id="CHARGE-EXTERNAL-1",
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=1,
+            sentence_inferred_group_id=1,
+            sentence_imposed_group_id=1,
         )
         self.state_person.sentences.append(sentence)
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 0)
 
         # Error when there is a SG but no sentence
         self.state_person.sentences = []
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            "Found StateSentenceGroup TEST-SG without an associated sentence.",
+            "Found NormalizedStateSentenceGroup TEST-SG without an associated sentence.",
         )
 
         # Error when there is a sentence but no SG (but at least one SG)
         sentence.sentence_group_external_id = "TEST-SG-2"
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 2)
         self.assertEqual(
             errors[0],
-            "Found sentence_ext_ids=['SENT-EXTERNAL-1'] referencing non-existent StateSentenceGroup TEST-SG-2.",
+            "Found sentence_ext_ids=['SENT-EXTERNAL-1'] referencing non-existent NormalizedStateSentenceGroup TEST-SG-2.",
         )
         self.assertEqual(
             errors[1],
-            "Found StateSentenceGroup TEST-SG without an associated sentence.",
+            "Found NormalizedStateSentenceGroup TEST-SG without an associated sentence.",
         )
 
         # Error when there is a sentence_group_external_id but no sentence group
         self.state_person.sentence_groups = []
         sentence.sentence_group_external_id = "SG-NOT-HYDRATED"
         self.state_person.sentences = [sentence]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            "Found sentence_ext_ids=['SENT-EXTERNAL-1'] referencing non-existent StateSentenceGroup SG-NOT-HYDRATED.",
+            "Found sentence_ext_ids=['SENT-EXTERNAL-1'] referencing non-existent NormalizedStateSentenceGroup SG-NOT-HYDRATED.",
         )
 
     def test_no_parole_possible_means_no_parole_projected_dates_group_level(
@@ -1190,7 +1285,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         sentence_group_length entities.
         """
         # One sentence, parole_possible is None - no Error
-        sentence = state_entities.StateSentence(
+        sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_group_external_id="SG-EXTERNAL-1",
@@ -1200,18 +1295,25 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=200,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=100,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
-        group = state_entities.StateSentenceGroup(
+        group = normalized_entities.NormalizedStateSentenceGroup(
+            sentence_group_id=700,
             state_code=self.state_code,
             external_id="SG-EXTERNAL-1",
+            sentence_inferred_group_id=300,
             sentence_group_lengths=[
-                state_entities.StateSentenceGroupLength(
+                normalized_entities.NormalizedStateSentenceGroupLength(
+                    sentence_group_length_id=800,
                     state_code=self.state_code,
                     group_update_datetime=datetime(2022, 1, 1),
                     parole_eligibility_date_external=date(2025, 1, 1),
@@ -1220,11 +1322,11 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         )
         self.state_person.sentences = [sentence]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
         # One sentence, parole_possible is False - Expected Error
-        sentence = state_entities.StateSentence(
+        sentence = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_group_external_id="SG-EXTERNAL-1",
@@ -1234,26 +1336,30 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=False,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=201,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=101,
+            sentence_inferred_group_id=301,
+            sentence_imposed_group_id=401,
         )
         self.state_person.sentences = [sentence]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors,
             [
-                "StateSentenceGroup(external_id='SG-EXTERNAL-1', sentence_group_id=None) "
+                "NormalizedStateSentenceGroup(external_id='SG-EXTERNAL-1', sentence_group_id=700) "
                 "has parole eligibility date, but none of its sentences allow parole."
             ],
         )
 
         # Mutliple sentences, parole_possible is False - Expected Error
-        sentence_1 = state_entities.StateSentence(
+        sentence_1 = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_group_external_id="SG-EXTERNAL-1",
@@ -1263,14 +1369,18 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=False,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=202,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=102,
+            sentence_inferred_group_id=302,
+            sentence_imposed_group_id=402,
         )
-        sentence_2 = state_entities.StateSentence(
+        sentence_2 = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-2",
             sentence_group_external_id="SG-EXTERNAL-1",
@@ -1280,26 +1390,30 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=False,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=203,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=103,
+            sentence_inferred_group_id=303,
+            sentence_imposed_group_id=403,
         )
         self.state_person.sentences = [sentence_1, sentence_2]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(
             errors,
             [
-                "StateSentenceGroup(external_id='SG-EXTERNAL-1', sentence_group_id=None) "
+                "NormalizedStateSentenceGroup(external_id='SG-EXTERNAL-1', sentence_group_id=700) "
                 "has parole eligibility date, but none of its sentences allow parole."
             ],
         )
 
         # Mutliple sentences, parole_possible is True or None - No Error
-        sentence_1 = state_entities.StateSentence(
+        sentence_1 = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_group_external_id="SG-EXTERNAL-1",
@@ -1309,14 +1423,18 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=204,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=104,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
-        sentence_2 = state_entities.StateSentence(
+        sentence_2 = normalized_entities.NormalizedStateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-2",
             sentence_group_external_id="SG-EXTERNAL-1",
@@ -1326,16 +1444,20 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             imposed_date=date(2022, 1, 1),
             parole_possible=True,
             charges=[
-                state_entities.StateChargeV2(
+                normalized_entities.NormalizedStateChargeV2(
+                    charge_v2_id=205,
                     external_id="CHARGE",
                     state_code=self.state_code,
                     status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
                 )
             ],
+            sentence_id=105,
+            sentence_inferred_group_id=300,
+            sentence_imposed_group_id=400,
         )
         self.state_person.sentences = [sentence_1, sentence_2]
         self.state_person.sentence_groups = [group]
-        errors = validate_root_entity(self.state_person)
+        errors = self.set_backedges_and_run_validations(self.state_person)
         self.assertEqual(errors, [])
 
 

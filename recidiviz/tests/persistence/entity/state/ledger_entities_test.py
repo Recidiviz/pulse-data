@@ -35,18 +35,30 @@ from unittest.mock import MagicMock, patch
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
+    StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.pipelines.ingest.state.validator import validate_root_entity
 
-ALL_LEDGER_ENTITIES = [
+# We test the normalized variants of the sentencing ledger entities because we only run their
+# validations after normalization.
+ALL_STATE_LEDGER_ENTITIES = [
     cls
     for cls in get_all_entity_classes_in_module(entities)
     if issubclass(cls, LedgerEntityMixin)
 ]
+NORMALIZED_SENTENCING_LEDGER_ENTITIES = [
+    cls
+    for cls in get_all_entity_classes_in_module(normalized_entities)
+    if issubclass(cls, LedgerEntityMixin) and "Sentence" in cls.__name__
+]
+# TODO(#53509): Test all LedgerEntityMixin classes in normalized_entities
+LEDGER_ENTITIES_TO_TEST = (
+    ALL_STATE_LEDGER_ENTITIES + NORMALIZED_SENTENCING_LEDGER_ENTITIES
+)
 
 
 class LedgerEntityTestCaseProtocol:
@@ -84,12 +96,44 @@ class LedgerEntityTestCaseProtocol:
             ],
         )
 
+    def new_normalized_state_person(self) -> normalized_entities.NormalizedStatePerson:
+        return normalized_entities.NormalizedStatePerson(
+            state_code=self.state_code,
+            person_id=1,
+            external_ids=[
+                normalized_entities.NormalizedStatePersonExternalId(
+                    external_id="1",
+                    state_code="US_XX",
+                    id_type="US_XX_TEST_PERSON",
+                    person_external_id_id=1,
+                    is_stable_id_for_type=True,
+                    is_current_display_id_for_type=True,
+                    id_active_to_datetime=None,
+                    id_active_from_datetime=None,
+                ),
+            ],
+        )
+
     def new_state_sentence(self) -> entities.StateSentence:
         return entities.StateSentence(
             state_code=self.state_code,
             external_id="EXTERNAL SENTENCE",
             sentence_type=StateSentenceType.STATE_PRISON,
             imposed_date=datetime.date(2022, 1, 1),
+        )
+
+    def new_normalized_state_sentence(
+        self,
+    ) -> normalized_entities.NormalizedStateSentence:
+        return normalized_entities.NormalizedStateSentence(
+            state_code=self.state_code,
+            sentence_id=1,
+            external_id="EXTERNAL SENTENCE",
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            imposed_date=datetime.date(2022, 1, 1),
+            sentence_imposed_group_id=1,
+            sentence_inferred_group_id=1,
         )
 
     def test_ledger_datetime_is_not_future(self) -> None:
@@ -343,7 +387,7 @@ class StateSentenceStatusSnapshotTest(unittest.TestCase, LedgerEntityTestCasePro
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
-        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        """Tests that we DONT call ledger_entity_checks since we only run validations after normalization."""
         person = self.new_state_person()
         sentence = self.new_state_sentence()
         snapshot = entities.StateSentenceStatusSnapshot(
@@ -356,7 +400,7 @@ class StateSentenceStatusSnapshotTest(unittest.TestCase, LedgerEntityTestCasePro
         sentence.sentence_status_snapshots = [snapshot]
         person.sentences = [sentence]
         _ = validate_root_entity(person)
-        mock_ledger_entity_checks.assert_called()
+        mock_ledger_entity_checks.assert_not_called()
 
 
 class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
@@ -392,7 +436,7 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
-        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        """Tests that we DONT call ledger_entity_checks since we only run validations after normalization."""
         person = self.new_state_person()
         sentence = self.new_state_sentence()
         length = entities.StateSentenceLength(
@@ -404,7 +448,7 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         sentence.sentence_lengths = [length]
         person.sentences = [sentence]
         _ = validate_root_entity(person)
-        mock_ledger_entity_checks.assert_called()
+        mock_ledger_entity_checks.assert_not_called()
 
     def test_enforced_datetime_pairs(self) -> None:
         # "projected_parole_release_date_external" before "projected_completion_date_min_external"
@@ -483,7 +527,7 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
-        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        """Tests that we DONT call ledger_entity_checks since we only run validations after normalization."""
         person = self.new_state_person()
         group_length_1 = entities.StateSentenceGroupLength(
             state_code=self.state_code,
@@ -502,7 +546,7 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
         )
         person.sentence_groups.append(group)
         _ = validate_root_entity(person)
-        mock_ledger_entity_checks.assert_called()
+        mock_ledger_entity_checks.assert_not_called()
 
     def test_enforced_datetime_pairs(self) -> None:
         # "projected_parole_release_date_external" before "projected_full_term_release_date_min_external"
@@ -537,6 +581,272 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
             r"Found StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceGroupLength(
+                projected_parole_release_date_external=self.after,
+                projected_full_term_release_date_max_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                sequence_num=None,
+            )
+
+
+class NormalizedStateSentenceStatusSnapshotTest(
+    unittest.TestCase, LedgerEntityTestCaseProtocol
+):
+    """Ensures NormalizedStateSentenceStatusSnapshot is tested against the LedgerEntityTestCaseProtocol"""
+
+    @classmethod
+    def ledger_entity(cls) -> Type[LedgerEntityMixin]:
+        return normalized_entities.NormalizedStateSentenceStatusSnapshot
+
+    def test_ledger_datetime_is_not_future(self) -> None:
+        ok = normalized_entities.NormalizedStateSentenceStatusSnapshot(
+            sentence_status_snapshot_id=1,
+            state_code=self.state_code,
+            status_update_datetime=self.the_past,
+            status=StateSentenceStatus.SERVING,
+        )
+        self.assertEqual(ok.ledger_datetime_field, self.the_past)
+        with self.assertRaisesRegex(ValueError, "is in the future"):
+            _ = normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                sentence_status_snapshot_id=1,
+                state_code=self.state_code,
+                status_update_datetime=self.the_future,
+                status=StateSentenceStatus.COMPLETED,
+            )
+
+    def test_ledger_partition_key(self) -> None:
+        ledger = normalized_entities.NormalizedStateSentenceStatusSnapshot(
+            sentence_status_snapshot_id=1,
+            status_update_datetime=self.ledger_time,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=self.state_code,
+            sequence_num=0,
+        )
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-000-")
+
+    @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
+    def test_ledger_entity_checks_is_called(
+        self, mock_ledger_entity_checks: MagicMock
+    ) -> None:
+        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        person = self.new_normalized_state_person()
+        sentence = self.new_normalized_state_sentence()
+        snapshot = normalized_entities.NormalizedStateSentenceStatusSnapshot(
+            sentence=sentence,
+            person=person,
+            state_code=self.state_code,
+            status=StateSentenceStatus.SERVING,
+            status_update_datetime=datetime.datetime(2022, 1, 1),
+            sentence_status_snapshot_id=1,
+            sequence_num=1,
+        )
+        sentence.sentence_status_snapshots = [snapshot]
+        person.sentences = [sentence]
+        _ = validate_root_entity(person)
+        mock_ledger_entity_checks.assert_called()
+
+
+class NormalizedStateSentenceLengthTest(
+    unittest.TestCase, LedgerEntityTestCaseProtocol
+):
+    """Ensures NormalizedStateSentenceLength is tested against the LedgerEntityTestCaseProtocol"""
+
+    @classmethod
+    def ledger_entity(cls) -> Type[LedgerEntityMixin]:
+        return normalized_entities.NormalizedStateSentenceLength
+
+    def test_ledger_datetime_is_not_future(self) -> None:
+        ok = normalized_entities.NormalizedStateSentenceLength(
+            state_code=self.state_code,
+            length_update_datetime=self.the_past,
+            sentence_length_days_min=99,
+            sentence_length_id=1,
+        )
+        self.assertEqual(ok.ledger_datetime_field, self.the_past)
+        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+            _ = normalized_entities.NormalizedStateSentenceLength(
+                sentence_length_id=1,
+                state_code=self.state_code,
+                length_update_datetime=self.the_future,
+                sentence_length_days_min=99,
+            )
+
+    def test_ledger_partition_key(self) -> None:
+        ledger = normalized_entities.NormalizedStateSentenceLength(
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sentence_length_id=1,
+            sequence_num=None,
+        )
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
+
+    @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
+    def test_ledger_entity_checks_is_called(
+        self, mock_ledger_entity_checks: MagicMock
+    ) -> None:
+        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        person = self.new_normalized_state_person()
+        sentence = self.new_normalized_state_sentence()
+        length = normalized_entities.NormalizedStateSentenceLength(
+            sentence=sentence,
+            sentence_length_id=1,
+            state_code=self.state_code,
+            length_update_datetime=datetime.datetime(2022, 1, 1),
+            sequence_num=None,
+        )
+        sentence.sentence_lengths = [length]
+        person.sentences = [sentence]
+        _ = validate_root_entity(person)
+        mock_ledger_entity_checks.assert_called()
+
+    def test_enforced_datetime_pairs(self) -> None:
+        # "projected_parole_release_date_external" before "projected_completion_date_min_external"
+        _ = normalized_entities.NormalizedStateSentenceLength(
+            sentence_length_id=1,
+            projected_parole_release_date_external=self.before,
+            projected_completion_date_min_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found NormalizedStateSentenceLength\(sentence_length_id=1\) with projected parole release datetime 2022-01-01 after projected minimum completion datetime 1999-01-01.",
+        ):
+            _ = normalized_entities.NormalizedStateSentenceLength(
+                sentence_length_id=1,
+                projected_parole_release_date_external=self.after,
+                projected_completion_date_min_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                sequence_num=None,
+            )
+        # "projected_parole_release_date_external" before "projected_completion_date_max_external"
+        _ = normalized_entities.NormalizedStateSentenceLength(
+            sentence_length_id=1,
+            projected_parole_release_date_external=self.before,
+            projected_completion_date_max_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found NormalizedStateSentenceLength\(sentence_length_id=1\) with projected parole release datetime 2022-01-01 after projected maximum completion datetime 1999-01-01.",
+        ):
+            _ = normalized_entities.NormalizedStateSentenceLength(
+                sentence_length_id=1,
+                projected_parole_release_date_external=self.after,
+                projected_completion_date_max_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                sequence_num=None,
+            )
+
+
+class NormalizedStateSentenceGroupLengthTest(
+    unittest.TestCase, LedgerEntityTestCaseProtocol
+):
+    """Ensures NormalizedStateSentenceGroupLength is tested against the LedgerEntityTestCaseProtocol"""
+
+    @classmethod
+    def ledger_entity(cls) -> Type[LedgerEntityMixin]:
+        return normalized_entities.NormalizedStateSentenceGroupLength
+
+    def test_ledger_datetime_is_not_future(self) -> None:
+        ok = normalized_entities.NormalizedStateSentenceGroupLength(
+            state_code=self.state_code,
+            group_update_datetime=self.the_past,
+            sentence_group_length_id=1,
+        )
+        self.assertEqual(ok.ledger_datetime_field, self.the_past)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found \[group_update_datetime\] value on class "
+            r"\[NormalizedStateSentenceGroupLength\] with value \[.+\] which is greater than or "
+            r"equal to \[.+\], the \(exclusive\) max allowed date\.$",
+        ):
+            _ = normalized_entities.NormalizedStateSentenceGroupLength(
+                state_code=self.state_code,
+                group_update_datetime=self.the_future,
+                sentence_group_length_id=1,
+            )
+
+    def test_ledger_partition_key(self) -> None:
+        ledger = normalized_entities.NormalizedStateSentenceGroupLength(
+            sentence_group_length_id=1,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
+
+    @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
+    def test_ledger_entity_checks_is_called(
+        self, mock_ledger_entity_checks: MagicMock
+    ) -> None:
+        """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
+        person = self.new_normalized_state_person()
+        group_length_1 = normalized_entities.NormalizedStateSentenceGroupLength(
+            sentence_group_length_id=1,
+            state_code=self.state_code,
+            group_update_datetime=datetime.datetime(2022, 1, 1),
+            sequence_num=None,
+        )
+        group_length_2 = normalized_entities.NormalizedStateSentenceGroupLength(
+            sentence_group_length_id=2,
+            state_code=self.state_code,
+            group_update_datetime=datetime.datetime(2023, 1, 1),
+            sequence_num=None,
+        )
+        group = normalized_entities.NormalizedStateSentenceGroup(
+            sentence_group_id=1,
+            sentence_inferred_group_id=1,
+            state_code=self.state_code,
+            external_id="TEST-SG",
+            sentence_group_lengths=[group_length_1, group_length_2],
+        )
+        person.sentence_groups.append(group)
+        _ = validate_root_entity(person)
+        mock_ledger_entity_checks.assert_called()
+
+    def test_enforced_datetime_pairs(self) -> None:
+        # "projected_parole_release_date_external" before "projected_full_term_release_date_min_external"
+        _ = normalized_entities.NormalizedStateSentenceGroupLength(
+            sentence_group_length_id=1,
+            projected_parole_release_date_external=self.before,
+            projected_full_term_release_date_min_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found NormalizedStateSentenceGroupLength\(sentence_group_length_id=1\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
+        ):
+            _ = normalized_entities.NormalizedStateSentenceGroupLength(
+                sentence_group_length_id=1,
+                projected_parole_release_date_external=self.after,
+                projected_full_term_release_date_min_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                sequence_num=None,
+            )
+        # "projected_parole_release_date_external" before "projected_full_term_release_date_max_external"
+        _ = normalized_entities.NormalizedStateSentenceGroupLength(
+            sentence_group_length_id=1,
+            projected_parole_release_date_external=self.before,
+            projected_full_term_release_date_max_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found NormalizedStateSentenceGroupLength\(sentence_group_length_id=1\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
+        ):
+            _ = normalized_entities.NormalizedStateSentenceGroupLength(
+                sentence_group_length_id=1,
                 projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_max_external=self.before,
                 group_update_datetime=self.ledger_time,
@@ -638,7 +948,11 @@ class StateScheduledSupervisionContactTest(
 
 
 def test_all_ledger_entities_have_a_test_case() -> None:
-    """Ensures every entity with a LedgerEntityMixin has a test implementing LedgerEntityTestCaseProtocol"""
+    """
+    Ensures every entity with a LedgerEntityMixin has a test implementing LedgerEntityTestCaseProtocol.
+    We test the normalized variants of the sentencing ledger entities because we only run their
+    validations after normalization.
+    """
     tested_entities: List[LedgerEntityMixin] = []
     for _, test_case in inspect.getmembers(
         sys.modules[__name__],
@@ -649,4 +963,4 @@ def test_all_ledger_entities_have_a_test_case() -> None:
         ),
     ):
         tested_entities.append(test_case.ledger_entity())
-    assert sorted(tested_entities, key=str) == sorted(ALL_LEDGER_ENTITIES, key=str)
+    assert sorted(tested_entities, key=str) == sorted(LEDGER_ENTITIES_TO_TEST, key=str)
