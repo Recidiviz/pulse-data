@@ -20,7 +20,7 @@ Bulk Upload into the Justice Counts database.
 """
 
 import datetime
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import Any, Dict, Hashable, Iterator, List, Optional, Set, Tuple
 
 import numpy as np
@@ -81,6 +81,10 @@ class WorkbookStandardizer:
         Yields:
             Iterator[Tuple[str, pd.DataFrame]]: An iterator of (sheet_name, DataFrame dataframe).
         """
+        # Pandas 2.0 requires bytes to be wrapped in BytesIO for read_excel
+        if isinstance(file, bytes):
+            file = BytesIO(file)
+
         excel_file = pd.ExcelFile(file)
 
         # Sort sheet names alphabetically to ensure consistent processing order

@@ -965,7 +965,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryEmulatorTestCase):
         expected = pd.DataFrame(
             [[0, 10, 0, 10, 1, "hard"]],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
-            dtype=int,
         )
         self._check_error_view_returns_expected_values(validation, expected)
 
@@ -1116,14 +1115,12 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryEmulatorTestCase):
         error_expected = pd.DataFrame(
             [[1, 10, 0, 10, 1, "hard"]],
             columns=["label", "a", "b", "c", "error_rate", "error_type"],
-            dtype=int,
         )
         self._check_error_view_returns_expected_values(validation, error_expected)
 
         original_expected = pd.DataFrame(
             [[0, 10, 10, 10], [1, 10, 0, 10]],
             columns=["label", "a", "b", "c"],
-            dtype=int,
         )
         original_result_job = self.bq_client.run_query_async(
             query_str=validation.view_builder.build().view_query, use_query_cache=False

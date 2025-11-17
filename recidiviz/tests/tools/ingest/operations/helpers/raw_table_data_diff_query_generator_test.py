@@ -252,7 +252,7 @@ COL1: val4, COL2: val55555, COL3: val6, is_deleted: False
 
         raw_result = self.query(self.query_str)
         parsed_result = self.query_generator.parse_query_result(
-            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+            raw_result.map(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
@@ -291,6 +291,6 @@ COL1: val4, COL2: val5, COL3: val6, is_deleted: False
 
         raw_result = self.query(self.query_str)
         parsed_result = self.query_generator.parse_query_result(
-            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+            raw_result.map(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)

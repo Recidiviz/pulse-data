@@ -489,13 +489,24 @@ def add_all_combinations(disposition_df: pd.DataFrame, state_code: str) -> pd.Da
     data = [[state_code] + flatten_row(row) for row in rows]
     all_combinations_df = pd.DataFrame(data=data, columns=attribute_cols)
     all_combinations_df.set_index(attribute_cols, inplace=True)
-    all_combinations_df[disposition_cols] = 0
+
+    # Initialize disposition columns with correct dtypes matching source dataframe (Pandas 2.0 compatibility)
+    state_disposition_df_indexed = disposition_df.set_index(attribute_cols)
+    for col in disposition_cols:
+        # Use same dtype as source to avoid Pandas 2.0 incompatible dtype assignment warnings
+        if col in state_disposition_df_indexed.columns:
+            all_combinations_df[col] = pd.Series(
+                0,
+                index=all_combinations_df.index,
+                dtype=state_disposition_df_indexed[col].dtype,
+            )
+        else:
+            all_combinations_df[col] = 0
 
     # Insert the disposition_df values into the DataFrame with all combinations
-    state_disposition_df_indexed = disposition_df.set_index(attribute_cols)
     all_combinations_df.loc[
         state_disposition_df_indexed.index, disposition_cols
-    ] = state_disposition_df_indexed[disposition_cols]
+    ] = state_disposition_df_indexed[disposition_cols].values
 
     # Set the index back to columns and make sure the original columns order is restored
     all_combinations_df.reset_index(inplace=True)
@@ -683,10 +694,15 @@ def get_all_rollup_aggregated_df(
         {"cohort_group"}
     )
     index = index_df.set_index(sorted(list(index_attributes))).index
+    # Pandas 2.0: Explicitly specify dtypes for empty MultiIndex levels to avoid object dtype inference
     all_rollup_levels_df = pd.DataFrame(
         index=index,
         columns=pd.MultiIndex(
-            levels=[[], [], []],
+            levels=[
+                pd.Index([], dtype="object"),  # metric
+                pd.Index([], dtype="object"),  # cohort_group
+                pd.Index([], dtype="int64"),  # rollup_level - ensure int64 from start
+            ],
             codes=[[], [], []],
             names=["metric", "cohort_group", "rollup_level"],
         ),
@@ -697,8 +713,10 @@ def get_all_rollup_aggregated_df(
         )
 
         # Add the current rollup level to each column
+        # Pandas 2.0: Create rollup_level as Index with int64 dtype explicitly
+        rollup_level_index = pd.Index([idx], dtype="int64")
         recidivism_series_df.columns = pd.MultiIndex.from_product(
-            recidivism_series_df.columns.levels + [[idx]],
+            recidivism_series_df.columns.levels + [rollup_level_index],
             names=["metric", "cohort_group", "rollup_level"],
         )
 
@@ -718,6 +736,17 @@ def get_all_rollup_aggregated_df(
             all_rollup_levels_df = all_rollup_levels_df.merge(
                 recidivism_series_df, left_index=True, right_index=True, how="left"
             )
+
+    # Pandas 2.0: Ensure rollup_level in column MultiIndex is int64
+    if "rollup_level" in all_rollup_levels_df.columns.names:
+        level_idx = all_rollup_levels_df.columns.names.index("rollup_level")
+        new_levels = list(all_rollup_levels_df.columns.levels)
+        new_levels[level_idx] = all_rollup_levels_df.columns.levels[level_idx].astype(
+            "int64"
+        )
+        all_rollup_levels_df.columns = all_rollup_levels_df.columns.set_levels(
+            new_levels[level_idx], level=level_idx
+        )
 
     return all_rollup_levels_df
 
@@ -756,18 +785,18 @@ def extract_rollup_columns(
     # Get the appropriate rollup level for each row
     if ROLLUP_CRITERIA[state_code] == "largest":
         exceeds_ci_threshold = (
-            all_rollup_levels_df.stack(["rollup_level", "cohort_group"])[
-                "final_ci_size"
-            ]
+            all_rollup_levels_df.stack(
+                ["rollup_level", "cohort_group"], future_stack=True
+            )["final_ci_size"]
             .unstack("cohort_group")
             .max(1)
             > ROLLUP_CI_THRESHOLDS[state_code]
         )
     elif ROLLUP_CRITERIA[state_code] == "2nd smallest":
         exceeds_ci_threshold = (
-            all_rollup_levels_df.stack(["rollup_level", "cohort_group"])[
-                "final_ci_size"
-            ]
+            all_rollup_levels_df.stack(
+                ["rollup_level", "cohort_group"], future_stack=True
+            )["final_ci_size"]
             .unstack("cohort_group")
             .apply(lambda row: get_nsmallest(row, 2), axis=1)
             > ROLLUP_CI_THRESHOLDS[state_code]
@@ -782,7 +811,9 @@ def extract_rollup_columns(
     )
 
     # Keep only the appropriate rollup level for each row
-    all_rollup_levels_df = all_rollup_levels_df.stack(level="rollup_level")
+    all_rollup_levels_df = all_rollup_levels_df.stack(
+        level="rollup_level", future_stack=True
+    )
     all_rollup_levels_df = all_rollup_levels_df[
         all_rollup_levels_df.index.get_level_values("rollup_level")
         == roll_up_level.reindex(all_rollup_levels_df.index)
@@ -806,6 +837,11 @@ def extract_rollup_columns(
 
     all_rollup_levels_df = all_rollup_levels_df.rename(columns=column_remapping)
     all_rollup_levels_df = all_rollup_levels_df.reset_index()
+    # Pandas 2.0 with future_stack=True may infer object dtype for rollup_level, so explicitly cast to int
+    if "rollup_level" in all_rollup_levels_df.columns:
+        all_rollup_levels_df["rollup_level"] = all_rollup_levels_df[
+            "rollup_level"
+        ].astype(int)
     all_rollup_levels_df["recidivism_rollup"] = all_rollup_levels_df.apply(
         get_recidivism_rollup, axis=1
     )

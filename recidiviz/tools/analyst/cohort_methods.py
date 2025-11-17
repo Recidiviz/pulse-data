@@ -515,16 +515,26 @@ def gen_cohort_status_df(
     # `status_end_date`. When there is no intersection, this value will be negative, and the values are therefore
     # clipped at 0 to represent 0 days of overlap.
 
+    # Pandas 2.0: Convert date columns to datetime64 before arithmetic to enable .dt accessor
+    cohort_x_status_dates = cohort_x_status[
+        [
+            "cohort_eval_date",
+            status_end_date_field,
+            cohort_date_field,
+            status_start_date_field,
+        ]
+    ].apply(pd.to_datetime)
+
     cohort_x_status["days_at_status"] = (
         (
             (
-                cohort_x_status[["cohort_eval_date", status_end_date_field]]
-                .fillna(pd.Timestamp.max.date())
+                cohort_x_status_dates[["cohort_eval_date", status_end_date_field]]
+                .fillna(pd.Timestamp.max)
                 .min(1)
             )
             - (
-                cohort_x_status[[cohort_date_field, status_start_date_field]]
-                .fillna(pd.Timestamp.max.date())
+                cohort_x_status_dates[[cohort_date_field, status_start_date_field]]
+                .fillna(pd.Timestamp.max)
                 .max(1)
             )
         ).dt.days

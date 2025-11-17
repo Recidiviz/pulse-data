@@ -166,7 +166,7 @@ class TestPopulationSimulation(unittest.TestCase):
         """Assert that the simulation results has negative time steps when the back-cast is enabled"""
         assert_index_equal(
             self.macro_projection.index.unique().sort_values(),
-            pd.Int64Index(range(-5, 10)),
+            pd.Index(range(-5, 10), dtype="int64"),
         )
 
     def test_baseline_with_backcast_projection_off(self) -> None:
@@ -283,8 +283,11 @@ class TestPopulationSimulation(unittest.TestCase):
         Test that PopulationSimulation can handle population_data with one less disaggregation axis
             than other data dfs
         """
+        # Pandas 2.0: explicitly sum only numeric columns to avoid string concatenation
         coarse_population_data = (
-            self.test_population_data.groupby(["compartment", "time_step"])
+            self.test_population_data.groupby(["compartment", "time_step"])[
+                "compartment_population"
+            ]
             .sum()
             .reset_index()
         )
@@ -371,13 +374,11 @@ class TestPopulationSimulation(unittest.TestCase):
         population_projection = population_simulation.simulate_policies()
         prison_populations = (
             population_projection[population_projection.compartment == "prison"]
-            .groupby(["time_step", "simulation_group"])
+            .groupby(["time_step", "simulation_group"])[
+                "compartment_population"
+            ]  # Pandas 2.0: be explicit about which column to sum
             .sum()
             .unstack("simulation_group")
-        )
-
-        prison_populations.columns = prison_populations.columns.get_level_values(
-            "simulation_group"
         )
 
         expected = pd.DataFrame(index=range(121))

@@ -353,7 +353,7 @@ class TestStableHistoricalRawDataCountsValidation(BigQueryEmulatorTestCase):
 
         results = self.query(self.validation.build_query())
         # pandas NA type isn't truthy so map to None
-        results = results.applymap(lambda x: None if pd.isna(x) else x)
+        results = results.map(lambda x: None if pd.isna(x) else x)
 
         error = self.validation.get_error_from_results(results.to_dict("records"))
 

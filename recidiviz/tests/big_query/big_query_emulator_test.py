@@ -19,6 +19,7 @@ import datetime
 from datetime import date
 
 import pandas as pd
+import pandas_gbq
 from google.api_core.exceptions import InternalServerError
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
@@ -791,7 +792,7 @@ FROM UNNEST([
     def test_query_from_pandas_call(self) -> None:
 
         # Query against the emulator, (no tables)
-        df = pd.read_gbq("SELECT 1 AS one", project_id=self.project_id)
+        df = pandas_gbq.read_gbq("SELECT 1 AS one", project_id=self.project_id)
         assert df.shape == (1, 1)
         assert df.one.iloc[0] == 1
 
@@ -813,7 +814,7 @@ FROM UNNEST([
         )
 
         # Query against empty table
-        df = pd.read_gbq(
+        df = pandas_gbq.read_gbq(
             f"SELECT a, b FROM `{self.project_id}.{address.dataset_id}.{address.table_id}`;"
         )
         assert df.empty
@@ -823,7 +824,7 @@ FROM UNNEST([
             address,
             data=[{"a": 1, "b": "foo"}, {"a": 3, "b": None}],
         )
-        df = pd.read_gbq(
+        df = pandas_gbq.read_gbq(
             f"SELECT a, b FROM `{self.project_id}.{address.dataset_id}.{address.table_id}`;"
         )
         assert df.a.to_list() == [1, 3]
@@ -844,8 +845,9 @@ FROM UNNEST([
                 [{"a": 42, "b": "bar"}, {"a": 43, "b": "baz"}],
                 columns=["a", "b"],
             )
-            more_data.to_gbq(
-                f"{address.dataset_id}.{address.table_id}",
+            pandas_gbq.to_gbq(
+                more_data,
+                destination_table="{address.dataset_id}.{address.table_id}",
                 project_id=self.project_id,
                 if_exists="append",
             )

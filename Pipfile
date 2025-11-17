@@ -123,8 +123,7 @@ annotated-types="*"
 numpy = "<2.0.0"
 us = "*"
 dateparser = "*"
-# TODO(#19995): Remove the <2.0.0 pin
-pandas = "<2.0.0"
+pandas = "*"
 more-itertools = "*"
 # TODO(#43270): Un-pin opentelemetry-* packages once https://github.com/open-telemetry/opentelemetry-python/issues/4615
 #  is resolved.

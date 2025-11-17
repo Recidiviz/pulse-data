@@ -45,7 +45,9 @@ def detect_date_granularity(
 
     granularity = None
     # sort by date column to get positive diffs
-    df = df.sort_values([unit_of_analysis_column, date_column])
+    df = df.sort_values([unit_of_analysis_column, date_column]).copy()
+    # Convert to pandas datetime to ensure diff() returns proper timedelta (Pandas 2.0 compatibility)
+    df[date_column] = pd.to_datetime(df[date_column])
     days_between_periods = int(
         np.floor(df.groupby([unit_of_analysis_column])[date_column].diff().mean().days)
     )

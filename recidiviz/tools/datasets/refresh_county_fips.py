@@ -160,8 +160,8 @@ def add_unknowns(fips_df: pd.DataFrame) -> pd.DataFrame:
     )
     unknown_codes = pd.DataFrame(list(unknown_codes))
 
-    fips_df_with_unknowns = fips_df.append(
-        unknown_codes[fips_df.columns], ignore_index=True
+    fips_df_with_unknowns = pd.concat(
+        [fips_df, unknown_codes[fips_df.columns]], ignore_index=True
     )
 
     return fips_df_with_unknowns

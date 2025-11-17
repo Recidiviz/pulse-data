@@ -16,9 +16,16 @@
 # =============================================================================
 from typing import Optional
 
+import pandas
 from pandas import DataFrame
 
 def read_gbq(
     query: str,
     project_id: Optional[str] = None,
+) -> DataFrame: ...
+def to_gbq(
+    dataframe: pandas.DataFrame,
+    destination_table: str,
+    project_id: Optional[str] = None,
+    if_exists: Optional[str] = "fail",
 ) -> DataFrame: ...

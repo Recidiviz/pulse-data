@@ -271,7 +271,7 @@ The following comparison table update_datetimes have no entries in the source ta
 
         raw_result = self.query(self.query_str)
         parsed_result = self.query_generator.parse_query_result(
-            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+            raw_result.map(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
@@ -313,7 +313,7 @@ The following source table update_datetimes have no entries in the comparison ta
 
         raw_result = self.query(self.query_str)
         parsed_result = self.query_generator.parse_query_result(
-            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+            raw_result.map(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
@@ -362,7 +362,7 @@ update_datetime: 2024-01-26T00:00:00
 
         raw_result = self.query(self.query_str)
         parsed_result = self.query_generator.parse_query_result(
-            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+            raw_result.map(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
@@ -406,7 +406,7 @@ update_datetime: 2024-01-26T00:00:00
 
         raw_result = self.query(self.query_str)
         parsed_result = self.query_generator.parse_query_result(
-            raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
+            raw_result.map(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)

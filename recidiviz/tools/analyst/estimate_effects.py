@@ -536,7 +536,8 @@ def pairwise_stratify(
 
     # get block id
     if categorical_columns:
-        dftmp["group_id"] = dftmp.groupby(categorical_columns).grouper.group_info[0]
+        # Use ngroup() instead of deprecated grouper.group_info (Pandas 2.0)
+        dftmp["group_id"] = dftmp.groupby(categorical_columns).ngroup()
     else:
         dftmp["group_id"] = 1
 
