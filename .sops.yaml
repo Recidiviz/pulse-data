@@ -1,4 +1,11 @@
+# SOPS allows us to store encrypted secrets files in our git repository
+# Configure SOPS to use the GCP KMS key provisioned for encryption / decryption
+# Recidiviz/security-operations-automation/atmos/stacks/recidiviz-staging.yaml
+# https://github.com/getsops/sops
 creation_rules:
+  # For production secrets, use production-specific keys
+  - path_regex: ^recidiviz/tools/deploy/atmos/.*\.production\.enc\.yaml$
+    gcp_kms: projects/recidiviz-123/locations/us-central1/keyRings/pulse-data-production-secrets/cryptoKeys/pulse-data-production-secrets-key
   # Encrypt SFTPGo ingest project secrets using the ingest-project specific KMS key
   - path_regex: recidiviz/tools/deploy/atmos/components/terraform/sftpgo-kubernetes-resources/configs/*\.enc\.yaml$
     gcp_kms: projects/recidiviz-staging/locations/us-central1/keyRings/recidiviz-ingest-project-secrets/cryptoKeys/recidiviz-ingest-project-secrets-key

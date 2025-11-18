@@ -1,0 +1,19 @@
+emails:
+  cloud_billing_backup: ENC[AES256_GCM,data:KPsMttM8mtMywZSRJL/hIkCR9CP76FhuwDwgZm2PEn4ZGYOMei4Ag0hPuGYO9rX3PCTXOQ==,iv:GosXuEnd21pVUREZJNostrC/v5VhE53pOvJen3dh/04=,tag:LPNIC8Dbe1p0WJXYZHZVDg==,type:str]
+  cloud_billing: ENC[AES256_GCM,data:vjdtz2/WfQ3CHBe5+nA7fCjRrS72ZNqIEsNjZrkCsy/9zNNz5wz2VJsZJsJv3JYn9prNzw==,iv:dj3kVB8jgUslCJtt107VhdqvT4HCcgI8G4CfLrG05Lo=,tag:2qOfg1argub39xcf43iIVA==,type:str]
+  alerts: ENC[AES256_GCM,data:RgXKW0hYIRNUDy4o6kQTVTaLnpI=,iv:R4YLID3zt43RPdvWhPCJ1MkpqUvOQEx2Ekswtfy0yHs=,tag:yTlPC4EXvjjIbaWFcjONVA==,type:str]
+  security: ENC[AES256_GCM,data:AmV288Y/WcoeLsU+ZCrhh8yUvOsfbg==,iv:UJOt6dnsMUyNJ3d3KvKu0iLzHnk6FUWKvBuK0kNUwSs=,tag:BmYN7QlmllAh4fSlrtm4lA==,type:str]
+service_keys:
+  cloud_billing: ENC[AES256_GCM,data:ZHT+UH3jFsABl8SfLh9cnBPCrhCcZadeOkJZODwGago=,iv:VX9WX/Hg4HrfmaNMWPh6puz7gA9Bc3YauOxaic80+44=,tag:wNg7s7cwtsLEXn67L8kBOg==,type:str]
+  stackdriver: ENC[AES256_GCM,data:HLaeaMHfD9UwJAsYWjg7L8k2DjKEH1Q9eI1clrHne0k=,iv:syddnRX/2EJM51IbZs8OrO8tfpg6JXlwGmVikX7jGu4=,tag:gTZO/JowtbgmKlhkQqhAQw==,type:str]
+  ie_on_call: ENC[AES256_GCM,data:5UjgM3+/9g55O5cfYGtGr9lmkp6sV3JxYNN+NyYVZJ0=,iv:dM0VzHqEJ1xcFlw3sVsXg2J2xAs52ZWVRXMmUSH1rC0=,tag:FhpJ1XTceUwSrYxYh0gh6g==,type:str]
+  polaris: ENC[AES256_GCM,data:430ds+22yV4VFl2+Xtm37Z3o2wDshl8vB/zoz0O4YFw=,iv:MAj7gCW5yfQZXslEtXbVFoHiRX9lon7msZb50DA3seo=,tag:uQpisgTXxbNP/tnhh4gKCg==,type:str]
+sops:
+  gcp_kms:
+    - resource_id: projects/recidiviz-123/locations/us-central1/keyRings/pulse-data-production-secrets/cryptoKeys/pulse-data-production-secrets-key
+      created_at: "2025-10-28T22:26:53Z"
+      enc: CiQAKLn8GVmGi1+hYPVeuYQDrtpGHYPV01U8RGh6Q7aSPEM1kJUSSQBdMbZMUJYThBJW3QZY0A2XCpdicbU6FE5cRin7e8UINgXbLSsJisyQIuxKmaDqjVOZySJCYI2mMifHDSD1gVZwaR7J49oWReE=
+  lastmodified: "2025-11-18T22:08:01Z"
+  mac: ENC[AES256_GCM,data:udCcQmhNMIoyehun2wBbbl1Ku6hKynUj1S1nCFBPoEBEL9NHbregUJK0lt6u6VfgLseXm18zBmyug9LV7oqPpWopiIrFOi+HBlq/hZd4Fay3HyOJaD4wt2cnZEnEDK9+IUiVPWpl5v4yPMrS8QXg1V5iZKyZcgWAeAIqpK6G8PM=,iv:TE99JHvq8ZHtYI1URxBovdw9xIywPRb5HLpF8eb5WL8=,tag:9tNfby10OsNmR7wazS6X1w==,type:str]
+  unencrypted_suffix: _unencrypted
+  version: 3.10.2
