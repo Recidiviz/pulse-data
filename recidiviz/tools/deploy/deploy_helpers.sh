@@ -275,6 +275,18 @@ function check_jq_installed {
     fi
 }
 
+function check_gcloud_authed {
+  echo "Checking gcloud user credentials..."
+
+  if ! gcloud auth print-access-token >/dev/null 2>&1; then
+    echo "No valid user credentials; running gcloud auth login..."
+    gcloud auth login
+    return 0
+  fi
+
+  echo "gcloud user creds look good; no login needed."
+}
+
 function verify_can_deploy {
     local PROJECT_ID
     local COMMIT_HASH

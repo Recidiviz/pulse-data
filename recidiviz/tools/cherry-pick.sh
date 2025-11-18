@@ -86,6 +86,12 @@ function prompt_cherry_pick_details {
     export ISSUE_DESCRIPTION ISSUE_VERSION CHERRYPICK_TYPE REVERT_REASON MAIN_STATUS TASK_LINK PR_LABEL
 }
 
+# Check if we're logged-in to Google Cloud
+check_gcloud_authed
+
+# Validate the Terraform is installed (required to fetch deployed versions)
+check_terraform_installed
+
 # Check if there's an active cherry-pick in progress
 if [ -f .git/CHERRY_PICK_HEAD ]; then
     echo "⚠️  Cherry-pick in progress detected!"
