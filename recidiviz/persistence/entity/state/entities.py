@@ -29,12 +29,8 @@ import attr
 from recidiviz.common import attr_utils, attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.reasonable_dates import (
-    BIRTHDATE_REASONABLE_LOWER_BOUND,
     MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-    STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
-    STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -169,6 +165,16 @@ from recidiviz.persistence.entity.state.entity_field_validators import (
     appears_with,
     parsing_opt_only,
 )
+from recidiviz.persistence.entity.state.reasonable_date_validators import (
+    REASONABLE_OPT_BIRTHDATE_VALIDATOR,
+    STANDARD_REASONABLE_DATE_VALIDATOR,
+    STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+    STANDARD_REASONABLE_OPT_DATETIME_VALIDATOR,
+    STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+    STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
+    STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
+)
 from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
     StateEntityMixin,
@@ -242,16 +248,12 @@ class StatePersonAddressPeriod(
     )
 
     address_start_date: datetime.date = attr.ib(
-        validator=attr_validators.is_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     )
 
     address_end_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     address_is_verified: Optional[bool] = attr.ib(
@@ -391,15 +393,11 @@ class StatePersonExternalId(
     )
     id_active_from_datetime: datetime.datetime | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_datetime(
-            STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     )
     id_active_to_datetime: datetime.datetime | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_datetime(
-            STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     )
 
     # Cross-entity relationships
@@ -540,14 +538,12 @@ class StatePerson(
 
     birthdate: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#40483): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#40483): Reset validator to just `REASONABLE_OPT_BIRTHDATE_VALIDATOR`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=BIRTHDATE_REASONABLE_LOWER_BOUND
-                ),
+                REASONABLE_OPT_BIRTHDATE_VALIDATOR,
                 exempted_states={
                     # TODO(#36562): Stop hydrating CO ingest data
                     StateCode.US_CO,
@@ -837,14 +833,12 @@ class StateAssessment(
     #   - When
     assessment_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#40499): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#40499): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40500): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 5018-05-17.
@@ -1169,15 +1163,12 @@ class StateIncarcerationPeriod(
     # Attributes
     #   - When
     admission_date: datetime.date = attr.ib(
-        # TODO(#41434): Reset validator to just `attr_validators.is_reasonable_date`
+        # TODO(#41434): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                STANDARD_REASONABLE_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#41446): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
@@ -1191,15 +1182,12 @@ class StateIncarcerationPeriod(
     )
     release_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#41434): Reset validator to just `attr_validators.is_reasonable_date`
+        # TODO(#41434): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#41447): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 4202-02-02.
@@ -1357,15 +1345,12 @@ class StateSupervisionPeriod(
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(
-        # TODO(#41433): Reset validator to just `attr_validators.is_reasonable_date`
+        # TODO(#41433): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                STANDARD_REASONABLE_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#41438): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
@@ -1389,15 +1374,12 @@ class StateSupervisionPeriod(
 
     termination_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#41433): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#41433): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#41438): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
@@ -1806,14 +1788,12 @@ class StateSupervisionViolation(
     #   - When
     violation_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#40455): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#40455): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 0019-07-02.
@@ -1951,14 +1931,12 @@ class StateSupervisionViolationResponse(
     #   - When
     response_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#40455): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#40455): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2913-10-22.
@@ -2152,15 +2130,11 @@ class StateEarlyDischarge(
     #   - When
     request_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
     decision_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     #  - What
@@ -2249,19 +2223,11 @@ class StateScheduledSupervisionContact(
     # Attributes
     #   - When
     scheduled_contact_date: Optional[datetime.date] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt_reasonable_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        default=None, validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR
     )
 
     scheduled_contact_datetime: Optional[datetime.datetime] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt_reasonable_datetime(
-            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_datetime_exclusive=STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        default=None, validator=STANDARD_REASONABLE_OPT_DATETIME_VALIDATOR
     )
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_not_future_datetime
@@ -2416,20 +2382,12 @@ class StateSupervisionContact(
     # TODO(#47474): Delete this field once these dates are hydrated in
     #  StateScheduledSupervisionContact
     scheduled_contact_date: Optional[datetime.date] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt_reasonable_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        default=None, validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR
     )
     # TODO(#47474): Delete this field once these dates are hydrated in
     #  StateScheduledSupervisionContact
     scheduled_contact_datetime: Optional[datetime.datetime] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt_reasonable_datetime(
-            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_datetime_exclusive=STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        default=None, validator=STANDARD_REASONABLE_OPT_DATETIME_VALIDATOR
     )
 
     #   - What
@@ -2542,15 +2500,12 @@ class StateEmploymentPeriod(
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(
-        # TODO(#42889): Reset validator to just `attr_validators.is_reasonable_date`
+        # TODO(#42889): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                STANDARD_REASONABLE_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#42890): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
@@ -2577,15 +2532,12 @@ class StateEmploymentPeriod(
     )
     end_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#42889): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#42889): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#42890): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1000-01-01.
@@ -2609,10 +2561,7 @@ class StateEmploymentPeriod(
     )
     last_verified_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
     )
 
     #   - What
@@ -2672,14 +2621,12 @@ class StateDrugScreen(
     # Attributes
     #   - When
     drug_screen_date: datetime.date = attr.ib(
-        # TODO(#40505): Reset validator to just `attr_validators.is_reasonable_past_date`
+        # TODO(#40505): Reset validator to just `STANDARD_REASONABLE_PAST_DATE_VALIDATOR`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40507): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 0010-01-02.
@@ -2833,15 +2780,11 @@ class StatePersonStaffRelationshipPeriod(
     # Attributes
     #   - When
     relationship_start_date: datetime.date = attr.ib(
-        validator=attr_validators.is_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     )
     relationship_end_date_exclusive: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     #   - Where
@@ -3043,14 +2986,12 @@ class StateStaffRolePeriod(
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(
-        # TODO(#40469): Reset validator to just `attr_validators.is_reasonable_past_date`
+        # TODO(#40469): Reset validator to just `STANDARD_REASONABLE_PAST_DATE_VALIDATOR`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1111-01-01.
@@ -3076,14 +3017,12 @@ class StateStaffRolePeriod(
 
     end_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#40469): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#40469): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40470): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2025-04-01.
@@ -3145,14 +3084,12 @@ class StateStaffSupervisorPeriod(
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(
-        # TODO(#40469): Reset validator to just `attr_validators.is_reasonable_past_date`
+        # TODO(#40469): Reset validator to just `STANDARD_REASONABLE_PAST_DATE_VALIDATOR`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1900-01-01.
@@ -3164,9 +3101,7 @@ class StateStaffSupervisorPeriod(
 
     end_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     #   - What
@@ -3211,14 +3146,12 @@ class StateStaffLocationPeriod(
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(
-        # TODO(#40469): Reset validator to just `attr_validators.is_reasonable_past_date`
+        # TODO(#40469): Reset validator to just `STANDARD_REASONABLE_PAST_DATE_VALIDATOR`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_date,
             state_exempted_validator(
-                attr_validators.is_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2025-04-07.
@@ -3232,14 +3165,12 @@ class StateStaffLocationPeriod(
     )
     end_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#40469): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#40469): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1900-01-01.
@@ -3295,17 +3226,13 @@ class StateStaffCaseloadTypePeriod(
     #   - When
     # The beginning of the period where this officer had this type of specialized caseload
     start_date: datetime.date = attr.ib(
-        validator=attr_validators.is_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     )
 
     # The end of the period where this officer had this type of specialized caseload
     end_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
@@ -3346,7 +3273,7 @@ class StateSentence(
     #   - it has sentencing_authority = StateSentencingAuthority.OTHER_STATE
     imposed_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
@@ -3358,9 +3285,7 @@ class StateSentence(
                 },
             ),
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as high as 2099-09-25.
@@ -3380,9 +3305,7 @@ class StateSentence(
     # which cannot be in the future!
     current_state_provided_start_date: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     # The amount of any time already served (in days) at time of sentence imposition,
@@ -3528,14 +3451,12 @@ class StateChargeV2(
     #   - When
     offense_date: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_past_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_past_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1015-10-12.
@@ -3552,9 +3473,7 @@ class StateChargeV2(
     )
     date_charged: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_past_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
     )
 
     #   - Where
@@ -3651,9 +3570,7 @@ class StateSentenceStatusSnapshot(
 
     # The start of the period of time over which the sentence status is valid
     status_update_datetime: datetime.datetime = attr.ib(
-        validator=attr_validators.is_reasonable_past_datetime(
-            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-        )
+        validator=STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR
     )
     # The status of a sentence
     status: StateSentenceStatus = attr.ib(
@@ -3696,14 +3613,12 @@ class StateSentenceLength(
 
     # The start of the period of time over which the set of all sentence length attributes are valid
     length_update_datetime: datetime.datetime = attr.ib(
-        # TODO(#38799): Reset validator to just `attr_validators.is_reasonable_past_datetime`
+        # TODO(#38799): Reset validator to just `STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR`
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_not_future_datetime,
             state_exempted_validator(
-                attr_validators.is_reasonable_past_datetime(
-                    min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-                ),
+                STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1900-01-01 00:00:00.
@@ -3733,15 +3648,14 @@ class StateSentenceLength(
     # The date on which a person is expected to become eligible for parole under the terms of this sentence
     parole_eligibility_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                # TODO(#53535): Update this field to allow far-future dates for a select
+                #  set of states that are known to have legitimate far-future dates.
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 3005-09-20.
@@ -3754,24 +3668,22 @@ class StateSentenceLength(
     # they will be released to parole from the parent sentence.
     projected_parole_release_date_external: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        # TODO(#53535): Update this field to allow far-future dates for a select
+        #  set of states that are known to have legitimate far-future dates.
+        validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
     )
     # The earliest date on which a person is projected to be released to liberty, if
     # they will be released to liberty from the parent sentence.
     projected_completion_date_min_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                # TODO(#53535): Update this field to allow far-future dates for a select
+                #  set of states that are known to have legitimate far-future dates.
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 3005-09-20.
@@ -3787,11 +3699,13 @@ class StateSentenceLength(
     # they will be released to liberty from the parent sentence.
     projected_completion_date_max_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
+                # TODO(#53535): Update this field to allow far-future dates for a select
+                #  set of states that are known to have legitimate far-future dates.
                 attr_validators.is_opt_reasonable_date(
                     min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
                     max_allowed_date_exclusive=MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
@@ -3879,23 +3793,20 @@ class StateSentenceGroupLength(
 
     # The date when all sentence term attributes are updated
     group_update_datetime: datetime.datetime = attr.ib(
-        validator=attr_validators.is_reasonable_past_datetime(
-            min_allowed_datetime_inclusive=STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND
-        ),
+        validator=STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
     )
 
     # The date on which a person is expected to become eligible for parole under the terms of this sentence
     parole_eligibility_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                # TODO(#53535): Update this field to allow far-future dates for a select
+                #  set of states that are known to have legitimate far-future dates.
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1006-11-05.
@@ -3908,15 +3819,14 @@ class StateSentenceGroupLength(
     # The date on which a person is projected to be released from incarceration to parole
     projected_parole_release_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                # TODO(#53535): Update this field to allow far-future dates for a select
+                #  set of states that are known to have legitimate far-future dates.
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as low as 1009-05-20.
@@ -3930,24 +3840,22 @@ class StateSentenceGroupLength(
     # all sentences in the term.
     projected_full_term_release_date_min_external: datetime.date | None = attr.ib(
         default=None,
-        validator=attr_validators.is_opt_reasonable_date(
-            min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-            max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-        ),
+        # TODO(#53535): Update this field to allow far-future dates for a select
+        #  set of states that are known to have legitimate far-future dates.
+        validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
     )
     # The latest date on which a person is projected to be released to liberty after having completed
     # all sentences in the term.
     projected_full_term_release_date_max_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just `attr_validators.is_opt_reasonable_date`
+        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
         validator=attr.validators.and_(
             attr_validators.is_opt_date,
             state_exempted_validator(
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
+                # TODO(#53535): Update this field to allow far-future dates for a select
+                #  set of states that are known to have legitimate far-future dates.
+                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
                 exempted_states={
                     # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                     #  - Found dates as high as 9999-12-31.

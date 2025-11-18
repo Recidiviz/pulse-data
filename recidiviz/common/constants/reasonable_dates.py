@@ -27,9 +27,9 @@ STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1900-0
 # Dates before this date likely are erroneous values (e.g. typos in data).
 STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2300-01-01")
 
-# Standard lower bound value for person birthdate values in our schema.
-# Some states store records about people who are quite old and there's no reason not to
-# ingest these people.
+# Upper bound value used for sentence projected max dates
+# TODO(#53535): Rename this / set more varied bounds where we think there are legit
+#  dates that fall past this bound.
 MAX_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2500-01-01")
 
 # Standard lower bound value for person birthdate values in our schema.
@@ -43,6 +43,9 @@ BIRTHDATE_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1700-01-01")
 STANDARD_DATETIME_FIELD_REASONABLE_LOWER_BOUND = datetime.datetime.fromisoformat(
     STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND.isoformat()
 )
+# Standard upper bound value for datetime fields in our schema. Dates before this date
+# likely are erroneous values (e.g. typos in data) or data that is so old that it is too
+# unreliable to ingest.
 STANDARD_DATETIME_FIELD_REASONABLE_UPPER_BOUND = datetime.datetime.fromisoformat(
     STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND.isoformat()
 )
