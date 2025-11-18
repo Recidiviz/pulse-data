@@ -160,15 +160,17 @@ products:
         environment: production
       - state_code: US_CA
         environment: production
-      - state_code: US_PA
+      - state_code: US_IA
         environment: production
       - state_code: US_IX
         environment: production
       - state_code: US_MI
         environment: production
-      - state_code: US_TN
-        environment: production
       - state_code: US_ND
+        environment: production
+      - state_code: US_PA
+        environment: production
+      - state_code: US_TN
         environment: production
       - state_code: US_TX
         environment: production

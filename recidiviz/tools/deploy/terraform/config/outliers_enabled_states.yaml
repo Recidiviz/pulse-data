@@ -1,10 +1,11 @@
-# State codes for states that have outliers enabled
-- US_PA
+# State codes for states that have insights enabled
+- US_AZ
+- US_CA
+- US_IA
 - US_ID
 - US_MI
-- US_TN
-- US_CA
 - US_ND
+- US_PA
+- US_TN
 - US_TX
 - US_UT
-- US_AZ
