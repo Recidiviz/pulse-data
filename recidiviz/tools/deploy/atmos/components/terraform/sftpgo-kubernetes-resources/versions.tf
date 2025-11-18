@@ -7,12 +7,12 @@ terraform {
 
     google = {
       source  = "hashicorp/google"
-      version = ">= 6.14.0, < 7"
+      version = ">= 7"
     }
 
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = ">= 6.14.0, < 7"
+      version = ">= 7"
     }
 
     kubernetes = {
@@ -28,6 +28,11 @@ terraform {
     sftpgo = {
       source  = "drakkan/sftpgo"
       version = ">= 0.0.12"
+    }
+
+    sops = {
+      source  = "carlpett/sops"
+      version = "~> 1.0"
     }
   }
 }

@@ -1,0 +1,67 @@
+# Example SOPS-encrypted secrets file for SFTPGo deployment
+# Copy this file to secrets.ingest-project.enc.yaml and encrypt with:
+#   sops --encrypt --in-place secrets.ingest-project.enc.yaml
+#
+# Edit encrypted file with:
+#   sops secrets.ingest-project.enc.yaml
+#
+# The .sops.yaml file configures the KMS key to use for encryption
+
+# Admin password for SFTPGo web interface
+sftpgo_admin_password: "CHANGE_ME_admin_password_here"
+
+# SFTP user password for state-specific user (e.g., tn-sftp)
+sftpgo_user_password: "CHANGE_ME_user_password_here"
+
+# Domain for HTTPS admin interface
+sftpgo_admin_domain: "sftpgo-admin-us-xx.recidiviz.org"
+
+# IP allowlist for HTTPS admin interface (empty list = allow all)
+sftpgo_admin_allowed_ips:
+  - "203.0.113.0/24"      # Example: Office network
+  - "198.51.100.5/32"     # Example: VPN gateway
+# Or set to [] for no restrictions
+
+# IP allowlist for SFTP connections (empty list = allow all)
+sftp_allowed_ips:
+  - "198.51.100.100/32"   # Example: Partner SFTP client IP
+  - "192.0.2.50/32"       # Example: Backup partner IP
+# Or set to [] for no restrictions
+
+# Identity-Aware Proxy (IAP) Configuration
+# Enables Google authentication for admin interface access
+# Works in conjunction with Cloud Armor IP restrictions for layered security
+iap_enabled: false  # Set to true to enable IAP authentication
+
+# OAuth 2.0 Client Credentials (required if iap_enabled is true)
+# These must be created manually in GCP Console (one-time setup):
+#
+# Setup Instructions:
+# 1. Go to: https://console.cloud.google.com/apis/credentials
+# 2. Click "Create Credentials" → "OAuth client ID"
+# 3. If prompted, configure OAuth consent screen first:
+#    - User Type: Internal (for Workspace orgs) or External
+#    - App name: "SFTPGo Admin Access"
+#    - Support email: your-team@recidiviz.org
+#    - Authorized domains: recidiviz.org
+# 4. For OAuth client:
+#    - Application type: Web application
+#    - Name: "SFTPGo Admin IAP Client - US-XX"
+#    - Authorized redirect URIs: Leave empty (IAP manages this)
+# 5. Add the redirect URI for IAP - it is in this format:
+#   - https://iap.googleapis.com/v1/oauth/clientIds/{{ CLIENT_ID }}:handleRedirect
+# 6. Copy the generated Client ID and Client Secret below
+# 7. Encrypt this file with SOPS before committing
+#
+# Note: The google_iap_brand and google_iap_client Terraform resources are
+# deprecated and will stop working in March 2026, so manual creation is required.
+iap_oauth_client_id: "123456789-abcdefghijklmnop.apps.googleusercontent.com"
+iap_oauth_client_secret: "GOCSPX-your_client_secret_here"
+
+# List of users/groups allowed to access admin interface via IAP
+# Format: "user:email@domain.com" or "group:group@domain.com"
+# These members need the "IAP-secured Web App User" role
+iap_access_members:
+  - "user:example-admin@recidiviz.org"
+  - "group:example-sre-team@recidiviz.org"
+# Or set to [] to allow any authenticated user (not recommended)

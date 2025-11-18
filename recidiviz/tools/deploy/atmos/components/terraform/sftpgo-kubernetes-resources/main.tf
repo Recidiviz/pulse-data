@@ -47,6 +47,16 @@ resource "kubernetes_storage_class" "hyperdisk" {
   }
 }
 
+locals {
+  # SFTPGo includes some IP-checking mechanism as part of its web CSRF token validation
+  # These values are needed to allow for proxied request to pass CSRF validation
+  # https://github.com/drakkan/sftpgo/issues/1816
+  allowed_proxy_env_vars = [for index, value  in local.load_balancing_ips :{
+    name = format("env.SFTPGO_HTTPD__BINDINGS__0__PROXY_ALLOWED__%s", index)
+    value = value
+  }]
+}
+
 resource "helm_release" "sftpgo" {
   name      = "sftpgo"
   namespace = kubernetes_namespace.sftpgo.metadata[0].name
@@ -56,50 +66,42 @@ resource "helm_release" "sftpgo" {
 
   values = [replace(file("values.yaml"), "!!LOADBALANCERIP!!", google_compute_address.default.address)]
 
-  set {
-    name  = "serviceAccount.name"
-    value = kubernetes_service_account.sftpgo.metadata[0].name
-  }
+  set = concat(
+    [
+      {
+        name  = "serviceAccount.name"
+        value = kubernetes_service_account.sftpgo.metadata[0].name
+      },
+      {
+        name  = "serviceAccount.create"
+        value = false
+      },
+      {
+        name  = "persistence.enabled"
+        value = true
+      },
+      {
+        name  = "persistence.pvc.storageClassName"
+        value = kubernetes_storage_class.hyperdisk.metadata[0].name
+      },
+      {
+        name  = "persistence.pvc.resources.requests.storage"
+        value = "25Gi"
+      },
+      {
+        name  = "env.SFTPGO_DEFAULT_ADMIN_USERNAME"
+        value = local.sftpgo_admin
+      },
+      {
+        name  = "env.SFTPGO_DEFAULT_ADMIN_PASSWORD"
+        value = local.sftpgo_admin_password
+      },
+    ],
+    local.allowed_proxy_env_vars
+  )
 
-  set {
-    name  = "serviceAccount.create"
-    value = false
-  }
-
-  set {
-    name  = "persistence.enabled"
-    value = true
-  }
-
-  set {
-    name  = "persistence.pvc.storageClassName"
-    value = kubernetes_storage_class.hyperdisk.metadata[0].name
-  }
-
-  set {
-    name  = "persistence.pvc.resources.requests.storage"
-    value = "25Gi"
-  }
-
-  set {
-    name  = "env.SFTPGO_DEFAULT_ADMIN_USERNAME"
-    value = local.sftpgo_admin
-  }
-  set {
-    name  = "env.SFTPGO_DEFAULT_ADMIN_PASSWORD"
-    value = data.google_secret_manager_secret_version.sftpgo_admin_password.secret_data
-  }
+  upgrade_install = true
 }
-
-
-data "google_secret_manager_secret_version" "sftpgo_admin_password" {
-  secret = "sftpgo_admin_password"
-}
-
-data "google_secret_manager_secret_version" "sftpgo_user_password" {
-  secret = "sftpgo_${local.lower_state_code}_password"
-}
-
 
 resource "sftpgo_user" "sftp_user" {
   depends_on = [helm_release.sftpgo]
@@ -118,7 +120,7 @@ resource "sftpgo_user" "sftp_user" {
   permissions = {
     "/" = "*"
   }
-  password = data.google_secret_manager_secret_version.sftpgo_user_password.secret_data
+  password = local.sftpgo_user_password
   status   = 1 # enabled
 }
 
@@ -134,6 +136,51 @@ resource "google_storage_bucket_iam_member" "sftp-bucket-viewer" {
   member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/${kubernetes_namespace.sftpgo.metadata[0].name}/sa/${kubernetes_service_account.sftpgo.metadata[0].name}"
 }
 
+data "google_container_cluster" "primary" {
+  name     = "sftpgo-cluster"
+  location = var.zone
+}
+
+# ClusterIP service for admin HTTP traffic (for load balancer)
+# The annotation tells GKE to create and manage the NEG
+resource "kubernetes_service_v1" "sftpgo_admin_http" {
+  depends_on = [helm_release.sftpgo]
+
+  metadata {
+    name      = "sftpgo-admin-http"
+    namespace = kubernetes_namespace.sftpgo.metadata[0].name
+    annotations = {
+      "cloud.google.com/neg" = jsonencode({
+        "exposed_ports" = {
+          "80" = { "name" = "sftpgo-admin-neg-l7" }
+        }
+      })
+    }
+  }
+
+  spec {
+    type = "ClusterIP"
+
+    selector = {
+      "app.kubernetes.io/name" = "sftpgo"
+    }
+
+    port {
+      name        = "http"
+      port        = 80
+      target_port = 8080
+      protocol    = "TCP"
+    }
+  }
+
+  # Ignore the cloud.google.com/neg-status annotation that GKE automatically adds
+  lifecycle {
+    ignore_changes = [
+      metadata[0].annotations["cloud.google.com/neg-status"]
+    ]
+  }
+}
+
 # Retrieve an access token as the Terraform runner
 data "google_client_config" "provider" {}
 
@@ -147,11 +194,11 @@ provider "kubernetes" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = "https://${var.kubernetes_endpoint}"
     cluster_ca_certificate = base64decode(var.kubernetes_ca_certificate)
     token                  = data.google_client_config.provider.access_token
-    exec {
+    exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "gke-gcloud-auth-plugin"
     }
@@ -161,5 +208,5 @@ provider "helm" {
 provider "sftpgo" {
   host     = "http://${google_compute_address.default.address}:8080"
   username = local.sftpgo_admin
-  password = data.google_secret_manager_secret_version.sftpgo_admin_password.secret_data
+  password = local.sftpgo_admin_password
 }

@@ -8,6 +8,11 @@ variable "region" {
   description = "Region we are provisioning to"
 }
 
+variable "zone" {
+  type        = string
+  description = "Zone we are provisioning to"
+}
+
 variable "state_code" {
   type        = string
   description = "State we are provisioning for"
@@ -28,4 +33,9 @@ variable "kubernetes_ca_certificate" {
   type        = string
   sensitive   = true
   description = "CA Certificate for connecting to the K8s cluster"
+}
+
+variable "config_file" {
+  type        = string
+  description = "Path to SOPS-encrypted YAML file containing secrets and configuration (e.g., secrets.ingest-project.enc.yaml)"
 }

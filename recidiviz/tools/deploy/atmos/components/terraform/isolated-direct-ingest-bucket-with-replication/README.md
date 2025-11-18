@@ -4,6 +4,8 @@ This creates a new standalone GCS ingest bucket, as well as replication rules to
 
 It is expected that a standalone ingest project has already been created for this state, with the storage transfer service enabled. This bucket is then created within that project.
 
+It is also expected that the storage transfer service agent has been created. [Documentation here](https://docs.cloud.google.com/storage-transfer/docs/iam-cloud#simple).
+
 ## Variables
 
 | Name         | Type     | Help                                         |

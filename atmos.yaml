@@ -1,4 +1,4 @@
-base_path: "./"
+base_path: "./recidiviz/tools/deploy/atmos"
 
 components:
   terraform:

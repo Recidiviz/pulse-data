@@ -11,3 +11,5 @@ terraform:
   providers:
     google:
       project: "{{ .settings.context.project_id }}"
+    google-beta:
+      project: "{{ .settings.context.project_id }}"

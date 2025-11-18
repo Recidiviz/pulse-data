@@ -1,0 +1,4 @@
+creation_rules:
+  # Encrypt SFTPGo ingest project secrets using the ingest-project specific KMS key
+  - path_regex: recidiviz/tools/deploy/atmos/components/terraform/sftpgo-kubernetes-resources/configs/*\.enc\.yaml$
+    gcp_kms: projects/recidiviz-staging/locations/us-central1/keyRings/recidiviz-ingest-project-secrets/cryptoKeys/recidiviz-ingest-project-secrets-key

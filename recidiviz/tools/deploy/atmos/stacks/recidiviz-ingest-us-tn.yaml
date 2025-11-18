@@ -1,0 +1,61 @@
+# Infrastructure configuration for components that will be deployed to the recidiviz-ingest-us-tn project
+
+import:
+  - ../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
+
+settings:
+  context:
+    project_id: recidiviz-ingest-us-tn
+    state_code: US_TN
+
+# The variables set here are automatically provided to any components used in this stack.
+vars:
+  project_id: "{{ .settings.context.project_id }}"
+  state_code: "{{ .settings.context.state_code }}"
+
+components:
+  terraform:
+    # Provisions the recidiviz-ingest-uc-nc project
+    vendor/core-project-factory:
+      vars:
+        name: "{{ .settings.context.project_id }}"
+        org_id: "{{ .settings.context.organization_id }}"
+        folder_id: "{{ .settings.context.hipaa_folder_id }}"
+        billing_account: "{{ .settings.context.billing_account }}"
+        # Grant the owner security group owner access (can be gained with go/jit)
+        group_name: "s-{{ .settings.context.project_id }}-owner"
+        group_role: roles/owner
+        default_service_account: deprivilege
+        deletion_policy: PREVENT
+        activate_apis:
+          - compute.googleapis.com # GCE
+          - container.googleapis.com # GKE
+          - secretmanager.googleapis.com
+          - storagetransfer.googleapis.com
+          - serviceusage.googleapis.com
+          - cloudresourcemanager.googleapis.com
+
+    isolated-direct-ingest-bucket-with-replication:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        state_code: "{{ .settings.context.state_code }}"
+
+    # Provision the cluster and resources separately so that the cluster can be recreated
+    # without the dependent helm resources preventing it if necessary
+    sftpgo-kubernetes-cluster:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        region: us-central1
+        zones:
+          - us-central1-b
+
+    sftpgo-kubernetes-resources:
+      vars:
+        config_file: configs/sftpgo-us-tn.enc.yaml
+        region: !terraform.state sftpgo-kubernetes-cluster {{.stack}} region
+        zone: us-central1-b
+        sftp_bucket_name: !terraform.state isolated-direct-ingest-bucket-with-replication {{.stack}} bucket_name
+        kubernetes_endpoint: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
+        kubernetes_ca_certificate: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate
