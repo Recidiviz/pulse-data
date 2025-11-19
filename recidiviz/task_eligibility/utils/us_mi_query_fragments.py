@@ -477,17 +477,12 @@ LEFT JOIN array_case_notes_cte a
 
 def secondary_officer_dockets_cte() -> str:
     return """
-        open_supervision_sessions AS (
-            SELECT * 
-            FROM `{project_id}.workflows_views.client_record_supervision_sessions_materialized`
-            WHERE end_date_exclusive IS NULL
-        ),
         agent_in_client_rec AS (
             SELECT 
                 state_code,
                 person_id,
                 supervising_officer_external_id AS Case_Manager_Omnni_Employee_Id
-            FROM open_supervision_sessions
+            FROM `{project_id}.workflows_views.client_record_supervision_cases_materialized`
         ),
         secondary_officer_metadata AS (
             SELECT 

@@ -19,7 +19,7 @@ employed by client record. This is used as a sub-criteria for Tasks criteria to 
 the population to the set of clients who are eligible and surfaced in client_record.
 """
 
-from recidiviz.calculator.query.state.views.workflows.client_record_supervision_sessions import (
+from recidiviz.calculator.query.state.views.workflows.client_record_supervision_cases import (
     STATES_WITH_OUT_OF_STATE_CLIENTS_INCLUDED,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
