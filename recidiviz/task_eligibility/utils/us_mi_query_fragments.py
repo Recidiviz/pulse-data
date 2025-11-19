@@ -436,8 +436,8 @@ LEFT JOIN previous_ad_seg_stays_for_form pf
 LEFT JOIN previous_ad_seg_stays p
     USING (person_id)
 LEFT JOIN (
-    SELECT state_code, person_id, housing_unit_type, start_date
-    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized`
+    SELECT state_code, person_id, housing_unit_type_update AS housing_unit_type, start_date
+    FROM `{{project_id}}.{{sessions_dataset}}.us_mi_housing_unit_type_collapsed_one_day_temp_seg_sessions`
     WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
 ) h
     USING (state_code, person_id)
