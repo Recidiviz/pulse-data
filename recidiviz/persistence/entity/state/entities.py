@@ -28,10 +28,6 @@ import attr
 
 from recidiviz.common import attr_utils, attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.reasonable_dates import (
-    MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
-    STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -174,6 +170,7 @@ from recidiviz.persistence.entity.state.reasonable_date_validators import (
     STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
+    reasonable_projected_sentence_date_validator,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
@@ -3648,80 +3645,51 @@ class StateSentenceLength(
     # The date on which a person is expected to become eligible for parole under the terms of this sentence
     parole_eligibility_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                # TODO(#53535): Update this field to allow far-future dates for a select
-                #  set of states that are known to have legitimate far-future dates.
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 3005-09-20.
-                    StateCode.US_AR,
-                },
-            ),
+        validator=reasonable_projected_sentence_date_validator(
+            exempted_states={
+                # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 3005-09-20.
+                StateCode.US_AR,
+            },
         ),
     )
     # The date on which a person is projected to be released from incarceration to parole, if
     # they will be released to parole from the parent sentence.
     projected_parole_release_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#53535): Update this field to allow far-future dates for a select
-        #  set of states that are known to have legitimate far-future dates.
-        validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+        validator=reasonable_projected_sentence_date_validator(),
     )
     # The earliest date on which a person is projected to be released to liberty, if
     # they will be released to liberty from the parent sentence.
     projected_completion_date_min_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                # TODO(#53535): Update this field to allow far-future dates for a select
-                #  set of states that are known to have legitimate far-future dates.
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 3005-09-20.
-                    StateCode.US_AR,
-                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 3301-02-25.
-                    StateCode.US_MO,
-                },
-            ),
+        validator=reasonable_projected_sentence_date_validator(
+            exempted_states={
+                # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 3005-09-20.
+                StateCode.US_AR,
+                # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 3301-02-25.
+                StateCode.US_MO,
+            },
         ),
     )
     # The latest date on which a person is projected to be released to liberty, if
     # they will be released to liberty from the parent sentence.
     projected_completion_date_max_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                # TODO(#53535): Update this field to allow far-future dates for a select
-                #  set of states that are known to have legitimate far-future dates.
-                attr_validators.is_opt_reasonable_date(
-                    min_allowed_date_inclusive=STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND,
-                    max_allowed_date_exclusive=MAX_DATE_FIELD_REASONABLE_UPPER_BOUND,
-                ),
-                exempted_states={
-                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 3005-09-20.
-                    StateCode.US_AR,
-                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 9999-12-31.
-                    StateCode.US_MO,
-                    # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 2924-02-01.
-                    StateCode.US_NE,
-                },
-            ),
+        validator=reasonable_projected_sentence_date_validator(
+            exempted_states={
+                # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 3005-09-20.
+                StateCode.US_AR,
+                # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 9999-12-31.
+                StateCode.US_MO,
+                # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 2924-02-01.
+                StateCode.US_NE,
+            },
         ),
     )
 
@@ -3799,72 +3767,46 @@ class StateSentenceGroupLength(
     # The date on which a person is expected to become eligible for parole under the terms of this sentence
     parole_eligibility_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                # TODO(#53535): Update this field to allow far-future dates for a select
-                #  set of states that are known to have legitimate far-future dates.
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1006-11-05.
-                    #  - Found dates as high as 9994-02-28.
-                    StateCode.US_MO,
-                },
-            ),
+        validator=reasonable_projected_sentence_date_validator(
+            exempted_states={
+                # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1006-11-05.
+                #  - Found dates as high as 9994-02-28.
+                StateCode.US_MO,
+            },
         ),
     )
     # The date on which a person is projected to be released from incarceration to parole
     projected_parole_release_date_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                # TODO(#53535): Update this field to allow far-future dates for a select
-                #  set of states that are known to have legitimate far-future dates.
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1009-05-20.
-                    #  - Found dates as high as 6201-03-23.
-                    StateCode.US_MO,
-                },
-            ),
+        validator=reasonable_projected_sentence_date_validator(
+            exempted_states={
+                # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1009-05-20.
+                #  - Found dates as high as 6201-03-23.
+                StateCode.US_MO,
+            },
         ),
     )
     # The earliest date on which a person is projected to be released to liberty after having completed
     # all sentences in the term.
     projected_full_term_release_date_min_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#53535): Update this field to allow far-future dates for a select
-        #  set of states that are known to have legitimate far-future dates.
-        validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+        validator=reasonable_projected_sentence_date_validator(),
     )
     # The latest date on which a person is projected to be released to liberty after having completed
     # all sentences in the term.
     projected_full_term_release_date_max_external: datetime.date | None = attr.ib(
         default=None,
-        # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-        #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                # TODO(#53535): Update this field to allow far-future dates for a select
-                #  set of states that are known to have legitimate far-future dates.
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 9999-12-31.
-                    StateCode.US_IX,
-                    # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 2924-02-01.
-                    StateCode.US_NE,
-                },
-            ),
+        validator=reasonable_projected_sentence_date_validator(
+            exempted_states={
+                # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 9999-12-31.
+                StateCode.US_IX,
+                # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 2924-02-01.
+                StateCode.US_NE,
+            },
         ),
     )
 

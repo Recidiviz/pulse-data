@@ -31,6 +31,14 @@ import attr
 import pytz
 
 
+class DateBelowLowerBoundError(ValueError):
+    """Raised when a date value is below the minimum allowed date."""
+
+
+class DateAboveUpperBoundError(ValueError):
+    """Raised when a date value is above the maximum allowed date."""
+
+
 class IsOptionalValidator:
     def __init__(self, expected_cls_type: Type) -> None:
         self._expected_cls_type = expected_cls_type
@@ -444,7 +452,7 @@ def _assert_value_falls_in_bounds(
     max_allowed_date_exclusive: datetime.date | datetime.datetime,
 ) -> None:
     if value < min_allowed_date_inclusive:
-        raise ValueError(
+        raise DateBelowLowerBoundError(
             f"Found [{attribute.name}] value on class [{type(instance).__name__}] with "
             f"value [{value.isoformat()}] which is less than "
             f"[{min_allowed_date_inclusive.isoformat()}], the (inclusive) min allowed "
@@ -452,7 +460,7 @@ def _assert_value_falls_in_bounds(
         )
 
     if value >= max_allowed_date_exclusive:
-        raise ValueError(
+        raise DateAboveUpperBoundError(
             f"Found [{attribute.name}] value on class [{type(instance).__name__}] with "
             f"value [{value.isoformat()}] which is greater than or equal to "
             f"[{max_allowed_date_exclusive.isoformat()}], the (exclusive) max allowed "

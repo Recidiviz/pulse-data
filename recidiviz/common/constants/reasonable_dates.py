@@ -27,10 +27,24 @@ STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1900-0
 # Dates before this date likely are erroneous values (e.g. typos in data).
 STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2300-01-01")
 
-# Upper bound value used for sentence projected max dates
-# TODO(#53535): Rename this / set more varied bounds where we think there are legit
-#  dates that fall past this bound.
-MAX_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2500-01-01")
+
+# Upper bound for US_AZ projected sentence dates. Arizona tracks life sentences with
+# release dates hundreds of years in the future (e.g. 10 consecutive 50-year sentences).
+US_AZ_PROJECTED_SENTENCE_DATE_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat(
+    "2700-01-01"
+)
+
+# Upper bound for US_TN projected sentence dates. Tennessee tracks sentences with
+# release dates in the far future for very long or consecutive sentences.
+US_TN_PROJECTED_SENTENCE_DATE_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat(
+    "2500-01-01"
+)
+
+# Upper bound for US_UT projected sentence dates. Utah tracks sentences with
+# release dates in the far future for very long or consecutive sentences.
+US_UT_PROJECTED_SENTENCE_DATE_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat(
+    "2500-01-01"
+)
 
 # Standard lower bound value for person birthdate values in our schema.
 # Some states store records about people who are quite old and there's no reason not to
