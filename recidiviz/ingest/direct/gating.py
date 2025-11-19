@@ -367,7 +367,7 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "eomis_ptyotherid": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "eomis_relatedcodevalue": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "eomis_relatedparty": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
-        "eomis_RiskAsmtTool": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "eomis_riskasmttool": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "eomis_sentcompchaining": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "eomis_sentencecomponent": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "eomis_sentencecompute": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
