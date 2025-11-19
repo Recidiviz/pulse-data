@@ -1081,8 +1081,12 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
             start_date,
             end_date,
             event_count = 0 as meets_criteria,
-            TO_JSON(STRUCT(event_dates)) AS reason,
+            TO_JSON(STRUCT(
+                event_dates,
+                event_dates[SAFE_ORDINAL(1)] AS latest_event_date
+            )) AS reason,
             event_dates,
+            event_dates[SAFE_ORDINAL(1)] AS latest_event_date,
         FROM event_count_spans
     """
 
@@ -1096,6 +1100,11 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
                 name="event_dates",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date(s) when the sanction occurred",
+            ),
+            ReasonsField(
+                name="latest_event_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when the latest sanction occurred",
             ),
         ],
     )
@@ -1478,7 +1487,6 @@ def status_for_at_least_x_time_criteria_query(
     additional_where_clause: str = "",
     additional_column: str = "",
 ) -> str:
-
     """
     Returns a criteria query builder that has spans of time when someone has been in a
     certain status for at least a given amount of time.
@@ -1565,8 +1573,10 @@ def status_for_at_least_x_time_criteria_query(
 
 
 def get_reason_json_fields_query_template_for_criteria(
-    criteria_builder: StateSpecificTaskCriteriaBigQueryViewBuilder
-    | StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    criteria_builder: (
+        StateSpecificTaskCriteriaBigQueryViewBuilder
+        | StateAgnosticTaskCriteriaBigQueryViewBuilder
+    ),
 ) -> str:
     """Returns a query template that extracts all json fields from a criteria builder"""
     return ",\n".join(

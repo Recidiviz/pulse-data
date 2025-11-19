@@ -127,6 +127,7 @@ class TaskCompletionEventType(Enum):
     SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM = (
         "SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM"
     )
+    GOOD_TIME_REINSTATED = "GOOD_TIME_REINSTATED"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -146,6 +147,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.HEARING_OCCURRED,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.GOOD_TIME_REINSTATED,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_PAROLE,
@@ -233,6 +235,7 @@ class TaskCompletionEventType(Enum):
         ]:
             return DecarceralImpactType.TRANSFER_TO_COMMUNITY_CONFINEMENT
         if self in [
+            TaskCompletionEventType.GOOD_TIME_REINSTATED,
             TaskCompletionEventType.RELEASE_TO_PAROLE,
         ]:
             return DecarceralImpactType.RELEASE_TO_PAROLE
@@ -329,6 +332,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.KUDOS_SMS_SENT,
+            TaskCompletionEventType.GOOD_TIME_REINSTATED,
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
             TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
@@ -367,6 +371,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM_OVERDUE,
+            TaskCompletionEventType.GOOD_TIME_REINSTATED,
             TaskCompletionEventType.GRANTED_FURLOUGH,
             TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
