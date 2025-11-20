@@ -364,14 +364,16 @@ def _create_or_update_view_and_materialize_if_necessary(
 
     view_configuration_changed = (
         existing_view is None
-        # Update the view if clustering fields have changed
-        or existing_view.clustering_fields != updated_view.clustering_fields
-        # Update the view if time partitioning configuration has changed
-        or existing_view.time_partitioning != updated_view.time_partitioning
         # We also check for schema changes, just in case a parent view or table has
         # added a column
         or existing_view.schema != updated_view.schema
         or existing_materialized_table is None
+        # Update the view if clustering fields have changed (clustering info stored on
+        # the materialized table)
+        or existing_materialized_table.clustering_fields != view.clustering_fields
+        # Update the view if time partitioning configuration has changed (partitioning
+        # info stored on the materialized table)
+        or existing_materialized_table.time_partitioning != view.time_partitioning
         # If the updated view's schema doesn't match the materialized table's data,
         # we're also in a state where schema changes haven't been fully reflected.
         or updated_view.schema != existing_materialized_table.schema

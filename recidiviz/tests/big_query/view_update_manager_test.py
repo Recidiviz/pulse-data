@@ -207,6 +207,8 @@ class ViewManagerTest(unittest.TestCase):
                     dataset_id=address.dataset_id,
                     table_id=address.table_id,
                     schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
                 )
 
             if mock_view_builders[0].view_id == address.table_id:
@@ -326,6 +328,8 @@ class ViewManagerTest(unittest.TestCase):
                     dataset_id=address.dataset_id,
                     table_id=address.table_id,
                     schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
                 )
 
             if mock_view_builders[0].view_id == address.table_id:
@@ -345,6 +349,8 @@ class ViewManagerTest(unittest.TestCase):
             return mock.MagicMock(
                 view_query=view_query,
                 schema=schema,
+                clustering_fields=None,
+                time_partitioning=None,
             )
 
         # Create/Update returns the table that was already there
@@ -385,17 +391,17 @@ class ViewManagerTest(unittest.TestCase):
         # Materialize is called where appropriate!
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [
-                # This view was updated
+                # This view was updated (query changed, but not configuration)
                 mock.call(
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
-                    view_configuration_changed=True,
+                    view_configuration_changed=False,
                 ),
                 # Child view of updated view is also materialized
                 mock.call(
                     view=mock_view_builders[2].build(),
                     use_query_cache=True,
-                    view_configuration_changed=True,
+                    view_configuration_changed=False,
                 ),
             ],
             any_order=True,
@@ -876,3 +882,232 @@ class ViewManagerTest(unittest.TestCase):
                 f"DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED, which should only "
                 f"contain datasets that currently hold or once held managed views.",
             )
+
+    def test_materialize_view_with_clustering_fields_changed(self) -> None:
+        """Tests that when a view's clustering fields are added/changed, the materialized table
+        is recreated with view_configuration_changed=True, even though the view object itself
+        doesn't have clustering fields (since views in BigQuery don't support clustering).
+
+        Tests two scenarios:
+        1. Adding clustering where none existed (None -> ["state_code"])
+        2. Changing existing clustering (["person_id"] -> ["state_code", "person_id"])
+        """
+        mock_view_builders = [
+            # View 1: Adding clustering where none existed
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="view_adding_clustering",
+                description="view_adding_clustering description",
+                view_query_template="SELECT state_code, person_id FROM table",
+                should_materialize=True,
+                clustering_fields=["state_code"],
+            ),
+            # View 2: Changing existing clustering fields
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="view_changing_clustering",
+                description="view_changing_clustering description",
+                view_query_template="SELECT state_code, person_id FROM table",
+                should_materialize=True,
+                clustering_fields=["state_code", "person_id"],
+            ),
+        ]
+
+        def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
+            schema = [
+                bigquery.SchemaField("state_code", "STRING", "REQUIRED"),
+                bigquery.SchemaField("person_id", "STRING", "REQUIRED"),
+            ]
+
+            # Materialized table for view 1: has no clustering
+            if address == mock_view_builders[0].materialized_address:
+                return mock.MagicMock(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                    schema=schema,
+                    clustering_fields=None,  # Old table had no clustering
+                    time_partitioning=None,
+                )
+
+            # Materialized table for view 2: has different clustering
+            if address == mock_view_builders[1].materialized_address:
+                return mock.MagicMock(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                    schema=schema,
+                    clustering_fields=["person_id"],  # Old table clustered differently
+                    time_partitioning=None,
+                )
+
+            # View objects don't have clustering (realistic - views don't cluster in BQ)
+            if address.table_id == mock_view_builders[0].view_id:
+                view = mock_view_builders[0].build()
+                return mock.MagicMock(
+                    view_query=view.view_query,
+                    schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
+                )
+
+            if address.table_id == mock_view_builders[1].view_id:
+                view = mock_view_builders[1].build()
+                return mock.MagicMock(
+                    view_query=view.view_query,
+                    schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
+                )
+
+            raise ValueError(f"Unexpected address [{address}]")
+
+        def mock_create_or_update(
+            view: BigQueryView, might_exist: bool  # pylint: disable=W0613
+        ) -> bigquery.Table:
+            return mock_get_table(view.address)
+
+        self.mock_client.get_table = mock_get_table
+        self.mock_client.create_or_update_view.side_effect = mock_create_or_update
+
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
+            view_builders_to_update=mock_view_builders,
+            historically_managed_datasets_to_clean=None,
+            rematerialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
+        )
+
+        # Both views should materialize with view_configuration_changed=True
+        self.mock_client.materialize_view_to_table.assert_has_calls(
+            [
+                mock.call(
+                    view=mock_view_builders[0].build(),
+                    use_query_cache=True,
+                    view_configuration_changed=True,
+                ),
+                mock.call(
+                    view=mock_view_builders[1].build(),
+                    use_query_cache=True,
+                    view_configuration_changed=True,
+                ),
+            ],
+            any_order=True,
+        )
+
+    def test_materialize_view_with_time_partitioning_changed(self) -> None:
+        """Tests that when a view's time partitioning configuration is added/changed, the
+        materialized table is recreated with view_configuration_changed=True, even though the
+        view object itself doesn't have time partitioning (since views in BigQuery don't support
+        partitioning).
+
+        Tests two scenarios:
+        1. Adding partitioning where none existed (None -> DAY partitioning)
+        2. Changing existing partitioning (HOUR -> DAY partitioning)
+        """
+        new_partitioning_config = bigquery.TimePartitioning(
+            type_=bigquery.TimePartitioningType.DAY,
+            field="update_datetime",
+        )
+
+        old_partitioning_config = bigquery.TimePartitioning(
+            type_=bigquery.TimePartitioningType.HOUR,
+            field="update_datetime",
+        )
+
+        mock_view_builders = [
+            # View 1: Adding partitioning where none existed
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="view_adding_partitioning",
+                description="view_adding_partitioning description",
+                view_query_template="SELECT update_datetime, person_id FROM table",
+                should_materialize=True,
+                time_partitioning=new_partitioning_config,
+            ),
+            # View 2: Changing existing partitioning
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="view_changing_partitioning",
+                description="view_changing_partitioning description",
+                view_query_template="SELECT update_datetime, person_id FROM table",
+                should_materialize=True,
+                time_partitioning=new_partitioning_config,
+            ),
+        ]
+
+        def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
+            schema = [
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+                bigquery.SchemaField("person_id", "STRING", "REQUIRED"),
+            ]
+
+            # Materialized table for view 1: has no time partitioning
+            if address == mock_view_builders[0].materialized_address:
+                return mock.MagicMock(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                    schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,  # Old table had no partitioning
+                )
+
+            # Materialized table for view 2: has different time partitioning
+            if address == mock_view_builders[1].materialized_address:
+                return mock.MagicMock(
+                    dataset_id=address.dataset_id,
+                    table_id=address.table_id,
+                    schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=old_partitioning_config,  # Old table partitioned differently
+                )
+
+            # View objects don't have time partitioning (realistic - views don't partition in BQ)
+            if address.table_id == mock_view_builders[0].view_id:
+                view = mock_view_builders[0].build()
+                return mock.MagicMock(
+                    view_query=view.view_query,
+                    schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
+                )
+
+            if address.table_id == mock_view_builders[1].view_id:
+                view = mock_view_builders[1].build()
+                return mock.MagicMock(
+                    view_query=view.view_query,
+                    schema=schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
+                )
+
+            raise ValueError(f"Unexpected address [{address}]")
+
+        def mock_create_or_update(
+            view: BigQueryView, might_exist: bool  # pylint: disable=W0613
+        ) -> bigquery.Table:
+            return mock_get_table(view.address)
+
+        self.mock_client.get_table = mock_get_table
+        self.mock_client.create_or_update_view.side_effect = mock_create_or_update
+
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
+            view_builders_to_update=mock_view_builders,
+            historically_managed_datasets_to_clean=None,
+            rematerialize_changed_views_only=True,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
+        )
+
+        # Both views should materialize with view_configuration_changed=True
+        self.mock_client.materialize_view_to_table.assert_has_calls(
+            [
+                mock.call(
+                    view=mock_view_builders[0].build(),
+                    use_query_cache=True,
+                    view_configuration_changed=True,
+                ),
+                mock.call(
+                    view=mock_view_builders[1].build(),
+                    use_query_cache=True,
+                    view_configuration_changed=True,
+                ),
+            ],
+            any_order=True,
+        )
