@@ -28,8 +28,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_POPULATION"
 
 # TODO(#50537): Update/refine candidate population to ensure it's correct.
-# TODO(#50537): Add SMI cases to candidate population once we have contact standards for
-# those clients we can add in.
 # TODO(#50537): Exclude clients residing in Community Supervision Centers (CSCs).
 _QUERY_TEMPLATE = """
 SELECT
@@ -43,7 +41,6 @@ WHERE state_code = 'US_MO'
     AND compartment_level_2 NOT IN ('ABSCONSION', 'IN_CUSTODY', 'INTERNAL_UNKNOWN')
     -- we only support Tasks for clients at these levels
     AND correctional_level IN ('MEDIUM', 'HIGH', 'MAXIMUM')
-    AND case_type IN ('GENERAL', 'DOMESTIC_VIOLENCE', 'SEX_OFFENSE')
     -- exclude clients in Transition Centers (TCs)
     /* TODO(#50537): Should we do the TC exclusions via `location_metadata` at some
     point, if we can add the necessary info to the metadata there? */
