@@ -240,8 +240,7 @@ class RecidivizGitHubServiceTest(TestCase):
 
         self.github_repo_mock.create_issue.assert_called_with(
             title="[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC",
-            body="""Failed run of [`a.job.id`] on the following dates: [ `2024-01-01T00:00:00+00:00`, `2024-01-02T00:00:00+00:00`, `2024-01-03T00:00:00+00:00` ]. Most recent error message:
-```a.job has failed for the sake of testing ~~```""",
+            body="""Failed run of [`a.job.id`] on the following dates: [ `2024-01-01T00:00:00+00:00`, `2024-01-02T00:00:00+00:00`, `2024-01-03T00:00:00+00:00` ].\n<details>\n<summary>Most recent error message:</summary>\n\n```\na.job has failed for the sake of testing ~~\n```\n</details>""",
             labels=[
                 "Raw Data Import Failure",
                 "Team: State Pod",
@@ -440,7 +439,7 @@ class RecidivizGitHubServiceTest(TestCase):
         self.github_repo_mock.create_issue.assert_not_called()
         issue.edit.assert_called_with(state="open")
         issue.create_comment.assert_called_with(
-            body="Failure for [`a.job.id`] on [ `2024-01-03T00:00:00+00:00` ]"
+            body="Failure for [`a.job.id`] on [ `2024-01-03T00:00:00+00:00` ]."
         )
 
         assert len(logs.output) == 1
@@ -488,7 +487,7 @@ class RecidivizGitHubServiceTest(TestCase):
                 "Failure for [a.job.id] on [ 2024-01-02T00:00:00+00:00 ]. Here is some more text too to make sure we are doing startswith."
             ),
             self._create_comment(
-                "Failure for [`a.job.id`] on [ `2024-01-03T00:00:00+00:00` ]",
+                "Failure for [`a.job.id`] on [ `2024-01-03T00:00:00+00:00` ].",
                 login="not-helper-bot",
             ),
         ]
@@ -515,7 +514,7 @@ class RecidivizGitHubServiceTest(TestCase):
         self.github_repo_mock.create_issue.assert_not_called()
         issue.edit.assert_not_called()
         issue.create_comment.assert_called_with(
-            body="Failure for [`a.job.id`] on [ `2024-01-03T00:00:00+00:00` ]"
+            body="Failure for [`a.job.id`] on [ `2024-01-03T00:00:00+00:00` ]."
         )
 
         assert len(logs.output) == 1

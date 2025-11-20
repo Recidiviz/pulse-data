@@ -152,12 +152,13 @@ class RecidivizGitHubService(RecidivizAlertingService):
         cls, incident: AirflowAlertingIncident, *, message_header: str, max_length: int
     ) -> str:
         """Returns a formatted string with the error message from the provided incident.
-        If the full formatted message is longer than |max_length|, the incident error
-        message will be truncated.
+        The error message itself will be rendered in an expandable block to limit
+        clutter in the issue comment thread. If the full formatted message is longer
+        than |max_length|, the incident error message will be truncated.
         """
         max_incident_error_message_length = max_length - len(message_header)
 
-        error_message_template = " Most recent error message:\n```{error_message}```"
+        error_message_template = "\n<details>\n<summary>Most recent error message:</summary>\n\n```\n{error_message}\n```\n</details>"
         max_incident_error_message_length -= len(error_message_template)
 
         error_message = (
@@ -210,7 +211,7 @@ class RecidivizGitHubService(RecidivizAlertingService):
 
     @staticmethod
     def _format_incident_issue_comment_header(incident: AirflowAlertingIncident) -> str:
-        return f"Failure for [`{incident.job_id}`] on [ `{incident.most_recent_failure.isoformat()}` ]"
+        return f"Failure for [`{incident.job_id}`] on [ `{incident.most_recent_failure.isoformat()}` ]."
 
     def _update_existing_issue_for_ongoing_incident(
         self, issue: Issue, incident: AirflowAlertingIncident
