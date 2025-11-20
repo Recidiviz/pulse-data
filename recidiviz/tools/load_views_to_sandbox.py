@@ -928,6 +928,20 @@ def collect_changed_views_and_descendants_to_load(
             start_node_addresses=changed_addresses_info.changed_view_addresses_to_load,
             end_node_addresses=end_addresses,
         )
+
+        # Filter out downstream views that don't match the state_code_filter.
+        # However, keep force-included addresses regardless of state code, as they are
+        # required for correctness (e.g., newly ADDED views that are parents of views
+        # we're loading).
+        if state_code_filter:
+            addresses_to_load = {
+                address
+                for address in addresses_to_load
+                if address in force_include_addresses
+                or address.state_code_for_address() is None
+                or address.state_code_for_address() == state_code_filter
+            }
+
         invalid_ignored_addresses = _find_invalid_ignores(
             full_dag_walker=full_dag_walker,
             address_to_change_type=changed_addresses_info.view_address_to_change_type,
