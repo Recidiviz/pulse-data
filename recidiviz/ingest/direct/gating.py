@@ -520,7 +520,6 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "RECIDIVIZ_REFERENCE_leadership_roster": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_mandatory_minimums": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_psi_supervisor_roster": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
-        "RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_supervision_location_districts_map": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_supervisor_roster": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "SupplementaryCounselorAssignments": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
