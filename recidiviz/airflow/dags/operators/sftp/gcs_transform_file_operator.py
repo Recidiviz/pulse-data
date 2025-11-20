@@ -77,6 +77,7 @@ class RecidivizGcsFileTransformOperator(BaseOperator):
             post_processed_paths,
         )
         if post_processed_paths:
+            # TODO(#53587) Define custom types for operator XCom outputs
             return [
                 {
                     REMOTE_FILE_PATH: self.remote_file_path,

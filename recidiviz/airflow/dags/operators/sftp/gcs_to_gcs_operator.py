@@ -88,6 +88,7 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
 
     def execute(self, context: Context) -> Dict[str, Union[str, int]]:
         super().execute(context)
+        # TODO(#53587) Define custom types for operator XCom outputs
         return {
             REMOTE_FILE_PATH: self.remote_file_path,
             POST_PROCESSED_NORMALIZED_FILE_PATH: self.post_processed_normalized_file_path,

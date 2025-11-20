@@ -128,3 +128,9 @@ class UsTxSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin)
             remote_path=remote_path,
             supported_environments=self.supported_environments(),
         )
+
+    def ingest_ready_files_have_stabilized(
+        self, _ingest_ready_normalized_file_paths: List[str]
+    ) -> bool:
+        """Texas-specific stabilization check for ingest-ready files."""
+        return True

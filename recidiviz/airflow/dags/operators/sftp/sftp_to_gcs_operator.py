@@ -90,6 +90,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
 
     # pylint: disable=unused-argument
     def execute(self, context: Context) -> Dict[str, Union[str, int]]:
+        """Downloads a file from SFTP to GCS and returns metadata about the download."""
         sftp_hook = RecidivizSFTPHook(
             ssh_conn_id=f"{self.region_code.lower()}_sftp_conn_id",
             transport_kwargs=self.delegate.get_transport_kwargs(),
@@ -118,6 +119,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
             remote_path=self.remote_file_path,
         )
 
+        # TODO(#53587) Define custom types for operator XCom outputs
         return {
             REMOTE_FILE_PATH: self.remote_file_path,
             SFTP_TIMESTAMP: self.sftp_timestamp,

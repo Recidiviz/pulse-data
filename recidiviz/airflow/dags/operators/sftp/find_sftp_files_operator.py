@@ -125,6 +125,7 @@ class FindSftpFilesOperator(BaseOperator):
                                 SFTP_TIMESTAMP: file_timestamp,
                             }
                         )
+        # TODO(#53587) Define custom types for operator XCom outputs
         results = [
             file_info
             for file_info in files_to_download_with_timestamps

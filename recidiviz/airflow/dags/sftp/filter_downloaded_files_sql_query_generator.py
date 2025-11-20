@@ -86,6 +86,7 @@ class FilterDownloadedFilesSqlQueryGenerator(
             already_downloaded_file_to_timestamp_set=downloaded_file_to_timestamp_set,
         )
 
+        # TODO(#53587) Define custom types for operator XCom outputs
         return [
             {REMOTE_FILE_PATH: file, SFTP_TIMESTAMP: timestamp}
             for file, timestamp in discovered_not_yet_downloaded_files

@@ -176,3 +176,9 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
                 f"(see 1Password for login) or contact Michigan to get them to delete "
                 f"the files."
             )
+
+    def ingest_ready_files_have_stabilized(
+        self, _ingest_ready_normalized_file_paths: List[str]
+    ) -> bool:
+        """Michigan-specific stabilization check for ingest-ready files."""
+        return True

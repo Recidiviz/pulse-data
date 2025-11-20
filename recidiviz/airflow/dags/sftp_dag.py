@@ -17,7 +17,7 @@
 """The DAG configuration for downloading files from SFTP."""
 import logging
 from datetime import timedelta
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from airflow.decorators import dag, task
 from airflow.models import DagRun
@@ -78,6 +78,7 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generato
 )
 from recidiviz.airflow.dags.sftp.metadata import (
     END_SFTP,
+    POST_PROCESSED_NORMALIZED_FILE_PATH,
     SFTP_ENABLED_YAML_CONFIG,
     SFTP_EXCLUDED_PATHS_YAML_CONFIG,
     SFTP_REQUIRED_RESOURCES,
@@ -102,6 +103,7 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.types import assert_type
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -185,12 +187,10 @@ def xcom_output_is_non_empty_list(
     return task_id_if_empty
 
 
-def discovered_files_lists_are_equal_and_non_empty(
-    xcom_prior_discovered_files: Optional[List],
-    xcom_discovered_files: Optional[List],
-    task_ids_if_equal: List[str],
-    task_id_if_not_equal_or_empty: str,
-) -> Union[str, List[str]]:
+def _discovered_files_lists_are_equal_and_non_empty(
+    xcom_prior_discovered_files: Optional[List[Dict[str, str]]],
+    xcom_discovered_files: Optional[List[Dict[str, str]]],
+) -> bool:
     if xcom_prior_discovered_files is None:
         raise ValueError("Expected to have a non-null previously discovered files list")
     if xcom_discovered_files is None:
@@ -199,8 +199,33 @@ def discovered_files_lists_are_equal_and_non_empty(
         len(xcom_prior_discovered_files) != len(xcom_discovered_files)
         or len(xcom_discovered_files) == 0
     ):
-        return task_id_if_not_equal_or_empty
-    return task_ids_if_equal
+        return False
+    return True
+
+
+@task.branch(trigger_rule=TriggerRule.ALL_DONE)
+def check_if_ingest_ready_files_have_stabilized(
+    state_code: StateCode,
+    xcom_prior_discovered_files: Optional[List[Dict[str, str]]],
+    xcom_discovered_files: Optional[List[Dict[str, str]]],
+    task_ids_if_should_upload: List[str],
+    task_id_if_should_not_upload: str,
+) -> Union[str, List[str]]:
+    if not _discovered_files_lists_are_equal_and_non_empty(
+        xcom_prior_discovered_files, xcom_discovered_files
+    ):
+        return task_id_if_should_not_upload
+
+    delegate = SftpDownloadDelegateFactory.build(region_code=state_code.value)
+    if not delegate.ingest_ready_files_have_stabilized(
+        _ingest_ready_normalized_file_paths=[
+            row[POST_PROCESSED_NORMALIZED_FILE_PATH]
+            for row in assert_type(xcom_discovered_files, list)
+        ]
+    ):
+        return task_id_if_should_not_upload
+
+    return task_ids_if_should_upload
 
 
 @task
@@ -490,25 +515,16 @@ def sftp_dag() -> None:
                     >> release_permission_for_ingest_file_upload
                 )
 
-            check_if_ingest_ready_files_have_stabilized = BranchPythonOperator(
-                task_id="check_if_ingest_ready_files_have_stabilized",
-                python_callable=discovered_files_lists_are_equal_and_non_empty,
-                op_kwargs={
-                    "xcom_prior_discovered_files": XComArg(
-                        gather_prior_discovered_ingest_ready_files
-                    ),
-                    "xcom_discovered_files": XComArg(
-                        gather_discovered_ingest_ready_files
-                    ),
-                    "task_ids_if_equal": [
-                        acquire_locks.task_id,
-                        ensure_acquired_locks.operator.task_id,
-                        release_locks.task_id,
-                    ],
-                    "task_id_if_not_equal_or_empty": do_not_upload_ingest_ready_files.task_id,
-                },
-                # This task will always trigger no matter the status of the prior tasks.
-                trigger_rule=TriggerRule.ALL_DONE,
+            ingest_ready_files_stabilized = check_if_ingest_ready_files_have_stabilized(
+                state_code=state_code,
+                xcom_prior_discovered_files=gather_prior_discovered_ingest_ready_files.output,
+                xcom_discovered_files=gather_discovered_ingest_ready_files.output,
+                task_ids_if_should_upload=[
+                    acquire_locks.task_id,
+                    ensure_acquired_locks.operator.task_id,
+                    release_locks.task_id,
+                ],
+                task_id_if_should_not_upload=do_not_upload_ingest_ready_files.task_id,
             )
 
             (
@@ -517,7 +533,7 @@ def sftp_dag() -> None:
                 >> remote_file_download
                 >> gather_prior_discovered_ingest_ready_files
                 >> ingest_ready_file_discovery
-                >> check_if_ingest_ready_files_have_stabilized
+                >> ingest_ready_files_stabilized
                 >> [
                     ingest_ready_file_upload,
                     do_not_upload_ingest_ready_files,

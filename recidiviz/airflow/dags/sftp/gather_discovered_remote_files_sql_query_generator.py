@@ -45,6 +45,7 @@ class GatherDiscoveredRemoteFilesSqlQueryGenerator(
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[Dict[str, Union[str, int]]]:
+        # TODO(#53587) Define custom types for operator XCom outputs
         return [
             {
                 REMOTE_FILE_PATH: row[REMOTE_FILE_PATH],

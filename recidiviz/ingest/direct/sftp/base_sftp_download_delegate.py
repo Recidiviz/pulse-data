@@ -97,3 +97,10 @@ class BaseSftpDownloadDelegate(abc.ABC):
             ValueError: If the discovered files are invalid for state-specific reasons
         """
         # Default implementation does nothing - states can override for custom validation
+
+    @abc.abstractmethod
+    def ingest_ready_files_have_stabilized(
+        self, _ingest_ready_normalized_file_paths: List[str]
+    ) -> bool:
+        """Checks if the ingest-ready files have stabilized and are ready for upload to
+        the GCS ingest bucket"""

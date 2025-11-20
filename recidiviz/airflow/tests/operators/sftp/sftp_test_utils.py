@@ -47,6 +47,7 @@ class FakeSftpDownloadDelegateFactory(SftpDownloadDelegateFactory):
 
 
 class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
+    """Fake SFTP download delegate for US-XX region"""
 
     allow_empty_sftp_directory: bool = False
 
@@ -77,8 +78,14 @@ class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
     ) -> None:
         pass
 
+    def ingest_ready_files_have_stabilized(
+        self, _ingest_ready_normalized_file_paths: List[str]
+    ) -> bool:
+        return True
+
 
 class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMixin):
+    """Fake SFTP download delegate for US-LL region"""
 
     allow_empty_sftp_directory: bool = True
 
@@ -112,3 +119,8 @@ class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate, RemoteFileCleanupMi
             remote_path=remote_path,
             supported_environments=self.supported_environments(),
         )
+
+    def ingest_ready_files_have_stabilized(
+        self, _ingest_ready_normalized_file_paths: List[str]
+    ) -> bool:
+        return True

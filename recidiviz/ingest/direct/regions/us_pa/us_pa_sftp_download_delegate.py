@@ -125,3 +125,9 @@ class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
         self, *, sftp_client: paramiko.SFTPClient, remote_path: str
     ) -> None:
         pass
+
+    def ingest_ready_files_have_stabilized(
+        self, _ingest_ready_normalized_file_paths: List[str]
+    ) -> bool:
+        """Pennsylvania-specific stabilization check for ingest-ready files."""
+        return True

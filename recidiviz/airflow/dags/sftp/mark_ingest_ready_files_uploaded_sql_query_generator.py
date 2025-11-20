@@ -77,6 +77,7 @@ class MarkIngestReadyFilesUploadedSqlQueryGenerator(
 
         # Due to how Airflow wraps XCOM values, we need to access the underlying
         # dictionary in order to properly serialize for the next task
+        # TODO(#53587) Define custom types for operator XCom outputs
         return [{**metadata} for metadata in ingest_ready_files_with_uploaded_paths]
 
     def update_sql_query(

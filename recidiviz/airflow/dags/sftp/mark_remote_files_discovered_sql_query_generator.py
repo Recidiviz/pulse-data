@@ -85,6 +85,7 @@ class MarkRemoteFilesDiscoveredSqlQueryGenerator(
 
         # Due to how Airflow wraps XCOM values, we need to access the underlying
         # dictionary in order to properly serialize for the next task
+        # TODO(#53587) Define custom types for operator XCom outputs
         return [{**metadata} for metadata in sftp_files_with_timestamps]
 
     def exists_sql_query(self, file_to_timestamp_set: Set[Tuple[str, int]]) -> str:

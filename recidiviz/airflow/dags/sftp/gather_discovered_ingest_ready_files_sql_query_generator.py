@@ -48,6 +48,7 @@ class GatherDiscoveredIngestReadyFilesSqlQueryGenerator(
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[Dict[str, Union[str, int]]]:
+        # TODO(#53587) Define custom types for operator XCom outputs
         return [
             {
                 POST_PROCESSED_NORMALIZED_FILE_PATH: row[

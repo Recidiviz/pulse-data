@@ -81,6 +81,7 @@ class FilterInvalidGcsFilesOperator(BaseOperator):
             if gcsfs.is_file(post_processed_file_path):
                 file = GcsfsFilePath.from_absolute_path(post_processed_file_path)
                 if self._is_supported_extension(file.abs_path()):
+                    # TODO(#53587) Define custom types for operator XCom outputs
                     final_metadatas.append(
                         {
                             **metadata,
