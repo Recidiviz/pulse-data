@@ -27,7 +27,7 @@ input_columns:
   DAYS: STRING
   START_DATE: STRING
 unused_columns:
-  - PROBABLE_RELEASE_DATE
+  - SENTENCE_EXPIRY_DATE
   - CALC_POS_REL_DATE
   - OVR_POS_REL_DATE
 output:
@@ -56,7 +56,7 @@ output:
           # 47 entries where START_DATE is also NULL. The EFFECTIVE_DATE field is theoretically
           # the effective date of the sentence, not a specific term associated with it.
           effective_date: EFFECTIVE_DATE
-          projected_max_release_date: SENTENCE_EXPIRY_DATE
+          projected_max_release_date: PROBABLE_RELEASE_DATE
           parole_eligibility_date: PAROLE_DATE
           # NOTE: PAROLE_DATE is the date a person was granted parole, not the date they
           # became eligible. It is currently the most accurate proxy we have for PED.
