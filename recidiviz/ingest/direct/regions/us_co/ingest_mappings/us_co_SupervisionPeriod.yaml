@@ -1,0 +1,178 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_SupervisionPeriod` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  start_datetime: DATETIME
+  end_datetime: DATETIME
+  start_event: STRING
+  end_event: STRING
+  start_reason: STRING
+  start_status: STRING
+  start_location: STRING
+  start_officer: STRING
+  period_id: INTEGER
+unused_columns:
+  - start_officer
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - period_id
+          supervision_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - start_reason
+                    - $literal("24 // Absconder-Warrant Issued") # TODO(#53644): Get this value into supervision_type_raw_text
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
+              - $else_if:
+                  $equal:
+                    - start_reason
+                    - $literal("64 // Deported by Federal ICE") # TODO(#53644): Get this value into supervision_type_raw_text
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.DEPORTED)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: start_status
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.ABSCONSION:
+                        - "AB // AWOL (Absconded)"
+                        - "AW // AWOL"
+                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
+                        - "AR // Arrested"
+                      StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+                        - "IN // Inmate Receiving Parole Services"
+                        - "SP // Inmate Receiving TSP"
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "AC // Active"
+                        - "EM // On Electronic Monitoring"
+                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                        - "DT // Detained"
+                        - "IA // Closed (i.e., OFF SYSTEM)"
+                        - "IP // OS (Off System)"
+                        - "OS // Interstate Compact"
+          start_date: start_datetime
+          termination_date: end_datetime
+          supervision_site: start_location
+          admission_reason:
+            $enum_mapping:
+              $raw_text: start_event
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                  - "L05 // AWOL (Absconded)"
+                  - "L23 // AWOL"
+                StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                  - "G00 // Began TSP/Supv. in Comm."
+                  - "G01 // Intake Parole Case"
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION:
+                  - "G11 // Returned to Parole"
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - "G02 // Supervision Transfer"
+                  - "G10 // Caseload Reassignment"
+                  - "S11 // EM Started/Continued"
+                  - "S12 // EM Ended"
+                StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - "G03 // Returned From Other Jurisdiction"
+                  - "G05 // AWOL (Absconder) in Custody"
+                  - "G07 // Transferred to another County Jail"
+                  - "G12 // Parole Officer Assigned"
+                  - "L00 // Ended TSP/Supv. in Comm."
+                  - "L03 // Transferred To/Continued in Other Jurisdiction"
+                  - "L06 // Revoked"
+                  - "L07 // Revoked (Sent to CCC)"
+                  - "L08 // Revoked (Other)"
+                  - "L10 // Offender Died - Received Death Certificate"
+                  - "L11 // Discharged"
+                  - "L12 // Earned Discharge"
+                  - "L16 // Closed ISC Interest"
+                  - "S01 // Changed Supervision Status"
+                  - "S02 // Changed Type Of Supervision"
+                  - "S18 // Offender Died - Awaiting Death Certificate"
+                  - "S30 // Arrested"
+                  - "S32 // In-Patient Treatment Program Began"
+                  - "S33 // In-Patient Treatment Program Ended"
+                  - "S34 // Out on Bond"
+                  - "S42 // Hospitalized"
+                  - "S43 // Released from Hospital"
+                  - "S44 // Placed Parolee-In-Prison"
+                  - "S47 // Placed Parolee in CCC"
+                  - "S48 // CCC Residence Ended"
+                  - "S49 // CRES Assigned"
+                  - "S58 // Waiting on Formal Discharge Document"
+                  - "S59 // Sure / Swift Sanction"
+                  - "S60 // Appeared in Count"
+                  - "S61 // One Day Revocation"
+                  - "S63 // Comm. Supv. Notification"
+                  - "S90 // Sealed/Expunged"
+                  - "S91 // Awaiting Transportation to Facility"
+                  - "S92 // Conversion"
+                  - "S98 // Converted Data Repair"
+                  - "S99 // Unable to decipher DCIS - See Comments"
+          termination_reason:
+            $enum_mapping:
+              $raw_text: end_event
+              $mappings:
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - "L05 // AWOL (Absconded)"
+                  - "L23 // AWOL"
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - "S18 // Offender Died - Awaiting Death Certificate"
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - "L11 // Discharged"
+                  - "L12 // Earned Discharge"
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - "L06 // Revoked"
+                StateSupervisionPeriodTerminationReason.SUSPENSION:
+                  - "G05 // AWOL (Absconder) in Custody"
+                  - "S30 // Arrested"
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - "L03 // Transferred To/Continued in Other Jurisdiction"
+                  - "L16 // Closed ISC Interest"
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - "G07 // Transferred to another County Jail"
+                  - "G01 // Intake Parole Case"
+                  - "G02 // Supervision Transfer"
+                  - "G10 // Caseload Reassignment"
+                  - "S11 // EM Started/Continued"
+                  - "S12 // EM Ended"
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  - "G03 // Returned From Other Jurisdiction"
+                  - "G12 // Parole Officer Assigned"
+                  - "L00 // Ended TSP/Supv. in Comm."
+                  - "L07 // Revoked (Sent to CCC)"
+                  - "L08 // Revoked (Other)"
+                  - "L10 // Offender Died - Received Death Certificate"
+                  - "S01 // Changed Supervision Status"
+                  - "S02 // Changed Type Of Supervision"
+                  - "S32 // In-Patient Treatment Program Began"
+                  - "S33 // In-Patient Treatment Program Ended"
+                  - "S34 // Out on Bond"
+                  - "S42 // Hospitalized"
+                  - "S43 // Released from Hospital"
+                  - "S44 // Placed Parolee-In-Prison"
+                  - "S47 // Placed Parolee in CCC"
+                  - "S48 // CCC Residence Ended"
+                  - "S49 // CRES Assigned"
+                  - "S58 // Waiting on Formal Discharge Document"
+                  - "S59 // Sure / Swift Sanction"
+                  - "S60 // Appeared in Count"
+                  - "S61 // One Day Revocation"
+                  - "S63 // Comm. Supv. Notification"
+                  - "S90 // Sealed/Expunged"
+                  - "S91 // Awaiting Transportation to Facility"
+                  - "S92 // Conversion"
+                  - "S98 // Converted Data Repair"
+                  - "S99 // Unable to decipher DCIS - See Comments"
+                  - "G00 // Began TSP/Supv. in Comm."
+                  - "G11 // Returned to Parole"
+          # supervising_officer_staff_external_id: start_officer
+          # supervising_officer_staff_external_id_type: $literal("US_CO_PARTYID")
