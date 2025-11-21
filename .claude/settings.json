@@ -1,5 +1,33 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(mcp list-tools:*)",
+      "Bash(mcp__list-resources:*)",
+
+      "Bash(grep:*)",
+      "Bash(echo:*)",
+
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(git log:*)",
+
+      "Bash(gh issue view:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+
+      "Bash(pipenv run pytest:*)",
+
+      "Bash(gcloud builds list:*)",
+      "Bash(gcloud builds log:*)",
+      "Bash(gcloud builds describe:*)",
+      "Bash(gcloud dataflow jobs list:*)",
+
+      "Bash(gsutil ls:*)",
+
+
+      "Bash(bq ls:*)",
+      "Bash(bq show:*)"
+    ],
     "deny": [
       "Read(./..env)",
       "Read(./..env.*)",
