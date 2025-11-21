@@ -37,13 +37,14 @@ from docker.models.containers import Container
 
 from recidiviz.tests.test_setup_utils import (
     BQ_EMULATOR_PROJECT_ID,
+    get_bq_emulator_grpc_port,
     get_bq_emulator_port,
 )
 
 # TODO(#20786): Migrate back to the goccy version by removing the comment about PAT and replacing recidiviz with
 #  goccy below.
 EMULATOR_IMAGE_REPOSITORY = "ghcr.io/recidiviz/bigquery-emulator"
-EMULATOR_VERSION = "0.4.4-recidiviz.25"
+EMULATOR_VERSION = "0.6.6-recidiviz.2.1"
 EMULATOR_IMAGE = f"{EMULATOR_IMAGE_REPOSITORY}:{EMULATOR_VERSION}"
 
 EMULATOR_ENTRYPOINT = "/bin/bigquery-emulator"
@@ -75,6 +76,7 @@ class BigQueryEmulatorControl:
     container: Container | None = attr.ib(default=None)
     name: str = attr.ib(factory=lambda: f"recidiviz-bq-emulator-{os.urandom(15).hex()}")
     port: int = attr.ib(factory=get_bq_emulator_port)
+    grpc_port: int = attr.ib(factory=get_bq_emulator_grpc_port)
 
     def pull_image(self) -> None:
         try:
@@ -84,7 +86,12 @@ class BigQueryEmulatorControl:
 
     def start_emulator(self, input_schema_json_path: str | None = None) -> None:
         """Starts the emulator container. Optionally mounts source tables volume"""
-        base_command = f"{EMULATOR_ENTRYPOINT} --project={BQ_EMULATOR_PROJECT_ID} --log-level=info --database=:memory: --port={self.port}"
+        base_command = (
+            f"{EMULATOR_ENTRYPOINT} --project={BQ_EMULATOR_PROJECT_ID} "
+            f"--log-level=info --database=:memory: --port={self.port} "
+            f"--grpc-port={self.grpc_port}"
+        )
+
         volumes: dict[str, dict[str, str]] = {}
 
         if input_schema_json_path:
@@ -102,7 +109,7 @@ class BigQueryEmulatorControl:
             command=base_command,
             name=self.name,
             auto_remove=True,
-            ports={self.port: self.port},
+            ports={self.port: self.port, self.grpc_port: self.grpc_port},
             detach=True,
             volumes=volumes,
         )

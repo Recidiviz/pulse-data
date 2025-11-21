@@ -26,12 +26,17 @@ from typing import Any, Dict, Iterable, List
 from unittest.mock import Mock, patch
 
 import db_dtypes
+import grpc
 import numpy
 import pandas as pd
 import pytest
 import requests
 from google.api_core.exceptions import GoogleAPICallError, from_http_response
 from google.cloud import bigquery
+from google.cloud.bigquery_storage_v1 import BigQueryReadClient
+from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+    BigQueryReadGrpcTransport,
+)
 from more_itertools import one
 from pandas._testing import assert_frame_equal
 from pandas_gbq import read_gbq as og_read_gbq
@@ -153,6 +158,24 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         )
         self.to_gbq_patcher.start()
 
+        # Patch BigQuery Client to always create a new emulator storage client
+        def _create_bqstorage_client() -> Any:
+            channel = grpc.insecure_channel(f"localhost:{self.control.grpc_port}")
+            transport = BigQueryReadGrpcTransport(channel=channel)
+            return BigQueryReadClient(
+                transport=transport,
+                client_options={
+                    "api_endpoint": f"localhost:{self.control.grpc_port}",
+                },
+            )
+
+        self.bqstorage_patcher = patch.object(
+            bigquery.Client,
+            "_ensure_bqstorage_client",
+            side_effect=_create_bqstorage_client,
+        )
+        self.bqstorage_patcher.start()
+
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         if self.wipe_emulator_data_on_teardown:
@@ -160,6 +183,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         self.bq_error_handling_patcher.stop()
         self.read_gbq_patcher.stop()
         self.to_gbq_patcher.stop()
+        self.bqstorage_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

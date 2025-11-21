@@ -43,3 +43,17 @@ def get_bq_emulator_port() -> int:
         return port
 
     return port + pytest_worker_id
+
+
+def get_bq_emulator_grpc_port() -> int:
+    """Returns the port for the BigQuery emulator that the current environment should
+    use. If we are running outside the context of pytest, we assume there is only one
+    emulator running at the default port. Otherwise, the port number is variable to
+    avoid interference between tests running in parallel.
+    """
+    # This port is arbitrarily chosen to avoid conflicts services in the RunsOn runner.
+    port = 61050
+    if not (pytest_worker_id := get_pytest_worker_id()):
+        return port
+
+    return port + pytest_worker_id

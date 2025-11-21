@@ -742,7 +742,6 @@ FROM UNNEST([
         example_view = client.create_table(_view_definition)
         client.delete_table(example_view)
 
-    # TODO(#39819) Update this test when the emulator quotes date values here
     def test_json_string_column(self) -> None:
         query = """
             SELECT 
@@ -756,11 +755,10 @@ FROM UNNEST([
         """
         self.run_query_test(
             query,
-            # TODO(#39819) Use this value in the test
-            # Using BigQuery (not the emulator) date values are quoted like so
-            # "$col1":'[{"str_col":"strings","date_col":"2022-01-01","int_col":42}]'
             expected_result=[
-                {"$col1": '[{"str_col":"strings","date_col":2022-01-01,"int_col":42}]'}
+                {
+                    "$col1": '[{"str_col":"strings","date_col":"2022-01-01","int_col":42}]'
+                }
             ],
         )
 
@@ -851,3 +849,20 @@ FROM UNNEST([
                 project_id=self.project_id,
                 if_exists="append",
             )
+
+    def test_timestamp_min_max(self) -> None:
+        """Tests resolution of https://github.com/goccy/go-zetasqlite/issues/132
+        and https://github.com/goccy/bigquery-emulator/issues/262"""
+        self.run_query_test(
+            """SELECT TIMESTAMP '0001-01-01 00:00:00.000000+00', TIMESTAMP '9999-12-31 23:59:59.999999+00'""",
+            expected_result=[
+                {
+                    "$col1": datetime.datetime(
+                        1, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+                    ),
+                    "$col2": datetime.datetime(
+                        9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc
+                    ),
+                }
+            ],
+        )

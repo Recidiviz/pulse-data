@@ -22,7 +22,6 @@ import csv
 import datetime
 import io
 import logging
-import re
 from typing import Any
 
 import pandas as pd
@@ -144,15 +143,6 @@ def check_ingest_view_ctes_are_documented(
                 f"Query {ingest_view_name} has all CTEs documented - please remove "
                 f"its empty entry from THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES."
             )
-
-
-def quote_json_values(json_str: str) -> str:
-    """Quotes unquoted values in JSON strings."""
-    # Matches patterns like: "key": value — where value is unquoted string or date
-    updated = re.sub(r'(".*?"):\s*([^",\]\}]+)', r'\1: "\2"', json_str)
-    # We want null values from within JSON to be empty strings
-    # (the behavior we had before quoting json values here)
-    return updated.replace('"NULL"', '""').replace('"null"', '""')
 
 
 class StateIngestViewAndMappingTestCase(
@@ -403,14 +393,6 @@ class StateIngestViewAndMappingTestCase(
             raise ValueError(
                 f"Unexpected external ID types for {manifest.root_entity_cls}: {unexpected_id_types}"
             )
-
-        # TODO(#39819) Remove this workaround when the emulator quotes date values
-        # in JSON correctly. big_query_emulator_test.py has examples
-        for row in ingest_view_results:
-            # Quote unquoted values in JSON strings
-            for key, value in row.items():
-                if isinstance(value, str) and value.upper().strip() != "NULL":
-                    row[key] = quote_json_values(value)
 
         parsed_ingest_view_results = manifest.parse_contents(
             contents_iterator=ingest_view_results,
