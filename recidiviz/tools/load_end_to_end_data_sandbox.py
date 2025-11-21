@@ -354,6 +354,8 @@ def load_end_to_end_sandbox(
     export_names: set[str],
     changed_datasets_to_include: list[str] | None,
     changed_datasets_to_ignore: list[str] | None,
+    changed_addresses_to_include: list[BigQueryAddress] | None,
+    changed_addresses_to_ignore: list[BigQueryAddress] | None,
 ) -> None:
     """Loads data into a BigQuery / GCS sandbox that reflects all local changes that
     impact Dataflow pipelines or BigQuery views.
@@ -403,6 +405,8 @@ def load_end_to_end_sandbox(
             ),
             changed_datasets_to_include=changed_datasets_to_include,
             changed_datasets_to_ignore=changed_datasets_to_ignore,
+            changed_addresses_to_include=changed_addresses_to_include,
+            changed_addresses_to_ignore=changed_addresses_to_ignore,
             state_code_filter=state_code,
             load_changed_views_only=False,
             load_up_to_addresses=load_up_to_addresses,
@@ -639,6 +643,30 @@ def parse_arguments() -> argparse.Namespace:
         type=str_to_list,
         required=False,
     )
+
+    ignored_addresses_group = parser.add_mutually_exclusive_group(required=False)
+    ignored_addresses_group.add_argument(
+        "--changed_addresses_to_ignore",
+        dest="changed_addresses_to_ignore",
+        help="A list of view addresses (comma-separated) for views we should skip when "
+        "detecting which views have changed. These views will still be loaded to the "
+        "sandbox if they are downstream of other views which have been changed. This "
+        "argument cannot be used if --changed_addresses_to_include is set.",
+        type=str_to_address_list,
+        required=False,
+    )
+
+    ignored_addresses_group.add_argument(
+        "--changed_addresses_to_include",
+        dest="changed_addresses_to_include",
+        help="A list of view addresses (comma-separated) for views we should consider "
+        "when detecting which views have changed. Views outside of this list will "
+        "still be loaded to the sandbox if they are downstream of changed views in "
+        "this list. This argument cannot be used if --changed_addresses_to_ignore "
+        "or --changed_datasets_to_ignore is set.",
+        type=str_to_address_list,
+        required=False,
+    )
     parsed_args = parser.parse_args()
 
     valid_exports = set(VIEW_COLLECTION_EXPORT_INDEX.keys())
@@ -681,4 +709,6 @@ if __name__ == "__main__":
         load_up_to_datasets=args.load_up_to_datasets,
         changed_datasets_to_include=args.changed_datasets_to_include,
         changed_datasets_to_ignore=args.changed_datasets_to_ignore,
+        changed_addresses_to_include=args.changed_addresses_to_include,
+        changed_addresses_to_ignore=args.changed_addresses_to_ignore,
     )

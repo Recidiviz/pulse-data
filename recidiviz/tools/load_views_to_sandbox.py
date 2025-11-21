@@ -51,6 +51,22 @@ datasets when considering which views have changed, run:
        --changed_datasets_to_include [DATASET_ID_1,DATASET_ID_2,...] \
        --load_changed_views_only
 
+To load all views that have changed since the last view deploy, but only look at some
+specific views when considering which views have changed (note: BE CAREFUL AND ONLY USE
+THIS IF YOU FEEL CONFIDENT YOU'RE INCLUDING ALL VIEWS YOUR CHANGE HAS TOUCHED), run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
+       --changed_addresses_to_include [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...] \
+       --load_changed_views_only
+
+To load all views that have changed since the last view deploy, but exclude some
+specific views when considering which views have changed (note: BE CAREFUL AND ONLY USE
+THIS IF YOU FEEL CONFIDENT YOU'RE INCLUDING ALL DATASETS YOUR CHANGE HAS TOUCHED), run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
+       --changed_addresses_to_ignore [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...] \
+       --load_changed_views_only
+
 To manually choose which views to load, run:
     python -m recidiviz.tools.load_views_to_sandbox \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] manual \
@@ -270,12 +286,13 @@ There are relatively few known use cases for the `manual` mode. Consider these a
     can use `auto` mode with the `--load_up_to_addresses` and/or `--load_up_to_datasets`
     arguments.
 * If you just want to load the views changed on your branch, you can use `auto` mode
-    with the `--load_changed_views_only` flag. 
+    with the `--load_changed_views_only` flag.
 * If `auto` mode is picking up other views on `main` you can use the
-    `--changed_datasets_to_ignore` or `--changed_datasets_to_include` flags to filter 
-    out changes in datasets unrelated to your changes.
+    `--changed_datasets_to_ignore`, `--changed_datasets_to_include`,
+    `--changed_addresses_to_include`, or `--changed_addresses_to_ignore` flags to
+    filter out changes in datasets or specific views unrelated to your changes.
 
-Are you sure you still want to continue with `manual` mode? 
+Are you sure you still want to continue with `manual` mode?
 """
 
     prompt_for_confirmation(confirmation_prompt)
@@ -591,6 +608,8 @@ class SandboxChangedAddresses:
 
     changed_datasets_to_include: set[str] | None
     changed_datasets_to_ignore: set[str] | None
+    changed_addresses_to_include: set[BigQueryAddress] | None
+    changed_addresses_to_ignore: set[BigQueryAddress] | None
     state_code_filter: StateCode | None
 
     changed_source_table_addresses: set[BigQueryAddress]
@@ -602,6 +621,16 @@ class SandboxChangedAddresses:
             raise ValueError(
                 "Can only set changed_datasets_to_include or "
                 "changed_datasets_to_ignore, but not both."
+            )
+
+        if self.changed_addresses_to_include and (
+            self.changed_datasets_to_ignore or self.changed_addresses_to_ignore
+        ):
+            raise ValueError(
+                "Cannot set changed_datasets_to_ignore or changed_addresses_to_ignore "
+                "if changed_addresses_to_include is already set. The "
+                "changed_addresses_to_include flag will exclude every other address "
+                "not in that list."
             )
 
     @property
@@ -624,6 +653,14 @@ class SandboxChangedAddresses:
                 or (
                     self.changed_datasets_to_include
                     and address.dataset_id not in self.changed_datasets_to_include
+                )
+                or (
+                    self.changed_addresses_to_include
+                    and address not in self.changed_addresses_to_include
+                )
+                or (
+                    self.changed_addresses_to_ignore
+                    and address in self.changed_addresses_to_ignore
                 )
                 or (
                     self.state_code_filter is not None
@@ -689,11 +726,12 @@ def summary_for_auto_sandbox(
             textwrap.fill(
                 "This is the set of views on your branch that has changed as compared "
                 "to deployed views, but you've exempted via the "
-                "--changed_datasets_to_include, --changed_datasets_to_ignore, or "
-                "--state_code_filter flags. "
-                "These views will not be loaded unless they are also included in the "
-                "DOWNSTREAM section below (can happen if they are in the dependency "
-                "chain between other changed views and views you want to load).",
+                "--changed_datasets_to_include, --changed_datasets_to_ignore, "
+                "--changed_addresses_to_include, --changed_addresses_to_ignore, or "
+                "--state_code_filter flags. These views will not be loaded unless they "
+                "are also included in the DOWNSTREAM section below (can happen if they "
+                "are in the dependency chain between other changed views and views you "
+                "want to load).",
                 width=descriptions_char_width,
             ),
         ),
@@ -724,7 +762,8 @@ def summary_for_auto_sandbox(
                 "to deployed views and will be treated as potential 'roots' of the "
                 "graph of views to load to your sandbox. If you don't care about some "
                 "of these changes, you can move them to the IGNORED section via the "
-                "--changed_datasets_to_include and --changed_datasets_to_ignore flags.",
+                "--changed_datasets_to_include, --changed_datasets_to_ignore, "
+                "--changed_addresses_to_include, or --changed_addresses_to_ignore flags.",
                 width=descriptions_char_width,
             ),
         ),
@@ -741,8 +780,9 @@ def summary_for_auto_sandbox(
                 "query has changed) as compared to deployed views and will be treated "
                 "as potential 'roots' of the graph of views to load to your sandbox. "
                 "If you don't care about some of these changes, you can move them to "
-                "the IGNORED section via the --changed_datasets_to_include and "
-                "--changed_datasets_to_ignore flags.",
+                "the IGNORED section via the --changed_datasets_to_include, "
+                "--changed_datasets_to_ignore, --changed_addresses_to_include, or "
+                "--changed_addresses_to_ignore flags.",
                 width=descriptions_char_width,
             ),
         ),
@@ -776,6 +816,8 @@ def get_sandbox_changed_addresses(
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     changed_datasets_to_include: list[str] | None,
     changed_datasets_to_ignore: list[str] | None,
+    changed_addresses_to_include: list[BigQueryAddress] | None,
+    changed_addresses_to_ignore: list[BigQueryAddress] | None,
     state_code_filter: StateCode | None,
 ) -> SandboxChangedAddresses:
     logging.info("Checking for changes against [%s] BigQuery...", project_id())
@@ -798,6 +840,12 @@ def get_sandbox_changed_addresses(
         ),
         changed_datasets_to_ignore=(
             set(changed_datasets_to_ignore) if changed_datasets_to_ignore else None
+        ),
+        changed_addresses_to_include=(
+            set(changed_addresses_to_include) if changed_addresses_to_include else None
+        ),
+        changed_addresses_to_ignore=(
+            set(changed_addresses_to_ignore) if changed_addresses_to_ignore else None
         ),
         state_code_filter=state_code_filter,
         changed_source_table_addresses=changed_source_table_addresses,
@@ -854,10 +902,13 @@ def _get_sandbox_leaf_node_candidate_addresses(
 
 
 def collect_changed_views_and_descendants_to_load(
+    *,
     prompt: bool,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     changed_datasets_to_include: list[str] | None,
     changed_datasets_to_ignore: list[str] | None,
+    changed_addresses_to_include: list[BigQueryAddress] | None,
+    changed_addresses_to_ignore: list[BigQueryAddress] | None,
     state_code_filter: StateCode | None,
     load_up_to_addresses: list[BigQueryAddress] | None,
     load_up_to_datasets: list[str] | None,
@@ -898,9 +949,30 @@ def collect_changed_views_and_descendants_to_load(
         input_source_table_dataset_overrides_dict=input_source_table_dataset_overrides_dict,
         changed_datasets_to_ignore=changed_datasets_to_ignore,
         changed_datasets_to_include=changed_datasets_to_include,
+        changed_addresses_to_include=changed_addresses_to_include,
+        changed_addresses_to_ignore=changed_addresses_to_ignore,
         state_code_filter=state_code_filter,
     )
     logging.info("Found all changes on local branch. Collecting all related views...")
+
+    # Validate that addresses in changed_addresses_to_include are actually changed
+    if changed_addresses_to_include:
+        unchanged_addresses = [
+            addr
+            for addr in changed_addresses_to_include
+            if addr not in changed_addresses_info.view_address_to_change_type
+        ]
+        if unchanged_addresses:
+            logging.warning(
+                "⚠️  The following addresses were specified in "
+                "--changed_addresses_to_include but are not detected as changed:\n%s\n"
+                "Your understanding of which views have changed on your branch may be"
+                "incorrect (or you have a typo).",
+                BigQueryAddress.addresses_to_str(
+                    set(unchanged_addresses), indent_level=2
+                ),
+            )
+            prompt_for_confirmation("Continue anyway?")
 
     if not changed_addresses_info.has_changes_to_load:
         print(
@@ -956,6 +1028,8 @@ def collect_changed_views_and_descendants_to_load(
             view_address_to_change_type=changed_addresses_info.view_address_to_change_type,
             changed_datasets_to_include=changed_addresses_info.changed_datasets_to_include,
             changed_datasets_to_ignore=changed_addresses_info.changed_datasets_to_ignore,
+            changed_addresses_to_include=changed_addresses_info.changed_addresses_to_include,
+            changed_addresses_to_ignore=changed_addresses_info.changed_addresses_to_ignore,
             state_code_filter=changed_addresses_info.state_code_filter,
             changed_source_table_addresses=changed_addresses_info.changed_source_table_addresses,
             force_include_addresses=force_include_addresses,
@@ -990,6 +1064,8 @@ def load_views_changed_on_branch_to_sandbox(
     rematerialize_changed_views_only: bool,
     changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
+    changed_addresses_to_include: Optional[List[BigQueryAddress]],
+    changed_addresses_to_ignore: Optional[List[BigQueryAddress]],
     load_up_to_addresses: Optional[List[BigQueryAddress]],
     load_up_to_datasets: Optional[List[str]],
     load_changed_views_only: bool,
@@ -1005,6 +1081,8 @@ def load_views_changed_on_branch_to_sandbox(
         ),
         changed_datasets_to_ignore=changed_datasets_to_ignore,
         changed_datasets_to_include=changed_datasets_to_include,
+        changed_addresses_to_include=changed_addresses_to_include,
+        changed_addresses_to_ignore=changed_addresses_to_ignore,
         state_code_filter=state_code_filter,
         load_changed_views_only=load_changed_views_only,
         load_up_to_addresses=load_up_to_addresses,
@@ -1294,6 +1372,30 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser_auto.add_argument(
+        "--changed_addresses_to_include",
+        dest="changed_addresses_to_include",
+        help="A list of view addresses (comma-separated, in the form dataset_id.view_id) "
+        "for specific views we should consider when detecting which views have changed. "
+        "Views outside of this list will still be loaded to the sandbox if they are "
+        "downstream of views in this list which have changed. This argument cannot be "
+        "used if --changed_addresses_to_ignore is set.",
+        type=str_to_address_list,
+        required=False,
+    )
+
+    parser_auto.add_argument(
+        "--changed_addresses_to_ignore",
+        dest="changed_addresses_to_ignore",
+        help="A list of view addresses (comma-separated, in the form dataset_id.view_id) "
+        "for specific views we should skip when detecting which views have changed. "
+        "Views in this list will still be loaded to the sandbox if they are downstream "
+        "of other views not in this list which have been changed. This argument cannot "
+        "be used if --changed_addresses_to_include is set.",
+        type=str_to_address_list,
+        required=False,
+    )
+
+    parser_auto.add_argument(
         "--load_up_to_addresses",
         dest="load_up_to_addresses",
         help=(
@@ -1413,6 +1515,8 @@ if __name__ == "__main__":
                 rematerialize_changed_views_only=args.rematerialize_changed_views_only,
                 changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
+                changed_addresses_to_include=args.changed_addresses_to_include,
+                changed_addresses_to_ignore=args.changed_addresses_to_ignore,
                 load_up_to_addresses=args.load_up_to_addresses,
                 load_up_to_datasets=args.load_up_to_datasets,
                 load_changed_views_only=args.load_changed_views_only,
