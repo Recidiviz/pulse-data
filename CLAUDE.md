@@ -12,15 +12,26 @@ https://docs.claude.com/en/docs/claude-code/memory
 - Use Python 3.11 with pipenv for dependency management
 - Install dependencies: `pipenv sync --dev` (or `./initial_pipenv_setup.sh` on first run)
 - Activate environment: `pipenv shell`
-- Use `gh` to examine pull requests (PRs), create PRs, etc -- this is because the `gh` cli has been authenticated to access our private repo.
+- Whenever possible, use `gh` to examine pull requests (PRs), create PRs, etc -- this is because the `gh` cli has been authenticated to access our private repo.
 
-### Testing
+### Python testing
+Tests for Python code live in `recidiviz/tests` directory. Generally, code is tested in a file whose name / path mirrors
+its name. For example, `recidiviz/big_query/big_query_view.py` has tests in `recidiviz/tests/big_query/big_query_view.py`.
+
+Running / configuring tests:
+- Run tests in a specific file: `pytest recidiviz/tests/path/to/test_file.py`
 - Run all tests: `pytest recidiviz`
-- Run specific test: `pytest path/to/test_file.py`
+  - This is not a common development flow as it is slow and will be handled by CI.
 - Test configuration in `setup.cfg` with coverage settings
+- To make test discovery faster, exclude fixture directories
+
+### Python Code Style
+- Always add type information to every python function definition. Avoid using Any where reasonable. Use modern python types, i.e. `str | None` instead of `Optional[str]`.
 
 ### Code Quality
-- Lint: `pipenv run pylint` or `./recidiviz/tools/lint/run_pylint.sh`
+- Lint: 
+  - `./recidiviz/tools/lint/run_pylint.sh` - Runs differential `pylint` on changed files and also some additional checks. Only works if on a branch where code has been committed (i.e. HEAD != main).
+  - `pipenv run pylint` - Slower, but can be used if 
 - Type checking: `mypy recidiviz`
 - Security checking: `bandit` (configured in `.bandit` file)
 - Auto-formatting: `black` and `isort` (configured in pre-commit hooks)
@@ -31,9 +42,17 @@ https://docs.claude.com/en/docs/claude-code/memory
 - Admin panel: `pipenv run docker-admin`
 - Justice Counts: `pipenv run docker-jc`
 
+### Github
+- TODOs in code reference tasks in Github using a specific format: 
+  - `TODO(#12345)` refers to a TODO that should be addressed by https://github.com/Recidiviz/pulse-data/issues/12345
+  - `TODO(Recidiviz/looker#123)` refers to a TODO that should be addressed by https://github.com/Recidiviz/looker/issues/123
+  - If you find a TODO in code that refers to a closed issue, it does not necessarily mean it has been addressed, as tasks are sometimes erroneously closed while TODOs still exist in code.
+
 ### Querying actual data 
-The BigQuery MCP server allows you to query for actual data. However, never
-attempt to access any data from Maine or California. If you are worried a query
+The BigQuery (BQ) MCP server allows you to query for actual data. If there is not a BQ MCP server
+configured locally, you should use the `bq` command line util to query data.
+
+However, never attempt to access any data from Maine or California. If you are worried a query
 you're running may access this data, please flag this to user and make sure
 they confirm before running the query.
 
@@ -41,17 +60,18 @@ they confirm before running the query.
 
 ### Core Components
 - **`recidiviz/`** - Main package with domain-specific modules:
-  - **`ingest/`** - Data ingestion pipelines for different states/sources
-  - **`calculator/`** - Metrics calculation and analytics logic
+  - **`admin_panel/`** - Administrative web interface
+  - **`aggregated_metrics/`** - BQ view generation framework for aggregated metrics views
+  - **`airflow/`** - Apache Airflow logic for orchestration deployed in Google Cloud Composer
+  - **`calculator/`** - Stores query logic for many (but not all) of our BQ views
+  - **`case_triage/`** - Case triage and pathways functionality
+  - **`ingest/`** - Data ingestion configuration for different states/sources
   - **`persistence/`** - Database schemas, entities, and data access
   - **`pipelines/`** - Apache Beam data processing pipelines
-  - **`validation/`** - Data validation and quality checks
-  - **`admin_panel/`** - Administrative web interface
-  - **`justice_counts/`** - Justice Counts application components
-  - **`case_triage/`** - Case triage and pathways functionality
-  - **`aggregated_metrics/`** - Aggregated metrics processing
+    - **`ingest/state`** - Pipeline for ingest (reads configurations from `recidiviz/ingest/direct/regions`)
+  - **`tools/`** - Scripts that can be run locally, in CI, or in Cloud Build jobs for development / operational uses.
+  - **`validation/`** - Framework for running validation and quality checks
   - **`workflows/`** - Workflow orchestration and ETL
-  - **`tools/`** - Development and operational utilities
 
 ### Key Patterns
 - Uses SQLAlchemy for database ORM (version pinned <2.0.0)
@@ -66,22 +86,18 @@ they confirm before running the query.
 - Pre-commit hooks configured for code quality enforcement
 - Docker Compose files for different service combinations
 
-### Testing Philosophy
-- Unit tests in parallel test directories (`recidiviz/tests/`)
-- Pytest with xdist for parallel execution
-- Code coverage tracking with pytest-cov
-- Fixture directories excluded from test discovery
-
 ## Additional Context
-- States are abbreviated as US_XX, where XX is the state code. US_ME = Maine, for example. US_OZ is fake state used for testing only.
-
-### Important Views
-- `workflows_views.client_record` and `workflows_views.resident_record` are two of the most important views leveraged by our front-end. If we need our front end to have access to data, it's quite possible the data should be added here as well.
+- States are abbreviated as US_XX, where XX is the state code. US_ME = Maine, for example. US_OZ is fake state used for testing only. Some additional "fake" state codes (e.g. US_XX, US_YY, US_WW) are available in the context of unittests. These should be used when testing generic functionality. 
 
 ## Data Ingestion Process
 For detailed information about how raw data is imported, transformed through ingest views, and normalized into Recidiviz entities, see:
 
 - [Ingest Process Documentation](./recidiviz/ingest/CLAUDE.md)
+
+## BigQuery Tooling and Libraries
+For detailed information about how to work with BigQuery infrastructure, tooling, and libraries:
+
+- [BigQuery Documentation](./recidiviz/big_query/CLAUDE.md)
 
 # Personal preferences
 - @.claude/pulse-data-local-settings.md
