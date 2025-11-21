@@ -108,6 +108,9 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                     "state_code"
                 ),
                 func.jsonb_agg(
+                    func.coalesce(StateRolePermissions.allowed_apps, cast({}, JSONB))
+                ).label("allowed_apps"),
+                func.jsonb_agg(
                     func.coalesce(StateRolePermissions.routes, cast({}, JSONB))
                 ).label("routes"),
                 func.jsonb_agg(
@@ -115,6 +118,9 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                         StateRolePermissions.feature_variants, cast({}, JSONB)
                     )
                 ).label("feature_variants"),
+                func.jsonb_agg(
+                    func.coalesce(StateRolePermissions.jii_permissions, cast({}, JSONB))
+                ).label("jii_permissions"),
             )
             .select_from(Roster)
             .join(
@@ -163,6 +169,10 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 ),
                 UserOverride.blocked_on.label("blocked_on"),
                 (
+                    aggregated_permissions_cte.c.allowed_apps
+                    + func.coalesce(PermissionsOverride.allowed_apps, cast({}, JSONB))
+                ).label("allowed_apps"),
+                (
                     aggregated_permissions_cte.c.routes
                     + func.coalesce(PermissionsOverride.routes, cast({}, JSONB))
                 ).label("routes"),
@@ -172,6 +182,12 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                         PermissionsOverride.feature_variants, cast({}, JSONB)
                     )
                 ).label("feature_variants"),
+                (
+                    aggregated_permissions_cte.c.jii_permissions
+                    + func.coalesce(
+                        PermissionsOverride.jii_permissions, cast({}, JSONB)
+                    )
+                ).label("jii_permissions"),
                 func.coalesce(
                     UserOverride.user_hash,
                     Roster.user_hash,

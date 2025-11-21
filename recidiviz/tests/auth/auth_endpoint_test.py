@@ -219,6 +219,7 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role=LEADERSHIP_ROLE,
+            allowed_apps={"app1": True, "app2": False},
             routes={"A": True, "B": False},
             feature_variants={"D": "E"},
         )
@@ -229,8 +230,10 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": LEADERSHIP_ROLE,
+                    "allowed_apps": {"app1": True, "app2": False},
                     "routes": {"A": True, "B": False},
                     "featureVariants": {"D": "E"},
+                    "jii_permissions": {},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -240,6 +243,7 @@ class AuthEndpointTests(TestCase):
             state="US_MO",
             role=LEADERSHIP_ROLE,
             routes={"route_A": True, "routeB": True, "C": False},
+            allowed_apps={"app1": True, "app2": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -248,7 +252,9 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "routes": {"route_A": True, "routeB": False},
+                    "allowed_apps": {"app1": False, "app2": True},
                     "reason": "test",
+                    "jii_permissions": {"live": True},
                 },
             )
             self.assertReasonLog(
@@ -260,13 +266,17 @@ class AuthEndpointTests(TestCase):
                     "role": LEADERSHIP_ROLE,
                     "stateCode": "US_MO",
                     "routes": {"route_A": True, "routeB": True, "C": False},
+                    "allowed_apps": {"app1": True, "app2": False},
                     "featureVariants": {},
+                    "jii_permissions": {},
                 },
                 {
                     "role": SUPERVISION_STAFF,
                     "stateCode": "US_MO",
                     "routes": {"route_A": True, "routeB": False},
+                    "allowed_apps": {"app1": False, "app2": True},
                     "featureVariants": {},
+                    "jii_permissions": {"live": True},
                 },
             ]
             response = self.client.get(
@@ -275,7 +285,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(expected, json.loads(response.data))
 
-    def test_states_add_state_role_missing_routes(self) -> None:
+    def test_states_add_state_role_subset_of_fields(self) -> None:
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
                 self.add_state_role("US_MO", SUPERVISION_STAFF),
@@ -283,6 +293,7 @@ class AuthEndpointTests(TestCase):
                 json={
                     "featureVariants": {"A": True},
                     "reason": "test",
+                    "allowed_apps": {"app1": True, "app2": False},
                 },
             )
             self.assertReasonLog(
@@ -294,7 +305,9 @@ class AuthEndpointTests(TestCase):
                     "role": SUPERVISION_STAFF,
                     "stateCode": "US_MO",
                     "routes": {},
+                    "allowed_apps": {"app1": True, "app2": False},
                     "featureVariants": {"A": True},
+                    "jii_permissions": {},
                 },
             ]
             response = self.client.get(
@@ -333,8 +346,10 @@ class AuthEndpointTests(TestCase):
                 {
                     "role": "unknown",
                     "stateCode": "US_MO",
+                    "allowed_apps": {},
                     "routes": {},
                     "featureVariants": {},
+                    "jii_permissions": {},
                 },
             ]
             response = self.client.get(
@@ -357,6 +372,8 @@ class AuthEndpointTests(TestCase):
                 json={
                     "featureVariants": {"D": True},
                     "routes": {"A": True, "B": False},
+                    "allowed_apps": {"app1": True, "app2": False},
+                    "jii_permissions": {"live": True},
                 },
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -366,7 +383,9 @@ class AuthEndpointTests(TestCase):
             state="US_MO",
             role=LEADERSHIP_ROLE,
             routes={"A": True, "B": True, "C": False},
+            allowed_apps={"app1": True, "app2": False},
             feature_variants={"C": True, "D": False},
+            jii_permissions={"permission_1": True},
         )
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -375,7 +394,9 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "routes": {"C": True, "B": False},
+                    "allowed_apps": {"app1": False, "app2": True},
                     "featureVariants": {"D": True, "E": False},
+                    "jii_permissions": {"permission_1": False, "permission_2": True},
                     "reason": "test",
                 },
             )
@@ -384,7 +405,9 @@ class AuthEndpointTests(TestCase):
                 "stateCode": "US_MO",
                 "role": LEADERSHIP_ROLE,
                 "routes": {"A": True, "B": False, "C": True},
+                "allowed_apps": {"app1": False, "app2": True},
                 "featureVariants": {"C": True, "D": True, "E": False},
+                "jii_permissions": {"permission_1": False, "permission_2": True},
             }
 
             self.assertEqual(expected, json.loads(response.data))
@@ -412,6 +435,7 @@ class AuthEndpointTests(TestCase):
                 self.update_state_role("US_MO", LEADERSHIP_ROLE),
                 headers=self.headers,
                 json={
+                    "allowed_apps": {"app1": True, "app2": False},
                     "routes": {"C": True, "B": False},
                     "featureVariants": {"D": True, "E": False},
                     "reason": "test",
@@ -421,8 +445,10 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_MO",
                 "role": LEADERSHIP_ROLE,
+                "allowed_apps": {"app1": True, "app2": False},
                 "routes": {"B": False, "C": True},
                 "featureVariants": {"C": True, "D": True, "E": False},
+                "jii_permissions": {},
             }
 
             self.assertEqual(expected, json.loads(response.data))
@@ -441,6 +467,7 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role=LEADERSHIP_ROLE,
+            allowed_apps={"app1": True, "app2": False},
             routes={"A": True, "B": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
@@ -458,8 +485,10 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_TN",
                 "role": LEADERSHIP_ROLE,
+                "allowed_apps": {"app1": True, "app2": False},
                 "routes": {"A": True, "B": False, "C": True},
                 "featureVariants": {},
+                "jii_permissions": {},
             }
 
             self.assertEqual(expected, json.loads(response.data))
@@ -565,11 +594,13 @@ class AuthEndpointTests(TestCase):
         state_role_delete = generate_fake_default_permissions(
             state="US_MO",
             role=LEADERSHIP_ROLE,
+            allowed_apps={"app1": True, "app2": False},
             routes={"A": True, "B": True, "C": False},
         )
         state_role_keep = generate_fake_default_permissions(
             state="US_MO",
             role=SUPERVISION_STAFF,
+            allowed_apps={"app1": False, "app2": True},
             routes={"A": True, "B": False, "C": False},
             feature_variants={"D": True},
         )
@@ -632,8 +663,10 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": SUPERVISION_STAFF,
+                    "allowed_apps": {"app1": False, "app2": True},
                     "routes": {"A": True, "B": False, "C": False},
                     "featureVariants": {"D": True},
+                    "jii_permissions": {},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -677,8 +710,10 @@ class AuthEndpointTests(TestCase):
                     {
                         "role": role,
                         "stateCode": "US_MO",
+                        "allowed_apps": {},
                         "routes": {},
                         "featureVariants": {},
+                        "jii_permissions": {},
                     }
                     for role in PREDEFINED_ROLES
                 ],
@@ -695,6 +730,7 @@ class AuthEndpointTests(TestCase):
             state="US_MO",
             role=LEADERSHIP_ROLE,
             routes={"A": True, "B": True, "C": False},
+            allowed_apps={"app1": True, "app2": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -715,8 +751,10 @@ class AuthEndpointTests(TestCase):
                     {
                         "role": role,
                         "stateCode": "US_MO",
+                        "allowed_apps": {},
                         "routes": {},
                         "featureVariants": {},
+                        "jii_permissions": {},
                     }
                     for role in PREDEFINED_ROLES
                     if role not in existing_roles
@@ -725,8 +763,10 @@ class AuthEndpointTests(TestCase):
                     {
                         "role": LEADERSHIP_ROLE,
                         "stateCode": "US_MO",
+                        "allowed_apps": {"app1": True, "app2": False},
                         "routes": {"A": True, "B": True, "C": False},
                         "featureVariants": {},
+                        "jii_permissions": {},
                     }
                 ],
                 key=lambda x: cast(str, x["role"]),
@@ -741,12 +781,14 @@ class AuthEndpointTests(TestCase):
         leadership_role = generate_fake_default_permissions(
             state="US_MO",
             role=LEADERSHIP_ROLE,
+            allowed_apps={"app1": True, "app2": False},
             routes={"A": True, "B": True, "C": False},
             feature_variants={"A": True, "D": True},
         )
         supervision_staff_role = generate_fake_default_permissions(
             state="US_MO",
             role=SUPERVISION_STAFF,
+            allowed_apps={"app1": False, "app2": False},
             routes={"A": True},
             feature_variants={"D": True},
         )
@@ -778,14 +820,18 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": LEADERSHIP_ROLE,
+                    "allowed_apps": {"app1": True, "app2": False},
                     "routes": {"A": True, "B": True, "C": False},
                     "featureVariants": {"A": True},
+                    "jii_permissions": {},
                 },
                 {
                     "stateCode": "US_MO",
                     "role": SUPERVISION_STAFF,
+                    "allowed_apps": {"app1": False, "app2": False},
                     "routes": {"A": True},
                     "featureVariants": {},
+                    "jii_permissions": {},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))

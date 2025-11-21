@@ -70,14 +70,18 @@ def generate_fake_rosters(
 def generate_fake_default_permissions(
     state: str,
     role: str,
+    allowed_apps: Optional[dict[str, bool]] = None,
     routes: Optional[dict[str, bool]] = None,
     feature_variants: Optional[dict] = None,
+    jii_permissions: Optional[dict[str, bool]] = None,
 ) -> StateRolePermissions:
     return StateRolePermissions(
         state_code=state,
         role=role,
+        allowed_apps=allowed_apps,
         routes=routes,
         feature_variants=feature_variants,
+        jii_permissions=jii_permissions,
     )
 
 
@@ -113,11 +117,15 @@ def generate_fake_permissions_overrides(
     email: str,
     routes: dict[str, bool] = sql.null(),
     feature_variants: dict = sql.null(),
+    allowed_apps: Optional[dict[str, bool]] = None,
+    jii_permissions: Optional[dict[str, bool]] = None,
 ) -> PermissionsOverride:
     return PermissionsOverride(
         email_address=email,
         routes=routes,
+        allowed_apps=allowed_apps,
         feature_variants=feature_variants,
+        jii_permissions=jii_permissions,
     )
 
 

@@ -7,3 +7,4 @@ US_MO,nodistrict@recidiviz.org,NDISTRICT,,First,Last,"xzSMmHGIPKEAYbUa8jLCYIJ2Y0
 US_CO,jane@testdomain.com,,,Jane,Doe,"hHzvOw+i5Lf0/NKtZiqUWk9JQhl9HVXJnOqPtVPCnHQ=",2023-03-22,2023-03-22,,{facilities_leadership}
 US_MO,missouri@recidiviz.org,54321,"1A, 2B",Hello,World,"Ag8rwyV8+b2t/NeqNRhX8TiVA4KLZQryd5kJvJ04wck=",2023-03-22,2023-03-22,,{supervision_line_staff}
 US_CO,bug_testing@recidiviz.org,,,,,"qOTZXez4ieGnc0X5n31e6SioaNM8GTOcIkzxbwRl4Xc=",2023-03-22,2023-03-22,,{facilities_leadership}
+US_TN,jii_staff@recidiviz.org,someExternalId,FACILITY_12,Bobby,Mountain,"uEFiO3ae1hgEenYYWAk48NnCJ2/p+5BqJVTDRBMqVrU=",2023-03-22,2023-03-22,pseudo-uEFi,{facility_line_staff}

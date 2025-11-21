@@ -1,4 +1,5 @@
-nolastname@recidiviz.org,,,2023-03-22,2023-03-22
-nodistrict@recidiviz.org,"{""community_projections"":true,""facility_projections"":false}",,2023-03-22,2023-03-22
-put_parameter@testdomain.com,,,2023-03-22,2023-03-22
-bug_testing@recidiviz.org,,,2023-03-22,2023-03-22
+nolastname@recidiviz.org,,,,2023-03-22,2023-03-22,
+nodistrict@recidiviz.org,,"{""community_projections"":true,""facility_projections"":false}",,2023-03-22,2023-03-22,
+put_parameter@testdomain.com,,,,2023-03-22,2023-03-22,
+bug_testing@recidiviz.org,,,,2023-03-22,2023-03-22,
+jii_staff@recidiviz.org,,,,2023-03-22,2023-03-22,"{""live_data"":true}""
