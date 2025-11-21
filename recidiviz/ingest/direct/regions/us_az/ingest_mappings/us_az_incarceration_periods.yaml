@@ -120,6 +120,7 @@ output:
                   - SHOCK Incarceration Violator
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - Transit Driver
+                  - Temp Absent to Escape Status
                   - Reinstated - RUAP
                   - In Transit T
                   - Received After 20 Days
@@ -214,6 +215,8 @@ output:
                   - Reinstated - RUAP
                   - Open Last Prison Episode
                   - Revocation
+                  # This has not appeared in the data since 1996.
+                  - SHOCK Incarceration Commitment
                 StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                   - Out to Court
                   - Out to Hospital
@@ -265,6 +268,7 @@ output:
                   - Close Supervision Episode - Active Inmate
                   - REIN FROM SUSP.
                   - SHOCK Incarceration Violator
+                  - NULL - Movement Code Correction - No Status Change
           facility: prison_name
           housing_unit: location_name
           custody_level:
