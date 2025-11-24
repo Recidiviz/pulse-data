@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for rule_engine module."""
+import re
 import unittest
+from pathlib import Path
+
+import yaml
 
 from recidiviz.monitoring.pagerduty_alert_forwarder.config_loader import (
     AlertForwarderConfig,
@@ -448,3 +452,384 @@ class TestRuleEngine(unittest.TestCase):
         self.assertTrue(
             result["title"].startswith("[PROD]")
         )  # Prefix from second rule preserved
+
+    def test_gcp_resource_name_helper(self) -> None:
+        """Test the gcp_resource_name helper to extract resource name from GCP path."""
+        alert_with_gcp_path = {
+            "incident": {
+                "incident_id": "test-incident-456",
+                "policy_name": "Environment Health Check",
+                "resource_name": "projects/recidiviz-staging/locations/us-central1/environments/experiment-anna",
+                "summary": "Environment health check failed",
+            }
+        }
+
+        config = AlertForwarderConfig(
+            {
+                "default": {"pagerduty_service": "default"},
+                "rules": [
+                    {
+                        "name": "GCP resource name extraction",
+                        "match": {"incident.policy_name": {"contains": "Environment"}},
+                        "actions": {
+                            "title_transform": "[{incident.resource_name|gcp_resource_name}] {incident.summary}",
+                        },
+                    }
+                ],
+            }
+        )
+
+        engine = RuleEngine(config)
+        result = engine.process_alert(PagerDutyAlert(alert_with_gcp_path))
+
+        self.assertEqual(
+            result["title"], "[experiment-anna] Environment health check failed"
+        )
+
+    def test_gcp_resource_name_helper_with_multiple_fields(self) -> None:
+        """Test using gcp_resource_name helper with multiple fields in template."""
+        alert_with_multiple_gcp_paths = {
+            "incident": {
+                "incident_id": "test-incident-789",
+                "policy_name": "Resource Alert",
+                "resource_name": "projects/recidiviz-staging/locations/us-central1/environments/experiment-bob",
+                "database_name": "projects/recidiviz-staging/instances/prod-db",
+                "summary": "Multiple resource alert",
+            }
+        }
+
+        config = AlertForwarderConfig(
+            {
+                "default": {"pagerduty_service": "default"},
+                "rules": [
+                    {
+                        "name": "Multiple GCP names",
+                        "match": {"incident.policy_name": {"contains": "Resource"}},
+                        "actions": {
+                            "title_transform": "[{incident.resource_name|gcp_resource_name}] DB: {incident.database_name|gcp_resource_name} - {incident.summary}",
+                        },
+                    }
+                ],
+            }
+        )
+
+        engine = RuleEngine(config)
+        result = engine.process_alert(PagerDutyAlert(alert_with_multiple_gcp_paths))
+
+        self.assertEqual(
+            result["title"],
+            "[experiment-bob] DB: prod-db - Multiple resource alert",
+        )
+
+    def test_gcp_resource_name_helper_with_simple_name(self) -> None:
+        """Test gcp_resource_name helper with a simple name (no slashes)."""
+        alert_with_simple_name = {
+            "incident": {
+                "incident_id": "test-incident-999",
+                "policy_name": "Simple Alert",
+                "resource_name": "simple-resource",
+                "summary": "Simple alert",
+            }
+        }
+
+        config = AlertForwarderConfig(
+            {
+                "default": {"pagerduty_service": "default"},
+                "rules": [
+                    {
+                        "name": "Simple name test",
+                        "match": {"incident.policy_name": {"contains": "Simple"}},
+                        "actions": {
+                            "title_transform": "[{incident.resource_name|gcp_resource_name}] {incident.summary}",
+                        },
+                    }
+                ],
+            }
+        )
+
+        engine = RuleEngine(config)
+        result = engine.process_alert(PagerDutyAlert(alert_with_simple_name))
+
+        # Should still work - just returns the whole string
+        self.assertEqual(result["title"], "[simple-resource] Simple alert")
+
+    def test_config_yaml_only_uses_supported_helpers(self) -> None:
+        """Test that config.yaml only uses supported helper functions."""
+        # Supported helpers
+        supported_helpers = {"gcp_resource_name"}
+
+        # Read the config.yaml file
+        config_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "monitoring"
+            / "pagerduty_alert_forwarder"
+            / "config.yaml"
+        )
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_content = f.read()
+
+        # Extract all helpers used in the config using regex
+        # Pattern: {field.path|helper_name}
+        helper_pattern = re.compile(r"\{[a-zA-Z0-9_.]+\|([a-zA-Z0-9_]+)\}")
+        helpers_found = helper_pattern.findall(config_content)
+
+        # Check that all found helpers are supported
+        unsupported_helpers = set(helpers_found) - supported_helpers
+
+        self.assertEqual(
+            unsupported_helpers,
+            set(),
+            f"Found unsupported helper functions in config.yaml: {unsupported_helpers}. "
+            f"Supported helpers are: {supported_helpers}",
+        )
+
+
+class TestRuleEngineIntegration(unittest.TestCase):
+    """Integration tests for rule engine with actual config.yaml."""
+
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        # Load the actual config.yaml
+        config_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "monitoring"
+            / "pagerduty_alert_forwarder"
+            / "config.yaml"
+        )
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = yaml.safe_load(f)
+
+        self.config = AlertForwarderConfig(config_data)
+        self.engine = RuleEngine(self.config)
+
+    def test_production_data_platform_cloud_run_job_failure(self) -> None:
+        """Test production data platform alert with Cloud Run job failure."""
+        alert = {
+            "incident": {
+                "incident_id": "test-123",
+                "policy_name": "Cloud Run Job Failure",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                        "job_name": "calculation-pipeline-prod",
+                    }
+                },
+                "summary": "Job failed with exit code 1",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Production Alerts" and "Cloud Run Job Failure" rules
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(
+            result["pagerduty_service"], "[PRODUCTION] Data Platform Infrastructure"
+        )
+        # Title should have production prefix and job name after description
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Cloud Run Job Failure: calculation-pipeline-prod",
+        )
+
+    def test_staging_data_platform_stale_metric_exports(self) -> None:
+        """Test staging data platform alert with stale metric exports."""
+        alert = {
+            "incident": {
+                "incident_id": "test-456",
+                "policy_name": "[OTL] GCS: Metric exports have not been uploaded in 24 hours",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-staging",
+                    }
+                },
+                "condition": {
+                    "metric": {
+                        "labels": {
+                            "region": "us-east1",
+                        }
+                    }
+                },
+                "summary": "No metric exports in 24 hours",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Staging Alerts" and "Stale Metric Exports" rules
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(
+            result["pagerduty_service"], "[STAGING] Data Platform Infrastructure"
+        )
+        # Title should have staging prefix and region label
+        self.assertEqual(result["title"], "[STAGING] [us-east1] Stale Metric Exports")
+
+    def test_production_dashboard_pubsub_failure(self) -> None:
+        """Test production dashboard alert with Pub/Sub failure."""
+        alert = {
+            "incident": {
+                "incident_id": "test-789",
+                "policy_name": "Cloud Pub/Sub Subscription - Message not acknowledged within an hour",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-dashboard-production",
+                        "subscription_id": "dashboard-events-sub",
+                    }
+                },
+                "summary": "Messages not acknowledged",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Dashboard Production Alerts" and "Cloud Pub/Sub Handler" rules
+        self.assertEqual(result["severity"], "error")
+        self.assertEqual(result["pagerduty_service"], "[PRODUCTION] Dashboards Project")
+        # Title should have production prefix and subscription ID after description
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Pub/Sub Message Failure to Acknowledge: dashboard-events-sub",
+        )
+
+    def test_staging_dashboard_dataflow_vcpu(self) -> None:
+        """Test staging dashboard alert with Dataflow high vCPU."""
+        alert = {
+            "incident": {
+                "incident_id": "test-101",
+                "policy_name": "[Dataflow] Job using more than 224 vCPUs",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-dashboard-staging",
+                    }
+                },
+                "metadata": {
+                    "user_labels": {
+                        "dataflow_pipeline_job": "dashboard-metrics-staging",
+                    }
+                },
+                "summary": "High vCPU usage detected",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Dashboard Staging Alerts" and "Dataflow Job vCPU" rules
+        # Note: Dataflow rule sets severity to warning, which should override staging default
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(result["pagerduty_service"], "[STAGING] Dashboards Project")
+        # Title should have pipeline job name after description
+        # Note: No prefix since Dashboard Staging Alerts doesn't set one
+        self.assertEqual(
+            result["title"],
+            "[STAGING] Dataflow Job High vCPU Use: dashboard-metrics-staging",
+        )
+
+    def test_production_data_platform_airflow_idle_environment(self) -> None:
+        """Test production data platform alert with idle Airflow environment."""
+        alert = {
+            "incident": {
+                "incident_id": "test-202",
+                "policy_name": "[Airflow] Potentially idle experiment environment",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                        "airflow_environment_name": "projects/recidiviz-123/locations/us-central1/environments/experiment-alice",
+                    }
+                },
+                "summary": "Environment idle for 3 days",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Production Alerts" and "Airflow Idle Experiment Instance" rules
+        # Airflow rule sets severity to warning, overriding production error
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(
+            result["pagerduty_service"], "[PRODUCTION] Data Platform Infrastructure"
+        )
+        # Title should have production prefix and extracted environment name using gcp_resource_name helper
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Potentially Idle Airflow Development Environment: experiment-alice",
+        )
+
+    def test_production_data_platform_failed_scheduled_query(self) -> None:
+        """Test production data platform alert with failed scheduled query."""
+        alert = {
+            "incident": {
+                "incident_id": "test-303",
+                "policy_name": "BQ Scheduled Query Monitoring",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                        "config_id": "scheduled-query-12345",
+                    }
+                },
+                "summary": "Scheduled query failed",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Production Alerts" and "Failed Scheduled Query" rules
+        # Failed Scheduled Query sets severity to warning, overriding production error
+        self.assertEqual(result["severity"], "warning")
+        self.assertEqual(
+            result["pagerduty_service"], "[PRODUCTION] Data Platform Infrastructure"
+        )
+        # Title should have production prefix and config ID after description
+        self.assertEqual(
+            result["title"],
+            "🚨 [PRODUCTION] Failed BigQuery Scheduled Query: scheduled-query-12345",
+        )
+
+    def test_production_data_platform_airflow_dag_parse_error(self) -> None:
+        """Test production data platform alert with Airflow DAG parse error."""
+        alert = {
+            "incident": {
+                "incident_id": "test-404",
+                "policy_name": "Airflow - DAG Parse Error",
+                "resource": {
+                    "labels": {
+                        "project_id": "recidiviz-123",
+                    }
+                },
+                "summary": "DAG parsing failed",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should match both "Production Alerts" and "Airflow DAG Parse Error" rules
+        # Airflow DAG Parse Error sets severity to critical, overriding production error
+        self.assertEqual(result["severity"], "critical")
+        self.assertEqual(
+            result["pagerduty_service"], "[PRODUCTION] Data Platform Infrastructure"
+        )
+        # Title should have production prefix and the DAG parse error title
+        self.assertEqual(result["title"], "🚨 [PRODUCTION] Airflow - DAG Parse Error")
+
+    def test_unmatched_alert_uses_defaults(self) -> None:
+        """Test that alerts not matching any project or policy use defaults."""
+        alert = {
+            "incident": {
+                "incident_id": "test-999",
+                "policy_name": "Unknown Alert Type",
+                "resource": {
+                    "labels": {
+                        "project_id": "unknown-project",
+                    }
+                },
+                "summary": "Some random alert",
+            }
+        }
+
+        result = self.engine.process_alert(PagerDutyAlert(alert))
+
+        # Should use default config
+        self.assertEqual(result["severity"], "info")
+        self.assertEqual(result["pagerduty_service"], "GCP Infrastructure")
+        # Title should be the original summary since no transformations apply
+        self.assertEqual(result["title"], "Some random alert")

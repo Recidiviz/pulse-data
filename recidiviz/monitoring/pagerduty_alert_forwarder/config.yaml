@@ -11,20 +11,20 @@ default:
 # Rules are evaluated in order; ALL matching rules are applied
 # Later rules can override actions from earlier rules
 rules:
-  - name: "Stale Metric Exports"
-    match:
-      incident.policy_name: "[OTL] GCS: Metric exports have not been uploaded in 24 hours"
-    actions:
-      title_transform: "[{incident.condition.metric.labels.region}] Stale Metric Exports"
-
-  # Production-specific alerts
+  # Firstly, assign general low/high priority urgency based on production / staging environment
   - name: "Production Alerts"
     match:
       incident.resource.labels.project_id: "recidiviz-123"
     actions:
       severity: error
       pagerduty_service: "[PRODUCTION] Data Platform Infrastructure"
-      title_prefix: "🚨 [PRODUCTION]"
+
+  - name: "Dashboard Production Alerts"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-production"
+    actions:
+      severity: error
+      pagerduty_service: "[PRODUCTION] Dashboards Project"
 
   # Staging/test alerts - lower priority
   - name: "Staging Alerts"
@@ -33,4 +33,93 @@ rules:
     actions:
       severity: warning
       pagerduty_service: "[STAGING] Data Platform Infrastructure"
+
+  - name: "Dashboard Staging Alerts"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-staging"
+    actions:
+      severity: warning
+      pagerduty_service: "[STAGING] Dashboards Project"
+
+  # Secondly, apply alert policy-specific actions
+  - name: "Stale Metric Exports"
+    match:
+      incident.policy_name: "[OTL] GCS: Metric exports have not been uploaded in 24 hours"
+    actions:
+      title_transform: "[{incident.condition.metric.labels.region}] Stale Metric Exports"
+
+  - name: "Cloud Run Job Failure"
+    match:
+      incident.policy_name:
+        contains: "Cloud Run Job Failure"
+    actions:
+      title_transform: "Cloud Run Job Failure: {incident.resource.labels.job_name}"
+
+  - name: "Cloud Function Failure"
+    match:
+      incident.policy_name:
+        contains: "Cloud Function Failure"
+    actions:
+      title_transform: "Cloud Function Failure: {incident.resource.labels.job_name}"
+
+  - name: "Dataflow Job vCPU"
+    match:
+      incident.policy_name:
+        contains: "[Dataflow] Job using more than"
+    actions:
+      severity: warning
+      title_transform: "Dataflow Job High vCPU Use: {incident.metadata.user_labels.dataflow_pipeline_job}"
+
+  - name: "Airflow DAG Parse Error"
+    match:
+      incident.policy_name: "Airflow - DAG Parse Error"
+    actions:
+      severity: critical
+      title_transform: "Airflow - DAG Parse Error"
+
+  - name: "Cloud Pub/Sub Handler"
+    match:
+      incident.policy_name: "Cloud Pub/Sub Subscription - Message not acknowledged within an hour"
+    actions:
+      severity: error
+      title_transform: "Pub/Sub Message Failure to Acknowledge: {incident.resource.labels.subscription_id}"
+
+  - name: "Airflow Idle Experiment Instance"
+    match:
+      incident.policy_name: "[Airflow] Potentially idle experiment environment"
+    actions:
+      severity: warning
+      title_transform: "Potentially Idle Airflow Development Environment: {incident.resource.labels.airflow_environment_name|gcp_resource_name}"
+
+  - name: "Failed Scheduled Query"
+    match:
+      incident.policy_name: "BQ Scheduled Query Monitoring"
+    actions:
+      severity: warning
+      title_transform: "Failed BigQuery Scheduled Query: {incident.resource.labels.config_id}"
+
+  # Lastly, apply staging / production prefixes
+  - name: "Production Alerts - Prefix Title"
+    match:
+      incident.resource.labels.project_id: "recidiviz-123"
+    actions:
+      title_prefix: "🚨 [PRODUCTION]"
+
+  - name: "Dashboard Production Alerts - Prefix Title"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-production"
+    actions:
+      title_prefix: "🚨 [PRODUCTION]"
+
+  # Staging/test alerts - lower priority
+  - name: "Staging Alerts - Prefix Title"
+    match:
+      incident.resource.labels.project_id: "recidiviz-staging"
+    actions:
+      title_prefix: "[STAGING]"
+
+  - name: "Dashboard Staging Alerts - Prefix Title"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-staging"
+    actions:
       title_prefix: "[STAGING]"

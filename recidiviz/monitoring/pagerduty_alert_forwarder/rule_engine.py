@@ -206,18 +206,24 @@ class RuleEngine:
         - {incident.policy_name} -> alert["incident"]["policy_name"]
         - {incident.resource_display_name} -> alert["incident"]["resource_display_name"]
 
+        Supports helper functions using pipe syntax:
+        - {incident.resource_name|gcp_resource_name} -> extracts name from GCP resource path
+          Example: "projects/project/locations/us-central1/environments/experiment"
+          becomes "experiment"
+
         Args:
-            template: Template string with {field.path} placeholders
+            template: Template string with {field.path} or {field.path|helper} placeholders
             alert: Alert data wrapper with cached field paths
 
         Returns:
             Template with placeholders replaced by actual values
         """
-        # Pattern to match {field.path} or {field.nested.path}
-        field_pattern = re.compile(r"\{([a-zA-Z0-9_.]+)\}")
+        # Pattern to match {field.path} or {field.path|helper}
+        field_pattern = re.compile(r"\{([a-zA-Z0-9_.]+)(?:\|([a-zA-Z0-9_]+))?\}")
 
         def replace_field(match: re.Match[str]) -> str:
             field_path = match.group(1)
+            helper = match.group(2)  # Optional helper function name
             value = alert.get(field_path)
 
             if value is None and not alert.has_field(field_path):
@@ -236,6 +242,36 @@ class RuleEngine:
                 # Return original placeholder if field not found
                 return match.group(0)
 
+            # Apply helper function if specified
+            if helper:
+                value = self._apply_helper(helper, str(value), field_path)
+
             return str(value)
 
         return field_pattern.sub(replace_field, template)
+
+    def _apply_helper(self, helper: str, value: str, field_path: str) -> str:
+        """Apply a helper function to transform a field value.
+
+        Args:
+            helper: Name of the helper function to apply
+            value: The field value to transform
+            field_path: The field path (for logging purposes)
+
+        Returns:
+            Transformed value
+        """
+        if helper == "gcp_resource_name":
+            # Extract the name component from a GCP resource path
+            # Example: "projects/project/locations/us-central1/environments/experiment"
+            # Returns: "experiment"
+            return value.split("/")[-1]
+
+        # Unknown helper - log warning and return original value
+        logger.warning(
+            "Unknown helper function: %s for field %s",
+            helper,
+            field_path,
+            extra={"helper": helper, "field_path": field_path},
+        )
+        return value

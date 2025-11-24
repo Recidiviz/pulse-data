@@ -129,14 +129,14 @@ resource "google_monitoring_alert_policy" "cloud_run_job_failure" {
       aggregations {
         alignment_period     = "900s"
         cross_series_reducer = "REDUCE_COUNT"
-        group_by_fields      = ["resource.label.job_name"]
+        group_by_fields      = ["resource.label.project_id", "resource.label.job_name"]
         per_series_aligner   = "ALIGN_RATE"
       }
 
       comparison      = "COMPARISON_GT"
       duration        = "0s"
       filter          = <<-EOT
-        resource.type = "cloud_run_job" AND resource.labels.project_id = "recidiviz-dashboard-production" AND metric.type = "run.googleapis.com/job/completed_task_attempt_count" AND metric.labels.result = "failed"
+        resource.type = "cloud_run_job" AND metric.type = "run.googleapis.com/job/completed_task_attempt_count" AND metric.labels.result = "failed"
       EOT
       threshold_value = "0"
 
@@ -146,19 +146,22 @@ resource "google_monitoring_alert_policy" "cloud_run_job_failure" {
       }
     }
 
-    display_name = "[recidiviz-dashboards-production] Cloud Run Job - Failed"
+    display_name = "Cloud Run Job - Failed"
   }
 
-  display_name = "[recidiviz-dashboards-production] Cloud Run Job Failure"
+  display_name = "Cloud Run Job Failure"
 
   documentation {
-    content   = "View recent runs at:\nhttps://console.cloud.google.com/run/jobs?project=recidiviz-dashboards-staging"
+    content   = "View recent runs at:\nhttps://console.cloud.google.com/run/jobs?project=recidiviz-dashboard-production"
     mime_type = "text/markdown"
-    subject   = "[recidiviz-dashboards-production] Cloud Run Job Failed"
+    subject   = "Cloud Run Job Failed"
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.polaris_general_infrastructure.id, google_monitoring_notification_channel.alerts.id]
+  notification_channels = [
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+    google_monitoring_notification_channel.alerts.id,
+  ]
   project               = var.project_id
 }
 
@@ -198,7 +201,10 @@ resource "google_monitoring_alert_policy" "uptime_check_url_down" {
 
   display_name          = "Uptime Check URL - DOWN"
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.polaris_general_infrastructure.id, google_monitoring_notification_channel.alerts.id]
+  notification_channels = [
+    google_monitoring_notification_channel.polaris_general_infrastructure.id,
+    google_monitoring_notification_channel.alerts.id
+  ]
   project               = var.project_id
 }
 
@@ -441,51 +447,6 @@ resource "google_monitoring_alert_policy" "project_ownership_assignedchanged" {
   project               = var.project_id
 }
 
-resource "google_monitoring_alert_policy" "cloud_run_job_failure_2" {
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-
-  conditions {
-    condition_threshold {
-      aggregations {
-        alignment_period     = "900s"
-        cross_series_reducer = "REDUCE_COUNT"
-        group_by_fields      = ["resource.label.job_name"]
-        per_series_aligner   = "ALIGN_RATE"
-      }
-
-      comparison      = "COMPARISON_GT"
-      duration        = "0s"
-      filter          = <<-EOT
-        resource.type = "cloud_run_job" AND resource.labels.project_id = "recidiviz-dashboard-staging" AND metric.type = "run.googleapis.com/job/completed_task_attempt_count" AND metric.labels.result = "failed"
-      EOT
-      threshold_value = "0"
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "[recidiviz-dashboards-staging] Cloud Run Job - Failed"
-  }
-
-  display_name = "[recidiviz-dashboards-staging] Cloud Run Job Failure"
-
-  documentation {
-    content   = "View recent runs at:\nhttps://console.cloud.google.com/run/jobs?project=recidiviz-dashboards-staging"
-    mime_type = "text/markdown"
-    subject   = "[recidiviz-dashboards-staging] Cloud Run Job Failed"
-  }
-
-  enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.polaris_general_infrastructure.id, google_monitoring_notification_channel.alerts.id]
-  project               = var.project_id
-}
 
 resource "google_monitoring_alert_policy" "arizona_oras_sheet_bq_scheduled_query_sync_monitoring" {
   alert_strategy {
@@ -518,113 +479,6 @@ resource "google_monitoring_alert_policy" "arizona_oras_sheet_bq_scheduled_query
 
   enabled               = "true"
   notification_channels = [google_monitoring_notification_channel.ie_on_call_general_alerts.id]
-  project               = var.project_id
-}
-
-resource "google_monitoring_alert_policy" "cloud_build_elevated_error_log_rate" {
-  alert_strategy {
-    auto_close           = "86400s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-
-  conditions {
-    condition_threshold {
-      aggregations {
-        alignment_period     = "300s"
-        cross_series_reducer = "REDUCE_COUNT"
-        group_by_fields      = ["resource.label.project_id", "resource.label.build_id"]
-        per_series_aligner   = "ALIGN_RATE"
-      }
-
-      comparison      = "COMPARISON_GT"
-      duration        = "0s"
-      filter          = <<-EOT
-        resource.type = "build" AND metric.type = "logging.googleapis.com/log_entry_count" AND metric.labels.severity = "ERROR"
-      EOT
-      threshold_value = "0"
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "Cloud Build - Log entries"
-  }
-
-  display_name = "Cloud Build - Elevated Error Log Rate"
-
-  documentation {
-    content   = "Check recent logs for the aforementioned Cloud Build builds using this query:\nresource.type=\"build\" resource.labels.build_id=\"\""
-    mime_type = "text/markdown"
-    subject   = "Elevated Cloud Build error logs"
-  }
-
-  enabled               = "false"
-  notification_channels = [
-    google_monitoring_notification_channel.stackdriver.id,
-    google_monitoring_notification_channel.alerts.id,
-  ]
-  project               = var.project_id
-  severity              = "WARNING"
-}
-
-resource "google_monitoring_alert_policy" "gcs_metric_exports_have_not_been_uploaded_in_24_hours" {
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-
-  conditions {
-    condition_monitoring_query_language {
-      duration = "0s"
-      query    = <<-EOT
-        fetch global
-        | metric
-            'custom.googleapis.com/opencensus/bigquery/metric_view_export_manager/export_file_age'
-        | filter and(metric.metric_view_export_name != 'PO_MONTHLY', metric.metric_view_export_name != 'DASHBOARD_USER_RESTRICTIONS')
-        | filter not(
-            and(
-                metric.metric_view_export_name = 'PUBLIC_DASHBOARD',
-                or(
-                    or(metric.region = 'US_ID', metric.region = 'US_ME'),
-                    or(metric.region = 'US_TN', metric.region = 'US_IX')
-                )
-            )
-        )
-        | filter not(and(metric.metric_view_export_name = 'OVERDUE_DISCHARGE', metric.region = 'US_IX'))
-        | align next_older(1h)
-        # File age is a timestamp of seconds since epoch, so min() gives us the oldest file
-        | group_by [resource.project_id, metric.region],
-            [value_export_file_age_max: min(value.export_file_age)]
-        | map [resource.project_id, metric.region],
-            [value_export_file_age_max:
-               cast_units(div(end(), 1s), 's') - value_export_file_age_max]
-        | condition gt(value_export_file_age_max, cast_units(60 * 60 * 28, 's'))
-      EOT
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "File in metric view export is older than 24 hours"
-  }
-
-  display_name = "GCS: Metric exports have not been uploaded in 24 hours"
-
-  documentation {
-    content   = "See the files that violate the SLA at https://go/export-health-staging or https://go/export-health-prod\n\nThis may have been caused by upstream ingest processes failing to run, failing in an error state, or by an issue within the export pipeline. The metric captures GCS file age (in seconds)."
-    mime_type = "text/markdown"
-  }
-
-  enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
   project               = var.project_id
 }
 
@@ -750,7 +604,10 @@ resource "google_monitoring_alert_policy" "cloud_function_failure" {
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
   project               = var.project_id
 }
 
@@ -799,7 +656,7 @@ resource "google_monitoring_alert_policy" "gcs_metric_exports_have_not_been_uplo
     display_name = "File in metric view export is older than 24 hours"
   }
 
-  display_name = "[OTL] GCS: Metric exports have not been uploaded in 24 hours"
+  display_name = "GCS: Metric exports have not been uploaded in 24 hours"
 
   documentation {
     content   = "See the files that violate the SLA at https://go/export-health-staging or https://go/export-health-prod\n\nThis may have been caused by upstream ingest processes failing to run, failing in an error state, or by an issue within the export pipeline. The metric captures GCS file age (in seconds)."
@@ -807,52 +664,10 @@ resource "google_monitoring_alert_policy" "gcs_metric_exports_have_not_been_uplo
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
-  project               = var.project_id
-}
-
-resource "google_monitoring_alert_policy" "cloud_run_job_failure_3" {
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-  conditions {
-    condition_threshold {
-      aggregations {
-        alignment_period     = "900s"
-        cross_series_reducer = "REDUCE_COUNT"
-        group_by_fields      = ["resource.label.project_id", "resource.label.job_name"]
-        per_series_aligner   = "ALIGN_RATE"
-      }
-
-      comparison      = "COMPARISON_GT"
-      duration        = "0s"
-      filter          = <<-EOT
-        resource.type = "cloud_run_job" AND (resource.labels.job_name != monitoring.regex.full_match(".*playtesting.*?") AND resource.labels.job_name != monitoring.regex.full_match(".*?preview.*?") AND resource.labels.job_name != "utah-data-transfer-sync" AND resource.labels.project_id = "recidiviz-123") AND metric.type = "run.googleapis.com/job/completed_task_attempt_count" AND metric.labels.result = "failed"
-      EOT
-      threshold_value = "0"
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "Cloud Run Job - Failed"
-  }
-
-  display_name = "[recidiviz-123] Cloud Run Job Failure"
-
-  documentation {
-    content   = "View recent runs at:\nhttps://console.cloud.google.com/run/jobs?project=recidiviz-123"
-    mime_type = "text/markdown"
-    subject   = "Cloud Run Job Failed"
-  }
-
-  enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
   project               = var.project_id
 }
 
@@ -888,7 +703,10 @@ resource "google_monitoring_alert_policy" "bq_deployed_view_too_expensive" {
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
   project               = var.project_id
 }
 
@@ -976,7 +794,7 @@ resource "google_monitoring_alert_policy" "job_using_more_than_224_vcpu" {
 
   enabled               = "true"
   notification_channels = [
-    google_monitoring_notification_channel.stackdriver.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
     google_monitoring_notification_channel.alerts.id,
   ]
   project               = var.project_id
@@ -1065,55 +883,12 @@ resource "google_monitoring_alert_policy" "airflow_dag_parse_error" {
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id
+  ]
   project               = var.project_id
   severity              = "CRITICAL"
-}
-
-resource "google_monitoring_alert_policy" "cloud_run_job_failure_4" {
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-
-  conditions {
-    condition_threshold {
-      aggregations {
-        alignment_period     = "900s"
-        cross_series_reducer = "REDUCE_COUNT"
-        group_by_fields      = ["resource.label.job_name"]
-        per_series_aligner   = "ALIGN_RATE"
-      }
-
-      comparison      = "COMPARISON_GT"
-      duration        = "0s"
-      filter          = <<-EOT
-        resource.type = "cloud_run_job" AND (resource.labels.job_name != monitoring.regex.full_match(".*playtesting.*?") AND resource.labels.job_name != monitoring.regex.full_match(".*?preview.*?") AND resource.labels.job_name != "utah-data-transfer-sync" AND resource.labels.project_id = "recidiviz-staging") AND metric.type = "run.googleapis.com/job/completed_task_attempt_count" AND metric.labels.result = "failed"
-      EOT
-      threshold_value = "0"
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "Cloud Run Job - Failed"
-  }
-
-  display_name = "[recidiviz-staging] Cloud Run Job Failure"
-
-  documentation {
-    content   = "View recent runs at:\nhttps://console.cloud.google.com/run/jobs?project=recidiviz-staging"
-    mime_type = "text/markdown"
-    subject   = "Cloud Run Job Failed"
-  }
-
-  enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
-  project               = var.project_id
 }
 
 resource "google_monitoring_alert_policy" "cloud_composer_gke_container_cpu_usage_is_too_high" {
@@ -1309,7 +1084,10 @@ resource "google_monitoring_alert_policy" "app_engine_too_many_serving_versions"
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
   project               = var.project_id
 }
 
@@ -1391,7 +1169,10 @@ resource "google_monitoring_alert_policy" "cloud_pubsub_subscription_message_not
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
   project               = var.project_id
   severity              = "ERROR"
 }
@@ -1476,7 +1257,10 @@ resource "google_monitoring_alert_policy" "potentially_idle_experiment_environme
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id, google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id
+  ]
   project               = var.project_id
   severity              = "ERROR"
 }
@@ -1517,51 +1301,6 @@ resource "google_monitoring_alert_policy" "datastore_high_entity_reads" {
 
   enabled               = "true"
   notification_channels = [google_monitoring_notification_channel.alerts.id]
-  project               = var.project_id
-}
-
-resource "google_monitoring_alert_policy" "create_or_update_bq_views_failures" {
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-
-  conditions {
-    condition_threshold {
-      aggregations {
-        alignment_period     = "60s"
-        cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["resource.label.project_id", "metric.label.create_update_views_namespace"]
-        per_series_aligner   = "ALIGN_RATE"
-      }
-
-      comparison      = "COMPARISON_GT"
-      duration        = "60s"
-      filter          = <<-EOT
-        resource.type = "generic_node" AND metric.type = "custom.googleapis.com/opencensus/view_update_manager.view_update_failure"
-      EOT
-      threshold_value = "0"
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "Generic Node - view_update_manager.view_update_failure"
-  }
-
-  display_name = "[OTL] Create or Update BQ Views Failures"
-
-  documentation {
-    content   = "## Place To Check\nCheck the `update_managed_views_all` task of the calc DAG in airflow. It may have already resolved when run or re-deployed.\n\n## Place To Troubleshoot\nRun `recidiviz/big_query/view_update_manager.py` locally to diagnose the failure and deploy relevant BQ view updates."
-    mime_type = "text/markdown"
-  }
-
-  enabled               = "false"
-  notification_channels = [google_monitoring_notification_channel.stackdriver.id]
   project               = var.project_id
 }
 
@@ -1608,50 +1347,6 @@ resource "google_monitoring_alert_policy" "firestore_high_write_frequency" {
   project               = var.project_id
 }
 
-resource "google_monitoring_alert_policy" "create_or_update_bq_views_failures_2" {
-  alert_strategy {
-    auto_close           = "604800s"
-    notification_prompts = ["OPENED", "CLOSED"]
-  }
-
-  combiner = "OR"
-
-  conditions {
-    condition_threshold {
-      aggregations {
-        alignment_period     = "60s"
-        cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["resource.label.project_id", "metric.label.create_update_views_namespace"]
-        per_series_aligner   = "ALIGN_RATE"
-      }
-
-      comparison      = "COMPARISON_GT"
-      duration        = "60s"
-      filter          = <<-EOT
-        metric.type="custom.googleapis.com/opencensus/bigquery/view_update_manager/num_view_update_failure" resource.type="gce_instance"
-      EOT
-      threshold_value = "0"
-
-      trigger {
-        count   = "1"
-        percent = "0"
-      }
-    }
-
-    display_name = "Create or update view failed"
-  }
-
-  display_name = "Create or Update BQ Views Failures"
-
-  documentation {
-    content   = "Run recidiviz/big_query/view_update_manager.py locally to diagnose the failure and deploy relevant BQ view updates."
-    mime_type = "text/markdown"
-  }
-
-  enabled               = "false"
-  notification_channels = [google_monitoring_notification_channel.stackdriver.id]
-  project               = var.project_id
-}
 
 resource "google_monitoring_alert_policy" "calculation_dag_has_not_triggered_within_timeframe" {
   alert_strategy {
@@ -1691,7 +1386,10 @@ resource "google_monitoring_alert_policy" "calculation_dag_has_not_triggered_wit
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id
+  ]
   project               = var.project_id
 
   user_labels = {
@@ -1725,7 +1423,10 @@ resource "google_monitoring_alert_policy" "bq_scheduled_query_monitoring" {
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.stackdriver.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id
+  ]
   project               = var.project_id
 }
 
@@ -1806,7 +1507,7 @@ resource "google_monitoring_alert_policy" "uptime_check_url_down_marketing_websi
   enabled               = "true"
   notification_channels = [
     google_monitoring_notification_channel.alerts.id,
-    google_monitoring_notification_channel.stackdriver.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
   ]
   project               = var.project_id
 }

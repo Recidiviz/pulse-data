@@ -105,3 +105,10 @@ resource "google_monitoring_notification_channel" "pagerduty_cloud_billing_backu
   project = var.project_id
   type    = "email"
 }
+
+
+data "google_monitoring_notification_channel" "pagerduty_alert_forwarder_service" {
+  project = var.project_id
+  display_name = "PagerDuty Alert Forwarder"
+  type = "pubsub"
+}

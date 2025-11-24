@@ -205,20 +205,8 @@ In this example, an alert for a production database with ERROR severity would:
 
 2. **Deploy with Atmos**:
    ```bash
-   cd recidiviz/tools/deploy/atmos
    atmos terraform apply apps/pagerduty-alert-forwarder --stack recidiviz-123
    ```
-
-3. **Populate Secrets**:
-   After Terraform creates the secrets, populate them with integration keys:
-   ```bash
-   echo -n 'YOUR_INTEGRATION_KEY' | gcloud secrets versions add \
-     pagerduty-integration-key-default-oncall \
-     --data-file=- \
-     --project=recidiviz-123
-   ```
-
-   Repeat for each service configured in `pagerduty_services`.
 
 ### Linking Cloud Monitoring
 
@@ -416,8 +404,6 @@ pytest recidiviz/tests/monitoring/pagerduty_alert_forwarder/
 
 ### Adding New PagerDuty Service
 
-1. Create integration in PagerDuty (Events API V2)
-2. Add service name to `pagerduty_services` in stack config
-3. Deploy with Atmos (creates secret)
-4. Populate secret with integration key
-5. Update `config.yaml` to route alerts to new service
+1. Add service name to `pagerduty_services` in stack config
+2. Deploy with Atmos (creates secret containing integration key)
+3. Update `config.yaml` to route alerts to new service

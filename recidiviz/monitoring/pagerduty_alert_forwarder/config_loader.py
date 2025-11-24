@@ -161,7 +161,7 @@ class MatchConfig:
                         condition = InCondition(allowed_values=condition_value["in"])
                     else:
                         raise ConfigurationError(
-                            f"Rule {rule_index} match '{field_path}' has unknown condition type. "
+                            f"Rule {rule_index} match '{field_path}' has unknown condition type: {condition_value} "
                             f"Supported: 'contains', 'in'"
                         )
                 elif isinstance(condition_value, (str, int, float, bool)):
