@@ -114,6 +114,7 @@ invalid_lines=$(get_changed_files \
     | grep --invert-match -e 'run_pylint\.sh' \
     | grep --invert-match -e '\.pylintrc' \
     | grep --invert-match -e 'CLAUDE\.md' \
+    | grep --invert-match -e '\.claude/skills/create_recidiviz_data_github_tasks/SKILL\.md' \
     | grep --invert-match -e '/templates/' \
     | grep --invert-match -e '/nbautoexports/' \
     | grep --invert-match -e '/migrated_notebooks/' \

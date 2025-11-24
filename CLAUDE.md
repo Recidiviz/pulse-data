@@ -43,9 +43,10 @@ Running / configuring tests:
 - Justice Counts: `pipenv run docker-jc`
 
 ### Github
-- TODOs in code reference tasks in Github using a specific format: 
+- TODOs in code reference tasks in Github using a specific format:
   - `TODO(#12345)` refers to a TODO that should be addressed by https://github.com/Recidiviz/pulse-data/issues/12345
   - `TODO(Recidiviz/looker#123)` refers to a TODO that should be addressed by https://github.com/Recidiviz/looker/issues/123
+  - `TODO(XXXX)` can be used as a placeholder before filing a task - this will cause lint to fail, ensuring the task gets filed before merging
   - If you find a TODO in code that refers to a closed issue, it does not necessarily mean it has been addressed, as tasks are sometimes erroneously closed while TODOs still exist in code.
 
 ### Querying actual data 
@@ -98,6 +99,14 @@ For detailed information about how raw data is imported, transformed through ing
 For detailed information about how to work with BigQuery infrastructure, tooling, and libraries:
 
 - [BigQuery Documentation](./recidiviz/big_query/CLAUDE.md)
+
+## Skills
+Skills are specific workflows or procedures that Claude can follow. Each skill is documented in its own directory under `.claude/skills/`. To create a new skill, add a directory with a `SKILL.md` file:
+
+- **`.claude/skills/[skill_name]/SKILL.md`** - Documentation for a specific skill
+
+Available skills:
+- [Create Recidiviz Data GitHub Tasks](./.claude/skills/create_recidiviz_data_github_tasks/SKILL.md)
 
 # Personal preferences
 - @.claude/pulse-data-local-settings.md

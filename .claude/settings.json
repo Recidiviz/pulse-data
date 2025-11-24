@@ -14,6 +14,7 @@
       "Bash(gh issue view:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr diff:*)",
+      "Bash(gh label list:*)",
 
       "Bash(pipenv run pytest:*)",
 

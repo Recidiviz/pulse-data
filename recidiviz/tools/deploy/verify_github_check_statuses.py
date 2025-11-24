@@ -188,6 +188,8 @@ def verify_github_check_statuses(
 def main(args: argparse.Namespace) -> None:
     with local_project_id_override(args.project_id):
         while True:
+            # TODO(#53670): Wait for required checks to complete (pass or fail) before
+            # allowing user to proceed.
             _, all_checks_passed = verify_github_check_statuses(
                 project_id=args.project_id,
                 commit_ref=args.commit_ref,
