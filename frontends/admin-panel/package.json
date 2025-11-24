@@ -10,7 +10,7 @@
     "@dagrejs/dagre": "^1.1.8",
     "@recidiviz/design-system": "^5.11.0",
     "@xyflow/react": "^12.9.2",
-    "antd": "^4.24.16",
+    "antd": "^5.29.1",
     "auto-text-size": "^0.2.3",
     "classnames": "^2.3.1",
     "d3-scale": "^4.0.2",
