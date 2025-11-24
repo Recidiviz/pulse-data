@@ -54,7 +54,10 @@ from typing import List, Optional
 import attr
 import pandas as pd
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_address import (
+    BigQueryAddress,
+    ProjectSpecificBigQueryAddress,
+)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.utils.string import StrictStringFormatter
@@ -285,6 +288,17 @@ def compare_table_or_view(
     output_project_id = address_original.project_id
     # Setup + determine which columns we'll be comparing
     bq_client = BigQueryClientImpl(project_id=output_project_id)
+
+    # check that original and new addresses are valid
+    invalid_addresses: list[BigQueryAddress] = []
+    for table_address in [address_original, address_new]:
+        project_agnostic_address = table_address.to_project_agnostic_address()
+        if not bq_client.table_exists(project_agnostic_address):
+            invalid_addresses.append(project_agnostic_address)
+    if invalid_addresses:
+        raise ValueError(
+            f"One or more tables to compare do not exist:\n{BigQueryAddress.addresses_to_str(invalid_addresses, indent_level=2)}"
+        )
 
     bq_client.create_dataset_if_necessary(
         comparison_output_dataset_id,
