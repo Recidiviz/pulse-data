@@ -20,12 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
-    SENTENCE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
-    SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -35,23 +29,8 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record im
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     RESIDENT_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ar_institutional_worker_status_record import (
-    US_AR_INSTITUTIONAL_WORKER_STATUS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ar_work_release_record import (
-    US_AR_WORK_RELEASE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
-    US_AR_RESIDENT_METADATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_record_incarceration_cases_with_dates import (
     US_AR_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ar.eligible_criminal_history_309 import (
-    VIEW_BUILDER as US_AR_ELIGIBLE_CRIMINAL_HISTORY_309_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ar.eligible_criminal_history_work_release import (
-    VIEW_BUILDER as US_AR_ELIGIBLE_CRIMINAL_HISTORY_WORK_RELEASE_VIEW_BUILDER,
 )
 
 # For each US_AR metric export, for each product view in that export, a mapping of
@@ -62,24 +41,6 @@ US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
     "WORKFLOWS_FIRESTORE": {
-        US_AR_INSTITUTIONAL_WORKER_STATUS_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_AR_ELIGIBLE_CRIMINAL_HISTORY_309_VIEW_BUILDER.address,
-                US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
-            },
-        },
-        US_AR_WORK_RELEASE_RECORD_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_AR_ELIGIBLE_CRIMINAL_HISTORY_WORK_RELEASE_VIEW_BUILDER.address,
-                US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
-            },
-        },
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
@@ -88,12 +49,6 @@ US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_AR_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
             },
         },
     },

@@ -160,9 +160,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
-    US_AR_RESIDENT_METADATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_record_incarceration_cases_with_dates import (
     US_AR_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
@@ -227,12 +224,6 @@ from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_
 )
 from recidiviz.task_eligibility.criteria.general.supervision_early_discharge_before_full_term_completion_date import (
     VIEW_BUILDER as SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ar.eligible_criminal_history_309 import (
-    VIEW_BUILDER as US_AR_ELIGIBLE_CRIMINAL_HISTORY_309_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ar.eligible_criminal_history_work_release import (
-    VIEW_BUILDER as US_AR_ELIGIBLE_CRIMINAL_HISTORY_WORK_RELEASE_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az.no_arson_conviction import (
     VIEW_BUILDER as US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER,
@@ -571,12 +562,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        US_AR_ELIGIBLE_CRIMINAL_HISTORY_309_VIEW_BUILDER.address: (
-            "TODO(#46254): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_AR_ELIGIBLE_CRIMINAL_HISTORY_WORK_RELEASE_VIEW_BUILDER.address: (
-            "TODO(#46254): Remove this reference as part of the v2 sentences migration"
-        ),
         US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -634,9 +619,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
-        ),
-        US_AR_RESIDENT_METADATA_VIEW_BUILDER.address: (
-            "TODO(#46254): Remove this reference as part of the v2 sentences migration"
         ),
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
@@ -740,9 +722,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_AR_RESIDENT_METADATA_VIEW_BUILDER.address: (
-            "TODO(#46254): Remove this reference as part of the v2 sentences migration"
         ),
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
