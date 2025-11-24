@@ -1,0 +1,6 @@
+US_XX,supervision_staff@testdomain.com,3706,,,,supervision_line_staff,"D1",,"supervision","user","pseudo-3706",true,false
+US_XX,user@testdomain.com,98725,,,,supervision_line_staff,"D2",,"supervision2","user2",,true,false
+US_XX,facilities_staff@testdomain.com,4507,'ID_TYPE',4507,'ID_TYPE',facilities_line_staff,,"facility_id_3","facility3","user3","pseudo-4507",false,true
+US_XX,facilities_leadership@testdomain.com,4508,,,,facilities_leadership,,,"facilityLeadership5","user5",,false,true
+US_XX,user4@testdomain.com,98727,'ID_TYPE',98797,'ID_TYPE_2',"facilities_line_staff,supervision_line_staff","D2","facility_id_4","both4","user4",,true,true
+US_XX,supervision_leadership@testdomain.com,,,,,supervision_leadership,,,"supervisionLeadership6","user6",,true,false

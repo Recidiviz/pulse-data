@@ -1632,6 +1632,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "state_code": "US_XX",
+                    "filename": "ingested_supervision_product_users.csv",
                 },
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, response.data)

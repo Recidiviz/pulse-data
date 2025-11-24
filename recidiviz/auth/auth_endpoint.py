@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 import sqlalchemy.orm.exc
@@ -45,6 +45,9 @@ from recidiviz.auth.helpers import (
     generate_user_hash,
     log_reason,
     validate_roles,
+)
+from recidiviz.calculator.query.state.views.reference.ingested_incarceration_and_supervision_product_users import (
+    INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.ingested_supervision_product_users import (
     INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
@@ -119,10 +122,21 @@ def _upsert_user_rows(
     state_code: str,
     rows: List[Dict[str, Any]],
     table: Type[Roster] | Type[UserOverride],
+    columns: List[str],
 ) -> None:
     """Upserts rows into a table that stores user attributes (Roster or UserOverride),
     along with some validation."""
     for row in rows:
+        # TODO(#53580): Remove this once supervision_product_users columns match incarceration_and_supervision_product_users columns
+        if columns != INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns:
+            row["external_id"] = row.get("staff_external_id") or row.get("external_id")
+            row["district"] = row.get("district_id") or row.get("district")
+            columns_to_delete = set(columns) - set(
+                INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns
+            )
+            for column in columns_to_delete:
+                del row[column]
+
         if not row["email_address"]:
             raise ValueError(
                 "Roster contains a row that is missing an email address (required)"
@@ -154,6 +168,7 @@ def _upsert_user_rows(
         # Enforce casing for columns where we have a preference.
         row["state_code"] = state_code.upper()
         row["email_address"] = email
+
         if row.get("external_id") is not None:
             row["external_id"] = row["external_id"].upper()
             if row.get("pseudonymized_id") is None:
@@ -162,7 +177,6 @@ def _upsert_user_rows(
                 )
         row["roles"] = roles
         row["user_hash"] = generate_user_hash(row["email_address"])
-
         # update existing row or add new row
         _upsert(session, row, table)
 
@@ -669,7 +683,10 @@ def get_auth_endpoint_blueprint(
         # It would be nice if we could do this as a filter in the GCS notification instead of as logic
         # here, but as of Jan 2023, the available filters are not expressive enough for our needs:
         # https://cloud.google.com/pubsub/docs/filtering#filtering_syntax
-        if filename != "ingested_supervision_product_users.csv":
+        if filename not in [
+            "ingested_supervision_product_users.csv",
+            "ingested_incarceration_and_supervision_product_users.csv",
+        ]:
             logging.info("Unknown filename %s, ignoring", filename)
             # We want to ignore these instead of erroring because Pub/Sub will retry the request if it
             # doesn't return a successful status code, and this is a permanent failure instead of a
@@ -682,7 +699,7 @@ def get_auth_endpoint_blueprint(
         )
         cloud_task_manager.create_task(
             absolute_uri=f"{cloud_run_metadata.url}/auth/import_ingested_users",
-            body={"state_code": state_code},
+            body={"state_code": state_code, "filename": filename},
             service_account_email=cloud_run_metadata.service_account_email,
         )
         logging.info(
@@ -694,16 +711,19 @@ def get_auth_endpoint_blueprint(
     class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
         """Helper class to upsert chunks of data read from GCS to the Roster table"""
 
-        def __init__(self, session: Session, state_code: str) -> None:
+        def __init__(
+            self, session: Session, state_code: str, columns: Optional[List[str]]
+        ) -> None:
             self.emails: List[str] = []
             self.session = session
             self.state_code = state_code
+            self.columns = columns if columns else []
 
         def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
-            df.columns = INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns
+            df.columns = self.columns
             # df.to_dict exports missing values as 'nan', so export to json instead
             rows = json.loads(df.to_json(orient="records"))
-            _upsert_user_rows(self.session, self.state_code, rows, Roster)
+            _upsert_user_rows(self.session, self.state_code, rows, Roster, self.columns)
             self.emails.extend(r["email_address"] for r in rows)
             return True
 
@@ -715,18 +735,29 @@ def get_auth_endpoint_blueprint(
         try:
             body = get_cloud_task_json_body()
             state_code = body.get("state_code")
+            filename = body.get("filename")
+
+            # Technically these and most of the below error statuses should be BAD_REQUEST, but
+            # since the caller is cloud tasks, it'll just retry the request instead of alerting
+            # a user to the issue. Instead, we use INTERNAL_SERVER_ERROR so it shows up in the
+            # admin panel oncall error page.
             if not state_code:
-                # Technically this and most of the below error statuses should be BAD_REQUEST, but
-                # since the caller is cloud tasks, it'll just retry the request instead of alerting
-                # a user to the issue. Instead, we use INTERNAL_SERVER_ERROR so it shows up in the
-                # admin panel oncall error page.
                 return "Missing state_code param", HTTPStatus.INTERNAL_SERVER_ERROR
+            if not filename:
+                return "Missing filename param", HTTPStatus.INTERNAL_SERVER_ERROR
 
             try:
                 _validate_state_code(state_code)
             except ValueError as error:
                 logging.error(error)
                 return str(error), HTTPStatus.INTERNAL_SERVER_ERROR
+
+            supervision_only = filename == "ingested_supervision_product_users.csv"
+            view_builder = (
+                INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER
+                if supervision_only
+                else INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER
+            )
 
             csv_path = GcsfsFilePath.from_absolute_path(
                 os.path.join(
@@ -735,7 +766,7 @@ def get_auth_endpoint_blueprint(
                         project_id=metadata.project_id(),
                     ),
                     state_code,
-                    f"{INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.view_id}.csv",
+                    f"{view_builder.view_id}.csv",
                 )
             )
             database_key = SQLAlchemyDatabaseKey.for_schema(
@@ -746,7 +777,7 @@ def get_auth_endpoint_blueprint(
                 # exist in the CSV file. Do this instead of import_gcs_csv_to_cloud_sql in order to have
                 # more accurate created/updated timestamps
                 reader_delegate = ImportIngestedUsersGcsfsCsvReaderDelegate(
-                    session, state_code
+                    session, state_code, view_builder.columns
                 )
                 csv_reader = GcsfsCsvReader(fs=GcsfsFactory.build())
                 csv_reader.streaming_read(
@@ -786,19 +817,50 @@ def get_auth_endpoint_blueprint(
                     .all()
                 )
 
-                # If a user has a facilities role, delete them from Roster but don't
+                if supervision_only:
+                    # If a user has a facilities role, delete them from Roster but don't
+                    # block them. They are still an active user but should not be in Roster
+                    # anymore because they are not supervision staff/being ingested through
+                    # roster sync
+                    facilities_roles = [
+                        "facilities_line_staff",
+                        "facilities_non_primary_staff",
+                    ]
+                    facilities_users = (
+                        session.execute(
+                            select(UserOverride.email_address).where(
+                                UserOverride.email_address.in_(
+                                    [
+                                        user.email_address
+                                        for user in roster_users_to_delete
+                                    ]
+                                ),
+                                UserOverride.roles.overlap(facilities_roles),
+                            )
+                        )
+                        .scalars()
+                        .all()
+                    )
+                else:
+                    facilities_users = []
+
+                # If a user has a leadership role, delete them from Roster but don't
                 # block them. They are still an active user but should not be in Roster
-                # anymore because they are not supervision staff/being ingested through
+                # anymore because they are not staff/being ingested through
                 # roster sync
-                facilities_users = (
+                leadership_roles = [
+                    "facilities_leadership",
+                    "supervision_leadership",
+                    "supervision_regional_leadership",
+                    "state_leadership",
+                ]
+                leadership_users = (
                     session.execute(
                         select(UserOverride.email_address).where(
                             UserOverride.email_address.in_(
                                 [user.email_address for user in roster_users_to_delete]
                             ),
-                            func.array_to_string(UserOverride.roles, ", ").ilike(
-                                "%facilities%"
-                            ),
+                            UserOverride.roles.overlap(leadership_roles),
                         )
                     )
                     .scalars()
@@ -809,7 +871,7 @@ def get_auth_endpoint_blueprint(
                     {
                         **convert_user_object_to_dict(user),
                         "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1)
-                        if user.email_address not in facilities_users
+                        if user.email_address not in leadership_users + facilities_users
                         else None,
                     }
                     for user in roster_users_to_delete

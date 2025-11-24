@@ -407,7 +407,9 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                     if v == "":
                         row[k] = None
             try:
-                _upsert_user_rows(current_session, state_code, rows, UserOverride)
+                _upsert_user_rows(
+                    current_session, state_code, rows, UserOverride, expected_columns
+                )
 
                 return f"{len(rows)} users added/updated to the roster"
             except IntegrityError as e:
