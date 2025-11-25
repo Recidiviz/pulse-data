@@ -49,7 +49,11 @@ employment_verification_trigger_view_builder = (
             meets_initial_employment_verification_trigger.VIEW_BUILDER,
             meets_employment_reverification_trigger.VIEW_BUILDER,
         ],
-        allowed_duplicate_reasons_keys=["contact_due_date", "last_contact_date"],
+        allowed_duplicate_reasons_keys=[
+            "contact_due_date",
+            "last_contact_date",
+            "contact_cadence",
+        ],
         reasons_aggregate_function_override={
             "contact_due_date": "MIN",
             "last_contact_date": "MAX",
