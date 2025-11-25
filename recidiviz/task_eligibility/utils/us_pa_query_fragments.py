@@ -1060,7 +1060,8 @@ def adm_eligibility_unclear_helper() -> str:
       {adm_pending_charges_helper()}
       UNION ALL 
       {adm_drug_charges_helper()}
-      -- TODO(#47689) Add reentrants with NAE to eligibility unclear tab 
+      UNION ALL 
+      {adm_marked_nae_in_oms_helper()}
       -- TODO(#47692) Add reentrants with DV flag to eligibility unclear tab
     )
     SELECT person_id,
@@ -1196,6 +1197,38 @@ def adm_drug_charges_helper() -> str:
     WHERE (form.form_information_statute_14
       OR form.form_information_statute_30
       OR form.form_information_statute_37)
+    """
+
+
+def adm_marked_nae_in_oms_helper() -> str:
+    """helper that returns copy for the eligibility tab for when somebody has been previously marked as
+    admin ineligible in captor.
+    """
+    return f"""
+      SELECT 
+        person_id, 
+        'This reentrant was previously flagged as "NAE" (Not Admin Eligible) in a case note. Please assess whether this designation is accurate and still applies by updating their eligibility status' AS metadata_eligibility_unclear_text
+      FROM (
+        SELECT pei.state_code,
+        pei.person_id,
+        CAST(update_datetime AS DATE) AS marked_nae_date,
+        CASE WHEN {contains_nae('PA_OtherDesc')} THEN PA_OtherDesc
+            WHEN {contains_nae('Miscellaneous')} THEN Miscellaneous
+            ELSE Notes
+        END AS note,
+        CASE WHEN {contains_nae('PA_OtherDesc')} THEN 'PA_OtherDesc'
+            WHEN {contains_nae('Miscellaneous')} THEN 'Miscellaneous'
+            ELSE 'Notes'
+        END AS note_source
+      FROM `{{project_id}}.{{us_pa_raw_data_dataset}}.dbo_Parolee` par -- using dbo_Parolee instead of dbo_Parolee_latest to get update_datetime field
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON par.ParoleNumber = pei.external_id
+        AND pei.id_type = 'US_PA_PBPP'
+      WHERE {contains_nae('Miscellaneous')}
+        OR {contains_nae('PA_OtherDesc')}
+        OR {contains_nae('Notes')}
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY update_datetime) = 1 -- only select first time someone is marked NAE
+    )
     """
 
 

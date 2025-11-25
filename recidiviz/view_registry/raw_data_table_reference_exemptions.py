@@ -71,9 +71,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd.not_in_active_revo
 from recidiviz.task_eligibility.criteria.state_specific.us_pa.meets_special_circumstances_criteria_for_time_served import (
     VIEW_BUILDER as US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_pa.not_marked_ineligible_for_admin_supervision_in_oms import (
-    VIEW_BUILDER as US_PA_NOT_MARKED_INELIGIBLE_FOR_ADMIN_SUPERVISION_IN_OMS_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_pa.not_on_sex_offense_protocol import (
     VIEW_BUILDER as US_PA_NOT_ON_SEX_OFFENSE_PROTOCOL_VIEW_BUILDER,
 )
@@ -123,7 +120,6 @@ RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]]
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
-        US_PA_NOT_MARKED_INELIGIBLE_FOR_ADMIN_SUPERVISION_IN_OMS_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_NOT_ON_SEX_OFFENSE_PROTOCOL_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         CLIENT_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
