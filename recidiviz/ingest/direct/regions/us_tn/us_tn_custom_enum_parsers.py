@@ -76,7 +76,7 @@ def supervision_type_from_fields(
 def staff_role_type_from_staff_title(
     raw_text: str,
 ) -> StateStaffRoleType:
-    if raw_text in ("PRBM", "PRBO", "PRBP", "PARO", "PAOS", "COFF"):
+    if raw_text in ("PRBM", "PRBO", "PRBP", "PARO", "PAOS"):
         return StateStaffRoleType.SUPERVISION_OFFICER
 
     return StateStaffRoleType.INTERNAL_UNKNOWN
