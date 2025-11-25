@@ -24,7 +24,9 @@ from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
 COLLECTION_BY_FILENAME = {
+    # TODO(#10615): Remove v1 once all states have migrated to v2.
     "us_ix_supervision_tasks_record.json": "US_ID-supervisionTasks",
+    "us_ix_supervision_tasks_record_v2.json": "US_ID-supervisionTasksV2",
     "us_mo_supervision_tasks_record.json": "US_MO-supervisionTasks",
     "us_nd_supervision_tasks_record.json": "US_ND-supervisionTasks",
     "us_ne_supervision_tasks_record.json": "US_NE-supervisionTasks",
