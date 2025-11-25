@@ -211,10 +211,19 @@ const StateUserPermissionsView = (): JSX.Element => {
           await checkResponse(deletedPermissions);
         }
 
-        const { routes, featureVariantsToAdd, featureVariantsToRemove } =
-          aggregateFormPermissionResults(rest);
+        const {
+          allowedApps,
+          routes,
+          featureVariantsToAdd,
+          featureVariantsToRemove,
+        } = aggregateFormPermissionResults(rest);
 
         // update user's custom permissions
+        const newApps = updatePermissionsObject(
+          row.allowedApps ?? {},
+          allowedApps,
+          []
+        );
         const newRoutes = updatePermissionsObject(row.routes ?? {}, routes, []);
         const newFeatureVariants = updatePermissionsObject(
           row.featureVariants ?? {},
@@ -225,6 +234,7 @@ const StateUserPermissionsView = (): JSX.Element => {
           const updatedPermissions = await updateUserPermissions(
             row.userHash,
             reason,
+            newApps,
             newRoutes,
             newFeatureVariants
           );

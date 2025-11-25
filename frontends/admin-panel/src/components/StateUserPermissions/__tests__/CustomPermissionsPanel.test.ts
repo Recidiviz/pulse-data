@@ -31,6 +31,7 @@ const baseUser: Omit<StateUserPermissionsResponse, "routes"> = {
   roles: ["test"],
   stateCode: "test",
   userHash: "test",
+  allowedApps: { staff: true },
 };
 
 describe("routePlaceholder", () => {

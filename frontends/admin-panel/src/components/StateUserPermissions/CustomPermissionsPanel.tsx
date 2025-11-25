@@ -16,13 +16,15 @@
 // =============================================================================
 import { FormInstance } from "antd";
 
-import { Route, StateUserPermissionsResponse } from "../../types";
+import { AllowedApp, Route, StateUserPermissionsResponse } from "../../types";
 import {
+  ALLOWED_APPS_LABELS,
   CPA_PERMISSIONS_LABELS,
   INSIGHTS_PERMISSIONS_LABELS,
   LANTERN_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   PSI_PERMISSIONS_LABELS,
+  ROUTES_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
   WORKFLOWS_PERMISSIONS_LABELS,
 } from "../constants";
@@ -51,33 +53,48 @@ export const routePlaceholder = (
   return values[0].toString();
 };
 
-const BasicPermissionList = ({
+function BasicPermissionList<PermissionType extends Route | AllowedApp>({
   labels,
   hidePermissions,
   selectedUsers,
+  getPlaceholder = () => undefined,
 }: {
-  labels: Partial<Record<Route, string>>;
+  labels: Partial<Record<PermissionType, string>>;
+  hidePermissions: boolean;
+  selectedUsers?: StateUserPermissionsResponse[];
+  getPlaceholder?: (
+    routeName: PermissionType,
+    selectedUsers: StateUserPermissionsResponse[] | undefined
+  ) => string | undefined;
+}): JSX.Element {
+  return (
+    <>
+      {(Object.entries(labels) as [keyof typeof labels, string][]).map(
+        ([name, label]) => {
+          return (
+            <PermissionSelect
+              permission={{ name, label }}
+              key={name}
+              disabled={hidePermissions}
+              placeholder={
+                hidePermissions
+                  ? undefined
+                  : getPlaceholder(name, selectedUsers)
+              }
+            />
+          );
+        }
+      )}
+    </>
+  );
+}
+
+const RoutePermissionList = (props: {
+  labels: Partial<typeof ROUTES_PERMISSIONS_LABELS>;
   hidePermissions: boolean;
   selectedUsers?: StateUserPermissionsResponse[];
 }): JSX.Element => (
-  <>
-    {(Object.entries(labels) as [keyof typeof labels, string][]).map(
-      ([name, label]) => {
-        return (
-          <PermissionSelect
-            permission={{ name, label }}
-            key={name}
-            disabled={hidePermissions}
-            placeholder={
-              hidePermissions
-                ? undefined
-                : routePlaceholder(name, selectedUsers)
-            }
-          />
-        );
-      }
-    )}
-  </>
+  <BasicPermissionList getPlaceholder={routePlaceholder} {...props} />
 );
 
 export const CustomPermissionsPanel = ({
@@ -90,8 +107,15 @@ export const CustomPermissionsPanel = ({
   selectedUsers?: StateUserPermissionsResponse[];
 }): JSX.Element => (
   <>
-    <h4>Workflows:</h4>
+    <h4>App access:</h4>
     <BasicPermissionList
+      labels={ALLOWED_APPS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
+
+    <h4>Workflows:</h4>
+    <RoutePermissionList
       labels={WORKFLOWS_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
@@ -157,35 +181,35 @@ export const CustomPermissionsPanel = ({
     />
 
     <h4>Vitals (Operations):</h4>
-    <BasicPermissionList
+    <RoutePermissionList
       labels={VITALS_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
 
     <h4>Pathways Pages:</h4>
-    <BasicPermissionList
+    <RoutePermissionList
       labels={PATHWAYS_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
 
     <h4>PSI Pages:</h4>
-    <BasicPermissionList
+    <RoutePermissionList
       labels={PSI_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
 
     <h4>Case Planning Assistant (CPA) Pages:</h4>
-    <BasicPermissionList
+    <RoutePermissionList
       labels={CPA_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
 
     <h4>Lantern (Legacy) Pages:</h4>
-    <BasicPermissionList
+    <RoutePermissionList
       labels={LANTERN_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}

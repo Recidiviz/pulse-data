@@ -14,7 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { AddUserRequest, FeatureVariants, Routes } from "../types";
+import {
+  AddUserRequest,
+  AllowedAppRecord,
+  FeatureVariants,
+  RouteRecord,
+} from "../types";
 import {
   deleteResource,
   deleteWithUrlAndBody,
@@ -143,12 +148,14 @@ export const updateUsers = async (
 export const updateUserPermissions = async (
   userHash: string,
   reason: string,
-  routes?: Partial<Routes>,
+  allowedApps?: AllowedAppRecord,
+  routes?: RouteRecord,
   featureVariants?: Partial<FeatureVariants>
 ): Promise<Response> => {
   return putAuthWithURLAndBody(
     `/users/${encodeURIComponent(userHash)}/permissions`,
     {
+      allowedApps,
       routes,
       featureVariants,
       reason,
@@ -176,10 +183,12 @@ export const createStateRolePermissions = async (
   stateCode: string,
   role: string,
   reason: string,
-  routes?: Partial<Routes>,
+  allowedApps?: AllowedAppRecord,
+  routes?: RouteRecord,
   featureVariants?: Partial<FeatureVariants>
 ): Promise<Response> => {
   return postAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
+    allowedApps,
     routes,
     featureVariants,
     reason,
@@ -190,10 +199,12 @@ export const updateStateRolePermissions = async (
   stateCode: string,
   role: string,
   reason: string,
-  routes?: Partial<Routes>,
+  allowedApps?: AllowedAppRecord,
+  routes?: RouteRecord,
   featureVariants?: Partial<FeatureVariants>
 ): Promise<Response> => {
   return patchAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
+    allowedApps,
     routes,
     featureVariants,
     reason,

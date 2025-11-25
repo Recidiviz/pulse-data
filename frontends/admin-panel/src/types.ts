@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { ROUTES_PERMISSIONS_LABELS } from "./components/constants";
+import {
+  ALLOWED_APPS_LABELS,
+  ROUTES_PERMISSIONS_LABELS,
+} from "./components/constants";
 
 export interface MetadataRecord<T> {
   name: string;
@@ -79,7 +82,8 @@ export interface StateUserPermissionsResponse {
   stateCode: string;
   allowedSupervisionLocationIds: string;
   allowedSupervisionLocationLevel: string;
-  routes: Partial<Routes> | null;
+  allowedApps: AllowedAppRecord | null;
+  routes: RouteRecord | null;
   blockedOn: string | null;
   firstName: string;
   lastName: string;
@@ -90,7 +94,10 @@ export interface StateUserPermissionsResponse {
   userHash: string;
 }
 
-export interface StateUserForm extends StateUserPermissionsResponse, Routes {
+export interface StateUserForm
+  extends StateUserPermissionsResponse,
+    Routes,
+    AllowedApps {
   useCustomPermissions: boolean;
   reason: string;
   featureVariant: {
@@ -106,8 +113,13 @@ export interface StateRolePermissionsResponse {
   role: string;
   routes: RouteRecord;
   featureVariants: FeatureVariants;
+  allowedApps: AllowedAppRecord;
 }
-export interface StateRoleForm extends StateRolePermissionsResponse, Routes {
+
+export interface StateRoleForm
+  extends StateRolePermissionsResponse,
+    Routes,
+    AllowedApps {
   reason: string;
   featureVariant: {
     name: string;
@@ -131,6 +143,10 @@ export type FeatureVariantRecord = Partial<FeatureVariants>;
 export type Route = keyof typeof ROUTES_PERMISSIONS_LABELS;
 export type Routes = Record<Route, boolean>;
 export type RouteRecord = Partial<Routes>;
+
+export type AllowedApp = keyof typeof ALLOWED_APPS_LABELS;
+export type AllowedApps = Record<AllowedApp, boolean>;
+export type AllowedAppRecord = Partial<AllowedApps>;
 
 export interface RemoveFeatureVariantForm {
   fvName: string;

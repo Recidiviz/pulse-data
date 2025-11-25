@@ -236,10 +236,10 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": SUPERVISION_LEADERSHIP_ROLE,
-                    "allowed_apps": {"app1": True, "app2": False},
+                    "allowedApps": {"app1": True, "app2": False},
                     "routes": {"A": True, "B": False},
                     "featureVariants": {"D": "E"},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -258,9 +258,9 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "routes": {"route_A": True, "routeB": False},
-                    "allowed_apps": {"app1": False, "app2": True},
+                    "allowedApps": {"app1": False, "app2": True},
                     "reason": "test",
-                    "jii_permissions": {"live": True},
+                    "jiiPermissions": {"live": True},
                 },
             )
             self.assertReasonLog(
@@ -272,17 +272,17 @@ class AuthEndpointTests(TestCase):
                     "role": SUPERVISION_LEADERSHIP_ROLE,
                     "stateCode": "US_MO",
                     "routes": {"route_A": True, "routeB": True, "C": False},
-                    "allowed_apps": {"app1": True, "app2": False},
+                    "allowedApps": {"app1": True, "app2": False},
                     "featureVariants": {},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
                 {
                     "role": SUPERVISION_STAFF,
                     "stateCode": "US_MO",
                     "routes": {"route_A": True, "routeB": False},
-                    "allowed_apps": {"app1": False, "app2": True},
+                    "allowedApps": {"app1": False, "app2": True},
                     "featureVariants": {},
-                    "jii_permissions": {"live": True},
+                    "jiiPermissions": {"live": True},
                 },
             ]
             response = self.client.get(
@@ -299,7 +299,7 @@ class AuthEndpointTests(TestCase):
                 json={
                     "featureVariants": {"A": True},
                     "reason": "test",
-                    "allowed_apps": {"app1": True, "app2": False},
+                    "allowedApps": {"app1": True, "app2": False},
                 },
             )
             self.assertReasonLog(
@@ -311,9 +311,9 @@ class AuthEndpointTests(TestCase):
                     "role": SUPERVISION_STAFF,
                     "stateCode": "US_MO",
                     "routes": {},
-                    "allowed_apps": {"app1": True, "app2": False},
+                    "allowedApps": {"app1": True, "app2": False},
                     "featureVariants": {"A": True},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
             ]
             response = self.client.get(
@@ -352,10 +352,10 @@ class AuthEndpointTests(TestCase):
                 {
                     "role": "unknown",
                     "stateCode": "US_MO",
-                    "allowed_apps": {},
+                    "allowedApps": {},
                     "routes": {},
                     "featureVariants": {},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
             ]
             response = self.client.get(
@@ -378,8 +378,8 @@ class AuthEndpointTests(TestCase):
                 json={
                     "featureVariants": {"D": True},
                     "routes": {"A": True, "B": False},
-                    "allowed_apps": {"app1": True, "app2": False},
-                    "jii_permissions": {"live": True},
+                    "allowedApps": {"app1": True, "app2": False},
+                    "jiiPermissions": {"live": True},
                 },
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -400,9 +400,9 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "routes": {"C": True, "B": False},
-                    "allowed_apps": {"app1": False, "app2": True},
+                    "allowedApps": {"app1": False, "app2": True},
                     "featureVariants": {"D": True, "E": False},
-                    "jii_permissions": {"permission_1": False, "permission_2": True},
+                    "jiiPermissions": {"permission_1": False, "permission_2": True},
                     "reason": "test",
                 },
             )
@@ -411,9 +411,9 @@ class AuthEndpointTests(TestCase):
                 "stateCode": "US_MO",
                 "role": SUPERVISION_LEADERSHIP_ROLE,
                 "routes": {"A": True, "B": False, "C": True},
-                "allowed_apps": {"app1": False, "app2": True},
+                "allowedApps": {"app1": False, "app2": True},
                 "featureVariants": {"C": True, "D": True, "E": False},
-                "jii_permissions": {"permission_1": False, "permission_2": True},
+                "jiiPermissions": {"permission_1": False, "permission_2": True},
             }
 
             self.assertEqual(expected, json.loads(response.data))
@@ -441,7 +441,7 @@ class AuthEndpointTests(TestCase):
                 self.update_state_role("US_MO", SUPERVISION_LEADERSHIP_ROLE),
                 headers=self.headers,
                 json={
-                    "allowed_apps": {"app1": True, "app2": False},
+                    "allowedApps": {"app1": True, "app2": False},
                     "routes": {"C": True, "B": False},
                     "featureVariants": {"D": True, "E": False},
                     "reason": "test",
@@ -451,10 +451,10 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_MO",
                 "role": SUPERVISION_LEADERSHIP_ROLE,
-                "allowed_apps": {"app1": True, "app2": False},
+                "allowedApps": {"app1": True, "app2": False},
                 "routes": {"B": False, "C": True},
                 "featureVariants": {"C": True, "D": True, "E": False},
-                "jii_permissions": {},
+                "jiiPermissions": {},
             }
 
             self.assertEqual(expected, json.loads(response.data))
@@ -491,10 +491,10 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_TN",
                 "role": SUPERVISION_LEADERSHIP_ROLE,
-                "allowed_apps": {"app1": True, "app2": False},
+                "allowedApps": {"app1": True, "app2": False},
                 "routes": {"A": True, "B": False, "C": True},
                 "featureVariants": {},
-                "jii_permissions": {},
+                "jiiPermissions": {},
             }
 
             self.assertEqual(expected, json.loads(response.data))
@@ -669,10 +669,10 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": SUPERVISION_STAFF,
-                    "allowed_apps": {"app1": False, "app2": True},
+                    "allowedApps": {"app1": False, "app2": True},
                     "routes": {"A": True, "B": False, "C": False},
                     "featureVariants": {"D": True},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -716,10 +716,10 @@ class AuthEndpointTests(TestCase):
                     {
                         "role": role,
                         "stateCode": "US_MO",
-                        "allowed_apps": {},
+                        "allowedApps": {},
                         "routes": {},
                         "featureVariants": {},
-                        "jii_permissions": {},
+                        "jiiPermissions": {},
                     }
                     for role in PREDEFINED_ROLES
                 ],
@@ -757,10 +757,10 @@ class AuthEndpointTests(TestCase):
                     {
                         "role": role,
                         "stateCode": "US_MO",
-                        "allowed_apps": {},
+                        "allowedApps": {},
                         "routes": {},
                         "featureVariants": {},
-                        "jii_permissions": {},
+                        "jiiPermissions": {},
                     }
                     for role in PREDEFINED_ROLES
                     if role not in existing_roles
@@ -769,10 +769,10 @@ class AuthEndpointTests(TestCase):
                     {
                         "role": SUPERVISION_LEADERSHIP_ROLE,
                         "stateCode": "US_MO",
-                        "allowed_apps": {"app1": True, "app2": False},
+                        "allowedApps": {"app1": True, "app2": False},
                         "routes": {"A": True, "B": True, "C": False},
                         "featureVariants": {},
-                        "jii_permissions": {},
+                        "jiiPermissions": {},
                     }
                 ],
                 key=lambda x: cast(str, x["role"]),
@@ -826,18 +826,18 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": SUPERVISION_LEADERSHIP_ROLE,
-                    "allowed_apps": {"app1": True, "app2": False},
+                    "allowedApps": {"app1": True, "app2": False},
                     "routes": {"A": True, "B": True, "C": False},
                     "featureVariants": {"A": True},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
                 {
                     "stateCode": "US_MO",
                     "role": SUPERVISION_STAFF,
-                    "allowed_apps": {"app1": False, "app2": False},
+                    "allowedApps": {"app1": False, "app2": False},
                     "routes": {"A": True},
                     "featureVariants": {},
-                    "jii_permissions": {},
+                    "jiiPermissions": {},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))

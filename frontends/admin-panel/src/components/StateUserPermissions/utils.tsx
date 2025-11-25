@@ -21,6 +21,8 @@ import { isFuture, isPast } from "date-fns";
 import moment from "moment";
 
 import {
+  AllowedAppRecord,
+  AllowedApps,
   FeatureVariantRecord,
   FeatureVariants,
   FeatureVariantValue,
@@ -31,25 +33,20 @@ import {
   StateUserForm,
   StateUserPermissionsResponse,
 } from "../../types";
-import { ROUTES_PERMISSIONS_LABELS } from "../constants";
+import { ALLOWED_APPS_LABELS, ROUTES_PERMISSIONS_LABELS } from "../constants";
 
-export function updatePermissionsObject(
-  existing: Partial<Routes>,
-  updated: Partial<Routes>,
-  remove: string[]
-): Partial<Routes> | undefined;
+// Given a record T, finds all keys of T whose values extend V
+export type KeysMatching<T, V> = {
+  [K in keyof T]-?: T[K] extends V ? K : never;
+}[keyof T];
 
-export function updatePermissionsObject(
-  existing: Partial<FeatureVariants>,
-  updated: Partial<FeatureVariants>,
+export function updatePermissionsObject<
+  Permissions extends Routes | FeatureVariants | AllowedApps
+>(
+  existing: Partial<Permissions>,
+  updated: Partial<Permissions>,
   remove: string[]
-): Partial<FeatureVariants> | undefined;
-
-export function updatePermissionsObject(
-  existing: Partial<Routes> | Partial<FeatureVariants>,
-  updated: Partial<Routes> | Partial<FeatureVariants>,
-  remove: string[]
-): Partial<Routes> | Partial<FeatureVariants> | undefined {
+): Partial<Permissions> | undefined {
   const newPermission = Object.entries(updated).reduce(
     (permissions, [permissionType, permissionValue]) => {
       if (permissionValue !== undefined) {
@@ -63,6 +60,7 @@ export function updatePermissionsObject(
     existing
   );
   remove.forEach((key: string) => {
+    // @ts-expect-error TS2322 we know every value in this object is a boolean
     newPermission[key as keyof typeof newPermission] = false;
   });
   return newPermission;
@@ -307,6 +305,26 @@ export const getUserPermissionsTableColumns = (
       ...getColumnSearchProps("district"),
       render: (text: string, record) => {
         return formatText(text, record);
+      },
+    },
+    {
+      title: titleWithInfoTooltip(
+        "Allowed Apps (In Development)",
+        "Top-level access-control for each of our apps. NOTE: This feature is still in development and currently does nothing."
+      ),
+      dataIndex: "allowedApps",
+      key: "allowedApps",
+      width: 300,
+      ...getColumnSearchProps("allowedApps"),
+      render: (text: Record<string, string>) => {
+        return {
+          props: {
+            style: {
+              whiteSpace: "pre",
+            },
+          },
+          children: formatPermission(text, ", "),
+        };
       },
     },
     {
@@ -558,7 +576,30 @@ export const getRolePermissionsTableColumns = (
       },
     },
     {
-      title: "Routes",
+      title: titleWithInfoTooltip(
+        "Allowed Apps (In Development)",
+        "Top-level access-control for each of our apps. NOTE: This feature is still in development and currently does nothing."
+      ),
+      dataIndex: "allowedApps",
+      key: "allowedApps",
+      width: 300,
+      ...getColumnSearchProps("allowedApps"),
+      render: (text: Record<string, string>) => {
+        return {
+          props: {
+            style: {
+              whiteSpace: "pre",
+            },
+          },
+          children: formatPermission(text, ", "),
+        };
+      },
+    },
+    {
+      title: titleWithInfoTooltip(
+        "Dashboard Routes",
+        "Controls access to sections of dashboard.recidiviz.org"
+      ),
       dataIndex: "routes",
       key: "routes",
       width: 300,
@@ -594,21 +635,56 @@ export const getRolePermissionsTableColumns = (
         };
       },
     },
+    {
+      title: titleWithInfoTooltip(
+        "JII Permissions",
+        "Controls access to features with opportunities.app"
+      ),
+      dataIndex: "jiiPermissions",
+      key: "jiiPermissions",
+      width: 300,
+      ...getColumnSearchProps("jiiPermissions"),
+      render: (text: Record<string, string>) => {
+        return {
+          props: {
+            style: {
+              whiteSpace: "pre",
+            },
+          },
+          children: formatPermission(text),
+        };
+      },
+    },
   ];
 };
+
+function extractBooleanFields<
+  Label extends KeysMatching<StateUserForm, boolean>
+>(
+  formResults: Partial<StateUserForm>,
+  permissionLabels: Record<Label, string>
+): Partial<Record<Label, boolean>> {
+  // formResults contains results that aren't just booleans, but the typing should
+  // ensure that this will only be called for entries with boolean outputs
+  // @ts-expect-error TS2322
+  return Object.fromEntries(
+    Object.keys(permissionLabels)
+      .filter((key) => key in formResults)
+      .map((key) => [key, formResults[key as keyof StateUserForm]])
+  );
+}
 
 export const aggregateFormPermissionResults = (
   formResults: Partial<StateUserForm>
 ): {
-  routes: Partial<Routes>;
-  featureVariantsToAdd: Partial<FeatureVariants>;
+  routes: RouteRecord;
+  featureVariantsToAdd: FeatureVariantRecord;
   featureVariantsToRemove: string[];
+  allowedApps: AllowedAppRecord;
 } => {
-  const routes = Object.fromEntries(
-    Object.keys(ROUTES_PERMISSIONS_LABELS)
-      .filter((key) => key in formResults)
-      .map((key) => [key, formResults[key as keyof StateUserForm]])
-  ) as Partial<Routes>;
+  const routes = extractBooleanFields(formResults, ROUTES_PERMISSIONS_LABELS);
+  const allowedApps = extractBooleanFields(formResults, ALLOWED_APPS_LABELS);
+
   const featureVariantsToAdd =
     formResults.featureVariant?.reduce<Partial<FeatureVariants>>(
       (fvsToAdd, fv) => {
@@ -624,6 +700,7 @@ export const aggregateFormPermissionResults = (
       },
       {}
     ) ?? {};
+
   const featureVariantsToRemove =
     formResults.featureVariant?.reduce<string[]>((fvsToRemove, fv) => {
       if (fv.name && fv.enabled === false) {
@@ -631,10 +708,14 @@ export const aggregateFormPermissionResults = (
       }
       return fvsToRemove;
     }, []) ?? [];
-  return { routes, featureVariantsToAdd, featureVariantsToRemove };
+
+  return { routes, featureVariantsToAdd, featureVariantsToRemove, allowedApps };
 };
 
-export const formatPermission = (text: Record<string, string>): string => {
+export const formatPermission = (
+  text: Record<string, string>,
+  joiner = "\n"
+): string => {
   if (!text) return "";
   return Object.keys(text)
     .sort()
@@ -651,7 +732,7 @@ export const formatPermission = (text: Record<string, string>): string => {
         ? permission
         : `${permission}: ${moment(activeDate).format("lll")}`;
     })
-    .join("\n");
+    .join(joiner);
 };
 
 export const getStateRoles = (

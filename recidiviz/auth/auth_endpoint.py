@@ -213,12 +213,12 @@ def get_auth_endpoint_blueprint(
                     {
                         "stateCode": res.state_code,
                         "role": res.role,
-                        "allowed_apps": res.allowed_apps,
+                        "allowedApps": res.allowed_apps,
                         "routes": res.routes if res.routes is not None else {},
                         "featureVariants": res.feature_variants
                         if res.feature_variants is not None
                         else {},
-                        "jii_permissions": res.jii_permissions
+                        "jiiPermissions": res.jii_permissions
                         if res.jii_permissions is not None
                         else {},
                     }
@@ -253,14 +253,14 @@ def get_auth_endpoint_blueprint(
                             {
                                 "name": per.role,
                                 "permissions": {
-                                    "allowed_apps": per.allowed_apps,
+                                    "allowedApps": per.allowed_apps,
                                     "routes": per.routes
                                     if per.routes is not None
                                     else {},
-                                    "feature_variants": per.feature_variants
+                                    "featureVariants": per.feature_variants
                                     if per.feature_variants is not None
                                     else {},
-                                    "jii_permissions": per.jii_permissions
+                                    "jiiPermissions": per.jii_permissions
                                     if per.jii_permissions is not None
                                     else {},
                                 },
@@ -318,11 +318,11 @@ def get_auth_endpoint_blueprint(
                     jsonify(
                         {
                             "stateCode": state_role.state_code,
-                            "allowed_apps": state_role.allowed_apps,
+                            "allowedApps": state_role.allowed_apps,
                             "role": state_role.role,
                             "routes": state_role.routes,
                             "featureVariants": state_role.feature_variants,
-                            "jii_permissions": state_role.jii_permissions,
+                            "jiiPermissions": state_role.jii_permissions,
                         }
                     ),
                     HTTPStatus.OK,
@@ -428,7 +428,7 @@ def get_auth_endpoint_blueprint(
                     jsonify(
                         {
                             "stateCode": state_role.state_code,
-                            "allowed_apps": state_role.allowed_apps,
+                            "allowedApps": state_role.allowed_apps,
                             "role": state_role.role,
                             "routes": state_role.routes
                             if state_role.routes is not None
@@ -436,7 +436,7 @@ def get_auth_endpoint_blueprint(
                             "featureVariants": state_role.feature_variants
                             if state_role.feature_variants is not None
                             else {},
-                            "jii_permissions": state_role.jii_permissions
+                            "jiiPermissions": state_role.jii_permissions
                             if state_role.jii_permissions is not None
                             else {},
                         }
@@ -603,11 +603,11 @@ def get_auth_endpoint_blueprint(
                         [
                             {
                                 "stateCode": role.state_code,
-                                "allowed_apps": role.allowed_apps,
+                                "allowedApps": role.allowed_apps,
                                 "role": role.role,
                                 "routes": role.routes,
                                 "featureVariants": role.feature_variants,
-                                "jii_permissions": role.jii_permissions,
+                                "jiiPermissions": role.jii_permissions,
                             }
                             for role in state_roles
                         ],

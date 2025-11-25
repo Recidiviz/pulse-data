@@ -19,9 +19,6 @@ export const formLayout = {
   labelCol: { span: 4 },
   wrapperCol: { span: 20 },
 };
-export const formTailLayout = {
-  wrapperCol: { offset: 4, span: 20 },
-};
 
 export const WORKFLOWS_PERMISSIONS_LABELS = {
   workflowsSupervision: "Supervision Workflows",
@@ -69,7 +66,12 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...PSI_PERMISSIONS_LABELS,
   ...CPA_PERMISSIONS_LABELS,
   ...LANTERN_PERMISSIONS_LABELS,
-};
+} satisfies Record<string, string>;
+
+export const ALLOWED_APPS_LABELS = {
+  staff: "Staff (dashboard.recidiviz.org)",
+  jii: "JII (opportunities.app)",
+} satisfies Record<string, string>;
 
 export const STATE_CODES_TO_NAMES = {
   US_AK: "Alaska",

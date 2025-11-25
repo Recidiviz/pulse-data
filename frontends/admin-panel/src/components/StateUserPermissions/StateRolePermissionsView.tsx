@@ -115,12 +115,17 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
 
   const onAdd = async ({ stateCode, role, reason, ...rest }: StateRoleForm) => {
     try {
-      const { routes, featureVariantsToAdd, featureVariantsToRemove } =
-        aggregateFormPermissionResults(rest);
+      const {
+        allowedApps,
+        routes,
+        featureVariantsToAdd,
+        featureVariantsToRemove,
+      } = aggregateFormPermissionResults(rest);
       const createdRole = await createStateRolePermissions(
         stateCode,
         role,
         reason,
+        updatePermissionsObject({}, allowedApps, []),
         updatePermissionsObject({}, routes, []),
         updatePermissionsObject(
           {},
@@ -146,12 +151,17 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     const results: Promise<unknown>[] = [];
     selectedRows.forEach((row: StateRolePermissionsResponse) => {
       const editRow = async () => {
-        const { routes, featureVariantsToAdd, featureVariantsToRemove } =
-          aggregateFormPermissionResults(rest);
+        const {
+          allowedApps,
+          routes,
+          featureVariantsToAdd,
+          featureVariantsToRemove,
+        } = aggregateFormPermissionResults(rest);
         const response = await updateStateRolePermissions(
           row.stateCode,
           row.role,
           reason,
+          updatePermissionsObject({}, allowedApps, []),
           updatePermissionsObject({}, routes, []),
           updatePermissionsObject(
             {},
