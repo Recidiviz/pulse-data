@@ -96,6 +96,7 @@ class OperateOnRawStorageDirectoriesController:
     file_tag_regex: Optional[str] = attr.field(validator=attr_validators.is_opt_str)
     log_output_path: str = attr.field(validator=attr_validators.is_str)
     dry_run: bool = attr.field(validator=attr_validators.is_bool)
+    skip_confirmation: bool = attr.field(validator=attr_validators.is_bool)
 
     mutex: threading.Lock = attr.ib(factory=threading.Lock, init=False)
     operations_list: List[Tuple[str, str]] = attr.ib(factory=list, init=False)
@@ -114,6 +115,7 @@ class OperateOnRawStorageDirectoriesController:
         source_region_storage_dir_path: GcsfsDirectoryPath,
         destination_region_storage_dir_path: GcsfsDirectoryPath,
         dry_run: bool,
+        skip_confirmation: bool = False,
         start_date_bound: Optional[str] = None,
         end_date_bound: Optional[str] = None,
         file_tags: Optional[List[str]] = None,
@@ -163,6 +165,7 @@ class OperateOnRawStorageDirectoriesController:
             file_tag_regex=formatted_file_tag_regex,
             log_output_path=log_output_path,
             dry_run=dry_run,
+            skip_confirmation=skip_confirmation,
         )
 
     @property
@@ -181,6 +184,7 @@ class OperateOnRawStorageDirectoriesController:
             f"[{self.source_region_storage_dir_path.abs_path()}] to "
             f"[{self.destination_region_storage_dir_path.abs_path()}] - continue?",
             dry_run=self.dry_run,
+            skip_confirmation=self.skip_confirmation,
         )
 
         logging.info(
@@ -197,6 +201,7 @@ class OperateOnRawStorageDirectoriesController:
             f"Found [{len(subdirs_to_operate_on)}] subdirectories to "
             f"{self.operation_type.value.lower()} - continue?",
             dry_run=self.dry_run,
+            skip_confirmation=self.skip_confirmation,
         )
 
         # To avoid potential conflict with copies or moves that involve nested

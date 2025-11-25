@@ -36,6 +36,7 @@ def prompt_for_confirmation(
     accepted_response_override: Optional[str] = None,
     rejected_response_override: Optional[str] = None,
     dry_run: bool = False,
+    skip_confirmation: bool = False,
     exit_on_cancel: bool = True,
     exit_code: int = 1,
 ) -> Optional[bool]:
@@ -43,6 +44,8 @@ def prompt_for_confirmation(
     want to continue with a script.
 
     If |dry_run| is True, we print out the prompts that would be printed and return None.
+
+    If |skip_confirmation| is True, we skip the prompt and auto-confirm (return None).
 
     If the user choses to exit, we will return with |exit_code| if |exit_on_cancel| is
     True; otherwise, we will return with False. If the user choses to continue, we will
@@ -60,6 +63,10 @@ def prompt_for_confirmation(
     input_prompt += "\n"
     if dry_run:
         logging.info("[DRY RUN] %s **DRY RUN - SKIPPED CONFIRMATION**", input_prompt)
+        return None
+
+    if skip_confirmation:
+        logging.info("%s **SKIPPED CONFIRMATION**", input_prompt)
         return None
 
     while True:

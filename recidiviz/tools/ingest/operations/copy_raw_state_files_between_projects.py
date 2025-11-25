@@ -45,6 +45,60 @@ from recidiviz.utils.params import str_to_bool
 
 
 # TODO(##37517) make start_date_bound -> state_datetime_bound and make it datetime | None instead, etc
+def copy_raw_state_files(
+    *,
+    region: str,
+    source_project_id: str,
+    source_raw_data_instance: DirectIngestInstance,
+    destination_project_id: str,
+    destination_raw_data_instance: DirectIngestInstance,
+    start_date_bound: str | None = None,
+    end_date_bound: str | None = None,
+    file_tag_filters: list[str] | None = None,
+    dry_run: bool = True,
+    skip_confirmation: bool = False,
+) -> None:
+    """Copies raw state files between projects.
+
+    Args:
+        region: Region code (e.g., 'us_nd')
+        source_project_id: GCP project to copy from
+        source_raw_data_instance: DirectIngestInstance to copy from
+        destination_project_id: GCP project to copy to
+        destination_raw_data_instance: DirectIngestInstance to copy to
+        start_date_bound: Optional lower bound date (inclusive). E.g. 2019-09-23
+        end_date_bound: Optional upper bound date (inclusive). E.g. 2019-09-23
+        file_tag_filters: Optional list of file tags to filter for
+        dry_run: If True, only prints what would be copied without executing
+    """
+    source_region_storage_dir_path = (
+        gcsfs_direct_ingest_storage_directory_path_for_state(
+            region_code=region,
+            ingest_instance=source_raw_data_instance,
+            project_id=source_project_id,
+        )
+    )
+    destination_region_storage_dir_path = (
+        gcsfs_direct_ingest_storage_directory_path_for_state(
+            region_code=region,
+            ingest_instance=destination_raw_data_instance,
+            project_id=destination_project_id,
+        )
+    )
+
+    OperateOnRawStorageDirectoriesController.create_controller(
+        region_code=region,
+        operation_type=IngestFilesOperationType.COPY,
+        source_region_storage_dir_path=source_region_storage_dir_path,
+        destination_region_storage_dir_path=destination_region_storage_dir_path,
+        file_tags=file_tag_filters or [],
+        start_date_bound=start_date_bound,
+        end_date_bound=end_date_bound,
+        dry_run=dry_run,
+        skip_confirmation=skip_confirmation,
+    ).run()
+
+
 def main() -> None:
     """Executes the main flow of the script."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -114,31 +168,17 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    source_region_storage_dir_path = (
-        gcsfs_direct_ingest_storage_directory_path_for_state(
-            region_code=args.region,
-            ingest_instance=args.source_raw_data_instance,
-            project_id=args.source_project_id,
-        )
-    )
-    destination_region_storage_dir_path = (
-        gcsfs_direct_ingest_storage_directory_path_for_state(
-            region_code=args.region,
-            ingest_instance=args.destination_raw_data_instance,
-            project_id=args.destination_project_id,
-        )
-    )
-
-    OperateOnRawStorageDirectoriesController.create_controller(
-        region_code=args.region,
-        operation_type=IngestFilesOperationType.COPY,
-        source_region_storage_dir_path=source_region_storage_dir_path,
-        destination_region_storage_dir_path=destination_region_storage_dir_path,
-        file_tags=args.file_tag_filters,
+    copy_raw_state_files(
+        region=args.region,
+        source_project_id=args.source_project_id,
+        source_raw_data_instance=args.source_raw_data_instance,
+        destination_project_id=args.destination_project_id,
+        destination_raw_data_instance=args.destination_raw_data_instance,
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
+        file_tag_filters=args.file_tag_filters,
         dry_run=args.dry_run,
-    ).run()
+    )
 
 
 if __name__ == "__main__":

@@ -110,6 +110,7 @@ class OperateOnRawStorageFilesController:
         dry_run: bool,
         operation_type: IngestFilesOperationType,
         file_filter: Optional[str],
+        skip_confirmation: bool = False,
     ):
         self.source_project_id = source_project_id
         self.destination_project_id = destination_project_id
@@ -120,6 +121,7 @@ class OperateOnRawStorageFilesController:
         self.dry_run = dry_run
         self.file_filter = file_filter
         self.operation_type = operation_type
+        self.skip_confirmation = skip_confirmation
 
         self.source_raw_data_instance = source_raw_data_instance
         self.destination_raw_data_instance = destination_raw_data_instance
@@ -171,6 +173,7 @@ class OperateOnRawStorageFilesController:
             f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}] to "
             f"ingest bucket in [{self.destination_project_id}].",
             dry_run=self.dry_run,
+            skip_confirmation=self.skip_confirmation,
         )
 
         logging.info("Finding files to %s...", self.operation_type.value.lower())
@@ -184,6 +187,7 @@ class OperateOnRawStorageFilesController:
         prompt_for_confirmation(
             f"Found [{len(date_subdir_paths)}] dates to {self.operation_type.value.lower()} - continue?",
             dry_run=self.dry_run,
+            skip_confirmation=self.skip_confirmation,
         )
 
         resource_locks: list[DirectIngestRawDataResourceLock]

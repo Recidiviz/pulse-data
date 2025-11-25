@@ -95,6 +95,9 @@ class GcsfsPath:
 
         return GcsfsFilePath(bucket_name=bucket_name, blob_name=blob_name)
 
+    def cloud_console_link_for_gcs_path(self) -> str:
+        return f"https://console.cloud.google.com/storage/browser/{self.abs_path()}"
+
 
 @attr.s(frozen=True)
 class GcsfsDirectoryPath(GcsfsPath):

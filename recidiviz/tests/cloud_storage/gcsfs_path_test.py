@@ -125,3 +125,25 @@ class TestGcsfsPath(unittest.TestCase):
             )
 
         GcsfsDirectoryPath(bucket_name="bucket", relative_path="this/is/a/path/")
+
+    def test_cloud_console_link_for_gcs_path_simple_file(self) -> None:
+        """Test cloud console link for a simple file in the bucket root."""
+        path = GcsfsFilePath(bucket_name="my-bucket", blob_name="file.txt")
+        expected_url = (
+            "https://console.cloud.google.com/storage/browser/my-bucket/file.txt"
+        )
+        self.assertEqual(expected_url, path.cloud_console_link_for_gcs_path())
+
+    def test_cloud_console_link_for_gcs_path_simple_directory(self) -> None:
+        """Test cloud console link for a directory."""
+        path = GcsfsDirectoryPath(bucket_name="my-bucket")
+        expected_url = "https://console.cloud.google.com/storage/browser/my-bucket/"
+        self.assertEqual(expected_url, path.cloud_console_link_for_gcs_path())
+
+    def test_cloud_console_link_for_gcs_path_deeply_nested(self) -> None:
+        """Test cloud console link for a deeply nested file path."""
+        path = GcsfsFilePath.from_absolute_path(
+            "gs://recidiviz-456-bucket/path/to/very/deeply/nested/file.parquet"
+        )
+        expected_url = "https://console.cloud.google.com/storage/browser/recidiviz-456-bucket/path/to/very/deeply/nested/file.parquet"
+        self.assertEqual(expected_url, path.cloud_console_link_for_gcs_path())
