@@ -49,6 +49,7 @@ class ManualRawDataPruningExemptionReason(Enum):
         "This file is a mix of incremental and historical data in the transfer history, "
         "which must be addressed before including in raw data pruning."
     )
+    AUTOMATICALLY_PRUNED = "This file is enabled for automatic raw data pruning and should not be manually pruned."
 
 
 class AutomaticRawDataPruningExemptionReason(Enum):
@@ -98,6 +99,7 @@ FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
         "Staff": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "StaffEmailByAlias": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "OffenderSentenceSummary": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "RECIDIVIZ_REFERENCE_incident_infraction_codes": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
     },
     StateCode.US_PA: {
         "RECIDIVIZ_REFERENCE_staff_roster": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
