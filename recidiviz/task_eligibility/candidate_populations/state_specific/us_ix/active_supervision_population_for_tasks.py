@@ -66,7 +66,7 @@ supervision_case_and_level AS (
         SAFE_CAST(NULL AS STRING) AS compartment_level_2,
         ctsl.case_type,
         ctsl.supervision_level,
-    FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized` ctsl
+    FROM `{{project_id}}.tasks_views.us_ix_case_type_supervision_level_spans_materialized` ctsl
         WHERE ctsl.case_type IN ('GENERAL', 'SEX_OFFENSE')
             AND ctsl.supervision_level IN ('MINIMUM', 'MEDIUM', 'HIGH')
 ),
