@@ -17,7 +17,6 @@ input_columns:
   ISSUING_AGY_LOC_ID: STRING
   COURT_INFO_ID: STRING
   PROBABLE_RELEASE_DATE: DATETIME
-  SENTENCE_EXPIRY_DATE: DATETIME
   SENTENCE_CALC_TYPE: STRING
   IMPOSED_DATE: STRING
   sentence_type: STRING
@@ -110,8 +109,9 @@ output:
           sentence_lengths:
             - StateSentenceLength:
                 length_update_datetime: SENTENCE_UPDT_DTM
-                projected_completion_date_min_external: PROBABLE_RELEASE_DATE
-                projected_completion_date_max_external: SENTENCE_EXPIRY_DATE
+                # The PROBABLE_RELEASE_DATE incorporates good time, but as of SENTENCE_UPDT_DTM, it is the maximum
+                # legal date someone can remain in custody. Holding them past this date would be illegal.
+                projected_completion_date_max_external: PROBABLE_RELEASE_DATE
                 sentence_length_days_max:
                   $custom:
                     $function: us_nd_custom_parsers.max_length_days_from_ymd

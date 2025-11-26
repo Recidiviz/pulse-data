@@ -480,10 +480,13 @@ state_sentence_group_length:
       The latest date on which a person
       is projected to be released to liberty after having completed all sentences
       in the term.
+      This date may incorporate good- or earned- time, but should represent the 
+      maximum legal date (as of group_update_datetime) that this person can be
+      held in custody. Holding this person past this date would be illegal.
     projected_full_term_release_date_min_external: >-
       The earliest date on which a person
       is projected to be released to liberty after having completed all sentences
-      in the term.
+      in the term. This date often will be a "discretionary" or "early" completion date.
     projected_parole_release_date_external: >-
       The date on which a person is projected
       to be released from incarceration to parole
@@ -510,12 +513,17 @@ state_sentence_length:
       The date on which a person is expected to become
       eligible for parole under the terms of this sentence
     projected_completion_date_max_external: >-
-      The latest date on which a person is projected
-      to be released to liberty after having completed all sentences in the term.
+      The latest date on which a person is projected to be released to liberty 
+      after having completed this sentence. 
+      This date may incorporate good- or earned- time, but should represent the 
+      maximum legal date (as of length_update_datetime) that this person can be
+      held in custody because they are serving this sentence (they may remain in 
+      custody based on other active sentences). Holding this person past this date 
+      due to the existence of this sentence would be illegal.
     projected_completion_date_min_external: >-
-      The earliest date on which a person is
-      projected to be released to liberty after having completed all sentences in
-      the term.
+      The earliest date on which a person is projected to be released to liberty 
+      after having completed this sentence. This date often will be a "discretionary"
+      or "early" completion date.
     projected_parole_release_date_external: >-
       The date on which a person is projected
       to be released from incarceration to parole
