@@ -169,9 +169,6 @@ from recidiviz.calculator.query.state.views.workflows.us_me.resident_record_inca
 from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.us_ne.resident_record_incarceration_cases_with_dates import (
-    US_NE_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_tn.resident_record_incarceration_cases_with_dates import (
     US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
@@ -922,10 +919,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
             "TODO(#46257): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        US_NE_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
         US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
