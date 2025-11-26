@@ -49,6 +49,7 @@ output:
                   - "REENTRY MANAGER"
                   - "CASE MANAGER"
                   - "PROGRAM MANAGER"
+                  - "FISCAL COST OF SUPERVISION"
     location_periods:
       - StateStaffLocationPeriod:
           external_id:
