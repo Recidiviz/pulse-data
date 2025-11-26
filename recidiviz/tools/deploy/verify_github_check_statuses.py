@@ -35,9 +35,11 @@ import argparse
 import datetime
 import logging
 import sys
+import time
 from collections import defaultdict
-from typing import Iterable, List
+from typing import List
 
+import attr
 from github.CheckRun import CheckRun
 
 from recidiviz.tools.utils.script_helpers import (
@@ -57,6 +59,65 @@ _REQUIRED_CHECKS_BY_PROJECT = {
         "BigQuery Source Table Validation (production)",
     },
 }
+
+_SUCCESS_STATES = {"success", "skipped"}
+
+# Maximum time (in seconds) to wait for required checks to complete
+_REQUIRED_CHECKS_TIMEOUT_SECONDS = 15 * 60  # 15 minutes
+
+
+@attr.s(frozen=True, kw_only=True)
+class GitHubCheckStatusResult:
+    """Result of fetching GitHub check statuses for a commit."""
+
+    commit_ref: str = attr.ib()
+    all_check_runs: list[CheckRun] = attr.ib()
+    required_check_names: set[str] = attr.ib()
+
+    def __attrs_post_init__(self) -> None:
+        # Validate that all required checks exist
+        check_names = {check_run.name for check_run in self.all_check_runs}
+        if missing_checks := self.required_check_names - check_names:
+            raise ValueError(
+                f"Found required Github checks which were not run for commit {self.commit_ref}: "
+                f"{missing_checks}. Did the names of these checks change or did they get "
+                f"removed?"
+            )
+
+    @property
+    def required_check_runs(self) -> list[CheckRun]:
+        """Returns the subset of check runs that are required."""
+        return [
+            check_run
+            for check_run in self.all_check_runs
+            if check_run.name in self.required_check_names
+        ]
+
+    @property
+    def incomplete_required_check_runs(self) -> list[CheckRun]:
+        """Required checks that are still running (in_progress)."""
+        return [
+            check_run
+            for check_run in self.required_check_runs
+            if not _is_check_completed(check_run)
+        ]
+
+    @property
+    def failing_required_check_runs(self) -> list[CheckRun]:
+        """Required checks that completed but failed."""
+        return [
+            check_run
+            for check_run in self.required_check_runs
+            if _is_check_completed(check_run) and not _check_passed(check_run)
+        ]
+
+    @property
+    def all_checks_passed(self) -> bool:
+        """True if all checks passed."""
+        return all(
+            _is_check_completed(check_run) and _check_passed(check_run)
+            for check_run in self.all_check_runs
+        )
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
@@ -92,6 +153,26 @@ def _get_conclusion(check_run: CheckRun) -> str:
     return check_run.conclusion or check_run.status
 
 
+def _is_check_completed(check_run: CheckRun) -> bool:
+    """Returns True if the check has completed (regardless of pass/fail).
+
+    Per GitHub API (https://docs.github.com/en/rest/checks/runs):
+    status can be 'queued', 'in_progress', or 'completed'.
+    Only when status='completed' will the conclusion field be set.
+    """
+    return check_run.status == "completed"
+
+
+def _check_passed(check_run: CheckRun) -> bool:
+    """Returns True if a COMPLETED check passed.
+
+    Per GitHub API (https://docs.github.com/en/rest/checks/runs):
+    conclusion is only set when status='completed' and can be:
+    'success', 'failure', 'neutral', 'cancelled', 'skipped', 'timed_out', 'action_required'.
+    """
+    return check_run.conclusion in _SUCCESS_STATES
+
+
 def print_check_statuses(check_runs: list[CheckRun]) -> None:
     indent_str = f"{ANSI.BLUE}>{ANSI.ENDC}"
 
@@ -110,15 +191,12 @@ def print_check_statuses(check_runs: list[CheckRun]) -> None:
             print(f"- {check_run.html_url}")
 
 
-def verify_github_check_statuses(
+def get_github_check_statuses(
     project_id: str,
     commit_ref: str,
-    success_states: Iterable[str],
-) -> tuple[bool, bool]:
-    """Verifies that the most recent CI check runs for the given commit all pass.
-    Prints out the status of all GitHub checks for the given commit. Returns a tuple of
-    booleans, the first one is true if all *required* checks have passed, the second one
-    is true if *all* checks have passed.
+) -> GitHubCheckStatusResult:
+    """Fetches GitHub check statuses for a commit and returns a structured result that
+    provides info about the statuses.
     """
     github_client = github_helperbot_client()
     check_runs = list(
@@ -143,67 +221,78 @@ def verify_github_check_statuses(
         for check_runs in check_runs_by_name.values()
     ]
 
-    print(f"Found {len(check_runs)} status checks:")
-    print_check_statuses(check_runs)
-
-    most_recent_check_runs_by_name = {
-        check_run.name: check_run for check_run in check_runs
-    }
-
     required_check_names = _REQUIRED_CHECKS_BY_PROJECT[project_id]
-    if missing_checks := required_check_names - set(most_recent_check_runs_by_name):
-        raise ValueError(
-            f"Found required Github checks which were not run for commit {commit_ref}: "
-            f"{missing_checks}. Did the names of these checks change or did they get "
-            f"removed?"
-        )
 
-    required_check_runs = [
-        most_recent_check_runs_by_name[check_name]
-        for check_name in sorted(required_check_names)
-    ]
-
-    failing_required_check_runs = [
-        check_run
-        for check_run in required_check_runs
-        if _get_conclusion(check_run) not in success_states
-    ]
-
-    if failing_required_check_runs:
-        print(
-            f"Found {len(failing_required_check_runs)} incomplete/failing REQUIRED "
-            f"check(s):"
-        )
-        print_check_statuses(failing_required_check_runs)
-        print(
-            "You must wait for these checks to complete and/or resolve the issues "
-            "before proceeding with the deploy."
-        )
-
-    return not bool(failing_required_check_runs), all(
-        _get_conclusion(check_run) in success_states for check_run in check_runs
+    return GitHubCheckStatusResult(
+        commit_ref=commit_ref,
+        all_check_runs=check_runs,
+        required_check_names=required_check_names,
     )
 
 
 def main(args: argparse.Namespace) -> None:
+    """Main function to verify GitHub check statuses before deployment.
+
+    Blocks deployment when required checks are still running (in_progress).
+    Allows override with --prompt when required checks have completed but failed.
+    Exits with error if required checks don't complete within timeout.
+    """
     with local_project_id_override(args.project_id):
+        start_time = time.time()
         while True:
-            # TODO(#53670): Wait for required checks to complete (pass or fail) before
-            # allowing user to proceed.
-            _, all_checks_passed = verify_github_check_statuses(
+            result = get_github_check_statuses(
                 project_id=args.project_id,
                 commit_ref=args.commit_ref,
-                success_states={"success", "skipped"},
             )
-            if all_checks_passed:
+
+            print(f"Found {len(result.all_check_runs)} status checks:")
+            print_check_statuses(result.all_check_runs)
+
+            if result.all_checks_passed:
                 return
 
+            if result.incomplete_required_check_runs:
+                if (time.time() - start_time) >= _REQUIRED_CHECKS_TIMEOUT_SECONDS:
+                    print(
+                        f"\n❌ Required checks have not completed after "
+                        f"[{_REQUIRED_CHECKS_TIMEOUT_SECONDS // 60}] minutes. Exiting."
+                    )
+                    sys.exit(1)
+
+                print(
+                    f"\nFound {len(result.incomplete_required_check_runs)} "
+                    f"INCOMPLETE REQUIRED check(s) (still running):"
+                )
+                print_check_statuses(result.incomplete_required_check_runs)
+                print(
+                    "\nRequired checks are still running. Waiting 30 seconds before "
+                    "checking again..."
+                )
+                time.sleep(30)
+                continue
+
+            if result.failing_required_check_runs:
+                print(
+                    f"\nFound [{len(result.failing_required_check_runs)}] FAILED "
+                    f"REQUIRED check(s):"
+                )
+                print_check_statuses(result.failing_required_check_runs)
+                if not args.prompt:
+                    sys.exit(1)
+                if prompt_for_step_or_skip(
+                    f"🚨 Found [{len(result.failing_required_check_runs)}] FAILING "
+                    f"required checks. Are you ABSOLUTELY SURE you want to proceed "
+                    "with the deploy?"
+                ):
+                    break
+                continue
+
+            # All required checks passed, some non-required checks failed / incomplete
             if not args.prompt:
                 sys.exit(1)
-
             if prompt_for_step_or_skip(
-                "Found checks that were not in success or skipped status. "
-                "Are you sure you want to proceed with the deploy?"
+                "⚠️ Some non-required checks have not passed. Are you sure you want to "
+                "proceed with the deploy?"
             ):
                 break
 

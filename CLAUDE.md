@@ -27,6 +27,7 @@ Running / configuring tests:
 
 ### Python Code Style
 - Always add type information to every python function definition. Avoid using Any where reasonable. Use modern python types, i.e. `str | None` instead of `Optional[str]`.
+- Don't add inline comments to explain things that are blatantly obvious just by reading the code or to explain something that is only meaningful in the context of the current conversation.
 
 ### Code Quality
 - Lint: 
