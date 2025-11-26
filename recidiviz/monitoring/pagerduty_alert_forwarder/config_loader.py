@@ -42,7 +42,7 @@ class Condition(abc.ABC):
         """
 
 
-@attr.define
+@attr.define(frozen=True)
 class EqualityCondition(Condition):
     """Condition that checks for exact equality (case-insensitive for strings)."""
 
@@ -61,7 +61,7 @@ class EqualityCondition(Condition):
         return str(value).lower() == str(self.expected_value).lower()
 
 
-@attr.define
+@attr.define(frozen=True)
 class ContainsCondition(Condition):
     """Condition that checks if a value contains a substring (case-insensitive)."""
 
@@ -80,7 +80,7 @@ class ContainsCondition(Condition):
         return self.search_term.lower() in str(value).lower()
 
 
-@attr.define
+@attr.define(frozen=True)
 class InCondition(Condition):
     """Condition that checks if a value is in a list of allowed values."""
 
@@ -101,7 +101,7 @@ class InCondition(Condition):
         return value_upper in allowed_upper
 
 
-@attr.define
+@attr.define(frozen=True)
 class MatchCondition:
     """A single match condition for a field path."""
 
@@ -188,7 +188,7 @@ class MatchConfig:
         return cls(conditions=conditions)
 
 
-@attr.define
+@attr.define(frozen=True)
 class ActionsConfig:
     """Actions configuration for a rule."""
 
@@ -267,7 +267,7 @@ class ActionsConfig:
         )
 
 
-@attr.define
+@attr.define(frozen=True)
 class RuleConfig:
     """Configuration for a single rule."""
 
@@ -321,7 +321,7 @@ class RuleConfig:
         )
 
 
-@attr.define
+@attr.define(frozen=True)
 class DefaultConfig:
     """Default configuration for alerts that don't match any rules."""
 

@@ -638,7 +638,7 @@ class TestRuleEngineIntegration(unittest.TestCase):
         alert = {
             "incident": {
                 "incident_id": "test-456",
-                "policy_name": "[OTL] GCS: Metric exports have not been uploaded in 24 hours",
+                "policy_name": "GCS: Metric exports have not been uploaded in 24 hours",
                 "resource": {
                     "labels": {
                         "project_id": "recidiviz-staging",
@@ -647,7 +647,7 @@ class TestRuleEngineIntegration(unittest.TestCase):
                 "condition": {
                     "metric": {
                         "labels": {
-                            "region": "us-east1",
+                            "region": "US_CA",
                         }
                     }
                 },
@@ -663,7 +663,7 @@ class TestRuleEngineIntegration(unittest.TestCase):
             result["pagerduty_service"], "[STAGING] Data Platform Infrastructure"
         )
         # Title should have staging prefix and region label
-        self.assertEqual(result["title"], "[STAGING] [us-east1] Stale Metric Exports")
+        self.assertEqual(result["title"], "[STAGING] [US_CA] Stale Metric Exports")
 
     def test_production_dashboard_pubsub_failure(self) -> None:
         """Test production dashboard alert with Pub/Sub failure."""

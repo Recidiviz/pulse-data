@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for config_loader module."""
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,6 +26,9 @@ from recidiviz.monitoring import pagerduty_alert_forwarder
 from recidiviz.monitoring.pagerduty_alert_forwarder.config_loader import (
     AlertForwarderConfig,
     ConfigurationError,
+    ContainsCondition,
+    EqualityCondition,
+    InCondition,
 )
 
 
@@ -263,4 +267,73 @@ rules:
             f"The following PagerDuty services are referenced in config.yaml but not "
             f"defined in recidiviz-123.yaml vars for apps/pagerduty-alert-forwarder: {missing_services}. "
             f"Please add them to the pagerduty_services list in the stack file.",
+        )
+
+    def test_all_alert_policies_defined_in_terraform(self) -> None:
+        """Test that all alert policies referenced in config.yaml are defined in Terraform."""
+        # Extract all policy names referenced in match conditions
+        policy_names_in_config = set()
+        partial_matches_in_config = set()
+
+        for rule in self.real_config.rules:
+            for match_condition in rule.match.conditions:
+                # Check if this condition is matching on incident.policy_name
+                if match_condition.field_path == "incident.policy_name":
+                    condition = match_condition.condition
+
+                    if isinstance(condition, EqualityCondition):
+                        # Exact match - add the expected value
+                        policy_names_in_config.add(str(condition.expected_value))
+                    elif isinstance(condition, InCondition):
+                        # Multiple allowed values - add all
+                        for value in condition.allowed_values:
+                            policy_names_in_config.add(str(value))
+                    elif isinstance(condition, ContainsCondition):
+                        # Substring match - validate separately
+                        partial_matches_in_config.add(condition)
+
+        # Load Terraform file and extract display_name values
+        package_dir = Path(pagerduty_alert_forwarder.__file__).parent
+        recidiviz_dir = package_dir.parent.parent
+        terraform_path = (
+            recidiviz_dir
+            / "tools/deploy/atmos/components/terraform/data-platform-alerting/monitoring_alert_policy.tf"
+        )
+
+        with open(terraform_path, "r", encoding="utf-8") as f:
+            terraform_content = f.read()
+
+        # Extract display_name values from google_monitoring_alert_policy resources
+        # Matches: display_name = "Policy Name" or display_name          = "Policy Name"
+        display_name_pattern = r'display_name\s*=\s*"([^"]+)"'
+        terraform_policy_names = set(
+            re.findall(display_name_pattern, terraform_content)
+        )
+
+        # Assert all exact policy names in config exist in Terraform
+        missing_policies = policy_names_in_config - terraform_policy_names
+
+        self.assertEqual(
+            set(),
+            missing_policies,
+            f"The following alert policies are referenced in config.yaml but not "
+            f"defined in monitoring_alert_policy.tf: {missing_policies}. "
+            f"Please add these alert policies to the Terraform file or update the config.yaml references.",
+        )
+
+        # Validate partial matches - each substring should match at least one policy
+        unmatched_partials = set()
+        for partial in partial_matches_in_config:
+            # Check if this substring appears in any Terraform policy name (case-insensitive)
+            if not any(
+                partial.evaluate(policy_name) for policy_name in terraform_policy_names
+            ):
+                unmatched_partials.add(partial)
+
+        self.assertEqual(
+            set(),
+            unmatched_partials,
+            f"The following partial matches (contains conditions) in config.yaml do not match "
+            f"any policy names in monitoring_alert_policy.tf: {unmatched_partials}. "
+            f"Please verify these substring matches are correct or add matching policies.",
         )

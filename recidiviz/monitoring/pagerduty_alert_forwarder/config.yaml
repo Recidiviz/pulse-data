@@ -44,7 +44,7 @@ rules:
   # Secondly, apply alert policy-specific actions
   - name: "Stale Metric Exports"
     match:
-      incident.policy_name: "[OTL] GCS: Metric exports have not been uploaded in 24 hours"
+      incident.policy_name: "GCS: Metric exports have not been uploaded in 24 hours"
     actions:
       title_transform: "[{incident.condition.metric.labels.region}] Stale Metric Exports"
 
