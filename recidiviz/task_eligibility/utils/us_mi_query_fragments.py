@@ -388,6 +388,7 @@ SELECT
     assessment.Management_Level_Assessment_Result AS metadata_management_security_level,
     assessment.Confinement_Level_Assessment_Result AS metadata_confinement_security_level,
     assessment.Actual_Placement_Level_Assessment_Result AS metadata_actual_security_level,
+    e.next_scc_date AS metadata_next_scc_date,
     a.case_notes 
 FROM eligible_and_almost_eligible tes
 LEFT JOIN `{{project_id}}.us_mi_normalized_state.state_person` sp
