@@ -111,6 +111,7 @@ def create_monitoring_meter_provider(
                 add_unique_identifier=True,
             ),
             export_interval_millis=60000,
+            export_timeout_millis=120000,
         )
 
         resource = detect_resource()

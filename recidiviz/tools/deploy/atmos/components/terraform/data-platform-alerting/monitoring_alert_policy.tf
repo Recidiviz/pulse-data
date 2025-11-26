@@ -623,7 +623,7 @@ resource "google_monitoring_alert_policy" "gcs_metric_exports_have_not_been_uplo
     condition_monitoring_query_language {
       duration = "0s"
       query    = <<-EOT
-        fetch generic_node
+        fetch k8s_cluster
         | metric
             'custom.googleapis.com/opencensus/metric_view_export_manager.export_file_age'
         | filter and(metric.metric_view_export_name != 'PO_MONTHLY', metric.metric_view_export_name != 'DASHBOARD_USER_RESTRICTIONS')
@@ -660,6 +660,54 @@ resource "google_monitoring_alert_policy" "gcs_metric_exports_have_not_been_uplo
 
   documentation {
     content   = "See the files that violate the SLA at https://go/export-health-staging or https://go/export-health-prod\n\nThis may have been caused by upstream ingest processes failing to run, failing in an error state, or by an issue within the export pipeline. The metric captures GCS file age (in seconds)."
+    mime_type = "text/markdown"
+  }
+
+  enabled               = "true"
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
+  project               = var.project_id
+}
+
+resource "google_monitoring_alert_policy" "metric_export_heartbeat_missing" {
+  alert_strategy {
+    auto_close           = "604800s"
+    notification_prompts = ["OPENED", "CLOSED"]
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_threshold {
+      aggregations {
+        alignment_period     = "3600s"
+        cross_series_reducer = "REDUCE_COUNT"
+        per_series_aligner   = "ALIGN_MEAN"
+      }
+
+      comparison              = "COMPARISON_LT"
+      duration                = "7200s"
+      evaluation_missing_data = "EVALUATION_MISSING_DATA_ACTIVE"
+      filter                  = <<-EOT
+        resource.type = "k8s_cluster" AND metric.type = "custom.googleapis.com/opencensus/metric_view_export_manager.export_file_age"
+      EOT
+      threshold_value         = "1"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "Metric export heartbeat - No data received"
+  }
+
+  display_name = "GCS: Metric export monitoring data missing"
+
+  documentation {
+    content   = "The metric export file age metric has stopped being published. This could indicate:\n1. The metric export process has crashed or stopped running\n2. An OpenTelemetry configuration change (e.g., resource type change)\n3. A monitoring pipeline issue\n\nCheck the logs of the generate_export_timeliness_metrics task in the monitoring DAG and verify that metrics are being published to Cloud Monitoring. This is a meta-alert that detects when the monitoring system itself stops working."
     mime_type = "text/markdown"
   }
 
@@ -1366,7 +1414,7 @@ resource "google_monitoring_alert_policy" "calculation_dag_has_not_triggered_wit
 
       comparison      = "COMPARISON_LT"
       duration        = "0s"
-      filter          = "metric.type=\"logging.googleapis.com/user/recidiviz-123_calculation_dag_runs\""
+      filter          = "resource.type=\"cloud_composer_environment\" AND metric.type=\"logging.googleapis.com/user/recidiviz-123_calculation_dag_runs\""
       threshold_value = "1"
 
       trigger {
