@@ -18,9 +18,25 @@
 contact standards we support in our Tasks tool.
 """
 
-from recidiviz.common.constants.states import StateCode
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.candidate_populations.general import (
+    active_supervision_population,
+)
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_high,
+    supervision_level_is_maximum,
+    supervision_level_is_medium,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+    not_in_transition_center_on_supervision,
+)
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,33 +45,38 @@ _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_POPULATION"
 
 # TODO(#50537): Update/refine candidate population to ensure it's correct.
 # TODO(#50537): Exclude clients residing in Community Supervision Centers (CSCs).
-_QUERY_TEMPLATE = """
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date_exclusive AS end_date,
-FROM `{project_id}.sessions.compartment_sub_sessions_materialized`
-WHERE state_code = 'US_MO'
-    AND compartment_level_1 = 'SUPERVISION'
-    AND compartment_level_2 NOT IN ('ABSCONSION', 'IN_CUSTODY', 'INTERNAL_UNKNOWN')
-    -- we only support Tasks for clients at these levels
-    AND correctional_level IN ('MEDIUM', 'HIGH', 'MAXIMUM')
-    -- exclude clients in Transition Centers (TCs)
-    /* TODO(#50537): Should we do the TC exclusions via `location_metadata` at some
-    point, if we can add the necessary info to the metadata there? */
-    AND supervision_office NOT IN (
-        -- TCs
-        'TCKC', 'TCSTL'
-    )
-"""
+_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
+    criteria_name=_POPULATION_NAME,
+    sub_criteria_list=[
+        active_supervision_population.VIEW_BUILDER.as_criteria(
+            criteria_name="IN_ACTIVE_SUPERVISION_CANDIDATE_POPULATION",
+            sessions_dataset=SESSIONS_DATASET,
+        ),
+        # we only support Tasks for clients at these supervision levels
+        StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            criteria_name="SUPERVISION_LEVEL_IS_MAXIMUM_OR_HIGH_OR_MEDIUM",
+            sub_criteria_list=[
+                supervision_level_is_high.VIEW_BUILDER,
+                supervision_level_is_maximum.VIEW_BUILDER,
+                supervision_level_is_medium.VIEW_BUILDER,
+            ],
+            # These should be the same across all three sub-criteria, so we don't need
+            # to worry about how they're deduplicated!
+            allowed_duplicate_reasons_keys=[
+                "supervision_level",
+                "supervision_level_start_date",
+            ],
+        ),
+        not_in_transition_center_on_supervision.VIEW_BUILDER,
+    ],
+)
 
 VIEW_BUILDER: StateSpecificTaskCandidatePopulationBigQueryViewBuilder = (
-    StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
-        state_code=StateCode.US_MO,
+    StateSpecificTaskCandidatePopulationBigQueryViewBuilder.from_criteria_group(
+        criteria_group=_CRITERIA_GROUP,
         population_name=_POPULATION_NAME,
-        population_spans_query_template=_QUERY_TEMPLATE,
-        description=__doc__,
     )
 )
 

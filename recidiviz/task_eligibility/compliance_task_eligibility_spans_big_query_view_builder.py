@@ -104,7 +104,7 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         self.compliance_type = compliance_type
         self.due_date_field = due_date_field
         self.last_task_completed_date_field = last_task_completed_date_field
-
+        self.candidate_population_view_builder = candidate_population_view_builder
         # Use the provided due_date_criteria_builder or default to the only criteria builder
         # in criteria_spans_view_builders
         if due_date_criteria_builder is None:
@@ -216,4 +216,9 @@ USING (state_code, person_id, start_date)
             all_descendants.add(criteria_builder)
             all_descendants |= criteria_builder.get_descendant_criteria()
 
+            # Add criteria from candidate_population_view_builder if available
+            candidate_criteria = (
+                self.candidate_population_view_builder.get_descendant_criteria()
+            )
+            all_descendants |= candidate_criteria
         return sorted(all_descendants, key=lambda c: c.criteria_name)
