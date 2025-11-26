@@ -63,6 +63,8 @@ components:
           - "[STAGING] Data Platform Infrastructure"
           - "[PRODUCTION] Data Platform Infrastructure"
           - "[Polaris] General Infrastructure"
+          - "[PRODUCTION] Dashboards Project"
+          - "[STAGING] Dashboards Project"
 
     data-platform-alerting:
       metadata:

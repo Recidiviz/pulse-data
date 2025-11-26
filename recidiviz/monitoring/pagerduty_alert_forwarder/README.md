@@ -278,12 +278,21 @@ gcloud pubsub subscriptions pull pagerduty-alert-forwarder-dlq-pull \
 ```
 
 **DLQ Alert**: When messages appear in the DLQ, an alert is triggered and sent to `alerts@recidiviz.org`.
+If the PagerDuty Alert Forwarder service not failing for all messages, it may also be forwarded to PagerDuty / Slack.
 
 **Common failure causes**:
 - Invalid PagerDuty integration key
 - PagerDuty API outage
 - Malformed alert data
 - Missing configuration for service
+
+
+**Remediation**:
+After identifying the underlying cause as to why the message was not processed, determine the following:
+* If the message contained a valid alert, fix the underlying issue then replay the message using `./tools/replay_dead_letter_queue.sh`
+  * Replayed messages will make their way back into the dead letter queue if the fail to process again
+* Otherwise, if the message was invalid (test / dummy data), discard the message by acknowledging it in the `Messages` tab of the
+`pagerduty-alert-forwarder-dlq-pull` Pub/Sub subscription.
 
 ### Metrics
 

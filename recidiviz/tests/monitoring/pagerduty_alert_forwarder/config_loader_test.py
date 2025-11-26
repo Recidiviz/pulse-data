@@ -19,6 +19,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 from recidiviz.monitoring import pagerduty_alert_forwarder
 from recidiviz.monitoring.pagerduty_alert_forwarder.config_loader import (
     AlertForwarderConfig,
@@ -28,6 +30,17 @@ from recidiviz.monitoring.pagerduty_alert_forwarder.config_loader import (
 
 class TestConfigLoader(unittest.TestCase):
     """Tests for configuration loader."""
+
+    real_config: AlertForwarderConfig
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # Get path to production config file using the package
+        package_dir = Path(pagerduty_alert_forwarder.__file__).parent
+        config_path = package_dir / "config.yaml"
+
+        # Should load without errors
+        cls.real_config = AlertForwarderConfig.from_file(str(config_path))
 
     def test_valid_config(self) -> None:
         """Test loading a valid configuration."""
@@ -202,13 +215,52 @@ rules:
 
     def test_load_production_config(self) -> None:
         """Test loading the actual production config file."""
-        # Get path to production config file using the package
-        package_dir = Path(pagerduty_alert_forwarder.__file__).parent
-        config_path = package_dir / "config.yaml"
-
-        # Should load without errors
-        config = AlertForwarderConfig.from_file(str(config_path))
-
         # Basic sanity checks
-        self.assertIsNotNone(config.default)
-        self.assertIsInstance(config.rules, list)
+        self.assertIsNotNone(self.real_config.default)
+        self.assertIsInstance(self.real_config.rules, list)
+
+    def test_all_services_defined_in_stack_file(self) -> None:
+        """Test that all PagerDuty services referenced in config.yaml are defined in the stack file."""
+
+        # Extract all pagerduty_service values from config
+        services_in_config = set()
+
+        # Get default service
+        default_service = self.real_config.default.pagerduty_service
+        if default_service:  # Only add if non-empty
+            services_in_config.add(default_service)
+
+        # Get services from rules
+        for rule in self.real_config.rules:
+            if rule.actions.pagerduty_service:
+                services_in_config.add(rule.actions.pagerduty_service)
+
+        # Load stack file
+        # package_dir is recidiviz/monitoring/pagerduty_alert_forwarder
+        # We need to go to recidiviz/tools/deploy/atmos/stacks/recidiviz-123.yaml
+        package_dir = Path(pagerduty_alert_forwarder.__file__).parent
+        recidiviz_dir = package_dir.parent.parent  # Go to recidiviz/ directory
+        stack_path = recidiviz_dir / "tools/deploy/atmos/stacks/recidiviz-123.yaml"
+
+        with open(stack_path, "r", encoding="utf-8") as f:
+            stack_data = yaml.safe_load(f)
+
+        # Extract pagerduty_services from stack
+        pagerduty_services = (
+            stack_data.get("components", {})
+            .get("terraform", {})
+            .get("apps/pagerduty-alert-forwarder", {})
+            .get("vars", {})
+            .get("pagerduty_services", [])
+        )
+
+        # Assert all services in config are defined in stack
+        missing_services = services_in_config - set(pagerduty_services)
+
+        self.assertEqual(
+            set(),
+            missing_services,
+            f"The following PagerDuty services are referenced in config.yaml but not "
+            f"defined in recidiviz-123.yaml vars for apps/pagerduty-alert-forwarder: {missing_services}. "
+            f"Please add them to the pagerduty_services list in the stack file.",
+        )
