@@ -62,6 +62,7 @@ def critical_date_has_passed_spans_cte(
     attributes: Optional[List[str]] = None,
     date_part: str = "DAY",
     table_name: str = "critical_date_spans",
+    cte_suffix: str = "",
 ) -> str:
     """Returns a CTE that indicates the span of time where a particular critical date
     was set and comes on or before the current date. The
@@ -88,6 +89,9 @@ def critical_date_has_passed_spans_cte(
 
     table_name (str, optional): The name of the table that the critical date spans are
         stored in. Defaults to "critical_date_spans".
+
+    cte_suffix (str, optional): Suffix to append to the CTE names to avoid name
+        collisions. Defaults to "".
     """
 
     if attributes:
@@ -102,7 +106,7 @@ def critical_date_has_passed_spans_cte(
     {meets_criteria_leading_window_time} days from the critical date to indicate the
     date when the criteria is met
     */
-    critical_date_spans_no_nulls AS (
+    critical_date_spans_no_nulls{cte_suffix} AS (
         SELECT
             state_code,
             person_id,
@@ -119,7 +123,7 @@ def critical_date_has_passed_spans_cte(
             {attribute_str}
         FROM {table_name}
     ),
-    criteria_spans AS (
+    criteria_spans{cte_suffix} AS (
         /*
         Create a FALSE criteria span for the period leading up to the critical date,
         if the critical date comes after the span end date then the whole criteria
@@ -134,7 +138,7 @@ def critical_date_has_passed_spans_cte(
             FALSE AS critical_date_has_passed,
             critical_date,
             {attribute_str}
-        FROM critical_date_spans_no_nulls
+        FROM critical_date_spans_no_nulls{cte_suffix}
         WHERE start_date < critical_or_in_window_date
         UNION ALL
         /*
@@ -150,10 +154,10 @@ def critical_date_has_passed_spans_cte(
             TRUE AS critical_date_has_passed,
             critical_date,
             {attribute_str}
-        FROM critical_date_spans_no_nulls
+        FROM critical_date_spans_no_nulls{cte_suffix}
         WHERE critical_or_in_window_date < end_date
     ),
-    critical_date_has_passed_spans AS (
+    critical_date_has_passed_spans{cte_suffix} AS (
         SELECT
             state_code,
             person_id,
@@ -163,7 +167,7 @@ def critical_date_has_passed_spans_cte(
             critical_date_has_passed,
             critical_date,
             {attribute_str}
-        FROM criteria_spans
+        FROM criteria_spans{cte_suffix}
     )"""
 
 

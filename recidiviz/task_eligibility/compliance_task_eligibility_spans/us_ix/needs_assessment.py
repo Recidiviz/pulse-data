@@ -28,14 +28,12 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
     active_supervision_population_for_tasks,
 )
-from recidiviz.task_eligibility.compliance_task_eligibility_spans.us_ne.needs_stable_assessment import (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
-)
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    not_serving_for_sexual_offense_on_supervision,
+    supervision_case_type_is_not_general_and_level_is_not_minimum,
+    supervision_case_type_is_sex_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     has_low_lsir_for_reassessment,
@@ -52,11 +50,6 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# This is to identify people who are serving for a sexual offense on supervision
-serving_for_sexual_offense = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=not_serving_for_sexual_offense_on_supervision.VIEW_BUILDER
-)
-
 # There is two task criteria wrappers here: an inverted one and a group one
 # The group one is needed to combine the two criteria with AND logic
 # The inverted one is needed to invert the resulting group criteria.
@@ -71,22 +64,49 @@ does_not_have_low_lsir_and_sexual_offense = (
                 criteria_name="US_IX_HAS_LOW_LSIR_AND_SEXUAL_OFFENSE",
                 sub_criteria_list=[
                     has_low_lsir_for_reassessment.VIEW_BUILDER,
-                    serving_for_sexual_offense,
+                    supervision_case_type_is_sex_offense.VIEW_BUILDER,
                 ],
             )
         )
     )
 )
-# This criteria is met when the individual is missing an annual assessment AND
-# does not have a low LSIR score + sexual offense. The latter group does not need
-# reassessments.
+
+# This criteria is met when the individual is missing an annual assessment. But it excludes
+# two groups who do not need reassessments:
+# 1) they are sex offenders with low LSIR scores, and
+# 2) they have GENERAL case type and are on minimum supervision.
+# does not have a low LSIR score + sexual offense AND is not on minimum supervision.
+# The latter group does not need reassessments.
 meets_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_MEETS_REASSESSMENT_TRIGGER",
     sub_criteria_list=[
         does_not_have_low_lsir_and_sexual_offense,
         is_missing_annual_assessment.VIEW_BUILDER,
+        supervision_case_type_is_not_general_and_level_is_not_minimum.VIEW_BUILDER,
     ],
+    allowed_duplicate_reasons_keys=["case_type"],
+)
+
+# Final combine: assessment trigger criteria that combines both initial and reassessment triggers
+meets_reassessment_or_initial_assessment_triggers = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
+        criteria_name="US_IX_MEETS_REASSESSMENT_OR_INITIAL_ASSESSMENT_TRIGGERS",
+        sub_criteria_list=[
+            meets_reassessment_trigger,
+            meets_initial_assessment_trigger.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[
+            "assessment_due_date",
+            "last_assessment_date",
+            "contact_cadence",
+        ],
+        reasons_aggregate_function_override={
+            "assessment_due_date": "MIN",
+            "last_assessment_date": "MAX",
+        },
+    )
 )
 # TODO(#51098): Rethink our candidate population
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
@@ -94,19 +114,11 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     task_name="needs_assessment",
     candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_IX_MEETS_REASSESSMENT_OR_INITIAL_ASSESSMENT_TRIGGERS",
-            sub_criteria_list=[
-                meets_reassessment_trigger,
-                meets_initial_assessment_trigger.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=["contact_due_date"],
-            reasons_aggregate_function_override={"contact_due_date": "MIN"},
-        )
+        meets_reassessment_or_initial_assessment_triggers,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
-    due_date_field="contact_due_date",
+    due_date_field="assessment_due_date",
+    due_date_criteria_builder=meets_reassessment_or_initial_assessment_triggers,
     last_task_completed_date_field="last_assessment_date",
 )
 
