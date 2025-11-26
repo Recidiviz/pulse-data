@@ -139,9 +139,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
     US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
-    US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -392,12 +389,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
             "of the v2 sentences migration"
         ),
     },
-    (StateCode.US_ND, StateCharge): {
-        US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46257): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-    },
     (StateCode.US_ND, StateIncarcerationSentence): {
         US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46257): This view should be deleted once ND no longer "
@@ -410,10 +401,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
     },
     (StateCode.US_ND, StateSupervisionSentence): {
         US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address: (
-            "TODO(#46257): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
-        US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address: (
             "TODO(#46257): Remove state_supervision_sentence reference as part "
             "of the v2 sentences migration"
         ),

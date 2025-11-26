@@ -105,10 +105,7 @@ from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_inca
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StateCharge,
-    StateSupervisionSentence,
-)
+from recidiviz.persistence.entity.state.entities import StateSupervisionSentence
 from recidiviz.pipelines.ingest.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
@@ -165,16 +162,9 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
@@ -196,16 +186,9 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
@@ -227,16 +210,9 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
         },
     },
@@ -329,16 +305,9 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
-                US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.address,
             },
         },
         US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER.address: {
