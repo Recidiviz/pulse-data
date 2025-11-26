@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_person` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OPUS: STRING
+  first_name: STRING
+  middle_name: STRING
+  last_name: STRING
+  suffix: STRING
+  sex: STRING
+  race: STRING
+  ethnicity: STRING
+  birthdate: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OPUS
+          id_type: $literal("US_NC_OPUS")
+    full_name:
+      $person_name:
+        $given_names: first_name
+        $middle_names: middle_name
+        $surname: last_name
+        $name_suffix: suffix
+    birthdate: birthdate
+    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
+    # been updated to read from state_person sex instead.
+    gender:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+    sex:
+      $enum_mapping:
+        $raw_text: sex
+        $mappings:
+          StateSex.MALE: M
+          StateSex.FEMALE: F
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: race
+              $mappings:
+                StateRace.BLACK: BLACK/AFRICAN AMERICAN
+                StateRace.WHITE: WHITE
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: AMERICAN INDIAN/ALASKAN NATIVE
+                StateRace.ASIAN: ASIAN/ASIAN AMERICAN
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAWAIIAN/PACIFIC ISLANDER
+                StateRace.EXTERNAL_UNKNOWN: UNKNOWN
+                StateRace.INTERNAL_UNKNOWN: OTHER
+    ethnicities:
+      - $conditional:
+          - $if:
+              $not_null: ethnicity
+            $then:
+              StatePersonEthnicity:
+                ethnicity:
+                  $enum_mapping:
+                    $raw_text: ethnicity
+                    $mappings:
+                      StateEthnicity.HISPANIC: HISPANIC/LATINO
+                      StateEthnicity.NOT_HISPANIC:
+                        - NOT HISPANIC/LATINO
+                        - EUROPEAN/N.AM./AUSTR
+                        - AFRICAN
+                      StateEthnicity.EXTERNAL_UNKNOWN: UNKNOWN

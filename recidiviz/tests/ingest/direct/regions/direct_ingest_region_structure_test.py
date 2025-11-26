@@ -108,7 +108,6 @@ YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
 )
 STATES_WITH_NO_FIXTURES = {
     StateCode.US_ID,
-    StateCode.US_NC,
 }
 UNTESTED_INGEST_VIEWS = {
     StateCode.US_PA: {
