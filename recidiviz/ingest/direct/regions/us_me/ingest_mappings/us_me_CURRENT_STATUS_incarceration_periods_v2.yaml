@@ -20,7 +20,8 @@ input_columns:
   transfer_type: STRING
   transfer_reason: STRING
   incarceration_period_id: STRING
-unused_columns: []
+unused_columns:
+  - current_status
 output:
   StatePerson:
     external_ids:
@@ -78,7 +79,6 @@ output:
                 $concat:
                   $separator: "@@"
                   $values:
-                    - current_status
                     - transfer_reason
                     - location_type
                   $include_nulls: True
@@ -91,7 +91,6 @@ output:
                   $values:
                     - previous_status
                     - previous_location_type
-                    - current_status
                     - movement_type
                     - transfer_type
                     - transfer_reason
@@ -108,7 +107,6 @@ output:
                       $concat:
                         $separator: "@@"
                         $values:
-                          - current_status
                           - next_status
                           - next_movement_type
                           - transfer_reason

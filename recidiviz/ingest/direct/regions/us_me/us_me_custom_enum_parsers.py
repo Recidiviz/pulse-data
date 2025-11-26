@@ -145,16 +145,11 @@ COUNTY_JAIL_DAYS_LIMIT = 9 * 30  # 9 months * 30 days
 
 
 def _in_temporary_custody(
-    current_status: str,
     location_type: str,
     transfer_reason: Optional[str],
 ) -> bool:
     return (
-        (
-            current_status == COUNTY_JAIL_STATUS
-            and location_type in DOC_FACILITY_LOCATION_TYPES
-        )
-        or transfer_reason in TEMPORARY_CUSTODY_TRANSFER_REASONS
+        transfer_reason in TEMPORARY_CUSTODY_TRANSFER_REASONS
         or location_type in COUNTY_JAIL_LOCATION_TYPES
     )
 
@@ -192,11 +187,10 @@ def parse_specialized_purpose_for_incarceration(
     raw_text: str,
 ) -> StateSpecializedPurposeForIncarceration:
     (
-        current_status,
         transfer_reason,
         location_type,
     ) = raw_text.upper().split("@@")
-    if _in_temporary_custody(current_status, location_type, transfer_reason):
+    if _in_temporary_custody(location_type, transfer_reason):
         return StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
     return StateSpecializedPurposeForIncarceration.GENERAL
 
@@ -206,7 +200,6 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
     (
         previous_status,
         previous_location_type,
-        current_status,
         movement_type,
         transfer_type,
         transfer_reason,
@@ -233,7 +226,7 @@ def parse_admission_reason(raw_text: str) -> StateIncarcerationPeriodAdmissionRe
     if ESCAPE in [previous_status, movement_type]:
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
 
-    if _in_temporary_custody(current_status, location_type, transfer_reason):
+    if _in_temporary_custody(location_type, transfer_reason):
         return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
 
     if (
@@ -258,7 +251,6 @@ def parse_release_reason(
 ) -> Optional[StateIncarcerationPeriodReleaseReason]:
     """Parse release reason from raw text"""
     (
-        current_status,
         next_status,
         next_movement_type,
         transfer_reason,
@@ -284,7 +276,7 @@ def parse_release_reason(
     ):
         return StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION
 
-    if _in_temporary_custody(current_status, location_type, transfer_reason):
+    if _in_temporary_custody(location_type, transfer_reason):
         return StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
 
     if (
