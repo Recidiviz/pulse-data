@@ -175,13 +175,7 @@ recent_misconduct_codes AS (
                        nonbondable_incident_date AS nonbondable_incident_date)), 
                NULL)
             IGNORE NULLS ORDER BY nonbondable_offense, nonbondable_incident_date) 
-            AS json_nonbondable_offenses_within_1_year,
-        CONCAT('(',
-            STRING_AGG(CONCAT(bondable_offense, ', ', STRING(bondable_incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(bondable_incident_date))),
-        ')') AS bondable_offenses_within_6_months,
-        CONCAT('(',
-            STRING_AGG(CONCAT(nonbondable_offense, ', ', STRING(nonbondable_incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(nonbondable_incident_date))),
-        ')') AS nonbondable_offenses_within_1_year,
+            AS json_nonbondable_offenses_within_1_year
     FROM recent_misconduct_distinct_offenses
     GROUP BY 1
 ),
@@ -387,11 +381,6 @@ SELECT
     (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
     rm.json_bondable_offenses_within_6_months AS metadata_json_recent_bondable_offenses,
     rm.json_nonbondable_offenses_within_1_year AS metadata_json_recent_nonbondable_offenses,
-    #TODO(#51218) remove once frontend is updated to json field
-    rm.bondable_offenses_within_6_months AS metadata_recent_bondable_offenses,
-    rm.nonbondable_offenses_within_1_year AS metadata_recent_nonbondable_offenses,
-    #TODO(#51218) remove once frontend is updated to json field
-    pf.form_ad_seg_stays_and_reasons_within_3_yrs AS metadata_ad_seg_stays_and_reasons_within_3_yrs,
     p.json_ad_seg_stays_and_reasons_within_3_yrs AS metadata_json_ad_seg_stays_and_reasons_within_3_yrs,
     #TODO(#28298) add in missing info when we receive data
     NULL AS metadata_needed_programming,
