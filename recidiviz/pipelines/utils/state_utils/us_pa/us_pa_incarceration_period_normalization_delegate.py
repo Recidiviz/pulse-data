@@ -123,7 +123,7 @@ class UsPaIncarcerationNormalizationDelegate(
             state_code=StateCode.US_PA,
             incarceration_periods=incarceration_periods,
             supervision_period_index=supervision_period_index,
-            temp_custody_custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            temp_custody_custodial_authority=StateCustodialAuthority.COUNTY,
         )
 
         return new_incarceration_periods
