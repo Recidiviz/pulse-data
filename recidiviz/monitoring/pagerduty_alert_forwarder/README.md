@@ -87,7 +87,7 @@ Match criteria use simple JSON field paths with dot notation (no indexing) to re
 - `incident.resource_type_display_name`: Resource type (e.g., "cloud_run_revision", "cloud_sql_database")
 - `incident.resource_display_name`: Resource name
 - `incident.condition_name`: Condition that triggered
-- `incident.severity`: Alert severity ("CRITICAL", "ERROR", "WARNING", "INFO")
+- `incident.severity`: Alert severity ("critical", "error", "warning", "info")
 - `incident.summary`: Alert summary text
 - `incident.incident_id`: Unique incident ID
 

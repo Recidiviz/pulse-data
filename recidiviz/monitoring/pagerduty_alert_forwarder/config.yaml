@@ -98,6 +98,13 @@ rules:
       severity: warning
       title_transform: "Failed BigQuery Scheduled Query: {incident.resource.labels.config_id}"
 
+  - name: "BigQuery Deployed View Too Expensive"
+    match:
+      incident.policy_name: "BQ Deployed View Too Expensive"
+    actions:
+      severity: warning
+      title_transform: "BigQuery Deployed View Too Expensive"
+
   # Lastly, apply staging / production prefixes
   - name: "Production Alerts - Prefix Title"
     match:
