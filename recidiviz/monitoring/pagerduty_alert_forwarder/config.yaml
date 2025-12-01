@@ -105,6 +105,16 @@ rules:
       severity: warning
       title_transform: "BigQuery Deployed View Too Expensive"
 
+  - name: "Suppress Preview Cloud Run Job Failures"
+    match:
+      incident.resource.labels.project_id: "recidiviz-dashboard-staging"
+      incident.policy_name:
+        contains: "Cloud Run Job Failure"
+      incident.resource.labels.job_name:
+        contains: "preview"
+    actions:
+      suppress: true
+
   # Lastly, apply staging / production prefixes
   - name: "Production Alerts - Prefix Title"
     match:

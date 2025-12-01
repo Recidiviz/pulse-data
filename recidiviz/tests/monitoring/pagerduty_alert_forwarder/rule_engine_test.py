@@ -553,6 +553,81 @@ class TestRuleEngine(unittest.TestCase):
         # Should still work - just returns the whole string
         self.assertEqual(result["title"], "[simple-resource] Simple alert")
 
+    def test_suppress_action(self) -> None:
+        """Test that suppress action prevents alert forwarding."""
+        config = AlertForwarderConfig(
+            {
+                "default": {"pagerduty_service": "default"},
+                "rules": [
+                    {
+                        "name": "Suppress preview failures",
+                        "match": {
+                            "incident.resource_display_name": {"contains": "preview"}
+                        },
+                        "actions": {"suppress": True},
+                    }
+                ],
+            }
+        )
+
+        engine = RuleEngine(config)
+
+        # Alert matching suppression rule
+        alert_with_preview = self.sample_alert.copy()
+        alert_with_preview["incident"] = self.sample_alert["incident"].copy()
+        alert_with_preview["incident"]["resource_display_name"] = "preview-db"
+
+        result = engine.process_alert(PagerDutyAlert(alert_with_preview))
+        self.assertTrue(result.get("suppress"))
+
+    def test_suppress_action_overrides(self) -> None:
+        """Test that suppress action can be overridden by later rules."""
+        config = AlertForwarderConfig(
+            {
+                "default": {"pagerduty_service": "default"},
+                "rules": [
+                    {
+                        "name": "First rule suppresses",
+                        "match": {"incident.policy_name": {"contains": "Database"}},
+                        "actions": {"suppress": True},
+                    },
+                    {
+                        "name": "Second rule does not suppress",
+                        "match": {"incident.policy_name": {"contains": "Database"}},
+                        "actions": {"severity": "critical"},
+                    },
+                ],
+            }
+        )
+
+        engine = RuleEngine(config)
+        result = engine.process_alert(PagerDutyAlert(self.sample_alert))
+
+        # Both rules match - suppress should remain True since second rule doesn't override it
+        self.assertTrue(result.get("suppress"))
+        self.assertEqual(result["severity"], "critical")
+
+    def test_no_suppress_by_default(self) -> None:
+        """Test that alerts are not suppressed by default."""
+        config = AlertForwarderConfig(
+            {
+                "default": {"pagerduty_service": "default"},
+                "rules": [
+                    {
+                        "name": "No suppress action",
+                        "match": {"incident.policy_name": {"contains": "Database"}},
+                        "actions": {"severity": "critical"},
+                    }
+                ],
+            }
+        )
+
+        engine = RuleEngine(config)
+        result = engine.process_alert(PagerDutyAlert(self.sample_alert))
+
+        # Should not be suppressed
+        self.assertFalse(result.get("suppress"))
+
     def test_config_yaml_only_uses_supported_helpers(self) -> None:
         """Test that config.yaml only uses supported helper functions."""
         # Supported helpers

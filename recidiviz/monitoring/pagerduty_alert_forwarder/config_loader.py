@@ -197,12 +197,14 @@ class ActionsConfig:
     TITLE_TRANSFORM_KEY = "title_transform"
     TITLE_PREFIX_KEY = "title_prefix"
     TITLE_SUFFIX_KEY = "title_suffix"
+    SUPPRESS_KEY = "suppress"
 
     severity: str | None = attr.field(default=None)
     pagerduty_service: str | None = attr.field(default=None)
     title_transform: str | None = attr.field(default=None)
     title_prefix: str | None = attr.field(default=None)
     title_suffix: str | None = attr.field(default=None)
+    suppress: bool = attr.field(default=False)
 
     @classmethod
     def from_dict(
@@ -258,12 +260,21 @@ class ActionsConfig:
         if cls.TITLE_SUFFIX_KEY in actions_dict:
             title_suffix = actions_dict[cls.TITLE_SUFFIX_KEY]
 
+        suppress = False
+        if cls.SUPPRESS_KEY in actions_dict:
+            suppress = actions_dict[cls.SUPPRESS_KEY]
+            if not isinstance(suppress, bool):
+                raise ConfigurationError(
+                    f"Rule {rule_index} 'actions.suppress' must be a boolean"
+                )
+
         return cls(
             severity=severity,
             pagerduty_service=pagerduty_service,
             title_transform=title_transform,
             title_prefix=title_prefix,
             title_suffix=title_suffix,
+            suppress=suppress,
         )
 
 

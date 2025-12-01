@@ -131,6 +131,8 @@ class AlertForwarder:
             logger.error("Failed to decode message data: %s", e)
             return Response(f"Invalid message data: {e}", status=400)
 
+        logger.debug("Processing pubsub message: %s", alert_data)
+
         # Process alert
         try:
             # Wrap alert data in PagerDutyAlert for cached field lookups
@@ -179,6 +181,15 @@ class AlertForwarder:
         severity = processed["severity"]
         service = processed["pagerduty_service"]
         title = processed["title"]
+        suppress = processed.get("suppress", False)
+
+        # Check if alert should be suppressed
+        if suppress:
+            logger.info(
+                "Alert suppressed by rule configuration",
+                extra={"policy_name": policy_name, "incident_id": incident_id},
+            )
+            return Response("Alert suppressed successfully", status=200)
 
         # Validate that we have a PagerDuty service configured
         if not service:

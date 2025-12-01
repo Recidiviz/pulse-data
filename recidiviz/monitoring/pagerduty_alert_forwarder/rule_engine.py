@@ -66,6 +66,7 @@ class RuleEngine:
             "pagerduty_service": self.config.default.pagerduty_service,
             "title": summary,
             "original_alert": alert.raw_data,
+            "suppress": False,
         }
 
         # Evaluate all rules in order and apply matching rules
@@ -170,6 +171,10 @@ class RuleEngine:
         # Update PagerDuty service if specified
         if actions.pagerduty_service is not None:
             result["pagerduty_service"] = actions.pagerduty_service
+
+        # Update suppress flag if specified
+        if actions.suppress:
+            result["suppress"] = True
 
         # Apply title transformations
         title = original_title

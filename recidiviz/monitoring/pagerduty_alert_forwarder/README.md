@@ -56,6 +56,7 @@ rules:
       title_prefix: "[PREFIX]"                # Add prefix to title
       title_suffix: "(suffix)"                # Add suffix to title
       title_transform: "Template with {incident.field}"  # Template with field interpolation
+      suppress: true                          # Suppress alert (don't forward to PagerDuty)
 ```
 
 ### Match Criteria
@@ -105,6 +106,7 @@ The rest of the available fields can be found in the contents of the PagerDuty a
 - **title_prefix**: Prepend text to the incident title
 - **title_suffix**: Append text to the incident title
 - **title_transform**: Replace the entire title with a template string using field interpolation
+- **suppress**: If set to `true`, suppress the alert (do not forward to PagerDuty)
 
 #### Title Transform Templates
 
@@ -136,6 +138,36 @@ title_transform: "[PROD] {incident.resource_type_display_name}/{incident.resourc
 ```
 
 **Note**: When `title_transform` is specified, it completely replaces the title. The `title_prefix` and `title_suffix` actions are ignored if `title_transform` is present.
+
+#### Alert Suppression
+
+The `suppress` action allows you to prevent certain alerts from being forwarded to PagerDuty. When set to `true`, matched alerts will be logged but not sent to PagerDuty.
+
+**Use Cases**:
+- **Non-production environments**: Suppress alerts from preview/staging deployments that shouldn't page on-call
+- **Noisy alerts**: Filter out alerts that aren't actionable but can't be disabled at the source
+- **Testing**: Suppress test alerts in specific projects or for specific resources
+
+**Examples**:
+
+```yaml
+# Suppress all preview environment Cloud Run job failures
+- name: "Suppress Preview Cloud Run Job Failures"
+  match:
+    incident.resource.labels.project_id: "recidiviz-dashboard-staging"
+    incident.policy_name:
+      contains: "Cloud Run Job Failure"
+    incident.resource.labels.job_name:
+      contains: "preview"
+  actions:
+    suppress: true
+```
+
+**Important Notes**:
+- Suppressed alerts are still logged in Cloud Run logs for audit purposes
+- The alert will show as successfully processed (won't go to DLQ)
+- If multiple rules match and any sets `suppress: true`, the alert will be suppressed
+- Use suppression sparingly - consider adjusting alert policies at the source when possible
 
 ### Rule Composition
 
@@ -193,9 +225,9 @@ In this example, an alert for a production database with ERROR severity would:
    ```bash
    cd /path/to/pulse-data
    docker build -f recidiviz/monitoring/pagerduty_alert_forwarder/Dockerfile \
-     -t us-docker.pkg.dev/recidiviz-123/pagerduty-alert-forwarder/pagerduty-alert-forwarder:latest . \
+     -t us-central1-docker.pkg.dev/recidiviz-123/pagerduty-alert-forwarder/pagerduty-alert-forwarder:latest . \
      --platform linux/amd64
-   docker push us-docker.pkg.dev/recidiviz-123/pagerduty-alert-forwarder/pagerduty-alert-forwarder:latest
+   docker push us-central1-docker.pkg.dev/recidiviz-123/pagerduty-alert-forwarder/pagerduty-alert-forwarder:latest
    ```
 
 ### Terraform Deployment

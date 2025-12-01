@@ -204,6 +204,47 @@ rules:
         keys = forwarder.load_pagerduty_keys()
         self.assertEqual(keys, {})
 
+    @patch(
+        "recidiviz.monitoring.pagerduty_alert_forwarder.server.PagerDutyClient.trigger_incident"
+    )
+    def test_process_alert_suppressed(self, mock_trigger: MagicMock) -> None:
+        """Test that suppressed alerts are not forwarded to PagerDuty."""
+        # Create a config with a suppression rule
+        config_content = """
+rules:
+  - name: "Suppress Test Rule"
+    match:
+      incident.resource.labels.project_id: "test-project"
+    actions:
+      suppress: true
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yaml"
+        ) as config_file:
+            config_file.write(config_content)
+            temp_config_file = config_file
+
+        with patch.dict(
+            "os.environ",
+            {
+                "CONFIG_PATH": temp_config_file.name,
+                "GCP_PROJECT": "test-project",
+                "PAGERDUTY_INTEGRATION_KEYS": json.dumps(
+                    {"test-service": "test-key-123"}
+                ),
+            },
+        ):
+            forwarder = AlertForwarder()
+
+            alert = self._create_alert(state="open")
+            response = forwarder.process_alert(alert)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"Alert suppressed successfully", response.data)
+
+            # Verify trigger_incident was NOT called
+            mock_trigger.assert_not_called()
+
 
 class TestServerEndpoints(unittest.TestCase):
     """Tests for Flask server endpoints."""
