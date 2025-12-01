@@ -1200,6 +1200,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mo_state.state_supervision_violation_type_entry",
     "us_mo_state.state_task_deadline",
     "us_nc_ingest_view_results.person",
+    "us_nc_ingest_view_results.staff",
     "us_nc_normalized_state.state_assessment",
     "us_nc_normalized_state.state_charge",
     "us_nc_normalized_state.state_charge_incarceration_sentence_association",

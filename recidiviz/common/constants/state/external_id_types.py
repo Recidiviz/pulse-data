@@ -122,6 +122,9 @@ US_MO_STAFF_BADGE_NUMBER = "US_MO_STAFF_BADGE_NUMBER"
 # US_NC
 # NC OPUS Number
 US_NC_OPUS = "US_NC_OPUS"
+# NC Staff ID Number
+US_NC_STAFF = "US_NC_STAFF"
+
 
 # US_ND
 # ND Elite ID - tracks someone across all incarceration stays
