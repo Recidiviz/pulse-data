@@ -49,8 +49,6 @@ class UsNeSupervisionNormalizationDelegate(
             # Enter absconsion mode if this period is ABSCONSION
             if sp.supervision_type == StateSupervisionPeriodSupervisionType.ABSCONSION:
                 in_absconsion = True
-                updated_supervision_periods.append(sp)
-                continue
 
             # While in absconsion, overwrite supervision_type
             if in_absconsion:

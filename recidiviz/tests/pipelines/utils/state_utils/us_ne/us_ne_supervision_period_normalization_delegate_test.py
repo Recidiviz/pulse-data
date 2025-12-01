@@ -209,3 +209,65 @@ class TestUsNeSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_periods_fixed,
             self.delegate.normalize_subsequent_absconsion_periods(supervision_periods),
         )
+
+    def test_normalize_subsequent_absconsion_periods_after_revocation(
+        self,
+    ) -> None:
+        """Test that subsequent absconsion periods are normalized correctly when last
+        period is open."""
+        sp1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            start_date=date(2024, 1, 5),
+            termination_date=date(2024, 1, 30),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            state_code=_STATE_CODE,
+            external_id="sp1",
+        )
+
+        sp2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_type=StateSupervisionPeriodSupervisionType.ABSCONSION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
+            start_date=date(2024, 1, 30),
+            termination_date=date(2024, 2, 20),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            state_code=_STATE_CODE,
+            external_id="sp2",
+        )
+        sp3 = StateSupervisionPeriod.new_with_defaults(
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            start_date=date(2024, 5, 20),
+            termination_date=date(2024, 6, 6),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            state_code=_STATE_CODE,
+            external_id="sp3",
+        )
+        sp4 = StateSupervisionPeriod.new_with_defaults(
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=date(2024, 6, 6),
+            termination_date=None,
+            termination_reason=None,
+            state_code=_STATE_CODE,
+            external_id="sp4",
+        )
+        supervision_periods = [
+            sp1,
+            sp2,
+            sp3,
+            sp4,
+        ]
+        # We don't expect 3 and 4 to change, previously they were being changed but since
+        # they come after an absconsion, then revocation, we expect them to remain the same
+        supervision_periods_fixed = [
+            sp1,
+            sp2,
+            sp3,
+            sp4,
+        ]
+
+        self.assertEqual(
+            supervision_periods_fixed,
+            self.delegate.normalize_subsequent_absconsion_periods(supervision_periods),
+        )
