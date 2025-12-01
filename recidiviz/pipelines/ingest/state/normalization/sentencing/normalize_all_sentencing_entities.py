@@ -242,9 +242,12 @@ def _normalize_single_sentence(
         and sentence.current_state_provided_start_date != earliest_serving_status_date
     ):
         raise ValueError(
-            f"{sentence.limited_pii_repr()} has a current_state_provided_start_date that does not align "
+            f"Sentence has a current_state_provided_start_date that does not align "
             "with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
-            f"is {earliest_serving_status_date} and the current_state_provided_start_date is {sentence.current_state_provided_start_date}"
+            f"is {earliest_serving_status_date} and the current_state_provided_start_date is "
+            f"{sentence.current_state_provided_start_date}. "
+            f"Sentence: {sentence.limited_pii_repr()}. "
+            f"Person: {assert_type(sentence.person, StatePerson).limited_pii_repr()}"
         )
     current_start_date = (
         sentence.current_state_provided_start_date or earliest_serving_status_date

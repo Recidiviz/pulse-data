@@ -17,6 +17,7 @@
 """State agnostic testing of normalization of sentencing v2 entities."""
 import copy
 import datetime
+import re
 import unittest
 from typing import List
 
@@ -805,10 +806,23 @@ class TestSentenceV2Normalization(unittest.TestCase):
         person = state_entities.StatePerson(
             state_code=self.state_code_value,
             sentences=[sentence],
+            external_ids=[
+                state_entities.StatePersonExternalId(
+                    state_code=self.state_code_value,
+                    external_id="person_external_id_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found \[VACATED\] status that is not the final status. StateSentenceStatusSnapshot\(sentence_status_snapshot_id=2\)",
+            re.escape(
+                "Found [VACATED] status that is not the final status. "
+                "Snapshot: StateSentenceStatusSnapshot(sentence_status_snapshot_id=2). "
+                "Person: StatePerson(person_id=None, external_ids=["
+                "StatePersonExternalId(external_id='person_external_id_1', "
+                "id_type='US_XX_ID_TYPE', person_external_id_id=None)])",
+            ),
         ):
             _ = self._get_normalized_sentences_for_person(person, self.delegate)
 
@@ -956,12 +970,25 @@ class TestSentenceV2Normalization(unittest.TestCase):
         person = state_entities.StatePerson(
             state_code=self.state_code_value,
             sentences=[sentence],
+            external_ids=[
+                state_entities.StatePersonExternalId(
+                    state_code=self.state_code_value,
+                    external_id="person_external_id_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"StateSentence\(external_id='sentence-1', sentence_id=1\) has a current_state_provided_start_date that "
-            "does not align with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
-            "is None and the current_state_provided_start_date is 2022-01-01",
+            re.escape(
+                "Sentence has a current_state_provided_start_date that does not align "
+                "with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
+                "is None and the current_state_provided_start_date is 2022-01-01. "
+                "Sentence: StateSentence(external_id='sentence-1', sentence_id=1). "
+                "Person: StatePerson(person_id=None, external_ids=["
+                "StatePersonExternalId(external_id='person_external_id_1', "
+                "id_type='US_XX_ID_TYPE', person_external_id_id=None)])"
+            ),
         ):
             self._get_normalized_sentences_for_person(person, self.delegate)
 
@@ -970,9 +997,15 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentence.sentence_status_snapshots = []
         with self.assertRaisesRegex(
             ValueError,
-            r"StateSentence\(external_id='sentence-1', sentence_id=1\) has a current_state_provided_start_date that "
-            "does not align with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
-            "is None and the current_state_provided_start_date is 2022-01-01",
+            re.escape(
+                "Sentence has a current_state_provided_start_date that does not align "
+                "with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
+                "is None and the current_state_provided_start_date is 2022-01-01. "
+                "Sentence: StateSentence(external_id='sentence-1', sentence_id=1). "
+                "Person: StatePerson(person_id=None, external_ids=["
+                "StatePersonExternalId(external_id='person_external_id_1', "
+                "id_type='US_XX_ID_TYPE', person_external_id_id=None)])"
+            ),
         ):
             self._get_normalized_sentences_for_person(person, self.delegate)
 
@@ -1037,12 +1070,25 @@ class TestSentenceV2Normalization(unittest.TestCase):
         person = state_entities.StatePerson(
             state_code=self.state_code_value,
             sentences=[sentence],
+            external_ids=[
+                state_entities.StatePersonExternalId(
+                    state_code=self.state_code_value,
+                    external_id="person_external_id_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"StateSentence\(external_id='sentence-1', sentence_id=1\) has a current_state_provided_start_date "
-            "that does not align with the NormalizedStateSentenceStatusSnapshot values. "
-            "The earliest serving status date is 2022-01-01 and the current_state_provided_start_date is 2022-02-15",
+            re.escape(
+                "Sentence has a current_state_provided_start_date that does not align "
+                "with the NormalizedStateSentenceStatusSnapshot values. The earliest serving status date "
+                "is 2022-01-01 and the current_state_provided_start_date is 2022-02-15. "
+                "Sentence: StateSentence(external_id='sentence-1', sentence_id=1). "
+                "Person: StatePerson(person_id=None, external_ids=["
+                "StatePersonExternalId(external_id='person_external_id_1', "
+                "id_type='US_XX_ID_TYPE', person_external_id_id=None)])"
+            ),
         ):
             self._get_normalized_sentences_for_person(person, self.delegate)
 

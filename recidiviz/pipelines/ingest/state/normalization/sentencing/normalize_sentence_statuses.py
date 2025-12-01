@@ -29,6 +29,7 @@ import datetime
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.date import as_datetime
 from recidiviz.persistence.entity.state.entities import (
+    StatePerson,
     StateSentence,
     StateSentenceStatusSnapshot,
 )
@@ -196,7 +197,10 @@ def _correct_and_create_serving_statuses_from_watermark(
             # early completion statuses before calling this function!
             if snapshot.status.is_terminating_status:
                 raise ValueError(
-                    f"{sentence.limited_pii_repr()} has a terminating status before we expected it to begin serving!"
+                    f"Sentence has a terminating status before we expected it to begin serving! "
+                    f"Snapshot: {snapshot.limited_pii_repr()}. "
+                    f"Sentence: {sentence.limited_pii_repr()}. "
+                    f"Person: {assert_type(sentence.person, StatePerson).limited_pii_repr()}"
                 )
 
         # We only create net-new serving statuses if there isn't a serving status on the serving watermark date
@@ -267,7 +271,9 @@ def _validate_terminating_statuses(
                 snapshot.status = StateSentenceStatus.SERVING
             else:
                 raise ValueError(
-                    f"Found [{snapshot.status.value}] status that is not the final status. {snapshot.limited_pii_repr()}"
+                    f"Found [{snapshot.status.value}] status that is not the final "
+                    f"status. Snapshot: {snapshot.limited_pii_repr()}. "
+                    f"Person: {assert_type(snapshot.person, StatePerson).limited_pii_repr()}"
                 )
     return initial_snapshots + [final_snapshot]
 
