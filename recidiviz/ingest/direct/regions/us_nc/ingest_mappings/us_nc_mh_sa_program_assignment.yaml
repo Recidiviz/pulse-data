@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_mh_sa_program_assignment` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OPUS: STRING
+  STEP: STRING
+  STARTDATE: DATE
+  ENDDATE: DATE
+  STATUS: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OPUS
+          id_type: $literal("US_NC_OPUS")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - OPUS
+                - STEP
+                - STARTDATE
+          program_id: STEP
+          participation_status:
+            $enum_mapping:
+              $raw_text: STATUS
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL: ACHIEVED
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER: REVISED
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS: ONGOING
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL: DISCONTINUED
+                StateProgramAssignmentParticipationStatus.DECEASED: DECEASED
+          start_date: STARTDATE
+          discharge_date: ENDDATE
