@@ -844,23 +844,25 @@ def get_auth_endpoint_blueprint(
                 else:
                     facilities_users = []
 
-                # If a user has a leadership role, delete them from Roster but don't
-                # block them. They are still an active user but should not be in Roster
-                # anymore because they are not staff/being ingested through
-                # roster sync
-                leadership_roles = [
+                # If a user has a leadership, manager, or non_primary role, delete them from Roster
+                # but don't block them. They are still an active user but should not be in Roster
+                # anymore because they are not staff/being ingested through roster sync.
+                # These roles are a subset of PREDEFINED_ROLES
+                not_line_staff_roles = [
                     "facilities_leadership",
                     "supervision_leadership",
                     "supervision_regional_leadership",
                     "state_leadership",
+                    "facilities_manager",
+                    "facilities_non_primary_staff",
                 ]
-                leadership_users = (
+                not_line_staff_users = (
                     session.execute(
                         select(UserOverride.email_address).where(
                             UserOverride.email_address.in_(
                                 [user.email_address for user in roster_users_to_delete]
                             ),
-                            UserOverride.roles.overlap(leadership_roles),
+                            UserOverride.roles.overlap(not_line_staff_roles),
                         )
                     )
                     .scalars()
@@ -871,7 +873,8 @@ def get_auth_endpoint_blueprint(
                     {
                         **convert_user_object_to_dict(user),
                         "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1)
-                        if user.email_address not in leadership_users + facilities_users
+                        if user.email_address
+                        not in not_line_staff_users + facilities_users
                         else None,
                     }
                     for user in roster_users_to_delete

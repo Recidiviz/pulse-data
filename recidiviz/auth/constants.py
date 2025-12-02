@@ -20,6 +20,7 @@ PREDEFINED_ROLES = [
     "facilities_leadership",
     "facilities_line_staff",
     "facilities_non_primary_staff",
+    "facilities_manager",
     "legislative_staff",
     "psi_staff",
     "state_data_team",
