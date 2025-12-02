@@ -24,17 +24,29 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison_exclude_safekeeping,
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_upgrade
+from recidiviz.task_eligibility.criteria.general import (
+    custody_level_lower_than_recommended,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     custody_level_lower_than_recommended_2026_policy,
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
     latest_caf_assessment_not_override,
 )
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+custody_level_not_lower_than_recommended_previous_policy_view_builder = (
+    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
+        sub_criteria=custody_level_lower_than_recommended.VIEW_BUILDER
+    )
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
@@ -46,6 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ineligible_for_annual_reclassification.VIEW_BUILDER,
         ineligible_for_initial_classification.VIEW_BUILDER,
         custody_level_lower_than_recommended_2026_policy.VIEW_BUILDER,
+        custody_level_not_lower_than_recommended_previous_policy_view_builder,
         # TODO(#50730): Add additional criteria to filter to upgrades occurring due to the updated classification policy
     ],
     completion_event_builder=custody_level_upgrade.VIEW_BUILDER,

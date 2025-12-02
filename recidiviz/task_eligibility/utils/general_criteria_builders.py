@@ -581,13 +581,29 @@ def custody_or_supervision_level_criteria_builder(
 
 def custody_level_compared_to_recommended(
     criteria: str,
+    score_type_by_state: Optional[dict] = None,
 ) -> str:
     """
     Args:
         criteria (str): The criteria for comparing current custody level to recommended level
+        score_type_by_state (dict, optional): Dictionary mapping state_code to score_type for filtering
+            recommended_custody_level_spans. If state is not provided, defaults to "DEFAULT" for that
+            state. Example: {"US_TN": "RECLASSIFICATION_2026_POLICY"}
     Returns:
         f-string: Spans of time where a given criteria comparing current and recommended custody level is met
     """
+
+    # Build WHERE clause for score type filtering if provided
+    if score_type_by_state:
+        score_type_conditions = []
+        for state_code, score_type in score_type_by_state.items():
+            score_type_conditions.append(
+                f"(state_code = '{state_code}' AND score_type = '{score_type}')"
+            )
+        score_type_filter = f"WHERE ({' OR '.join(score_type_conditions)}) OR (state_code NOT IN ({list_to_query_string(list(score_type_by_state.keys()), quoted=True)}) AND score_type = 'DEFAULT')"
+    else:
+        # Default to "DEFAULT" score type for all states
+        score_type_filter = "WHERE score_type = 'DEFAULT'"
 
     return f"""
     WITH critical_dates AS (
@@ -610,6 +626,7 @@ def custody_level_compared_to_recommended(
         CAST(NULL AS STRING) AS custody_level,
         recommended_custody_level,
       FROM `{{project_id}}.{{analyst_dataset}}.recommended_custody_level_spans_materialized`
+      {score_type_filter}
 
     ),
     {create_sub_sessions_with_attributes(table_name='critical_dates',end_date_field_name="end_date_exclusive")}
