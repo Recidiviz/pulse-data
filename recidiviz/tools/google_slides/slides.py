@@ -39,6 +39,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import googleapiclient
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 
 from recidiviz.utils.google_drive import get_credentials
 
@@ -495,9 +496,7 @@ https://drive.google.com/drive/folders/{parent_directory_id}
         }
 
         # set local file-specific metadata
-        media_metadata = googleapiclient.http.MediaFileUpload(
-            figure_file_path, mimetype="image/png"
-        )
+        media_metadata = MediaFileUpload(figure_file_path, mimetype="image/png")
 
         # upload figure
         response = (

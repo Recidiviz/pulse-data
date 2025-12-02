@@ -137,7 +137,7 @@ class TestGoogleSlidesManager(unittest.TestCase):
             )
 
     # mock googleapiclient to avoid looking for FAKE_IMAGE_PATH
-    @patch("recidiviz.tools.google_slides.slides.googleapiclient")
+    @patch("recidiviz.tools.google_slides.slides.MediaFileUpload")
     def test_upload_figure(self, mock_api_client: Mock) -> None:
         # init manager
         manager = GoogleSlidesManager("", FAKE_SLIDES_ID)
@@ -158,9 +158,7 @@ class TestGoogleSlidesManager(unittest.TestCase):
             "name": FAKE_FILE_NAME,
             "parents": [FAKE_DIRECTORY_ID],
         }
-        media_metadata = mock_api_client.http.MediaFileUpload(
-            FAKE_FILE_PATH, mimetype="image/png"
-        )
+        media_metadata = mock_api_client(FAKE_FILE_PATH, mimetype="image/png")
 
         # Asserts
         # check that _drive_service.files().create() called correctly
