@@ -149,6 +149,7 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
         return {
             "lastUpdated": "2022-08-03",
             "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
+            "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}, {"value": "TRANS_FEMALE", "label": "Trans Female"}]',
         }
 
     def test_demo(self) -> None:
@@ -172,7 +173,7 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
 
 
 class TestLibertyToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):
-    """Test for PrisonPopulationOverTimeCount metric."""
+    """Test for LibertyToPrisonPopulationOverTimeCount metric."""
 
     @property
     def test(self) -> TestCase:

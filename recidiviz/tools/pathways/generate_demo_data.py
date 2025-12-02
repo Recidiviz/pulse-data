@@ -63,6 +63,7 @@ dimension_possible_values: Dict[str, Sequence] = {
     ],
     "facility": ["FACILITY_1", "FACILITY_2", "FACILITY_3", "FACILITY_4", "FACILITY_5"],
     "gender": ["MALE", "FEMALE"],
+    "sex": ["MALE", "FEMALE", "OTHER"],
     "judicial_district": [
         "JUDICIAL_DISTRICT_1",
         "JUDICIAL_DISTRICT_2",

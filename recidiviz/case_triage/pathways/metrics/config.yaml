@@ -54,6 +54,7 @@ PrisonPopulationOverTime:
     age_group: FILTER
     facility: FILTER
     gender: FILTER
+    sex: FILTER
     race: FILTER
     time_period: FILTER
 
@@ -67,6 +68,7 @@ PrisonPopulationByDimensionCount:
     age_group: ALL
     facility: ALL
     gender: ALL
+    sex: ALL
     length_of_stay: ALL
     race: ALL
 

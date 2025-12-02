@@ -200,6 +200,7 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     object_metadata = gcsfs.get_metadata(csv_path) or {}
     last_updated = object_metadata.get("last_updated", None)
     facility_id_name_map = object_metadata.get("facility_id_name_map", None)
+    gender_id_name_map = object_metadata.get("gender_id_name_map", None)
 
     # Updating/merging the metadata fields separately allows us to maintain any
     # previously set fields that are not included in the current import
@@ -220,6 +221,16 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
                 MetricMetadata(
                     metric=db_entity.__name__,
                     facility_id_name_map=facility_id_name_map,
+                )
+            )
+
+    if gender_id_name_map:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            # Replace any existing entries with this state code + metric with the new one
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity.__name__,
+                    gender_id_name_map=gender_id_name_map,
                 )
             )
 

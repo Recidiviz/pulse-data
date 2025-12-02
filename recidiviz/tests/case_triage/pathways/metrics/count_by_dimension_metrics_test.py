@@ -524,9 +524,14 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
             Dimension.FACILITY: [
                 {"facility": "F1", "count": 4},
             ],
+            Dimension.SEX: [
+                {"sex": "FEMALE", "count": 1},
+                {"sex": "MALE", "count": 3},
+            ],
             Dimension.GENDER: [
-                {"gender": "FEMALE", "count": 2},
                 {"gender": "MALE", "count": 2},
+                {"gender": "NON_BINARY", "count": 1},
+                {"gender": "TRANS_FEMALE", "count": 1},
             ],
             Dimension.ADMISSION_REASON: [
                 {"admissionReason": "NEW_ADMISSION", "count": 1},
@@ -545,4 +550,5 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
         return {
             "lastUpdated": "2022-08-02",
             "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
+            "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}, {"value": "TRANS_FEMALE", "label": "Trans Female"}]',
         }

@@ -545,6 +545,7 @@ class TestPathwaysMigrations(MigrationsTestBase):
             "prison_population_by_dimension_age_group",
             "prison_population_by_dimension_facility",
             "prison_population_by_dimension_gender",
+            "prison_population_by_dimension_sex",
             "prison_population_by_dimension_pk",
             "prison_population_by_dimension_pkey",
             "prison_population_by_dimension_race",

@@ -89,6 +89,7 @@ class MetricMetadata(PathwaysBase):
     metric = Column(String, primary_key=True, nullable=False)
     last_updated = Column(Date, nullable=False)
     facility_id_name_map = Column(JSONB, nullable=True)
+    gender_id_name_map = Column(JSONB, nullable=True)
 
     def to_json(self) -> Dict[str, Any]:
         json_dict = {}
@@ -98,6 +99,8 @@ class MetricMetadata(PathwaysBase):
             json_dict["lastUpdated"] = self.last_updated.isoformat()
         if self.facility_id_name_map:
             json_dict["facilityIdNameMap"] = self.facility_id_name_map
+        if self.gender_id_name_map:
+            json_dict["genderIdNameMap"] = self.gender_id_name_map
         return json_dict
 
 
@@ -147,6 +150,7 @@ class PrisonPopulationOverTime(PathwaysBase):
             "age_group",
             "facility",
             "gender",
+            "sex",
             "admission_reason",
             "race",
             unique=True,
@@ -158,6 +162,7 @@ class PrisonPopulationOverTime(PathwaysBase):
                 "person_id",
                 "age_group",
                 "gender",
+                "sex",
                 "facility",
                 "admission_reason",
                 "race",
@@ -184,6 +189,8 @@ class PrisonPopulationOverTime(PathwaysBase):
     facility = Column(String, primary_key=True, nullable=True)
     # Gender of the person
     gender = Column(String, primary_key=True, nullable=True)
+    # Sex of the person
+    sex = Column(String, primary_key=True, nullable=True)
     # Admission reason
     admission_reason = Column(String, primary_key=True, nullable=True)
     # Race of the person
@@ -203,6 +210,7 @@ class PrisonPopulationByDimension(PathwaysBase):
             "prison_population_by_dimension_pk",
             "person_id",
             "gender",
+            "sex",
             "admission_reason",
             "facility",
             "age_group",
@@ -211,7 +219,14 @@ class PrisonPopulationByDimension(PathwaysBase):
         ),
         *build_covered_indexes(
             index_base_name="prison_population_by_dimension",
-            dimensions=["age_group", "facility", "gender", "admission_reason", "race"],
+            dimensions=[
+                "age_group",
+                "facility",
+                "gender",
+                "sex",
+                "admission_reason",
+                "race",
+            ],
             includes=["person_id"],
         ),
     )
@@ -226,6 +241,8 @@ class PrisonPopulationByDimension(PathwaysBase):
     facility = Column(String, primary_key=True, nullable=False)
     # Gender of the person
     gender = Column(String, primary_key=True, nullable=False)
+    # Sex of the person
+    sex = Column(String, primary_key=True, nullable=False)
     # Admission reason
     admission_reason = Column(String, primary_key=True, nullable=False)
     # Race of the person
