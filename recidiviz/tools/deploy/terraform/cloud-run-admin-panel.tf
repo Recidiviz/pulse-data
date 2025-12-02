@@ -174,6 +174,11 @@ data "google_service_account" "dashboard_metrics" {
   account_id = "dashboard-metrics-${var.project_id == "recidiviz-123" ? "production" : "staging"}"
 }
 
+# Service account used by jii cloud function
+data "google_service_account" "jii_functions" {
+  account_id = "jii-functions-${var.project_id == "recidiviz-123" ? "production" : "staging"}"
+}
+
 resource "google_cloud_run_service_iam_member" "admin-panel-auth0-actions" {
   location = google_cloud_run_service.admin_panel.location
   project  = google_cloud_run_service.admin_panel.project
@@ -188,4 +193,12 @@ resource "google_cloud_run_service_iam_member" "admin-panel-dashboard-metrics" {
   service  = google_cloud_run_service.admin_panel.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${data.google_service_account.dashboard_metrics.email}"
+}
+
+resource "google_cloud_run_service_iam_member" "admin-panel-jii-functions" {
+  location = google_cloud_run_service.admin_panel.location
+  project  = google_cloud_run_service.admin_panel.project
+  service  = google_cloud_run_service.admin_panel.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${data.google_service_account.jii_functions.email}"
 }

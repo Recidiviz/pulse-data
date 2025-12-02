@@ -171,6 +171,8 @@ def convert_to_dict_single_result(row: Row) -> Dict[str, Any]:
     row_dict = dict(row)
     row_dict["routes"] = merge_permissions(row_dict["routes"])
     row_dict["feature_variants"] = merge_permissions(row_dict["feature_variants"])
+    row_dict["allowed_apps"] = merge_permissions(row_dict["allowed_apps"])
+    row_dict["jii_permissions"] = merge_permissions(row_dict["jii_permissions"])
     return row_dict
 
 

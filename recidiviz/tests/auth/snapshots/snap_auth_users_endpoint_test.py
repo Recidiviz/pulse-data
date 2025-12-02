@@ -13,6 +13,7 @@ snapshots = Snapshot()
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -21,6 +22,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "externalId": "ABC",
         "featureVariants": {},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -29,6 +31,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "userHash": "yRfBcQIOiTFhlzX/Erh5NLDygGJxoGUlTm7iVPyC5CY=",
     },
     {
+        "allowedApps": {"app1": True, "app2": False},
         "allowedSupervisionLocationIds": "1, 2",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
         "blockedOn": None,
@@ -37,6 +40,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "externalId": None,
         "featureVariants": {"D": {}},
         "firstName": None,
+        "jiiPermissions": {"perm1": True, "perm2": False},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -50,6 +54,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user_multiple_roles"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -58,6 +63,7 @@ snapshots[
         "externalId": "ABC",
         "featureVariants": {},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -66,6 +72,7 @@ snapshots[
         "userHash": "yRfBcQIOiTFhlzX/Erh5NLDygGJxoGUlTm7iVPyC5CY=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "1, 2",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
         "blockedOn": None,
@@ -74,6 +81,7 @@ snapshots[
         "externalId": None,
         "featureVariants": {"feature1": {}},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership", "supervision_line_staff"],
@@ -102,6 +110,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_delete_feature_variant_from_permissions_overrides"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": None,
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -110,6 +119,7 @@ snapshots[
         "externalId": None,
         "featureVariants": {"A": True, "D": True},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -118,6 +128,7 @@ snapshots[
         "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": None,
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -126,6 +137,7 @@ snapshots[
         "externalId": None,
         "featureVariants": {"A": True, "B": True, "F": True},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_line_staff"],
@@ -136,6 +148,7 @@ snapshots[
 ]
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] = {
+    "allowedApps": {},
     "allowedSupervisionLocationIds": "",
     "allowedSupervisionLocationLevel": "",
     "blockedOn": None,
@@ -144,6 +157,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] =
     "externalId": "ABC",
     "featureVariants": {"D": {}},
     "firstName": None,
+    "jiiPermissions": {},
     "lastName": None,
     "pseudonymizedId": "pseudo-ABC",
     "roles": ["supervision_leadership"],
@@ -156,6 +170,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_no_permissions"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -164,6 +179,7 @@ snapshots[
         "externalId": "12345",
         "featureVariants": {},
         "firstName": "Test A.",
+        "jiiPermissions": {},
         "lastName": "User",
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -177,6 +193,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_some_overrides"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": "2025-01-09T14:00:00+00:00",
@@ -185,6 +202,7 @@ snapshots[
         "externalId": "user_1_override.external_id",
         "featureVariants": {"C": {}, "new variant": False},
         "firstName": "Fake",
+        "jiiPermissions": {},
         "lastName": "User",
         "pseudonymizedId": "hashed-user_1_override",
         "roles": ["user_1_override.role"],
@@ -193,6 +211,7 @@ snapshots[
         "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -201,6 +220,7 @@ snapshots[
         "externalId": "abc",
         "featureVariants": {},
         "firstName": "John",
+        "jiiPermissions": {},
         "lastName": "Doe",
         "pseudonymizedId": "pseudo-abc",
         "roles": ["supervision_line_staff"],
@@ -214,6 +234,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_empty_overrides"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "4, 10A",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
         "blockedOn": None,
@@ -222,6 +243,7 @@ snapshots[
         "externalId": "12345",
         "featureVariants": {},
         "firstName": "Test A.",
+        "jiiPermissions": {},
         "lastName": "User",
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -235,6 +257,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_multiple_roles_no_conflicts"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -243,6 +266,7 @@ snapshots[
         "externalId": None,
         "featureVariants": {"feature1": {}},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership", "supervision_line_staff"],
@@ -256,6 +280,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_multiple_roles_with_conflicts"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -268,6 +293,7 @@ snapshots[
             "feature3": {"activeDate": "2024-04-30T14:45:09.865Z"},
         },
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership", "supervision_line_staff"],
@@ -281,6 +307,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_null_values"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": "2025-01-09T14:00:00+00:00",
@@ -289,6 +316,7 @@ snapshots[
         "externalId": "A1B2",
         "featureVariants": {"C": {}},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -301,6 +329,7 @@ snapshots[
 snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_add_role"
 ] = {
+    "allowedApps": {},
     "allowedSupervisionLocationIds": "",
     "allowedSupervisionLocationLevel": "",
     "blockedOn": None,
@@ -309,6 +338,7 @@ snapshots[
     "externalId": None,
     "featureVariants": {"feature1": {}, "feature2": {}},
     "firstName": None,
+    "jiiPermissions": {},
     "lastName": None,
     "pseudonymizedId": None,
     "roles": ["supervision_line_staff", "supervision_leadership"],
@@ -321,6 +351,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_in_roster"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -329,6 +360,7 @@ snapshots[
         "externalId": "123",
         "featureVariants": {},
         "firstName": "Test",
+        "jiiPermissions": {},
         "lastName": "User",
         "pseudonymizedId": "pseudo-123",
         "roles": ["supervision_leadership"],
@@ -342,6 +374,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_in_user_override"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -350,6 +383,7 @@ snapshots[
         "externalId": "UPDATED ID",
         "featureVariants": {},
         "firstName": "Updated",
+        "jiiPermissions": {},
         "lastName": "Name",
         "pseudonymizedId": "pseudo-UPDATED ID",
         "roles": ["supervision_leadership"],
@@ -362,6 +396,7 @@ snapshots[
 snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_missing_state_code"
 ] = {
+    "allowedApps": {},
     "allowedSupervisionLocationIds": "",
     "allowedSupervisionLocationLevel": "",
     "blockedOn": None,
@@ -370,6 +405,7 @@ snapshots[
     "externalId": "UPDATED ID",
     "featureVariants": {},
     "firstName": "Updated",
+    "jiiPermissions": {},
     "lastName": "Name",
     "pseudonymizedId": "pseudo-UPDATED ID",
     "roles": ["supervision_leadership"],
@@ -380,6 +416,7 @@ snapshots[
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users"] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -388,6 +425,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
         "externalId": "123",
         "featureVariants": {},
         "firstName": "Test",
+        "jiiPermissions": {},
         "lastName": "User",
         "pseudonymizedId": "pseudo-123",
         "roles": ["supervision_line_staff"],
@@ -396,6 +434,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
         "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -404,6 +443,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
         "externalId": "456",
         "featureVariants": {},
         "firstName": "Original",
+        "jiiPermissions": {},
         "lastName": "Name",
         "pseudonymizedId": None,
         "roles": ["supervision_line_staff"],
@@ -415,6 +455,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster"] = [
     {
+        "allowedApps": {"app3": True},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -423,6 +464,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "externalId": "2834",
         "featureVariants": {},
         "firstName": "facilities",
+        "jiiPermissions": {"perm3": True},
         "lastName": "user",
         "pseudonymizedId": "pseudo-2834",
         "roles": ["facilities_line_staff"],
@@ -431,6 +473,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "userHash": "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo=",
     },
     {
+        "allowedApps": {"app1": True},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -439,6 +482,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
+        "jiiPermissions": {"perm1": True},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3975",
         "roles": ["supervision_leadership"],
@@ -447,6 +491,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
+        "allowedApps": {"app2": True},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -455,6 +500,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "externalId": "3706",
         "featureVariants": {},
         "firstName": "supervision",
+        "jiiPermissions": {"perm2": True},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3706",
         "roles": ["supervision_line_staff"],
@@ -468,6 +514,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_missing_external_id"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -476,6 +523,7 @@ snapshots[
         "externalId": "1234",
         "featureVariants": {},
         "firstName": "leadership",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -489,6 +537,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_multiple_roles"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -497,6 +546,7 @@ snapshots[
         "externalId": "2834",
         "featureVariants": {},
         "firstName": "facilities",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-2834",
         "roles": ["facilities_line_staff", "supervision_line_staff", "experiment-foo"],
@@ -505,6 +555,7 @@ snapshots[
         "userHash": "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -513,6 +564,7 @@ snapshots[
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3975",
         "roles": ["supervision_leadership", "supervision_line_staff"],
@@ -521,6 +573,7 @@ snapshots[
         "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -529,6 +582,7 @@ snapshots[
         "externalId": "3706",
         "featureVariants": {},
         "firstName": "supervision",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3706",
         "roles": ["supervision_line_staff"],
@@ -542,6 +596,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_then_sync_roster"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -550,6 +605,7 @@ snapshots[
         "externalId": "2834",
         "featureVariants": {},
         "firstName": "facilities",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-2834",
         "roles": ["facilities_line_staff"],
@@ -558,6 +614,7 @@ snapshots[
         "userHash": "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -566,6 +623,7 @@ snapshots[
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3975",
         "roles": ["supervision_leadership"],
@@ -574,6 +632,7 @@ snapshots[
         "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -582,6 +641,7 @@ snapshots[
         "externalId": "3706",
         "featureVariants": {},
         "firstName": "supervision",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3706",
         "roles": ["supervision_line_staff"],
@@ -590,6 +650,7 @@ snapshots[
         "userHash": "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -598,6 +659,7 @@ snapshots[
         "externalId": "98725",
         "featureVariants": {},
         "firstName": "supervision2",
+        "jiiPermissions": {},
         "lastName": "user2",
         "pseudonymizedId": "pseudo-98725",
         "roles": ["supervision_line_staff"],
@@ -611,6 +673,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_update_user"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -619,6 +682,7 @@ snapshots[
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
+        "jiiPermissions": {},
         "lastName": "user",
         "pseudonymizedId": "pseudo-3975",
         "roles": ["supervision_leadership", "supervision_line_staff"],
@@ -627,6 +691,7 @@ snapshots[
         "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -635,6 +700,7 @@ snapshots[
         "externalId": None,
         "featureVariants": {},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_line_staff"],
@@ -648,6 +714,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_with_malformed_email_address"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -656,6 +723,7 @@ snapshots[
         "externalId": "0000",
         "featureVariants": {},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -669,6 +737,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_with_missing_associated_role"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -677,6 +746,7 @@ snapshots[
         "externalId": "0000",
         "featureVariants": {},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],
@@ -690,6 +760,7 @@ snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_with_missing_email_address"
 ] = [
     {
+        "allowedApps": {},
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blockedOn": None,
@@ -698,6 +769,7 @@ snapshots[
         "externalId": "0000",
         "featureVariants": {},
         "firstName": None,
+        "jiiPermissions": {},
         "lastName": None,
         "pseudonymizedId": None,
         "roles": ["supervision_leadership"],

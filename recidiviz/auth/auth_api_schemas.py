@@ -96,6 +96,8 @@ class UserRequestSchema(UserSchema, ReasonSchema):
 class PermissionsSchema(CamelCaseSchema):
     routes = fields.Dict(keys=fields.Str(), values=fields.Bool())
     feature_variants = fields.Dict(keys=fields.Str(), values=fields.Raw())
+    allowed_apps = fields.Dict(keys=fields.Str(), values=fields.Bool())
+    jii_permissions = fields.Dict(keys=fields.Str(), values=fields.Bool())
 
 
 class PermissionsRequestSchema(PermissionsSchema, ReasonSchema):

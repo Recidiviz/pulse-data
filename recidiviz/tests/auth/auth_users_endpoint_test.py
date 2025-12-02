@@ -515,6 +515,7 @@ class AuthUsersEndpointTestCase(TestCase):
             headers=self.headers,
         )
         expected: Dict[str, Any] = {
+            "allowedApps": {},
             "allowedSupervisionLocationIds": "",
             "allowedSupervisionLocationLevel": "",
             "blockedOn": (datetime.now(tzlocal()) + timedelta(weeks=1))
@@ -528,6 +529,7 @@ class AuthUsersEndpointTestCase(TestCase):
             "roles": [SUPERVISION_STAFF],
             "stateCode": "US_CO",
             "routes": {},
+            "jiiPermissions": {},
             "featureVariants": {},
             "userHash": _PARAMETER_USER_HASH,
             "pseudonymizedId": None,
@@ -729,6 +731,7 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             expected_response: List[Dict[str, Any]] = [
                 {
+                    "allowedApps": {},
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
@@ -740,6 +743,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "roles": [LEADERSHIP_ROLE],
                     "routes": {},
                     "featureVariants": {},
+                    "jiiPermissions": {},
                     "stateCode": "US_ID",
                     "userHash": _PARAMETER_USER_HASH,
                     "pseudonymizedId": None,
@@ -777,6 +781,7 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             expected_response: List[Dict[str, Any]] = [
                 {
+                    "allowedApps": {},
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blockedOn": BLOCKED_ON_DATE.astimezone(timezone.utc).isoformat(),
@@ -788,6 +793,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "roles": [SUPERVISION_STAFF],
                     "routes": {},
                     "featureVariants": {},
+                    "jiiPermissions": {},
                     "stateCode": "US_TN",
                     "userHash": _PARAMETER_USER_HASH,
                     "pseudonymizedId": None,
@@ -832,6 +838,8 @@ class AuthUsersEndpointTestCase(TestCase):
                     "featureVariants": {
                         "variant1": "true",
                     },
+                    "allowedApps": {"app1": True},
+                    "jiiPermissions": {"permission1": True},
                     "reason": "test",
                 },
             )
@@ -851,6 +859,7 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
             expected_response = [
                 {
+                    "allowedApps": {"app1": True},
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blockedOn": None,
@@ -861,6 +870,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "lastName": None,
                     "roles": [SUPERVISION_STAFF],
                     "stateCode": "US_CO",
+                    "jiiPermissions": {"permission1": True},
                     "routes": {
                         "system_prisonToSupervision": True,
                         "community_practices": False,
@@ -890,6 +900,7 @@ class AuthUsersEndpointTestCase(TestCase):
             role=LEADERSHIP_ROLE,
             routes={"A": True},
             feature_variants={"C": "D"},
+            jii_permissions={"permission1": True},
         )
         add_entity_to_database_session(self.database_key, [added_user, default_tn])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -899,6 +910,8 @@ class AuthUsersEndpointTestCase(TestCase):
                 json={
                     "routes": {"C": False},
                     "reason": "test",
+                    "allowedApps": {"app1": True},
+                    "jiiPermissions": {"permission2": True},
                 },
             )
             self.assertEqual(
@@ -921,6 +934,7 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             expected_response = [
                 {
+                    "allowedApps": {"app1": True},
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blockedOn": None,
@@ -929,6 +943,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
+                    "jiiPermissions": {"permission1": True, "permission2": True},
                     "roles": [LEADERSHIP_ROLE],
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"C": "D"},
@@ -953,6 +968,8 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@testdomain.com",
             routes={"A": True},
             feature_variants={"C": "D"},
+            allowed_apps={"app1": True},
+            jii_permissions={"permission1": True},
         )
         add_entity_to_database_session(
             self.database_key, [added_user, override_permissions]
@@ -964,6 +981,8 @@ class AuthUsersEndpointTestCase(TestCase):
                 json={
                     "routes": {"E": False},
                     "reason": "test",
+                    "allowedApps": {"app2": True},
+                    "jiiPermissions": {"permission1": False, "permission2": True},
                 },
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -975,6 +994,8 @@ class AuthUsersEndpointTestCase(TestCase):
                 "emailAddress": "parameter@testdomain.com",
                 "routes": {"E": False},
                 "featureVariants": {"C": "D"},
+                "allowedApps": {"app2": True},
+                "jiiPermissions": {"permission1": False, "permission2": True},
             }
             self.assertEqual(expected, json.loads(response.data))
 
@@ -1020,6 +1041,7 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             expected_response = [
                 {
+                    "allowedApps": {},
                     "allowedSupervisionLocationIds": "D1",
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blockedOn": None,
@@ -1031,6 +1053,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "roles": [LEADERSHIP_ROLE],
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"E": "F"},
+                    "jiiPermissions": {},
                     "stateCode": "US_MO",
                     "userHash": _PARAMETER_USER_HASH,
                     "pseudonymizedId": None,
@@ -1079,6 +1102,7 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             expected_response = [
                 {
+                    "allowedApps": {},
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blockedOn": None,
@@ -1089,6 +1113,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "lastName": None,
                     "roles": [LEADERSHIP_ROLE],
                     "routes": {"A": True, "C": False},
+                    "jiiPermissions": {},
                     "featureVariants": {"E": "F", "G": "H"},
                     "stateCode": "US_CO",
                     "userHash": _PARAMETER_USER_HASH,
@@ -1132,6 +1157,8 @@ class AuthUsersEndpointTestCase(TestCase):
             role=LEADERSHIP_ROLE,
             routes={"A": True, "B": False},
             feature_variants={"D": {}},
+            allowed_apps={"app1": True, "app2": False},
+            jii_permissions={"perm1": True, "perm2": False},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -1350,16 +1377,22 @@ class AuthUsersEndpointTestCase(TestCase):
                 state="US_XX",
                 role=LEADERSHIP_ROLE,
                 routes={"A": True},
+                allowed_apps={"app1": True},
+                jii_permissions={"perm1": True},
             )
             supervision_staff_default = generate_fake_default_permissions(
                 state="US_XX",
                 role=SUPERVISION_STAFF,
                 routes={"B": True},
+                allowed_apps={"app2": True},
+                jii_permissions={"perm2": True},
             )
             facilities_staff_default = generate_fake_default_permissions(
                 state="US_XX",
                 role=FACILITIES_STAFF,
                 routes={"C": True},
+                allowed_apps={"app3": True},
+                jii_permissions={"perm3": True},
             )
             add_entity_to_database_session(
                 self.database_key,
