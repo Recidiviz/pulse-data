@@ -36,6 +36,21 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
         dataset_id="observations__officer_span",
         table_id="supervision_officer_eligibility_sessions",
     ): (90 * 10),
+    # TODO(#29291) Need to investigate views to improve performance
+    BigQueryAddress(
+        dataset_id="impact_reports",
+        table_id="usage__justice_involved_state_period_event_aggregated_metrics__months_rolling_last_558_days",
+    ): (60 * 10),
+    # TODO(#29291) Need to investigate views to improve performance
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="justice_involved_workflows_provisioned_user_metrics_officer_assignment_sessions",
+    ): (60 * 10),
+    # TODO(#29291) Need to investigate views to improve performance
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="justice_involved_workflows_provisioned_user_metrics_person_assignment_sessions",
+    ): (60 * 10),
 }
 
 
