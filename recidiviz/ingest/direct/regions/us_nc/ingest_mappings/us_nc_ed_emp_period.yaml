@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_ed_emp_period` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OPUS: STRING
+  start_date: DATE
+  end_date: DATE
+  special_status: STRING
+  employment: STRING
+  ed_pgm: STRING
+  seq: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OPUS
+          id_type: $literal("US_NC_OPUS")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OPUS
+                - seq
+          start_date: start_date
+          end_date: end_date
+          last_verified_date: start_date
+          employer_name: employment
+          employment_status:
+            $conditional:
+              - $if:
+                  $not_null: employment
+                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT)
+              - $else_if:
+                  $not_null: ed_pgm
+                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.STUDENT)
+              - $else_if:
+                  $not_null: special_status
+                $then:
+                  $enum_mapping:
+                    $raw_text: special_status
+                    $mappings:
+                      StateEmploymentPeriodEmploymentStatus.UNEMPLOYED: unemployed
+                      StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE: retired
+                      StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK: disabled
