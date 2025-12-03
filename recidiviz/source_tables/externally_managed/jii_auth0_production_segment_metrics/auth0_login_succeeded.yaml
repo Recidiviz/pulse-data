@@ -63,6 +63,12 @@ schema:
   - name: skip_email_verification
     type: BOOLEAN
     mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: do_not_sync_profile
+    type: BOOLEAN
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
