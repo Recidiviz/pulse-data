@@ -46,7 +46,7 @@ rules:
     match:
       incident.policy_name: "GCS: Metric exports have not been uploaded in 24 hours"
     actions:
-      title_transform: "[{incident.condition.metric.labels.region}] Stale Metric Exports"
+      title_transform: "[{incident.metric.labels.region}] Stale Metric Exports"
 
   - name: "Cloud Run Job Failure"
     match:

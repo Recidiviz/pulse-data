@@ -719,11 +719,9 @@ class TestRuleEngineIntegration(unittest.TestCase):
                         "project_id": "recidiviz-staging",
                     }
                 },
-                "condition": {
-                    "metric": {
-                        "labels": {
-                            "region": "US_CA",
-                        }
+                "metric": {
+                    "labels": {
+                        "region": "US_CA",
                     }
                 },
                 "summary": "No metric exports in 24 hours",
