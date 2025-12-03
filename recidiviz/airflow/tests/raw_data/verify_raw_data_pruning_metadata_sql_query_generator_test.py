@@ -16,6 +16,7 @@
 # =============================================================================
 """Unit tests for VerifyRawDataPruningMetadataSqlQueryGenerator"""
 import datetime
+from typing import Any
 from unittest.mock import create_autospec, patch
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -26,6 +27,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.dags.raw_data.verify_raw_data_pruning_metadata_sql_query_generator import (
+    PruningMetadataQueryBuilder,
     RawDataPruningConfig,
     VerifyRawDataPruningMetadataSqlQueryGenerator,
 )
@@ -113,7 +115,7 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         self,
         file_tag: str,
         automatic_pruning_enabled: bool,
-        primary_keys: str,
+        primary_key: str,
         full_historical_lookback: bool,
     ) -> None:
         self.mock_pg_hook.run(
@@ -122,18 +124,18 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
             (region_code, raw_data_instance, file_tag, updated_at, automatic_pruning_enabled,
              raw_file_primary_keys, raw_files_contain_full_historical_lookback)
             VALUES ('{self.state_code.value}', '{self.raw_data_instance.value}', '{file_tag}', NOW(), {automatic_pruning_enabled},
-                    '{primary_keys}', {full_historical_lookback})
+                    '{primary_key}', {full_historical_lookback})
             """
         )
 
     def _get_pruning_metadata(self, file_tag: str) -> RawDataPruningConfig | None:
-        raw_data_pruning_metadata_rows = self.mock_pg_hook.get_records(
-            f"""
-            SELECT *
-            FROM direct_ingest_raw_data_pruning_metadata
-            WHERE region_code = 'US_XX' AND file_tag = '{file_tag}'
-            """
+        query = PruningMetadataQueryBuilder.build_get_metadata_query(
+            region_code=self.state_code.value,
+            raw_data_instance=self.raw_data_instance.value,
+            file_tags=[file_tag],
         )
+        raw_data_pruning_metadata_rows = self.mock_pg_hook.get_records(query)
+
         metadata_row = (
             one(raw_data_pruning_metadata_rows)
             if raw_data_pruning_metadata_rows
@@ -201,7 +203,7 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         self._insert_pruning_metadata(
             file_tag=pruning_enabled_file_tag,
             automatic_pruning_enabled=True,
-            primary_keys="old_key",
+            primary_key="old_key",
             full_historical_lookback=True,
         )
 
@@ -271,7 +273,7 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         error = RawDataFilesSkippedError.deserialize(errors[0])
         assert error.file_tag == pruning_enabled_file_tag
         assert (
-            rf"Pruning configuration for file_tag [{pruning_enabled_file_tag}] changed but [2] files have already been imported"
+            rf"Pruning configuration for file_tag [{pruning_enabled_file_tag}] not found but [2] files have already been imported"
             in error.skipped_message
         )
         # Metadata should not be created for pruning enabled file
@@ -295,13 +297,13 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         self._insert_pruning_metadata(
             file_tag=pruning_disabled_file_tag,
             automatic_pruning_enabled=True,  # Now disabled in config
-            primary_keys="COL_1",
+            primary_key="COL_1",
             full_historical_lookback=False,
         )
         self._insert_pruning_metadata(
             file_tag=pruning_enabled_file_tag,
             automatic_pruning_enabled=False,  # Now enabled in config
-            primary_keys="",
+            primary_key="",
             full_historical_lookback=True,
         )
 
@@ -389,7 +391,7 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         self._insert_pruning_metadata(
             file_tag=pruning_disabled_file_tag,
             automatic_pruning_enabled=False,
-            primary_keys="",
+            primary_key="",
             full_historical_lookback=True,
         )
         self._insert_bq_file_metadata(file_tag=pruning_disabled_file_tag, num_files=2)
@@ -458,3 +460,201 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
         )
 
         assert actual_metadata_config == expected_metadata_config
+
+    def test_error_on_imported_file_counts_query(self) -> None:
+        """On imported file counts query error:
+        1. Any file tags with no metadata changes or non-meaningful changes should be
+        imported.
+        2. Any files that had meaningful config changes should be skipped with an error.
+        """
+        no_change_file_tag = "singlePrimaryKey"
+        non_meaningful_changes_file_tag = "tagInvalidCharacters"
+        invalid_diff_file_tag = "tagInvalidFileConfigHeaders"
+        valid_diff_file_tag = "multipleColPrimaryKeyHistorical"
+        file_tags = {
+            no_change_file_tag,
+            invalid_diff_file_tag,
+            valid_diff_file_tag,
+            non_meaningful_changes_file_tag,
+        }
+
+        for file_tag in file_tags - {non_meaningful_changes_file_tag}:
+            self._insert_pruning_metadata(
+                file_tag=file_tag,
+                automatic_pruning_enabled=True,
+                primary_key="primary_key",
+                full_historical_lookback=True,
+            )
+        self._insert_pruning_metadata(
+            file_tag=non_meaningful_changes_file_tag,
+            automatic_pruning_enabled=False,
+            primary_key="",
+            full_historical_lookback=False,
+        )
+
+        for file_tag in file_tags - {valid_diff_file_tag}:
+            self._insert_bq_file_metadata(file_tag=file_tag, num_files=2)
+
+        self._insert_bq_file_metadata(file_tag=valid_diff_file_tag, num_files=1)
+
+        bq_metadatum = [
+            self._create_bq_metadata_for_file_being_imported(ft, file_id=i)
+            for i, ft in enumerate(file_tags)
+        ]
+        self.mock_operator.xcom_pull.return_value = [
+            metadata.serialize() for metadata in bq_metadatum
+        ]
+
+        original_run = self.mock_pg_hook.run
+
+        def run_with_error(sql: str, *args: Any, **kwargs: Any) -> Any:
+            if "SELECT file_tag, COUNT(*) as file_count" in sql:
+                raise RuntimeError("File count failed")
+            return original_run(sql, *args, **kwargs)
+
+        with patch.object(self.mock_pg_hook, "run", side_effect=run_with_error):
+            import_ready_metadata = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+        assert len(import_ready_metadata) == 2
+        deserialized_imported_file_tags = {
+            RawBigQueryFileMetadata.deserialize(metadata).file_tag
+            for metadata in import_ready_metadata
+        }
+        assert {
+            no_change_file_tag,
+            non_meaningful_changes_file_tag,
+        } == deserialized_imported_file_tags
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        errors = call_args.kwargs["value"]
+        assert len(errors) == 2
+
+        deserialized_errors = [
+            RawDataFilesSkippedError.deserialize(error) for error in errors
+        ]
+        assert {invalid_diff_file_tag, valid_diff_file_tag} == {
+            error.file_tag for error in deserialized_errors
+        }
+        assert all(
+            "File count failed" in error.skipped_message
+            for error in deserialized_errors
+        )
+
+    def test_error_on_upsert_query(self) -> None:
+        """On upsert query error:
+        1. Any file tags with no metadata changes or non-meaningful changes should be
+        imported.
+        2. Any files that had meaningful config changes should be skipped with an error.
+        3. Any files that had illegal meaningful config changes should include both the illegal config error
+          and the upsert error in their skipped error message.
+        """
+        no_change_file_tag = "singlePrimaryKey"
+        non_meaningful_changes_file_tag = "tagInvalidCharacters"
+        invalid_diff_file_tag = "tagInvalidFileConfigHeaders"
+        valid_diff_file_tag = "multipleColPrimaryKeyHistorical"
+        file_tags = {
+            no_change_file_tag,
+            invalid_diff_file_tag,
+            valid_diff_file_tag,
+            non_meaningful_changes_file_tag,
+        }
+
+        for file_tag in file_tags - {non_meaningful_changes_file_tag}:
+            self._insert_pruning_metadata(
+                file_tag=file_tag,
+                automatic_pruning_enabled=True,
+                primary_key="primary_key",
+                full_historical_lookback=True,
+            )
+        self._insert_pruning_metadata(
+            file_tag=non_meaningful_changes_file_tag,
+            automatic_pruning_enabled=False,
+            primary_key="",
+            full_historical_lookback=False,
+        )
+
+        for file_tag in file_tags - {valid_diff_file_tag}:
+            self._insert_bq_file_metadata(file_tag=file_tag, num_files=2)
+
+        self._insert_bq_file_metadata(file_tag=valid_diff_file_tag, num_files=1)
+
+        bq_metadatum = [
+            self._create_bq_metadata_for_file_being_imported(ft, file_id=i)
+            for i, ft in enumerate(file_tags)
+        ]
+        self.mock_operator.xcom_pull.return_value = [
+            metadata.serialize() for metadata in bq_metadatum
+        ]
+
+        original_run = self.mock_pg_hook.run
+
+        def run_with_error(sql: str, *args: Any, **kwargs: Any) -> Any:
+            if "INSERT INTO direct_ingest_raw_data_pruning_metadata" in sql:
+                raise RuntimeError("Upsert failed")
+            return original_run(sql, *args, **kwargs)
+
+        with patch.object(self.mock_pg_hook, "run", side_effect=run_with_error):
+            import_ready_metadata = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+        assert len(import_ready_metadata) == 2
+        deserialized_imported_file_tags = {
+            RawBigQueryFileMetadata.deserialize(metadata).file_tag
+            for metadata in import_ready_metadata
+        }
+        assert {
+            no_change_file_tag,
+            non_meaningful_changes_file_tag,
+        } == deserialized_imported_file_tags
+
+        call_args = self.mock_operator.xcom_push.call_args
+        assert call_args.kwargs["key"] == "skipped_file_errors"
+        errors = call_args.kwargs["value"]
+        assert len(errors) == 2
+
+        deserialized_errors = [
+            RawDataFilesSkippedError.deserialize(error) for error in errors
+        ]
+        assert {invalid_diff_file_tag, valid_diff_file_tag} == {
+            error.file_tag for error in deserialized_errors
+        }
+        assert all(
+            "Upsert failed" in error.skipped_message for error in deserialized_errors
+        )
+        assert any(
+            rf"Pruning configuration for file_tag [{invalid_diff_file_tag}] changed but [2] files have already been imported"
+            in error.skipped_message
+            for error in deserialized_errors
+        )
+        assert all(
+            rf"Pruning configuration for file_tag [{valid_diff_file_tag}] changed"
+            not in error.skipped_message
+            for error in deserialized_errors
+        )
+
+    def test_crash_on_metadata_gathering_query_failure(self) -> None:
+        file_tag = "singlePrimaryKey"
+
+        self._insert_bq_file_metadata(file_tag=file_tag, num_files=1)
+
+        bq_metadata = self._create_bq_metadata_for_file_being_imported(
+            file_tag=file_tag,
+        )
+        self.mock_operator.xcom_pull.return_value = [bq_metadata.serialize()]
+
+        with patch.object(
+            self.mock_pg_hook,
+            "get_records",
+            side_effect=RuntimeError("Failed to fetch pruning metadata"),
+        ):
+            # Should raise the exception
+            with self.assertRaises(RuntimeError) as context:
+                self.generator.execute_postgres_query(
+                    self.mock_operator, self.mock_pg_hook, self.mock_context
+                )
+
+            assert "Failed to fetch pruning metadata" in str(context.exception)
