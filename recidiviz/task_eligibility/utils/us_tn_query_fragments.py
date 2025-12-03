@@ -36,10 +36,6 @@ DRC_SUPERVISION_LEVELS_RAW_TEXT = ["1D1", "2D2", "3D3"]
 # opportunities.
 PSU_SUPERVISION_LEVELS_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4"]
 
-# These are the raw-text supervision levels for the 2025 version of the Compliant
-# Reporting Policy.
-COMPLIANT_REPORTING_2025_POLICY_SUPERVISION_LEVELS_RAW_TEXT = ["8LC", "8TR"]
-
 # These are the raw-text supervision levels that correspond with Suspension of Direct
 # Supervision (SDS) in TN.
 SDS_SUPERVISION_LEVELS_RAW_TEXT = [

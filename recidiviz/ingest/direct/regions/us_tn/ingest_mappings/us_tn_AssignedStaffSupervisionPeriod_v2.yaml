@@ -146,7 +146,6 @@ output:
                   - 4TR # STANDARD - TELEPHONE RPT
                   - 8TR # New IOT value
                   - IOT # INTERACTIVE OFFENDER TRAC
-                  - 8LC # LOW COMPLIANT
 
                 StateSupervisionLevel.MINIMUM:
                   - 4MI # STANDARD - MINIMUM
@@ -238,6 +237,7 @@ output:
                   - XPR # INTAKE SEX OFFNDR PROB.
                   - 7IN # INTAKE REGULAR
                   - 7SN # INTAKE SEX OFFENDER
+                  - 8LC # LOW COMPLIANT
 
                 # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                 StateSupervisionLevel.UNSUPERVISED:
