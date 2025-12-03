@@ -30,6 +30,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     ],
     "frontend_almost_eligible_copy_cta_viewed": [
         ProductType.CLIENT_PAGE,
+        ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
         ProductType.WORKFLOWS,
     ],
     "frontend_case_note_search": [ProductType.CASE_NOTE_SEARCH],
@@ -42,6 +43,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     ],
     "frontend_direct_download_form_downloaded": [ProductType.WORKFLOWS],
     "frontend_methodology_link_clicked": [
+        ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE,
         ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE,
         ProductType.TASKS,
@@ -64,6 +66,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_opportunity_marked_submitted": [
         ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+        ProductType.TASKS,
         ProductType.WORKFLOWS,
     ],
     "frontend_opportunity_previewed": [
@@ -76,11 +79,13 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_opportunity_snoozed": [
         ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+        ProductType.TASKS,
         ProductType.WORKFLOWS,
     ],
     "frontend_opportunity_status_updated": [
         ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+        ProductType.TASKS,
         ProductType.WORKFLOWS,
     ],
     "frontend_opportunity_tab_clicked": [
@@ -152,6 +157,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
         ProductType.WORKFLOWS,
     ],
     "frontend_referral_form_downloaded": [
+        ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
         ProductType.WORKFLOWS,
     ],

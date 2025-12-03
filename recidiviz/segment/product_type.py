@@ -43,6 +43,7 @@ class ProductType(Enum):
 
     CASE_NOTE_SEARCH = "CASE_NOTE_SEARCH"
     CLIENT_PAGE = "CLIENT_PAGE"
+    LANTERN = "LANTERN"
     MILESTONES = "MILESTONES"
     PATHWAYS = "PATHWAYS"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
@@ -52,8 +53,8 @@ class ProductType(Enum):
     )
     SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE = "SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE"
     TASKS = "TASKS"
-    WORKFLOWS = "WORKFLOWS"
     VITALS = "VITALS"
+    WORKFLOWS = "WORKFLOWS"
 
     @property
     def pretty_name(self) -> str:
@@ -73,6 +74,7 @@ class ProductType(Enum):
         returned by `context_page_filter_query_fragment`."""
         if self in [
             ProductType.CLIENT_PAGE,
+            ProductType.LANTERN,
             ProductType.MILESTONES,
             ProductType.PATHWAYS,
             ProductType.PSI_CASE_INSIGHTS,
@@ -107,7 +109,7 @@ class ProductType(Enum):
         if self == ProductType.MILESTONES:
             return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
         if self == ProductType.PATHWAYS:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system')"
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
         if self == ProductType.PSI_CASE_INSIGHTS:
             return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
@@ -125,6 +127,8 @@ class ProductType(Enum):
             )
         if self == ProductType.VITALS:
             return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/operations')"
+        if self == ProductType.LANTERN:
+            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/revocations')"
         raise ValueError(f"Unknown context page filter for product type: {self}")
 
     @property
@@ -166,6 +170,8 @@ class ProductType(Enum):
                 "workflows_facilities",
                 "tasks",
             ]
+        if self == ProductType.LANTERN:
+            return ["lantern"]
         if self == ProductType.MILESTONES:
             return ["workflows", "workflows_supervision"]
         if self == ProductType.PATHWAYS:

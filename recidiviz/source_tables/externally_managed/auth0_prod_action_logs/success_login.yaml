@@ -150,6 +150,9 @@ schema:
   - name: routes_workflows_supervision
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_lantern
+    type: BOOLEAN
+    mode: NULLABLE
   - name: routes_tasks
     type: BOOLEAN
     mode: NULLABLE
