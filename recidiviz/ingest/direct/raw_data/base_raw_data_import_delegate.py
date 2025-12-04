@@ -25,6 +25,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 )
 
 
+# TODO(#53517) Delete base and state-specific delegates
 class BaseRawDataImportDelegate:
     """Base delegate class for handling state-specific raw data download logic"""
 
