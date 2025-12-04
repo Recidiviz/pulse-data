@@ -46,7 +46,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
 )
 from recidiviz.airflow.tests.fixtures import raw_data as raw_data_fixtures
 from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
-    FakeRawDataImportChunkedFileHandlerFactory,
+    FakeStateRawFileChunkingMetadataFactory,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
@@ -439,12 +439,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
 
         # This must be patched prior to the import of the raw_data_import_dag in `gcs_operator_patcher`
-        # as `DirectIngestListNormalizedUnprocessedFilesOperator` imports and holds a reference to the handler
-        self.chunked_file_handler_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportChunkedFileHandlerFactory",
-            FakeRawDataImportChunkedFileHandlerFactory,
+        # as `DirectIngestListNormalizedUnprocessedFilesOperator` imports and holds a reference to the metadata provider
+        self.chunking_metadata_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.StateRawFileChunkingMetadataFactory",
+            FakeStateRawFileChunkingMetadataFactory,
         )
-        self.chunked_file_handler_patcher.start()
+        self.chunking_metadata_patcher.start()
 
         self.gcs_operator_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
@@ -482,7 +482,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         self.cloud_sql_db_hook_patcher.stop()
         self.gcs_operator_patcher.stop()
         self.region_module_patch.stop()
-        self.chunked_file_handler_patcher.stop()
+        self.chunking_metadata_patcher.stop()
         self.gcsfs_patcher.stop()
         self.region_module_patch.stop()
         self.header_reader_patcher.stop()
@@ -1054,12 +1054,12 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
 
         # This must be patched prior to file_chunking_args_patcher as `generate_file_chunking_pod_arguments` imports
-        # and holds a reference to the handler
-        self.chunked_file_handler_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportChunkedFileHandlerFactory",
-            FakeRawDataImportChunkedFileHandlerFactory,
+        # and holds a reference to the metadata provider
+        self.chunking_metadata_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.StateRawFileChunkingMetadataFactory",
+            FakeStateRawFileChunkingMetadataFactory,
         )
-        self.chunked_file_handler_patcher.start()
+        self.chunking_metadata_patcher.start()
 
         self.file_chunking_args_patcher = patch(
             "recidiviz.airflow.dags.raw_data_import_dag.generate_file_chunking_pod_arguments.function",
@@ -1095,7 +1095,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.kpo_operator_patcher.stop()
         self.file_chunking_args_patcher.stop()
         self.verify_file_chunks_patcher.stop()
-        self.chunked_file_handler_patcher.stop()
+        self.chunking_metadata_patcher.stop()
         self.fake_gcs_patch.stop()
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
@@ -2587,11 +2587,11 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         for patcher in self.region_module_patch:
             patcher.start()
 
-        self.chunked_file_handler_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportChunkedFileHandlerFactory",
-            FakeRawDataImportChunkedFileHandlerFactory,
+        self.chunking_metadata_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.StateRawFileChunkingMetadataFactory",
+            FakeStateRawFileChunkingMetadataFactory,
         )
-        self.chunked_file_handler_patcher.start()
+        self.chunking_metadata_patcher.start()
 
         # operator mocks ---
 
@@ -2698,7 +2698,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.cloud_sql_db_hook_patcher.stop()
         self.kpo_operator_patcher.stop()
         self.dag_kick_off_patcher.stop()
-        self.chunked_file_handler_patcher.stop()
+        self.chunking_metadata_patcher.stop()
         # task interactions
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()

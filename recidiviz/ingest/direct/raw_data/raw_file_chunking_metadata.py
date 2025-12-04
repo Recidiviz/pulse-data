@@ -60,6 +60,16 @@ class RawFileChunkingMetadata(abc.ABC):
                   encountered during coalescing.
         """
 
+    @property
+    @abc.abstractmethod
+    def expected_file_count(self) -> int | None:
+        """Returns the expected number of files that make up a single, logical file tag
+        for this chunking strategy.
+
+        Returns:
+            The expected number of files, or None if any number of files is acceptable.
+        """
+
 
 @attr.define
 class SequentiallyChunkedFileMetadata(RawFileChunkingMetadata):
@@ -159,6 +169,10 @@ class SequentiallyChunkedFileMetadata(RawFileChunkingMetadata):
         )
         return [RawBigQueryFileMetadata.from_gcs_files(gcs_files=gcs_files)], []
 
+    @property
+    def expected_file_count(self) -> int | None:
+        return self.known_chunk_count
+
 
 @attr.define
 class SingleFileMetadata(RawFileChunkingMetadata):
@@ -200,3 +214,7 @@ class SingleFileMetadata(RawFileChunkingMetadata):
             gcs_files[0].parts.utc_upload_datetime.date(),
         )
         return [RawBigQueryFileMetadata.from_gcs_files(gcs_files=gcs_files)], []
+
+    @property
+    def expected_file_count(self) -> int | None:
+        return 1

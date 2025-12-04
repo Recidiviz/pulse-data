@@ -17,17 +17,15 @@
 """Shared testing utilities for raw data"""
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler import (
-    RawDataImportChunkedFileHandler,
-)
-from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
-    RawDataImportChunkedFileHandlerFactory,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata import (
     SequentiallyChunkedFileMetadata,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import (
     RawFileChunkingMetadataHistory,
+    StateRawFileChunkingMetadata,
+)
+from recidiviz.ingest.direct.raw_data.state_raw_file_chunking_metadata_factory import (
+    StateRawFileChunkingMetadataFactory,
 )
 
 US_XX_CHUNKING_METADATA_BY_FILE_TAG = {
@@ -50,18 +48,17 @@ US_XX_CHUNKING_METADATA_BY_FILE_TAG = {
 }
 
 
-class FakeRawDataImportChunkedFileHandlerFactory(
-    RawDataImportChunkedFileHandlerFactory
-):
-    """Test factory that creates RawDataImportChunkedFileHandler instances for testing."""
+class FakeStateRawFileChunkingMetadataFactory(StateRawFileChunkingMetadataFactory):
+    """Test factory that creates StateRawFileChunkingMetadata instances for testing."""
 
     @classmethod
-    def build(cls, *, region_code: str) -> RawDataImportChunkedFileHandler:
-        region_code = region_code.upper()
-        if region_code == StateCode.US_XX.value:
-            return RawDataImportChunkedFileHandler(
-                chunking_metadata_by_file_tag=US_XX_CHUNKING_METADATA_BY_FILE_TAG
+    def build(cls, *, region_code: str) -> StateRawFileChunkingMetadata:
+        state_code = StateCode(region_code.upper())
+        if state_code == StateCode.US_XX:
+            return StateRawFileChunkingMetadata(
+                state_code=state_code,
+                chunking_metadata_by_file_tag=US_XX_CHUNKING_METADATA_BY_FILE_TAG,
             )
-        if region_code in {StateCode.US_LL.value, StateCode.US_YY.value}:
-            return RawDataImportChunkedFileHandler()
+        if state_code in {StateCode.US_LL, StateCode.US_YY}:
+            return StateRawFileChunkingMetadata(state_code=state_code)
         raise ValueError(f"Unexpected region code provided: {region_code}")

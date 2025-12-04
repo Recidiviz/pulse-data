@@ -19,12 +19,14 @@
 import datetime
 from unittest import TestCase
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata import (
     SequentiallyChunkedFileMetadata,
     SingleFileMetadata,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import (
     RawFileChunkingMetadataHistory,
+    StateRawFileChunkingMetadata,
 )
 
 
@@ -154,3 +156,34 @@ class TestRawFileChunkingMetadataHistory(TestCase):
                     ),
                 ],
             )
+
+
+class StateRawFileChunkingMetadataTest(TestCase):
+    """Unit tests for StateRawFileChunkingMetadata"""
+
+    def test_get_current_expected_file_count_with_metadata(self) -> None:
+        metadata_history = RawFileChunkingMetadataHistory(
+            file_tag="test_file",
+            chunking_metadata_history=[
+                SequentiallyChunkedFileMetadata(known_chunk_count=5),
+            ],
+        )
+        chunking_metadata = StateRawFileChunkingMetadata(
+            state_code=StateCode.US_XX,
+            chunking_metadata_by_file_tag={"test_file": metadata_history},
+        )
+
+        file_count = chunking_metadata.get_current_expected_file_count("test_file")
+
+        self.assertEqual(file_count, 5)
+
+    def test_get_current_expected_file_count_returns_one_for_unknown_file_tag(
+        self,
+    ) -> None:
+        chunking_metadata = StateRawFileChunkingMetadata(
+            state_code=StateCode.US_XX, chunking_metadata_by_file_tag=None
+        )
+
+        file_count = chunking_metadata.get_current_expected_file_count("unknown_file")
+
+        self.assertEqual(file_count, 1)

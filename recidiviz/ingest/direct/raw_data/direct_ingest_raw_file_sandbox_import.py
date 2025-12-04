@@ -49,12 +49,15 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (
     DirectIngestRawFilePreImportNormalizer,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
-    RawDataImportChunkedFileHandlerFactory,
+from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler import (
+    RawDataImportChunkedFileHandler,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.raw_data.state_raw_file_chunking_metadata_factory import (
+    StateRawFileChunkingMetadataFactory,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -385,8 +388,10 @@ def _build_bq_metadata(
     represented in RawGCSFileMetadata objects.
     """
 
-    delegate = RawDataImportChunkedFileHandlerFactory.build(
-        region_code=region_raw_file_config.region_code
+    chunked_file_handler = RawDataImportChunkedFileHandler(
+        state_chunked_file_metadata=StateRawFileChunkingMetadataFactory.build(
+            region_code=region_raw_file_config.region_code
+        )
     )
     conceptual_files: List[RawBigQueryFileMetadata] = []
     skipped_files: List[SandboxConceptualFileImportResult] = []
@@ -445,7 +450,7 @@ def _build_bq_metadata(
                     (
                         conceptual_files_for_file_tag,
                         skipped_errors_for_file_tag,
-                    ) = delegate.coalesce_chunked_files(
+                    ) = chunked_file_handler.coalesce_chunked_files(
                         file_tag=file_tag, gcs_files=gcs_files
                     )
 

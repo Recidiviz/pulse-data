@@ -14,30 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for RawDataImportChunkedFileHandlerFactory"""
+"""Unit tests for StateRawFileChunkingMetadataFactory"""
 from unittest import TestCase
 
-from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
-    RawDataImportChunkedFileHandlerFactory,
+from recidiviz.ingest.direct.raw_data.state_raw_file_chunking_metadata_factory import (
+    StateRawFileChunkingMetadataFactory,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 
 
-class RawDataImportChunkedFileHandlerFactoryTest(TestCase):
-    """Unit tests for RawDataImportChunkedFileHandlerFactory"""
+class StateRawFileChunkingMetadataFactoryTest(TestCase):
+    """Unit tests for StateRawFileChunkingMetadataFactory"""
 
-    def test_all_regions_have_delegate(self) -> None:
+    def test_all_regions_have_provider(self) -> None:
         for state_code in get_existing_direct_ingest_states():
-            _ = RawDataImportChunkedFileHandlerFactory.build(
-                region_code=state_code.value
-            )
+            _ = StateRawFileChunkingMetadataFactory.build(region_code=state_code.value)
 
     def test_unrecognized_region_code_error(self) -> None:
         with self.assertRaisesRegex(
-            ValueError, r"Unexpected region code provided: \[THIS ISNT A REGION CODE\]"
+            ValueError, r"Unexpected region code provided: \[US_YY\]"
         ):
-            _ = RawDataImportChunkedFileHandlerFactory.build(
-                region_code="this isnt a region code"
-            )
+            _ = StateRawFileChunkingMetadataFactory.build(region_code="US_YY")

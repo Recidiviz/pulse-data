@@ -20,6 +20,7 @@ import datetime
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata import (
     RawFileChunkingMetadata,
 )
@@ -93,3 +94,49 @@ class RawFileChunkingMetadataHistory:
             f"No chunking metadata found for file tag [{self.file_tag}] "
             f"and date [{utc_upload_date}]"
         )
+
+    @property
+    def current_expected_file_count(self) -> int | None:
+        """Gets the expected number of files that make up a single, logical file
+        for the current period.
+
+        Returns:
+            The expected file count, or None if the current metadata
+            allows any number of files.
+        """
+        current_metadata = self.chunking_metadata_history[-1]
+        return current_metadata.expected_file_count
+
+
+@attr.define
+class StateRawFileChunkingMetadata:
+    """Encapsulates metadata for any chunked files in a given state.
+
+    Attributes:
+        state_code: The state code for which this metadata applies.
+        chunking_metadata_by_file_tag: Dictionary mapping file tags to their
+            chunking metadata history. If None, no files are chunked.
+    """
+
+    state_code: StateCode
+    chunking_metadata_by_file_tag: dict[
+        str, RawFileChunkingMetadataHistory
+    ] | None = attr.ib(default=None, validator=attr_validators.is_opt_dict)
+
+    def get_current_expected_file_count(self, file_tag: str) -> int | None:
+        """Gets the expected number of files that make up a single, logical file
+        for the current period for a file tag.
+
+        Returns:
+            The expected file count, or None if the current metadata allows any
+            number of files. If no chunking metadata exists for the file tag,
+            defaults to 1 (indicating a single file).
+        """
+        if (
+            self.chunking_metadata_by_file_tag is None
+            or file_tag not in self.chunking_metadata_by_file_tag
+        ):
+            return 1  # Default to single file if no chunking metadata exists for the file tag
+
+        metadata_history = self.chunking_metadata_by_file_tag[file_tag]
+        return metadata_history.current_expected_file_count

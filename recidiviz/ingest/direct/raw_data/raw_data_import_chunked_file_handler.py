@@ -17,9 +17,9 @@
 """Class for handling chunked raw data files"""
 import attr
 
-from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import (
     RawFileChunkingMetadataHistory,
+    StateRawFileChunkingMetadata,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
@@ -31,18 +31,21 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 @attr.define
 class RawDataImportChunkedFileHandler:
     """Coalesces gcs files into conceptual bigquery files based on the provided
-    chunking metadata history.
+    state chunked file metadata.
 
     Attributes:
-        chunking_metadata_by_file_tag: Dictionary mapping file tags to their
-            chunking metadata history. If a file tag is not present, that file
-            type is assumed not to have chunking. May be None for states with
-            no chunked files.
+        state_chunked_file_metadata: Metadata about chunked files for the state.
     """
 
-    chunking_metadata_by_file_tag: dict[
-        str, RawFileChunkingMetadataHistory
-    ] | None = attr.ib(default=None, validator=attr_validators.is_opt_dict)
+    state_chunked_file_metadata: StateRawFileChunkingMetadata = attr.ib(
+        validator=attr.validators.instance_of(StateRawFileChunkingMetadata)
+    )
+
+    @property
+    def chunking_metadata_by_file_tag(
+        self,
+    ) -> dict[str, RawFileChunkingMetadataHistory] | None:
+        return self.state_chunked_file_metadata.chunking_metadata_by_file_tag
 
     def coalesce_chunked_files(
         self, file_tag: str, gcs_files: list[RawGCSFileMetadata]

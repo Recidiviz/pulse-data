@@ -35,11 +35,14 @@ from recidiviz.airflow.dags.raw_data.utils import (
     logger,
     partition_as_list,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
-    RawDataImportChunkedFileHandlerFactory,
+from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler import (
+    RawDataImportChunkedFileHandler,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.raw_data.state_raw_file_chunking_metadata_factory import (
+    StateRawFileChunkingMetadataFactory,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -125,8 +128,10 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             get_all_unprocessed_gcs_file_metadata_task_id
         )
         self._region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None
-        self._delegate = RawDataImportChunkedFileHandlerFactory.build(
-            region_code=region_code
+        self._chunked_file_handler = RawDataImportChunkedFileHandler(
+            state_chunked_file_metadata=StateRawFileChunkingMetadataFactory.build(
+                region_code=region_code
+            )
         )
 
     @property
@@ -349,7 +354,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                     (
                         conceptual_files_for_file_tag,
                         skipped_errors_for_file_tag,
-                    ) = self._delegate.coalesce_chunked_files(
+                    ) = self._chunked_file_handler.coalesce_chunked_files(
                         file_tag=file_tag, gcs_files=gcs_files
                     )
 
