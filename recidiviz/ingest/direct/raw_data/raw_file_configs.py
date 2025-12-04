@@ -20,6 +20,7 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime, timezone
+from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -33,6 +34,8 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.gating import (
     FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE,
+    MANUAL_RAW_DATA_PRUNING_STATES,
+    file_tag_exempt_from_automatic_raw_data_pruning,
 )
 from recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions import (
     is_column_exempt_from_datetime_parsers,
@@ -58,6 +61,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
 )
@@ -74,6 +78,15 @@ DEFAULT_IS_CHUNKED_FILE_VALUE = False
 DEFAULT_FIELD_TYPE = RawTableColumnFieldType.STRING
 
 EXCLUDE_FROM_YAML = "exclude_from_yaml"
+
+
+class RawDataPruningStatus(Enum):
+    """Enum for the pruning status of a raw data file."""
+
+    AUTOMATIC = "AUTOMATIC"
+    # TODO(#51884) Remove once manual pruning is fully deprecated
+    MANUAL = "MANUAL"
+    NOT_PRUNED = "NOT_PRUNED"
 
 
 @attr.s
@@ -857,20 +870,6 @@ class DirectIngestRawFileConfig:
             == RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK
         )
 
-    def is_exempt_from_legacy_manual_raw_data_pruning(self) -> bool:
-        """Returns True if this file is exempt from raw data pruning."""
-
-        if self.file_tag in FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE.get(
-            self.state_code, {}
-        ):
-            return True
-
-        # We currently only conduct manual raw data pruning on raw files that are always historical.
-        if not self.always_historical_export:
-            return True
-
-        return self.no_valid_primary_keys
-
     def eligible_for_automatic_raw_data_pruning(self) -> bool:
         """Returns True if this file is eligible for automatic raw data pruning."""
         return not self.no_valid_primary_keys and bool(self.primary_key_cols)
@@ -923,7 +922,43 @@ class DirectIngestRawFileConfig:
             column_info.import_blocking_column_validation_exemptions, validation_type
         ) or self.file_is_exempt_from_validation(validation_type)
 
-    def for_admin_panel_api(self) -> Dict[str, Any]:
+    def get_pruning_status(
+        self, raw_data_instance: DirectIngestInstance
+    ) -> RawDataPruningStatus:
+        """Returns the pruning status of this raw data file for the given instance."""
+        if (
+            self.eligible_for_automatic_raw_data_pruning()
+            and not file_tag_exempt_from_automatic_raw_data_pruning(
+                self.state_code, raw_data_instance, self.file_tag
+            )
+        ):
+            return RawDataPruningStatus.AUTOMATIC
+
+        # Check for legacy manual pruning eligibility
+        # File is exempt from manual pruning if:
+        # 1. It's explicitly in the exemption list, or
+        # 2. It's not always_historical_export, or
+        # 3. It has no valid primary keys
+        is_exempt_from_manual = (
+            self.file_tag
+            in FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE.get(
+                self.state_code, {}
+            )
+            or not self.always_historical_export
+            or self.no_valid_primary_keys
+        )
+
+        if (
+            not is_exempt_from_manual
+            and self.state_code in MANUAL_RAW_DATA_PRUNING_STATES
+        ):
+            return RawDataPruningStatus.MANUAL
+
+        return RawDataPruningStatus.NOT_PRUNED
+
+    def for_admin_panel_api(
+        self, raw_data_instance: DirectIngestInstance
+    ) -> Dict[str, Any]:
         """Constructs an abridged set of fields to send to the admin panel front end.
         If you are updating this object, please make sure to update constants::RawFileConfigSummary
         as well.
@@ -940,7 +975,7 @@ class DirectIngestRawFileConfig:
             ).title(),
             "isCodeFile": self.is_code_file,
             "isChunkedFile": self.is_chunked_file,
-            "manuallyPruned": not self.is_exempt_from_legacy_manual_raw_data_pruning(),
+            "pruningStatus": self.get_pruning_status(raw_data_instance).value,
             "inferColumns": self.infer_columns_from_config,
         }
 

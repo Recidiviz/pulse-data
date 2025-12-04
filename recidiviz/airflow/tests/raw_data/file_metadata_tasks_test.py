@@ -56,6 +56,10 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawDataPruningStatus,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -507,11 +511,11 @@ class CoalesceResultsAndErrorsTest(TestCase):
     """Tests for coalesce_results_and_errors"""
 
     def setUp(self) -> None:
-        self.pruning_patch = patch(
-            "recidiviz.airflow.dags.raw_data.file_metadata_tasks.automatic_raw_data_pruning_enabled_for_file_config"
+        self.pruning_patch = patch.object(
+            DirectIngestRawFileConfig, "get_pruning_status"
         )
         self.pruning_mock = self.pruning_patch.start()
-        self.pruning_mock.return_value = False
+        self.pruning_mock.return_value = RawDataPruningStatus.NOT_PRUNED
         self.region_module_patch = patch(
             "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
             fake_regions,
@@ -1024,7 +1028,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
     def test_build_file_imports_for_errors_processing_pruning_propagated(
         self,
     ) -> None:
-        self.pruning_mock.return_value = True
+        self.pruning_mock.return_value = RawDataPruningStatus.AUTOMATIC
         bq_metadata = [
             RawBigQueryFileMetadata(
                 file_id=1,

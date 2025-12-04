@@ -150,7 +150,6 @@ class TestVerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUn
     def _get_expected_pruning_config(self, file_tag: str) -> RawDataPruningConfig:
         return RawDataPruningConfig.from_raw_file_config(
             raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
-            state_code=self.state_code,
             raw_data_instance=self.raw_data_instance,
         )
 

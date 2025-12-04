@@ -117,6 +117,13 @@ export type RawDataFileTagImport = {
   deletedRows: number | null;
 };
 
+export enum RawDataPruningStatus {
+  AUTOMATIC = "AUTOMATIC",
+  // TODO(#51884) Remove once manual pruning is fully deprecated
+  MANUAL = "MANUAL",
+  NOT_PRUNED = "NOT_PRUNED",
+}
+
 export type RawFileConfigSummary = {
   fileTag: string;
   fileDescription: string;
@@ -127,7 +134,7 @@ export type RawFileConfigSummary = {
   exportLookbackWindow: string;
   isCodeFile: boolean;
   isChunkedFile: boolean;
-  manuallyPruned: boolean;
+  pruningStatus: RawDataPruningStatus;
   inferColumns: boolean;
 };
 

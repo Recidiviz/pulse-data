@@ -34,12 +34,10 @@ from recidiviz.airflow.dags.raw_data.utils import (
     logger,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
-    automatic_raw_data_pruning_enabled_for_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawDataPruningStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -169,18 +167,16 @@ class RawDataPruningConfig:
     @classmethod
     def from_raw_file_config(
         cls,
-        state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
     ) -> "RawDataPruningConfig":
         """Creates a RawDataPruningConfig from a DirectIngestRawFileConfig."""
         return cls(
             file_tag=raw_file_config.file_tag,
-            automatic_pruning_enabled=automatic_raw_data_pruning_enabled_for_file_config(
-                state_code=state_code,
-                raw_data_instance=raw_data_instance,
-                raw_file_config=raw_file_config,
-            ),
+            automatic_pruning_enabled=raw_file_config.get_pruning_status(
+                raw_data_instance
+            )
+            == RawDataPruningStatus.AUTOMATIC,
             primary_keys=sorted(raw_file_config.primary_key_cols),
             raw_files_contain_full_historical_lookback=raw_file_config.always_historical_export,
         )
@@ -546,7 +542,6 @@ class VerifyRawDataPruningMetadataSqlQueryGenerator(CloudSqlQueryGenerator[list[
             raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
             current_raw_file_pruning_config: RawDataPruningConfig = (
                 RawDataPruningConfig.from_raw_file_config(
-                    state_code=self._state_code,
                     raw_data_instance=self._raw_data_instance,
                     raw_file_config=raw_file_config,
                 )

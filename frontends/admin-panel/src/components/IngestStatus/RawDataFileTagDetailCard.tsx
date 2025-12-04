@@ -54,9 +54,9 @@ const RawDataFileTagDetail = (): JSX.Element => {
 
   const getRawFileConfig = useCallback(async () => {
     setRawFileConfigLoading(true);
-    await fetchRawFileConfig(stateCode, fileTag);
+    await fetchRawFileConfig(stateCode, instance, fileTag);
     setRawFileConfigLoading(false);
-  }, [stateCode, fileTag]);
+  }, [stateCode, instance, fileTag]);
 
   useEffect(() => {
     getImportRuns();
@@ -79,10 +79,12 @@ const RawDataFileTagDetail = (): JSX.Element => {
 
   async function fetchRawFileConfig(
     fetchableStateCode: string,
+    fetchableInstance: string,
     fetchableFileTag: string
   ) {
     const response = await getRawFileConfigSummary(
       fetchableStateCode,
+      fetchableInstance,
       fetchableFileTag
     );
     const result: RawFileConfigSummary | undefined = await response.json();

@@ -27,9 +27,6 @@ import attr
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import raw_data
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
-    automatic_raw_data_pruning_enabled_for_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     ColumnUpdateInfo,
@@ -40,6 +37,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawDataClassification,
     RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
+    RawDataPruningStatus,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -687,7 +685,10 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual([], config.current_datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertTrue(config.is_undocumented)
-        self.assertFalse(config.is_exempt_from_legacy_manual_raw_data_pruning())
+        self.assertEqual(
+            RawDataPruningStatus.NOT_PRUNED,
+            config.get_pruning_status(DirectIngestInstance.PRIMARY),
+        )
 
     def test_column_types(self) -> None:
         """Tests a config with columns of various types / documentation levels."""
@@ -739,7 +740,10 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         )
         self.assertFalse(config.has_enums)
         self.assertFalse(config.is_undocumented)
-        self.assertFalse(config.is_exempt_from_legacy_manual_raw_data_pruning())
+        self.assertEqual(
+            config.get_pruning_status(DirectIngestInstance.PRIMARY),
+            RawDataPruningStatus.AUTOMATIC,
+        )
 
         # Now add an enum column and verify that column-related properties change
         # accordingly.
@@ -810,9 +814,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
     def test_is_exempt_from_raw_data_pruning_no_valid_primary_keys_true(
         self,
     ) -> None:
-        """Because the file is not historical, it should be exempt from raw data
-        pruning.
-        """
+        """Because the file has no valid primary keys, it should be exempt from raw data pruning."""
         config = attr.evolve(
             self.sparse_config,
             columns=[
@@ -829,37 +831,15 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.UNKNOWN_INCREMENTAL_LOOKBACK,
         )
 
-        self.assertTrue(config.is_exempt_from_legacy_manual_raw_data_pruning())
-
-    def test_raw_data_pruning_exempt_for_file_tag_in_state_no_valid_primary_keys_always_historical(
-        self,
-    ) -> None:
-        """Because the file has no valid primary keys and is historical, it should be
-        exempt from raw data pruning."""
-        config = attr.evolve(
-            self.sparse_config,
-            columns=[
-                RawTableColumnInfo(
-                    name="Col1",
-                    state_code=StateCode.US_XX,
-                    file_tag=self.sparse_config.file_tag,
-                    description="description",
-                    is_pii=False,
-                    field_type=RawTableColumnFieldType.STRING,
-                )
-            ],
-            no_valid_primary_keys=True,
-            export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
+        self.assertEqual(
+            config.get_pruning_status(DirectIngestInstance.PRIMARY),
+            RawDataPruningStatus.NOT_PRUNED,
         )
-
-        self.assertTrue(config.is_exempt_from_legacy_manual_raw_data_pruning())
 
     def test_raw_data_pruning_exempt_for_file_tag_in_state_valid_primary_keys_always_historical(
         self,
     ) -> None:
-        """Because the file has valid primary keys and is always historical, it should
-        NOT be exempt from raw data pruning.
-        """
+        """Because the file has empty primary_key_cols, it should be exempt from raw data pruning."""
         config = attr.evolve(
             self.sparse_config,
             columns=[
@@ -876,14 +856,15 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.FULL_HISTORICAL_LOOKBACK,
         )
 
-        self.assertFalse(config.is_exempt_from_legacy_manual_raw_data_pruning())
+        self.assertEqual(
+            config.get_pruning_status(DirectIngestInstance.PRIMARY),
+            RawDataPruningStatus.NOT_PRUNED,
+        )
 
     def test_raw_data_pruning_exempt_for_file_tag_in_state_valid_primary_keys_not_historical(
         self,
     ) -> None:
-        """Because the file has valid primary keys and is not always historical, it
-        should be exempt from raw data pruning.
-        """
+        """Because the file has valid primary keys, it is eligible for automatic pruning."""
         config = attr.evolve(
             self.sparse_config,
             columns=[
@@ -901,7 +882,10 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             export_lookback_window=RawDataExportLookbackWindow.TWO_WEEK_INCREMENTAL_LOOKBACK,
         )
 
-        self.assertTrue(config.is_exempt_from_legacy_manual_raw_data_pruning())
+        self.assertEqual(
+            config.get_pruning_status(DirectIngestInstance.PRIMARY),
+            RawDataPruningStatus.AUTOMATIC,
+        )
 
     def test_exempt_from_automatic_raw_data_pruning(self) -> None:
         """Assert that the config is exempt from automatic raw data pruning."""
@@ -2393,9 +2377,9 @@ def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation
         region_raw_file_config = DirectIngestRegionRawFileConfig(region_code)
         state_code = StateCode(region_code.upper())
         for file_tag, config in region_raw_file_config.raw_file_configs.items():
-            if automatic_raw_data_pruning_enabled_for_file_config(
-                state_code, DirectIngestInstance.PRIMARY, config
-            ) and config.file_is_exempt_from_validation(
+            if config.get_pruning_status(
+                DirectIngestInstance.PRIMARY
+            ) == RawDataPruningStatus.AUTOMATIC and config.file_is_exempt_from_validation(
                 RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
             ):
                 raise ValueError(
@@ -2411,9 +2395,7 @@ def test_automatic_raw_data_pruning_files_do_not_have_supplemental_order_by() ->
         state_code = StateCode(region_code.upper())
         for file_tag, config in region_raw_file_config.raw_file_configs.items():
             pruning_enabled = any(
-                automatic_raw_data_pruning_enabled_for_file_config(
-                    state_code, instance, config
-                )
+                config.get_pruning_status(instance) == RawDataPruningStatus.AUTOMATIC
                 for instance in DirectIngestInstance
             )
             if pruning_enabled and config.supplemental_order_by_clause:

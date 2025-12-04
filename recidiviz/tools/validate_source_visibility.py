@@ -382,7 +382,6 @@ def main() -> int:
         "recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler",
         "recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory",
         "recidiviz.ingest.direct.raw_data.raw_data_pruning_bq_utils",
-        "recidiviz.ingest.direct.raw_data.raw_data_pruning_utils",
         "recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata",
         "recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history",
         "recidiviz.ingest.direct.raw_data.raw_file_config_enums",

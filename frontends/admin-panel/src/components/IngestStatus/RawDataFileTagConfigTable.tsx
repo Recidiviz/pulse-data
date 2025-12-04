@@ -124,8 +124,8 @@ const RawFileConfigTable: React.FC<RawFileConfigTableProps> = ({
               <Descriptions.Item label="Chunked File?">
                 {rawFileConfigSummary.isChunkedFile ? "Yes" : "No"}
               </Descriptions.Item>
-              <Descriptions.Item label="Manually, Loss-ily Pruned?">
-                {rawFileConfigSummary.manuallyPruned ? "Yes" : "No"}
+              <Descriptions.Item label="Pruning Status">
+                {rawFileConfigSummary.pruningStatus}
               </Descriptions.Item>
               <Descriptions.Item label="Has Headers?">
                 {rawFileConfigSummary.inferColumns ? "No" : "Yes"}

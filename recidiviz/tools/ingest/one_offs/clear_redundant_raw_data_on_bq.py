@@ -47,6 +47,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawDataPruningStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -263,17 +264,20 @@ def prune_raw_data_for_state_and_project(
                 results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
 
-            if raw_file_configs[
-                file_tag
-            ].is_exempt_from_legacy_manual_raw_data_pruning():
+            if (
+                raw_file_configs[file_tag].get_pruning_status(
+                    DirectIngestInstance.PRIMARY
+                )
+                != RawDataPruningStatus.MANUAL
+            ):
                 logging.info(
-                    "[%s][Skipping] `is_exempt_from_legacy_manual_raw_data_pruning()` is True.",
+                    "[%s][Skipping] Not eligible for manual raw data pruning.",
                     file_tag,
                 )
                 results[PruningStatus.NOT_ELIGIBLE].append(file_tag)
                 continue
             logging.info(
-                "[%s] `is_exempt_from_legacy_manual_raw_data_pruning()` is False. Moving forward with raw data pruning.",
+                "[%s] Eligible for manual raw data pruning. Moving forward.",
                 file_tag,
             )
 

@@ -54,12 +54,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
-    automatic_raw_data_pruning_enabled_for_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+    RawDataPruningStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
@@ -457,12 +454,11 @@ def _historical_diffs_active_for_tag(
     file_tag: str,
 ) -> bool:
     """Boolean return for if the raw file_tag will have historical diffs active"""
-    # TODO(#12390): Replace with raw_region_config.raw_file_configs[file_tag].eligible_for_automatic_raw_data_pruning()
-    # once raw data pruning is live
-    return automatic_raw_data_pruning_enabled_for_file_config(
-        state_code=StateCode(raw_region_config.region_code.upper()),
-        raw_data_instance=raw_data_instance,
-        raw_file_config=raw_region_config.raw_file_configs[file_tag],
+    return (
+        raw_region_config.raw_file_configs[file_tag].get_pruning_status(
+            raw_data_instance
+        )
+        == RawDataPruningStatus.AUTOMATIC
     )
 
 

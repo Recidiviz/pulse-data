@@ -412,7 +412,7 @@ class IngestOpsEndpointTests(TestCase):
         )
         # Act
         response = self.client.get(
-            "/api/ingest_operations/raw_file_config/US_XX/basic",
+            "/api/ingest_operations/raw_file_config/US_XX/PRIMARY/basic",
         )
 
         # Assert
@@ -425,7 +425,7 @@ class IngestOpsEndpointTests(TestCase):
                 "fileDescription": "First raw file.",
                 "fileTag": "file_tag_first",
                 "inferColumns": False,
-                "manuallyPruned": False,
+                "pruningStatus": "AUTOMATIC",
                 "lineTerminator": "‡\n",
                 "isChunkedFile": False,
                 "isCodeFile": False,

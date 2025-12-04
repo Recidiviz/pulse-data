@@ -507,19 +507,25 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
-    @bp.route("/api/ingest_operations/raw_file_config/<state_code_str>/<file_tag_str>")
+    @bp.route(
+        "/api/ingest_operations/raw_file_config/<state_code_str>/<instance_str>/<file_tag_str>"
+    )
     def _get_raw_file_config_for_file_tag(
         state_code_str: str,
+        instance_str: str,
         file_tag_str: str,
     ) -> Tuple[Response, HTTPStatus]:
         state_code = StateCode(state_code_str)
+        ingest_instance = DirectIngestInstance(instance_str)
 
         raw_config = get_ingest_operations_store().get_raw_file_config(
             state_code, file_tag_str
         )
 
         return (
-            jsonify(raw_config.for_admin_panel_api() if raw_config else None),
+            jsonify(
+                raw_config.for_admin_panel_api(ingest_instance) if raw_config else None
+            ),
             HTTPStatus.OK,
         )
 

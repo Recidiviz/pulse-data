@@ -36,6 +36,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder imp
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+    RawDataPruningStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
@@ -67,16 +68,17 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.load_job_mock = self.load_job_patch.start()
         self.load_job_mock.side_effect = self._mock_load
 
+        # Patch get_pruning_status to return NOT_PRUNED by default (disabling automatic pruning)
         self.pruning_patches = [
             patch(path)
             for path in [
-                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.automatic_raw_data_pruning_enabled_for_file_config",
-                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.automatic_raw_data_pruning_enabled_for_file_config",
-                "recidiviz.ingest.direct.views.raw_table_query_builder.automatic_raw_data_pruning_enabled_for_file_config",
+                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.DirectIngestRawFileConfig.get_pruning_status",
+                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.DirectIngestRawFileConfig.get_pruning_status",
+                "recidiviz.ingest.direct.views.raw_table_query_builder.DirectIngestRawFileConfig.get_pruning_status",
             ]
         ]
         self.pruning_mocks = [p.start() for p in self.pruning_patches]
-        self._set_pruning_mocks(False)
+        self._set_pruning_status(RawDataPruningStatus.NOT_PRUNED)
 
         super().setUp()
 
@@ -101,9 +103,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             p.stop()
         super().tearDown()
 
-    def _set_pruning_mocks(self, b: bool) -> None:
+    def _set_pruning_status(self, status: RawDataPruningStatus) -> None:
         for m in self.pruning_mocks:
-            m.return_value = b
+            m.return_value = status
 
     def _mock_fail(self, *_: Any, **__: Any) -> None:
         raise ValueError("We hit an error!")
@@ -607,7 +609,6 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             deleted_rows=1,
             historical_diffs_active=True,
         )
-        self._set_pruning_mocks(True)
         (
             file_tag,
             input_paths,
@@ -615,6 +616,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_output,
             raw_data_table,
         ) = self._prep_test("historical_diff_depends_on_transform")
+        self._set_pruning_status(RawDataPruningStatus.AUTOMATIC)
         irf = ImportReadyFile(
             file_id=10,
             file_tag=file_tag,
@@ -919,10 +921,10 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
 
     def test_fail_validations_keeps_temp_table(self) -> None:
-        self._set_pruning_mocks(True)
         file_tag, input_paths, *_ = self._prep_test(
             "no_migrations_no_changes_single_file"
         )
+        self._set_pruning_status(RawDataPruningStatus.AUTOMATIC)
 
         with patch(
             "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.DirectIngestRawTablePreImportValidator.run_raw_data_temp_table_validations",
@@ -1125,7 +1127,6 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             deleted_rows=None,
             historical_diffs_active=False,
         )
-        self._set_pruning_mocks(True)
         (
             file_tag,
             input_paths,
@@ -1133,6 +1134,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_output,
             raw_data_table,
         ) = self._prep_test("no_migrations_no_changes_single_file")
+        self._set_pruning_status(RawDataPruningStatus.AUTOMATIC)
         irf = ImportReadyFile(
             file_id=1,
             file_tag=file_tag,

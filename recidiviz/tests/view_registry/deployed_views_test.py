@@ -60,10 +60,10 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
-    automatic_raw_data_pruning_enabled_for_file_config,
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    RawDataPruningStatus,
+    get_region_raw_file_config,
 )
-from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_VIEWS_DATASET,
@@ -897,8 +897,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                     file_tag = parent_address.table_id
                     raw_file_config = region_raw_file_config.raw_file_configs[file_tag]
 
-                    if automatic_raw_data_pruning_enabled_for_file_config(
-                        state_code, DirectIngestInstance.PRIMARY, raw_file_config
+                    if (
+                        raw_file_config.get_pruning_status(DirectIngestInstance.PRIMARY)
+                        == RawDataPruningStatus.AUTOMATIC
                     ):
                         errors.append(
                             ValueError(

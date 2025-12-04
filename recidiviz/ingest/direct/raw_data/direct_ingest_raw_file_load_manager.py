@@ -48,12 +48,10 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_transformation_que
 from recidiviz.ingest.direct.raw_data.raw_data_pruning_bq_utils import (
     get_pruned_table_row_counts,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_pruning_utils import (
-    automatic_raw_data_pruning_enabled_for_file_config,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawDataPruningStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     RAW_DATA_TRANSFORMED_TEMP_TABLE_SUFFIX,
@@ -405,10 +403,9 @@ class DirectIngestRawFileLoadManager:
         """
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
 
-        if not automatic_raw_data_pruning_enabled_for_file_config(
-            state_code=self.state_code,
-            raw_data_instance=self.raw_data_instance,
-            raw_file_config=file_config,
+        if (
+            file_config.get_pruning_status(self.raw_data_instance)
+            != RawDataPruningStatus.AUTOMATIC
         ):
             return False
 
