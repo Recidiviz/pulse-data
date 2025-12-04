@@ -35,8 +35,8 @@ from recidiviz.airflow.dags.raw_data.utils import (
     logger,
     partition_as_list,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
-    RawDataImportDelegateFactory,
+from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
+    RawDataImportChunkedFileHandlerFactory,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -125,7 +125,9 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             get_all_unprocessed_gcs_file_metadata_task_id
         )
         self._region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None
-        self._delegate = RawDataImportDelegateFactory.build(region_code=region_code)
+        self._delegate = RawDataImportChunkedFileHandlerFactory.build(
+            region_code=region_code
+        )
 
     @property
     def region_raw_file_config(self) -> DirectIngestRegionRawFileConfig:

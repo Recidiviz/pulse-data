@@ -14,86 +14,54 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shared testing utilities for sftp operators"""
+"""Shared testing utilities for raw data"""
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.base_raw_data_import_delegate import (
-    BaseRawDataImportDelegate,
-    skipped_error_for_unrecognized_file_tag_for_chunked_files,
+from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler import (
+    RawDataImportChunkedFileHandler,
 )
-from recidiviz.ingest.direct.raw_data.mixins.sequential_chunked_file_mixin import (
-    SequentialChunkedFileMixin,
+from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
+    RawDataImportChunkedFileHandlerFactory,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
-    RawDataImportDelegateFactory,
+from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata import (
+    SequentiallyChunkedFileMetadata,
 )
-from recidiviz.ingest.direct.types.raw_data_import_types import (
-    RawBigQueryFileMetadata,
-    RawDataFilesSkippedError,
-    RawGCSFileMetadata,
+from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import (
+    RawFileChunkingMetadataHistory,
 )
 
-TEST_PROJECT_ID = "recidiviz-testing"
+US_XX_CHUNKING_METADATA_BY_FILE_TAG = {
+    "tagChunkedFile": RawFileChunkingMetadataHistory(
+        file_tag="tagChunkedFile",
+        chunking_metadata_history=[
+            SequentiallyChunkedFileMetadata(
+                known_chunk_count=3,
+            ),
+        ],
+    ),
+    "tagChunkedFileTwo": RawFileChunkingMetadataHistory(
+        file_tag="tagChunkedFileTwo",
+        chunking_metadata_history=[
+            SequentiallyChunkedFileMetadata(
+                known_chunk_count=4,
+            ),
+        ],
+    ),
+}
 
 
-class FakeRawDataImportDelegateFactory(RawDataImportDelegateFactory):
+class FakeRawDataImportChunkedFileHandlerFactory(
+    RawDataImportChunkedFileHandlerFactory
+):
+    """Test factory that creates RawDataImportChunkedFileHandler instances for testing."""
+
     @classmethod
-    def build(cls, *, region_code: str) -> BaseRawDataImportDelegate:
+    def build(cls, *, region_code: str) -> RawDataImportChunkedFileHandler:
         region_code = region_code.upper()
         if region_code == StateCode.US_XX.value:
-            return FakeUsXxRawDataImportDelegate()
-        if region_code == StateCode.US_LL.value:
-            return FakeUsLlRawDataImportDelegate()
-        if region_code == StateCode.US_YY.value:
-            return FakeUsLlRawDataImportDelegate()
+            return RawDataImportChunkedFileHandler(
+                chunking_metadata_by_file_tag=US_XX_CHUNKING_METADATA_BY_FILE_TAG
+            )
+        if region_code in {StateCode.US_LL.value, StateCode.US_YY.value}:
+            return RawDataImportChunkedFileHandler()
         raise ValueError(f"Unexpected region code provided: {region_code}")
-
-
-class FakeUsXxRawDataImportDelegate(
-    BaseRawDataImportDelegate, SequentialChunkedFileMixin
-):
-    def coalesce_chunked_files(
-        self, file_tag: str, gcs_files: list[RawGCSFileMetadata]
-    ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-
-        if file_tag == "tagChunkedFile":
-            mx = SequentialChunkedFileMixin.group_n_files_with_sequential_suffixes(
-                n=3, file_tag=file_tag, gcs_files=gcs_files
-            )
-            print(f"!booya -- {file_tag} -- {mx}")
-            return SequentialChunkedFileMixin.group_n_files_with_sequential_suffixes(
-                n=3, file_tag=file_tag, gcs_files=gcs_files
-            )
-
-        if file_tag == "tagChunkedFileTwo":
-            mx = SequentialChunkedFileMixin.group_n_files_with_sequential_suffixes(
-                n=4, file_tag=file_tag, gcs_files=gcs_files
-            )
-            print(f"!booya22 -- {file_tag} -- {mx}")
-            return SequentialChunkedFileMixin.group_n_files_with_sequential_suffixes(
-                n=4, file_tag=file_tag, gcs_files=gcs_files
-            )
-
-        print(f"!booya skipped {file_tag}")
-
-        return skipped_error_for_unrecognized_file_tag_for_chunked_files(
-            file_tag=file_tag, gcs_files=gcs_files
-        )
-
-
-class FakeUsLlRawDataImportDelegate(BaseRawDataImportDelegate):
-    def coalesce_chunked_files(
-        self, file_tag: str, gcs_files: list[RawGCSFileMetadata]
-    ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-        return skipped_error_for_unrecognized_file_tag_for_chunked_files(
-            file_tag=file_tag, gcs_files=gcs_files
-        )
-
-
-class FakeUsYyRawDataImportDelegate(BaseRawDataImportDelegate):
-    def coalesce_chunked_files(
-        self, file_tag: str, gcs_files: list[RawGCSFileMetadata]
-    ) -> tuple[list[RawBigQueryFileMetadata], list[RawDataFilesSkippedError]]:
-        return skipped_error_for_unrecognized_file_tag_for_chunked_files(
-            file_tag=file_tag, gcs_files=gcs_files
-        )

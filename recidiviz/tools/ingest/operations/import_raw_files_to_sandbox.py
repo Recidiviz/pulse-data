@@ -370,7 +370,7 @@ def parse_arguments() -> argparse.Namespace:
         "--allow-incomplete-chunked-files",
         help=(
             "Allows incomplete chunked files, meaning that we don't enforce that the "
-            "the RawDataImportDelegate.coalesce_chunked_files logic for each day when "
+            "the RawDataImportChunkedFileHandler.coalesce_chunked_files logic for each day when "
             "grouping files marked as is_chunked_fil=True in the raw file config."
         ),
         action="store_true",

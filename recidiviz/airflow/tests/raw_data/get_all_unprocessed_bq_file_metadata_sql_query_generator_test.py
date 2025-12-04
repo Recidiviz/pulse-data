@@ -36,7 +36,7 @@ from recidiviz.airflow.dags.raw_data.write_file_processed_time_to_bq_file_metada
     WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator,
 )
 from recidiviz.airflow.tests.raw_data.raw_data_test_utils import (
-    FakeRawDataImportDelegateFactory,
+    FakeRawDataImportChunkedFileHandlerFactory,
 )
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -66,11 +66,11 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             fake_regions,
         )
         self.region_module_patch.start()
-        self.delegate_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportDelegateFactory",
-            FakeRawDataImportDelegateFactory,
+        self.chunked_file_handler_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator.RawDataImportChunkedFileHandlerFactory",
+            FakeRawDataImportChunkedFileHandlerFactory,
         )
-        self.delegate_patcher.start()
+        self.chunked_file_handler_patcher.start()
 
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
         self.generator = GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
@@ -88,7 +88,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
     def tearDown(self) -> None:
         self.region_module_patch.stop()
-        self.delegate_patcher.stop()
+        self.chunked_file_handler_patcher.stop()
         return super().tearDown()
 
     def _validate_results(

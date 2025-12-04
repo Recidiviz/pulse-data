@@ -49,8 +49,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (
     DirectIngestRawFilePreImportNormalizer,
 )
-from recidiviz.ingest.direct.raw_data.raw_data_import_delegate_factory import (
-    RawDataImportDelegateFactory,
+from recidiviz.ingest.direct.raw_data.raw_data_import_chunked_file_handler_factory import (
+    RawDataImportChunkedFileHandlerFactory,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -385,7 +385,7 @@ def _build_bq_metadata(
     represented in RawGCSFileMetadata objects.
     """
 
-    delegate = RawDataImportDelegateFactory.build(
+    delegate = RawDataImportChunkedFileHandlerFactory.build(
         region_code=region_raw_file_config.region_code
     )
     conceptual_files: List[RawBigQueryFileMetadata] = []
