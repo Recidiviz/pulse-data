@@ -1,0 +1,168 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_receipt
+description: Intercom content receipts - tracks when content is sent to users
+schema:
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: user_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: company_id
+    type: STRING
+    mode: NULLABLE
+  - name: company_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: email
+    type: STRING
+    mode: NULLABLE
+  - name: name
+    type: STRING
+    mode: NULLABLE
+  - name: ruleset_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: content_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: content_type
+    type: STRING
+    mode: NULLABLE
+  - name: content_title
+    type: STRING
+    mode: NULLABLE
+  - name: created_via
+    type: STRING
+    mode: NULLABLE
+  - name: device
+    type: STRING
+    mode: NULLABLE
+  - name: ruleset_version_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: conversation_id
+    type: FLOAT
+    mode: NULLABLE
+  - name: series_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: series_title
+    type: STRING
+    mode: NULLABLE
+  - name: node_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: first_reply
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_completion
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_series_completion
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_series_disengagement
+    type: STRING
+    mode: NULLABLE
+  - name: first_series_exit
+    type: STRING
+    mode: NULLABLE
+  - name: first_goal_success
+    type: STRING
+    mode: NULLABLE
+  - name: first_tour_step_failure
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_tour_step_view
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_reaction
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_open
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_click
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_dismissal
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_collected_email
+    type: STRING
+    mode: NULLABLE
+  - name: first_unsubscribe
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_hard_bounce
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_soft_bounce
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_spam_complaint
+    type: STRING
+    mode: NULLABLE
+  - name: first_permission_grant
+    type: STRING
+    mode: NULLABLE
+  - name: first_button_tap
+    type: STRING
+    mode: NULLABLE
+  - name: first_screen_view
+    type: STRING
+    mode: NULLABLE
+  - name: first_webhook_failure
+    type: STRING
+    mode: NULLABLE
+  - name: first_sms_failure
+    type: STRING
+    mode: NULLABLE
+  - name: first_whatsapp_failure
+    type: STRING
+    mode: NULLABLE
+  - name: first_push_failure
+    type: STRING
+    mode: NULLABLE
+  - name: first_answer
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: first_keyword_reply
+    type: STRING
+    mode: NULLABLE
+  - name: first_people_reached_receipt
+    type: STRING
+    mode: NULLABLE
+  - name: first_checklist_step_receipt
+    type: STRING
+    mode: NULLABLE
+  - name: first_checklist_step_open
+    type: STRING
+    mode: NULLABLE
+  - name: first_checklist_step_click
+    type: STRING
+    mode: NULLABLE
+  - name: first_checklist_step_completion
+    type: STRING
+    mode: NULLABLE
+  - name: first_fin_helpful_answer
+    type: STRING
+    mode: NULLABLE
+  - name: first_fin_step_reached
+    type: STRING
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

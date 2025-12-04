@@ -1,0 +1,327 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_overview
+description: Intercom overview metrics - summary data across all content types
+schema:
+  - name: ruleset_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: audience_type
+    type: STRING
+    mode: NULLABLE
+  - name: content_title
+    type: STRING
+    mode: NULLABLE
+  - name: content_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: content_type
+    type: STRING
+    mode: NULLABLE
+  - name: series_id
+    type: STRING
+    mode: NULLABLE
+  - name: series_title
+    type: STRING
+    mode: NULLABLE
+  - name: state
+    type: STRING
+    mode: NULLABLE
+  - name: last_sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: last_state_change_by
+    type: STRING
+    mode: NULLABLE
+  - name: last_state_change_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: last_edited_by
+    type: STRING
+    mode: NULLABLE
+  - name: last_edited_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: url
+    type: STRING
+    mode: NULLABLE
+  - name: receipt_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: receipt_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: reply_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: reply_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: reply_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: completion_total
+    type: STRING
+    mode: NULLABLE
+  - name: completion_unique
+    type: STRING
+    mode: NULLABLE
+  - name: completion_rate
+    type: STRING
+    mode: NULLABLE
+  - name: goal_success_total
+    type: STRING
+    mode: NULLABLE
+  - name: goal_success_unique
+    type: STRING
+    mode: NULLABLE
+  - name: goal_success_rate
+    type: STRING
+    mode: NULLABLE
+  - name: tour_step_failure_total
+    type: STRING
+    mode: NULLABLE
+  - name: tour_step_failure_unique
+    type: STRING
+    mode: NULLABLE
+  - name: tour_step_failure_rate
+    type: STRING
+    mode: NULLABLE
+  - name: tour_step_view_total
+    type: STRING
+    mode: NULLABLE
+  - name: tour_step_view_unique
+    type: STRING
+    mode: NULLABLE
+  - name: reaction_total
+    type: STRING
+    mode: NULLABLE
+  - name: reaction_unique
+    type: STRING
+    mode: NULLABLE
+  - name: reaction_rate
+    type: STRING
+    mode: NULLABLE
+  - name: open_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: open_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: open_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: click_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: click_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: click_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: dismissal_total
+    type: STRING
+    mode: NULLABLE
+  - name: dismissal_unique
+    type: STRING
+    mode: NULLABLE
+  - name: dismissal_rate
+    type: STRING
+    mode: NULLABLE
+  - name: collected_email_total
+    type: STRING
+    mode: NULLABLE
+  - name: collected_email_unique
+    type: STRING
+    mode: NULLABLE
+  - name: collected_email_rate
+    type: STRING
+    mode: NULLABLE
+  - name: unsubscribe_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: unsubscribe_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: unsubscribe_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: hard_bounce_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: hard_bounce_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: hard_bounce_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: spam_complaint_total
+    type: STRING
+    mode: NULLABLE
+  - name: spam_complaint_unique
+    type: STRING
+    mode: NULLABLE
+  - name: spam_complaint_rate
+    type: STRING
+    mode: NULLABLE
+  - name: permission_grant_total
+    type: STRING
+    mode: NULLABLE
+  - name: permission_grant_unique
+    type: STRING
+    mode: NULLABLE
+  - name: permission_grant_rate
+    type: STRING
+    mode: NULLABLE
+  - name: button_tap_total
+    type: STRING
+    mode: NULLABLE
+  - name: button_tap_unique
+    type: STRING
+    mode: NULLABLE
+  - name: button_tap_rate
+    type: STRING
+    mode: NULLABLE
+  - name: screen_view_total
+    type: STRING
+    mode: NULLABLE
+  - name: screen_view_unique
+    type: STRING
+    mode: NULLABLE
+  - name: screen_view_rate
+    type: STRING
+    mode: NULLABLE
+  - name: webhook_failure_total
+    type: STRING
+    mode: NULLABLE
+  - name: webhook_failure_unique
+    type: STRING
+    mode: NULLABLE
+  - name: webhook_failure_rate
+    type: STRING
+    mode: NULLABLE
+  - name: sms_failure_total
+    type: STRING
+    mode: NULLABLE
+  - name: sms_failure_unique
+    type: STRING
+    mode: NULLABLE
+  - name: sms_failure_rate
+    type: STRING
+    mode: NULLABLE
+  - name: whatsapp_failure_total
+    type: STRING
+    mode: NULLABLE
+  - name: whatsapp_failure_unique
+    type: STRING
+    mode: NULLABLE
+  - name: whatsapp_failure_rate
+    type: STRING
+    mode: NULLABLE
+  - name: push_failure_total
+    type: STRING
+    mode: NULLABLE
+  - name: push_failure_unique
+    type: STRING
+    mode: NULLABLE
+  - name: push_failure_rate
+    type: STRING
+    mode: NULLABLE
+  - name: answer_total
+    type: STRING
+    mode: NULLABLE
+  - name: answer_unique
+    type: STRING
+    mode: NULLABLE
+  - name: answer_rate
+    type: STRING
+    mode: NULLABLE
+  - name: keyword_reply_total
+    type: STRING
+    mode: NULLABLE
+  - name: keyword_reply_unique
+    type: STRING
+    mode: NULLABLE
+  - name: people_reached_receipt_total
+    type: STRING
+    mode: NULLABLE
+  - name: people_reached_receipt_unique
+    type: STRING
+    mode: NULLABLE
+  - name: people_reached_receipt_rate
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_receipt_total
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_receipt_unique
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_receipt_rate
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_open_total
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_open_unique
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_open_rate
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_click_total
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_click_unique
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_click_rate
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_completion_total
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_completion_unique
+    type: STRING
+    mode: NULLABLE
+  - name: checklist_step_completion_rate
+    type: STRING
+    mode: NULLABLE
+  - name: fin_helpful_answer_total
+    type: STRING
+    mode: NULLABLE
+  - name: fin_helpful_answer_unique
+    type: STRING
+    mode: NULLABLE
+  - name: fin_helpful_answer_rate
+    type: STRING
+    mode: NULLABLE
+  - name: fin_step_reached_total
+    type: STRING
+    mode: NULLABLE
+  - name: fin_step_reached_unique
+    type: STRING
+    mode: NULLABLE
+  - name: fin_step_reached_rate
+    type: STRING
+    mode: NULLABLE
+  - name: email_failure_total
+    type: FLOAT
+    mode: NULLABLE
+  - name: email_failure_unique
+    type: FLOAT
+    mode: NULLABLE
+  - name: email_failure_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

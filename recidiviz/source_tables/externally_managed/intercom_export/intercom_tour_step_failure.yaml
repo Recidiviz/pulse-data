@@ -1,0 +1,27 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_tour_step_failure
+description: Intercom product tour events - tracks product tour failure events
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: step_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: failed_selector
+    type: STRING
+    mode: NULLABLE
+  - name: failure_url
+    type: STRING
+    mode: NULLABLE
+  - name: failed_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

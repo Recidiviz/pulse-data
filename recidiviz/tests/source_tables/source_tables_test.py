@@ -69,6 +69,24 @@ COMMON_VESTIGES = [
     # As of 7/23/25 this is unused, but we may still want to reference Day Zero info in
     # the future.
     "static_reference_tables.day_zero_reports",
+    # As of 12/1/25 these intercom tables are unused, but may be referenced for ad hoc analysis
+    "intercom_export.intercom_checkpoint",
+    "intercom_export.intercom_click",
+    "intercom_export.intercom_completion",
+    "intercom_export.intercom_dismissal",
+    "intercom_export.intercom_fin_step_reached",
+    "intercom_export.intercom_goal_success",
+    "intercom_export.intercom_hard_bounce",
+    "intercom_export.intercom_open",
+    "intercom_export.intercom_overview",
+    "intercom_export.intercom_reaction",
+    "intercom_export.intercom_reply",
+    "intercom_export.intercom_series_completion",
+    "intercom_export.intercom_series_disengagement",
+    "intercom_export.intercom_soft_bounce",
+    "intercom_export.intercom_tour_step_failure",
+    "intercom_export.intercom_tour_step_view",
+    "intercom_export.intercom_unsubscribe",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

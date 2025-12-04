@@ -1,0 +1,23 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_series_disengagement
+description:
+  Intercom series disengagement - users that reached a rule block they
+  do not match in an Intercom Series, or the Series time period timed out
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: disengaged_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: disengaged_node_ruleset_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

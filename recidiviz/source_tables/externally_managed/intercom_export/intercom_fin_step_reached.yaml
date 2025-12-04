@@ -1,0 +1,32 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_fin_step_reached
+description:
+  Intercom Fin step reached - tracks when a user reaches a step within
+  a Fin Procedure
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: involved_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: content_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: content_type
+    type: INTEGER
+    mode: NULLABLE
+  - name: ruleset_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: conversation_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

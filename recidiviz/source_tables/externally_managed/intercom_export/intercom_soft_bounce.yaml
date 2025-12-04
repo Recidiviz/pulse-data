@@ -1,0 +1,18 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_soft_bounce
+description: Intercom soft bounce events
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: soft_bounced_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

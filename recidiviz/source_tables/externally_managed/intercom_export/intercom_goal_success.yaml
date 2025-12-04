@@ -1,0 +1,18 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_goal_success
+description: Intercom goal success - tracks when a user hits a Series goal
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: goal_hit_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

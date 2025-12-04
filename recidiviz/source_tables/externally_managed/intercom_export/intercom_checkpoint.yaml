@@ -1,0 +1,42 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_checkpoint
+description: Intercom checkpoint events - tracks checkpoint status changes
+schema:
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: company_id
+    type: STRING
+    mode: NULLABLE
+  - name: series_entry_record_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: ruleset_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: status_code
+    type: INTEGER
+    mode: NULLABLE
+  - name: status_name
+    type: STRING
+    mode: NULLABLE
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: last_processed_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: expires_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: times_processed
+    type: INTEGER
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

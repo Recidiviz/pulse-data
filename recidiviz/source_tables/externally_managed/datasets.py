@@ -22,6 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
     EXPORT_ARCHIVES_DATASET,
+    INTERCOM_EXPORT_DATASET,
     JII_AUTH0_PROD_SEGMENT_DATASET,
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS,
     PULSE_DASHBOARD_SEGMENT_DATASET,
@@ -94,4 +95,5 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     TWILIO_WEBHOOK_REQUESTS_DATASET_ID: "Stores requests from Twilio made to internal webhooks",
     JII_AUTH0_PROD_SEGMENT_DATASET: "Stores auth0 events logged from JII Tablet App via Segment",
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS: "Stores backend usage events logged from JII Tablet App via Segment",
+    INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data exported from Intercom",
 }

@@ -2481,6 +2481,73 @@ ACTIVE_USAGE_EVENTS_GLOBAL_USER = EventCountMetric(
     ],
 )
 
+DISTINCT_USERS_WITH_CSAT_RESPONSES = EventDistinctUnitCountMetric(
+    name="distinct_users_with_csat_responses",
+    display_name="Distinct Users With Intercom CSAT Responses",
+    description="Number of distinct users who submitted at least one CSAT survey response",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_CSAT_RESPONSE,
+        event_conditions_dict={},
+    ),
+)
+
+CSAT_RESPONSES = EventCountMetric(
+    name="csat_responses",
+    display_name="CSAT Total Responses",
+    description="Total number of Intercom CSAT responses submitted",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_CSAT_RESPONSE,
+        event_conditions_dict={},
+    ),
+)
+
+CSAT_POSITIVE_RESPONSES = EventCountMetric(
+    name="csat_positive_responses",
+    display_name="CSAT Positive Responses",
+    description="Total customer satisfaction survey responses with a 4-5 score",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_CSAT_RESPONSE,
+        event_conditions_dict={
+            "feedback_type": ["POSITIVE"],
+        },
+    ),
+)
+
+CSAT_NEUTRAL_RESPONSES = EventCountMetric(
+    name="csat_neutral_responses",
+    display_name="CSAT Neutral Responses",
+    description="Total customer satisfaction survey responses with a 3 score",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_CSAT_RESPONSE,
+        event_conditions_dict={
+            "feedback_type": ["NEUTRAL"],
+        },
+    ),
+)
+
+CSAT_NEGATIVE_RESPONSES = EventCountMetric(
+    name="csat_negative_responses",
+    display_name="CSAT Negative Responses",
+    description="Total customer satisfaction survey responses with a 1-2 score",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_CSAT_RESPONSE,
+        event_conditions_dict={
+            "feedback_type": ["NEGATIVE"],
+        },
+    ),
+)
+
+AVG_CSAT_SCORE = EventValueMetric(
+    name="avg_csat_score",
+    display_name="Average CSAT Score",
+    description="Average customer satisfaction score (1-5) across all Intercom survey responses",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_CSAT_RESPONSE,
+        event_conditions_dict={},
+    ),
+    event_value_numeric="satisfaction_score",
+    event_count_metric=CSAT_RESPONSES,
+)
 
 DISTINCT_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
     name="distinct_jii_tablet_app_provisioned_users",

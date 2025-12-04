@@ -1,0 +1,21 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_series_completion
+description: Intercom series completed events
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: completed_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: completion_node_ruleset_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

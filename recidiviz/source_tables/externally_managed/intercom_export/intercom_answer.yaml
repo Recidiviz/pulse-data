@@ -1,0 +1,30 @@
+address:
+  dataset_id: intercom_export
+  table_id: intercom_answer
+description: Intercom survey answer events - individual question responses
+schema:
+  - name: receipt_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: answered_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: question_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: question
+    type: STRING
+    mode: NULLABLE
+  - name: response_type
+    type: STRING
+    mode: NULLABLE
+  - name: response
+    type: STRING
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false
