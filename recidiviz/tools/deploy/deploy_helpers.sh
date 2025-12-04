@@ -293,6 +293,8 @@ function verify_can_deploy {
     PROJECT_ID=$1
     COMMIT_HASH=$2
 
+    run_cmd check_gcloud_authed
+
     echo "Checking script is executing in a pipenv shell"
     run_cmd check_running_in_pipenv_shell
 
@@ -426,7 +428,7 @@ function update_deployment_status {
   local RELEASE_VERSION_TAG=$4
 
   DEPLOYMENT_STATUS="${NEW_DEPLOYMENT_STATUS}"
-  GCLOUD_USER=$(gcloud config get-value account)
+  GCLOUD_USER=$(gcloud config get-value account) || exit_on_fail
   if [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_STARTED}" ]; then
     initialize_deployment_log
 

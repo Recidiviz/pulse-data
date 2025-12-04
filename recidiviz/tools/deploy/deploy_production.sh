@@ -32,8 +32,16 @@ fi
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags --force
 
+echo "Checking out tag [$GIT_VERSION_TAG]"
+if ! git checkout tags/"${GIT_VERSION_TAG}" -b "${GIT_VERSION_TAG}"
+then
+    echo "Attempting to reuse existing branch $GIT_VERSION_TAG"
+    run_cmd git checkout "${GIT_VERSION_TAG}"
+fi
+
+COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
+
 echo "Performing pre-deploy verification"
-COMMIT_HASH=$(git rev-list -n 1 "${GIT_VERSION_TAG}") || exit_on_fail
 run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
 
 validate_release_branch_changes_since_tag "${GIT_VERSION_TAG}"
@@ -63,14 +71,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
     run_cmd exit 1
 fi
 
-echo "Checking out tag [$GIT_VERSION_TAG]"
-if ! git checkout tags/"${GIT_VERSION_TAG}" -b "${GIT_VERSION_TAG}"
-then
-    echo "Attempting to reuse existing branch $GIT_VERSION_TAG"
-    run_cmd git checkout "${GIT_VERSION_TAG}"
-fi
 
-COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 
