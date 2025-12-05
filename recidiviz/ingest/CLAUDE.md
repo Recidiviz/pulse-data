@@ -91,7 +91,44 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
 - **Data Cleaning**: Handle state-specific formatting and validation
 - **Deduplication**: Remove or prioritize duplicate records
 - **Business Logic**: Apply state-specific rules and transformations
-- **Historical Processing**: If a table name referenced in the ingest view is suffixed with `@ALL`, that indicates that the ingest view should pull in all data, including updates over time, for that table. Otherwise, it will use the `_latest` view, which is constructed by containing only the most recent information for each row by primary key.
+- **Historical Processing**: Raw table references can use modifiers to control how data is filtered. See "Raw Table Modifiers" section below.
+
+### Raw Table Modifiers
+
+Ingest views can use modifiers to control how raw data is queried:
+
+| Modifier | Historical Versions | Includes Deleted? | Exposes `is_deleted`? | Exposes `update_datetime`? |
+|----------|---------------------|-------------------|----------------------|----------------------------|
+| (none) / `@LATEST` | No (latest only) | No | No | No |
+| `@ALL` | Yes | No | No | Yes |
+| `@ALL_WITH_DELETED` | Yes | Yes | **Yes** | Yes |
+
+**`@LATEST` (default):** Returns only the most recent version of each row, filtering out deleted rows.
+```sql
+SELECT * FROM {offenders}  -- Same as {offenders@LATEST}
+```
+
+**`@ALL`:** Returns all historical versions of rows (filtered to non-deleted). Useful for tracking changes over time.
+```sql
+SELECT * FROM {offenders@ALL}
+```
+
+**`@ALL_WITH_DELETED`:** Returns all historical versions INCLUDING deleted rows. Useful for states that send daily snapshots where deletions are implicit (records simply disappear from subsequent files).
+
+```sql
+-- Example: Detect when someone left supervision in NC
+SELECT
+    OPUS as person_id,
+    CDBGDTSP as supervision_start_date,
+    is_deleted,
+    update_datetime,
+    -- When is_deleted changes from False to True, that's the supervision end date
+    LAG(is_deleted) OVER (PARTITION BY OPUS, CDBGDTSP ORDER BY update_datetime) as prev_deleted_status
+FROM {offenders@ALL_WITH_DELETED}
+WHERE is_deleted = True  -- Only show deletions
+```
+
+**Important:** Both `@ALL` and `@ALL_WITH_DELETED` require exemption from manual raw data pruning. This is enforced via validation and must be configured in the raw data YAML file.
 
 ## 3. Entity Mapping
 
