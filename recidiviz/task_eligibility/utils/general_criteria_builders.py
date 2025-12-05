@@ -699,7 +699,10 @@ def custody_level_compared_to_recommended(
 def num_events_within_time_interval_spans(
     events_cte: str,
     date_interval: Optional[int] = None,
+    date_interval_start: Optional[int] = None,
     date_part: Optional[str] = None,
+    index_columns: Optional[List[str]] = None,
+    event_list_field: Optional[str] = None,
 ) -> str:
     """
     Creates a CTE with spans of time for the number of events within a given time interval.
@@ -708,22 +711,52 @@ def num_events_within_time_interval_spans(
             the spans.
         date_interval (int, optional): Number of <date_part> over which the events will be counted.
             If not provided, the events will be counted into the indefinite future.
+        date_interval_start (int, optional): Number of <date_part> to offset the start date.
         date_part (str, optional): Supports any of the BigQuery date_part values:
             "DAY", "WEEK", "MONTH", "QUARTER", "YEAR".
             Must be provided if date_interval is provided.
+        index_columns : Optional[List[str]]: List of column names to use as index columns for
+            the input spans. If no index columns are provided, default to [`person_id`, `state_code`].
+        event_list_field (str, optional): If provided, includes an event_list array
+            containing the values of this field from the events_cte for each event
+            in the span. The events_cte must have a column with this name.
     """
+    if index_columns is None:
+        index_columns = ["person_id", "state_code"]
+    index_col_str = list_to_query_string(index_columns)
+
+    grouping_col_str = ", ".join([str(i + 1) for i in range(len(index_columns) + 2)])
+
     if date_interval:
         end_date_clause = f"DATE_ADD(event_date, INTERVAL {date_interval} {date_part})"
     else:
         end_date_clause = "CAST(NULL AS DATE)"
 
+    if date_interval_start:
+        start_date_clause = (
+            f"DATE_ADD(event_date, INTERVAL {date_interval_start} {date_part})"
+        )
+    else:
+        start_date_clause = "event_date"
+
+    event_field = "event_date,"
+    array_agg_field = "ARRAY_AGG(event_date ORDER BY event_date DESC) AS event_dates,"
+
+    # Handle optional event_list_field for custom event list arrays
+    if event_list_field:
+        event_list_select_field = f"{event_list_field},"
+        event_list_agg_field = f"ARRAY_AGG({event_list_field} ORDER BY event_date DESC, {event_list_field} ASC) AS event_list,"
+    else:
+        event_list_select_field = ""
+        event_list_agg_field = ""
+
     return f"""event_spans AS (
         SELECT
-            state_code,
-            person_id,
-            event_date AS start_date,
+            {index_col_str},
+            {start_date_clause} AS start_date,
             {end_date_clause} AS end_date,
-            event_date,
+            {event_field}
+            {event_list_select_field}
         FROM {events_cte}
         WHERE event_date IS NOT NULL
     )
@@ -731,18 +764,18 @@ def num_events_within_time_interval_spans(
     -- We create sub-sessions to find overlapping periods where an event happened during
     -- some interval, allowing us to count the number of events that have recently occurred 
     -- during that period
-    {create_sub_sessions_with_attributes('event_spans')}
+    {create_sub_sessions_with_attributes('event_spans', index_columns=index_columns)}
     ,
     event_count_spans AS (
         SELECT 
-            state_code,
-            person_id,
+            {index_col_str},
             start_date,
             end_date,
-            COUNT(event_date) AS event_count,
-            ARRAY_AGG(event_date ORDER BY event_date DESC) AS event_dates,
+            COUNT(*) AS event_count,
+            {array_agg_field}
+            {event_list_agg_field}
         FROM sub_sessions_with_attributes
-        GROUP BY 1,2,3,4
+        GROUP BY {grouping_col_str}
     )
     """
 

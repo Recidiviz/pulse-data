@@ -18,10 +18,17 @@
 
 from typing import List, Union
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
+)
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    num_events_within_time_interval_spans,
 )
 
 # TODO(#20870): Rather than having to repeatedly exclude these levels from
@@ -311,7 +318,7 @@ def detainers_cte() -> str:
 
 
 def compliant_reporting_offense_type_condition(
-    offense_flags: Union[str, List[str]]
+    offense_flags: Union[str, List[str]],
 ) -> str:
     """
     Function that generates the syntax to query charge description for 4 TN-specific offense flag used in compliant
@@ -336,3 +343,368 @@ def compliant_reporting_offense_type_condition(
         raise ValueError(f"Offense flag must be one of {list(lk)}")
 
     return " OR ".join([lk[offense_flag] for offense_flag in offense_flags])
+
+
+# Incident types classified as violent for TN Classification V2 CAF scoring.
+# Used in incident_based_caf_score_query_template to determine if an incident is violent.
+_US_TN_CLASSIFICATION_V2_VIOLENT_INCIDENT_TYPES = [
+    "AOW",  # Assault on staff without weapon
+    "ASW",  # Assault on staff with weapon
+    "AVW",  # Assault on inmate with weapon (or similar)
+    "HOM",  # Homicide
+    "RAP",  # Rape
+    "SXB",  # Sexual battery
+]
+
+
+def incident_based_caf_score_query_template(
+    score_definitions: dict,
+    incident_filter_condition: str,
+) -> str:
+    """
+    Generates a SQL query for calculating CAF (Classification Assessment Form)
+    scores based on incarceration incidents for Tennessee's Classification V2 policy.
+
+    This function creates a query that:
+    1. Retrieves incarceration incidents within state prison spans
+    2. Filters incidents based on the provided condition (e.g., violent vs non-violent)
+    3. Counts incidents within configurable time windows (e.g., 0-6 months, 6-12 months)
+    4. Calculates scores based on incident counts using the provided score definitions
+    5. Aggregates adjacent spans with the same score and incidents list
+
+    The resulting query produces spans with:
+    - A total_score representing the sum of scores across all time windows
+    - An incidents_list array containing details of each contributing incident
+
+    Args:
+        score_definitions: A dictionary mapping time windows to score mappings.
+            Keys are tuples of (start_months, end_months) defining the lookback window.
+            Values are dictionaries mapping incident counts to scores.
+            Example: {
+                (0, 6): {0: -1, 1: 0, 2: 1, 3: 2},   # 0-6 months: 0 incidents = -1, 1 = 0, etc.
+                (6, 12): {0: 0, 1: 1, 2: 2, 3: 3},   # 6-12 months: different scoring
+            }
+
+        incident_filter_condition: A WHERE clause condition to filter which incidents
+            are included in the scoring. This should reference columns available in
+            the `us_tn_incarceration_incidents_preprocessed` table
+            (e.g., "incident_class IN ('A', 'B') AND NOT is_violent").
+    """
+
+    def create_case_when_clause(score_mapping: dict, column_name: str) -> str:
+        """Creates a CASE WHEN clause to map incident counts to scores."""
+        case_when_cases = [
+            f"WHEN num_incidents_{column_name} = {k} THEN {v}"
+            for k, v in score_mapping.items()
+            if k != max(score_mapping.keys())
+        ]
+        case_when_cases.append(
+            f"WHEN num_incidents_{column_name} >= {max(score_mapping.keys())} THEN {score_mapping[max(score_mapping.keys())]}"
+        )
+        case_when_cases_clause = "\n".join(case_when_cases)
+        case_when_clause = (
+            f"CASE\n{case_when_cases_clause}\nELSE NULL END AS score_{column_name}"
+        )
+        return case_when_clause
+
+    case_when_clauses = [
+        create_case_when_clause(score_mapping, f"past_{start}_to_{end}_months")
+        for (
+            start,
+            end,
+        ), score_mapping in score_definitions.items()
+    ]
+
+    case_when_clauses_all = ",\n".join(case_when_clauses)
+
+    incident_count_ctes = ",\n".join(
+        [
+            f"""incidents_past_{start}_to_{end}_months AS
+        (
+            WITH {num_events_within_time_interval_spans(
+                events_cte="relevant_incidents",
+                date_interval=end,
+                date_interval_start=start,
+                date_part="MONTH",
+                index_columns=["person_id", "state_code", "custodial_authority_session_id"],
+                event_list_field="incarceration_incident_id",
+            )}
+            SELECT
+                person_id,
+                state_code,
+                custodial_authority_session_id,
+                start_date,
+                end_date,
+                event_count AS num_incidents_past_{start}_to_{end}_months,
+                event_list AS incident_ids_past_{start}_to_{end}_months,
+            FROM event_count_spans
+        )
+        """
+            for (start, end) in score_definitions.keys()
+        ]
+    )
+
+    combined_cte_clauses = []
+
+    for start, end in score_definitions.keys():
+        incident_fields = []
+        incident_id_fields = []
+        for (
+            field_start,
+            field_end,
+        ) in score_definitions.keys():
+            if (field_start, field_end) != (start, end):
+                incident_fields.append(
+                    f"0 AS num_incidents_past_{field_start}_to_{field_end}_months"
+                )
+                incident_id_fields.append(
+                    f"CAST([] AS ARRAY<INT64>) AS incident_ids_past_{field_start}_to_{field_end}_months"
+                )
+            else:
+                incident_fields.append(f"num_incidents_past_{start}_to_{end}_months")
+                incident_id_fields.append(f"incident_ids_past_{start}_to_{end}_months")
+        incident_fields_all = ",\n".join(incident_fields)
+        incident_id_fields_all = ",\n".join(incident_id_fields)
+        combined_cte_clauses.append(
+            f"""
+    SELECT
+        person_id,
+        state_code,
+        custodial_authority_session_id,
+        start_date,
+        end_date,
+        {incident_fields_all},
+        {incident_id_fields_all},
+    FROM incidents_past_{start}_to_{end}_months
+    """
+        )
+
+    max_incidents_fields = [
+        f"MAX(num_incidents_past_{start}_to_{end}_months) AS num_incidents_past_{start}_to_{end}_months"
+        for (start, end) in score_definitions.keys()
+    ]
+
+    # Aggregate incident IDs by flattening and re-aggregating arrays from each row
+    # We use ARRAY_CONCAT_AGG to combine arrays from overlapping time windows
+    max_incident_ids_fields = [
+        f"ARRAY_CONCAT_AGG(incident_ids_past_{start}_to_{end}_months) AS incident_ids_past_{start}_to_{end}_months"
+        for (start, end) in score_definitions.keys()
+    ]
+
+    max_incidents_clause = ",\n".join(max_incidents_fields + max_incident_ids_fields)
+
+    # Build UNION ALL clauses to unnest each time window's incident IDs with their time period label
+    # Each clause is a full SELECT from calculated_scores_separate that unnests one time window's IDs
+    incident_ids_unnest_clauses = [
+        f"""SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date,
+            incarceration_incident_id,
+            '{start}-{end} months' AS incident_time_period
+        FROM calculated_scores_separate,
+        UNNEST(incident_ids_past_{start}_to_{end}_months) AS incarceration_incident_id"""
+        for (start, end) in score_definitions.keys()
+    ]
+    incident_ids_unnest_union = "\n        UNION ALL\n        ".join(
+        incident_ids_unnest_clauses
+    )
+
+    # Build comma-separated list of incident ID arrays to carry through
+    incident_id_arrays_clause = ",\n".join(
+        [
+            f"incident_ids_past_{start}_to_{end}_months"
+            for (start, end) in score_definitions.keys()
+        ]
+    )
+
+    combined_cte = "\nUNION ALL\n".join(combined_cte_clauses)
+
+    aggregate_score_clause = " + ".join(
+        [
+            f"score_past_{start}_to_{end}_months"
+            for (start, end) in score_definitions.keys()
+        ]
+    )
+
+    # Build list of violent incident types
+    violent_incident_types_str = list_to_query_string(
+        _US_TN_CLASSIFICATION_V2_VIOLENT_INCIDENT_TYPES, quoted=True, single_quote=True
+    )
+
+    return f"""
+    -- Get all state prison spans to link incidents to specific stays
+    WITH state_prison_spans AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.sessions.custodial_authority_sessions_materialized`
+        WHERE
+            state_code = 'US_TN'
+            AND custodial_authority = 'STATE_PRISON'
+    )
+    ,
+    -- Get all incidents with relevant metadata, joined to their state prison span
+    incidents AS (
+        SELECT
+            incidents.person_id,
+            incidents.state_code,
+            state_prison_spans.custodial_authority_session_id,
+            incidents.incarceration_incident_id,
+            incidents.incident_date,
+            incidents.incident_class,  -- Class: A, B, or C
+            incidents.incident_type_raw_text,
+            -- Flag whether incident is violent based on the incident type
+            COALESCE(incidents.incident_type_raw_text IN (
+                {violent_incident_types_str}
+                ), FALSE) AS is_violent
+        FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized` incidents
+        LEFT JOIN state_prison_spans
+        ON
+            incidents.person_id = state_prison_spans.person_id
+            AND incidents.state_code = state_prison_spans.state_code
+            AND incidents.incident_date >= state_prison_spans.start_date
+            AND incidents.incident_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
+        WHERE incidents.state_code = "US_TN"
+            -- Only include guilty dispositions
+            AND incidents.disposition = 'GU'
+            -- Exclude verbal warnings
+            AND incidents.incident_details NOT LIKE "%VERBAL WARNING%"
+            AND incidents.incident_class IS NOT NULL
+            AND incidents.incident_date IS NOT NULL
+        -- Keep only the most severe incident per person per date
+        QUALIFY ROW_NUMBER() OVER(
+            PARTITION BY incidents.person_id, incidents.incident_date 
+            ORDER BY incidents.incident_class, incidents.injury_level DESC, incidents.assault_score DESC
+        ) = 1
+    )
+    ,
+    -- Filter to only the incidents matching the provided filter condition (e.g., violent or non-violent)
+    relevant_incidents AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            incarceration_incident_id,
+            incident_date AS event_date,
+            incident_type_raw_text,
+            incident_class,
+        FROM incidents
+        WHERE {incident_filter_condition}
+    )
+    ,
+    -- Count incidents within each time window (e.g., 0-6 months, 6-12 months, etc.)
+    -- Each time window produces spans where the count changes
+    {incident_count_ctes}
+    ,
+    -- Combine all time window spans into a single CTE for sub-sessionization
+    combined_incident_spans AS (
+        {combined_cte}
+    )
+    ,
+    -- Break up overlapping spans from different time windows into non-overlapping sub-sessions
+    {create_sub_sessions_with_attributes('combined_incident_spans', index_columns=['person_id', 'state_code', 'custodial_authority_session_id'])}
+    ,
+    -- Deduplicate sub-sessions by taking the max incident count for each time window
+    sub_sessions_deduped AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date,
+            {max_incidents_clause},
+        FROM sub_sessions_with_attributes
+        GROUP BY 1, 2, 3, 4, 5
+    )
+    ,
+    -- Calculate the score for each time window based on incident counts
+    calculated_scores_separate AS (
+        SELECT
+            incident_counts.person_id,
+            incident_counts.state_code,
+            incident_counts.custodial_authority_session_id,
+            incident_counts.start_date,
+            -- Clip spans to end of stay in state prison
+            LEAST(incident_counts.end_date, {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}) AS end_date,
+            -- Calculate score for each time window based on incident counts
+            {case_when_clauses_all},
+            -- Keep incident ID arrays for each time window
+            {incident_id_arrays_clause},
+        FROM sub_sessions_deduped incident_counts
+        LEFT JOIN state_prison_spans
+        USING (person_id, state_code, custodial_authority_session_id)
+        -- Omit spans that start after the end of the state prison stay
+        WHERE incident_counts.start_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
+    )
+    ,
+    -- Unnest incident IDs from each time window with their time period label, then join to incidents
+    incident_ids_with_time_period AS (
+        {incident_ids_unnest_union}
+    )
+    ,
+    incident_details_unnested AS (
+        SELECT
+            incident_periods.person_id,
+            incident_periods.state_code,
+            incident_periods.custodial_authority_session_id,
+            incident_periods.start_date,
+            incident_periods.end_date,
+            incident_periods.incident_time_period,
+            incidents.incarceration_incident_id,
+            incidents.incident_date,
+            incidents.incident_type_raw_text,
+            incidents.incident_class
+        FROM incident_ids_with_time_period incident_periods
+        INNER JOIN incidents
+            ON incident_periods.incarceration_incident_id = incidents.incarceration_incident_id
+    )
+    ,
+    -- Aggregate incident details into an array of structs for each span
+    incident_details_aggregated AS (
+        SELECT
+            person_id,
+            state_code,
+            custodial_authority_session_id,
+            start_date,
+            end_date,
+            TO_JSON(
+                ARRAY_AGG(
+                    STRUCT(
+                        incarceration_incident_id,
+                        incident_date,
+                        incident_type_raw_text,
+                        incident_class,
+                        incident_time_period
+                    )
+                    ORDER BY incident_date
+                )
+            ) AS incidents_list
+        FROM incident_details_unnested
+        GROUP BY 1, 2, 3, 4, 5
+    )
+    -- Combine scores from all time windows and join incident details
+    SELECT
+        incident_counts.person_id,
+        incident_counts.state_code,
+        incident_counts.start_date,
+        incident_counts.end_date AS end_date_exclusive,
+        -- Sum up the individual score components to get the total score
+        {aggregate_score_clause} AS total_score,
+        -- Get incident details from the aggregated CTE (empty array if no incidents)
+        IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list
+    FROM calculated_scores_separate incident_counts
+    LEFT JOIN incident_details_aggregated
+        ON incident_counts.person_id = incident_details_aggregated.person_id
+        AND incident_counts.state_code = incident_details_aggregated.state_code
+        AND incident_counts.custodial_authority_session_id = incident_details_aggregated.custodial_authority_session_id
+        AND incident_counts.start_date = incident_details_aggregated.start_date
+        AND incident_counts.end_date = incident_details_aggregated.end_date
+    -- Filter out zero-length spans
+    WHERE incident_counts.end_date > incident_counts.start_date
+    """
