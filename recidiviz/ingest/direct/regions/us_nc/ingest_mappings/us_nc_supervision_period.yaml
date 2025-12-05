@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_period`
+# to corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OPUS: STRING
+  CDOFICER: STRING
+  CDBGDTSP: STRING
+  period_start_date: DATETIME
+  end_date: DATETIME
+  SUPVLEVL: STRING
+  SUPERVISION: STRING
+  CDPPSLOC: STRING
+  seq: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OPUS
+          id_type: $literal("US_NC_OPUS")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OPUS
+                - CDBGDTSP
+                - seq
+          supervision_type:
+            $enum_mapping:
+              $raw_text: SUPERVISION
+              $mappings:
+                StateSupervisionPeriodSupervisionType.PROBATION:
+                  - "PRO: PROBATION"
+                StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+                  - "POR: POST-RELEASE"
+                StateSupervisionPeriodSupervisionType.PAROLE:
+                  - "PRB: POST RELEASE PROBATION"
+          start_date: period_start_date
+          termination_date: end_date
+          supervision_site: CDPPSLOC
+          supervising_officer_staff_external_id: CDOFICER
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CDOFICER
+                $then: $literal("US_NC_STAFF")
+          supervision_level:
+            $enum_mapping:
+              $raw_text: SUPVLEVL
+              $mappings:
+                StateSupervisionLevel.INTAKE: "L0"
+                StateSupervisionLevel.MAXIMUM: "L1"
+                StateSupervisionLevel.HIGH: "L2"
+                StateSupervisionLevel.MEDIUM: "L3"
+                StateSupervisionLevel.MINIMUM: "L4"
+                StateSupervisionLevel.LIMITED: "L5"
