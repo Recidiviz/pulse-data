@@ -354,7 +354,7 @@ SELECT
     DATE(sgt.person_projected_full_term_release_date_min) AS form_information_min_release_date,
     si.facility AS form_information_facility,
     si.housing_unit AS form_information_lock,
-    (COALESCE(SMI.MMD, "No") = "Yes") AS form_information_OPT,
+    (COALESCE(OPT.OPTLevelOfCare, "No") = "Y") AS form_information_OPT,
     CASE WHEN stg.STG_Level = 'I' THEN "1"
          WHEN stg.STG_Level = 'II' THEN "2"
          ELSE stg.STG_Level 
@@ -378,7 +378,7 @@ SELECT
             WHEN h.housing_unit_type = 'MENTAL_HEALTH_SOLITARY_CONFINEMENT' THEN 'Observation'
             ELSE 'Other Segregation'
     END AS metadata_solitary_session_type,
-    (OPT.OPTLevelOfCare = "Y") AS metadata_OPT,
+    (COALESCE(OPT.OPTLevelOfCare, "No") = "Y") AS metadata_OPT,
     rm.json_bondable_offenses_within_6_months AS metadata_json_recent_bondable_offenses,
     rm.json_nonbondable_offenses_within_1_year AS metadata_json_recent_nonbondable_offenses,
     p.json_ad_seg_stays_and_reasons_within_3_yrs AS metadata_json_ad_seg_stays_and_reasons_within_3_yrs,
