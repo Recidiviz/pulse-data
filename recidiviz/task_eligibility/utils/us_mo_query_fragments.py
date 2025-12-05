@@ -306,7 +306,7 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
                 rdp.conditional_release_date,
                 /* Null out PPDs from the past (which seem to have often been from
                 legitimate releases to parole that ended in revocation, such that the
-                PPD was a true PPD at one point but is no longer. */
+                PPD was a true PPD at one point but is no longer). */
                 /* TODO(#45890): Can we handle this upstream anywhere, particularly if
                 we're going to be using this date for eligibility logic? Do we still
                 want to null it out here if so? Is this the right logic for identifying
@@ -325,22 +325,46 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
                 AND CURRENT_DATE('US/Eastern') BETWEEN mrc.cycle_start_date AND {nonnull_end_date_clause('mrc.cycle_end_date')}
         ),
         earliest_release_dates AS (
-            /* Note that if a person has no non-null release dates coming out of the above
-            CTE, then there will be no rows coming from this CTE for them. */
+            /* Note that if a person has no non-null release dates coming out of the
+            above CTE, then there will be no rows coming from this CTE for them. */
+            SELECT
+                state_code,
+                person_id,
+                cycle_start_date,
+                cycle_end_date,
+                release_date,
+                release_date_type,
+            FROM release_dates
+            UNPIVOT(release_date FOR release_date_type IN (maximum_release_date, mandatory_release_date, conditional_release_date, presumptive_parole_date))
+            /* Filter to row(s) with a date matching the earliest date for a person-
+            cycle. If a person has multiple dates that are the same and the earliest of
+            their dates, we'll keep those multiple rows here via RANK. */
+            QUALIFY RANK() OVER (
+                PARTITION BY state_code, person_id, cycle_start_date, cycle_end_date
+                ORDER BY release_date
+            ) = 1
+        ),
+        earliest_release_dates_aggregated AS (
             SELECT
                 state_code,
                 person_id,
                 cycle_start_date AS start_datetime,
                 cycle_end_date AS end_datetime,
-                MIN(release_date) AS critical_date,
-            FROM release_dates
-            UNPIVOT(release_date FOR release_date_type IN (maximum_release_date, mandatory_release_date, conditional_release_date, presumptive_parole_date))
+                /* We already filtered to the earliest release date(s) for a person-
+                cycle, so regardless of which date we take here, it will be the earliest
+                date from their set of dates. */
+                ANY_VALUE(release_date) AS critical_date,
+                /* For all the date types that match the earliest date, aggregate them
+                into an array. */
+                ARRAY_AGG(release_date_type ORDER BY release_date_type) AS earliest_release_date_types,
+            FROM earliest_release_dates
             GROUP BY 1, 2, 3, 4
         ),
         {critical_date_has_passed_spans_cte(
             meets_criteria_leading_window_time=date_leading_interval,
             date_part=date_part,
-            table_name='earliest_release_dates',
+            table_name="earliest_release_dates_aggregated",
+            attributes=["earliest_release_date_types"],
         )}
         SELECT
             state_code,
@@ -349,9 +373,11 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
             end_date,
             critical_date_has_passed AS meets_criteria,
             TO_JSON(STRUCT(
-                critical_date AS earliest_release_date
+                critical_date AS earliest_release_date,
+                earliest_release_date_types
             )) AS reason,
             critical_date AS earliest_release_date,
+            earliest_release_date_types,
         FROM critical_date_has_passed_spans
     """
 
@@ -367,6 +393,11 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
                 name="earliest_release_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Earliest established release date",
+            ),
+            ReasonsField(
+                name="earliest_release_date_types",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Type(s) of earliest release date(s)",
             ),
         ],
     )

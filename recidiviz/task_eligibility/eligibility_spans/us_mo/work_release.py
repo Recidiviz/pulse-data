@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.criteria.general import (
     within_24_months_of_projected_full_term_release_date_min,
     within_48_months_of_projected_full_term_release_date_min,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_mo import (  # completed_12_months_outside_clearance,
+from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     educational_score_1,
     has_first_degree_arson_or_robbery_offenses,
     institutional_risk_score_1_while_incarcerated,
@@ -106,7 +106,6 @@ NO_PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskC
 
 PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
-    # TODO(#45499): Rename this subcriterion once OC completion is finished
     criteria_name="US_MO_WITHIN_24_MONTHS_OF_EARLIEST_RELEASE_DATE_AND_HAS_FIRST_DEGREE_ARSON_OR_ROBBERY_OFFENSES",
     sub_criteria_list=[
         # NB: The below criterion identifies people who have first-degree arson or
@@ -115,7 +114,6 @@ PROHIBITING_OFFENSES_NEAR_TERM_COMPLETION_CRITERIA_GROUP = StateSpecificTaskCrit
         # resident's offense history for these offenses when screening for work release.
         has_first_degree_arson_or_robbery_offenses.VIEW_BUILDER,
         WITHIN_24_MONTHS_CRITERIA_GROUP,
-        # completed_12_months_outside_clearance.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 )
@@ -131,6 +129,7 @@ MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP = StateSpecificTaskCriteriaGrou
         "disqualifying_offenses",
         "disqualifying_dates",
         "earliest_release_date",
+        "earliest_release_date_types",
     ],
     reasons_aggregate_function_override={
         # The reasons blobs should be identical in each of these cases (since the two
@@ -138,6 +137,10 @@ MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP = StateSpecificTaskCriteriaGrou
         # ANY_VALUE here to just pick one.
         "disqualifying_offenses": "ANY_VALUE",
         "disqualifying_dates": "ANY_VALUE",
+        # Should be identical across criteria, since the same underlying logic is used
+        # for each of the release-date criteria, so it shouldn't matter which one we
+        # pick.
+        "earliest_release_date_types": "ANY_VALUE",
     },
 )
 
@@ -188,7 +191,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="WORK_RELEASE",
     description=__doc__,
-    # TODO(#43388): Ensure that this is the correct candidate population.
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
@@ -203,8 +205,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # now for the sub-criteria in this group?
         MEETS_TIME_REMAINING_REQUIREMENTS_CRITERIA_GROUP,
     ],
-    # TODO(#45922): Revisit this and see if we want to adjust how we're capturing WR
-    # approvals.
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
 

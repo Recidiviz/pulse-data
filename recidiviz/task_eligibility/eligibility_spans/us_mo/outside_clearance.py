@@ -69,20 +69,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="OUTSIDE_CLEARANCE",
     description=__doc__,
-    # TODO(#44398): Ensure that this is the correct candidate population.
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         *WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
         WITHIN_60_MONTHS_CRITERIA_GROUP,
-        # TODO(#45980): This criterion currently only captures people who have approved
-        # outside-clearance requests, but since not every facility records
-        # approvals/denials via the requests table, can we find another way to try to
-        # identify residents already on OC and exclude them from eligibility here? Is
-        # there anything we can do with work assignments from `LBAKRDTA_TAK032`?
         not_on_institutional_worker_status.VIEW_BUILDER,
     ],
-    # TODO(#45922): Revisit this and see if we want to adjust how we're capturing OC
-    # approvals.
     completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
 )
 
