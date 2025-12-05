@@ -1,4 +1,4 @@
-state,age_group,race,ethnicity,gender,population
+state,age_group,race,ethnicity,sex,population
 Alabama,1-4 years,American Indian or Alaska Native,Hispanic or Latino,Male,440
 Alabama,1-4 years,American Indian or Alaska Native,Hispanic or Latino,Female,401
 Alabama,1-4 years,American Indian or Alaska Native,Not Hispanic or Latino,Male,380

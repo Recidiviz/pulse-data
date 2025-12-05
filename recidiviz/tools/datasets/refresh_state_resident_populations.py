@@ -43,11 +43,11 @@ STATE_COL = "state"
 AGE_GROUP_COL = "age_group"
 RACE_COL = "race"
 ETHNICITY_COL = "ethnicity"
-GENDER_COL = "gender"
+SEX_COL = "sex"
 POPULATION_COL = "population"
 
 
-def fetch_population_csv(year: str, gender: str) -> io.StringIO:
+def fetch_population_csv(year: str, sex: str) -> io.StringIO:
     """Request the population CSV from the CDC website."""
     response = requests.post(
         "https://wonder.cdc.gov/controller/datarequest/D190",
@@ -84,7 +84,7 @@ def fetch_population_csv(year: str, gender: str) -> io.StringIO:
             ("V_D190.V4", "*All*"),
             ("V_D190.V6", "*All*"),
             ("V_D190.V1", year),
-            ("V_D190.V5", gender),
+            ("V_D190.V5", sex),
             ("O_change_action-Send-Export Results", "Export Results"),
             ("O_show_zeros", "true"),
             ("O_precision", "0"),
@@ -121,8 +121,8 @@ def transform_population_df(
             CDC_POPULATION_COL: str,
         },
     )
-    # Add gender column for "Female"
-    female_df[GENDER_COL] = "Female"
+    # Add sex column for "Female"
+    female_df[SEX_COL] = "Female"
 
     # Read male CSV
     male_df = pd.read_csv(
@@ -142,8 +142,8 @@ def transform_population_df(
             CDC_POPULATION_COL: str,
         },
     )
-    # Add gender column for "Male"
-    male_df[GENDER_COL] = "Male"
+    # Add sex column for "Male"
+    male_df[SEX_COL] = "Male"
 
     # Remove methodology from the bottom for both dataframes
     female_notes_start = female_df[~female_df[CDC_NOTES_COL].isna()].iloc[0]
@@ -157,7 +157,7 @@ def transform_population_df(
         CDC_AGE_GROUP_COL,
         CDC_RACE_COL,
         CDC_ETHNICITY_COL,
-        GENDER_COL,
+        SEX_COL,
         CDC_POPULATION_COL,
     ]
 
@@ -193,10 +193,10 @@ def main() -> None:
     into a single year column."""
 
     YEAR = "2022"
-    FEMALE_GENDER_CODE = "F"
-    MALE_GENDER_CODE = "M"
-    female_csv = fetch_population_csv(YEAR, FEMALE_GENDER_CODE)
-    male_csv = fetch_population_csv(YEAR, MALE_GENDER_CODE)
+    FEMALE_SEX_CODE = "F"
+    MALE_SEX_CODE = "M"
+    female_csv = fetch_population_csv(YEAR, FEMALE_SEX_CODE)
+    male_csv = fetch_population_csv(YEAR, MALE_SEX_CODE)
     df = transform_population_df(female_csv, male_csv)
     df.to_csv(
         make_large_static_data_file_output_path("state_resident_populations.csv"),

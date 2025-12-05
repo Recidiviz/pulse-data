@@ -10,7 +10,7 @@ description: >-
   More than one race.
 
   A single row has the number of people that are of the age group, race, ethnicity,
-  and gender within that state. This data is transformed by us to fit into our
+  and sex within that state. This data is transformed by us to fit into our
   StateRace enum.
 
   The data source can be explored at https://wonder.cdc.gov/single-race-population.html
@@ -30,7 +30,7 @@ schema:
   - name: ethnicity
     type: STRING
     mode: NULLABLE
-  - name: gender
+  - name: sex
     type: STRING
     mode: NULLABLE
   - name: population
