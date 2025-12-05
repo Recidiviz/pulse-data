@@ -590,3 +590,10 @@ module "airflow-kubernetes-pod-operator-outputs" {
     },
   ]
 }
+
+module "state-data-downloads" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "state-data-downloads"
+}
