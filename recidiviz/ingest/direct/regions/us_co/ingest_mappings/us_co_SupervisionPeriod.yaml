@@ -13,8 +13,7 @@ input_columns:
   start_location: STRING
   start_officer: STRING
   period_id: INTEGER
-unused_columns:
-  - start_officer
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -174,5 +173,9 @@ output:
                   - "S99 // Unable to decipher DCIS - See Comments"
                   - "G00 // Began TSP/Supv. in Comm."
                   - "G11 // Returned to Parole"
-          # supervising_officer_staff_external_id: start_officer
-          # supervising_officer_staff_external_id_type: $literal("US_CO_PARTYID")
+          supervising_officer_staff_external_id: start_officer
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: start_officer
+                $then: $literal("US_CO_PARTYID")
