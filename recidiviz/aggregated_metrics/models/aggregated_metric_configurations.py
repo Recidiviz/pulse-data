@@ -2640,6 +2640,19 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_FUNNEL_METRICS = [
     )
     for k in USAGE_EVENTS_DICT
 ]
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_MARKED_PERMANENTLY_INELIGIBLE = DailyAvgSpanCountMetric(
+    name="avg_population_task_almost_eligible_marked_permanently_ineligible",
+    display_name="Average Population: Task Almost Eligible And Marked Permanently Ineligible",
+    description="Average daily count of clients almost eligible for selected task type marked permanently ineligible",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+            "marked_permanently_ineligible": ["true"],
+        },
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_ELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_population_task_eligible",
     display_name="Average Population: Task Eligible",
@@ -2666,6 +2679,38 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_FUNNEL_METRICS = [
         ),
     )
     for k in USAGE_EVENTS_DICT
+]
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_MARKED_PERMANENTLY_INELIGIBLE = DailyAvgSpanCountMetric(
+    name="avg_population_task_eligible_marked_permanently_ineligible",
+    display_name="Average Population: Task Eligible And Marked Permanently Ineligible",
+    description="Average daily count of clients eligible for selected task type marked permanently ineligible",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "marked_permanently_ineligible": ["true"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_WORKFLOWS_REVIEW_STATUS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population__clients_{review_approval_status.lower()}",
+        display_name=f"Average Population: {snake_to_title(review_approval_status)}",
+        description=f"Average daily count of clients in the {snake_to_title(review_approval_status).lower()} status",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_surfaceable": ["true"],
+                "review_approval_status": [review_approval_status],
+            },
+        ),
+    )
+    for review_approval_status in [
+        "SNOOZE_REVIEW",
+        "GRANT_REVIEW",
+        "REVISIONS_REQUESTED",
+    ]
 ]
 
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE = SpanDistinctUnitCountMetric(
@@ -2697,6 +2742,19 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_FUNNEL_METRICS = [
     for k in USAGE_EVENTS_DICT
 ]
 
+DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_MARKED_PERMANENTLY_INELIGIBLE = SpanDistinctUnitCountMetric(
+    name="distinct_clients_almost_eligible_marked_permanently_ineligible",
+    display_name="Distinct Population: Almost Eligible And Marked Permanently Ineligible",
+    description="Total distinct count of clients almost eligible for selected task type marked permanently ineligible",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+            "marked_permanently_ineligible": ["true"],
+        },
+    ),
+)
+
 DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE = SpanDistinctUnitCountMetric(
     name="distinct_clients_eligible",
     display_name="Distinct Population: Eligible",
@@ -2724,6 +2782,39 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_FUNNEL_METRICS = [
         ),
     )
     for k in USAGE_EVENTS_DICT
+]
+
+DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_MARKED_PERMANENTLY_INELIGIBLE = SpanDistinctUnitCountMetric(
+    name="distinct_clients_eligible_marked_permanently_ineligible",
+    display_name="Distinct Population: Eligible And Marked Permanently Ineligible",
+    description="Total distinct count of clients eligible for selected task type marked permanently ineligible",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "marked_permanently_ineligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_POPULATION_WORKFLOWS_REVIEW_STATUS = [
+    SpanDistinctUnitCountMetric(
+        name=f"distinct_clients_{review_approval_status.lower()}",
+        display_name=f"Distinct Population: {snake_to_title(review_approval_status)}",
+        description=f"Total distinct count of clients in the {snake_to_title(review_approval_status).lower()} status",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_surfaceable": ["true"],
+                "review_approval_status": [review_approval_status],
+            },
+        ),
+    )
+    for review_approval_status in [
+        "SNOOZE_REVIEW",
+        "GRANT_REVIEW",
+        "REVISIONS_REQUESTED",
+    ]
 ]
 
 
