@@ -317,6 +317,89 @@ def detainers_cte() -> str:
     """
 
 
+# List of violent felony charges as defined in TN's Classification V2 CAF form
+US_TN_CAF_V2_VIOLENT_FELONY_CHARGES = [
+    "ADULTERATION FOOD, DRUGS",
+    "AGGRAVATED ARSON",
+    "AGGRAVATED ASSAULT",
+    "AGGRAVATED KIDNAPPING",
+    "AGGRAVATED PROSTITUTION (WITH HIV)",
+    "AGGRAVATED RAPE",
+    "AGGRAVATED RIOT",
+    "AGGRAVATED SEXUAL ASSAULT",
+    "AGGRAVATED SEXUAL BATTERY",
+    "AGGRAVATED ROBBERY",
+    "AGGRAVATED SPOUSE RAPE",
+    "AIDING AND ABETTING BANK ROBBERY",
+    "ASSAULT FROM AMBUSH",
+    "ASSAULT W/DEADLY WEAPON",
+    "ASSAULT W/I AGGRAVATED KIDNAPPING",
+    "ASSAULT W/INTENT MANSLAUGHTER",
+    "ASSAULT W/INTENT TO COMMIT FELONY",
+    "ASSAULT W/INTENT TO MURDER",
+    "ASSAULT W/INTENT TO RAPE",
+    "ASSAULT W/INTENT TO ROB",
+    "ASSAULT & BATTERY (felony only)",
+    "ASSAULT & BATTERY W/INTENT CARNAL KNOWLEDGE",
+    "CARJACKING",
+    "CIVIL RIGHTS INTIMIDATION - WITH VIOLENCE",
+    "CRIMINAL EXPOSURE TO HIV",
+    "ESCAPE - TAKE HOSTAGE(S)",
+    "ESP. AGGRAVATED ROBBERY",
+    "ESP. AGGRAVATED BURGLARY",
+    "EXPLOSIVE – THREAT",
+    "GIFTS ADULTERATED CANDY/FOOD",
+    "HOME INVASION",
+    "INTIMIDATION – VIOLENCE",
+    "KIDNAPPING",
+    "KIDNAP - SEXUAL ASSAULT, RANSOM, HOSTAGE,",
+    "MAYHEM",
+    "MURDER 1",
+    "MURDER 2",
+    "MURDER OF PERSON 70+",
+    "PARTICIPATING IN A RIOT",
+    "RAPE - WITH VIOLENCE/FORCE/COERCION",
+    "RECKLESS AGGRAVATED ASSAULT",
+    "RETALIATE FOR PAST ACTION - WITH VIOLENCE",
+    "ROBBERY",
+    "ROBBERY - ARMED WITH DEADLY WEAPON",
+    "SECOND DEGREE MURDER",
+    "SEXUAL BATTERY - FORCE/COERCION",
+    "STALKING",
+    "THREAT TO BOMB",
+    "THREATENING A WITNESS",
+    "VOLUNTARY MANSLAUGHTER",
+    "WILLFUL INJURY W/EXPLOSIVES",
+]
+
+
+def caf_v2_violent_felony_sentences_cte() -> str:
+    """
+    Returns a CTE that gets distinct violent felony sentences imposed in TN.
+
+    Returns:
+        str: SQL CTE as a string
+    """
+    violent_felony_charges_list = list_to_query_string(
+        US_TN_CAF_V2_VIOLENT_FELONY_CHARGES, quoted=True
+    )
+    return f"""
+    felony_sentences AS (
+        -- get distinct felonies imposed with indicator for violence
+        SELECT DISTINCT
+            person_id,
+            state_code,
+            imposed_date,
+            description,
+        FROM `{{project_id}}.sentence_sessions_v2_all.sentences_and_charges_materialized`
+        WHERE 
+            state_code = "US_TN"
+            AND classification_type != "MISDEMEANOR"
+            AND description IN ({violent_felony_charges_list})
+    )
+    """
+
+
 def compliant_reporting_offense_type_condition(
     offense_flags: Union[str, List[str]],
 ) -> str:
