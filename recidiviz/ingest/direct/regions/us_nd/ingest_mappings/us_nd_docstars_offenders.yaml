@@ -146,14 +146,6 @@ output:
               $state: STATE
               $zip: ZIP
     birthdate: DOB
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $enum_mapping:
-        $raw_text: SEX
-        $mappings:
-          StateGender.MALE: "1"
-          StateGender.FEMALE: "2"
     sex:
       $enum_mapping:
         $raw_text: SEX

@@ -31,23 +31,6 @@ output:
               $name_suffix: suffix
               $middle_names: middle_initial
           alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $enum_mapping:
-        $raw_text: OffSex
-        $mappings:
-          StateGender.MALE: [M, m]
-          StateGender.FEMALE: [F, f]
-        $ignore:
-          # These are relatively rare erroneous values.
-          - "1"
-          - A
-          - B
-          - MM
-          - N
-          - U
-          - W
     sex:
       $enum_mapping:
         $raw_text: OffSex

@@ -26,20 +26,6 @@ output:
     birthdate: dob
     current_email_address: email_addr
     current_phone_number: phone_num
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $enum_mapping:
-        $raw_text: sex
-        $mappings:
-          StateGender.MALE:
-            - M
-          StateGender.FEMALE:
-            - F
-          # TODO(#35794): Confirm these mappings
-          StateGender.INTERNAL_UNKNOWN:
-            - G
-            - N
     sex:
       $enum_mapping:
         $raw_text: sex

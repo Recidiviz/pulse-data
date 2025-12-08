@@ -33,23 +33,6 @@ output:
         $middle_names: MIDDLE_NAME
         $surname: SURNAME
     birthdate: DATE_OF_BIRTH
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $conditional:
-        - $if:
-            $not_null: GENDER
-          $then:
-            $enum_mapping:
-              $raw_text: GENDER
-              $mappings:
-                StateGender.MALE:
-                  - Male
-                StateGender.FEMALE:
-                  - Female
-                StateGender.EXTERNAL_UNKNOWN:
-                  - Unknown
-        - $else: $literal_enum(StateGender.INTERNAL_UNKNOWN)
     sex:
       $conditional:
         - $if:

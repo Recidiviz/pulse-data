@@ -84,15 +84,6 @@ output:
                     $json_extract:
                       $key: suffix
                       $json: $iter_item
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $enum_mapping:
-        $raw_text: OFFNSEX
-        $mappings:
-          StateGender.MALE: M
-          StateGender.FEMALE: F
-          StateGender.EXTERNAL_UNKNOWN: U
     sex:
       $enum_mapping:
         $raw_text: OFFNSEX

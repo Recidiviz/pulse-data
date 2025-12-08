@@ -57,14 +57,6 @@ output:
               - legal_address_2
             $include_nulls: False
         $custom_parser: us_pa_custom_enum_parsers.residency_status_from_address
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $enum_mapping:
-        $raw_text: sex
-        $mappings:
-          StateGender.MALE: MALE
-          StateGender.FEMALE: FEMALE
     sex:
       $enum_mapping:
         $raw_text: sex

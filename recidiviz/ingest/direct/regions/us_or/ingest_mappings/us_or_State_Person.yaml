@@ -30,14 +30,6 @@ output:
         $given_names: FIRST_NAME
         $middle_names: MIDDLE_NAME
         $surname: LAST_NAME
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender:
-      $enum_mapping:
-        $raw_text: SEX
-        $mappings:
-          StateGender.MALE: M
-          StateGender.FEMALE: F
     sex:
       $enum_mapping:
         $raw_text: SEX

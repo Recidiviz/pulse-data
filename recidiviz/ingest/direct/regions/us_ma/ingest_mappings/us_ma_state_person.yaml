@@ -17,7 +17,4 @@ output:
       $person_name:
         $given_names: COMMIT_FNAME
         $surname: COMMIT_LNAME
-    # TODO(#50976): Remove this mapping for gender once downstream views / pipelines have
-    # been updated to read from state_person sex instead.
-    gender: $literal_enum(StateGender.INTERNAL_UNKNOWN)
     sex: $literal_enum(StateSex.INTERNAL_UNKNOWN)
