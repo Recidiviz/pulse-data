@@ -49,9 +49,6 @@ class StateGender(StateEntityEnum):
     FEMALE = state_enum_strings.state_gender_female
     MALE = state_enum_strings.state_gender_male
     NON_BINARY = state_enum_strings.state_gender_non_binary
-    TRANS = state_enum_strings.state_gender_trans
-    TRANS_FEMALE = state_enum_strings.state_gender_trans_female
-    TRANS_MALE = state_enum_strings.state_gender_trans_male
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -68,9 +65,6 @@ _STATE_GENDER_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateGender.FEMALE: "Female",
     StateGender.MALE: "Male",
     StateGender.NON_BINARY: "Non-binary",
-    StateGender.TRANS: "Trans",
-    StateGender.TRANS_FEMALE: "Trans female",
-    StateGender.TRANS_MALE: "Trans male",
 }
 
 

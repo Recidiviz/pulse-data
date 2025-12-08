@@ -412,7 +412,7 @@ def create_dfs_dict_demographics(
     Inputs:
         df (DataFrame): output of get_task_query
         races (list): Races we want to analyze (WHITE, BLACK, HISPANIC, etc). Optional
-        genders (list): Genders we want to analyze (MALE, FEMALE, TRANS_MALE, etc). Optional
+        genders (list): Genders we want to analyze (MALE, FEMALE, NON_BINARY, etc). Optional
         age_brackets (list): Age groups we want to analyze (Example: [(18, 25), (25, 40), (40, 60), (60, 100)]). Optional
     """
     # Generate cumulative filtered data frames by each demographic indicated
@@ -483,7 +483,7 @@ def count_tes_spans_per_month_adding_each_criteria_one_by_one(
         gender (bool): Indicates if we want to analyze genders
         age (bool): Indicates if we want to analyze age groups
         races (list): Races we want to analyze (WHITE, BLACK, HISPANIC, etc)
-        genders (list): Genders we want to analyze (MALE, FEMALE, TRANS_MALE, etc)
+        genders (list): Genders we want to analyze (MALE, FEMALE, NON_BINARY, etc)
         age_brackets (list): Age groups we want to analyze (Example: [(18, 25), (25, 40), (40, 60), (60, 100)])
 
     Returns:

@@ -13,10 +13,12 @@ output:
       $enum_mapping:
         $raw_text: GENDER
         $mappings:
-          FakeGender.MALE: Male
-          FakeGender.FEMALE: Female
-          FakeGender.TRANS_FEMALE: Trans-Female
-          FakeGender.TRANS_MALE: Trans-Male
+          FakeGender.MALE:
+            - Male
+            - Trans-Male
+          FakeGender.FEMALE:
+            - Female
+            - Trans-Female
         $ignore:
           - x
           - "!"

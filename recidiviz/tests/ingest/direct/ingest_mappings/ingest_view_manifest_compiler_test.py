@@ -782,7 +782,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                gender=FakeGender.TRANS_FEMALE,
+                gender=FakeGender.FEMALE,
                 gender_raw_text="TRANS-FEMALE",
                 external_ids=[
                     FakePersonExternalId(
