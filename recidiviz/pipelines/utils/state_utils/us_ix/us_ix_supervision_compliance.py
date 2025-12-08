@@ -91,9 +91,7 @@ SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
 # http://forms.idoc.idaho.gov/WebLink/0/edoc/283396/Sex%20Offenders%20Supervision%20and%20Classification.pdf
 SEX_OFFENSE_LSIR_MINIMUM_SCORE: Dict[StateGender, int] = {
     StateGender.FEMALE: 23,
-    StateGender.TRANS_FEMALE: 23,
     StateGender.MALE: 21,
-    StateGender.TRANS_MALE: 21,
 }
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
@@ -178,17 +176,7 @@ CURRENT_US_IX_ASSESSMENT_SCORE_RANGE: Dict[
         StateSupervisionLevel.MEDIUM: (23, 30),
         StateSupervisionLevel.HIGH: (31, None),
     },
-    StateGender.TRANS_FEMALE: {
-        StateSupervisionLevel.MINIMUM: (0, 22),
-        StateSupervisionLevel.MEDIUM: (23, 30),
-        StateSupervisionLevel.HIGH: (31, None),
-    },
     StateGender.MALE: {
-        StateSupervisionLevel.MINIMUM: (0, 20),
-        StateSupervisionLevel.MEDIUM: (21, 28),
-        StateSupervisionLevel.HIGH: (29, None),
-    },
-    StateGender.TRANS_MALE: {
         StateSupervisionLevel.MINIMUM: (0, 20),
         StateSupervisionLevel.MEDIUM: (21, 28),
         StateSupervisionLevel.HIGH: (29, None),

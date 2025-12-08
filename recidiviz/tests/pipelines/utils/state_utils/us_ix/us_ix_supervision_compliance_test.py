@@ -2064,9 +2064,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     @parameterized.expand(
         [
             (StateGender.MALE,),
-            (StateGender.TRANS_MALE,),
             (StateGender.FEMALE,),
-            (StateGender.TRANS_FEMALE,),
         ]
     )
     def test_reassessment_requirements_at_sex_offense_boundaries(
@@ -2203,13 +2201,9 @@ class TestSupervisionDowngrades(unittest.TestCase):
     @parameterized.expand(
         [
             ("male_old", StateGender.MALE, date(2019, 12, 31)),
-            ("trans_ma_oldle", StateGender.TRANS_MALE, date(2019, 12, 31)),
             ("fema_oldle", StateGender.FEMALE, date(2019, 12, 31)),
-            ("trans_fema_oldle", StateGender.TRANS_FEMALE, date(2019, 12, 31)),
             ("male_new", StateGender.MALE, date(2020, 12, 31)),
-            ("trans_male_new", StateGender.TRANS_MALE, date(2020, 12, 31)),
             ("female_new", StateGender.FEMALE, date(2020, 12, 31)),
-            ("trans_female_new", StateGender.TRANS_FEMALE, date(2020, 12, 31)),
         ]
     )
     def test_minimum_no_downgrade(
@@ -2306,28 +2300,9 @@ class TestSupervisionDowngrades(unittest.TestCase):
     @parameterized.expand(
         [
             ("medium_female", StateSupervisionLevel.MEDIUM, 23, StateGender.FEMALE),
-            (
-                "medium_trans_female",
-                StateSupervisionLevel.MEDIUM,
-                23,
-                StateGender.TRANS_FEMALE,
-            ),
             ("medium_male", StateSupervisionLevel.MEDIUM, 21, StateGender.MALE),
-            (
-                "medium_trans_male",
-                StateSupervisionLevel.MEDIUM,
-                21,
-                StateGender.TRANS_MALE,
-            ),
             ("high_female", StateSupervisionLevel.HIGH, 31, StateGender.FEMALE),
-            (
-                "high_trans_female",
-                StateSupervisionLevel.HIGH,
-                31,
-                StateGender.TRANS_FEMALE,
-            ),
             ("high_male", StateSupervisionLevel.HIGH, 29, StateGender.MALE),
-            ("high_trans_male", StateSupervisionLevel.HIGH, 29, StateGender.TRANS_MALE),
         ]
     )
     def test_new_downgrade_at_border(

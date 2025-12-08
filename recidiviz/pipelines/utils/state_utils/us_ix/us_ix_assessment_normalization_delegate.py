@@ -18,7 +18,7 @@
 import datetime
 from typing import Optional
 
-from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.common.constants.state.state_person import StateSex
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
@@ -29,7 +29,7 @@ class UsIxAssessmentNormalizationDelegate(StateSpecificAssessmentNormalizationDe
     """US_IX implementation of the StateSpecificAssessmentNormalizationDelegate."""
 
     def __init__(self, person: StatePerson) -> None:
-        self.gender = person.gender
+        self.sex = person.sex
 
     def set_lsir_assessment_score_bucket(
         self, assessment: StateAssessment
@@ -45,13 +45,13 @@ class UsIxAssessmentNormalizationDelegate(StateSpecificAssessmentNormalizationDe
                 if assessment_score <= 30:
                     return "LEVEL_3"
                 return "LEVEL_4"
-            if self.gender in {StateGender.MALE, StateGender.TRANS_MALE}:
+            if self.sex is StateSex.MALE:
                 if assessment_score <= 20:
                     return "LOW"
                 if assessment_score <= 28:
                     return "MODERATE"
                 return "HIGH"
-            if self.gender in {StateGender.FEMALE, StateGender.TRANS_FEMALE}:
+            if self.sex is StateSex.FEMALE:
                 if assessment_score <= 22:
                     return "LOW"
                 if assessment_score <= 30:
