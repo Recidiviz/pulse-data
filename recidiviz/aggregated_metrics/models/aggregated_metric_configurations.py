@@ -2178,24 +2178,25 @@ VIOLATION_RESPONSES_BY_TYPE_METRICS = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
 
-DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_VISIBLE_IN_TOOL = SpanDistinctUnitCountMetric(
-    name="workflows_distinct_people_eligible_and_visible_in_tool",
-    display_name="Distinct Population: Eligible And Visible In Tool",
-    description="Total distinct count of clients eligible and visible-in-tool for fully launched task types",
-    span_selector=SpanSelector(
-        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-        span_conditions_dict={
-            "is_eligible": ["true"],
-            "is_surfaceable": ["true"],
-            "task_type_is_fully_launched": ["true"],
-        },
-    ),
+DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_VISIBLE_IN_TOOL = (
+    SpanDistinctUnitCountMetric(
+        name="workflows_distinct_people_eligible_and_visible_in_tool",
+        display_name="Distinct Population: Eligible And Visible In Tool",
+        description="Total distinct count of clients eligible and visible-in-tool",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "is_surfaceable": ["true"],
+            },
+        ),
+    )
 )
 
 DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_eligible_and_actionable",
     display_name="Distinct Population: Eligible And Actionable",
-    description="Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for fully launched task types",
+    description="Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress)",
     span_selector=SpanSelector(
         span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         span_conditions_dict={
@@ -2203,7 +2204,6 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMet
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
-            "task_type_is_fully_launched": ["true"],
         },
     ),
 )
@@ -2211,13 +2211,12 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMet
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_VISIBLE_IN_TOOL = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_almost_eligible_and_visible_in_tool",
     display_name="Distinct Population: Almost Eligible And Visible In Tool",
-    description="Total distinct count of clients almost eligible and visible-in-tool for fully launched task types",
+    description="Total distinct count of clients almost eligible and visible-in-tool",
     span_selector=SpanSelector(
         span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         span_conditions_dict={
             "is_almost_eligible": ["true"],
             "is_surfaceable": ["true"],
-            "task_type_is_fully_launched": ["true"],
         },
     ),
 )
@@ -2225,7 +2224,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_VISIBLE_IN_TOOL = SpanDistinct
 DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_eligible_actionable_and_viewed",
     display_name="Distinct Population: Eligible, Actionable, And Viewed",
-    description="Total distinct count of clients eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for fully launched task types",
+    description="Total distinct count of clients eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on)",
     span_selector=SpanSelector(
         span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         span_conditions_dict={
@@ -2233,7 +2232,6 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitC
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
-            "task_type_is_fully_launched": ["true"],
             "viewed": ["true"],
         },
     ),
@@ -2251,7 +2249,6 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
-                "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -2263,7 +2260,7 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_almost_eligible_and_actionable",
     display_name="Distinct Population: Almost Eligible And Actionable",
-    description="Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for fully launched task types",
+    description="Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) ",
     span_selector=SpanSelector(
         span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         span_conditions_dict={
@@ -2271,7 +2268,6 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitC
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
-            "task_type_is_fully_launched": ["true"],
         },
     ),
 )
@@ -2279,7 +2275,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitC
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_almost_eligible_actionable_and_viewed",
     display_name="Distinct Population: Almost Eligible, Actionable, And Viewed",
-    description="Total distinct count of clients almost eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for fully launched task types",
+    description="Total distinct count of clients almost eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on)",
     span_selector=SpanSelector(
         span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         span_conditions_dict={
@@ -2287,7 +2283,6 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistin
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
-            "task_type_is_fully_launched": ["true"],
             "viewed": ["true"],
         },
     ),
@@ -2305,7 +2300,6 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
-                "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -2624,6 +2618,65 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
         },
     ),
 )
+
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = DailyAvgSpanCountMetric(
+    name="avg_daily_population_task_almost_eligible_actionable_and_viewed",
+    display_name="Average Population: Task Almost Eligible, Actionable, And Viewed",
+    description="Average daily count of clients almost eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on)",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "viewed": ["true"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_almost_eligible_actionable_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Almost Eligible, Actionable, And Viewed, {b.task_title}",
+        description=f"Average daily count of clients almost eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for task type:  {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "viewed": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_almost_eligible_actionable_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Almost Eligible, Actionable, And Viewed, {b.task_title}",
+        description=f"Average daily count of clients almost eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for task type:  {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "viewed": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_FUNNEL_METRICS = [
     DailyAvgSpanCountMetric(
         name=f"avg_population_task_almost_eligible_{k.lower()}",
@@ -3357,6 +3410,7 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
                 "marked_ineligible": ["true"],
                 "is_eligible": ["true"],
                 "task_type": [b.task_type_name],
+                "is_surfaceable": ["true"],
             },
         ),
     )
@@ -3375,6 +3429,7 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION = [
                 "marked_ineligible": ["true"],
                 "is_eligible": ["true"],
                 "task_type": [b.task_type_name],
+                "is_surfaceable": ["true"],
             },
         ),
     )
@@ -3392,6 +3447,8 @@ AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_SUPERVISION = [
             span_conditions_dict={
                 "in_progress": ["true"],
                 "is_eligible": ["true"],
+                "marked_ineligible": ["false"],
+                "is_surfaceable": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -3410,6 +3467,8 @@ AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_INCARCERATION = [
             span_conditions_dict={
                 "in_progress": ["true"],
                 "is_eligible": ["true"],
+                "marked_ineligible": ["false"],
+                "is_surfaceable": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -3445,7 +3504,6 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION = [
             span_conditions_dict={
                 "is_eligible": ["true"],
                 "viewed": ["true"],
-                "marked_ineligible": ["false"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -3464,13 +3522,70 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION = [
             span_conditions_dict={
                 "is_eligible": ["true"],
                 "viewed": ["true"],
-                "marked_ineligible": ["false"],
                 "task_type": [b.task_type_name],
             },
         ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED = DailyAvgSpanCountMetric(
+    name="avg_daily_population_task_eligible_actionable_and_viewed",
+    display_name="Average Population: Eligible, Actionable, And Viewed",
+    description="Average daily count of clients eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on)",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "viewed": ["true"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_actionable_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Eligible, Actionable, And Viewed, {b.task_title}",
+        description=f"Average daily count of clients eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for task type:  {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "viewed": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_actionable_and_viewed_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Eligible, Actionable, And Viewed, {b.task_title}",
+        description=f"Average daily count of clients eligible, actionable (visible, not marked ineligible, not marked in progress), and viewed (clicked-on) for task type:  {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "viewed": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED = DailyAvgSpanCountMetric(
@@ -3483,9 +3598,6 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED = DailyAvgSpanCountMetric(
             "is_eligible": ["true"],
             "viewed": ["false"],
             "is_surfaceable": ["true"],
-            "in_progress": ["false"],
-            "marked_ineligible": ["false"],
-            "task_type_is_fully_launched": ["true"],
         },
     ),
 )
@@ -3500,7 +3612,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION = [
             span_conditions_dict={
                 "is_eligible": ["true"],
                 "viewed": ["false"],
-                "marked_ineligible": ["false"],
+                "is_surfaceable": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -3519,7 +3631,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION = [
             span_conditions_dict={
                 "is_eligible": ["true"],
                 "viewed": ["false"],
-                "marked_ineligible": ["false"],
+                "is_surfaceable": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -3540,9 +3652,27 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS = DailyAvgSpanCountMetri
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
-            "task_type_is_fully_launched": ["true"],
         },
     ),
+)
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_LESS_THAN_30_DAYS = (
+    DailyAvgSpanCountMetric(
+        name="avg_daily_population_task_eligible_and_unviewed_less_than_30_days",
+        display_name="Average Population: Task Eligible And Unviewed <30 Days",
+        description="Average daily count of clients eligible and unviewed for <30 days",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible_past_30_days": ["false"],
+                "viewed": ["false"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "is_eligible": ["true"],
+            },
+        ),
+    )
 )
 
 AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION = [
@@ -3559,7 +3689,28 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION = [
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
                 "task_type": [b.task_type_name],
-                "task_type_is_fully_launched": ["true"],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_LESS_THAN_30_DAYS_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_unviewed_less_than_30_days_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Unviewed <30 Days, {b.task_title}",
+        description=f"Average daily count of clients eligible and unviewed for <30 days for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "is_eligible_past_30_days": ["false"],
+                "viewed": ["false"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
             },
         ),
     )
@@ -3581,7 +3732,28 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION = 
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
                 "task_type": [b.task_type_name],
-                "task_type_is_fully_launched": ["true"],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_LESS_THAN_30_DAYS_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_unviewed_less_than_30_days_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Unviewed <30 Days, {b.task_title}",
+        description=f"Average daily count of clients eligible and unviewed for <30 days for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "is_eligible_past_30_days": ["false"],
+                "viewed": ["false"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
             },
         ),
     )
