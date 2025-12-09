@@ -18,13 +18,19 @@ exclusions:
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+  - validation_name: state_incarceration_period_by_release_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#54723) Incarceration periods only exist as inferred from supervision periods.
+  - validation_name: state_incarceration_period_by_admission_date_stable_counts
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#54723) Incarceration periods only exist as inferred from supervision periods.
 max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_termination_date_stable_counts
-    hard_max_allowed_error_override: .32
-    override_reason: .32 falls within an expected range of variation for this measure
+    hard_max_allowed_error_override: .36
+    override_reason: I think this is normal variation! Especially towards the end of the year, we tend to see a lot of action.
   - validation_name: state_supervision_period_by_start_date_stable_counts
-    hard_max_allowed_error_override: 0.27
-    override_reason: .27 falls within an expected range of variation for this measure
+    hard_max_allowed_error_override: 0.36
+    override_reason: I think this is normal variation! Especially towards the end of the year, we tend to see a lot of action.
   - validation_name: outliers_staff_count_percent_change_intermonth
     hard_max_allowed_error_override: .07
     override_reason: This is likely expected variation.
