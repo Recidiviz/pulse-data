@@ -49,16 +49,6 @@ IN_PERSON_CONTACT_TRIGGERS_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQue
         meets_in_person_contact_triggers.VIEW_BUILDER,
         meets_in_person_in_community_contact_triggers.VIEW_BUILDER,
     ],
-    allowed_duplicate_reasons_keys=[
-        # default function to de-duplicate (MAX) should be fine here
-        "last_contact_date",
-        # should be the same because underlying contact periods should be the same
-        "contact_due_date",
-        # defaulting to MAX should also be fine here
-        "contact_count",
-        # should agree across the two anyways
-        "contact_cadence",
-    ],
 )
 
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(

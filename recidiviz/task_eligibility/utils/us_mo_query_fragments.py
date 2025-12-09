@@ -18,9 +18,16 @@
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
+    calc_contact_period_end_date,
     create_contact_cadence_reason,
 )
 from recidiviz.common.constants.states import StateCode
@@ -403,33 +410,43 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
     )
 
 
-def us_mo_contact_compliance_builder_type_agnostic(
+# TODO(#54133): Validate logic, especially for "2+ per 1 period" contacts and "2+ per 2+
+# period" contacts.
+def us_mo_contact_compliance_builder(
     *,
     criteria_name: str,
     description: str,
     contact_category: str,
-    contact_category_name_in_reason_blob: str = "category_of_contact",
-    contact_types_accepted_name_in_reason_blob: str = "contact_types_accepted",
+    reasons_field_suffix: str = "",
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns a state-specific criterion view builder identifying when someone in MO
-    is due (i.e., has not met requirements) for a category of contact encompassing
+    is due (i.e., has not met requirements) for a category of contact that can encompass
     multiple contact types.
 
     Args:
         criteria_name (str): The name of the criterion view.
         description (str): A brief description of the criterion view.
         contact_category (str): The category of contact being considered, as specified
-            in `us_mo_contact_standards_type_agnostic.csv`.
-        contact_category_name_in_reason_blob (str, optional): The name for the reasons
-            field containing the `contact_category` from our contact cadence spans.
-            Default: "category_of_contact".
-        contact_types_accepted_name_in_reason_blob (str, optional): The name for the
-            reasons field containing the `contact_types_accepted` from our contact
-            cadence spans. Default: "contact_types_accepted".
+            in `us_mo_contact_standards.csv`.
+        reasons_field_suffix (str, optional): Suffix to append to names of reasons
+            fields. Can be used to make it easier to group criteria by ensuring reasons
+            fields for sub-criteria have different names. Default: "" (adds no suffix).
     Returns:
         StateSpecificTaskCriteriaBigQueryViewBuilder: View builder for spans of time
             when someone is due for a contact within the specified category.
     """
+
+    reasons_field_name_category_of_contact = (
+        f"category_of_contact{reasons_field_suffix}"
+    )
+    reasons_field_name_contact_types_accepted = (
+        f"contact_types_accepted{reasons_field_suffix}"
+    )
+    reasons_field_name_contact_cadence = f"contact_cadence{reasons_field_suffix}"
+    reasons_field_name_contact_count = f"contact_count{reasons_field_suffix}"
+    reasons_field_name_contact_due_date = f"contact_due_date{reasons_field_suffix}"
+    reasons_field_name_last_contact_date = f"last_contact_date{reasons_field_suffix}"
+    reasons_field_name_overdue_flag = f"overdue_flag{reasons_field_suffix}"
 
     criterion_query = f"""
     WITH contact_events AS (
@@ -444,153 +461,242 @@ def us_mo_contact_compliance_builder_type_agnostic(
     ),
     contact_cadence_spans AS (
         SELECT *
-        FROM `{{project_id}}.tasks_views.us_mo_contact_cadence_spans_type_agnostic_materialized`
+        FROM `{{project_id}}.tasks_views.us_mo_contact_requirement_spans_materialized`
         WHERE contact_category = '{contact_category}'
     ),
-    -- connect each contact to the contact period during which it was completed
-    lookback_cte AS (
-        SELECT
-            ccs.state_code,
-            ccs.person_id,
-            CAST(ccs.contact_period_start AS DATE) AS contact_period_start,
-            DATE_ADD(CAST(ccs.contact_period_end AS DATE), INTERVAL 1 DAY) AS contact_period_end_exclusive,
-            ccs.contact_category,
-            ccs.contact_types_accepted,
-            ccs.frequency,
-            ccs.frequency_date_part,
-            ccs.quantity,
-            ce.contact_date,
-        FROM contact_cadence_spans ccs
-        LEFT JOIN contact_events ce
-            ON ccs.state_code = ce.state_code
-            AND ccs.person_id = ce.person_id
-            AND ce.contact_type IN UNNEST(SPLIT(ccs.contact_types_accepted, ','))
-            AND ce.contact_date BETWEEN ccs.contact_period_start AND ccs.contact_period_end
-    ),
-    -- union all critical dates (start dates, end dates, & contact dates)
-    critical_dates AS (
+    /* Create spans of time when someone has an upcoming contact due date. For month- or
+    week-based contact requirements, we extend due dates to the end of the relevant
+    calendar month or week. (For example, for a "once every four months" contact
+    requirement, if the latest contact occurred on January 15, the due date of the next
+    contact would be May 30.) */
+    due_date_spans_initial_compliance AS (
+        /* Create spans based on when someone starts on a supervision level / case type.
+        Treat each level/type change as a fresh start, without looking back to previous
+        contacts but allowing for a full contact interval to come into compliance. (For
+        example, for a "once every four months" contact requirement, we allow four
+        months from the change before the next contact is due.)
+        TODO(#54133): Do we need to adjust this logic to align with MO's practices? */
         SELECT
             state_code,
             person_id,
-            contact_period_start,
-            contact_period_end_exclusive,
+            contact_standard_period_start AS start_date,
+            contact_standard_period_end AS end_date,
             contact_category,
             contact_types_accepted,
             frequency,
             frequency_date_part,
             quantity,
-            contact_period_start AS critical_date,
-        FROM lookback_cte
-        UNION DISTINCT
-        SELECT
+            {calc_contact_period_end_date(period_start_date="contact_standard_period_start")}
+                AS initial_compliance_due_date,
+        FROM contact_cadence_spans
+    ),
+    due_date_spans_from_contacts AS (
+        /* Create spans based on when someone has a qualifying contact. Each contact
+        acts as a fresh start, such that the next contact won't be due for another full
+        contact interval. (For example, for a "once every four months" requirement, the
+        due date for the subsequent contact will be four months after the latest
+        contact.) */
+        WITH critical_date_spans_contact_expiration AS (
+            SELECT
+                ccs.state_code,
+                ccs.person_id,
+                ce.contact_date AS start_datetime,
+                ccs.contact_standard_period_end AS end_datetime,
+                DATE_ADD(
+                    (
+                        {calc_contact_period_end_date(period_start_date="ce.contact_date")}
+                    ),
+                    INTERVAL 1 DAY
+                ) AS critical_date,
+                ccs.contact_category,
+                ccs.contact_types_accepted,
+                ccs.frequency,
+                ccs.frequency_date_part,
+                ccs.quantity,
+                {calc_contact_period_end_date(period_start_date="ce.contact_date")}
+                    AS contact_expiration_date,
+                ce.contact_date AS last_contact_date,
+            FROM contact_cadence_spans ccs
+            /* Use INNER JOIN because we already create baseline spans separately for
+            contact periods prior to considering any contacts, so we only need to deal
+            with contact periods here that overlap with contacts. */
+            INNER JOIN contact_events ce
+                ON ccs.state_code = ce.state_code
+                AND ccs.person_id = ce.person_id
+                AND ce.contact_type IN UNNEST(SPLIT(ccs.contact_types_accepted, ','))
+                AND ce.contact_date BETWEEN ccs.contact_standard_period_start AND {nonnull_end_date_exclusive_clause('ccs.contact_standard_period_end')}
+            /* Sometimes, a single contact (with one `contact_external_id`) may include
+            multiple types of contacts that count toward a requirement, and those types
+            may be split out into different rows. However, even though that single
+            contact may have multiple qualifying types, we only want to count that
+            contact once toward meeting requirements. Here, in cases where there are
+            multiple rows coming from the preprocessed contacts view with the same
+            `contact_external_id`, we'll reduce it to one row and treat it as one
+            contact. If all that differs between the two rows is the `contact_type`, it
+            doesn't matter which row we choose, since we're not keeping the
+            `contact_type` as output from this CTE anyways. */
+            QUALIFY ROW_NUMBER() OVER (
+                PARTITION BY ce.state_code, ce.person_id, ce.contact_external_id
+                ORDER BY ce.contact_type DESC
+            ) = 1
+        ),
+        {critical_date_has_passed_spans_cte(
+            table_name="critical_date_spans_contact_expiration",
+            cte_suffix="_contact_expiration",
+            attributes=[
+                "contact_category",
+                "contact_types_accepted",
+                "frequency",
+                "frequency_date_part",
+                "quantity",
+                "contact_expiration_date",
+                "last_contact_date",
+            ],
+        )}
+        SELECT 
             state_code,
             person_id,
-            contact_period_start,
-            contact_period_end_exclusive,
+            start_date,
+            end_date,
             contact_category,
             contact_types_accepted,
             frequency,
             frequency_date_part,
             quantity,
-            contact_period_end_exclusive AS critical_date,
-        FROM lookback_cte
-        UNION DISTINCT
-        SELECT
-            state_code,
-            person_id,
-            contact_period_start,
-            contact_period_end_exclusive,
-            contact_category,
-            contact_types_accepted,
-            frequency,
-            frequency_date_part,
-            quantity,
-            contact_date AS critical_date,
-        FROM lookback_cte
-        WHERE contact_date IS NOT NULL
-    ),
-    divided_periods AS (
-        SELECT
-            state_code,
-            person_id,
-            contact_period_start,
-            contact_period_end_exclusive,
-            contact_category,
-            contact_types_accepted,
-            frequency,
-            frequency_date_part,
-            quantity,
-            critical_date AS period_start,
-            LEAD(critical_date) OVER (
-                PARTITION BY state_code, person_id, contact_period_start, contact_period_end_exclusive
-                ORDER BY critical_date
-            ) AS period_end_exclusive,
-        FROM critical_dates
-    ),
-    divided_periods_with_contact_info AS (
-        SELECT
-            dp.state_code,
-            dp.person_id,
-            dp.contact_period_start,
-            dp.contact_period_end_exclusive,
-            dp.period_start,
-            dp.period_end_exclusive,
-            dp.contact_category,
-            dp.contact_types_accepted,
-            dp.frequency,
-            dp.frequency_date_part,
-            dp.quantity,
-            /* For contacts completed between the start of the contact period and the
-            end date of the current span, count them toward compliance requirements. */
-            COUNT(
-                /* We only want to count a single contact event once, even if that event
-                had multiple codes that we've split out into different rows. */
-                DISTINCT
-                IF(
-                    ce.contact_date BETWEEN dp.contact_period_start AND DATE_SUB(dp.period_end_exclusive, INTERVAL 1 DAY),
-                    ce.contact_external_id,
-                    NULL
-                )
-            ) AS contact_count,
-            /* Pull the date of the latest completed contact, even if it was in a
-            previous contact period. */
-            MAX(ce.contact_date) AS last_contact_date,
-        FROM divided_periods dp
-        LEFT JOIN contact_events ce
-            ON dp.state_code = ce.state_code
-            AND dp.person_id = ce.person_id
-            AND ce.contact_type IN UNNEST(SPLIT(dp.contact_types_accepted, ','))
-            -- join in contacts completed before the end date of the span
-            AND ce.contact_date < dp.period_end_exclusive
-        WHERE dp.period_end_exclusive IS NOT NULL
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-    ),
-    periods AS (
-        SELECT
-            state_code,
-            person_id,
-            period_start AS start_date,
-            period_end_exclusive AS end_date,
-            (contact_count < quantity) AS meets_criteria,
+            -- if the critical date has passed, the contact has expired
+            IF(critical_date_has_passed, 0, 1) AS contact_count,
+            contact_expiration_date,
             last_contact_date,
-            DATE_SUB(contact_period_end_exclusive, INTERVAL 1 DAY) AS contact_due_date,
-            contact_category AS {contact_category_name_in_reason_blob},
-            contact_types_accepted AS {contact_types_accepted_name_in_reason_blob},
+        FROM critical_date_has_passed_spans_contact_expiration
+    ),
+    due_date_spans_all AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            contact_category,
+            contact_types_accepted,
+            frequency,
+            frequency_date_part,
+            quantity,
+            0 AS contact_count,
+            CAST(NULL AS DATE) AS contact_expiration_date,
+            initial_compliance_due_date,
+            CAST(NULL AS DATE) AS last_contact_date,
+        FROM due_date_spans_initial_compliance
+        UNION ALL
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            contact_category,
+            contact_types_accepted,
+            frequency,
+            frequency_date_part,
+            quantity,
             contact_count,
-            {create_contact_cadence_reason()} AS contact_cadence,
-        FROM divided_periods_with_contact_info
-    )
-    SELECT
-        *,
+            contact_expiration_date,
+            CAST(NULL AS DATE) AS initial_compliance_due_date,
+            last_contact_date,
+        FROM due_date_spans_from_contacts
+    ),
+    -- sub-sessionize to combine due dates from all of the spans
+    {create_sub_sessions_with_attributes(table_name="due_date_spans_all")},
+    -- aggregate sub-sessions to deduplicate between overlapping spans
+    sub_sessions_with_attributes_aggregated AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            -- these should all be the same across all rows anyways
+            ANY_VALUE(contact_category) AS contact_category,
+            ANY_VALUE(contact_types_accepted) AS contact_types_accepted,
+            ANY_VALUE(frequency) AS frequency,
+            ANY_VALUE(frequency_date_part) AS frequency_date_part,
+            ANY_VALUE(quantity) AS quantity,
+            SUM(contact_count) AS contact_count,
+            -- all expiration dates for contacts that have occurred by start date
+            ARRAY_AGG(contact_expiration_date ORDER BY contact_expiration_date DESC) AS contact_expiration_date_array,
+            -- should pick up the one non-null date
+            ANY_VALUE(initial_compliance_due_date) AS initial_compliance_due_date,
+            -- pull most recent contact date
+            MAX(last_contact_date) AS last_contact_date,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1, 2, 3, 4
+    ),
+    /* Next, we'll use "critical date has passed" logic to split spans by contact due
+    dates, enabling us to identify when a contact will be overdue. */
+    critical_date_spans_due_date AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            DATE_ADD(
+                COALESCE(
+                    contact_expiration_date_array[SAFE_ORDINAL(quantity)],
+                    initial_compliance_due_date
+                ),
+                INTERVAL 1 DAY
+            ) AS critical_date,
+            contact_category,
+            contact_types_accepted,
+            frequency,
+            frequency_date_part,
+            quantity,
+            contact_count,
+            COALESCE(
+                contact_expiration_date_array[SAFE_ORDINAL(quantity)],
+                initial_compliance_due_date
+            ) AS contact_due_date,
+            last_contact_date,
+        FROM sub_sessions_with_attributes_aggregated
+    ),
+    {critical_date_has_passed_spans_cte(
+        table_name="critical_date_spans_due_date",
+        cte_suffix="_due_date",
+        attributes=[
+            "contact_category",
+            "contact_types_accepted",
+            "frequency",
+            "frequency_date_part",
+            "quantity",
+            "contact_count",
+            "contact_due_date",
+            "last_contact_date",
+        ],
+    )}
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        /* Clients will always be eligible, since the only thing that will change when
+        an officer completes a contact is that the due date for the next contact gets
+        bumped out. There will never be a time period where the client has no upcoming
+        due dates. */
+        TRUE AS meets_criteria,
+        contact_category AS {reasons_field_name_category_of_contact},
+        contact_types_accepted AS {reasons_field_name_contact_types_accepted},
+        {create_contact_cadence_reason()} AS {reasons_field_name_contact_cadence},
+        contact_count AS {reasons_field_name_contact_count},
+        contact_due_date AS {reasons_field_name_contact_due_date},
+        last_contact_date AS {reasons_field_name_last_contact_date},
+        -- if the critical date has passed, the contact is overdue
+        critical_date_has_passed AS {reasons_field_name_overdue_flag},
         TO_JSON(STRUCT(
-            last_contact_date,
-            contact_due_date,
-            {contact_category_name_in_reason_blob},
-            {contact_types_accepted_name_in_reason_blob},
-            contact_count,
-            contact_cadence
+            contact_category AS {reasons_field_name_category_of_contact},
+            contact_types_accepted AS {reasons_field_name_contact_types_accepted},
+            {create_contact_cadence_reason()} AS {reasons_field_name_contact_cadence},
+            contact_count AS {reasons_field_name_contact_count},
+            contact_due_date AS {reasons_field_name_contact_due_date},
+            last_contact_date AS {reasons_field_name_last_contact_date},
+            critical_date_has_passed AS {reasons_field_name_overdue_flag}
         )) AS reason,
-    FROM periods
+    FROM critical_date_has_passed_spans_due_date
     """
 
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -601,34 +707,39 @@ def us_mo_contact_compliance_builder_type_agnostic(
         meets_criteria_default=False,
         reasons_fields=[
             ReasonsField(
-                name="last_contact_date",
+                name=reasons_field_name_category_of_contact,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Category of contact due",
+            ),
+            ReasonsField(
+                name=reasons_field_name_contact_types_accepted,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Types of contacts included in category",
+            ),
+            ReasonsField(
+                name=reasons_field_name_contact_cadence,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Contact cadence requirement",
+            ),
+            ReasonsField(
+                name=reasons_field_name_contact_count,
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Number of currently applicable contacts",
+            ),
+            ReasonsField(
+                name=reasons_field_name_contact_due_date,
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date of the last contact.",
+                description="Due date of the contact",
             ),
             ReasonsField(
-                name="contact_due_date",
+                name=reasons_field_name_last_contact_date,
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Due date of the contact.",
+                description="Date of the last contact",
             ),
             ReasonsField(
-                name=contact_category_name_in_reason_blob,
+                name=reasons_field_name_overdue_flag,
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Category of contact due.",
-            ),
-            ReasonsField(
-                name=contact_types_accepted_name_in_reason_blob,
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Types of contacts included in category.",
-            ),
-            ReasonsField(
-                name="contact_count",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Number of contacts done within the overall period.",
-            ),
-            ReasonsField(
-                name="contact_cadence",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Contact cadence requirement.",
+                description="Flag that indicates whether contact was missed",
             ),
         ],
     )
