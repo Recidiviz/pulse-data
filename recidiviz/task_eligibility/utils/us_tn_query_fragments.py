@@ -373,9 +373,12 @@ US_TN_CAF_V2_VIOLENT_FELONY_CHARGES = [
 ]
 
 
-def caf_v2_violent_felony_sentences_cte() -> str:
+def caf_v2_possible_felony_charges_cte() -> str:
     """
-    Returns a CTE that gets distinct violent felony sentences imposed in TN.
+    Returns a CTE that gets charges imposed in TN,
+    with an is_violent flag indicating whether the charge is violent,
+    and classification_type to distinguish confirmed felonies from charges with unknown classification.
+    Unknown classifications are related to either diversion sentences or interstate compact cases.
 
     Returns:
         str: SQL CTE as a string
@@ -384,18 +387,22 @@ def caf_v2_violent_felony_sentences_cte() -> str:
         US_TN_CAF_V2_VIOLENT_FELONY_CHARGES, quoted=True
     )
     return f"""
-    felony_sentences AS (
-        -- get distinct felonies imposed with indicator for violence
-        SELECT DISTINCT
+    possible_felony_charges AS (
+        SELECT
             person_id,
             state_code,
             imposed_date,
             description,
-        FROM `{{project_id}}.sentence_sessions_v2_all.sentences_and_charges_materialized`
+            classification_type,
+            -- Use list of violent felony charges only for TN felony sentences
+            -- Diversion and interstate compact cases matching these descriptions may or may
+            -- not be classified as violent, so we only flag confirmed violent felonies here
+            description IN ({violent_felony_charges_list}) AND classification_type = "FELONY" AS is_violent_felony,
+        FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
         WHERE 
             state_code = "US_TN"
-            AND classification_type != "MISDEMEANOR"
-            AND description IN ({violent_felony_charges_list})
+            -- Exclude misdemeanors, include interstate compact and diversion cases
+            AND classification_type IN ("FELONY", "EXTERNAL_UNKNOWN")
     )
     """
 
