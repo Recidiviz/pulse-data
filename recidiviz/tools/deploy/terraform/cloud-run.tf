@@ -52,6 +52,15 @@ The account and its IAM policies are managed in Terraform.
 EOT
 }
 
+resource "google_service_account" "public_pathways_cloud_run" {
+  account_id   = "public-pathways-cr"
+  display_name = "Public Pathways Cloud Run Service Account"
+  description  = <<EOT
+Service Account that acts as the identity for the Public Pathways Cloud Run service.
+The account and its IAM policies are managed in Terraform.
+EOT
+}
+
 locals {
   cloud_run_common_roles = [
     "roles/appengine.appViewer",
@@ -139,6 +148,13 @@ resource "google_project_iam_member" "admin_panel_iam" {
   project = var.project_id
   role    = each.key
   member  = "serviceAccount:${google_service_account.admin_panel_cloud_run.email}"
+}
+
+resource "google_project_iam_member" "public_pathways_iam" {
+  for_each = toset(local.cloud_run_common_roles)
+  project  = var.project_id
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.public_pathways_cloud_run.email}"
 }
 
 resource "google_service_account_iam_member" "application_data_import_iam" {
@@ -363,7 +379,80 @@ resource "google_cloud_run_service" "asset-generation" {
   autogenerate_revision_name = false
 }
 
-# By default, Cloud Run services are private and secured by IAM. 
+# Initializes Public Pathways Cloud Run service
+resource "google_cloud_run_service" "public-pathways" {
+  name     = "public-pathways-server"
+  location = var.us_central_region
+
+  template {
+    spec {
+      containers {
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["pipenv"]
+        args = [
+          "run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT",
+          "recidiviz.public_pathways.server:app"
+        ]
+
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+
+        env {
+          name  = "APP_URL"
+          value = var.project_id == "recidiviz-123" ? "https://public-pathways-app.recidiviz.org" : "https://public-pathways-app-staging.recidiviz.org"
+        }
+
+        env {
+          name  = "DASHBOARD_URL"
+          value = "https://public-pathways-dashboard.recidiviz.org"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "1024Mi"
+          }
+        }
+      }
+
+      service_account_name = google_service_account.public_pathways_cloud_run.email
+    }
+
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/minScale"        = 1
+        "autoscaling.knative.dev/maxScale"        = var.max_public_pathways_instances
+        "run.googleapis.com/cloudsql-instances"   = local.public_pathways_connection_string
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.id
+        "run.googleapis.com/vpc-access-egress"    = "all-traffic"
+      }
+
+      # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
+      # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
+      # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
+      # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
+      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
+      name = "public-pathways-server-${local.git_short_hash}"
+    }
+  }
+
+  metadata {
+    annotations = {
+      "run.googleapis.com/ingress" = "internal-and-cloud-load-balancing"
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  autogenerate_revision_name = false
+}
+
+# By default, Cloud Run services are private and secured by IAM.
 # The blocks below set up public access so that anyone (e.g. our frontends)
 # can invoke the services through an HTTP endpoint.
 resource "google_cloud_run_service_iam_member" "public-access" {
@@ -378,6 +467,14 @@ resource "google_cloud_run_service_iam_member" "asset-generation-public-access" 
   location = google_cloud_run_service.asset-generation.location
   project  = google_cloud_run_service.asset-generation.project
   service  = google_cloud_run_service.asset-generation.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+resource "google_cloud_run_service_iam_member" "public-pathways-public-access" {
+  location = google_cloud_run_service.public-pathways.location
+  project  = google_cloud_run_service.public-pathways.project
+  service  = google_cloud_run_service.public-pathways.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
