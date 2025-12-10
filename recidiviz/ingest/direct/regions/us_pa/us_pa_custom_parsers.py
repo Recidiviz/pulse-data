@@ -30,7 +30,11 @@ from typing import Dict, List, Optional
 
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.regions.custom_enum_parser_utils import (
+    invert_enum_to_str_mappings,
     invert_str_to_str_mappings,
+)
+from recidiviz.ingest.direct.regions.us_pa.us_pa_custom_enum_parsers import (
+    SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS,
 )
 
 # A static reference cache for converting violation type codes into other relevant
@@ -74,6 +78,19 @@ _VIOLATION_CONDITIONS: Dict[str, List[str]] = {
 _VIOLATION_CONDITIONS_BY_CODE: Dict[str, str] = invert_str_to_str_mappings(
     _VIOLATION_CONDITIONS
 )
+
+
+def county_oos_federal_foreign(county: str) -> bool:
+    """Returns whether supervision county string should get mapped to a custodial authority value"""
+
+    custodial_authority_result = invert_enum_to_str_mappings(
+        SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS
+    ).get(county, None)
+
+    if custodial_authority_result:
+        return True
+
+    return False
 
 
 def get_pfi_raw_text(

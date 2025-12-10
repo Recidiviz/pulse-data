@@ -205,6 +205,7 @@ output:
                       - supervision_location_org_code
           custodial_authority:
             $conditional:
+              # check if this supervision period includes some sort of detainer indicating custodial authority
               - $if:
                   $in:
                     $value: status_code
@@ -221,20 +222,22 @@ output:
                         - "52" # INS Detainer
                       StateCustodialAuthority.OTHER_STATE:
                         - "51" # Other State Detainer
+              # else check if supervision county indicates this period is OOS, federal, or foreign custody
+              # there are no other flags or status codes that indicate OOS
               - $else_if:
-                  $equal:
-                    - $literal("FEDERA")
-                    - county_of_residence
+                  $custom:
+                    $function: us_pa_custom_parsers.county_oos_federal_foreign
+                    $args:
+                      county: county_of_residence
                 $then:
                   $enum_mapping:
                     $raw_text: county_of_residence
-                    $mappings:
-                      StateCustodialAuthority.FEDERAL:
-                        - "FEDERA"
+                    $custom_parser: us_pa_custom_enum_parsers.supervision_period_custodial_authority_mapper_based_on_supervision_county
+              # else map based on supervision type
               - $else:
                   $enum_mapping:
                     $raw_text: supervision_type
-                    $custom_parser: us_pa_custom_enum_parsers.supervision_period_custodial_authority_mapper
+                    $custom_parser: us_pa_custom_enum_parsers.supervision_period_custodial_authority_mapper_based_on_supervision_type
           supervision_level:
             $conditional:
               - $if:

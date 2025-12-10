@@ -337,6 +337,7 @@ def _retrieve_release_reason_mapping(
 SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS: Dict[
     StateCustodialAuthority, List[str]
 ] = {
+    # mappings based on supervision type
     StateCustodialAuthority.SUPERVISION_AUTHORITY: [
         "02",  # Paroled from SCI to PBPP Supervision
         "03",  # Reparoled from SCI to PBPP Supervision
@@ -356,6 +357,63 @@ SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS: Dict[
     StateCustodialAuthority.INTERNAL_UNKNOWN: [
         "08",  # Other States’ Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
+    ],
+    # mappings based on supervision county
+    StateCustodialAuthority.OTHER_COUNTRY: ["FOREIG"],
+    StateCustodialAuthority.FEDERAL: ["FEDERA"],
+    StateCustodialAuthority.OTHER_STATE: [
+        "ALABAM",
+        "ALASKA",
+        "ARIZON",
+        "ARKANS",
+        "CALIFO",
+        "COLORA",
+        "CONNEC",
+        "DEL ST",
+        "FLORID",
+        "GEORGI",
+        "HAWAII",
+        "IDAHO",
+        "ILLINO",
+        "IND ST",
+        "IOWA",
+        "KANSAS",
+        "KENTUC",
+        "LOUISI",
+        "MAINE",
+        "MARYLA",
+        "MASSAC",
+        "MICHIG",
+        "MINNES",
+        "MISSIS",
+        "MISSOU",
+        "MONTAN",
+        "NEBRAS",
+        "NEVADA",
+        "NEW HA",
+        "NEW JE",
+        "NEW ME",
+        "NEW YO",
+        "N CARO",
+        "OHIO",
+        "OKLAHO",
+        "OREGON",
+        "PENNSL",
+        "PUERTO",
+        "RHODE",
+        "S CARO",
+        "S DAKO",
+        "TENNES",
+        "TEXAS",
+        "UTAH",
+        "VERMON",
+        "VIRGIN",
+        "VIRISL",
+        "W VIRG",
+        "WAS ST",
+        "WASHDC",
+        "WISCON",
+        "WYO ST",
     ],
 }
 
@@ -769,7 +827,25 @@ def supervision_period_supervision_type_mapper(
     return get_most_relevant_supervision_type(supervision_types)
 
 
-def supervision_period_custodial_authority_mapper(
+def supervision_period_custodial_authority_mapper_based_on_supervision_county(
+    raw_text: str,
+) -> Optional[StateCustodialAuthority]:
+    """Maps a list of supervision county codes to a custodial authority enum."""
+    if not raw_text:
+        return None
+
+    custodial_authority = STR_TO_SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_MAPPINGS.get(
+        raw_text, None
+    )
+    if not custodial_authority:
+        raise ValueError(
+            f"No mapping for supervision period custodial authority {custodial_authority}"
+        )
+
+    return custodial_authority
+
+
+def supervision_period_custodial_authority_mapper_based_on_supervision_type(
     raw_text: str,
 ) -> Optional[StateCustodialAuthority]:
     """Maps a list of supervision type codes to a custodial authority enum."""
