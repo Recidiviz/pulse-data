@@ -1195,6 +1195,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         contact_type=StateSupervisionContactType.DIRECT,
         contact_type_raw_text="FACE_TO_FACE",
         contact_date=datetime.date(year=1111, month=1, day=2),
+        contact_datetime=datetime.datetime(1111, 1, 2, 0, 0, 0),
         state_code="US_XX",
         contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
         contact_reason_raw_text="GENERAL_CONTACT",

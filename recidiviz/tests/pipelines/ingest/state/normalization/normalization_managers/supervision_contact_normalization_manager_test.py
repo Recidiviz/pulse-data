@@ -130,51 +130,6 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
 
         self.assertEqual([sc_1, sc_2], normalized_contacts)
 
-    def test_scheduled_datetime_supervision_contacts_normalization(self) -> None:
-        self.maxDiff = None
-        sc_1 = StateSupervisionContact.new_with_defaults(
-            supervision_contact_id=1234,
-            external_id="a1",
-            state_code=StateCode.US_XX.value,
-            scheduled_contact_datetime=datetime.datetime(2025, 6, 1, 0, 0, 0),
-            contact_type=StateSupervisionContactType.DIRECT,
-            status=StateSupervisionContactStatus.COMPLETED,
-        )
-        sc_2 = StateSupervisionContact.new_with_defaults(
-            supervision_contact_id=1234,
-            external_id="a2",
-            state_code=StateCode.US_XX.value,
-            scheduled_contact_datetime=datetime.datetime(2024, 12, 31, 0, 0, 0),
-            contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
-            status=StateSupervisionContactStatus.ATTEMPTED,
-        )
-        supervision_contacts = [sc_1, sc_2]
-
-        normalized_contacts = self._normalized_supervision_contacts_for_calculations(
-            supervision_contacts=supervision_contacts
-        )
-
-        sc_1 = StateSupervisionContact.new_with_defaults(
-            supervision_contact_id=1234,
-            external_id="a1",
-            state_code=StateCode.US_XX.value,
-            scheduled_contact_date=datetime.date(2025, 6, 1),
-            scheduled_contact_datetime=datetime.datetime(2025, 6, 1, 0, 0, 0),
-            contact_type=StateSupervisionContactType.DIRECT,
-            status=StateSupervisionContactStatus.COMPLETED,
-        )
-        sc_2 = StateSupervisionContact.new_with_defaults(
-            supervision_contact_id=1234,
-            external_id="a2",
-            state_code=StateCode.US_XX.value,
-            scheduled_contact_date=datetime.date(2024, 12, 31),
-            scheduled_contact_datetime=datetime.datetime(2024, 12, 31, 0, 0, 0),
-            contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
-            status=StateSupervisionContactStatus.ATTEMPTED,
-        )
-
-        self.assertEqual([sc_1, sc_2], normalized_contacts)
-
     def test_supervision_contacts_additional_attributes(self) -> None:
         sc = StateSupervisionContact.new_with_defaults(
             supervision_contact_id=1,

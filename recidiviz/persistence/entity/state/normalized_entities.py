@@ -2738,14 +2738,6 @@ class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEnti
     contact_datetime: datetime | None = attr.ib(
         default=None, validator=attr_validators.is_opt_datetime
     )
-    scheduled_contact_date: date | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-    )
-    scheduled_contact_datetime: datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_DATETIME_VALIDATOR,
-    )
 
     #   - What
     contact_type: StateSupervisionContactType | None = attr.ib(
@@ -2836,58 +2828,16 @@ class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEnti
         ]
 
     def __attrs_post_init__(self) -> None:
-        # we want the following invariants to be true about contacts with a SCHEDULED status
-        #   - it has a non-null scheduled_date
-        #   - it has a null contact_date
-        #   - both verified_employment and resulted_in_arrest are null
 
-        if self.status == StateSupervisionContactStatus.SCHEDULED:
-            if self.scheduled_contact_date is None:
-                raise ValueError(
-                    "Excepted to have scheduled_date hydrated on a contact with a SCHEDULED status"
-                )
-
-            if self.contact_date is not None:
-                raise ValueError(
-                    "Excepted to have a null contact_date on a contact with a SCHEDULED status"
-                )
-
-            # Enforce that both date and datetime fields are hydrated.
-            if (
-                self.scheduled_contact_date is not None
-                and self.scheduled_contact_datetime is None
-            ):
-                raise ValueError(
-                    "Expected scheduled_contact_datetime to be hydrated when scheduled_contact_date is not None"
-                )
-            if (
-                self.scheduled_contact_datetime is not None
-                and self.scheduled_contact_date is None
-            ):
-                raise ValueError(
-                    "Expected scheduled_contact_date to be hydrated when scheduled_contact_datetime is not None"
-                )
-            if self.contact_date is not None and self.contact_datetime is None:
-                raise ValueError(
-                    "Expected contact_datetime to be hydrated when contact_date is not None"
-                )
-            if self.contact_datetime is not None and self.contact_date is None:
-                raise ValueError(
-                    "Expected contact_date to be hydrated when contact_datetime is not None"
-                )
-
-            if (
-                self.verified_employment is not None
-                or self.resulted_in_arrest is not None
-            ):
-                raise ValueError(
-                    "Expected for both verified_employment and resulted_in_arrest to be null as this contact has not yet happened"
-                )
-        else:
-            if self.contact_date is None:
-                raise ValueError(
-                    "Expected to have contact_date hydrated on a contact without a SCHEDULED status"
-                )
+        # Enforce that both date and datetime fields are hydrated.
+        if self.contact_date is not None and self.contact_datetime is None:
+            raise ValueError(
+                "Expected contact_datetime to be hydrated when contact_date is not None"
+            )
+        if self.contact_datetime is not None and self.contact_date is None:
+            raise ValueError(
+                "Expected contact_date to be hydrated when contact_datetime is not None"
+            )
 
 
 @attr.s(eq=False, kw_only=True)

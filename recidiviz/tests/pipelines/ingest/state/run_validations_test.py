@@ -2132,6 +2132,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
+                        contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                         supervision_contact_id=101,
                         status=StateSupervisionContactStatus.COMPLETED,
                     )
@@ -2257,6 +2258,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
+                        contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                         supervision_contact_id=101,
                         status=StateSupervisionContactStatus.COMPLETED,
                     )
@@ -2409,6 +2411,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
+                        contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                         supervision_contact_id=101,
                         status=StateSupervisionContactStatus.COMPLETED,
                     )
@@ -2551,6 +2554,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                         state_code="US_DD",
                         external_id="c1",
                         contact_date=date(2018, 4, 1),
+                        contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                         supervision_contact_id=101,
                         status=StateSupervisionContactStatus.COMPLETED,
                     )
@@ -2799,6 +2803,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="c1",
                 contact_date=date(2018, 4, 1),
+                contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                 supervision_contact_id=101,
                 person=person1,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -2809,6 +2814,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="c2",
                 contact_date=date(2018, 4, 1),
+                contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                 supervision_contact_id=102,
                 person=person1,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -2866,6 +2872,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_YY",
                 external_id="c2",
                 contact_date=date(2020, 4, 1),
+                contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                 supervision_contact_id=104,
                 person=person2,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -2877,6 +2884,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 state_code="US_DD",
                 external_id="c2",
                 contact_date=date(2020, 4, 1),
+                contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
                 supervision_contact_id=105,
                 person=person2,
                 status=StateSupervisionContactStatus.COMPLETED,

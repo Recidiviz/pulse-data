@@ -2376,17 +2376,6 @@ class StateSupervisionContact(
         default=None, validator=attr_validators.is_opt_datetime
     )
 
-    # TODO(#47474): Delete this field once these dates are hydrated in
-    #  StateScheduledSupervisionContact
-    scheduled_contact_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=STANDARD_REASONABLE_OPT_DATE_VALIDATOR
-    )
-    # TODO(#47474): Delete this field once these dates are hydrated in
-    #  StateScheduledSupervisionContact
-    scheduled_contact_datetime: Optional[datetime.datetime] = attr.ib(
-        default=None, validator=STANDARD_REASONABLE_OPT_DATETIME_VALIDATOR
-    )
-
     #   - What
     contact_type: Optional[StateSupervisionContactType] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateSupervisionContactType)
@@ -2453,15 +2442,6 @@ class StateSupervisionContact(
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-
-    def __attrs_post_init__(self) -> None:
-        # Ensure that only one of each pairs is hydrated if any are
-        if (self.scheduled_contact_date or self.scheduled_contact_datetime) and (
-            self.contact_date or self.contact_datetime
-        ):
-            raise ValueError(
-                "Cannot have both scheduled and actual contact date/datetime set."
-            )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:

@@ -1880,8 +1880,6 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
 
     contact_date = Column(Date)
     contact_datetime = Column(DateTime)
-    scheduled_contact_date = Column(Date)
-    scheduled_contact_datetime = Column(DateTime)
     contact_reason = Column(state_supervision_contact_reason)
     contact_reason_raw_text = Column(String(255))
     contact_type = Column(state_supervision_contact_type)

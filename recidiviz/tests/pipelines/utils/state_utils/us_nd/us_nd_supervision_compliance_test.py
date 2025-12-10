@@ -18,7 +18,7 @@
 # pylint: disable=protected-access
 
 import unittest
-from datetime import date
+from datetime import date, datetime
 from typing import List
 
 from dateutil.relativedelta import relativedelta
@@ -183,6 +183,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             state_code="US_ND",
             external_id="c1",
             contact_date=date(2018, 4, 1),
+            contact_datetime=datetime(2018, 4, 1, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
@@ -191,6 +192,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             state_code="US_ND",
             external_id="c2",
             contact_date=date(2018, 4, 15),
+            contact_datetime=datetime(2018, 4, 15, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
@@ -199,6 +201,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             state_code="US_ND",
             external_id="c3",
             contact_date=date(2018, 4, 30),
+            contact_datetime=datetime(2018, 4, 30, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
@@ -207,6 +210,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             state_code="US_ND",
             external_id="c4",
             contact_date=date(2018, 3, 30),
+            contact_datetime=datetime(2018, 3, 30, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
@@ -215,6 +219,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             state_code="US_ND",
             external_id="c5",
             contact_date=date(2018, 4, 30),
+            contact_datetime=datetime(2018, 4, 30, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.ATTEMPTED,
         )
@@ -223,6 +228,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             state_code="US_ND",
             external_id="c6",
             contact_date=date(2018, 4, 30),
+            contact_datetime=datetime(2018, 4, 30, 0, 0, 0),
             contact_type=StateSupervisionContactType.COLLATERAL,
             status=StateSupervisionContactStatus.COMPLETED,
         )
@@ -554,6 +560,9 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 external_id=f"c_{contact_date.isoformat()}",
                 contact_date=contact_date,
+                contact_datetime=datetime(
+                    contact_date.year, contact_date.month, contact_date.day, 0, 0, 0
+                ),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
@@ -600,6 +609,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code=StateCode.US_ND.value,
                 external_id="c1",
                 contact_date=supervision_period.start_date,
+                contact_datetime=datetime(
+                    supervision_period.start_date.year,
+                    supervision_period.start_date.month,
+                    supervision_period.start_date.day,
+                    0,
+                    0,
+                    0,
+                ),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
@@ -652,6 +669,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 external_id="c1",
                 # Only contact happened before supervision started
                 contact_date=start_of_supervision - relativedelta(days=100),
+                contact_datetime=datetime(
+                    (start_of_supervision - relativedelta(days=100)).year,
+                    (start_of_supervision - relativedelta(days=100)).month,
+                    (start_of_supervision - relativedelta(days=100)).day,
+                    0,
+                    0,
+                    0,
+                ),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
@@ -707,6 +732,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 external_id="c1",
                 contact_date=supervision_period.start_date,
+                contact_datetime=datetime(
+                    supervision_period.start_date.year,
+                    supervision_period.start_date.month,
+                    supervision_period.start_date.day,
+                    0,
+                    0,
+                    0,
+                ),
                 contact_type=StateSupervisionContactType.DIRECT,
                 # Only contact was not completed
                 status=StateSupervisionContactStatus.ATTEMPTED,
@@ -763,6 +796,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 external_id="c1",
                 contact_date=supervision_period.start_date,
+                contact_datetime=datetime(
+                    supervision_period.start_date.year,
+                    supervision_period.start_date.month,
+                    supervision_period.start_date.day,
+                    0,
+                    0,
+                    0,
+                ),
                 # Only contact is invalid type
                 contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -818,6 +859,14 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 state_code="US_ND",
                 external_id="c1",
                 contact_date=start_of_supervision,
+                contact_datetime=datetime(
+                    start_of_supervision.year,
+                    start_of_supervision.month,
+                    start_of_supervision.day,
+                    0,
+                    0,
+                    0,
+                ),
                 # Only contact is invalid type
                 contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1093,6 +1142,14 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
                 state_code="US_ND",
                 external_id="c1",
                 contact_date=start_of_supervision + relativedelta(days=1),
+                contact_datetime=datetime(
+                    (start_of_supervision + relativedelta(days=1)).year,
+                    (start_of_supervision + relativedelta(days=1)).month,
+                    (start_of_supervision + relativedelta(days=1)).day,
+                    0,
+                    0,
+                    0,
+                ),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
@@ -1197,6 +1254,14 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
                 state_code="US_ND",
                 external_id="c1",
                 contact_date=start_of_supervision + relativedelta(days=1),
+                contact_datetime=datetime(
+                    (start_of_supervision + relativedelta(days=1)).year,
+                    (start_of_supervision + relativedelta(days=1)).month,
+                    (start_of_supervision + relativedelta(days=1)).day,
+                    0,
+                    0,
+                    0,
+                ),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
@@ -1287,6 +1352,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             state_code="US_ND",
             external_id="c1",
             contact_date=date(2018, 3, 8),
+            contact_datetime=datetime(2018, 3, 8, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
             location=StateSupervisionContactLocation.RESIDENCE,
@@ -1296,6 +1362,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             state_code="US_ND",
             external_id="c2",
             contact_date=date(2019, 3, 6),
+            contact_datetime=datetime(2019, 3, 6, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
             location=StateSupervisionContactLocation.RESIDENCE,
@@ -1352,6 +1419,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             state_code="US_ND",
             external_id="c1",
             contact_date=date(2018, 3, 5),
+            contact_datetime=datetime(2018, 3, 5, 0, 0, 0),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
             location=StateSupervisionContactLocation.RESIDENCE,

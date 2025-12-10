@@ -97,7 +97,6 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
         """
         For the given list of StateSupervisionContact, updates each contact so that:
             * if either contact_date or contact_datetime is set, then both are set
-            * If either scheduled_contact_date or scheduled_contact_datetime is set, then both are set
 
         Returns the same list of StateSupervisionContact, each with modified dates.
         """
@@ -110,8 +109,6 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
                 )
             contact_date = supervision_contact.contact_date
             contact_datetime = supervision_contact.contact_datetime
-            scheduled_date = supervision_contact.scheduled_contact_date
-            scheduled_datetime = supervision_contact.scheduled_contact_datetime
 
             # Handle contact date/datetime
             if contact_date and not contact_datetime:
@@ -126,23 +123,6 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
                 contact_date
                 and contact_datetime
                 and contact_date != contact_datetime.date()
-            ):
-                raise ValueError(
-                    f"For supervision_contact_id {supervision_contact.supervision_contact_id}, "
-                    f"found mismatched contact_date {contact_date} and contact_datetime {contact_datetime}."
-                )
-
-            # Handle scheduled contact date/datetime
-            if scheduled_date and not scheduled_datetime:
-                supervision_contact.scheduled_contact_datetime = datetime.combine(
-                    scheduled_date, time.min
-                )
-            elif scheduled_datetime and not scheduled_date:
-                supervision_contact.scheduled_contact_date = scheduled_datetime.date()
-            elif (
-                scheduled_date
-                and scheduled_datetime
-                and scheduled_date != scheduled_datetime.date()
             ):
                 raise ValueError(
                     f"For supervision_contact_id {supervision_contact.supervision_contact_id}, "

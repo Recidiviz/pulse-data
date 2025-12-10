@@ -895,15 +895,13 @@
       normalized_state_supervision_contact.location,
       normalized_state_supervision_contact.location_raw_text,
       normalized_state_supervision_contact.resulted_in_arrest,
-      normalized_state_supervision_contact.scheduled_contact_date,
-      normalized_state_supervision_contact.scheduled_contact_datetime_date,
       normalized_state_supervision_contact.state_code,
       normalized_state_supervision_contact.status,
       normalized_state_supervision_contact.status_raw_text,
       normalized_state_supervision_contact.supervision_contact_id,
       normalized_state_supervision_contact.supervision_contact_metadata,
       normalized_state_supervision_contact.verified_employment]
-    sorts: [normalized_state_supervision_contact.contact_date desc, normalized_state_supervision_contact.contact_datetime_date desc, normalized_state_supervision_contact.scheduled_contact_date desc, normalized_state_supervision_contact.scheduled_contact_datetime_date desc]
+    sorts: [normalized_state_supervision_contact.contact_date desc, normalized_state_supervision_contact.contact_datetime_date desc]
     listen: 
       Person Id: normalized_state_person.person_id
       State Code: normalized_state_person.state_code

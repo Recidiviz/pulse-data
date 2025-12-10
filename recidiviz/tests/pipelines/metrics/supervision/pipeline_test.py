@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for supervision/pipeline.py"""
+import datetime
 import unittest
 from datetime import date
 from typing import Any, Callable, Collection, Dict, Iterable, Optional, Set
@@ -243,6 +244,14 @@ class TestSupervisionPipeline(unittest.TestCase):
             state_code=state_code,
             external_id="c1",
             contact_date=supervision_period.start_date,
+            contact_datetime=datetime.datetime(
+                supervision_period.start_date.year,
+                supervision_period.start_date.month,
+                supervision_period.start_date.day,
+                0,
+                0,
+                0,
+            ),
             person_id=fake_person_id,
         )
 
