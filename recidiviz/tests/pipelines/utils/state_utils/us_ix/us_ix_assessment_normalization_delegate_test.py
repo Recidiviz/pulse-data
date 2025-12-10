@@ -22,7 +22,7 @@ from typing import List, Tuple
 from parameterized import parameterized
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
-from recidiviz.common.constants.state.state_person import StateSex
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
@@ -106,16 +106,16 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("low female", StateSex.FEMALE, 20, "LOW"),
-            ("moderate female", StateSex.FEMALE, 25, "MODERATE"),
-            ("high female", StateSex.FEMALE, 32, "HIGH"),
-            ("low male", StateSex.MALE, 15, "LOW"),
-            ("moderate male", StateSex.MALE, 25, "MODERATE"),
-            ("high male", StateSex.MALE, 30, "HIGH"),
+            ("low female", StateGender.FEMALE, 20, "LOW"),
+            ("moderate female", StateGender.FEMALE, 25, "MODERATE"),
+            ("high female", StateGender.FEMALE, 32, "HIGH"),
+            ("low male", StateGender.MALE, 15, "LOW"),
+            ("moderate male", StateGender.MALE, 25, "MODERATE"),
+            ("high male", StateGender.MALE, 30, "HIGH"),
         ]
     )
     def test_normalized_assessments_score_bucket_post_july_2020(
-        self, _name: str, sex: StateSex, score: int, bucket: str
+        self, _name: str, gender: StateGender, score: int, bucket: str
     ) -> None:
         _, additional_attributes = self._normalized_assessments_for_calculations(
             assessments=[
@@ -128,7 +128,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=datetime.date(2020, 11, 1),
                 )
             ],
-            person=StatePerson(state_code=STATE_CODE, person_id=2, sex=sex),
+            person=StatePerson(state_code=STATE_CODE, person_id=2, gender=gender),
         )
 
         self.assertEqual(
@@ -192,7 +192,9 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=datetime.date(2017, 11, 1),
                 ),
             ],
-            person=StatePerson(state_code=STATE_CODE, person_id=2, sex=StateSex.FEMALE),
+            person=StatePerson(
+                state_code=STATE_CODE, person_id=2, gender=StateGender.FEMALE
+            ),
         )
 
         self.assertEqual(
@@ -225,7 +227,9 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=None,
                 )
             ],
-            person=StatePerson(state_code=STATE_CODE, person_id=2, sex=StateSex.FEMALE),
+            person=StatePerson(
+                state_code=STATE_CODE, person_id=2, gender=StateGender.FEMALE
+            ),
         )
 
         self.assertEqual(

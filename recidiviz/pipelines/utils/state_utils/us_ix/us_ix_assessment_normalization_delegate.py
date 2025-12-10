@@ -18,7 +18,7 @@
 import datetime
 from typing import Optional
 
-from recidiviz.common.constants.state.state_person import StateSex
+from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
@@ -29,7 +29,8 @@ class UsIxAssessmentNormalizationDelegate(StateSpecificAssessmentNormalizationDe
     """US_IX implementation of the StateSpecificAssessmentNormalizationDelegate."""
 
     def __init__(self, person: StatePerson) -> None:
-        self.sex = person.sex
+        # Confirmed on 12/8/25 that Idaho uses gender (not sex) to classify individual LSIR scores
+        self.gender = person.gender
 
     def set_lsir_assessment_score_bucket(
         self, assessment: StateAssessment
@@ -45,13 +46,14 @@ class UsIxAssessmentNormalizationDelegate(StateSpecificAssessmentNormalizationDe
                 if assessment_score <= 30:
                     return "LEVEL_3"
                 return "LEVEL_4"
-            if self.sex is StateSex.MALE:
+            # Gender-based thresholds for LSIR scores (post 7/21/2020)
+            if self.gender is StateGender.MALE:
                 if assessment_score <= 20:
                     return "LOW"
                 if assessment_score <= 28:
                     return "MODERATE"
                 return "HIGH"
-            if self.sex is StateSex.FEMALE:
+            if self.gender is StateGender.FEMALE:
                 if assessment_score <= 22:
                     return "LOW"
                 if assessment_score <= 30:

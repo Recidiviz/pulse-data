@@ -365,6 +365,8 @@ def detainer_case_notes(criteria_column: str = "Detainers") -> str:
 def lsir_spans() -> str:
     """
     Returns a SQL query that returns LSIR spans in Idaho.
+
+    Note: Confirmed on 12/8/25 that Idaho uses gender (not sex) to classify individual LSIR scores.
     """
 
     return f"""LSIR_level_gender AS(
@@ -378,11 +380,11 @@ def lsir_spans() -> str:
       ses.start_date AS supervision_start_date,
       ses.end_date_exclusive AS supervision_end_date,
       CASE
-          WHEN ((sex != "MALE" OR sex IS NULL) AND assessment_score <=22) THEN "LOW"
-          WHEN ((sex != "MALE" OR sex IS NULL)
+          WHEN ((gender != "MALE" OR gender IS NULL) AND assessment_score <=22) THEN "LOW"
+          WHEN ((gender != "MALE" OR gender IS NULL)
                                 AND (assessment_score BETWEEN 23 AND 30)) THEN "MODERATE"
-          WHEN (sex = "MALE" AND assessment_score <=20) THEN "LOW"
-          WHEN (sex = "MALE" AND (assessment_score BETWEEN 21 AND 28)) THEN "MODERATE"
+          WHEN (gender = "MALE" AND assessment_score <=20) THEN "LOW"
+          WHEN (gender = "MALE" AND (assessment_score BETWEEN 21 AND 28)) THEN "MODERATE"
           ELSE "HIGH"
           END AS lsir_level
   FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
