@@ -38,8 +38,8 @@ def is_other_ed_ineligible_offense() -> str:
       OR clean_statute = '711.3' -- second degree robbery
       OR clean_statute = '709.23' -- continuous sexual abuse of a child
       OR clean_statute = '710.3' -- second degree kidnapping
-      OR (clean_statute = '711.2' AND imposed_date >= '2018-07-01')  -- first degree robbery
-      OR (clean_statute = '712.2' AND imposed_date >= '2019-07-01') -- first degree arson
+      OR clean_statute = '711.2' -- first degree robbery
+      OR clean_statute = '712.2' -- first degree arson
       OR clean_statute = '728.12' -- sexual exploitation of a minor
       OR clean_statute = '710A.2' -- human trafficking
       OR statute LIKE '%726.6(5)%' -- child endangerment resulting in death
