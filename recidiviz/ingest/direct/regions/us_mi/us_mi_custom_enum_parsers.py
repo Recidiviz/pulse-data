@@ -299,6 +299,9 @@ high_levels = [
 unsupervised_levels = [
     "13457",  # Unavailable For Supervision
     "2285",  # Unsupervised Probation
+]
+
+residential_program_levels = [
     "2292",  # Parole Minimum Administrative
     "3624",  # Probation Minimum Administrative
 ]
@@ -348,6 +351,9 @@ def parse_supervision_level(
         if supervision_level_value in unsupervised_levels:
             return StateSupervisionLevel.UNSUPERVISED
 
+        if supervision_level_value in residential_program_levels:
+            return StateSupervisionLevel.RESIDENTIAL_PROGRAM
+
         if supervision_level_value in warrant_levels:
             return StateSupervisionLevel.WARRANT
 
@@ -379,7 +385,7 @@ def parse_supervision_level(
         return StateSupervisionLevel.IN_CUSTODY
 
     if re.search(r"MINIMUM ADMINISTRATIVE", supervision_level_value):
-        return StateSupervisionLevel.UNSUPERVISED
+        return StateSupervisionLevel.RESIDENTIAL_PROGRAM
 
     if (
         re.search(r"WARRANT", supervision_level_value)
