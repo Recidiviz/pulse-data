@@ -60,7 +60,7 @@ rules:
       incident.policy_name:
         contains: "Cloud Function Failure"
     actions:
-      title_transform: "Cloud Function Failure: {incident.resource.labels.job_name}"
+      title_transform: "Cloud Function Failure: {incident.resource.labels.function_name}"
 
   - name: "Dataflow Job vCPU"
     match:
