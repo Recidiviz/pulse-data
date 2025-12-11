@@ -738,6 +738,9 @@ def get_warrants_and_detainers_query(
 
     Args:
         order_types: A list of order types to include in the query.
+        criteria_name: The name of the criteria.
+        description: The description of the criteria.
+        remove_misdemeanor_detainers: Whether to remove misdemeanor detainers from the query.
     """
     query = f"""WITH warrants_and_detainers AS (
     SELECT 
@@ -765,7 +768,7 @@ def get_warrants_and_detainers_query(
     WHERE e.ORDER_TYPE IN {tuple(order_types)}
         AND e.OFFENSE_STATUS != 'C'
         -- Removing misdemeanor detainers if specified
-        {"AND e.OFFENSE_DESC NOT LIKE '%(M)%'" if remove_misdemeanor_detainers else ""}
+        {"AND e.OFFENSE_DESC NOT LIKE '%(M)%' AND e.OFFENSE_DESC NOT LIKE '%(MisA)%'" if remove_misdemeanor_detainers else ""}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id, e.OFFENSE_DATE ORDER BY {nonnull_end_date_exclusive_clause('iss.end_date')} ASC) = 1
     
 ),
