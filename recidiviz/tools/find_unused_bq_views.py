@@ -156,9 +156,6 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.user_data_downloads.us_tx.us_tx_eligible_clients_for_user_download import (
-    US_TX_ELIGIBLE_CLIENTS_FOR_USER_DOWNLOAD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -466,9 +463,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.address: (
         "Will be used in auth_endpoint to support the facilities roster sync - see #51776 (Jen Overgaag, 11/4/2025)"
-    ),
-    US_TX_ELIGIBLE_CLIENTS_FOR_USER_DOWNLOAD_VIEW_BUILDER.address: (
-        "Will be used the generate a csv of eligible clients that will be downloaded on the frontend - (Michelle Orden, 12/5/2025)"
     ),
 }
 

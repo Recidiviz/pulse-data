@@ -235,3 +235,10 @@ products:
     states:
       - state_code: US_NE
         environment: production
+  - name: User Data Downloads
+    description: Views that are utlimately made available to downloaded as CSV files on the frontend. These views may or may not be joined with other data such as marked submitted/ineligible data on the frontend.
+    exports:
+      - USER_DATA_DOWNLOADS
+    states:
+      - state_code: US_TX
+        environment: production
