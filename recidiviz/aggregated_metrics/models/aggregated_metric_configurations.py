@@ -767,9 +767,9 @@ AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE = DailyAvgSpanCountMetric(
 
 AVG_DAILY_POPULATION_CONTACT_REQUIRED = DailyAvgSpanCountMetric(
     name="avg_population_contact_required",
-    display_name="Average Population: Clients Requiring A Face-To-Face Contact",
+    display_name="Average Population: Clients Requiring A Face-To-Face Contact (Legacy Logic)",
     description="Average daily population of clients requiring a face-to-face contact based on "
-    "their supervision level",
+    "their supervision level, according to legacy case compliance logic",
     span_selector=SpanSelector(
         span_type=SpanType.SUPERVISION_CONTACT_COMPLIANCE_SPAN,
         span_conditions_dict={"contact_required": ["true"]},
@@ -779,14 +779,38 @@ AVG_DAILY_POPULATION_CONTACT_REQUIRED = DailyAvgSpanCountMetric(
 AVG_DAILY_POPULATION_CONTACT_OVERDUE = DailyAvgSpanCountMetric(
     name="avg_population_contact_overdue",
     display_name="Average Population: Clients Requiring Face-To-Face-Contact Whose Contacts Are "
-    "Overdue",
+    "Overdue (Legacy Logic)",
     description="Average daily population of clients requiring a face-to-face contact based on "
-    "their supervision level who are overdue to receive one",
+    "their supervision level who are overdue to receive one, according to legacy case compliance logic",
     span_selector=SpanSelector(
         span_type=SpanType.SUPERVISION_CONTACT_COMPLIANCE_SPAN,
         span_conditions_dict={
             "contact_required": ["true"],
             "contact_overdue": ["true"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_CONTACT_TASKS_ELIGIBLE = DailyAvgSpanCountMetric(
+    name="avg_population_contact_tasks_eligible",
+    display_name="Average Population: Contact Tasks Eligible",
+    description="Average daily population of clients eligible for contact tasks",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASKS_SCHEDULED_CONTACT_SPAN,
+        span_conditions_dict={"is_eligible": ["true"]},
+    ),
+)
+
+AVG_DAILY_POPULATION_CONTACT_TASKS_ELIGIBLE_WITH_SCHEDULED_APPOINTMENT = DailyAvgSpanCountMetric(
+    name="avg_population_contact_tasks_eligible_with_scheduled_appointment",
+    display_name="Average Population: Contact Tasks Eligible With Scheduled Appointment",
+    description="Average daily population of clients eligible for contact tasks who have "
+    "a scheduled appointment date for the contact",
+    span_selector=SpanSelector(
+        span_type=SpanType.TASKS_SCHEDULED_CONTACT_SPAN,
+        span_conditions_dict={
+            "has_scheduled_contact": ["true"],
+            "is_eligible": ["true"],
         },
     ),
 )
