@@ -3,8 +3,8 @@ manifest_language: 1.0.0
 input_columns:
   officer_id: STRING
   supervisor_id: STRING
-  start_date: DATETIME
-  end_date: DATETIME
+  start_date: DATE
+  end_date: DATE
   rn: INTEGER
 unused_columns: []
 output:
