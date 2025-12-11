@@ -28,13 +28,11 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_CONTINUOUS_EMPLOYMENT_FOR_6_MONTHS"
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     employed_for_at_least_x_time_criteria_builder(
         date_interval=6,
         date_part="MONTH",
-        criteria_name=_CRITERIA_NAME,
+        criteria_name="CONTINUOUS_EMPLOYMENT_OR_STUDENT_OR_ALT_FOR_6_MONTHS",
         description=__doc__,
         employment_status_values=[
             "EMPLOYED_UNKNOWN_AMOUNT",

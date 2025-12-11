@@ -26,8 +26,8 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     at_least_6_months_since_most_recent_positive_drug_test,
+    continuous_employment_or_student_or_alt_for_3_months,
     on_supervision_at_least_6_months,
-    supervision_continuous_employment_for_3_months,
     supervision_housing_is_permanent_for_3_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
@@ -79,7 +79,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
         # 3. Compliance and stability
         supervision_housing_is_permanent_for_3_months.VIEW_BUILDER,
-        supervision_continuous_employment_for_3_months.VIEW_BUILDER,
+        continuous_employment_or_student_or_alt_for_3_months.VIEW_BUILDER,
         no_medhigh_supervision_violation_within_12_months.VIEW_BUILDER,
         on_supervision_at_least_6_months.VIEW_BUILDER,
         at_least_6_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
@@ -101,7 +101,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                         description="Only missing the completion of ordered assessments/treatment/programming criteria",
                     ),
                     NotEligibleCriteriaCondition(
-                        criteria=supervision_continuous_employment_for_3_months.VIEW_BUILDER,
+                        criteria=continuous_employment_or_student_or_alt_for_3_months.VIEW_BUILDER,
                         description="Only missing the continuous employment for 3 months criteria",
                     ),
                 ],

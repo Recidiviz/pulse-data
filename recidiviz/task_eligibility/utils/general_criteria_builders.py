@@ -1551,7 +1551,8 @@ def status_for_at_least_x_time_criteria_query(
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
         additional_where_clause (str, optional): Any additional WHERE-clause filters for
             selecting statuses. Defaults to "".
-        additional_column (str, optional): The name of the column that contains the
+        additional_column (str, optional): The name of an a column you'd like to keep in
+            final output.
     """
     left_join_statement = (
         f"""LEFT JOIN sessions ses ON adj.state_code = ses.state_code
@@ -1606,7 +1607,7 @@ def status_for_at_least_x_time_criteria_query(
             table_name='sessions',
             end_date_field_name="end_date",
             )}) AS adj
-        {left_join_statement if additional_column != '' else ''}
+        {left_join_statement}
 
         GROUP BY 1,2,3,4
     ),

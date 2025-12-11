@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that displays periods when someone has maintained 
-continuous employment, been a student, or had an alternative income source for at 
-least three months.
+continuous employment or been a student for at least 90 days
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -28,20 +27,17 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_CONTINUOUS_EMPLOYMENT_FOR_3_MONTHS"
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     employed_for_at_least_x_time_criteria_builder(
-        date_interval=3,
-        date_part="MONTH",
-        criteria_name=_CRITERIA_NAME,
+        date_interval=90,
+        date_part="DAY",
+        criteria_name="CONTINUOUS_EMPLOYMENT_OR_STUDENT_FOR_90_DAYS",
         description=__doc__,
         employment_status_values=[
             "EMPLOYED_UNKNOWN_AMOUNT",
             "EMPLOYED_FULL_TIME",
             "EMPLOYED_PART_TIME",
             "STUDENT",
-            "ALTERNATE_INCOME_SOURCE",
         ],
     )
 )
