@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  RESI_SID_NO: STRING
+  RESI_STREET: STRING
+  RESI_STREET2: STRING
+  RESI_CITY: STRING
+  RESI_STATE: STRING
+  RESI_ZIP: STRING
+  RESI_COUNTY: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RESI_SID_NO
+          id_type: $literal("US_TX_SID")
+    address_periods:
+      - StatePersonAddressPeriod:
+          address_start_date: start_date
+          address_end_date: end_date
+          address_line_1: RESI_STREET
+          address_line_2: RESI_STREET2
+          address_city: RESI_CITY
+          address_county: RESI_COUNTY
+          address_zip: RESI_ZIP
+          address_state: RESI_STATE
+          address_type: $literal_enum(StatePersonAddressType.PHYSICAL_RESIDENCE)
