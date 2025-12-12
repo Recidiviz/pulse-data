@@ -98,13 +98,17 @@ metric_pipelines:
   # Full US_CO calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_CO
-    metric_types: INCARCERATION_POPULATION_SPAN
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     machine_type: c4a-highcpu-32
   - pipeline: incarceration_metrics
     state_code: US_CO
     metric_types:
       INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION
       INCARCERATION_RELEASE
+    machine_type: c4a-highcpu-32
+  - pipeline: supervision_metrics
+    state_code: US_CO
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     machine_type: c4a-highcpu-32
 
   # Full US_MO calculations with no time limit
