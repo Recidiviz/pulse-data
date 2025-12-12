@@ -492,7 +492,14 @@ def within_x_time_of_date(
 
 
 def meets_mandatory_literacy(opp_name: str) -> str:
-    """Returns spans of time after someone has completed a mandatory literacy program"""
+    """Returns spans of time during which someone has either completed or been exempted
+    from completing a mandatory literacy program.
+
+    Exemptions from mandatory literacy only apply during the specific incarceration period
+    (DOC_ID) where they were granted. Actual completions (program completions and TABE passes)
+    apply in perpetuity across all future incarcerations.
+    """
+    # TODO(#53389): Move this logic to ingest.
     assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
     if opp_name.upper() == "TPR":
         _TABLE = "AZ_DOC_TRANSITION_PRG_EVAL"
@@ -503,80 +510,56 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         _ELIG_TABLE = "AZ_DOC_DRUG_TRAN_PRG_ELIG"
         _ID_MAP = "DRUG_TRAN_PRG_ELIGIBILITY_ID"
     return f"""
-    WITH manlit_ingest AS (
+    WITH 
+    /*
+    INCARCERATION PERIODS: Used to bound exemption spans to specific incarceration sessions.
+    */
+    sentence_serving_period AS (
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.sentence_sessions.sentence_serving_period_materialized` ss
+        WHERE state_code = 'US_AZ'
+    ),
+    
+    /*
+    PROGRAM ASSIGNMENTS - ACTUAL COMPLETIONS (not exemptions)
+    These are people who successfully completed the functional literacy program.
+    Actual completions apply in perpetuity (end_date = NULL), so they meet the
+    standard in all future incarcerations.
+    */ 
+    manlit_ingest_completed AS (
         SELECT
           state_code,
           person_id,
           discharge_date as start_date,
-          CAST(NULL AS DATE) AS end_date,
+          CAST(NULL AS DATE) AS end_date,  -- NULL = applies forever
           TRUE AS meets_criteria,
           discharge_date AS latest_functional_literacy_date,
-          'Program Assignment' AS data_location
+          'Program Assignment - Completed' AS data_location
         #TODO(#33858): Ingest into state task deadline or find some way to view this historically
         FROM
           `{{project_id}}.normalized_state.state_program_assignment`
         WHERE state_code = 'US_AZ'
-        AND (participation_status_raw_text IN ('COMPLETED')
-            -- This catches cases where a resident has been exempted from Mandatory Literacy for any reason
-            OR JSON_EXTRACT(referral_metadata, '$.EXEMPTION') != '""')
+      AND participation_status = 'DISCHARGED_SUCCESSFUL'
         AND program_id LIKE '%LITERACY%'
+        -- -- Filter out exemptions: those have the EXEMPTION field populated
+        AND JSON_EXTRACT(referral_metadata, '$.EXEMPTION') = '""' 
         #TODO(#33737): Look into multiple span cases for residents who have completed in MAN-LIT programs
         QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
     ),
-    manlit_prg_eval AS (
-        SELECT
-          pei.state_code,
-          pei.person_id, 
-          -- We use the earliest possible CREATE_DTM case when we see a 'Y' for Mandatory Literacy Status
-          -- CREATE_DTM is associated with all aspects of the chosen _TABLE and therefore we may see multiple
-          -- CREATE_DTMs for the same literacy status due to another variable of someone's eligibility changing
-          MIN(PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)] )) AS start_date,
-          CAST(NULL AS DATE) AS end_date,
-          TRUE AS meets_criteria,
-          MIN(PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)] )) AS latest_functional_literacy_date,
-          'PRG_EVAL' AS data_location,
-        FROM
-          `{{project_id}}.us_az_raw_data_up_to_date_views.{_TABLE}_latest` eval
-        INNER JOIN 
-        `{{project_id}}.us_az_raw_data_up_to_date_views.{_ELIG_TABLE}_latest` map_to_docid
-        USING ({_ID_MAP})
-        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
-        USING(DOC_ID)
-        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.PERSON_latest` person
-        USING(PERSON_ID)
-        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
-            ON ADC_NUMBER = external_id 
-            AND pei.state_code = 'US_AZ'
-            AND pei.id_type = 'US_AZ_ADC_NUMBER'
-        WHERE (MEETS_MANDITORY_LITERACY = 'Y' OR  LITERACY_EXCEPTION = 'Y')
-        GROUP BY 1,2
-    ),
-    manlit_priority_report AS (
-        SELECT
-        pei.state_code,
-        pei.person_id, 
-        -- We use the earliest possible CREATE_DTM case when we see a 'Y' for MEET_STANDARD
-        MIN(CAST(SPLIT(priority_report.DATE_CREATED, ' ')[OFFSET(0)] AS DATE)) AS start_date,
-        CAST(NULL AS DATE) AS end_date,
-        TRUE AS meets_criteria,
-        MIN(CAST(SPLIT(priority_report.DATE_CREATED, ' ')[OFFSET(0)] AS DATE)) AS latest_functional_literacy_date,
-        'PRIORITY_REPORT' AS data_location,
-    FROM
-        `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_PRIORITY_REPORT_latest` priority_report
-    LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
-    USING(DOC_ID)
-    LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.PERSON_latest` person
-    USING(PERSON_ID)
-    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
-        ON ADC_NUMBER = external_id 
-        AND pei.state_code = 'US_AZ'
-        AND pei.id_type = 'US_AZ_ADC_NUMBER'
-    WHERE (MEET_STANDARD = 'Yes')
-    GROUP BY 1,2
-    ),
+    /*
+    TABE QUALIFICATION - ACTUAL TEST PASSES
+    TABE (Tests of Adult Basic Education) assesses reading, language, and math skills.
+    To meet mandatory literacy via TABE, a person must score grade level 8 or higher
+    on ALL THREE sections. These are actual test passes (no exemptions possible).
+    Once passed, this applies in perpetuity (end_date = NULL).
+    */
     tabe_qualification AS (
         WITH
-        --  Find the earliest passing date for each section for each person
+        -- Find the earliest date each person passed each section
         section_earliest_pass_date AS (
             SELECT
                 person_id,
@@ -587,7 +570,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
                 SELECT
                     sa.person_id,
                     sa.assessment_date,
-                    -- Flags to indicate if the score is passing for each section
+                    -- Flag if score >= grade level 8 (passing) for each section
                     CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.READING_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_reading_flag,
                     CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.LANGUAGE_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_language_flag,
                     CASE WHEN SAFE_CAST(JSON_EXTRACT_SCALAR(assessment_metadata, '$.MATH_SCORE') AS NUMERIC) >= 8 THEN 1 ELSE 0 END AS passed_math_flag
@@ -610,19 +593,21 @@ def meets_mandatory_literacy(opp_name: str) -> str:
             "US_AZ" AS state_code,
             person_id, 
             overall_all_sections_passed_date AS start_date,
-            CAST(NULL AS DATE) AS end_date,
+            CAST(NULL AS DATE) AS end_date,  -- NULL = applies forever
             TRUE AS meets_criteria,
             overall_all_sections_passed_date AS latest_functional_literacy_date,
             'DOC_EDUCATION_TABE' AS data_location,
         FROM (
             SELECT
             person_id,
-            -- The latest of the earliest passing dates is the earliest date on which all sections were passed.
+            -- The date when ALL sections were passed is the LATEST of the three earliest pass dates
+            -- (e.g., if Reading passed in Jan, Language in Feb, Math in March, they met the
+            -- requirement in March when all three were complete)
             GREATEST(earliest_reading_pass_date, earliest_language_pass_date, earliest_math_pass_date) AS overall_all_sections_passed_date
             FROM
                 section_earliest_pass_date
             WHERE
-                -- Ensure all three sections have been passed
+                -- All three sections must have been passed at some point
                 earliest_reading_pass_date IS NOT NULL
                 AND earliest_language_pass_date IS NOT NULL
                 AND earliest_math_pass_date IS NOT NULL
@@ -630,33 +615,149 @@ def meets_mandatory_literacy(opp_name: str) -> str:
                 1,2
         )
     ),
+    /*
+    PROGRAM ASSIGNMENTS - EXEMPTIONS
+    These are people who received an exemption from the literacy requirement.
+    These exemptions are tied to a specific incarceration session and should end when 
+    the session ends.
+    */
+    manlit_ingest_exemption AS (
+         SELECT DISTINCT
+          pa.state_code,
+          pa.person_id,
+          discharge_date as start_date,
+          ssp.end_date_exclusive as end_date,
+          TRUE AS meets_criteria,
+          discharge_date AS latest_functional_literacy_date,
+          'Program Assignment - Exemption' AS data_location
+        #TODO(#33858): Ingest into state task deadline or find some way to view this historically
+        FROM
+          `{{project_id}}.normalized_state.state_program_assignment` pa
+        JOIN sentence_serving_period ssp
+        ON(pa.person_id = ssp.person_id and pa.state_code = ssp.state_code 
+        -- Use the end date of the incarceration span being served when this exemption was introduced
+        AND pa.start_date BETWEEN ssp.start_date and {nonnull_end_date_exclusive_clause("ssp.end_date_exclusive")})
+        WHERE pa.state_code = 'US_AZ'
+        AND program_id LIKE '%LITERACY%'
+        AND JSON_EXTRACT(referral_metadata, '$.EXEMPTION') != '""' 
+        -- Keep the earliest exemption for each DOC_ID where one exists
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY pa.state_code, pa.person_id ORDER BY start_date ASC) = 1
+        ),
+    /*
+    ACIS PROGRAM EVALUATION - EXEMPTIONS
+    When LITERACY_EXCEPTION = 'Y', the person has an exemption. 
+    These exemptions are tied to a specific incarceration session and should end when 
+    the session ends.
+    */
+    manlit_prg_eval_exemption AS (
+        SELECT
+          pei.state_code,
+          pei.person_id,
+          PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) AS exemption_date,
+          ssp.end_date_exclusive,
+          TRUE AS meets_criteria,
+          PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) AS latest_functional_literacy_date,
+          'Program Evaluation - Exemption' AS data_location
+        FROM
+          `{{project_id}}.us_az_raw_data_up_to_date_views.{_TABLE}_latest` eval
+        INNER JOIN 
+        `{{project_id}}.us_az_raw_data_up_to_date_views.{_ELIG_TABLE}_latest` map_to_docid
+        USING ({_ID_MAP})
+        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
+        USING(DOC_ID)
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+            ON doc_ep.PERSON_ID = pei.external_id
+            AND pei.state_code = 'US_AZ'
+            AND pei.id_type = 'US_AZ_PERSON_ID'
+        JOIN sentence_serving_period ssp
+            ON(pei.person_id = ssp.person_id and pei.state_code = ssp.state_code 
+            -- Use the end date of the incarceration span being served when this exemption was introduced
+            AND  PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) BETWEEN ssp.start_date and {nonnull_end_date_exclusive_clause("ssp.end_date_exclusive")})
+        WHERE LITERACY_EXCEPTION = 'Y'
+        -- Take earliest exemption per person per DOC_ID
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY pei.state_code, pei.person_id, map_to_docid.DOC_ID 
+            ORDER BY exemption_date ASC
+        ) = 1
+    ),   /*
+    DOC PRIORITY REPORT - EXEMPTIONS
+    This report tracks when people meet the literacy standard. However, some rows indicate
+    meeting the standard via exemption (e.g. MEET_STANDARD = 'Yes' and LITERACY_STANDARD = 'None')
+    We filter to only those exemptions. These apply until the end of the incarceration session.
+    */
+    priority_report_cleaned AS (
+        SELECT DISTINCT 
+            DOC_ID, 
+            MEET_STANDARD, 
+            LITERACY_STANDARD, 
+            -- This value updates daily, so the latest view of the Priority Report table
+            -- tends to have today as the DATE_CREATED. Use the full table and find the 
+            -- first time a status appeared and the most recent time it appeared.
+            MIN(DATE(DATE_CREATED)) as DATE_CREATED, 
+            MAX(DATE(DATE_CREATED)) AS DATE_SEEN
+        FROM `{{project_id}}.us_az_raw_data_views.DOC_PRIORITY_REPORT_all` priority_report 
+        WHERE PROGRAM_TYPE_ID = '1' -- 'Academic Education'  
+        GROUP BY 1,2,3
+        -- Only keep the most recent set of values per DOC_ID (incarceration stint)
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY DOC_ID ORDER BY DATE_SEEN DESC) = 1
+    ),
+    manlit_priority_report_exemption AS (
+        SELECT
+            pei.state_code,
+            pei.person_id, 
+            -- Use the earliest date someone was marked as meeting the standard
+            DATE_CREATED AS start_date,
+            ssp.end_date_exclusive AS end_date,  -- NULL = applies forever
+            TRUE AS meets_criteria,
+            DATE_CREATED AS latest_functional_literacy_date,
+            'PRIORITY_REPORT - Exemption' AS data_location,
+        FROM
+            priority_report_cleaned
+        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
+            USING(DOC_ID)
+        LEFT JOIN `{{project_id}}.us_az_normalized_state.state_person_external_id` pei
+            ON doc_ep.PERSON_ID = pei.external_id 
+            AND pei.state_code = 'US_AZ'
+            AND pei.id_type = 'US_AZ_PERSON_ID'
+        JOIN sentence_serving_period ssp
+            ON(pei.person_id = ssp.person_id and pei.state_code = ssp.state_code 
+            -- Use the end date of the incarceration span being served when this exemption was introduced
+            AND (priority_report_cleaned.DATE_CREATED BETWEEN ssp.start_date and {nonnull_end_date_exclusive_clause("ssp.end_date_exclusive")}))
+        WHERE 
+        -- Filter to exemption-based "passes": people marked as meeting the standard
+        -- when they don't have a literacy standard.
+            (MEET_STANDARD = 'Yes' AND LITERACY_STANDARD = 'None')
+    ),
+    /*
+    UNION ALL DATA SOURCES
+    Combine all literacy completion sources:
+    - Actual completions (end_date = NULL, applies in perpetuity)
+    - Exemptions (end_date = incarceration release date, limited to specific DOC_ID)
+    */
     union_cte AS (
-        SELECT
-          *
-        FROM
-          manlit_ingest 
+        -- ACTUAL COMPLETIONS: apply forever (end_date = NULL)
+        SELECT * FROM manlit_ingest_completed 
         UNION ALL
-        SELECT
-          *
-        FROM
-          manlit_prg_eval 
+        SELECT * FROM tabe_qualification
         UNION ALL
-        SELECT
-          *
-        FROM
-          manlit_priority_report 
+        -- EXEMPTIONS: limited to specific incarceration period (end_date set)
+        SELECT * FROM manlit_ingest_exemption
         UNION ALL
-        SELECT
-            *
-        FROM
-            tabe_qualification
+        SELECT * FROM manlit_prg_eval_exemption
+        UNION ALL 
+        SELECT * FROM manlit_priority_report_exemption
     ),
     {create_sub_sessions_with_attributes('union_cte')}
+    /*
+    FINAL OUTPUT
+    Create sub-sessions from overlapping spans and deduplicate to keep the latest
+    literacy date and data source for each unique span.
+    */
     SELECT
         state_code,
         person_id,
         start_date,
-        end_date,
+        end_date,  -- NULL for actual completions (perpetual), date for exemptions (limited)
         meets_criteria,
         TO_JSON(STRUCT(
                 latest_functional_literacy_date AS latest_functional_literacy_date,
@@ -666,7 +767,8 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         data_location AS latest_data_location,
     FROM
         sub_sessions_with_attributes
-    -- Ensuring for every row, we grab the latest data location and latest date of meeting literacy
+    WHERE start_date IS DISTINCT FROM end_date
+    -- For overlapping spans, keep the one with the most recent literacy date
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, start_date, meets_criteria ORDER BY latest_functional_literacy_date DESC) = 1
     """
 
