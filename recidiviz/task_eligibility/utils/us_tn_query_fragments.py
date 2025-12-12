@@ -437,13 +437,37 @@ def compliant_reporting_offense_type_condition(
 
 # Incident types classified as violent for TN Classification V2 CAF scoring.
 # Used in incident_based_caf_score_query_template to determine if an incident is violent.
-_US_TN_CLASSIFICATION_V2_VIOLENT_INCIDENT_TYPES = [
-    "AOW",  # Assault on staff without weapon
-    "ASW",  # Assault on staff with weapon
-    "AVW",  # Assault on inmate with weapon (or similar)
-    "HOM",  # Homicide
-    "RAP",  # Rape
-    "SXB",  # Sexual battery
+_US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES = [
+    "AOO",  # ASSAULT OFFENDER - WITHOUT WEAPON
+    "AOS",  # ASSAULT ON STAFF
+    "AOW",  # ASSAULT OFFENDER - WEAPON
+    "ASA",  # ASSAULT-STAFF-SERIOUS INJURY
+    "ASB",  # ASSAULT-STAFF-INJURY
+    "ASC",  # ASSAULT-STAFF-MINOR INJURY
+    "ASD",  # ASSAULT-OFN-SERIOUS INJURY
+    "ASE",  # ASSAULT-OFN-INJURY
+    "ASF",  # ASSAULT-OFN-MINOR INJURY
+    "ASG",  # ASSAULT-VIS-SERIOUS INJURY
+    "ASH",  # ASSAULT-VIS-INJURY
+    "ASI",  # ASSAULT-VIS-MINOR INJURY
+    "ASJ",  # ASSAULT STAFF NO INJURY
+    "ASK",  # ASSAULT OFFENDER NO INJURY
+    "ASL",  # ASSAULT
+    "ASM",  # ASSAULT VISITOR NO INJURY
+    "ASO",  # ASSAULT STAFF - WITHOUT WEAPON
+    "ASW",  # ASSAULT STAFF - WEAPON
+    "AVO",  # ASSAULT VISITOR/GUEST - WITHOUT WEAPON
+    "AVW",  # ASSAULT VISITOR/GUEST - WEAPON
+    "FIG",  # FIGHTING
+    "DEG",  # DEATH-STAFF-HOMICIDE (ON DUTY)
+    "DEH",  # DEATH-OFN-HOMICIDE
+    "DVH",  # DEATH-VISITOR-HOMICIDE
+    "HOM",  # HOMICIDE
+    "HOS",  # HOSTAGE SITUATION
+    "RAP",  # RAPE
+    "SXB",  # SEXUAL BATTERY
+    "TEM",  # THREATENING EMPLOYEE
+    "TOF",  # THREATENING OFFENDER
 ]
 
 
@@ -619,9 +643,11 @@ def incident_based_caf_score_query_template(
         ]
     )
 
-    # Build list of violent incident types
-    violent_incident_types_str = list_to_query_string(
-        _US_TN_CLASSIFICATION_V2_VIOLENT_INCIDENT_TYPES, quoted=True, single_quote=True
+    # Build list of violent infraction types
+    violent_infraction_types_str = list_to_query_string(
+        _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES,
+        quoted=True,
+        single_quote=True,
     )
 
     return f"""
@@ -648,10 +674,10 @@ def incident_based_caf_score_query_template(
             incidents.incarceration_incident_id,
             incidents.incident_date,
             incidents.incident_class,  -- Class: A, B, or C
-            incidents.incident_type_raw_text,
-            -- Flag whether incident is violent based on the incident type
-            COALESCE(incidents.incident_type_raw_text IN (
-                {violent_incident_types_str}
+            incidents.infraction_type_raw_text,
+            -- Flag whether incident is violent based on the infraction type
+            COALESCE(incidents.infraction_type_raw_text IN (
+                {violent_infraction_types_str}
                 ), FALSE) AS is_violent
         FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized` incidents
         LEFT JOIN state_prison_spans
@@ -670,7 +696,15 @@ def incident_based_caf_score_query_template(
         -- Keep only the most severe incident per person per date
         QUALIFY ROW_NUMBER() OVER(
             PARTITION BY incidents.person_id, incidents.incident_date 
-            ORDER BY incidents.incident_class, incidents.injury_level DESC, incidents.assault_score DESC
+            ORDER BY
+                -- Prioritize violent incidents
+                CASE WHEN COALESCE(incidents.infraction_type_raw_text IN (
+                    {violent_infraction_types_str}
+                ), FALSE) THEN 1 ELSE 0 END DESC,
+                -- Then prioritize incident class (A, B, C)
+                incidents.incident_class, 
+                incidents.injury_level DESC, 
+                incidents.assault_score DESC
         ) = 1
     )
     ,
@@ -682,7 +716,7 @@ def incident_based_caf_score_query_template(
             custodial_authority_session_id,
             incarceration_incident_id,
             incident_date AS event_date,
-            incident_type_raw_text,
+            infraction_type_raw_text,
             incident_class,
         FROM incidents
         WHERE {incident_filter_condition}
@@ -748,7 +782,7 @@ def incident_based_caf_score_query_template(
             incident_periods.incident_time_period,
             incidents.incarceration_incident_id,
             incidents.incident_date,
-            incidents.incident_type_raw_text,
+            incidents.infraction_type_raw_text,
             incidents.incident_class
         FROM incident_ids_with_time_period incident_periods
         INNER JOIN incidents
@@ -768,7 +802,7 @@ def incident_based_caf_score_query_template(
                     STRUCT(
                         incarceration_incident_id,
                         incident_date,
-                        incident_type_raw_text,
+                        infraction_type_raw_text,
                         incident_class,
                         incident_time_period
                     )
