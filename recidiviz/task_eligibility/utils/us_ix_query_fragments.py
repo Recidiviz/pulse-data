@@ -24,6 +24,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.observations.span_observation_big_query_view_builder import fix_indent
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
@@ -139,7 +140,10 @@ ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX = "[<{{]([^>}}]*)[>}}]|&nbsp"
 
 
 def ix_offender_alerts_case_notes(
-    date_part: str = "MONTH", date_interval: str = "6", where_clause: str = ""
+    date_part: str = "MONTH",
+    date_interval: str = "6",
+    where_clause: str = "",
+    indent_level: int = 8,
 ) -> str:
     """
     Returns a SQL query that returns case notes for offender alerts in Idaho.
@@ -147,10 +151,12 @@ def ix_offender_alerts_case_notes(
         date_part (str): Date part to use for the date interval. Defaults to 'MONTH'.
         date_interval (str): Date interval to use for the date part. Defaults to '6'.
         where_clause (str): Where clause to use in the query. Defaults to ''.
+        indent_level (int): Indent level for the query. Defaults to 2.
     Returns:
         str: SQL query as a string.
     """
-    return f"""    SELECT
+    query = f"""
+        SELECT
             OffenderId AS external_id,
             "Alerts" AS criteria,
             AlertDesc AS note_title,
@@ -166,6 +172,8 @@ def ix_offender_alerts_case_notes(
                 USING (AlertId)
             {where_clause})
         WHERE end_date > DATE_SUB(CURRENT_DATE, INTERVAL {date_interval} {date_part})"""
+
+    return fix_indent(query, indent_level=indent_level)
 
 
 INSTITUTIONAL_BEHAVIOR_NOTES_STR = "Institutional Behavior Notes (in the past 6 months)"
@@ -198,6 +206,7 @@ def ix_general_case_notes(
     criteria_str: str,
     where_clause_addition: str = "",
     in_the_past_x_months: Optional[int] = None,
+    indent_level: int = 8,
 ) -> str:
     """
     Returns a SQL query that returns case notes for a specified contact mode in Idaho.
@@ -207,6 +216,7 @@ def ix_general_case_notes(
         in_the_past_x_months (int): Number of months to use for the date interval.
             Defaults to 6.
         where_clause_addition (str): Where clause to use in the query. Defaults to ''.
+        indent_level (int): Indent level for the query. Defaults to 2.
     Returns:
         str: SQL query as a string.
     """
@@ -216,7 +226,7 @@ def ix_general_case_notes(
             WHERE DATE_DIFF(CURRENT_DATE('US/Pacific'), event_date, MONTH)
             - IF(EXTRACT(DAY FROM event_date) > EXTRACT(DAY FROM CURRENT_DATE('US/Pacific')), 1, 0)
             <= {in_the_past_x_months}"""
-    return f"""
+    query = f"""
         SELECT *
         FROM (
             SELECT
@@ -240,19 +250,23 @@ def ix_general_case_notes(
         )
         {date_filter_clause}"""
 
+    return fix_indent(query, indent_level=indent_level)
+
 
 NOTE_TITLE_REGEX = "r'^{{note_title:(.*?)}}'"
 NOTE_BODY_REGEX = " r'{{note:((?s:.*))}}'"
 
 
-def ix_fuzzy_matched_case_notes(where_clause: str = "") -> str:
+def ix_fuzzy_matched_case_notes(where_clause: str = "", indent_level: int = 8) -> str:
     """
     Returns a SQL query that returns fuzzy matched case notes filtered by type in Idaho
 
     Args:
         where_clause (str): Where clause to use in the query. Defaults to ''.
+        indent_level (int): Indent level for the query. Defaults to 8.
     """
-    return f"""    SELECT *
+    query = f"""
+        SELECT *
         FROM (
             SELECT 
                 person_external_id AS external_id,
@@ -269,22 +283,26 @@ def ix_fuzzy_matched_case_notes(where_clause: str = "") -> str:
                     - IF(EXTRACT(DAY FROM event_date) > EXTRACT(DAY FROM CURRENT_DATE('US/Pacific')),
                         1, 0)) <= 3"""
 
+    return fix_indent(query, indent_level=indent_level)
+
 
 def escape_absconsion_or_eluding_police_case_notes(
-    criteria_column_str: str = "Escape, Absconsion or Eluding Police history (in the past 10 years",
+    criteria_column_str: str = "Escape, Absconsion or Eluding Police history (in the past 10 years)",
+    indent_level: int = 8,
 ) -> str:
     """
     Returns a SQL query that returns case notes for escape, absconsion or eluding police in Idaho.
 
     Args:
         criteria_column_str (str): Criteria to use for the criteria column. Defaults to
-        'Escape, Absconsion or Eluding Police history (in the past 10 years').
+            'Escape, Absconsion or Eluding Police history (in the past 10 years').
+        indent_level (int): Indent level for the query. Defaults to 8.
 
     Returns:
         str: SQL query as a string.
     """
 
-    return f"""
+    query = f"""
     SELECT
         pei.external_id,
         '{criteria_column_str}' AS criteria,
@@ -339,27 +357,36 @@ def escape_absconsion_or_eluding_police_case_notes(
             AND pei.id_type = 'US_IX_IDOC'
     WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
         AND meets_criteria IS FALSE
-    GROUP BY 1,2,3,4,5
-"""
+    GROUP BY 1,2,3,4,5"""
+
+    return fix_indent(query, indent_level=indent_level)
 
 
-def detainer_case_notes(criteria_column: str = "Detainers") -> str:
+def detainer_case_notes(
+    criteria_column: str = "Detainers", indent_level: int = 8
+) -> str:
     """
     Returns a SQL query that returns case notes for detainers in Idaho.
+    Args:
+
+        criteria_column (str): Criteria to use for the criteria column. Defaults to 'Detainers'.
+        indent_level (int): Indent level for the query. Defaults to 8.
     """
 
-    return f"""SELECT
-        pei.external_id,
-        '{criteria_column}' AS criteria,
-        CONCAT(DetainerTypeDesc, ' - ', DetainerStatusDesc) AS note_title,
-        Comments AS note_body,
-        start_date AS event_date,
-    FROM `{{project_id}}.{{analyst_dataset}}.us_ix_detainer_spans_materialized` det
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON det.person_id = pei.person_id
-            AND det.state_code = pei.state_code
-            AND pei.id_type = 'US_IX_DOC'
-"""
+    query = f"""
+SELECT
+    pei.external_id,
+    '{criteria_column}' AS criteria,
+    CONCAT(DetainerTypeDesc, ' - ', DetainerStatusDesc) AS note_title,
+    Comments AS note_body,
+    start_date AS event_date,
+FROM `{{project_id}}.{{analyst_dataset}}.us_ix_detainer_spans_materialized` det
+LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+    ON det.person_id = pei.person_id
+        AND det.state_code = pei.state_code
+        AND pei.id_type = 'US_IX_DOC'"""
+
+    return fix_indent(query, indent_level=indent_level)
 
 
 def lsir_spans() -> str:
@@ -457,10 +484,7 @@ DOR_CRITERIA_COLUMNS = """
         SUBSTR(dot.DorOffenseCode, 1, 1) AS dor_class"""
 
 
-def dor_query(
-    columns_str: str,
-    classes_to_include: list,
-) -> str:
+def dor_query(columns_str: str, classes_to_include: list, indent_level: int = 8) -> str:
     """
     Returns a SQL query that returns all the Disciplinary Offense Reports in Idaho
     that match the classes requested.
@@ -471,9 +495,10 @@ def dor_query(
         classes_to_include (list): List of classes to include in the query. E.g. ['A', 'B'].
         additional_where_clause (str): Additional where clause to use in the query.
             Defaults to ''.
+        indent_level (int): Indent level for the query. Defaults to 8.
     """
 
-    return f"""
+    query = f"""
     SELECT *
     FROM (
         SELECT {columns_str}
@@ -493,8 +518,10 @@ def dor_query(
         QUALIFY ROW_NUMBER() OVER(PARTITION BY dap.DACaseId, dap.OffenderId ORDER BY dap.InsertDate DESC) = 1
     )"""
 
+    return fix_indent(query, indent_level=indent_level)
 
-def program_enrollment_query() -> str:
+
+def program_enrollment_query(indent_level: int = 8) -> str:
     """
     Returns a SQL query that selects information about program enrollments. Some facts:
     - The query includes the offender ID, criteria, note title, note body, and event date.
@@ -502,7 +529,7 @@ def program_enrollment_query() -> str:
     are included.
     - Only programs that were started at current incarceration periods are included
     """
-    return """
+    query = """
     SELECT 
         ce.OffenderId AS external_id,
         "Program enrollment" AS criteria,
@@ -555,13 +582,17 @@ def program_enrollment_query() -> str:
         ce.OfdEnrollmentStatusId IN ('1', '2', '3')
     """
 
+    return fix_indent(query, indent_level=indent_level)
 
-def victim_alert_notes() -> str:
+
+def victim_alert_notes(indent_level: int = 8) -> str:
     """
     Returns a SQL query that selects information about victim alerts.
+    Args:
+        indent_level (int): Indent level for the query. Defaults to 8.
     """
 
-    return """
+    query = """
     SELECT
         OffenderId AS external_id,
         'Victim Alerts' AS criteria,
@@ -571,6 +602,8 @@ def victim_alert_notes() -> str:
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ind_Offender_Alert_latest`
     -- Victim alerts
     WHERE AlertId = '133'"""
+
+    return fix_indent(query, indent_level=indent_level)
 
 
 def supervision_level_criteria_query(

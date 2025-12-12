@@ -95,15 +95,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_custody_level_downgrade_record import (
     US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_resident_worker_request_record import (
-    US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_work_release_request_record import (
-    US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_xcrc_request_record import (
-    US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_record_incarceration_cases_with_dates import (
     US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
@@ -148,9 +139,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             ): {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
@@ -182,9 +170,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             ): {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
@@ -216,9 +201,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             ): {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
@@ -316,14 +298,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
         },
-        US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: {
             US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
@@ -343,22 +317,6 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 table_id=StateCharge.get_table_id(),
             ): {
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address,
             },
         },
         US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: {

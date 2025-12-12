@@ -127,15 +127,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_d
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_transfer_to_limited_supervision_form_record import (
     US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_resident_worker_request_record import (
-    US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_work_release_request_record import (
-    US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_xcrc_request_record import (
-    US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
     US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
@@ -328,18 +319,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
             "sentences migration"
         ),
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46255): Remove state_charge reference as part of the v2 "
-            "sentences migration"
-        ),
-        US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),
