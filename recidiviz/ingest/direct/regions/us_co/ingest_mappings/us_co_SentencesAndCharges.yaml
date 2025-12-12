@@ -1,0 +1,178 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_SentencesAndCharges` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOMPONENT: STRING
+  CJISCHARGECOUNT: STRING
+  SENTENCETYPE: STRING
+  DOCOFFENSECODE: STRING
+  STATECOUNTY: STRING
+  HOWSERVEDSUMMARY: STRING
+  SEXCRIMEFLAG: STRING
+  SENTENCEFINDINGFLAG: STRING
+  FELONYCLASS: STRING
+  GOVERNS: STRING
+  ATTEMPTED: STRING
+  VIOLENTSENT: STRING
+  OFFENSEDATE: STRING
+  SENTENCEEFFECTIVEDATE: STRING
+  CURRCOMMITCONVICTIONDT: STRING
+  CJISSTATUTECODE: STRING
+  CJISSTATUTEDESC: STRING
+  PRIMARYOFFENSECURRINCAR: STRING
+  SENTENCEFINDINGDATE: STRING
+  LIFESENTENCETYPE: STRING
+  INITIAL_TIME_SERVED_DAYS: STRING
+unused_columns:
+  - SENTENCEEFFECTIVEDATE # TODO(#54884): excluding until we want to include #current_state_provided_start_date
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - OFFENDERID
+          - COMMITMENTPREFIX
+          - SENTENCECOMPONENT
+    #TODO(#54084): Confirm this is how we want to represent sentence groups once we have
+    # a better understanding of how sentences connect in CO
+  - sentence_group_external_id:
+      $concat:
+        $values:
+          - OFFENDERID
+          - COMMITMENTPREFIX
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: $variable(sentence_group_external_id)
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_group_external_id: $variable(sentence_group_external_id)
+          sentence_type:
+            $enum_mapping:
+              $raw_text: SENTENCETYPE
+              $mappings:
+                StateSentenceType.STATE_PRISON:
+                  - SP # Prison Timeline
+                  - YO # Youth Offender Services
+                  - IC # Interstate Compact - not sure the best place for this
+                StateSentenceType.PROBATION:
+                  - PT # CONFIRM WITH CO - PAROLE OR PROBATION TIMELINE
+          imposed_date: SENTENCEFINDINGDATE
+          #current_state_provided_start_date: SENTENCEEFFECTIVEDATE
+          sentencing_authority: $literal_enum(StateSentencingAuthority.STATE)
+          county_code: STATECOUNTY
+          is_life:
+            $in:
+              $value: LIFESENTENCETYPE
+              $options:
+                - $literal("1TL") # One day to Life
+                - $literal("LSX") # Lifetime Supervision of Sex Offense
+                - $literal("MXL") # Indeterminate Min to Life Max
+                - $literal("WIP") # Life with Parole
+                - $literal("WOP") # Life without Parole
+          is_capital_punishment:
+            $equal:
+              - LIFESENTENCETYPE
+              - $literal("DTH") # Death
+          parole_possible:
+            $not_in:
+              $value: LIFESENTENCETYPE
+              $options:
+                - $literal("WOP") # Life without Parole
+                - $literal("DTH") # Death
+          initial_time_served_days: INITIAL_TIME_SERVED_DAYS #Derived from TIMESERVEDTO
+          sentence_metadata:
+            $normalized_values_json_dict:
+              CC_CS_SENTENCE: HOWSERVEDSUMMARY # Indicates if consecutive or concurrent sentence
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - OFFENDERID
+                      - COMMITMENTPREFIX
+                status:
+                  $enum_mapping:
+                    $raw_text: SENTENCEFINDINGFLAG
+                    $mappings:
+                      StateChargeV2Status.ACQUITTED:
+                        - ACQT # Acquitted
+                        - FGSA # Guilty Set Aside
+                      StateChargeV2Status.CONVICTED:
+                        - FFGL # Guilty to Lesser Charge
+                        - FFGM # Guilty Misdemeanor
+                        - FFGY # Guilty
+                        - GU # Guilty (Conversion)
+                        - PRVN # Proven
+                        - FFNC # Nolo Contendere
+                        - FDFS # Deferred Sentence
+                        - CNSD # Consolidated
+                      StateChargeV2Status.INTERNAL_UNKNOWN:
+                        - FFGI # NOT GUILTY INSANITY  # excluding from view since needs CONVICTED for pipeline
+                        - NPRV # NOT PROVEN  # excluding from view since needs CONVICTED for pipeline
+                      StateChargeV2Status.DROPPED:
+                        - FFNG # Not Guilty
+                        - DMDA # Dismissed by D.A.
+                      StateChargeV2Status.EXTERNAL_UNKNOWN:
+                        - UNKN # Unknown (Conversion)
+                offense_date: OFFENSEDATE
+                date_charged: CURRCOMMITCONVICTIONDT
+                county_code: STATECOUNTY
+                statute: CJISSTATUTECODE
+                description: CJISSTATUTEDESC
+                offense_type: DOCOFFENSECODE
+                ncic_code: PRIMARYOFFENSECURRINCAR
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: FELONYCLASS
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - "0" # Felony Other
+                        - "1" # Felony Class 1
+                        - "2" # Felony Class 2
+                        - "3" # Felony Class 3
+                        - "4" # Felony Class 4
+                        - "5" # Felony Class 5
+                        - "6" # Felony Class 6
+                        - A # Drug Felony Class 1
+                        - B # Drug Felony Class 2
+                        - C # Drug Felony Class 3
+                        - D # Drug Felony Class 4
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - "7" # Misdemeanor (7)
+                        - "8" # Misdemeanor (8)
+                        - "9" # Misdemeanor (9)
+                        - E # Drug Misdemeanor (E)
+                        - F # Drug Misdemeanor (F)
+                        - G # Drug Misdemeanor (G)
+                      StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
+                        - U # Unclassified
+                        - X # Unknown
+                classification_subtype: FELONYCLASS
+                is_sex_offense:
+                  $equal:
+                    - SEXCRIMEFLAG
+                    - $literal("Y") # YES
+                is_controlling:
+                  $in:
+                    $value: GOVERNS
+                    $options:
+                      - $literal("M") # Max
+                      - $literal("B") # Both
+                attempted:
+                  $equal:
+                    - ATTEMPTED #SENTENCEINCHOATEFLAG
+                    - $literal("H")
+                is_violent:
+                  $equal:
+                    - VIOLENTSENT #MANDATORYVIOLENTSENTENCEFLAG
+                    - $literal("Y") # YES
+                counts: CJISCHARGECOUNT
