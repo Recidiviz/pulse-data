@@ -188,6 +188,55 @@
     width: 24
     height: 6
 
+  - name: com_Investigation
+    title: com_Investigation
+    explore: us_ix_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ix_com_Investigation.primary_key,
+      us_ix_com_Investigation.InvestigationId,
+      us_ix_com_Investigation.RequestDate__raw,
+      us_ix_com_Investigation.RequestingAgencyId,
+      us_ix_com_Investigation.InvestigationTypeId,
+      us_ix_com_Investigation.RequestingStaffId,
+      us_ix_com_Investigation.ReceivingDOCLocationId,
+      us_ix_com_Investigation.TransferReasonId,
+      us_ix_com_Investigation.RequestNotes,
+      us_ix_com_Investigation.AssignedById,
+      us_ix_com_Investigation.AssignedToId,
+      us_ix_com_Investigation.AssignedDate,
+      us_ix_com_Investigation.DueDate,
+      us_ix_com_Investigation.CompletionDate,
+      us_ix_com_Investigation.AssociatedReportId,
+      us_ix_com_Investigation.Accepted,
+      us_ix_com_Investigation.Cancelled,
+      us_ix_com_Investigation.ResponseNotes,
+      us_ix_com_Investigation.OffenderId,
+      us_ix_com_Investigation.Locking,
+      us_ix_com_Investigation.InsertUserId,
+      us_ix_com_Investigation.InsertDate,
+      us_ix_com_Investigation.UpdateUserId,
+      us_ix_com_Investigation.UpdateDate,
+      us_ix_com_Investigation.ProposedOffenderAddressId,
+      us_ix_com_Investigation.OtherDOCLocationId,
+      us_ix_com_Investigation.OtherAssignedById,
+      us_ix_com_Investigation.OtherAssignedToId,
+      us_ix_com_Investigation.OtherAssignedDate,
+      us_ix_com_Investigation.OtherDueDate,
+      us_ix_com_Investigation.InvestigationStatusId,
+      us_ix_com_Investigation.file_id,
+      us_ix_com_Investigation.is_deleted]
+    sorts: [us_ix_com_Investigation.RequestDate__raw]
+    note_display: hover
+    note_text: "TODO(#15329): Fill in the file description"
+    listen: 
+      View Type: us_ix_ind_Offender.view_type
+      US_IX_DOC: us_ix_ind_Offender.OffenderId
+    row: 18
+    col: 0
+    width: 24
+    height: 6
+
   - name: com_PSIReport
     title: com_PSIReport
     explore: us_ix_raw_data
@@ -233,7 +282,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 18
+    row: 24
     col: 0
     width: 24
     height: 6
@@ -265,7 +314,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 24
+    row: 30
     col: 0
     width: 24
     height: 6
@@ -317,7 +366,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 30
+    row: 36
     col: 0
     width: 24
     height: 6
@@ -366,7 +415,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 36
+    row: 42
     col: 0
     width: 24
     height: 6
@@ -421,7 +470,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 42
+    row: 48
     col: 0
     width: 24
     height: 6
@@ -465,7 +514,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 48
+    row: 54
     col: 0
     width: 24
     height: 6
@@ -494,7 +543,34 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 54
+    row: 60
+    col: 0
+    width: 24
+    height: 6
+
+  - name: gsm_ParticipantOffender
+    title: gsm_ParticipantOffender
+    explore: us_ix_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ix_gsm_ParticipantOffender.primary_key,
+      us_ix_gsm_ParticipantOffender.ParticipantId,
+      us_ix_gsm_ParticipantOffender.ClassCode,
+      us_ix_gsm_ParticipantOffender.OffenderId,
+      us_ix_gsm_ParticipantOffender.InsertUserId,
+      us_ix_gsm_ParticipantOffender.Locking,
+      us_ix_gsm_ParticipantOffender.InsertDate__raw,
+      us_ix_gsm_ParticipantOffender.UpdateUserId,
+      us_ix_gsm_ParticipantOffender.UpdateDate__raw,
+      us_ix_gsm_ParticipantOffender.file_id,
+      us_ix_gsm_ParticipantOffender.is_deleted]
+    sorts: [us_ix_gsm_ParticipantOffender.InsertDate__raw]
+    note_display: hover
+    note_text: "Maps participant information to offender information"
+    listen: 
+      View Type: us_ix_ind_Offender.view_type
+      US_IX_DOC: us_ix_ind_Offender.OffenderId
+    row: 66
     col: 0
     width: 24
     height: 6
@@ -525,7 +601,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 60
+    row: 72
     col: 0
     width: 24
     height: 6
@@ -563,7 +639,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 66
+    row: 78
     col: 0
     width: 24
     height: 6
@@ -604,7 +680,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 72
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -640,7 +716,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 78
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -678,7 +754,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 84
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -717,7 +793,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 90
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -750,7 +826,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 96
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -778,7 +854,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 102
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -806,7 +882,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 108
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -838,7 +914,40 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 114
+    row: 126
+    col: 0
+    width: 24
+    height: 6
+
+  - name: movement
+    title: movement
+    explore: us_ix_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ix_movement.primary_key,
+      us_ix_movement.move_srl,
+      us_ix_movement.docno,
+      us_ix_movement.incrno,
+      us_ix_movement.move_dtd__raw,
+      us_ix_movement.move_typ,
+      us_ix_movement.fac_cd,
+      us_ix_movement.lu_cd,
+      us_ix_movement.loc_cd,
+      us_ix_movement.move_pod,
+      us_ix_movement.move_tier,
+      us_ix_movement.move_cell,
+      us_ix_movement.move_bunk,
+      us_ix_movement.cnty_cd,
+      us_ix_movement.perm_fac_cd,
+      us_ix_movement.file_id,
+      us_ix_movement.is_deleted]
+    sorts: [us_ix_movement.move_dtd__raw]
+    note_display: hover
+    note_text: "Contains a new row for every movement that happens for a person under IDOC authority (either on supervision or incarcerated)."
+    listen: 
+      View Type: us_ix_ind_Offender.view_type
+      US_IX_DOC: us_ix_ind_Offender.OffenderId
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -879,7 +988,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 120
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -926,7 +1035,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 126
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -972,7 +1081,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 132
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1020,7 +1129,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 138
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1052,7 +1161,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 144
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1100,7 +1209,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 150
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1193,7 +1302,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 156
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1247,7 +1356,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 162
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1289,7 +1398,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 168
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1384,7 +1493,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 174
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1432,7 +1541,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 180
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1479,7 +1588,7 @@
     listen: 
       View Type: us_ix_ind_Offender.view_type
       US_IX_DOC: us_ix_ind_Offender.OffenderId
-    row: 186
+    row: 204
     col: 0
     width: 24
     height: 6

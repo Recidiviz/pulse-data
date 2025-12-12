@@ -24,6 +24,13 @@ explore: us_ix_raw_data_template {
     view_label: "us_ix_com_CommunityServiceRecord"
   }
 
+  join: us_ix_com_Investigation {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_com_Investigation.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_com_Investigation"
+  }
+
   join: us_ix_com_PSIReport {
     sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_com_PSIReport.OffenderId};;
     type: full_outer
@@ -71,6 +78,13 @@ explore: us_ix_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_ix_dsc_DAProcedure"
+  }
+
+  join: us_ix_gsm_ParticipantOffender {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_gsm_ParticipantOffender.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_gsm_ParticipantOffender"
   }
 
   join: us_ix_hsn_BedAssignment {
@@ -141,6 +155,13 @@ explore: us_ix_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_ix_ind_Offender_QuestionnaireTemplate"
+  }
+
+  join: us_ix_movement {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_movement.docno};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_movement"
   }
 
   join: us_ix_prb_PBCase {
