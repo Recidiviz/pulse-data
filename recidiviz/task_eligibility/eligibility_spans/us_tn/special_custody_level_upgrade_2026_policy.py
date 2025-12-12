@@ -31,7 +31,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     custody_level_lower_than_recommended_2026_policy,
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
-    latest_caf_assessment_not_override,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
@@ -54,12 +53,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        latest_caf_assessment_not_override.VIEW_BUILDER,
         ineligible_for_annual_reclassification.VIEW_BUILDER,
         ineligible_for_initial_classification.VIEW_BUILDER,
         custody_level_lower_than_recommended_2026_policy.VIEW_BUILDER,
         custody_level_not_lower_than_recommended_previous_policy_view_builder,
-        # TODO(#50730): Add additional criteria to filter to upgrades occurring due to the updated classification policy
+        # TODO(#54858): Add additional criterion to exclude those who have already been classified under the 2026 policy
     ],
     completion_event_builder=custody_level_upgrade.VIEW_BUILDER,
 )
