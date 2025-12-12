@@ -149,9 +149,18 @@ def _sort_sentences_by_severity(
     return list(sorted(sentences, key=_sort_key, reverse=True))
 
 
-def sentences_overlap_serving(
+def sentences_have_contiguous_or_overlapping_serving(
     s1: NormalizedStateSentence, s2: NormalizedStateSentence
 ) -> bool:
+    """
+    Returns True if the two given sentences either:
+      - Have an overlapping span of time where they are both serving.
+      - Have contiguous serving spans, meaning they are served one after the other
+        within a day
+
+    This is for the purpose of identifying sentences we intend to infer together
+    into a NormalizedStateSentenceInferredGroup.
+    """
     span1 = s1.first_serving_status_to_terminating_status_dt_range
     span2 = s2.first_serving_status_to_terminating_status_dt_range
     if not (span1 and span2):
@@ -309,7 +318,7 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
             {c.offense_date for c in s2.charges if c.offense_date}
         ):
             return True
-        return sentences_overlap_serving(s1, s2)
+        return sentences_have_contiguous_or_overlapping_serving(s1, s2)
 
 
 class SentenceNormalizationManager(EntityNormalizationManager):
