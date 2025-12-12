@@ -55,6 +55,22 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+RISK_REDUCTION_FOR_ET_VIEW_BUILDER = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.OR,
+        criteria_name="US_UT_RISK_REDUCTION_FOR_ET",
+        sub_criteria_list=[
+            risk_level_reduction_of_one_or_more.VIEW_BUILDER,
+            risk_level_stayed_moderate_or_low.VIEW_BUILDER,
+            risk_score_reduction_5_percent_or_more.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[
+            "assessment_level_raw_text",
+            "first_assessment_level_raw_text",
+        ],
+    ),
+)[0]
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_UT,
     task_name="EARLY_TERMINATION_FROM_SUPERVISION_REQUEST",
@@ -64,19 +80,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # 1. Completion of ordered assessments and any recommended treatment or programming
         has_completed_ordered_assessments.VIEW_BUILDER,
         # 2. Risk reduction criteria
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_UT_RISK_REDUCTION_FOR_ET",
-            sub_criteria_list=[
-                risk_level_reduction_of_one_or_more.VIEW_BUILDER,
-                risk_level_stayed_moderate_or_low.VIEW_BUILDER,
-                risk_score_reduction_5_percent_or_more.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[
-                "assessment_level_raw_text",
-                "first_assessment_level_raw_text",
-            ],
-        ),
+        RISK_REDUCTION_FOR_ET_VIEW_BUILDER,
         # 3. Compliance and stability
         supervision_housing_is_permanent_for_3_months.VIEW_BUILDER,
         continuous_employment_or_student_or_alt_for_3_months.VIEW_BUILDER,
