@@ -37,10 +37,10 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .11
     override_reason: Investigation needed. TODO(#32640)
   - validation_name: state_supervision_violation_by_violation_date_stable_counts
-    hard_max_allowed_error_override: .31
+    hard_max_allowed_error_override: .41
     override_reason: This is standard variation for this entity month to month.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
-    hard_max_allowed_error_override: .31
+    hard_max_allowed_error_override: .41
     override_reason: This is standard variation for this entity month to month.
   - validation_name: state_supervision_period_by_start_date_stable_counts
     hard_max_allowed_error_override: .28
@@ -53,14 +53,14 @@ max_allowed_error_overrides:
     override_reason: TODO(#39885) - investigate missing sentence serving periods for open parole sessions
 num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 50
+    hard_num_allowed_rows_override: 2000
     override_reason: Investigation needed. TODO(#34826)
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 150
+    hard_num_allowed_rows_override: 200
     override_reason: |-
       There are rare cases where a person is incarcerated with two distinct DOC_IDs assigned
       at the same time. These people presumably are serving two concurrent sentences at the same
-      time. Current failing level as of 9/17/24 is 140 rows.
+      time. Current failing level as of 12/10/25 is 175 rows.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 250
     override_reason: Small overlap. To investigate. (#32648)

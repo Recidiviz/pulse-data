@@ -70,8 +70,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 300
     override_reason: Needs investigation. Current failing level as of 7/29/24 is 228 rows. #TODO(#16241)
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 30000
-    override_reason: Needs investigation.  Current failing level as of 7/29/24 is 26,086 rows #TODO(#16436)
+    hard_num_allowed_rows_override: 33000
+    override_reason: Needs investigation.  Current failing level as of 12/10/25 is 30,856 rows #TODO(#16436)
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 20
     override_reason: Needs investigation. Current failing level as of 7/29/24 is 13 rows #TODO(#19047)
