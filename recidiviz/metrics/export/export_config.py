@@ -474,10 +474,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=USER_DATA_DOWNLOADS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="USER_DATA_DOWNLOADS",
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
-        output_project_by_data_project={
-            GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
-            GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
-        },
         export_output_formats_and_validations={
             ExportOutputFormatType.CSV: [ExportValidationType.EXISTS]
         },
