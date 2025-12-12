@@ -104,6 +104,7 @@ output:
                         - Investigation
                       StateSupervisionPeriodSupervisionType.PAROLE:
                         - Parole
+                        - Parole-Non Idaho
                       StateSupervisionPeriodSupervisionType.PROBATION:
                         - Probation
                       StateSupervisionPeriodSupervisionType.WARRANT_STATUS:
@@ -368,7 +369,7 @@ output:
               - $else_if:
                   $equal:
                     - PhysicalLocationTypeDesc
-                    - $literal("Adult Residential Programs")
+                    - $literal("Adult Residential Programs")
                 $then: $literal_enum(StateSupervisionLevel.RESIDENTIAL_PROGRAM)
               - $else_if:
                   $equal:

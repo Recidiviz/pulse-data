@@ -182,7 +182,6 @@ FILE_DOCUMENTATION_EXEMPTIONS: dict[StateCode, set[str]] = {
         "scl_SentenceLinkSentenceOrder",
         "scl_SentenceRelationship",
         "sup_SupervisionAssignmentLevel",
-        "sup_SupervisionLevelChangeRequest",
     },
     # TODO(#39252): Add file-level documentation for these files and remove this exemption for US_ME
     StateCode.US_ME: {
