@@ -13,7 +13,6 @@ input_columns:
   PARTICIPATION_START_DATE: DATETIME
   PARTICIPATION_END_DATE: DATETIME
   EXEMPTION: STRING
-  EXEMPTION_COMMENTS: STRING
   CHANGE_REASON: STRING
   EXEMPTION_REMOVED_DATE: DATETIME
 unused_columns: []
@@ -77,5 +76,4 @@ output:
               # A Y/N flag indicating whether a person successfully completed the program.
               COMPLETION_FLAG: COMPLETION_PR_FLAG
               EXEMPTION: EXEMPTION
-              EXEMPTION_COMMENTS: EXEMPTION_COMMENTS
               EXEMPTION_REMOVED_DATE: EXEMPTION_REMOVED_DATE
