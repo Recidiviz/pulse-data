@@ -17,6 +17,9 @@
 """US_NE exemptions for deprecated sentence v1 view references in product views."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.state.views.meetings.clients import (
+    MEETINGS_CLIENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -37,5 +40,14 @@ US_NE_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
+    },
+    "MEETINGS": {
+        # Meetings client view doesn't pull sentence information, but does pull other information
+        # from the workflows client record for simplicity.
+        MEETINGS_CLIENTS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            }
+        }
     },
 }
