@@ -36,6 +36,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
 )
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentencingAuthority,
@@ -323,3 +326,34 @@ def parse_supervision_type(
         return StateSupervisionPeriodSupervisionType.ABSCONSION
 
     return StateSupervisionPeriodSupervisionType.PAROLE
+
+
+def parse_clinical_participation(
+    raw_text: str,
+) -> Optional[StateProgramAssignmentParticipationStatus]:
+    """
+    Determine facility clinical program participation status
+    """
+    accept_refuse, outcome, complete_date = raw_text.split("@@")
+
+    if accept_refuse == "Refused":
+        return StateProgramAssignmentParticipationStatus.REFUSED
+
+    if outcome in (
+        "Adequate Progression",
+        "Satisfactory Progression",
+        "Met SO treatment goals",
+    ):
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL
+
+    if outcome in (
+        "Terminated from Program",
+        "Withdrawn from Program",
+        "Did not meet SO treatment goals",
+    ):
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL
+
+    if accept_refuse is None and outcome is None and complete_date is not None:
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN
+
+    return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN

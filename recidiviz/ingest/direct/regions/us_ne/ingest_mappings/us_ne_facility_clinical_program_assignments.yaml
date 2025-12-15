@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_program_assignment` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  sexOffenderTreatmentId: STRING
+  recommendationCode: STRING
+  recommendation: STRING
+  acceptRefuse: STRING
+  treatmentOutcome: STRING
+  dateScreened: DATE
+  treatmentStarted: DATE
+  treatmentCompleted: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - sexOffenderTreatmentId
+                - $literal("CLINICAL")
+          program_id: recommendationCode
+          participation_status:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - acceptRefuse
+                    - treatmentOutcome
+                    - treatmentCompleted
+              $custom_parser: us_ne_custom_enum_parsers.parse_clinical_participation
+          referral_date: dateScreened
+          start_date: treatmentStarted
+          discharge_date: treatmentCompleted
+          referral_metadata:
+            $normalized_values_json_dict:
+              recommendation_name: recommendation
