@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_not_diversion,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_residential_program,
     supervision_level_is_not_unassigned,
     supervision_or_supervision_out_of_state_level_is_not_high,
 )
@@ -68,6 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_diversion.VIEW_BUILDER,
         supervision_or_supervision_out_of_state_level_is_not_high.VIEW_BUILDER,
         supervision_level_is_not_modified.VIEW_BUILDER,
+        supervision_level_is_not_residential_program.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade_before_initial_classification_review_date.VIEW_BUILDER,
 )
