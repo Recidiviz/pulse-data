@@ -28,8 +28,6 @@ from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder im
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NOT_INCARCERATION_WITHIN_3_YEARS_OF_PROJECTED_PAROLE_RELEASE_DATE"
-
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
 someone is NOT within 3 years of their projected parole release date.
