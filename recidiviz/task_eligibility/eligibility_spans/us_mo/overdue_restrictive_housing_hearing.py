@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligiblity spans view that shows the spans of time during which
-someone in MO has an upcoming restrictive housing hearing.
-TODO(#26722): Deprecate once new opportunities are live.
-"""
+"""Shows the spans of time during which someone in MO has an overdue Restrictive Housing hearing"""
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -37,12 +34,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in MO has an overdue Restrictive Housing hearing"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="OVERDUE_RESTRICTIVE_HOUSING_HEARING",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         in_restrictive_housing.VIEW_BUILDER,

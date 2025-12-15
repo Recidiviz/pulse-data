@@ -14,12 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time where a client's early
-early discharge eligibility date was before their full term completion date, implying
-the client could be eligible for early discharge from supervision. If the clients
-discharge date is on or after their full term release date then they will likely be
-discharged normally.
-"""
+"""Defines a criteria span view that shows spans of time during which
+someone has an early discharge eligibility date before their full term completion date
+(aka expiration date). When a client's early discharge eligibility date is equal to
+their full term completion date it is implied they will have normal supervision
+discharge on their sentence expiration date."""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
@@ -43,12 +42,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE"
-
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has an early discharge eligibility date before their full term completion date
-(aka expiration date). When a client's early discharge eligibility date is equal to
-their full term completion date it is implied they will have normal supervision
-discharge on their sentence expiration date."""
 
 _QUERY_TEMPLATE = f"""
 WITH
@@ -122,7 +115,7 @@ WHERE early_discharge_date IS NOT NULL
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
+    description=__doc__,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[

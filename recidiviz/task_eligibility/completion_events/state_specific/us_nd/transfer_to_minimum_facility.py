@@ -29,9 +29,6 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows transfers to minimum security
-facilities or units."""
-
 _QUERY_TEMPLATE = f"""
 WITH housing_unit_sess AS (
     SELECT 
@@ -56,7 +53,7 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_ND,
         completion_event_type=TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
     )

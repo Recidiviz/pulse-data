@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligiblity spans view that shows the spans of time during which
-someone in ND is eligible to have early termination paperwork completed for them in
-preparation for an early discharge.
+"""Shows the spans of time during which someone in ND is eligible
+to have early termination paperwork completed for them in preparation for an early
+discharge.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
@@ -41,15 +41,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ND is eligible
-to have early termination paperwork completed for them in preparation for an early
-discharge.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ND,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         implied_valid_early_termination_sentence_type.VIEW_BUILDER,

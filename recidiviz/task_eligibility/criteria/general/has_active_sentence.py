@@ -32,11 +32,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_ACTIVE_SENTENCE"
 
-_DESCRIPTION = """Describes the spans of time when a client has a supervision session that overlaps with a sentence span.
-Those who are on supervision without an overlapping span almost certainly have erroneous expiration dates
-and can be surfaced as a separate "data quality" issue rather than eligible for discharge.
-"""
-
 _QUERY_TEMPLATE = f"""
     -- TODO(#38294) Update this to use sentence serving periods
     WITH sessions_and_sentence_spans AS (
@@ -75,7 +70,7 @@ _QUERY_TEMPLATE = f"""
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
+    description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(

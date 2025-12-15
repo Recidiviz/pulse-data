@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when someone is not serving a sentence for a sex offense.
+"""Describes the spans of time when someone is not serving a sentence for a sex offense while
+incarcerated.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -29,14 +30,10 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#37445) Rename to specify incarceration
 _CRITERIA_NAME = "NOT_SERVING_FOR_SEXUAL_OFFENSE"
 
-_DESCRIPTION = """Describes the spans of time when someone is not serving a sentence for a sex offense while
-incarcerated.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = get_ineligible_offense_type_criteria(
     criteria_name=_CRITERIA_NAME,
     compartment_level_1="INCARCERATION",
-    description=_DESCRIPTION,
+    description=__doc__,
     # only include spans with ineligible offenses
     where_clause="WHERE sent.is_sex_offense",
 )

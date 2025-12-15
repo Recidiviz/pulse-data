@@ -31,12 +31,6 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 18 months of their full term completion date 
-or upcoming projected parole release date (TPD).
-"""
-
 VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="INCARCERATION_WITHIN_18_MONTHS_OF_FTCD_OR_UPCOMING_TPD",

@@ -38,14 +38,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ID is eligible
-to request early discharge from probation supervision.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_probation_at_least_one_year.VIEW_BUILDER,

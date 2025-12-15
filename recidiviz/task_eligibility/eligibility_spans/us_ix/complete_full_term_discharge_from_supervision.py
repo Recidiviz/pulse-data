@@ -33,14 +33,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ID is eligible
-for full term discharge from supervision.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,

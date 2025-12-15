@@ -32,9 +32,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATION_PAST_HALF_MIN_TERM_RELEASE_DATE"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone
-has completed half their minimum term incarceration sentence."""
-
 _QUERY_TEMPLATE = f"""
 --TODO(#37417): Consider refactoring to use sentence imposed groups
 --TODO(#39106): Migrate CTE to `sentence_first_serving_date` view
@@ -83,7 +80,7 @@ FROM critical_date_has_passed_spans cd
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     reasons_fields=[

@@ -27,7 +27,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all custody level downgrades to Medium Trustee across ME"""
 _QUERY_TEMPLATE = """
     SELECT
         state_code,
@@ -51,7 +50,7 @@ _QUERY_TEMPLATE = """
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_ME,
     completion_event_type=TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
-    description=_DESCRIPTION,
+    description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

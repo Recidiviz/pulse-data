@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a client had at least 2 negative drug tests in the past year."""
+"""Describes the spans of time when a client had at least 2 negative drug test in the past year."""
 
 from google.cloud import bigquery
 
@@ -31,8 +31,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR"
 
-_DESCRIPTION = """Describes the spans of time when a client had at least 2 negative drug test in the past year."""
-
 _QUERY_TEMPLATE = f"""
     {has_at_least_x_negative_tests_in_time_interval(number_of_negative_tests=2,
                                                     date_interval=12,
@@ -44,7 +42,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
     criteria_name=_CRITERIA_NAME,
     meets_criteria_default=False,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
+    description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
@@ -54,7 +52,6 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
         ),
     ],
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

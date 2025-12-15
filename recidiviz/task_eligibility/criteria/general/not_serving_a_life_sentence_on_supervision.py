@@ -28,14 +28,11 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NOT_SERVING_A_LIFE_SENTENCE_ON_SUPERVISION"
 
-_DESCRIPTION = """Describes the spans of time when someone is not serving a life sentence on supervision.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_ineligible_offense_type_criteria(
         criteria_name=_CRITERIA_NAME,
         compartment_level_1="SUPERVISION",
-        description=_DESCRIPTION,
+        description=__doc__,
         where_clause="WHERE sent.is_life",
         additional_json_fields=["LOGICAL_OR(sent.is_life) AS life_sentence"],
     )

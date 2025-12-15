@@ -54,10 +54,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ID is eligible
-to complete the form for transfer to limited unit supervision.
-"""
-
 # If a person has a supervision case type of sexual offense, they only need their income
 # verified after an employment change to be eligible for this opportunity.
 sex_offender_with_verified_employment = (
@@ -82,7 +78,7 @@ income_verified_for_lsu = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         lsir_level_low_for_90_days.VIEW_BUILDER,

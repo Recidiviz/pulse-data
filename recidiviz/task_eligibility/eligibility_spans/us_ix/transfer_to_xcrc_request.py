@@ -50,15 +50,10 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Shows the spans of time during which someone in ID is eligible
-for a transfer to the Expanded Community Reentry Center program.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="TRANSFER_TO_XCRC_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,

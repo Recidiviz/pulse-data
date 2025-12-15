@@ -34,9 +34,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_PAYMENTS_3_CONSECUTIVE_MONTHS"
 
-_DESCRIPTION = """Describes the spans of time when a client has a balance below $2000 and has made
-consecutive payments for 3 months"""
-
 _QUERY_TEMPLATE = f"""
     WITH balance_and_payments AS (
         SELECT 
@@ -103,7 +100,7 @@ _QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,

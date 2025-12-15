@@ -30,16 +30,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATION_WITHIN_1_YEAR_OF_UPCOMING_PROJECTED_PAROLE_RELEASE_DATE"
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is within 1 year of their projected parole release date.
-Once the projected parole release date has passed, the criteria is no longer met.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         meets_criteria_leading_window_time=1,
         date_part="YEAR",
         critical_date_name_in_reason="group_projected_parole_release_date",

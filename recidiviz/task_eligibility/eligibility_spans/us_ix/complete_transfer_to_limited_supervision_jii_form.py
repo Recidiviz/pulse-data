@@ -43,11 +43,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ID is eligible or almost eligible
-to complete the form for transfer to limited unit supervision. These spans have a more flexible set of almost
-eligible criteria conditions since it is JII-facing.
-"""
-
 COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION = (
     complete_transfer_to_limited_supervision_form.VIEW_BUILDER
 )
@@ -55,7 +50,7 @@ COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION = (
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_JII_FORM",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.candidate_population_view_builder,
     criteria_spans_view_builders=[
         lsir_level_low_for_90_days.VIEW_BUILDER,

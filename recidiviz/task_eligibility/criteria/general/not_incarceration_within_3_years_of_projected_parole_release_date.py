@@ -28,16 +28,9 @@ from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder im
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is NOT within 3 years of their projected parole release date.
-Projected parole release dates in the past  will not satisfy this requirement.
-"""
-
 VIEW_BUILDER = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_3_years_of_projected_parole_release_date.VIEW_BUILDER,
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

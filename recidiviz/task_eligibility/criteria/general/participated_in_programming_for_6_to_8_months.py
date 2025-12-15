@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has been
-participating in proramming for 6 to 8 months.
-."""
+"""Defines a criteria span view that shows spans of time during which
+someone has participated in 1 or more programs for 6 to 8 months."""
 
 from google.cloud import bigquery
 
@@ -35,8 +34,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "PARTICIPATED_IN_PROGRAMMING_FOR_6_TO_8_MONTHS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has participated in 1 or more programs for 6 to 8 months."""
+_DESCRIPTION = __doc__
 
 _QUERY_TEMPLATE = f"""
 {participated_in_programming_for_X_to_Y_months(

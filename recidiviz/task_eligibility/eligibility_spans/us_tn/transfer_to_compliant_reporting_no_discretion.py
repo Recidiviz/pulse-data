@@ -59,9 +59,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in TN may be eligible for compliant reporting.
-"""
-
 _REQUIRED_CRITERIA = [
     on_eligible_level_for_sufficient_time,
     no_arrests_in_past_year,
@@ -97,7 +94,7 @@ _DISCRETION_CRITERIA = [
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="TRANSFER_TO_COMPLIANT_REPORTING_NO_DISCRETION",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         criteria.VIEW_BUILDER for criteria in _REQUIRED_CRITERIA

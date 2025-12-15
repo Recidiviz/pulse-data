@@ -24,12 +24,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_INCARCERATION_SANCTIONS_WITHIN_12_MONTHS"
 
-_DESCRIPTION = """Spans of time when someone hasn't had an incarceration sanction in the past 12 months"""
-
 VIEW_BUILDER = (
     incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         date_interval=12,
         date_part="MONTH",
     )

@@ -34,11 +34,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "CUSTODIAL_AUTHORITY_IS_SUPERVISION_AUTHORITY_OR_OTHER_STATE"
 
-_DESCRIPTION = """This criteria view builder defines spans of time that clients are on supervision and under the
-custodial authority of supervision authority or other state.
-Therefore, federal and other country custodial authorities are excluded.
-"""
-
 _QUERY_TEMPLATE = f"""
 WITH custodial_authority_spans AS (
 SELECT
@@ -66,7 +61,7 @@ GROUP BY 1,2,3,4
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     reasons_fields=[

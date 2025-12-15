@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are on probation
-supervision and are actively supervised as defined by excluding certain compartments
+"""Selects all spans of time in which a person is on probation
+supervision and actively supervised as defined by excluding certain compartments 
 and supervision levels such as in custody, bench warrant, absconsion, or unknown.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
@@ -34,15 +34,10 @@ _POPULATION_NAME = (
     "PROBATION_ACTIVE_SUPERVISION_AND_SUPERVISION_OUT_OF_STATE_POPULATION"
 )
 
-_DESCRIPTION = """Selects all spans of time in which a person is on probation
-supervision and actively supervised as defined by excluding certain compartments 
-and supervision levels such as in custody, bench warrant, absconsion, or unknown.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         additional_filters=active_supervision_population_additional_filters(
             included_compartment_level_2="('PROBATION')"
         ),

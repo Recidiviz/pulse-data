@@ -29,11 +29,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATION_WITHIN_6_MONTHS_OF_PAROLE_ELIGIBILITY_DATE"
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 6 months of their parole eligibility date.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         compartment_level_1_filter="INCARCERATION",
@@ -42,7 +37,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         critical_date_column="sentence_parole_eligibility_date",
         critical_date_name_in_reason="parole_eligibility_date",
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
     )
 )
 

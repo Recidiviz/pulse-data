@@ -36,10 +36,6 @@ _CRITERIA_NAME = (
     "SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE"
 )
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is serving
-a supervision or supervision out of state parole term of one year or more. 
-This query is only relevant for states who have parole sentencing data stored separately in supervision sentences."""
-
 _QUERY_TEMPLATE = f"""
     SELECT
         span.state_code,
@@ -54,10 +50,9 @@ _QUERY_TEMPLATE = f"""
     GROUP BY 1, 2, 3, 4
 """
 
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[

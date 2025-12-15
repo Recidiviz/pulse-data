@@ -31,16 +31,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_LIMITED"
 
-_DESCRIPTION = """This criteria view builder defines spans of time where clients are not on LIMITED
-supervision level as tracked by our `sessions` dataset."""
-
 _REASONS_COLUMNS = """supervision_level AS supervision_level,
     start_date AS limited_start_date"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     custody_or_supervision_level_criteria_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         levels_lst=["LIMITED"],
         reasons_columns=_REASONS_COLUMNS,
         reasons_fields=[

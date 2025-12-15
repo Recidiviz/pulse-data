@@ -40,14 +40,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for an annual reclassification.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="ANNUAL_RECLASSIFICATION_REVIEW",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         at_least_12_months_since_latest_assessment.VIEW_BUILDER,

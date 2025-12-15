@@ -30,9 +30,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_HIGH_FOR_6_MONTHS"
 
-_DESCRIPTION = """This criteria view builder defines spans of time where clients have been on HIGH
-supervision level for 6 months as tracked by our `sessions` dataset."""
-
 _QUERY_TEMPLATE = f"""
 
 WITH clients_on_high_with_6months AS (
@@ -57,7 +54,7 @@ WHERE {nonnull_end_date_clause('end_date_exclusive')} > start_date_plus_6mo
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         reasons_fields=[

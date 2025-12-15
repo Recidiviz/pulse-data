@@ -31,13 +31,6 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
-and their projected parole release date (TPD) is not within 3 years. Only TPDs greater than 3 years away
-meet this requirement (TPDs in the past will not).
-"""
-
-
 VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="INCARCERATION_NOT_WITHIN_3_YEARS_OF_TPD_AND_LIFE_SENTENCE",

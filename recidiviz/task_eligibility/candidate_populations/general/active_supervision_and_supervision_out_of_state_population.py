@@ -32,15 +32,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _POPULATION_NAME = "ACTIVE_SUPERVISION_AND_SUPERVISION_OUT_OF_STATE_POPULATION"
 
-_DESCRIPTION = """Defines a candidate population view containing all people who are on supervision (in or out
-of state) and who are actively supervised as defined by excluding certain compartments and supervision levels
-such as in custody, bench warrant, absconsion, or unknown.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         additional_filters=active_supervision_population_additional_filters(),
         compartment_level_1=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"],
     )

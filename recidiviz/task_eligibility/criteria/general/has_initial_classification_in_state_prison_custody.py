@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time someone has received a classification since they entered state prison custody."""
+"""Describes the spans of time someone has received a classification since
+they entered state prison custody"""
 
 from google.cloud import bigquery
 
@@ -27,9 +28,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY"
-
-_DESCRIPTION = """Describes the spans of time someone has received a classification since
-they entered state prison custody"""
 
 _QUERY_TEMPLATE = f"""
     SELECT
@@ -64,7 +62,7 @@ _QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     meets_criteria_default=False,
     reasons_fields=[

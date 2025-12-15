@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all transfer to limited supervision events for any person,
-across all states.
-"""
+"""Defines a view that shows all transfer to limited supervision events
+for any person, across all states."""
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
@@ -25,9 +24,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_DESCRIPTION = """Defines a view that shows all transfer to limited supervision events
-for any person, across all states."""
 
 _QUERY_TEMPLATE = """
 SELECT
@@ -41,7 +37,7 @@ WHERE supervision_level = "LIMITED"
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder(
         completion_event_type=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
         states_to_exclude=[StateCode.US_AZ, StateCode.US_TN],

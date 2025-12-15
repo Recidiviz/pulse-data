@@ -30,8 +30,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"
 
-_DESCRIPTION = """Describes the spans of time when a client has past their parole eligibility date."""
-
 _REASON_QUERY = f"""
 WITH critical_date_spans AS
 (
@@ -59,7 +57,7 @@ FROM critical_date_has_passed_spans cd
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_REASON_QUERY,
         sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         reasons_fields=[

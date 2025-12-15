@@ -25,8 +25,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all releases from solitary confinement."""
-
 _QUERY_TEMPLATE = """
 /* Get any SOLITARY_CONFINEMENT housing_unit_type_collapsed_solitary_session that ends. An end with a date_gap will
 indicate that the resident was discharged out of incarceration, and a new adjacent session will indicate the 
@@ -43,7 +41,7 @@ AND end_date_exclusive IS NOT NULL
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
     completion_event_type=TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
-    description=_DESCRIPTION,
+    description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
 )

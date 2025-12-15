@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligibility spans view that shows the spans of time during which
+"""Shows the spans of time during which
 someone in MI is eligible for minimum telephone reporting.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
@@ -49,14 +49,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which
-someone in MI is eligible for minimum telephone reporting.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         not_serving_ineligible_offenses_for_telephone_reporting.VIEW_BUILDER,

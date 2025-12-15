@@ -34,15 +34,10 @@ _POPULATION_NAME = (
     "PAROLE_ACTIVE_SUPERVISION_INCLUDING_NULL_SUPERVISION_LEVEL_POPULATION"
 )
 
-_DESCRIPTION = """Defines a candidate population view containing all people who are on parole supervision
-and are actively supervised as defined by excluding certain compartments and supervision 
-levels such as in custody, bench warrant, absconsion, or unknown.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         additional_filters=active_supervision_population_additional_filters(
             included_compartment_level_2="('PAROLE')",
             allow_null_correctional_level=True,

@@ -37,14 +37,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for a custody level downgrade.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="CUSTODY_LEVEL_DOWNGRADE",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         latest_caf_assessment_not_override.VIEW_BUILDER,

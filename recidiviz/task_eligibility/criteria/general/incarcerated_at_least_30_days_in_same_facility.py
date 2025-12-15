@@ -37,11 +37,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATED_AT_LEAST_30_DAYS_IN_SAME_FACILITY"
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which someone has
-been incarcerated at least 30 days in the same facility.
-"""
-
 _QUERY_TEMPLATE = f"""
 WITH loc_sessions AS (
     SELECT 
@@ -97,7 +92,7 @@ FROM critical_date_has_passed_spans cd
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
+    description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(

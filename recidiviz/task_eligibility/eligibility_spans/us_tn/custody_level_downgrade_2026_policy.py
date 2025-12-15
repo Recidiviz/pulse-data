@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for a custody level downgrade.
+someone in TN is eligible for a custody level downgrade, under the 2026 classification policy.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -33,14 +33,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for a custody level downgrade, under the 2026 classification policy.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="CUSTODY_LEVEL_DOWNGRADE_2026_POLICY",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         ineligible_for_annual_reclassification.VIEW_BUILDER,

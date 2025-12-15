@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows transfers to Community Reentry Centers (CRC)
-in ID, restricted to transfers when the resident was eligible for work release."""
+"""Defines a view that shows transfers to Work-Release in a
+Community Reentry Centers (CRC) in ID, restricted to transfers when the resident
+was eligible for work release."""
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -30,10 +31,6 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_DESCRIPTION = """Defines a view that shows transfers to Work-Release in a
-Community Reentry Centers (CRC) in ID, restricted to transfers when the resident
-was eligible for work release."""
 
 _QUERY_TEMPLATE = f"""WITH crc_spans AS (
     {ix_crc_facilities_in_location_sessions(
@@ -61,7 +58,7 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_IX,
         completion_event_type=TaskCompletionEventType.GRANTED_WORK_RELEASE,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
     )

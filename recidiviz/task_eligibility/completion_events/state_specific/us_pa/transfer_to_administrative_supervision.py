@@ -25,10 +25,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = (
-    """Defines a view that shows all transfers to administrative supervision"""
-)
-
 _QUERY_TEMPLATE = """
 SELECT
   state_code,
@@ -42,7 +38,7 @@ WHERE supervision_level_raw_text like '%ADM%'
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_PA,
     completion_event_type=TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
-    description=_DESCRIPTION,
+    description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
 )

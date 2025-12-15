@@ -30,9 +30,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NOT_IN_TREATMENT_IN_PRISON"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which clients are not
-in prison for treatment purposes (e.g. RIDER program in ID)."""
-
 _QUERY = f"""
 SELECT 
     state_code,
@@ -51,7 +48,7 @@ GROUP BY 1,2,3,4
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY,
     sessions_dataset=SESSIONS_DATASET,
     meets_criteria_default=True,

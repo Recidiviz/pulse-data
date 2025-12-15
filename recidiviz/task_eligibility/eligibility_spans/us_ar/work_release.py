@@ -48,14 +48,10 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in AR is eligible
-for work release.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AR,
     task_name="WORK_RELEASE",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # TODO(#34322): Clarify Class I eligibility criteria

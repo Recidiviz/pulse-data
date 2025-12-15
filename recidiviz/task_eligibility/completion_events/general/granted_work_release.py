@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all work-release starts for any person, 
+"""Defines a view that shows all work-release starts for any person,
 across all states.
 """
 from recidiviz.calculator.query.state import dataset_config
@@ -25,10 +25,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_DESCRIPTION = """Defines a view that shows all work-release starts for any person,
-across all states.
-"""
 
 _QUERY_TEMPLATE = """
 SELECT
@@ -42,7 +38,7 @@ FROM
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder(
         completion_event_type=TaskCompletionEventType.GRANTED_WORK_RELEASE,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
         states_to_exclude=[StateCode.US_IX, StateCode.US_ME],

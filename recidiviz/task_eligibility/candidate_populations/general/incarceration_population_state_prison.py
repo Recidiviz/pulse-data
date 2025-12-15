@@ -27,14 +27,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _POPULATION_NAME = "INCARCERATION_POPULATION_STATE_PRISON"
 
-_DESCRIPTION = """Selects all spans of time in which a person is in INCARCERATION
-as tracked by data in our `sessions` dataset, as well as STATE_PRISON custodial authority
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         additional_filters=['custodial_authority = "STATE_PRISON" '],
         compartment_level_1=["INCARCERATION"],
     )

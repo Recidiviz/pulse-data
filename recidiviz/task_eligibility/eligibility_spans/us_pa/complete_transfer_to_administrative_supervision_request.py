@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligibility spans view that shows the spans of time during which
-someone in PA is eligible for transfer to Administrative Supervision.
+"""Shows the spans of time during which
+someone in PA is eligible for transfer to administrative supervision.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
@@ -48,10 +48,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which
-someone in PA is eligible for transfer to administrative supervision.
-"""
-
 not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=supervision_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
 )
@@ -59,7 +55,7 @@ not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_PA,
     task_name="COMPLETE_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_supervision_at_least_one_year.VIEW_BUILDER,

@@ -31,17 +31,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "CUSTODY_LEVEL_IS_NOT_MAX"
 
-_DESCRIPTION = """This criteria view builder defines spans of time where residents are not on MAXIMUM custody level
-as tracked by our `sessions` dataset.
-"""
-
 _REASONS_COLUMNS = """custody_level AS custody_level,
     TRUE AS custody_level_is_max,
     start_date AS custody_level_start_date"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = custody_or_supervision_level_criteria_builder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     levels_lst=["MAXIMUM"],
     reasons_columns=_REASONS_COLUMNS,
     reasons_fields=[

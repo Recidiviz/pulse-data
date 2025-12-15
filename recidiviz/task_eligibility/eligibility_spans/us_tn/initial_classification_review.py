@@ -37,10 +37,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Builder for a task eligibility spans view that shows the spans of time during which
-someone in TN is eligible for an initial classification.
-"""
-
 NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY = (
     StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
         sub_criteria=has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
@@ -50,7 +46,7 @@ NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY = (
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="INITIAL_CLASSIFICATION_REVIEW",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
         NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY,

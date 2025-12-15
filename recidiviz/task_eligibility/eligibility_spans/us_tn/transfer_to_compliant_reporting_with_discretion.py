@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in TN may be eligible for compliant reporting, with discretion.
+"""Shows the spans of time during which someone in TN may be eligible for compliant reporting, with
+discretion related to:
+- missing/outdated sentencing information
+- zero tolerance codes suggesting outdated sentencing information
+- ineligible offense types for expired sentences (but not sentences that expired 10+ years ago)
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
@@ -46,17 +50,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in TN may be eligible for compliant reporting, with
-discretion related to:
-- missing/outdated sentencing information
-- zero tolerance codes suggesting outdated sentencing information
-- ineligible offense types for expired sentences (but not sentences that expired 10+ years ago)
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="TRANSFER_TO_COMPLIANT_REPORTING_WITH_DISCRETION",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         criteria.VIEW_BUILDER for criteria in _REQUIRED_CRITERIA

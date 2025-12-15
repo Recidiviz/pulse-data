@@ -31,9 +31,6 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#39036): Build this as an inversion to SUPERVISION_LEVEL_IS_NOT_UNASSIGNED or vice versa
 _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_UNASSIGNED"
 
-_DESCRIPTION = """This criteria view builder defines spans of time, where clients do not have a supervision level of
- UNASSIGNED as tracked by our `sessions` dataset."""
-
 _QUERY_TEMPLATE = f"""
 #TODO(#22511) refactor to build off of a general criteria view builder
 WITH unassigned_spans AS (
@@ -61,7 +58,7 @@ SELECT
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,

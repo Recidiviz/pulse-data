@@ -33,10 +33,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_ESCAPE_IN_CURRENT_INCARCERATION"
 
-_DESCRIPTION = """
-Shows the spans of time during which someone is ineligible for a task because they have
-an escape sentence in their current incarceration."""
-
 _QUERY_TEMPLATE = """
 WITH escape_related_sentences AS (
   SELECT 
@@ -74,7 +70,7 @@ ORDER BY start_date
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
+    description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
     sentence_sessions_dataset=SENTENCE_SESSIONS_V2_ALL_DATASET,
     reasons_fields=[

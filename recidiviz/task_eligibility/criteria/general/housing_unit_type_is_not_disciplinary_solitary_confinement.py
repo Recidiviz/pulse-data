@@ -27,8 +27,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HOUSING_UNIT_TYPE_IS_NOT_DISCIPLINARY_SOLITARY_CONFINEMENT"
 
-_DESCRIPTION = """Describes spans of time that residents are not in DISCIPLINARY_SOLITARY_CONFINEMENT"""
-
 _QUERY_TEMPLATE = """
        SELECT
             state_code,
@@ -47,7 +45,7 @@ _QUERY_TEMPLATE = """
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
-    description=_DESCRIPTION,
+    description=__doc__,
     sessions_dataset=SESSIONS_DATASET,
     meets_criteria_default=True,
     reasons_fields=[

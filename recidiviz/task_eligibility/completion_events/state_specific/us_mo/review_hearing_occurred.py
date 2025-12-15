@@ -26,10 +26,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows when Restrictive Housing review hearings have occurred, regardless
-of whether they were on time.
-"""
-
 _QUERY_TEMPLATE = """
     WITH hearings_with_review_dates AS (
         SELECT
@@ -57,7 +53,7 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_MO,
         completion_event_type=TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
         analyst_views_dataset=ANALYST_VIEWS_DATASET,
     )

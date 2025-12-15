@@ -31,9 +31,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_MEDIUM_OR_LOWER"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which clients
-have a 'MEDIUM' supervision_level or lower ('MEDIUM', 'MINIMUM', 'LIMITED')"""
-
 _REASONS_COLUMNS = """IF(state_code = 'US_ME',
                         CASE supervision_level
                             WHEN 'MEDIUM' THEN 'Moderate Risk'
@@ -46,7 +43,7 @@ _REASONS_COLUMNS = """IF(state_code = 'US_ME',
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = custody_or_supervision_level_criteria_builder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     levels_lst=["MINIMUM", "LIMITED", "MEDIUM"],
     reasons_columns=_REASONS_COLUMNS,
     reasons_fields=[

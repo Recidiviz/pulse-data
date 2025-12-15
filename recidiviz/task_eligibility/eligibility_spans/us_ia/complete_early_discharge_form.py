@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in IA is eligible for early discharge from supervision."""
+"""Shows the spans of time during which someone in IA is eligible for early discharge from
+supervision."""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_and_supervision_out_of_state_population,
@@ -49,9 +50,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in IA is eligible for early discharge from
-supervision."""
-
 not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_builder = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=supervision_past_group_full_term_completion_date_or_upcoming_30_days.VIEW_BUILDER
 )
@@ -59,7 +57,7 @@ not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_bu
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IA,
     task_name="COMPLETE_EARLY_DISCHARGE_FORM",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_is_0_not_available_1_2_or_3.VIEW_BUILDER,

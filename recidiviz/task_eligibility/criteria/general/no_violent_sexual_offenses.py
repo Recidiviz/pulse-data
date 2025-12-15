@@ -29,8 +29,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_VIOLENT_SEXUAL_OFFENSES"
 
-_DESCRIPTION = """Describes spans of time where a candidate has no current or prior violent sexual convictions"""
-
 _REASONS_FIELDS = [
     ReasonsField(
         name="any_assaultive_sexual_conviction",
@@ -42,7 +40,7 @@ _REASONS_FIELDS = [
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     state_agnostic_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         reasons_fields=_REASONS_FIELDS,
     )
 )

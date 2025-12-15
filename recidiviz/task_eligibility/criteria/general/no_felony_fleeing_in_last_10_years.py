@@ -30,12 +30,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_FELONY_FLEEING_IN_LAST_10_YEARS"
 
-_DESCRIPTION = """Spans of time when someone has not incurred a felony for fleeing in the past 10 years."""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     state_agnostic_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         reasons_fields=[
             ReasonsField(
                 name="felony_fleeing_charges",

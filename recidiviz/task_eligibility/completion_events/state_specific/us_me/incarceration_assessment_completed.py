@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all reclassification events
-for any person across ME
-"""
+"""Defines a view that shows all annual and semi-annual reclassification meeting dates for any person,
+across ME"""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -28,8 +27,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all annual and semi-annual reclassification meeting dates for any person,
-across ME"""
 _QUERY_TEMPLATE = """
     SELECT
       pei.person_id,
@@ -51,7 +48,7 @@ _QUERY_TEMPLATE = """
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_ME,
     completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
-    description=_DESCRIPTION,
+    description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(

@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has been
-participating in proramming for 12 to 14 months.
-."""
+"""Defines a criteria span view that shows spans of time during which
+someone has participated in 1 or more programs for 12 to 14 months."""
 
 from google.cloud import bigquery
 
@@ -35,9 +34,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "PARTICIPATED_IN_PROGRAMMING_FOR_12_TO_14_MONTHS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has participated in 1 or more programs for 12 to 14 months."""
-
 _QUERY_TEMPLATE = f"""
 {participated_in_programming_for_X_to_Y_months(
     x_months=12, y_months=14
@@ -46,7 +42,7 @@ _QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,

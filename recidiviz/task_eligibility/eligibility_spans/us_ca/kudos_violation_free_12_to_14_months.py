@@ -34,15 +34,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in CA is eligible
-for a 12 month violation free kudos. This span only lasts for two months after the 
-event happened and is only available to clients on PAROLE and not IN_CUSTODY.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_CA,
     task_name="kudos_violation_free_12_to_14_months",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         no_supervision_violation_within_12_to_14_months_of_start.VIEW_BUILDER,

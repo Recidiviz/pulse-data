@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all releases from temporary or disciplinary solitary confinement to a non-solitary
-compartment.
+""" Defines a view that shows all releases from temporary or disciplinary solitary confinement to a
+non-solitary compartment. If a client goes from TEMPORARY --> DISCIPLINARY --> TEMPORARY --> GENERAL only the last
+transition will be counted.
 """
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
@@ -26,11 +27,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_DESCRIPTION = """ Defines a view that shows all releases from temporary or disciplinary solitary confinement to a
-non-solitary compartment. If a client goes from TEMPORARY --> DISCIPLINARY --> TEMPORARY --> GENERAL only the last
-transition will be counted.
-"""
 
 _QUERY_TEMPLATE = f"""
 /* Get any DISCIPLINARY or TEMPORARY solitary confinement housing_unit_type_session that ends in a housing_unit_type
@@ -59,7 +55,7 @@ WHERE housing_unit_type IN ('TEMPORARY_SOLITARY_CONFINEMENT', 'DISCIPLINARY_SOLI
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
     completion_event_type=TaskCompletionEventType.TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT,
-    description=_DESCRIPTION,
+    description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
 )

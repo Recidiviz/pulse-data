@@ -34,10 +34,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SERVING_A_LIFE_SENTENCE"
 
-_DESCRIPTION = (
-    """Describes the spans of time when someone is serving a life sentence."""
-)
-
 _QUERY_TEMPLATE = f"""
     SELECT
         span.state_code,
@@ -56,7 +52,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
         sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         reasons_fields=[

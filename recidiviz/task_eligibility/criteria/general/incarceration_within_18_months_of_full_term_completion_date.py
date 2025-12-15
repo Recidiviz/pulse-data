@@ -29,11 +29,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATION_WITHIN_18_MONTHS_OF_FULL_TERM_COMPLETION_DATE"
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 18 months of their full term completion date.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         compartment_level_1_filter="INCARCERATION",
@@ -41,7 +36,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         date_part="MONTH",
         critical_date_name_in_reason="full_term_completion_date",
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
     )
 )
 

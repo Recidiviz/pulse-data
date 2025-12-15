@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Shows the spans of time during which someone in ME is eligible
-for a transfer to SCCP (Supervised Community Confinement Program)
+"""Shows the spans of time during which someone in ME is eligible
+for a transfer to SCCP (Supervised Community Confinement Program).
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
@@ -44,14 +43,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ME is eligible
-for a transfer to SCCP (Supervised Community Confinement Program).
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ME,
     task_name="TRANSFER_TO_SCCP_FORM",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         custody_level_is_minimum_or_community.VIEW_BUILDER,

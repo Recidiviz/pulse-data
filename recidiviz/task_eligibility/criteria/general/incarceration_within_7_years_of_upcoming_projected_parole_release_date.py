@@ -14,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Defines a criteria span view that shows spans of time during which
-someone is within 7 years of their upcming projected parole release date.
-Once the projected parole release date has passed, the criteria is no longer met.
-"""
+"""Defines a criteria span view that shows spans of time during which
+someone is within 7 years of their upcoming projected parole release date.
+Once the projected parole release date has passed, the criteria is no longer met."""
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,16 +30,10 @@ _CRITERIA_NAME = (
     "INCARCERATION_WITHIN_7_YEARS_OF_UPCOMING_PROJECTED_PAROLE_RELEASE_DATE"
 )
 
-_DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is within 7 years of their upcoming projected parole release date.
-Once the projected parole release date has passed, the criteria is no longer met.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     is_past_completion_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         meets_criteria_leading_window_time=7,
         date_part="YEAR",
         critical_date_name_in_reason="group_projected_parole_release_date",

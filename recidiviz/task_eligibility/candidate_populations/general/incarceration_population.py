@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are
-incarcerated at any point in time.
+"""Selects all spans of time in which a person is incarcerated as tracked
+by data in our `sessions` dataset. All types of incarceration (including INTERNAL_UNKNOWN)
+are included.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -28,15 +29,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _POPULATION_NAME = "INCARCERATION_POPULATION"
 
-_DESCRIPTION = """Selects all spans of time in which a person is incarcerated as tracked
-by data in our `sessions` dataset. All types of incarceration (including INTERNAL_UNKNOWN)
-are included.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         additional_filters=[],
         compartment_level_1=["INCARCERATION"],
     )

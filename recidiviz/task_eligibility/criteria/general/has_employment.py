@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has a
-stable employment
-"""
+"""Defines a criteria span view that shows spans of time during which someone has a stable
+employment type"""
 
 from google.cloud import bigquery
 
@@ -33,10 +32,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_EMPLOYMENT"
-
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has a stable
-employment type
-"""
 
 _QUERY_TEMPLATE = f"""
 WITH employment AS (
@@ -69,7 +64,7 @@ GROUP BY 1,2,3,4
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     reasons_fields=[

@@ -32,9 +32,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NOT_ADMITTED_TO_TEMPORARY_SOLITARY_CONFINEMENT_IN_THE_LAST_3_DAYS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
-past 3 days since their admission from general to temporary solitary confinement. """
-
 _QUERY_TEMPLATE = f"""
 WITH housing_transitions AS (
     SELECT
@@ -77,7 +74,7 @@ critical_date_spans AS (
 """
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     meets_criteria_default=True,

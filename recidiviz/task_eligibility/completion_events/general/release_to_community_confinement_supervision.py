@@ -26,9 +26,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all releases from general incarceration to community
-confinement supervision for any person, across all states."""
-
 _QUERY_TEMPLATE = """
 SELECT
   state_code,
@@ -43,7 +40,7 @@ WHERE compartment_level_1 = "SUPERVISION"
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
     completion_event_type=TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
-    description=_DESCRIPTION,
+    description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
 )

@@ -32,14 +32,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Builder for a task eligiblity spans view that shows the spans of time during which
-someone in PA is eligible for geriatric parole.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_PA,
     task_name="TRANSFER_TO_GERIATRIC_PAROLE",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         age_55_years_or_older.VIEW_BUILDER,

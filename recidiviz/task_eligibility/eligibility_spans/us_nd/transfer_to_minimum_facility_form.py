@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Shows the spans of time during which someone in ND is for a transfer into a 
-minimum security facility.
+"""Shows the spans of time during which someone in ND is eligible
+for a transfer into a minimum security facility.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
@@ -55,9 +54,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in ND is eligible
-for a transfer into a minimum security facility.
-"""
 INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD = StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_3_months_of_full_term_completion_date.VIEW_BUILDER,
 )
@@ -71,7 +67,7 @@ HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT = (
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ND,
     task_name="TRANSFER_TO_MINIMUM_FACILITY_FORM",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         custody_level_is_minimum.VIEW_BUILDER,

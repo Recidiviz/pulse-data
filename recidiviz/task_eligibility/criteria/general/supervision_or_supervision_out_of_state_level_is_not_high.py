@@ -29,9 +29,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_LEVEL_IS_NOT_HIGH"
 
-_DESCRIPTION = """This criteria view builder defines spans of time where clients are not on HIGH
-supervision level as tracked by our `sessions` dataset."""
-
 _QUERY_TEMPLATE = """
 WITH high_spans AS (
 SELECT
@@ -58,7 +55,7 @@ SELECT
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,

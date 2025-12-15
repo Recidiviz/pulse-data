@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone
-has completed half their full term supervision or supervision out of state sentence.
-"""
+"""Defines a criteria span view that shows spans of time during which
+someone has completed half their full term supervision or supervision out of state sentence"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
@@ -41,9 +40,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = (
     "SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_PAST_HALF_FULL_TERM_RELEASE_DATE"
 )
-
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has completed half their full term supervision or supervision out of state sentence"""
 
 _QUERY_TEMPLATE = f"""
 WITH critical_date_spans AS 
@@ -101,7 +97,7 @@ QUALIFY ROW_NUMBER() OVER (
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,

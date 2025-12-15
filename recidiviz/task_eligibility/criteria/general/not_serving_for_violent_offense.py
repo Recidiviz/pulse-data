@@ -28,13 +28,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NOT_SERVING_FOR_VIOLENT_OFFENSE"
 
-_DESCRIPTION = """Describes the spans of time when someone is not serving a sentence for a violent crime.
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = get_ineligible_offense_type_criteria(
     criteria_name=_CRITERIA_NAME,
     compartment_level_1="INCARCERATION",
-    description=_DESCRIPTION,
+    description=__doc__,
     # only include spans with ineligible offenses
     where_clause="WHERE sent.is_violent",
 )

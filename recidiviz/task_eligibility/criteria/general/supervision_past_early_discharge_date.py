@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has passed their early discharge
-date.
-"""
+"""Defines a criteria span view that shows spans of time during which
+someone has passed their early discharge eligible date."""
 from google.cloud import bigquery
 
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
@@ -36,9 +35,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_PAST_EARLY_DISCHARGE_DATE"
-
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has passed their early discharge eligible date."""
 
 _DAYS_BEFORE_ELIGIBLE_DATE = 0
 _QUERY_TEMPLATE = f"""
@@ -66,7 +62,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         reasons_fields=[
             ReasonsField(
