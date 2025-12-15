@@ -135,6 +135,7 @@ output:
                   - "S30 // Arrested"
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - "L03 // Transferred To/Continued in Other Jurisdiction"
+                  - "L03 // Transferred/Continued to Interstate Compact"
                   - "L16 // Closed ISC Interest"
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                   - "G07 // Transferred to another County Jail"
