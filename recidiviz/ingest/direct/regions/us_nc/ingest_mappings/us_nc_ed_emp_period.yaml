@@ -35,7 +35,10 @@ output:
                 $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT)
               - $else_if:
                   $not_null: ed_pgm
-                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.STUDENT)
+                $then:
+                  $enum_mapping:
+                    $raw_text: ed_pgm
+                    $custom_parser: us_nc_custom_enum_parsers.parse_student_employment_status
               - $else_if:
                   $not_null: special_status
                 $then:

@@ -22,3 +22,18 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_nc_custom_enum_parsers.<function name>
 """
+
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+)
+
+
+def parse_student_employment_status(
+    raw_text: str,  # pylint: disable=unused-argument
+) -> StateEmploymentPeriodEmploymentStatus:
+    """Parses any non-null ed_pgm value to STUDENT employment status.
+
+    The raw_text will contain the education program name, and we map any value
+    to STUDENT status since having an ed_pgm value indicates the person is a student.
+    """
+    return StateEmploymentPeriodEmploymentStatus.STUDENT
