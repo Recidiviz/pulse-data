@@ -8,11 +8,6 @@ input_columns:
   LastName: STRING
   Suffix: STRING
   OIMS_SID_NO: STRING
-  RESI_STREET: STRING
-  RESI_STREET2: STRING
-  RESI_CITY: STRING
-  RESI_STATE: STRING
-  RESI_ZIP: STRING
   Phone_Number: STRING
   TDCJ_NOs: STRING
   race: STRING
@@ -36,13 +31,6 @@ output:
         $middle_names: MiddleName
         $surname: LastName
         $name_suffix: Suffix
-    current_address:
-      $physical_address:
-        $address_1: RESI_STREET
-        $address_2: RESI_STREET2
-        $city: RESI_CITY
-        $state: RESI_STATE
-        $zip: RESI_ZIP
     current_phone_number: Phone_Number
     sex:
       $enum_mapping:
