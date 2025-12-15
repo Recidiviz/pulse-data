@@ -21,6 +21,11 @@ variable "region" {
   default = "us-west-2"
 }
 
+variable "image_name_prefix" {
+  type = string
+  # Prefix for the AMI names, will be suffixed with architecture and timestamp
+  default = "python311-postgres13-runs-on"
+}
 
 variable "helper_script_folder" {
   type    = string
@@ -57,7 +62,7 @@ data "amazon-ami" "runs-on-ami-arm64" {
 
 
 source "amazon-ebs" "build-x64" {
-  ami_name       = "x64-python311-postgres13-runs-on-${formatdate("YYYY-MM-DD-hhmmss", timestamp())}"
+  ami_name       = "x64-${var.image_name_prefix}-${formatdate("YYYY-MM-DD-hhmmss", timestamp())}"
   instance_type  = "m7i.xlarge"
   region         = "${var.region}"
   source_ami     = "${data.amazon-ami.runs-on-ami-x64.id}"
@@ -69,7 +74,7 @@ source "amazon-ebs" "build-x64" {
 
 
 source "amazon-ebs" "build-arm64" {
-  ami_name       = "arm64-python311-postgres13-runs-on-${formatdate("YYYY-MM-DD-hhmmss", timestamp())}"
+  ami_name       = "arm64-${var.image_name_prefix}-${formatdate("YYYY-MM-DD-hhmmss", timestamp())}"
   instance_type  = "m7g.xlarge"
   region         = "${var.region}"
   source_ami     = "${data.amazon-ami.runs-on-ami-arm64.id}"
