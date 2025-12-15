@@ -121,6 +121,7 @@ output:
                   - "Sri Lankan"
                   - "Guamanian or Chamorro"
                   - "Pakistani"
+                  - "Bangladeshi"
                 StateEthnicity.EXTERNAL_UNKNOWN:
                   - "Unknown"
               $ignore:
