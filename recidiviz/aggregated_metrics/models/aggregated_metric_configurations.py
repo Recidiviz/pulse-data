@@ -2411,6 +2411,39 @@ DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS = EventDistinctUnitCountMetric(
         event_conditions_dict={},
     ),
 )
+DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_workflows_users_with_eligible_caseload_in_past_year",
+    display_name="Distinct Registered Primary Workflows Users With Eligible Caseload In Past Year",
+    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once and have had an eligible caseload in the past year",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_workflows_users_with_eligible_caseload_in_past_year",
+    display_name="Distinct Logged In Primary Workflows Users With Eligible Caseload In Past Year",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows and have had an eligible caseload in the past year",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_workflows_users_with_eligible_caseload_in_past_year",
+    display_name="Distinct Active Primary Workflows Users With Eligible Caseload In Past Year",
+    description="Number of distinct primary (line staff) Workflows users having at least one usage event for the task type during the time period who had an eligible caseload in the past year",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
 LOGINS_BY_PRIMARY_WORKFLOWS_USER = EventCountMetric(
     name="logins_primary_workflows_user",
     display_name="Logins, Primary Workflows Users",
