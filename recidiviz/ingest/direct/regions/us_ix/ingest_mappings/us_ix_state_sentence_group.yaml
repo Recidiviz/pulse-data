@@ -6,7 +6,7 @@ input_columns:
   FtrdApprovedDate: STRING
   TentativeParoleDate: STRING
   update_datetime: DATETIME
-  DpedApprovedDate: STRING
+  DpedApprovedDate: DATE
   rn: INTEGER
 unused_columns: []
 output:
