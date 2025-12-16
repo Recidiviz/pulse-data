@@ -400,7 +400,10 @@ python-slugify = "==8.0.4"
 pytimeparse = "==1.1.8"
 pytz = "==2025.2"
 PyYAML = "==6.0.3"
-ray = "==2.50.1"
+# Removing this dependency to address vulnerability https://github.com/Recidiviz/pulse-data/security/dependabot/1451.
+# This package is not actually used by our pipelines. We can reintroduce this package once we upgrade to a
+# Cloud Composer version which supports a patched version of ray (ray>=2.52.0).
+# ray = "==2.50.1"
 redis = "==5.2.1"
 referencing = "==0.37.0"
 regex = "==2025.10.23"
