@@ -459,15 +459,14 @@ def parse_sentence_type(raw_text: str) -> Optional[StateSentenceType]:
         return StateSentenceType.SPLIT
     if serve_time == ZERO_TIME_STRING and probation_time != ZERO_TIME_STRING:
         return StateSentenceType.PROBATION
-    if (
-        serve_time != ZERO_TIME_STRING or revocation_time != ZERO_TIME_STRING
-    ) and probation_time == ZERO_TIME_STRING:
 
-        # revocation_time is time that someone is sentenced to incarceration (either in
-        # county jail or prison) due to a revocation.
-        incarcerated_time = (
-            serve_time if serve_time != ZERO_TIME_STRING else revocation_time
-        )
+    # revocation_time is time that someone is sentenced to incarceration (either in
+    # county jail or prison) due to a revocation.
+    incarcerated_time = (
+        serve_time if serve_time != ZERO_TIME_STRING else revocation_time
+    )
+    if incarcerated_time != ZERO_TIME_STRING:
+
         match = re.match(SENTENCED_TIME_REGEX, incarcerated_time)
 
         if match:
@@ -483,12 +482,8 @@ def parse_sentence_type(raw_text: str) -> Optional[StateSentenceType]:
 
             return StateSentenceType.COUNTY_JAIL
 
-    # 1. If there are no sentence times, then it's likely a fines and fees related
-    # sentence, though it could be community service or something else. For now, ingest
-    # as INTERNAL_UNKOWN.
-    # 2. If there is a sentence time, but no serve, probation, or revocation time, what
-    # does that mean? Open question to Erin that I haven't asked yet
-    return StateSentenceType.INTERNAL_UNKNOWN
+    # We should never get here!
+    raise ValueError(f"Unsure how to convert {raw_text} to a sentence_type.")
 
 
 def parse_supervision_sentence_status(
