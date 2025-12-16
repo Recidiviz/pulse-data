@@ -331,7 +331,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
                 ),
                 parents=criteria_view_builders,
                 clustering_fields=clustering_fields,
-                parent_to_select_statement=get_criteria_select_statement,
+                parent_view_to_select_statement=get_criteria_select_statement,
             )
         )
 
@@ -346,7 +346,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             ),
             parents=general_builders,
             clustering_fields=clustering_fields,
-            parent_to_select_statement=get_criteria_select_statement,
+            parent_view_to_select_statement=get_criteria_select_statement,
         )
     )
 
@@ -415,7 +415,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
                 ),
                 parents=population_view_builders,
                 clustering_fields=clustering_fields,
-                parent_to_select_statement=get_population_select_statement,
+                parent_view_to_select_statement=get_population_select_statement,
             )
         )
 
@@ -430,7 +430,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
             ),
             parents=general_builders,
             clustering_fields=clustering_fields,
-            parent_to_select_statement=get_population_select_statement,
+            parent_view_to_select_statement=get_population_select_statement,
         )
     )
 
@@ -500,7 +500,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                 ),
                 parents=completion_event_view_builders,
                 clustering_fields=clustering_fields,
-                parent_to_select_statement=get_completion_event_select_statement,
+                parent_view_to_select_statement=get_completion_event_select_statement,
             )
         )
 
@@ -515,7 +515,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
             ),
             parents=general_builders,
             clustering_fields=clustering_fields,
-            parent_to_select_statement=get_completion_event_select_statement,
+            parent_view_to_select_statement=get_completion_event_select_statement,
         )
     )
 
@@ -528,7 +528,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
             ),
             parents=view_collector.collect_view_builders(),
             clustering_fields=clustering_fields,
-            parent_to_select_statement=get_completion_event_select_statement,
+            parent_view_to_select_statement=get_completion_event_select_statement,
         )
     ]
 

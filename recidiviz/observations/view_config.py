@@ -75,7 +75,7 @@ def _build_unioned_spans_builder(
         )
     )
 
-    def _parent_to_select_statement(vb: SpanObservationBigQueryViewBuilder) -> str:
+    def _parent_view_to_select_statement(vb: SpanObservationBigQueryViewBuilder) -> str:
         return (
             f'SELECT "{vb.span_type.value}" AS span, {non_attribute_columns_str}, '
             f"{convert_cols_to_json_string(vb.attribute_cols)} AS {vb.SPAN_ATTRIBUTES_OUTPUT_COL_NAME}"
@@ -92,7 +92,7 @@ def _build_unioned_spans_builder(
         description=_description_for_union_all_view(unit_of_observation_type, SpanType),
         parents=parent_span_views,
         clustering_fields=(unit_of_observation.primary_key_columns_ordered + ["span"]),
-        parent_to_select_statement=_parent_to_select_statement,
+        parent_view_to_select_statement=_parent_view_to_select_statement,
     )
 
 
@@ -110,7 +110,9 @@ def _build_unioned_events_builder(
         )
     )
 
-    def _parent_to_select_statement(vb: EventObservationBigQueryViewBuilder) -> str:
+    def _parent_view_to_select_statement(
+        vb: EventObservationBigQueryViewBuilder,
+    ) -> str:
         return (
             f'SELECT "{vb.event_type.value}" AS event, {non_attribute_columns_str}, '
             f"{convert_cols_to_json_string(vb.attribute_cols)} AS {vb.EVENT_ATTRIBUTES_OUTPUT_COL_NAME}"
@@ -127,7 +129,7 @@ def _build_unioned_events_builder(
         ),
         parents=parent_event_views,
         clustering_fields=(unit_of_observation.primary_key_columns_ordered + ["event"]),
-        parent_to_select_statement=_parent_to_select_statement,
+        parent_view_to_select_statement=_parent_view_to_select_statement,
     )
 
 

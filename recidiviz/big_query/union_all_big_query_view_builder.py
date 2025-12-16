@@ -18,7 +18,7 @@
 tables together.
 """
 import logging
-from typing import Callable, Dict, Optional, Sequence
+from typing import Callable, Dict, Sequence
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
@@ -46,11 +46,14 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         bq_description: str | None = None,
         parents: Sequence[BigQueryViewBuilderType] | Sequence[BigQueryAddress],
         clustering_fields: list[str],
-        custom_select_statement: Optional[str] = None,
-        parent_to_select_statement: Optional[
-            Callable[[BigQueryViewBuilderType], str]
-        ] = None,
-        materialized_address_override: Optional[BigQueryAddress] = None,
+        custom_select_statement: str | None = None,
+        parent_view_to_select_statement: (
+            Callable[[BigQueryViewBuilderType], str] | None
+        ) = None,
+        parent_address_to_select_statement: (
+            Callable[[BigQueryAddress], str] | None
+        ) = None,
+        materialized_address_override: BigQueryAddress | None = None,
     ):
         """
         Args:
@@ -62,12 +65,16 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             clustering_fields: Columns by which to cluster this view's materialized
                 table.
             custom_select_statement: A custom SELECT statement to be used for each
-                individual view / address query. May only be set if
-                |parent_to_select_statement| is null.
-            parent_to_select_statement: A function that, for a given parent view
-                builder or table address, returns a string SELECT statement that should
-                be used to query the provided view. May only be set if
-                |custom_select_statement| is not null.
+                individual view / address query. May not be set if either
+                |parent_view_to_select_statement| or |parent_address_to_select_statement|
+                is set.
+            parent_view_to_select_statement: A function that, for a given parent view
+                builder, returns a string SELECT statement. May only be used when
+                |parents| contains BigQueryViewBuilder instances.
+            parent_address_to_select_statement: A function that, for a given parent
+                address, returns a string SELECT statement. May be used with either
+                BigQueryViewBuilder or BigQueryAddress parents (addresses are derived
+                from view builders when needed).
             materialized_address_override: If set, this view will be materialized to
                 this address rather than the default materialization address.
         """
@@ -82,20 +89,43 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 f"Found no clustering fields for UnionAllBigQueryViewBuilder view "
                 f"[{dataset_id}.{view_id}]."
             )
-        if custom_select_statement and parent_to_select_statement:
+
+        # Validate select statement options
+        select_options_set = sum(
+            [
+                custom_select_statement is not None,
+                parent_view_to_select_statement is not None,
+                parent_address_to_select_statement is not None,
+            ]
+        )
+        if select_options_set > 1:
             raise ValueError(
-                f"May only set one of |custom_select_statement| and "
-                f"|parent_to_select_statement|. Found both set for view "
+                f"May only set one of |custom_select_statement|, "
+                f"|parent_view_to_select_statement|, or "
+                f"|parent_address_to_select_statement|. Found multiple set for view "
                 f"{dataset_id}.{view_id}"
             )
+        if parent_view_to_select_statement is not None and not isinstance(
+            parents[0], BigQueryViewBuilder
+        ):
+            raise ValueError(
+                f"|parent_view_to_select_statement| may only be used when parents "
+                f"are BigQueryViewBuilder instances, not BigQueryAddress. "
+                f"Use |parent_address_to_select_statement| instead for view "
+                f"{dataset_id}.{view_id}"
+            )
+
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.description = description
         self.bq_description = bq_description
-        self.parents = parents
+        self.parents: Sequence[BigQueryViewBuilderType] | Sequence[
+            BigQueryAddress
+        ] = parents
         self.clustering_fields = clustering_fields
         self.custom_select_statement = custom_select_statement
-        self.parent_to_select_statement = parent_to_select_statement
+        self.parent_view_to_select_statement = parent_view_to_select_statement
+        self.parent_address_to_select_statement = parent_address_to_select_statement
         self.materialized_address = self._build_materialized_address(
             dataset_id=dataset_id,
             view_id=view_id,
@@ -106,7 +136,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
     @staticmethod
     def _get_address(
-        parent: BigQueryViewBuilderType | BigQueryAddress,
+        parent: BigQueryViewBuilder | BigQueryAddress,
     ) -> BigQueryAddress:
         if isinstance(parent, BigQueryAddress):
             return parent
@@ -114,7 +144,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
     @staticmethod
     def _get_table_for_query(
-        parent: BigQueryViewBuilderType | BigQueryAddress,
+        parent: BigQueryViewBuilder | BigQueryAddress,
     ) -> BigQueryAddress:
         if isinstance(parent, BigQueryAddress):
             return parent
@@ -168,13 +198,17 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
             if self.custom_select_statement:
                 custom_select_statement = self.custom_select_statement
-            elif self.parent_to_select_statement:
+            elif self.parent_view_to_select_statement:
                 if isinstance(parent, BigQueryAddress):
                     raise ValueError(
-                        "Can only use a custom select statement for a "
-                        "BigQueryViewBuilder type parent"
+                        "Expected BigQueryViewBuilder parent, got BigQueryAddress"
                     )
-                custom_select_statement = self.parent_to_select_statement(parent)
+                custom_select_statement = self.parent_view_to_select_statement(parent)
+            elif self.parent_address_to_select_statement:
+                parent_address = self._get_address(parent)
+                custom_select_statement = self.parent_address_to_select_statement(
+                    parent_address
+                )
             else:
                 custom_select_statement = None
 

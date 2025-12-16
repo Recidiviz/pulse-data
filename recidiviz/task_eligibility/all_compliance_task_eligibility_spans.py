@@ -92,7 +92,7 @@ def get_compliance_eligiblity_spans_unioned_view_builders() -> Sequence[
                 ),
                 parents=task_view_builders,
                 clustering_fields=clustering_fields,
-                parent_to_select_statement=get_criteria_select_statement,
+                parent_view_to_select_statement=get_criteria_select_statement,
             )
         )
 

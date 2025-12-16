@@ -93,7 +93,7 @@ SELECT
             description="Union of all segment events for a product.",
             parents=builders,
             clustering_fields=["state_code", "person_id"],
-            parent_to_select_statement=_select_statement,
+            parent_view_to_select_statement=_select_statement,
         )
         product_union_builders.append(unioned_builder)
     return product_union_builders
@@ -158,7 +158,7 @@ def _get_unioned_segment_event_view_builder() -> UnionAllBigQueryViewBuilder:
         description="Union of all segment events across products.",
         parents=_get_segment_event_view_builders(),
         clustering_fields=["state_code", "email_address"],
-        parent_to_select_statement=lambda vb: f"""
+        parent_view_to_select_statement=lambda vb: f"""
 SELECT
     state_code,
     email_address,

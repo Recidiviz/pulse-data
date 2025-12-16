@@ -120,7 +120,9 @@ def _build_time_periods_unioned_view_builder(
 
     unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
 
-    def _parent_to_select_statement(vb: AggregatedMetricsBigQueryViewBuilder) -> str:
+    def _parent_view_to_select_statement(
+        vb: AggregatedMetricsBigQueryViewBuilder,
+    ) -> str:
         columns_str = list_to_query_string(vb.output_columns)
         return f"SELECT {columns_str}"
 
@@ -145,7 +147,7 @@ def _build_time_periods_unioned_view_builder(
         description=description,
         bq_description=bq_description,
         parents=parents,
-        parent_to_select_statement=_parent_to_select_statement,
+        parent_view_to_select_statement=_parent_view_to_select_statement,
         clustering_fields=unit_of_analysis.primary_key_columns,
     )
 

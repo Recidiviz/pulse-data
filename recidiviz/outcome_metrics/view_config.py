@@ -38,7 +38,9 @@ from recidiviz.outcome_metrics.views.transitions_metric_utils import (
 
 
 def get_unioned_transitions_view_builder() -> UnionAllBigQueryViewBuilder:
-    def _parent_to_select_statement(vb: ImpactTransitionsBigQueryViewBuilder) -> str:
+    def _parent_view_to_select_statement(
+        vb: ImpactTransitionsBigQueryViewBuilder,
+    ) -> str:
         return f"SELECT *, '{vb.product_transition_type.pretty_name}' AS product_transition_type"
 
     return UnionAllBigQueryViewBuilder(
@@ -47,7 +49,7 @@ def get_unioned_transitions_view_builder() -> UnionAllBigQueryViewBuilder:
         description="Convenience view combining all transitions metrics into a single view",
         parents=ImpactTransitionsBigQueryViewCollector().collect_view_builders(),
         clustering_fields=["state_code"],
-        parent_to_select_statement=_parent_to_select_statement,
+        parent_view_to_select_statement=_parent_view_to_select_statement,
     )
 
 
