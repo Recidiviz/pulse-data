@@ -107,7 +107,10 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
         def set_current_job(current_job: Dict[Any, Any]) -> None:
             self.job = current_job
             DataflowJobLink.persist(
-                self, context, self.project_id, self.location, self.job.get("id")
+                context,
+                project_id=self.project_id,
+                region=self.location,
+                job_id=self.job.get("id"),
             )
 
         try:
