@@ -440,10 +440,20 @@ def parse_deciding_body_type(
 def parse_sentence_type(raw_text: str) -> Optional[StateSentenceType]:
     """Parses the supervision type from the lengths of various sentencing components:
     total sentence length, serve time (jail / prison sentence), probation time,
-    revocation time (this is also jail or prison). This uses the most recent information
-    about the sentence, though these values don't typically change over time.
+    revocation time (this is also jail or prison), and life indicator (indicates if the
+    person in sentenced to life in prison). This uses the most recent information about
+    the sentence, though these values don't typically change over time.
     """
-    (_, serve_time, probation_time, revocation_time) = raw_text.upper().split("@@")
+    (
+        _sentence_time,
+        serve_time,
+        probation_time,
+        revocation_time,
+        life_ind,
+    ) = raw_text.upper().split("@@")
+
+    if life_ind == "Y":
+        return StateSentenceType.STATE_PRISON
 
     if ZERO_TIME_STRING not in (serve_time, probation_time):
         return StateSentenceType.SPLIT

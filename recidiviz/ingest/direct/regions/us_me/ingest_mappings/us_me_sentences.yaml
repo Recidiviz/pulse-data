@@ -29,6 +29,7 @@ input_columns:
   revocation_time: STRING
   Detention_Days_Num_cleaned: INTEGER
   parent_Cis_401_Court_Order_Id_cleaned: STRING
+  Life_Ind: STRING
 unused_columns:
   - parent_Cis_401_Court_Order_Id_cleaned
 variables:
@@ -72,6 +73,7 @@ output:
                     - serve_time
                     - probation_time
                     - revocation_time
+                    - Life_Ind
               $custom_parser: us_me_custom_enum_parsers.parse_sentence_type
           county_code: Jurisdiction_County_Cd
           conditions: conditions
