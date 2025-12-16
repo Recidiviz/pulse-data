@@ -85,3 +85,31 @@ custom:
           - datetime_start_inclusive: "2024-09-17T00:00:00Z"
             datetime_end_exclusive: "2025-10-21T00:00:00Z"
             reason: "This table was modified on 2025-10-21 to be full historical instead of a 14 day diff"
+
+  US_UT:
+    file_tags:
+      spcl_cond_cd:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-08-30T00:00:00Z"
+            datetime_end_exclusive: "2025-12-12T00:00:00Z"
+            reason: "File size jumped after this date range."
+      rim_accomp_spcl_cond:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-08-30T00:00:00Z"
+            datetime_end_exclusive: "2025-12-12T00:00:00Z"
+            reason: "File size jumped after this date range."
+      rim_accomp_agrmnt_cond:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-08-30T00:00:00Z"
+            datetime_end_exclusive: "2025-12-12T00:00:00Z"
+            reason: "File size jumped after this date range."
+      p_p_agrmnt_cond_cd:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-08-22T00:00:00Z"
+            datetime_end_exclusive: "2025-12-12T00:00:00Z"
+            reason: "File size jumped after this date range."
+      p_p_agrmnt_cat_cd:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-08-22T00:00:00Z"
+            datetime_end_exclusive: "2025-12-12T00:00:00Z"
+            reason: "File size jumped after this date range."
