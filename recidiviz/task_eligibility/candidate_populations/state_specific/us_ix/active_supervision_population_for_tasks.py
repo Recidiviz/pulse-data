@@ -19,8 +19,8 @@ This script selects all spans of time in which a person is a candidate for activ
 for tasks in the state of Idaho. Specifically, it selects people with the following
 conditions:
 - Active supervision: probation, parole, or dual
-- Case types: GENERAL and SEX_OFFENSE
-- Supervision levels: MINIMUM, MEDIUM, or HIGH
+- Case types: GENERAL, SEX_OFFENSE, XCRC, or MENTAL_HEALTH_COURT
+- Supervision levels: MINIMUM, MEDIUM, HIGH, or XCRC
 """
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -51,7 +51,7 @@ WITH active_supervision_population AS (
         `{{project_id}}.sessions.compartment_sub_sessions_materialized`
     WHERE compartment_level_1 IN ('SUPERVISION')
         AND metric_source != "INFERRED"
-        AND compartment_level_2 IN ('PROBATION', 'PAROLE', 'DUAL')
+        AND compartment_level_2 IN ('PROBATION', 'PAROLE', 'DUAL', 'COMMUNITY_CONFINEMENT')
         AND correctional_level NOT IN ('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')
         AND start_date >= '1900-01-01'
 ),
@@ -67,8 +67,8 @@ supervision_case_and_level AS (
         ctsl.case_type,
         ctsl.supervision_level,
     FROM `{{project_id}}.tasks_views.us_ix_case_type_supervision_level_spans_materialized` ctsl
-        WHERE ctsl.case_type IN ('GENERAL', 'SEX_OFFENSE')
-            AND ctsl.supervision_level IN ('MINIMUM', 'MEDIUM', 'HIGH')
+        WHERE ctsl.case_type IN ('GENERAL', 'SEX_OFFENSE', 'XCRC', 'MENTAL_HEALTH_COURT')
+            AND ctsl.supervision_level IN ('MINIMUM', 'MEDIUM', 'HIGH', 'XCRC')
 ),
 
 combine AS (

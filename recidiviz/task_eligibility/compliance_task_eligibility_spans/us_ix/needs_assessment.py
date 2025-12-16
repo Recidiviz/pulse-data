@@ -73,10 +73,9 @@ does_not_have_low_lsir_and_sexual_offense = (
 
 # This criteria is met when the individual is missing an annual assessment. But it excludes
 # two groups who do not need reassessments:
-# 1) they are sex offenders with low LSIR scores, and
-# 2) they have GENERAL case type and are on minimum supervision.
-# does not have a low LSIR score + sexual offense AND is not on minimum supervision.
-# The latter group does not need reassessments.
+# 1) SEX OFFENDERS with LOW LSIR scores, and
+# 2) GENERAL case type and MINIMUM supervision.
+# These groups don't need reassessments.
 meets_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_MEETS_REASSESSMENT_TRIGGER",
