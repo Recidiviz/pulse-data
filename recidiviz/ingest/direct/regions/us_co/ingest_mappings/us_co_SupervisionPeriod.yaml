@@ -79,6 +79,10 @@ output:
                   - "G10 // Caseload Reassignment"
                   - "S11 // EM Started/Continued"
                   - "S12 // EM Ended"
+                StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - "G03 // Returned From Interstate Compact"
+                  - "G04 // Returned From Other Jurisdiction"
+                  - "G13 // Returned to YOS"
                 StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - "G03 // Returned From Other Jurisdiction"
                   - "G05 // AWOL (Absconder) in Custody"
@@ -86,6 +90,8 @@ output:
                   - "G12 // Parole Officer Assigned"
                   - "L00 // Ended TSP/Supv. in Comm."
                   - "L03 // Transferred To/Continued in Other Jurisdiction"
+                  - "L03 // Transferred/Continued to Interstate Compact"
+                  - "L04 // Transferred To Other Jurisdiction"
                   - "L06 // Revoked"
                   - "L07 // Revoked (Sent to CCC)"
                   - "L08 // Revoked (Other)"
@@ -108,7 +114,7 @@ output:
                   - "S49 // CRES Assigned"
                   - "S58 // Waiting on Formal Discharge Document"
                   - "S59 // Sure / Swift Sanction"
-                  - "S60 // Appeared in Count"
+                  - "S60 // Appeared in Court"
                   - "S61 // One Day Revocation"
                   - "S63 // Comm. Supv. Notification"
                   - "S90 // Sealed/Expunged"
@@ -116,6 +122,7 @@ output:
                   - "S92 // Conversion"
                   - "S98 // Converted Data Repair"
                   - "S99 // Unable to decipher DCIS - See Comments"
+
           termination_reason:
             $enum_mapping:
               $raw_text: end_event
@@ -136,6 +143,7 @@ output:
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - "L03 // Transferred To/Continued in Other Jurisdiction"
                   - "L03 // Transferred/Continued to Interstate Compact"
+                  - "L04 // Transferred To Other Jurisdiction"
                   - "L16 // Closed ISC Interest"
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                   - "G07 // Transferred to another County Jail"
@@ -144,9 +152,11 @@ output:
                   - "G10 // Caseload Reassignment"
                   - "S11 // EM Started/Continued"
                   - "S12 // EM Ended"
+                  - "S60 // Appeared in Court"
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - "G03 // Returned From Other Jurisdiction"
                   - "G12 // Parole Officer Assigned"
+                  - "G13 // Returned to YOS"
                   - "L00 // Ended TSP/Supv. in Comm."
                   - "L07 // Revoked (Sent to CCC)"
                   - "L08 // Revoked (Other)"
@@ -174,6 +184,8 @@ output:
                   - "S99 // Unable to decipher DCIS - See Comments"
                   - "G00 // Began TSP/Supv. in Comm."
                   - "G11 // Returned to Parole"
+                  - "G03 // Returned From Interstate Compact"
+                  - "G04 // Returned From Other Jurisdiction"
           supervising_officer_staff_external_id: start_officer
           supervising_officer_staff_external_id_type:
             $conditional:
