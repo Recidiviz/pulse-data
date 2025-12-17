@@ -62,7 +62,7 @@ function writeLoginStatusToSheet_(sheet, authToken) {
       .map((row, i) => [
         row[2].toLowerCase(), // email address
         {
-          rowIndex: i,
+          rowIndex: i + 2, // account for the missing first row and for rows/cols being 1-indexed
           emailSentTimestamp: row[4],
         },
       ])
@@ -78,10 +78,15 @@ function writeLoginStatusToSheet_(sheet, authToken) {
     if (lastLogin > new Date(emailSentTimestamp)) {
       loginsAfterEmailSent++;
     }
-    // Write the login time to the 6th column of the sheet
-    // (rows and columns for getRange are 1-indexed)
-    const formattedDateTime = lastLogin.toISOString();
-    sheet.getRange(rowIndex + 1, colToWrite).setValue(formattedDateTime);
+    // Write the login time to the last column of the sheet
+    try {
+      const formattedDateTime = lastLogin.toISOString();
+      sheet.getRange(rowIndex, colToWrite).setValue(formattedDateTime);
+    } catch (e) {
+      // Catch errors based on the last login time not being a valid date,
+      // e.g. if this person has never logged in
+      sheet.getRange(rowIndex, colToWrite).setValue("NEVER");
+    }
   }
 
   // Print summary and write header to sheet
