@@ -366,6 +366,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "validation_views__task_eligibility",
     "vitals_report_views",
     "jii_texting",
+    "jii_texting_db_export",
 }
 
 

@@ -1,0 +1,45 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_tx
+  table_id: MessageAttempt
+description: This table contains message attempt data for JII Texting in Texas
+schema:
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: twilioMessageSid
+    type: STRING
+    mode: NULLABLE
+  - name: body
+    type: STRING
+    mode: NULLABLE
+  - name: phoneNumber
+    type: STRING
+    mode: NULLABLE
+  - name: status
+    type: STRING
+    mode: NULLABLE
+  - name: createdTimestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: lastUpdatedTimestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: twilioSentTimestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: requestedSendTimestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: error
+    type: STRING
+    mode: NULLABLE
+  - name: errorCode
+    type: INTEGER
+    mode: NULLABLE
+  - name: messageSeriesId
+    type: STRING
+    mode: NULLABLE
+  - name: workflowExecutionId
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

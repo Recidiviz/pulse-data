@@ -1,0 +1,18 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_tx
+  table_id: MessageSeries
+description: This table contains message series data for JII Texting in Texas
+schema:
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: messageType
+    type: STRING
+    mode: NULLABLE
+  - name: personExternalId
+    type: STRING
+    mode: NULLABLE
+  - name: groupId
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

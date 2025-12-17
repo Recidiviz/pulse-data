@@ -1,0 +1,20 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_ix
+  table_id: ContactReminderMessageSeries
+description:
+  This table contains contact reminder message series data for JII Texting in
+  Idaho
+schema:
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: reminderType
+    type: STRING
+    mode: NULLABLE
+  - name: personExternalId
+    type: STRING
+    mode: NULLABLE
+  - name: contactId
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

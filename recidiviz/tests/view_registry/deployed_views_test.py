@@ -54,6 +54,15 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_fu
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_contact_reminders import (
+    JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_messages import (
+    JII_TEXTING_MESSAGES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_welcome_messages import (
+    JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
@@ -471,6 +480,10 @@ class ViewDagInvariantTests(unittest.TestCase):
                 dataset_id="observations__person_event",
                 table_id="supervision_contact",
             ),
+            # JII texting views that join message series and attempts from unioned source tables
+            JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER.address,
+            JII_TEXTING_MESSAGES_VIEW_BUILDER.address,
+            JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER.address,
         }
 
         allowed_union_all_datasets_to_query_from = {

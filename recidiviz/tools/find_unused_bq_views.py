@@ -60,6 +60,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_contact_reminders import (
+    JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_messages import (
+    JII_TEXTING_MESSAGES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_welcome_messages import (
+    JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.jii_texting.jii_to_text_archive import (
     JII_TO_TEXT_ARCHIVE_VIEW_BUILDER,
 )
@@ -324,6 +333,18 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"
     ),
+    JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER.address: (
+        "State agnostic view that joins ContactReminderMessageSeries and ContactReminderMessageAttempt"
+        "tables used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    JII_TEXTING_MESSAGES_VIEW_BUILDER.address: (
+        "State agnostic view that joins MessageSeries and MessageAttempt"
+        "tables used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER.address: (
+        "State agnostic view that joins WelcomeMessageSeries and WelcomeMessageAttempt tables"
+        "used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
         table_id="most_recent_incarceration_admission_metrics_not_included_in_state_population",
@@ -463,6 +484,24 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.address: (
         "Will be used in auth_endpoint to support the facilities roster sync - see #51776 (Jen Overgaag, 11/4/2025)"
+    ),
+    BigQueryAddress.from_str("jii_texting_db_export.ContactReminderMessageAttempt"): (
+        "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    BigQueryAddress.from_str("jii_texting_db_export.ContactReminderMessageSeries"): (
+        "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    BigQueryAddress.from_str("jii_texting_db_export.MessageAttempt"): (
+        "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    BigQueryAddress.from_str("jii_texting_db_export.MessageSeries"): (
+        "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    BigQueryAddress.from_str("jii_texting_db_export.WelcomeMessageAttempt"): (
+        "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    BigQueryAddress.from_str("jii_texting_db_export.WelcomeMessageSeries"): (
+        "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
     ),
 }
 

@@ -43,6 +43,11 @@ ALL_BILLING_DATA_DATASET: str = "all_billing_data"
 
 TWILIO_WEBHOOK_REQUESTS_DATASET_ID: str = "twilio_webhook_requests"
 
+# Views that are updated via a Terraform-configured transfer job defined in the recidiviz-dashboards repo
+JII_TEXTING_DASHBOARDS_DB_US_TX: str = "jii_texting_dashboards_db_us_tx"
+
+JII_TEXTING_DASHBOARDS_DB_US_IX: str = "jii_texting_dashboards_db_us_ix"
+
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
         f"Contains one-off validation data provided directed by "
@@ -96,4 +101,6 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     JII_AUTH0_PROD_SEGMENT_DATASET: "Stores auth0 events logged from JII Tablet App via Segment",
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS: "Stores backend usage events logged from JII Tablet App via Segment",
     INTERCOM_EXPORT_DATASET: "Stores user interaction and survey data exported from Intercom",
+    JII_TEXTING_DASHBOARDS_DB_US_TX: "Stores JII Texting dashboard data for Texas.",
+    JII_TEXTING_DASHBOARDS_DB_US_IX: "Stores JII Texting dashboard data for Idaho.",
 }

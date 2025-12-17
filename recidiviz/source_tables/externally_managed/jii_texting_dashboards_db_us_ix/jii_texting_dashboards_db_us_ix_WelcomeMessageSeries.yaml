@@ -1,0 +1,12 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_ix
+  table_id: WelcomeMessageSeries
+description: This table contains welcome message series data for JII Texting in Idaho
+schema:
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: personExternalId
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

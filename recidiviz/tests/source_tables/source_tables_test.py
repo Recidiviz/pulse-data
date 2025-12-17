@@ -15,13 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for source table registry."""
+import os
 import unittest
 from typing import Iterable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.source_tables import yaml_managed
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
+)
+from recidiviz.source_tables.collect_source_tables_from_yamls import (
+    collect_source_tables_from_yamls_by_dataset,
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableConfigDoesNotExistError,
@@ -217,3 +222,77 @@ class SourceTablesTest(unittest.TestCase):
 
     def test_that_all_referenced_source_tables_exist_production(self) -> None:
         self.run_source_tables_test(GCP_PROJECT_PRODUCTION)
+
+    def test_gcs_backed_tables_have_valid_external_data_configuration(self) -> None:
+        """
+        All tables in the gcs_backed_tables directory must have:
+        1. An external_data_configuration section
+        2. source_uris with at least one gs:// URI
+        3. source_format of either CSV or NEWLINE_DELIMITED_JSON
+        """
+
+        yaml_managed_path = os.path.dirname(yaml_managed.__file__)
+        gcs_backed_tables_path = os.path.join(yaml_managed_path, "gcs_backed_tables")
+
+        # Use project ID override for loading configs
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            # Collect all source tables from yaml_managed directory
+            source_tables_by_dataset = collect_source_tables_from_yamls_by_dataset(
+                yamls_root_path=yaml_managed_path
+            )
+
+            # Filter to only tables from the gcs_backed_tables subdirectory
+            all_gcs_backed_tables = [
+                source_table
+                for source_tables in source_tables_by_dataset.values()
+                for source_table in source_tables
+                if source_table.yaml_definition_path
+                and source_table.yaml_definition_path.startswith(gcs_backed_tables_path)
+            ]
+
+        self.assertGreater(
+            len(all_gcs_backed_tables),
+            0,
+            "Expected to find GCS-backed tables in the gcs_backed_tables directory",
+        )
+
+        for source_table in all_gcs_backed_tables:
+            with local_project_id_override(GCP_PROJECT_STAGING):
+                table_name = (
+                    f"{source_table.address.dataset_id}.{source_table.address.table_id}"
+                )
+
+                # Check that external_data_configuration exists
+                self.assertIsNotNone(
+                    source_table.external_data_configuration,
+                    f"{table_name} must have an external_data_configuration section",
+                )
+
+                config = source_table.external_data_configuration
+                assert config is not None  # for type checker
+
+                # Check that source_uris exists and has at least one URI
+                self.assertIsNotNone(
+                    config.source_uris,
+                    f"{table_name} must have source_uris in external_data_configuration",
+                )
+                self.assertGreater(
+                    len(config.source_uris),
+                    0,
+                    f"{table_name} must have at least one source_uri",
+                )
+
+                # Check that all source_uris start with gs://
+                for uri in config.source_uris:
+                    self.assertTrue(
+                        uri.startswith("gs://"),
+                        f"{table_name} source_uri must start with gs://, found: {uri}",
+                    )
+
+                # Check that source_format is CSV or NEWLINE_DELIMITED_JSON
+                self.assertIn(
+                    config.source_format,
+                    ["CSV", "NEWLINE_DELIMITED_JSON"],
+                    f"{table_name} source_format must be either CSV or NEWLINE_DELIMITED_JSON, "
+                    f"found: {config.source_format}",
+                )

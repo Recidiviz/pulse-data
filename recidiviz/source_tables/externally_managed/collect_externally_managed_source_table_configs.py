@@ -29,6 +29,8 @@ from recidiviz.source_tables.collect_source_tables_from_yamls import (
 )
 from recidiviz.source_tables.externally_managed.datasets import (
     EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
+    JII_TEXTING_DASHBOARDS_DB_US_IX,
+    JII_TEXTING_DASHBOARDS_DB_US_TX,
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
@@ -71,6 +73,12 @@ def collect_externally_managed_source_table_collections(
             only_check_required_columns=True,
         ),
         EXPORT_ARCHIVES_DATASET: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        JII_TEXTING_DASHBOARDS_DB_US_TX: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        JII_TEXTING_DASHBOARDS_DB_US_IX: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
     }
