@@ -100,6 +100,8 @@ FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
         "Staff": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "StaffEmailByAlias": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "OffenderSentenceSummary": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "ClassTerminationRequest": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
+        "JobTerminationRequest": ManualRawDataPruningExemptionReason.AUTOMATICALLY_PRUNED,
     },
     StateCode.US_PA: {
         "RECIDIVIZ_REFERENCE_staff_roster": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
