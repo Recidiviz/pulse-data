@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    is_male,
     not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
@@ -60,7 +61,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         # All of CRC work-release criteria
         *TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_VIEW_BUILDER.criteria_spans_view_builders,
-        # Additionally, must be a resident of ICIO
+        # Must be male (ICIO is a men's facility)
+        is_male.VIEW_BUILDER,
+        # Must be a resident of ICIO or expected to be released to D1/D2
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             logic_type=TaskCriteriaGroupLogicType.OR,
             criteria_name="US_IX_IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE",
