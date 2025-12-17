@@ -34,12 +34,16 @@ output:
               $mappings:
                 StateAssessmentClass.RISK:
                   - "Risk/Need"
+                StateAssessmentClass.SEX_OFFENSE:
+                  - "Sex Offender"
           assessment_type:
             $enum_mapping:
               $raw_text: AssessmentToolDesc
               $mappings:
                 StateAssessmentType.LSIR:
                   - "LSI-R"
+                StateAssessmentType.STABLE:
+                  - "Stable 2007 v.2"
           assessment_level:
             $conditional:
               - $if:
@@ -121,10 +125,14 @@ output:
                     $mappings:
                       StateAssessmentLevel.LOW:
                         - "Low Risk"
+                        - "Low"
                       StateAssessmentLevel.MEDIUM:
                         - "Moderate Risk"
+                      StateAssessmentLevel.MODERATE:
+                        - "Moderate"
                       StateAssessmentLevel.HIGH:
                         - "High Risk"
+                        - "High"
           assessment_score: OverallScore
           assessment_metadata:
             $normalized_values_json_dict:
