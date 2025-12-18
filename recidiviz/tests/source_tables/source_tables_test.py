@@ -112,6 +112,15 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_tx_supervision_tasks_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
+            # Case planning assistant events logged via Segment - not yet referenced in view graph
+            "case_planning_production.frontend_cpa_action_plan_printed",
+            "case_planning_production.frontend_cpa_action_plan_resource_selected",
+            "case_planning_production.frontend_cpa_client_intake_manually_enabled",
+            "case_planning_production.frontend_cpa_clients_page_client_status_filtered",
+            "case_planning_production.frontend_cpa_clients_page_navigate_to_client_profile_link_clicked",
+            "case_planning_production.frontend_cpa_intake_chat_client_address_submitted",
+            "case_planning_production.frontend_cpa_intake_chat_client_login",
+            "case_planning_production.pages",
             *COMMON_VESTIGES,
         ]
     },
@@ -129,6 +138,15 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_nd_supervision_tasks_record_archive",
             "export_archives.us_ne_supervision_tasks_record_archive",
             "export_archives.us_tx_supervision_tasks_record_archive",
+            # Case planning assistant events logged via Segment - not yet referenced in view graph
+            "case_planning_production.frontend_cpa_action_plan_printed",
+            "case_planning_production.frontend_cpa_action_plan_resource_selected",
+            "case_planning_production.frontend_cpa_client_intake_manually_enabled",
+            "case_planning_production.frontend_cpa_clients_page_client_status_filtered",
+            "case_planning_production.frontend_cpa_clients_page_navigate_to_client_profile_link_clicked",
+            "case_planning_production.frontend_cpa_intake_chat_client_address_submitted",
+            "case_planning_production.frontend_cpa_intake_chat_client_login",
+            "case_planning_production.pages",
             *COMMON_VESTIGES,
         ]
     },

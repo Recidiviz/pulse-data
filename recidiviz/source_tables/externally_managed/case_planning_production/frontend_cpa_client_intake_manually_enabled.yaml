@@ -1,0 +1,89 @@
+address:
+  dataset_id: case_planning_production
+  table_id: frontend_cpa_client_intake_manually_enabled
+description:
+  "Segment events emitted when client intake is manually enabled for a client in
+  case planning assistant tool"
+schema:
+  - name: anonymous_id
+    type: STRING
+    mode: NULLABLE
+  - name: context_ip
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: context_locale
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_path
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_referrer
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_title
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_url
+    type: STRING
+    mode: NULLABLE
+  - name: context_timezone
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_brands
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_mobile
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: context_user_agent_data_platform
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: is_internal_user
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: justice_involved_person_id
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

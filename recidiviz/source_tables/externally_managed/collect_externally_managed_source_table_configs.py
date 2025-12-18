@@ -21,6 +21,7 @@ from functools import cache
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
+    CASE_PLANNING_PRODUCTION_DATASET,
     EXPORT_ARCHIVES_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
@@ -67,6 +68,9 @@ def collect_externally_managed_source_table_collections(
             only_check_required_columns=True,
         ),
         AUTH0_PROD_ACTION_LOGS: SourceTableCollectionValidationConfig(
+            only_check_required_columns=True,
+        ),
+        CASE_PLANNING_PRODUCTION_DATASET: SourceTableCollectionValidationConfig(
             only_check_required_columns=True,
         ),
         PULSE_DASHBOARD_SEGMENT_DATASET: SourceTableCollectionValidationConfig(

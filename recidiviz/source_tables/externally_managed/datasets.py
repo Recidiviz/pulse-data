@@ -21,6 +21,7 @@ process that writes to BQ).
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
+    CASE_PLANNING_PRODUCTION_DATASET,
     EXPORT_ARCHIVES_DATASET,
     INTERCOM_EXPORT_DATASET,
     JII_AUTH0_PROD_SEGMENT_DATASET,
@@ -78,6 +79,7 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     **VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS,
     AUTH0_EVENTS: "Stores legacy events logged from Auth0 actions via Segment",
     AUTH0_PROD_ACTION_LOGS: "Stores events logged from Auth0 actions via Segment",
+    CASE_PLANNING_PRODUCTION_DATASET: "Stores case planning analytics events logged via Segment",
     EXPORT_ARCHIVES_DATASET: (
         "Contains tables that archive the contents of daily exports."
     ),
