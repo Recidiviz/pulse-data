@@ -13,3 +13,4 @@ columns:
 encoding: WINDOWS-1252
 separator: "|"
 custom_line_terminator: "\n"
+update_cadence: DAILY

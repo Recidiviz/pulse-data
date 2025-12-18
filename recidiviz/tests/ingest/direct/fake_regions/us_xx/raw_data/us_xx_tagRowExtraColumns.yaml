@@ -11,3 +11,4 @@ columns:
   - name: termination_code
   - name: update_date
 custom_line_terminator: "\n"
+update_cadence: DAILY

@@ -447,15 +447,15 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
 
         file_paths = [
             {
-                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "remote_file_path": "/recidiviz/fake_file_one.txt",
                 "sftp_timestamp": 1731283716,
             },
             {
-                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "remote_file_path": "/recidiviz/fake_file_two.txt",
                 "sftp_timestamp": 1731283717,
             },
             {
-                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "remote_file_path": "/recidiviz/fake_file_three.txt",
                 "sftp_timestamp": 1731283718,
             },
         ]
@@ -479,9 +479,9 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
             # validate correct persistence layer
 
             remote_file_to_expected_post_processed_name = {
-                "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
-                "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
-                "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+                "/recidiviz/fake_file_one.txt": "2024-11-11T00:08:36:000000/recidiviz/fake_file_one.txt",
+                "/recidiviz/fake_file_two.txt": "2024-11-11T00:08:37:000000/recidiviz/fake_file_two.txt",
+                "/recidiviz/fake_file_three.txt": "2024-11-11T00:08:38:000000/recidiviz/fake_file_three.txt",
             }
 
             # we've found & downloaded the files
@@ -533,23 +533,23 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
 
         file_paths = [
             {
-                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "remote_file_path": "/recidiviz/fake_file_one.txt",
                 "sftp_timestamp": 1731283716,
             },
             {
-                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "remote_file_path": "/recidiviz/fake_file_two.txt",
                 "sftp_timestamp": 1731283717,
             },
             {
-                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "remote_file_path": "/recidiviz/fake_file_three.txt",
                 "sftp_timestamp": 1731283718,
             },
         ]
 
         remote_file_to_expected_post_processed_name = {
-            "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
-            "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
-            "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+            "/recidiviz/fake_file_one.txt": "2024-11-11T00:08:36:000000/recidiviz/fake_file_one.txt",
+            "/recidiviz/fake_file_two.txt": "2024-11-11T00:08:37:000000/recidiviz/fake_file_two.txt",
+            "/recidiviz/fake_file_three.txt": "2024-11-11T00:08:38:000000/recidiviz/fake_file_three.txt",
         }
 
         with Session(bind=self.engine) as session:

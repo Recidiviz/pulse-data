@@ -20,10 +20,6 @@ from enum import Enum, auto
 from pprint import pformat
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
-    DirectIngestDocumentationGenerator,
-)
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions import (
     DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY,
     DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS,
@@ -31,14 +27,12 @@ from recidiviz.ingest.direct.raw_data.datetime_sql_parser_exemptions import (
     DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
+from recidiviz.ingest.direct.raw_data.raw_file_references_utils import (
+    get_file_tags_referenced_in_downstream_views,
+    get_file_tags_referenced_in_ingest_views,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
-)
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
-)
-from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
-    RawDataReferenceReasonsYamlLoader,
 )
 
 
@@ -95,32 +89,13 @@ class TestDatetimeSqlParserExemptions(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.file_tags_referenced_in_ingest_views = {
-            state_code: cls._get_file_tags_referenced_in_ingest_views(state_code)
+            state_code: get_file_tags_referenced_in_ingest_views(state_code)
             for state_code in get_existing_direct_ingest_states()
         }
         cls.file_tags_referenced_in_downstream_views = {
-            state_code: cls._get_file_tags_referenced_in_downstream_views(state_code)
+            state_code: get_file_tags_referenced_in_downstream_views(state_code)
             for state_code in get_existing_direct_ingest_states()
         }
-
-    @staticmethod
-    def _get_file_tags_referenced_in_ingest_views(state_code: StateCode) -> set[str]:
-        view_collector = DirectIngestViewQueryBuilderCollector(
-            get_direct_ingest_region(region_code=state_code.value), []
-        )
-        return set(
-            DirectIngestDocumentationGenerator.get_referencing_views(view_collector)
-        )
-
-    @staticmethod
-    def _get_file_tags_referenced_in_downstream_views(
-        state_code: StateCode,
-    ) -> set[str]:
-        return set(
-            RawDataReferenceReasonsYamlLoader.get_downstream_referencing_views(
-                state_code
-            )
-        )
 
     def get_file_tag_reference_type(
         self, state_code: StateCode, file_tag: str

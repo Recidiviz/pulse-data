@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A subclass of GCSToGCSOperator that returns output to the DAG."""
-import datetime
 import os
 from typing import Any, Dict, Union
 
@@ -26,6 +25,9 @@ from recidiviz.airflow.dags.sftp.metadata import (
     POST_PROCESSED_NORMALIZED_FILE_PATH,
     REMOTE_FILE_PATH,
     UPLOADED_FILE_PATH,
+)
+from recidiviz.airflow.dags.sftp.sftp_utils import (
+    utc_update_datetime_from_post_processed_normalized_file_path,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -75,11 +77,12 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
         )
 
     def build_upload_path(self) -> GcsfsFilePath:
-        date_str = self.post_processed_normalized_file_path.split("/")[0]
         normalized_file_name = os.path.basename(
             to_normalized_unprocessed_raw_file_path(
-                self.post_processed_normalized_file_path,
-                datetime.datetime.fromisoformat(date_str),
+                original_file_path=self.post_processed_normalized_file_path,
+                dt=utc_update_datetime_from_post_processed_normalized_file_path(
+                    self.post_processed_normalized_file_path
+                ),
             )
         )
         return GcsfsFilePath.from_directory_and_file_name(
