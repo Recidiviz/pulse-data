@@ -201,7 +201,10 @@ def test_sentencing_normalization() -> None:
     ) = get_normalized_sentencing_entities(
         StateCode.US_AZ,
         person,
-        UsAzSentenceNormalizationDelegate(),
+        UsAzSentenceNormalizationDelegate(
+            incarceration_periods=person.incarceration_periods,
+            sentences=person.sentences,
+        ),
         expected_output_entities=get_all_entity_classes_in_module(normalized_entities),
     )
 

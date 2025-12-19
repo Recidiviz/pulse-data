@@ -121,7 +121,9 @@ def build_normalized_state_person(
     ).get_normalized_violations()
 
     sentencing_delegate = get_state_specific_sentence_normalization_delegate(
-        state_code.value
+        state_code.value,
+        incarceration_periods=person.incarceration_periods,
+        sentences=person.sentences,
     )
     (
         normalized_incarceration_sentences,

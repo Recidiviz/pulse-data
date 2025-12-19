@@ -33,6 +33,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateEarlyDischarge,
     StateIncarcerationSentence,
+    StateSentence,
+    StateSentenceStatusSnapshot,
     StateSupervisionSentence,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -231,6 +233,27 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
 
         By default, returns the supervision sentence itself."""
         return supervision_sentence
+
+    def update_sentence_status_snapshot(
+        self,
+        sentence: "StateSentence",
+        snapshot: "StateSentenceStatusSnapshot",
+    ) -> "StateSentenceStatusSnapshot | None":
+        """Contains state-specific logic for filtering or updating sentence status snapshots.
+
+        Called during status snapshot normalization for each snapshot.
+
+        Args:
+            sentence: The sentence this snapshot belongs to
+            snapshot: The specific status snapshot being processed
+
+        Returns:
+            - The snapshot (unchanged) to keep it
+            - A modified snapshot to update it
+            - None to filter it out
+
+        By default, returns the snapshot unchanged."""
+        return snapshot
 
     @property
     def correct_early_completed_statuses(self) -> bool:

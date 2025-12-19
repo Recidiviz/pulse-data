@@ -105,6 +105,8 @@ def get_state_specific_violation_response_normalization_delegate(
 
 def get_state_specific_sentence_normalization_delegate(
     state_code: str,
+    incarceration_periods: list[StateIncarcerationPeriod],
+    sentences: list["StateSentence"],
 ) -> StateSpecificSentenceNormalizationDelegate:
     return StateSpecificSentenceNormalizationDelegate()
 

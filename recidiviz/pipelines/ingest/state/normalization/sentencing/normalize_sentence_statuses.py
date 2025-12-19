@@ -296,6 +296,18 @@ def normalize_snapshots_for_single_sentence(
     all_snapshots = sorted(
         sentence.sentence_status_snapshots, key=lambda s: s.partition_key
     )
+
+    # Allow state-specific delegate to filter or modify snapshots
+    processed_snapshots = []
+    for snapshot in all_snapshots:
+        updated_snapshot = delegate.update_sentence_status_snapshot(
+            sentence=sentence,
+            snapshot=snapshot,
+        )
+        if updated_snapshot is not None:
+            processed_snapshots.append(updated_snapshot)
+    all_snapshots = processed_snapshots
+
     if delegate.correct_early_completed_statuses:
         all_snapshots = _validate_terminating_statuses(
             all_snapshots, correct_early_completed_statuses=True

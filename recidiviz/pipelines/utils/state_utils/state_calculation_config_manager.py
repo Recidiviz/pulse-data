@@ -997,8 +997,10 @@ def get_state_specific_supervision_period_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def get_state_specific_sentence_normalization_delegate(
+def get_state_specific_sentence_normalization_delegate(  # pylint: disable=unused-argument
     state_code: str,
+    incarceration_periods: list[StateIncarcerationPeriod],
+    sentences: list["StateSentence"],
 ) -> StateSpecificSentenceNormalizationDelegate:
     """Returns the type of SentenceNormalizationDelegate that should be used for normalizing
     StateIncarcerationSentence/StateSupervisionSentence entities from a given |state_code|.
@@ -1039,7 +1041,10 @@ def get_state_specific_sentence_normalization_delegate(
     if state_code == StateCode.US_ID.value:
         return UsIdSentenceNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
-        return UsAzSentenceNormalizationDelegate()
+        return UsAzSentenceNormalizationDelegate(
+            incarceration_periods=incarceration_periods,
+            sentences=sentences,
+        )
     if state_code == StateCode.US_TX.value:
         return UsTxSentenceNormalizationDelegate()
     if state_code == StateCode.US_UT.value:
