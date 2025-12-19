@@ -480,7 +480,7 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This view will be used just for validation of the jii_to_text view and we'd only want to delete the archive / validation if we delete or stop using the jii_to_text view itself (Samantha Norcia, 11/10/2025)"
     ),
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
-        "TODO(#50601) This view will be used in product/validation views (Samantha Norcia, 11/10/2025)"
+        "This view will be used just for validation views (Samantha Norcia, 11/10/2025)"
     ),
     INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.address: (
         "Will be used in auth_endpoint to support the facilities roster sync - see #51776 (Jen Overgaag, 11/4/2025)"
@@ -502,6 +502,14 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     BigQueryAddress.from_str("jii_texting_db_export.WelcomeMessageSeries"): (
         "Source table used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    BigQueryAddress.from_str(
+        "validation_views__jii_texting.incorrect_contact_reminder"
+    ): (
+        "Validation view for JII texting contact reminders (Samantha Norcia, 12/18/2025)"
+    ),
+    BigQueryAddress.from_str("validation_views__jii_texting.invalid_numbers"): (
+        "Validation view for JII texting invalid phone numbers (Samantha Norcia, 12/18/2025)"
     ),
 }
 

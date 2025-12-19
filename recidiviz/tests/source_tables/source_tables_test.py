@@ -56,8 +56,6 @@ COMMON_VESTIGES = [
     "static_reference_tables.us_tn_standards_due",
     # TODO(#16661): Remove this section once US_ID fully deprecated
     "static_reference_tables.state_incarceration_facilities",
-    # This view is used by Polaris to monitor/analyze incoming messages to our Twilio phone numbers
-    "twilio_webhook_requests.jii_texting_incoming_messages",
     # These tables are output datasets for our population projection model code
     # (see recidiviz/calculator/modeling/population_projection) but are not referenced
     # by any deployed views.
@@ -121,6 +119,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "case_planning_production.frontend_cpa_intake_chat_client_address_submitted",
             "case_planning_production.frontend_cpa_intake_chat_client_login",
             "case_planning_production.pages",
+            # This table is used by text_responses view which only deploys to production (cross-project view)
+            "twilio_webhook_requests.jii_texting_incoming_messages",
             *COMMON_VESTIGES,
         ]
     },

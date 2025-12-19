@@ -137,6 +137,9 @@ from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissio
 from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_custody import (
     INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.jii_texting_multiple_welcome_messages import (
+    JII_TEXTING_MULTIPLE_WELCOME_MESSAGES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.jii_to_text_percent_change_exceeded import (
     JII_TO_TEXT_PERCENT_CHANGE_EXCEEDED_VIEW_BUILDER,
 )
@@ -991,6 +994,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             hard_max_allowed_error=0.30,
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=JII_TEXTING_MULTIPLE_WELCOME_MESSAGES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
             view_builder=PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
