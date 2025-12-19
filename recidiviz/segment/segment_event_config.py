@@ -56,6 +56,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_milestones_tab_clicked": [ProductType.MILESTONES],
     "frontend_opportunity_approval_actions": [
         ProductType.CLIENT_PAGE,
+        ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
         ProductType.WORKFLOWS,
     ],
     "frontend_opportunity_marked_eligible": [
@@ -103,6 +104,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_opportunity_unsubmitted": [
         ProductType.CLIENT_PAGE,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
+        ProductType.TASKS,
         ProductType.WORKFLOWS,
     ],
     "frontend_outliers_action_strategy_list_viewed": [
