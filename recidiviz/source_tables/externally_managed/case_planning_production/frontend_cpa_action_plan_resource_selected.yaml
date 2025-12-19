@@ -23,9 +23,6 @@ schema:
   - name: context_page_path
     type: STRING
     mode: NULLABLE
-  - name: context_page_referrer
-    type: STRING
-    mode: NULLABLE
   - name: context_page_title
     type: STRING
     mode: NULLABLE

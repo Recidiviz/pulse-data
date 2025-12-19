@@ -71,9 +71,6 @@ schema:
   - name: timestamp
     type: TIMESTAMP
     mode: NULLABLE
-  - name: user_id
-    type: STRING
-    mode: NULLABLE
   - name: uuid_ts
     type: TIMESTAMP
     mode: NULLABLE
