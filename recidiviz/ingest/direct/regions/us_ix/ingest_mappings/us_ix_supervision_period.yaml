@@ -98,8 +98,6 @@ output:
                   $enum_mapping:
                     $raw_text: LegalStatusDesc
                     $mappings:
-                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
-                        - Non Idaho Commitment
                       StateSupervisionPeriodSupervisionType.INVESTIGATION:
                         - Investigation
                       StateSupervisionPeriodSupervisionType.PAROLE:
@@ -107,6 +105,8 @@ output:
                         - Parole-Non Idaho
                       StateSupervisionPeriodSupervisionType.PROBATION:
                         - Probation
+                        - Non Idaho Commitment
+                        - Probation-Non Idaho
                       StateSupervisionPeriodSupervisionType.WARRANT_STATUS:
                         - Parole Violator
                         - Probation Violator
