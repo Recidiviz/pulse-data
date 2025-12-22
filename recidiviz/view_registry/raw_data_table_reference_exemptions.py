@@ -22,9 +22,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
     US_IX_DETAINER_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_ne.us_ne_latest_aggregate_sentence_entry_without_hold_for_review import (
-    US_NE_LATEST_AGGREGATE_SENTENCE_ENTRY_WITHOUT_HOLD_FOR_REVIEW_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_ca_location_metadata import (
     US_CA_LOCATION_METADATA_VIEW_BUILDER,
 )
@@ -108,9 +105,6 @@ RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]]
         US_ND_INCARCERATION_WITHIN_6_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
         US_ND_INCARCERATION_PAST_PAROLE_REVIEW_DATE_PLUS_ONE_MONTH_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
         US_ND_INCARCERATION_WITHIN_12_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
-    },
-    StateCode.US_NE: {
-        US_NE_LATEST_AGGREGATE_SENTENCE_ENTRY_WITHOUT_HOLD_FOR_REVIEW_VIEW_BUILDER.address: "TODO(#46857): Identify a better way to re-use the logic generating `_latest` views"
     },
     StateCode.US_NY: {
         US_NY_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(#51185) Update to use raw data _all view"

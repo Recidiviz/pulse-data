@@ -80,6 +80,7 @@ FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
         "LOCATION_HIST": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "AggregateSentence": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
         "ORASClientRiskLevelAndNeeds": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
+        "GoodTimeDay": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
     },
     StateCode.US_OR: {
         "RCDVZ_PRDDTA_OP013P": ManualRawDataPruningExemptionReason.USED_AS_ALL_DEPENDENCY,
