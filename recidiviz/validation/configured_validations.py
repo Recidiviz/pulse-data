@@ -53,6 +53,13 @@ from recidiviz.validation.views.state.analyst_data_validation.us_ma_resident_egt
 from recidiviz.validation.views.state.analyst_data_validation.us_ma_resident_monthly_credit_activity_discrepancy import (
     US_MA_RESIDENT_MONTHLY_CREDIT_ACTIVITY_DISCREPANCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.us_pa.us_pa_releases_preprocessed_validations import (
+    US_PA_DIFFERENT_INMATE_ID_AND_INMATE_ID_OLD_VIEW_BUILDER,
+    US_PA_IS_SCI_VIEW_BUILDER,
+    US_PA_NO_NEEDS_CATEGORY_RELEASE_STATUS_VIEW_BUILDER,
+    US_PA_NO_NULL_SPAN_EXTERNAL_ID_VIEW_BUILDER,
+    US_PA_NO_UNKNOWN_RELEASE_STATUS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.dataflow_metrics.configured_validations import (
     get_all_dataflow_metrics_validations,
 )
@@ -592,6 +599,28 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MA_RESIDENT_MONTHLY_CREDIT_ACTIVITY_DISCREPANCY_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_PA_NO_NULL_SPAN_EXTERNAL_ID_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_PA_NO_NEEDS_CATEGORY_RELEASE_STATUS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_PA_NO_UNKNOWN_RELEASE_STATUS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=100,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_PA_DIFFERENT_INMATE_ID_AND_INMATE_ID_OLD_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=300,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_PA_IS_SCI_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
