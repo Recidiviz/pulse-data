@@ -19,7 +19,7 @@
     "express-jwt": "^7.7.8",
     "express-rate-limit": "^8.2.1",
     "firebase-admin": "^13.6.0",
-    "firebase-functions": "^7.0.1",
+    "firebase-functions": "^7.0.2",
     "jwks-rsa": "^2.1.5"
   },
   "devDependencies": {
