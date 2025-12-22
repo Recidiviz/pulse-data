@@ -30,8 +30,21 @@ output:
               $mappings:
                 StateStaffRoleType.SUPERVISION_OFFICER:
                   - SUPERVISION
+                  - SUPERVISION SUPERVISOR
                 StateStaffRoleType.INTERNAL_UNKNOWN:
                   - FACILITY
+                  - FACILITY SUPERVISOR
+          role_subtype:
+            $enum_mapping:
+              $raw_text: ROLE_TYPE
+              $mappings:
+                StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                  - SUPERVISION
+                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                  - SUPERVISION SUPERVISOR
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                  - FACILITY
+                  - FACILITY SUPERVISOR
           start_date: START_DATE
           end_date: END_DATE
     location_periods:
@@ -47,30 +60,39 @@ output:
           start_date: START_DATE
           end_date: END_DATE
     supervisor_periods:
-      - StateStaffSupervisorPeriod:
-          external_id:
-            $concat:
-              $values:
-                - AGENT_ID
-                - SUPERVISOR_ID
-                - SEQ_NUM
-              $separator: "@@"
-          supervisor_staff_external_id: SUPERVISOR_ID
-          supervisor_staff_external_id_type: $literal("US_AZ_PERSON_ID")
-          start_date: START_DATE
-          end_date: END_DATE
+      - $conditional:
+          - $if:
+              $not_null: SUPERVISOR_ID
+            $then:
+              StateStaffSupervisorPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - AGENT_ID
+                      - SUPERVISOR_ID
+                      - SEQ_NUM
+                    $separator: "@@"
+                supervisor_staff_external_id: SUPERVISOR_ID
+                supervisor_staff_external_id_type: $literal("US_AZ_PERSON_ID")
+                start_date: START_DATE
+                end_date: END_DATE
     caseload_type_periods:
-      - StateStaffCaseloadTypePeriod:
-          external_id:
-            $concat:
-              $values:
-                - AGENT_ID
-                - LOCATION
-                - SEQ_NUM
-              $separator: "@@"
-          caseload_type:
-            $enum_mapping:
-              $raw_text: LOCATION
-              $custom_parser: us_az_custom_enum_parsers.parse_staff_caseload_type
-          start_date: START_DATE
-          end_date: END_DATE
+      # This conditional ensures we only hydrate this entity for line staff, not supervisors.
+      - $conditional:
+          - $if:
+              $not_null: SUPERVISOR_ID
+            $then:
+              StateStaffCaseloadTypePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - AGENT_ID
+                      - LOCATION
+                      - SEQ_NUM
+                    $separator: "@@"
+                caseload_type:
+                  $enum_mapping:
+                    $raw_text: LOCATION
+                    $custom_parser: us_az_custom_enum_parsers.parse_staff_caseload_type
+                start_date: START_DATE
+                end_date: END_DATE
