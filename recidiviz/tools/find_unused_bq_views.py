@@ -54,6 +54,15 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
+    US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_releases_preprocessed import (
+    US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_sapphire_preprocessed import (
+    US_PA_SAPPHIRE_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
@@ -510,6 +519,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     BigQueryAddress.from_str("validation_views__jii_texting.invalid_numbers"): (
         "Validation view for JII texting invalid phone numbers (Samantha Norcia, 12/18/2025)"
+    ),
+    US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER.address: (
+        "Preprocessed incarceration release type view in PA, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
+    ),
+    US_PA_SAPPHIRE_PREPROCESSED_VIEW_BUILDER.address: (
+        "Preprocessed view of sapphire data in PA, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
+    ),
+    US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address: (
+        "Preprocessed view of address and form information entry, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
     ),
 }
 

@@ -22,6 +22,12 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
     US_IX_DETAINER_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
+    US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_releases_preprocessed import (
+    US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_ca_location_metadata import (
     US_CA_LOCATION_METADATA_VIEW_BUILDER,
 )
@@ -117,5 +123,7 @@ RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]]
         US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         US_PA_NOT_ON_SEX_OFFENSE_PROTOCOL_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
         CLIENT_RECORD_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
+        US_PA_RELEASES_PREPROCESSED_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
+        US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address: "TODO(#51186) Update to use raw data _all view",
     },
 }

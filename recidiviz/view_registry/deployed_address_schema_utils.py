@@ -34,6 +34,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_level_raw_text_mappings import (
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
+    US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_comments_preprocessed import (
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -234,6 +237,7 @@ def state_specific_deployed_views_without_state_code_columns(
         US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER.address,
         US_MO_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_NE_CLIENT_METADATA_VIEW_BUILDER.address,
+        US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address,
         US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER.address,
         US_TN_JII_RAW_DATA_UPDATE_DATE_VIEW_BUILDER.address,
         US_TN_JII_TOOLS_DATE_ALIGNED_OFFENDER_SENTENCE_SUMMARY_LATEST_VIEW_BUILDER.address,

@@ -1120,6 +1120,8 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
     },
     StateCode.US_PA: {
         "dbo_LU_PBPP_Organization": ["DateModified"],
+        "Person_vw_Projected_Release_Date": ["Projected_Release_Date"],
+        "SAPPHIRE_COMPLETED_DC108AS": ["DATE_FORM_SUBMITTED"],
     },
     StateCode.US_TN: {
         "ContactNoteComment": ["ContactNoteDateTime"],
@@ -1693,9 +1695,7 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
     },
     StateCode.US_PA: {
         "AssessmentResults_StrongR": ["DateCompleted"],
-        "Person_vw_Projected_Release_Date": ["Projected_Release_Date"],
         "RECIDIVIZ_REFERENCE_agent_districts": ["date_received"],
-        "SAPPHIRE_COMPLETED_DC108AS": ["DATE_FORM_SUBMITTED"],
         "dbo_Controlling_Sentence": [
             "Expiration_Date",
             "RRRI_Date",
