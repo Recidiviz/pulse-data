@@ -274,7 +274,8 @@ def agreement_form_status_side_panel_notes(opp_name: str) -> str:
         )
     return f"""
     SELECT
-      DISTINCT ep.PERSON_ID AS external_id,
+      DISTINCT 
+      PERSON_ID AS external_id,
       "Agreement Form Signature Status" AS criteria,
       CASE WHEN (SIG_STATUS = 'SIGNED')
             THEN 'Signed'
@@ -292,10 +293,6 @@ def agreement_form_status_side_panel_notes(opp_name: str) -> str:
       start_date AS event_date
     FROM
       `{{project_id}}.analyst_data.us_az_agreement_form_signatures_materialized`
-    JOIN
-      `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` ep
-    USING
-      (DOC_ID)
     WHERE end_date_exclusive IS NULL 
         AND program = '{opp_name.upper()}'
     """
