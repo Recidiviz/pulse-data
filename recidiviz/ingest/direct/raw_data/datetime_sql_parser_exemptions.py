@@ -168,7 +168,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     },
     StateCode.US_PA: {
         "dbo_Release": ["LastModifiedDate"],
-        "dbo_vwCCISAllMvmt": ["Bed_Dt", "LstMod_Dt", "Status_Dt"],
         "dbo_vwCCISAllProgDtls": ["LstMod_Dt"],
     },
     StateCode.US_TN: {
