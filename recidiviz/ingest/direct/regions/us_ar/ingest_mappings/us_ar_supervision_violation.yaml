@@ -109,6 +109,7 @@ output:
                         - "060" # Unknown
                         - "061" # Unknown
                         - "062" # Unknown
+                        - "063" # Unknown
                         - "064" # Unknown
                       StateSupervisionViolationType.EXTERNAL_UNKNOWN:
                         - "X02" # Offense - any violation (or any comb violation)
