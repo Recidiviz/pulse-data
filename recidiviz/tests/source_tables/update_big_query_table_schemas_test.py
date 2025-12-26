@@ -370,6 +370,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_co_ingest_view_results.SentencesAndCharges",
     "us_co_ingest_view_results.StatePerson",
     "us_co_ingest_view_results.StateStaff",
+    "us_co_ingest_view_results.SupervisionContact",
     "us_co_ingest_view_results.SupervisionPeriod",
     "us_co_normalized_state.state_assessment",
     "us_co_normalized_state.state_charge",
