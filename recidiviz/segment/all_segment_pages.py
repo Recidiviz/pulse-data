@@ -20,6 +20,7 @@ along with the product type associated with each page."""
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.segment.segment_event_utils import (
+    SEGMENT_DATASETS,
     build_segment_event_view_query_template,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -27,17 +28,22 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_ID = "all_segment_pages"
 
+
+def _get_pages_query_template(dataset: str) -> str:
+    return build_segment_event_view_query_template(
+        segment_table_sql_source=BigQueryAddress(dataset_id=dataset, table_id="pages"),
+        segment_table_jii_pseudonymized_id_columns=[],
+        additional_attribute_cols=[],
+        product_type_filter=None,
+    )
+
+
 # TODO(#46788): Deprecate this view and generalize `pages` to use standard
 # Segment event infra once views are no longer configured by event X product builders
 ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id="segment_events",
-    view_query_template=build_segment_event_view_query_template(
-        segment_table_sql_source=BigQueryAddress(
-            dataset_id="pulse_dashboard_segment_metrics", table_id="pages"
-        ),
-        segment_table_jii_pseudonymized_id_columns=[],
-        additional_attribute_cols=[],
-        product_type_filter=None,
+    view_query_template="\nUNION ALL\n".join(
+        _get_pages_query_template(dataset) for dataset in SEGMENT_DATASETS
     ),
     view_id=_VIEW_ID,
     description=__doc__,

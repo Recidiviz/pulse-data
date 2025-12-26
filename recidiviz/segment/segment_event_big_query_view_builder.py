@@ -41,6 +41,10 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         segment_table_jii_pseudonymized_id_columns: list[str],
         # Any additional attribute columns that should be included in the view
         additional_attribute_cols: list[str],
+        # Whether the source table has a session_id column
+        has_session_id: bool = True,
+        # Whether the source table has a user_id column (for staff users)
+        has_user_id: bool = True,
     ) -> None:
         self.segment_table_sql_source = segment_events_source_table_address
         self.segment_table_jii_pseudonymized_id_columns = (
@@ -48,6 +52,8 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
         self.additional_attribute_cols = additional_attribute_cols
         self.segment_event_name = segment_events_source_table_address.table_id
+        self.has_session_id = has_session_id
+        self.has_user_id = has_user_id
 
         address = self.view_address(segment_events_source_table_address)
         super().__init__(
@@ -58,6 +64,8 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 segment_table_sql_source=segment_events_source_table_address,
                 segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
                 additional_attribute_cols=additional_attribute_cols,
+                has_session_id=has_session_id,
+                has_user_id=has_user_id,
             ),
             should_materialize=True,
             clustering_fields=["state_code", "user_id"],
@@ -79,6 +87,8 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         segment_table_sql_source: BigQueryAddress,
         segment_table_jii_pseudonymized_id_columns: list[str],
         additional_attribute_cols: list[str],
+        has_session_id: bool = True,
+        has_user_id: bool = True,
     ) -> str:
         """Builds the SQL query template for the Segment event view for a single product type
         by transforming hashed user and client id's into internal id's and pulling any additonal
@@ -89,4 +99,6 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
             additional_attribute_cols=additional_attribute_cols,
             product_type_filter=None,
+            has_session_id=has_session_id,
+            has_user_id=has_user_id,
         )

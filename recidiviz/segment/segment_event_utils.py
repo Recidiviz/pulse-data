@@ -18,12 +18,29 @@
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.state.dataset_config import (
+    CASE_PLANNING_PRODUCTION_DATASET,
+    PULSE_DASHBOARD_SEGMENT_DATASET,
+)
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_config import get_product_types_for_event
 
 # The first US_IX export for workflows was on 1/11 in staging and 1/17 in prod.
 # For simplicity, use the prod date.
 FIRST_IX_EXPORT_DATE = "2023-01-17"
+
+# Datasets containing Segment event source tables
+SEGMENT_DATASETS = [PULSE_DASHBOARD_SEGMENT_DATASET, CASE_PLANNING_PRODUCTION_DATASET]
+
+
+def _get_url_filter_for_all_products() -> str:
+    """Returns a SQL WHERE clause that filters for URLs from all product types."""
+    # Get unique URL bases from all product types
+    unique_url_bases = list({product_type.url_base for product_type in ProductType})
+    url_conditions = [
+        f"context_page_url LIKE '{url_base}/%'" for url_base in unique_url_bases
+    ]
+    return " OR ".join(url_conditions)
 
 
 def _get_product_type_case_when_statement_pages() -> str:
@@ -69,6 +86,8 @@ def build_segment_event_view_query_template(
     #  from event_specific views and don't need to use the
     #  build_segment_event_view_query_template() helper.
     product_type_filter: ProductType | None,
+    has_session_id: bool = True,
+    has_user_id: bool = True,
 ) -> str:
     """Builds the SQL query template for a Segment event view by transforming
     hashed user and client id's into internal id's and pulling any additonal
@@ -90,13 +109,35 @@ def build_segment_event_view_query_template(
         product_type_clause = _get_product_type_case_when_statement_usage_event(
             segment_table_sql_source.table_id
         )
+    is_pages_event = segment_table_sql_source.table_id == "pages"
+
+    # Determine session_id selection based on whether it's a pages event or whether the source has session_id
+    session_id_select = ""
+    if not is_pages_event:
+        if has_session_id:
+            session_id_select = "person_id, session_id,"
+        else:
+            session_id_select = "person_id, CAST(NULL AS STRING) AS session_id,"
+
+    session_id_inner_select = ""
+    if not is_pages_event:
+        if has_session_id:
+            session_id_inner_select = "session_id,"
+        else:
+            session_id_inner_select = "CAST(NULL AS STRING) AS session_id,"
+
+    # Determine user_id selection based on whether the source has user_id
+    user_id_inner_select = (
+        "user_id," if has_user_id else "CAST(NULL AS STRING) AS user_id,"
+    )
+
     template = f"""
 SELECT
     state_code,
     user_id,
     LOWER(rdu.email) AS email_address,
     DATETIME(timestamp, "US/Eastern") AS event_ts,
-    {"" if segment_table_sql_source.table_id == "pages" else "person_id, session_id,"}
+    {session_id_select}
     context_page_path,
     context_page_url,
     {product_type_clause if product_type_clause else ""}
@@ -105,13 +146,13 @@ FROM (
     SELECT
         -- default columns for all views
         -- this field was renamed, fall back to previous name for older records
-        {f"COALESCE({list_to_query_string(segment_table_jii_pseudonymized_id_columns)})" 
+        {f"COALESCE({list_to_query_string(segment_table_jii_pseudonymized_id_columns)})"
             if segment_table_jii_pseudonymized_id_columns
             else "CAST(NULL AS STRING)"
         } AS pseudonymized_id,
         timestamp,
-    {"" if segment_table_sql_source.table_id == "pages" else "session_id,"}
-        user_id,
+    {session_id_inner_select}
+        {user_id_inner_select}
         context_page_path,
         context_page_url,
         "{segment_table_sql_source.table_id}" AS event,
@@ -120,9 +161,7 @@ FROM (
         `{{project_id}}.{segment_table_sql_source.to_str()}`
     -- events from prod deployment only
     WHERE
-        --TODO(#43316): Adjust logic to support JII tablet events, and move this filtering
-        -- logic to segment_event_big_query_view_builder based on ProductType url logic.
-        context_page_url LIKE '%://dashboard.recidiviz.org/%'
+        {f"context_page_url LIKE '{product_type_filter.url_base}/%'" if product_type_filter else _get_url_filter_for_all_products()}
     -- dedupes events loaded more than once
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1

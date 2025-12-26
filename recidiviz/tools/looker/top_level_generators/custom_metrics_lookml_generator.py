@@ -38,6 +38,10 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.tools.looker.aggregated_metrics.custom_cpa_metrics_configurations import (
+    CPA_ASSIGNMENT_NAMES_TO_TYPES,
+    CPA_IMPACT_LOOKER_METRICS,
+)
 from recidiviz.tools.looker.aggregated_metrics.custom_global_metrics_configurations import (
     GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
     GLOBAL_IMPACT_LOOKER_METRICS,
@@ -212,6 +216,15 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=JII_TABLET_APP_IMPACT_LOOKER_METRICS,
             assignment_types_dict=JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={},
+        )
+
+        # CPA
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="case_planning_assistant_metrics",
+            output_directory=output_subdir,
+            metrics=CPA_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=CPA_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
         )
 

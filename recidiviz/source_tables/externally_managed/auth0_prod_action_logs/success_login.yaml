@@ -156,6 +156,9 @@ schema:
   - name: routes_tasks
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_cpa
+    type: BOOLEAN
+    mode: NULLABLE
   - name: routes_psi
     type: BOOLEAN
     mode: NULLABLE

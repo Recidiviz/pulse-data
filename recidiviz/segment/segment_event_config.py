@@ -41,6 +41,21 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
         ProductType.TASKS,
         ProductType.WORKFLOWS,
     ],
+    "frontend_cpa_action_plan_printed": [ProductType.CASE_PLANNING_ASSISTANT],
+    "frontend_cpa_action_plan_resource_selected": [ProductType.CASE_PLANNING_ASSISTANT],
+    "frontend_cpa_client_intake_manually_enabled": [
+        ProductType.CASE_PLANNING_ASSISTANT
+    ],
+    "frontend_cpa_clients_page_client_status_filtered": [
+        ProductType.CASE_PLANNING_ASSISTANT
+    ],
+    "frontend_cpa_clients_page_navigate_to_client_profile_link_clicked": [
+        ProductType.CASE_PLANNING_ASSISTANT
+    ],
+    "frontend_cpa_intake_chat_client_address_submitted": [
+        ProductType.CASE_PLANNING_ASSISTANT
+    ],
+    "frontend_cpa_intake_chat_client_login": [ProductType.CASE_PLANNING_ASSISTANT],
     "frontend_direct_download_form_downloaded": [ProductType.WORKFLOWS],
     "frontend_methodology_link_clicked": [
         ProductType.CLIENT_PAGE,

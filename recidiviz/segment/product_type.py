@@ -42,6 +42,7 @@ class ProductType(Enum):
     """
 
     CASE_NOTE_SEARCH = "CASE_NOTE_SEARCH"
+    CASE_PLANNING_ASSISTANT = "CASE_PLANNING_ASSISTANT"
     CLIENT_PAGE = "CLIENT_PAGE"
     LANTERN = "LANTERN"
     MILESTONES = "MILESTONES"
@@ -55,6 +56,13 @@ class ProductType(Enum):
     TASKS = "TASKS"
     VITALS = "VITALS"
     WORKFLOWS = "WORKFLOWS"
+
+    @property
+    def url_base(self) -> str:
+        """Returns the base URL for this product type."""
+        if self == ProductType.CASE_PLANNING_ASSISTANT:
+            return "https://plan.recidiviz.org"
+        return "https://dashboard.recidiviz.org"
 
     @property
     def pretty_name(self) -> str:
@@ -73,6 +81,7 @@ class ProductType(Enum):
         regex, then pages will be attributed to the first product in the conditional
         returned by `context_page_filter_query_fragment`."""
         if self in [
+            ProductType.CASE_PLANNING_ASSISTANT,
             ProductType.CLIENT_PAGE,
             ProductType.LANTERN,
             ProductType.MILESTONES,
@@ -95,41 +104,58 @@ class ProductType(Enum):
         )
 
     def context_page_filter_query_fragment(
-        self, context_page_url_col_name: str = "context_page_path"
+        self, context_page_url_col_name: str = "context_page_url"
     ) -> str:
         """Returns the query fragment that identifies the Segment event url paths
         associated with a given product type. Since some segment events are shared across
-        multiple product surfaces, we use the context page keyword to further filter
+        multiple product surfaces, we use the url and context page keyword to further filter
         Segment events by product type based on where they were triggered in the UI."""
 
+        # Ensure URL starts with the product's url_base
+        url_base_check = f"STARTS_WITH({context_page_url_col_name}, '{self.url_base}')"
+
+        # Path-based filtering for each product type
         if self == ProductType.CASE_NOTE_SEARCH:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows')"
-        if self == ProductType.CLIENT_PAGE:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/clients|/workflows/residents')"
-        if self == ProductType.MILESTONES:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
-        if self == ProductType.PATHWAYS:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
-        if self == ProductType.PSI_CASE_INSIGHTS:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
-        if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
-        if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
-        if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
-        if self == ProductType.TASKS:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/tasks')"
-        if self == ProductType.WORKFLOWS:
-            return (
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows')"
+        elif self == ProductType.CASE_PLANNING_ASSISTANT:
+            # No additional path filtering needed - just the url_base check
+            return url_base_check
+        elif self == ProductType.CLIENT_PAGE:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/clients|/workflows/residents')"
+        elif self == ProductType.MILESTONES:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
+        elif self == ProductType.PATHWAYS:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
+        elif self == ProductType.PSI_CASE_INSIGHTS:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
+        elif self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
+        elif self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
+        elif self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
+        elif self == ProductType.TASKS:
+            path_filter = (
+                f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/tasks')"
+            )
+        elif self == ProductType.WORKFLOWS:
+            path_filter = (
                 f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows') "
                 f"AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/(clients|residents|milestones|tasks)')"
             )
-        if self == ProductType.VITALS:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/operations')"
-        if self == ProductType.LANTERN:
-            return f"REGEXP_CONTAINS({context_page_url_col_name}, r'/revocations')"
-        raise ValueError(f"Unknown context page filter for product type: {self}")
+        elif self == ProductType.VITALS:
+            path_filter = (
+                f"REGEXP_CONTAINS({context_page_url_col_name}, r'/operations')"
+            )
+        elif self == ProductType.LANTERN:
+            path_filter = (
+                f"REGEXP_CONTAINS({context_page_url_col_name}, r'/revocations')"
+            )
+        else:
+            raise ValueError(f"Unknown context page filter for product type: {self}")
+
+        # Combine url_base check with path filter
+        return f"({url_base_check}) AND ({path_filter})"
 
     @property
     def segment_dataset_name(self) -> str:
@@ -163,6 +189,8 @@ class ProductType(Enum):
         """Returns the routes that should be used to identify users who are provisioned
         to access this product type via auth tables. All routes should be in snake_case."""
 
+        if self == ProductType.CASE_PLANNING_ASSISTANT:
+            return ["cpa"]
         if self == ProductType.CLIENT_PAGE:
             return [
                 "workflows",
@@ -231,6 +259,8 @@ class ProductType(Enum):
     @property
     def primary_role_types(self) -> list[str]:
         """Returns the primary role types for this product type in the product roster."""
+        if self == ProductType.CASE_PLANNING_ASSISTANT:
+            return ["cpa_staff"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
             return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:

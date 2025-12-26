@@ -3150,6 +3150,7 @@ DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_AFTER_TOOL_ACTION = EventDistinctUnitCoun
     ),
 )
 
+# TODO(#55098): Refactor all product-specific adoption metrics to use global usage metrics
 DISTINCT_PROVISIONED_INSIGHTS_USERS = SpanDistinctUnitCountMetric(
     name="distinct_provisioned_insights_users",
     display_name="Distinct Provisioned Supervisor Homepage Users",
@@ -3453,6 +3454,47 @@ DISTINCT_ACTIVE_PRIMARY_TASKS_USERS = EventDistinctUnitCountMetric(
     event_selector=EventSelector(
         event_type=EventType.TASKS_ACTIVE_USAGE_EVENT,
         event_conditions_dict={},
+    ),
+)
+
+# CPA Usage
+DISTINCT_PROVISIONED_CASE_PLANNING_ASSISTANT_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_case_planning_assistant_users",
+    display_name="Distinct Provisioned Case Planning Assistant Users",
+    description="Number of distinct Case Planning Assistant users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_provisioned_case_planning_assistant": ["true"]},
+    ),
+)
+
+DISTINCT_REGISTERED_CASE_PLANNING_ASSISTANT_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_registered_case_planning_assistant_users",
+    display_name="Distinct Registered Case Planning Assistant Users",
+    description="Number of distinct Case Planning Assistant users who have signed up/logged into the Case Planning Assistant tool at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.GLOBAL_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered_case_planning_assistant": ["true"]},
+    ),
+)
+
+DISTINCT_LOGGED_IN_CASE_PLANNING_ASSISTANT_USERS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_case_planning_assistant_users",
+    display_name="Distinct Logged In Case Planning Assistant Users",
+    description="Number of distinct Case Planning Assistant users who logged into the Case Planning Assistant tool",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_LOGIN,
+        event_conditions_dict={"has_case_planning_assistant_access": ["true"]},
+    ),
+)
+
+DISTINCT_ACTIVE_CASE_PLANNING_ASSISTANT_USERS = EventDistinctUnitCountMetric(
+    name="distinct_active_case_planning_assistant_users",
+    display_name="Distinct Active Case Planning Assistant Users",
+    description="Number of distinct Case Planning Assistant users having at least one active usage event",
+    event_selector=EventSelector(
+        event_type=EventType.GLOBAL_USER_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"product_type": ["CASE_PLANNING_ASSISTANT"]},
     ),
 )
 

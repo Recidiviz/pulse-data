@@ -24,13 +24,11 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.calculator.query.state.dataset_config import (
-    PULSE_DASHBOARD_SEGMENT_DATASET,
-)
 from recidiviz.segment.all_segment_pages import ALL_SEGMENT_PAGES_VIEW_BUILDER
 from recidiviz.segment.segment_event_big_query_view_builder import (
     SegmentEventBigQueryViewBuilder,
 )
+from recidiviz.segment.segment_event_utils import SEGMENT_DATASETS
 from recidiviz.segment.segment_product_event_big_query_view_builder import (
     SegmentProductEventBigQueryViewBuilder,
 )
@@ -67,6 +65,11 @@ def _get_unioned_segment_event_builders() -> list[UnionAllBigQueryViewBuilder]:
     """Generates a list of UnionAllBigQueryViewBuilder instances for each product type"""
 
     def _select_statement(vb: SegmentProductEventBigQueryViewBuilder) -> str:
+        session_id_select = (
+            "session_id,"
+            if vb.has_session_id
+            else "CAST(NULL AS STRING) AS session_id,"
+        )
         return f"""
 SELECT
     state_code,
@@ -75,7 +78,7 @@ SELECT
     event_ts,
     person_id,
     context_page_path,
-    session_id,
+    {session_id_select}
     {_get_shared_columns_statement(vb)}
 """
 
@@ -104,11 +107,23 @@ def _get_segment_event_view_builders() -> Sequence[SegmentEventBigQueryViewBuild
     segment event view. Excludes `pages` and `identifies` events as logins and pageviews
     do not count toward active usage events.
     """
-    segment_event_source_table_addresses = one(
-        c
-        for c in collect_externally_managed_source_table_collections(project_id=None)
-        if c.dataset_id == PULSE_DASHBOARD_SEGMENT_DATASET
-    ).source_tables_by_address
+    # Collect source tables from all segment event datasets
+    segment_event_source_table_addresses = {}
+    for dataset_id in SEGMENT_DATASETS:
+        try:
+            collection = one(
+                c
+                for c in collect_externally_managed_source_table_collections(
+                    project_id=None
+                )
+                if c.dataset_id == dataset_id
+            )
+            segment_event_source_table_addresses.update(
+                collection.source_tables_by_address
+            )
+        except ValueError:
+            # Dataset doesn't exist, skip
+            pass
 
     # TODO(#46239): Derive segment_table_jii_pseudonymized_id_columns/additional_attribute_cols
     #  directly from an event-specific config and remove this
@@ -139,12 +154,19 @@ def _get_segment_event_view_builders() -> Sequence[SegmentEventBigQueryViewBuild
                 }
             )
 
+            # If any product event builder has has_session_id=False, use False for the event view
+            has_session_id = all(b.has_session_id for b in product_event_builders)
+            # If any product event builder has has_user_id=False, use False for the event view
+            has_user_id = all(b.has_user_id for b in product_event_builders)
+
             event_view_builders.append(
                 SegmentEventBigQueryViewBuilder(
                     description=f"Segment event view for {event_source_table_address.table_id} events",
                     segment_events_source_table_address=event_source_table_address,
                     segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
                     additional_attribute_cols=additional_attribute_cols,
+                    has_session_id=has_session_id,
+                    has_user_id=has_user_id,
                 )
             )
     return event_view_builders

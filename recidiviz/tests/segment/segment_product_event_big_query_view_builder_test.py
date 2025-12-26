@@ -22,6 +22,7 @@ from recidiviz.segment.segment_event_config import (
     SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS,
     get_product_types_for_event,
 )
+from recidiviz.segment.segment_event_utils import SEGMENT_DATASETS
 from recidiviz.segment.segment_product_event_big_query_view_collector import (
     SegmentProductEventBigQueryViewCollector,
 )
@@ -47,16 +48,14 @@ class SegmentProductEventBigQueryViewBuilderTest(unittest.TestCase):
                 )
 
     def test_segment_event_source_dataset_is_segment_dataset(self) -> None:
-        """Test that the segment_event_source_table references a *segment_metrics dataset."""
+        """Test that the segment_event_source_table references a valid segment dataset."""
         for (
             builder
         ) in SegmentProductEventBigQueryViewCollector().collect_view_builders():
-            if not builder.segment_table_sql_source.dataset_id.endswith(
-                "_segment_metrics"
-            ):
+            if builder.segment_table_sql_source.dataset_id not in SEGMENT_DATASETS:
                 raise ValueError(
                     f"Invalid segment_event_source_table `{builder.segment_table_sql_source.to_str()}`, "
-                    f"expected *_segment_metrics dataset, found `{builder.segment_table_sql_source.dataset_id}`.",
+                    f"expected one of {SEGMENT_DATASETS}, found `{builder.segment_table_sql_source.dataset_id}`.",
                 )
 
     # TODO(#46240): Delete this test once product X event views are directly derived

@@ -177,6 +177,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "reentry",
     "segment_events",
     "segment_events__case_note_search",
+    "segment_events__case_planning_assistant",
     "segment_events__client_page",
     "segment_events__milestones",
     "segment_events__psi_case_insights",
