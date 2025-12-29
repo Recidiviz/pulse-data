@@ -27,9 +27,20 @@ variable "image_name_prefix" {
   default = "python311-postgres13-runs-on"
 }
 
+variable "timestamp" {
+  type = string
+  # Timestamp for the AMI names. If not provided, will be auto-generated.
+  default = ""
+}
+
 variable "helper_script_folder" {
   type    = string
   default = "/imagegeneration/helpers"
+}
+
+locals {
+  # Use provided timestamp or generate a new one
+  ami_timestamp = var.timestamp != "" ? var.timestamp : formatdate("YYYY-MM-DD-hhmmss", timestamp())
 }
 
 
@@ -62,7 +73,7 @@ data "amazon-ami" "runs-on-ami-arm64" {
 
 
 source "amazon-ebs" "build-x64" {
-  ami_name       = "x64-${var.image_name_prefix}-${formatdate("YYYY-MM-DD-hhmmss", timestamp())}"
+  ami_name       = "x64-${var.image_name_prefix}-${local.ami_timestamp}"
   instance_type  = "m7i.xlarge"
   region         = "${var.region}"
   source_ami     = "${data.amazon-ami.runs-on-ami-x64.id}"
@@ -74,7 +85,7 @@ source "amazon-ebs" "build-x64" {
 
 
 source "amazon-ebs" "build-arm64" {
-  ami_name       = "arm64-${var.image_name_prefix}-${formatdate("YYYY-MM-DD-hhmmss", timestamp())}"
+  ami_name       = "arm64-${var.image_name_prefix}-${local.ami_timestamp}"
   instance_type  = "m7g.xlarge"
   region         = "${var.region}"
   source_ami     = "${data.amazon-ami.runs-on-ami-arm64.id}"
