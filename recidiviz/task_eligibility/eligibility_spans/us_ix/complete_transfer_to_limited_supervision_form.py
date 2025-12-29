@@ -25,10 +25,6 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
-from recidiviz.task_eligibility.compliance_task_eligibility_spans.us_ix.needs_assessment import (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
-)
 from recidiviz.task_eligibility.criteria.general import (
     supervision_case_type_is_sex_offense,
     supervision_level_is_not_diversion,
@@ -50,6 +46,10 @@ from recidiviz.task_eligibility.criteria_condition import (
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

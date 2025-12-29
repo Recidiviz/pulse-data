@@ -16,11 +16,12 @@
 # =============================================================================
 """
 This script selects all spans of time in which a person is a candidate for active supervision
-for tasks in the state of Idaho. Specifically, it selects people with the following
+for sex offender tasks in the state of Idaho. Specifically, it selects people with the following
 conditions:
 - Active supervision: probation, parole, or dual
-- Case types: GENERAL, SEX_OFFENSE, XCRC, or MENTAL_HEALTH_COURT
-- Supervision levels: MINIMUM, MEDIUM, HIGH, or XCRC
+- Case types: SEX_OFFENSE only
+- Supervision levels: MINIMUM, MEDIUM, or HIGH
+- Gender: MALE only
 """
 
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
@@ -30,10 +31,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = us_ix_active_supervision_population_view_builder(
-    population_name="US_IX_ACTIVE_SUPERVISION_POPULATION_FOR_TASKS",
+    population_name="US_IX_ACTIVE_MALE_SEX_OFFENDER_SUPERVISION_POPULATION_FOR_TASKS",
     description=__doc__,
-    case_types=["GENERAL", "SEX_OFFENSE", "XCRC", "MENTAL_HEALTH_COURT"],
-    supervision_levels=["MINIMUM", "MEDIUM", "HIGH", "XCRC"],
+    case_types=["SEX_OFFENSE"],
+    supervision_levels=["MINIMUM", "MEDIUM", "HIGH"],
+    gender="MALE",
 )
 
 if __name__ == "__main__":

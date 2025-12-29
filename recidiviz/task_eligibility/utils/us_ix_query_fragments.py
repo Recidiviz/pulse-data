@@ -19,12 +19,25 @@ Helper SQL queries for Idaho
 """
 from typing import List, Optional
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.observations.span_observation_big_query_view_builder import fix_indent
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
+    StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
@@ -799,3 +812,276 @@ def eprd_within_x_months_query(
     FROM critical_date_has_passed_spans
     WHERE start_date IS DISTINCT FROM end_date
 """
+
+
+def us_ix_active_supervision_population_view_builder(
+    population_name: str,
+    description: str,
+    case_types: List[str],
+    supervision_levels: List[str],
+    gender: Optional[str] = None,
+) -> StateSpecificTaskCandidatePopulationBigQueryViewBuilder:
+    """
+    Creates a VIEW_BUILDER for Idaho active supervision population with specified filters.
+
+    This includes people on PROBATION, PAROLE, DUAL, or COMMUNITY_CONFINEMENT
+    with specified case types and supervision levels.
+
+    Args:
+        population_name: The name of the population (e.g., 'US_IX_ACTIVE_SUPERVISION_POPULATION_FOR_TASKS')
+        description: The description/docstring for the population
+        case_types: List of case types to include (e.g., ['GENERAL', 'SEX_OFFENSE'])
+        supervision_levels: List of supervision levels to include (e.g., ['MINIMUM', 'MEDIUM', 'HIGH'])
+        gender: Optional gender filter (e.g., 'MALE', 'FEMALE'). If None, no gender filter is applied.
+    """
+    case_types_str = "('" + "', '".join(case_types) + "')"
+    supervision_levels_str = "('" + "', '".join(supervision_levels) + "')"
+
+    # Build gender filter CTE and join if gender is specified
+    gender_cte = ""
+    gender_join = ""
+    if gender:
+        gender_cte = f"""
+gender_filter AS (
+    SELECT person_id
+    FROM `{{project_id}}.normalized_state.state_person`
+    WHERE state_code = 'US_IX'
+        AND gender = '{gender}'
+),
+"""
+        gender_join = """
+    INNER JOIN gender_filter gf
+        ON css.person_id = gf.person_id"""
+
+    query_template = f"""
+WITH {gender_cte}active_supervision_population AS (
+    -- Active supervision population on PROBATION, PAROLE, or DUAL supervision
+    SELECT
+        css.state_code,
+        css.person_id,
+        css.start_date,
+        css.end_date_exclusive AS end_date,
+        css.compartment_level_1,
+        css.compartment_level_2,
+        SAFE_CAST(NULL AS STRING) AS case_type,
+        SAFE_CAST(NULL AS STRING) AS supervision_level
+    FROM
+        `{{project_id}}.sessions.compartment_sub_sessions_materialized` css{gender_join}
+    WHERE css.compartment_level_1 IN ('SUPERVISION')
+        AND css.metric_source != "INFERRED"
+        AND css.compartment_level_2 IN ('PROBATION', 'PAROLE', 'DUAL', 'COMMUNITY_CONFINEMENT')
+        AND css.correctional_level NOT IN ('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')
+        AND css.start_date >= '1900-01-01'
+),
+
+supervision_case_and_level AS (
+    -- Filter by case types and supervision levels
+    SELECT
+        ctsl.state_code,
+        ctsl.person_id,
+        ctsl.start_date,
+        ctsl.end_date,
+        SAFE_CAST(NULL AS STRING) AS compartment_level_1,
+        SAFE_CAST(NULL AS STRING) AS compartment_level_2,
+        ctsl.case_type,
+        ctsl.supervision_level,
+    FROM `{{project_id}}.tasks_views.us_ix_case_type_supervision_level_spans_materialized` ctsl
+        WHERE ctsl.case_type IN {case_types_str}
+            AND ctsl.supervision_level IN {supervision_levels_str}
+),
+
+combine AS (
+    SELECT *
+    FROM active_supervision_population
+
+    UNION ALL
+
+    SELECT *
+    FROM supervision_case_and_level
+),
+
+{create_sub_sessions_with_attributes(table_name="combine")}
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4
+-- We only want spans where both criteria are met, so we filter to those with count > 1
+HAVING COUNT(*) > 1
+"""
+
+    return StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
+        population_name=population_name,
+        population_spans_query_template=query_template,
+        description=description,
+    )
+
+
+def us_ix_supervision_start_cte() -> str:
+    """
+    Returns a SQL CTE that selects the start of supervision sessions in Idaho.
+    This is used for initial assessment triggers.
+    """
+    return f"""
+supervision_start AS (
+    -- Get the first compartment_level_1_super_session for each supervision_super_session
+    SELECT
+        css.state_code,
+        css.person_id,
+        sss.end_date_exclusive AS end_datetime,
+        MIN(css.start_date) AS start_of_supervision_date,
+        MIN(css.start_date) AS start_datetime,
+    FROM `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` css
+    LEFT JOIN `{{project_id}}.sessions.supervision_super_sessions_materialized` sss
+        ON css.state_code = sss.state_code
+            AND css.person_id = sss.person_id
+            AND css.start_date BETWEEN sss.start_date AND {nonnull_end_date_clause('sss.end_date')}
+    WHERE css.state_code = 'US_IX'
+        AND css.start_reason IN ('COURT_SENTENCE', 'RELEASE_FROM_INCARCERATION')
+        AND css.compartment_level_1 = 'SUPERVISION'
+    GROUP BY 1,2,3
+)"""
+
+
+def us_ix_annual_assessment_criteria_view_builder(
+    criteria_name: str,
+    description: str,
+    assessment_type: str,
+    assessment_class: str,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """
+    Creates a VIEW_BUILDER for annual assessment criteria in Idaho.
+
+    This criteria shows spans of time for which supervision clients need an assessment
+    reassessment. This should happen every 365 days after the last assessment, and is
+    triggered 30 days before that date.
+
+    Args:
+        criteria_name: The name of the criteria (e.g., 'US_IX_IS_MISSING_ANNUAL_LSIR_ASSESSMENT')
+        description: The description/docstring for the criteria
+        assessment_type: The assessment type to filter (e.g., 'LSIR', 'STABLE')
+        assessment_class: The assessment class to filter (e.g., 'RISK', 'SEX_OFFENSE')
+    """
+    query_template = f"""
+WITH supervision_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    FROM `{{project_id}}.sessions.supervision_super_sessions_materialized` css
+    WHERE css.state_code = 'US_IX'
+),
+
+assessments AS (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        assessment_date,
+    FROM `{{project_id}}.sessions.assessment_score_sessions_materialized`
+    WHERE state_code = 'US_IX'
+        AND assessment_type = '{assessment_type}'
+        AND assessment_class = '{assessment_class}'
+),
+
+critical_date_spans AS (
+    SELECT
+        ss.state_code,
+        ss.person_id,
+        IFNULL(a.assessment_date, ss.start_date) AS start_datetime,
+        -- The end_datetime is either the next assessment date (if it exists) or the end of the
+        -- supervision session.
+        IF(
+            a.assessment_date IS NOT NULL,
+            -- next_assessment date OR end_date, whichever is earlier
+            LEAST(
+                IFNULL(
+                    LEAD(a.assessment_date) OVER (
+                        PARTITION BY ss.state_code, ss.person_id
+                        ORDER BY a.assessment_date
+                    ),
+                    '9999-12-31'
+                ),
+                {nonnull_end_date_clause('ss.end_date')}
+            ),
+            ss.end_date
+        ) AS end_datetime,
+        DATE_ADD(a.assessment_date, INTERVAL 365 DAY) AS critical_date,
+        a.assessment_date AS last_assessment_date,
+    FROM supervision_sessions ss
+    LEFT JOIN assessments a
+        ON ss.person_id = a.person_id
+            AND ss.state_code = a.state_code
+            AND a.assessment_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date')}
+),
+
+{critical_date_has_passed_spans_cte(
+    meets_criteria_leading_window_time=30,
+    attributes=['last_assessment_date'])}
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(
+        STRUCT(
+            critical_date AS assessment_due_date,
+            last_assessment_date AS last_assessment_date,
+            critical_date_has_passed AS is_missing_annual_assessment,
+            '1 EVERY 365 DAYS' AS contact_cadence,
+            '{assessment_type}' AS assessment_type,
+            '{assessment_class}' AS assessment_class
+    )) AS reason,
+    critical_date AS assessment_due_date,
+    last_assessment_date,
+    critical_date_has_passed AS is_missing_annual_assessment,
+    '1 EVERY 365 DAYS' AS contact_cadence,
+    '{assessment_type}' AS assessment_type,
+    '{assessment_class}' AS assessment_class,
+FROM critical_date_has_passed_spans
+"""
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        reasons_fields=[
+            ReasonsField(
+                name="assessment_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Due date of the assessment.",
+            ),
+            ReasonsField(
+                name="last_assessment_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the last assessment.",
+            ),
+            ReasonsField(
+                name="is_missing_annual_assessment",
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Whether the client is missing an annual assessment.",
+            ),
+            ReasonsField(
+                name="contact_cadence",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="The required cadence for assessments.",
+            ),
+            ReasonsField(
+                name="assessment_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="The type of assessment.",
+            ),
+            ReasonsField(
+                name="assessment_class",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="The class of assessment.",
+            ),
+        ],
+    )

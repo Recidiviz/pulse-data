@@ -37,8 +37,8 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     has_low_lsir_for_reassessment,
-    is_missing_annual_assessment,
-    meets_initial_assessment_trigger,
+    is_missing_annual_lsir_assessment,
+    meets_initial_lsir_assessment_trigger,
 )
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
@@ -71,30 +71,30 @@ does_not_have_low_lsir_and_sexual_offense = (
     )
 )
 
-# This criteria is met when the individual is missing an annual assessment. But it excludes
+# This criteria is met when the individual is missing an annual LSI-R assessment. But it excludes
 # two groups who do not need reassessments:
 # 1) SEX OFFENDERS with LOW LSIR scores, and
 # 2) GENERAL case type and MINIMUM supervision.
 # These groups don't need reassessments.
-meets_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+meets_lsir_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
-    criteria_name="US_IX_MEETS_REASSESSMENT_TRIGGER",
+    criteria_name="US_IX_MEETS_LSIR_REASSESSMENT_TRIGGER",
     sub_criteria_list=[
         does_not_have_low_lsir_and_sexual_offense,
-        is_missing_annual_assessment.VIEW_BUILDER,
+        is_missing_annual_lsir_assessment.VIEW_BUILDER,
         supervision_case_type_is_not_general_and_level_is_not_minimum.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=["case_type"],
 )
 
 # Final combine: assessment trigger criteria that combines both initial and reassessment triggers
-meets_reassessment_or_initial_assessment_triggers = (
+meets_lsir_reassessment_or_initial_assessment_triggers = (
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         logic_type=TaskCriteriaGroupLogicType.OR,
-        criteria_name="US_IX_MEETS_REASSESSMENT_OR_INITIAL_ASSESSMENT_TRIGGERS",
+        criteria_name="US_IX_MEETS_LSIR_REASSESSMENT_OR_INITIAL_ASSESSMENT_TRIGGERS",
         sub_criteria_list=[
-            meets_reassessment_trigger,
-            meets_initial_assessment_trigger.VIEW_BUILDER,
+            meets_lsir_reassessment_trigger,
+            meets_initial_lsir_assessment_trigger.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=[
             "assessment_due_date",
@@ -110,14 +110,14 @@ meets_reassessment_or_initial_assessment_triggers = (
 # TODO(#51098): Rethink our candidate population
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
-    task_name="needs_assessment",
+    task_name="needs_lsir_assessment",
     candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        meets_reassessment_or_initial_assessment_triggers,
+        meets_lsir_reassessment_or_initial_assessment_triggers,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="assessment_due_date",
-    due_date_criteria_builder=meets_reassessment_or_initial_assessment_triggers,
+    due_date_criteria_builder=meets_lsir_reassessment_or_initial_assessment_triggers,
     last_task_completed_date_field="last_assessment_date",
 )
 
