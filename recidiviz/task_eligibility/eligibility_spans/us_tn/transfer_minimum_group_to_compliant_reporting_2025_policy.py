@@ -40,10 +40,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     assessed_not_high_on_strong_r_domains,
     most_recent_fee_code_is_feep_in_last_90_days,
     no_arrests_in_past_6_months,
+    no_ineligible_cr_offense_2025_policy,
     no_supervision_sanction_within_3_months,
     not_in_day_reporting_center,
     not_on_community_supervision_for_life,
-    not_serving_ineligible_cr_offense_policy_b,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     EligibleCriteriaCondition,
@@ -87,11 +87,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
-        not_serving_ineligible_cr_offense_policy_b.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center.VIEW_BUILDER,
         no_supervision_sanction_within_3_months.VIEW_BUILDER,
         no_arrests_in_past_6_months.VIEW_BUILDER,
+        no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
         no_supervision_violation_report_within_6_months.VIEW_BUILDER,
         latest_drug_test_is_negative_or_missing.VIEW_BUILDER,
         assessed_not_high_on_strong_r_domains.VIEW_BUILDER,

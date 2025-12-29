@@ -38,10 +38,10 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     assessed_risk_low_compliant_on_strong_r2_after_intake_supervision_level,
     home_visit_since_intake_supervision_level,
+    no_ineligible_cr_offense_2025_policy,
     no_supervision_sanction_since_intake_supervision_level,
     not_in_day_reporting_center,
     not_on_community_supervision_for_life,
-    not_serving_ineligible_cr_offense_policy_b,
     three_face_to_face_contacts_within_60_days_of_intake_supervision_start,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -82,7 +82,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_violation_report_since_intake_supervision_level.VIEW_BUILDER,
         no_positive_drug_screens_since_intake_supervision_level.VIEW_BUILDER,
         three_face_to_face_contacts_within_60_days_of_intake_supervision_start.VIEW_BUILDER,
-        not_serving_ineligible_cr_offense_policy_b.VIEW_BUILDER,
+        no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center.VIEW_BUILDER,
         _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
