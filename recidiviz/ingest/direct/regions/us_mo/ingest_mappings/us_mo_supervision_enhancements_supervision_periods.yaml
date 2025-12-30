@@ -5,16 +5,15 @@ manifest_language: 1.0.0
 input_columns:
   DOC: STRING
   CYC: STRING
-  FIELD_ASSIGNMENT_SEQ_NUM: INTEGER
-  START_STATUS_SEQ_NUM: STRING
-  SUPV_PERIOD_BEG_DT: DATETIME
-  START_STATUS_CODE_LIST: STRING
-  SUPV_PERIOD_END_DT: DATETIME
-  END_STATUS_CODE_LIST: STRING
-  LOCATION_ACRONYM: STRING
+  session_id: INTEGER
+  start_date: DATE
+  end_date: DATE
+  LOC_ACRO: STRING
+  SUPV_OFFICER_ID: STRING
   CASE_TYPE_LIST: STRING
-  BDGNO: STRING
-  SUP_TYPE: STRING
+  SUP_LVL: STRING
+  START_STATUS_CODE_LIST: STRING
+  END_STATUS_CODE_LIST: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -29,19 +28,10 @@ output:
               $values:
                 - DOC
                 - CYC
-                - FIELD_ASSIGNMENT_SEQ_NUM
-                - START_STATUS_SEQ_NUM
-          start_date: SUPV_PERIOD_BEG_DT
-          termination_date:
-            $conditional:
-              - $if:
-                  $not_in:
-                    $value: SUPV_PERIOD_END_DT
-                    $options:
-                      - $literal("0")
-                      - $literal("99999999")
-                $then: SUPV_PERIOD_END_DT
-          supervision_site: LOCATION_ACRONYM
+                - session_id
+          start_date: start_date
+          termination_date: end_date
+          supervision_site: LOC_ACRO
           admission_reason:
             $enum_mapping:
               $raw_text: START_STATUS_CODE_LIST
@@ -51,12 +41,7 @@ output:
             $conditional:
               - $if:
                   $and:
-                    - $not_in:
-                        $value: SUPV_PERIOD_END_DT
-                        $options:
-                          - $literal("0")
-                          - $literal("99999999")
-                    - $not_null: SUPV_PERIOD_END_DT
+                    - $not_null: end_date
                     - $is_null: END_STATUS_CODE_LIST
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
               - $else:
@@ -65,7 +50,7 @@ output:
                     $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_termination_reason
           supervision_level:
             $enum_mapping:
-              $raw_text: SUP_TYPE
+              $raw_text: SUP_LVL
               $mappings:
                 StateSupervisionLevel.ABSCONSION:
                   - "ESC" # Absconder
@@ -110,11 +95,11 @@ output:
                   # The following codes are no longer used according to MO, but may appear in historical records
                   - "RTF" # Residential Treatment facility
                   - "VCT" # Residential Violator Center
-          supervising_officer_staff_external_id: BDGNO
+          supervising_officer_staff_external_id: SUPV_OFFICER_ID
           supervising_officer_staff_external_id_type:
             $conditional:
               - $if:
-                  $not_null: BDGNO
+                  $not_null: SUPV_OFFICER_ID
                 $then: $literal("US_MO_STAFF_BADGE_NUMBER")
           case_type_entries:
             - $foreach:
