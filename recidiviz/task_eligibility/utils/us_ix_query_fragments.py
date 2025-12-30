@@ -908,6 +908,7 @@ SELECT
     start_date,
     end_date,
 FROM sub_sessions_with_attributes
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 -- We only want spans where both criteria are met, so we filter to those with count > 1
 HAVING COUNT(*) > 1
