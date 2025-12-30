@@ -31,14 +31,9 @@ from recidiviz.task_eligibility.criteria.general import (
     is_male,
     not_serving_for_violent_offense,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    has_a_d1_or_d2_release_note,
-    in_icio,
-    not_denied_for_crc,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ix.crc_work_release_time_based_criteria import (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import not_denied_for_crc
+from recidiviz.task_eligibility.criteria.state_specific.us_ix.not_eligible_for_crc_like_bed_icio import (
+    IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE,
 )
 from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_release_request import (
     VIEW_BUILDER as TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_VIEW_BUILDER,
@@ -64,14 +59,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # Must be male (ICIO is a men's facility)
         is_male.VIEW_BUILDER,
         # Must be a resident of ICIO or expected to be released to D1/D2
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_IX_IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE",
-            sub_criteria_list=[
-                in_icio.VIEW_BUILDER,
-                has_a_d1_or_d2_release_note.VIEW_BUILDER,
-            ],
-        ),
+        IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE,
     ],
     # TODO(#54358): Find out which completion event should be used here
     completion_event_builder=granted_work_release.VIEW_BUILDER,

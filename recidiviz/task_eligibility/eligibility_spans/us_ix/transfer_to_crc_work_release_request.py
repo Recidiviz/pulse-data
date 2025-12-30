@@ -40,6 +40,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_sex_offender_alert,
     not_denied_for_crc,
     not_detainers_for_xcrc_and_crc,
+    not_eligible_for_crc_like_bed_icio,
     not_serving_a_rider_sentence,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -76,6 +77,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarceration_not_past_projected_parole_release_date.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
         not_denied_for_crc.VIEW_BUILDER,
+        not_eligible_for_crc_like_bed_icio.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(

@@ -32,14 +32,12 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
     continuous_enrollment_at_rehab_facility_for_90_days,
 )
-from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_like_bed_icio_request import (
-    TaskCriteriaGroupLogicType,
-)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
