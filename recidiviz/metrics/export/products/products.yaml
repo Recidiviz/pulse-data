@@ -233,6 +233,8 @@ products:
     exports:
       - MEETINGS
     states:
+      - state_code: US_ME
+        environment: production
       - state_code: US_NE
         environment: production
   - name: User Data Downloads
