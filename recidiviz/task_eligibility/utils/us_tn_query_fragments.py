@@ -704,7 +704,11 @@ def incident_based_caf_score_query_template(
                 -- Then prioritize incident class (A, B, C)
                 incidents.incident_class, 
                 incidents.injury_level DESC, 
-                incidents.assault_score DESC
+                incidents.assault_score DESC,
+                -- Then order by infraction type, just to make it more deterministic
+                incidents.infraction_type_raw_text,
+                -- Then order by incident ID, which is arbitrary but ensures determinism
+                incidents.incarceration_incident_id
         ) = 1
     )
     ,
@@ -780,13 +784,13 @@ def incident_based_caf_score_query_template(
             incident_periods.start_date,
             incident_periods.end_date,
             incident_periods.incident_time_period,
-            incidents.incarceration_incident_id,
-            incidents.incident_date,
-            incidents.infraction_type_raw_text,
-            incidents.incident_class
+            relevant_incidents.incarceration_incident_id,
+            relevant_incidents.event_date AS incident_date,
+            relevant_incidents.infraction_type_raw_text,
+            relevant_incidents.incident_class
         FROM incident_ids_with_time_period incident_periods
-        INNER JOIN incidents
-            ON incident_periods.incarceration_incident_id = incidents.incarceration_incident_id
+        INNER JOIN relevant_incidents
+            ON incident_periods.incarceration_incident_id = relevant_incidents.incarceration_incident_id
     )
     ,
     -- Aggregate incident details into an array of structs for each span
