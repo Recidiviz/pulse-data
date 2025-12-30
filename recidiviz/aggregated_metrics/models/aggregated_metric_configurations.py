@@ -2281,6 +2281,27 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
+DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION = [
+    SpanDistinctUnitCountMetric(
+        name=f"workflows_distinct_people_eligible_and_actionable_{b.task_type_name.lower()}",
+        display_name=f"Distinct Population: Eligible And Actionable, {b.task_title}",
+        description=f"Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type_is_fully_launched": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_almost_eligible_and_actionable",
     display_name="Distinct Population: Almost Eligible And Actionable",
@@ -2330,6 +2351,27 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION = [
+    SpanDistinctUnitCountMetric(
+        name=f"workflows_distinct_people_almost_eligible_and_actionable_{b.task_type_name.lower()}",
+        display_name=f"Distinct Population: Almost Eligible And Actionable, {b.task_title}",
+        description=f"Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type_is_fully_launched": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
 
 WORKFLOWS_PRIMARY_USER_ACTIVE_USAGE_EVENTS = EventCountMetric(

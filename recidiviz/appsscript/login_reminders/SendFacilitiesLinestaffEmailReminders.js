@@ -16,7 +16,7 @@
 // =============================================================================
 /* Apps Script for sending email reminders to facilities line staff. */
 
-const FACILITIES_LINESTAFF_INCLUDED_STATES = ["US_AZ", "US_TN"];
+const FACILITIES_LINESTAFF_INCLUDED_STATES = ["US_AZ", "US_IX", "US_TN"];
 
 // =============================================================================
 
@@ -35,6 +35,8 @@ const FACILITIES_LINESTAFF_QUERY = `SELECT
   total_opportunities,
   eligible_opportunities,
   almost_eligible_opportunities,
+  eligible_clients_by_opportunity,
+  almost_eligible_clients_by_opportunity,
 
 FROM
   \`recidiviz-123.user_metrics.workflows_facilities_user_available_actions_materialized\`

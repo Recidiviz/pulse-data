@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Aggregated metrics collection definition for aggregated metrics, separated by 
-supervision linestaff, facilities linestaff, and supervision supervisors. These metrics 
-are used for user reports and information about users' eligible clients for email 
+"""Aggregated metrics collection definition for aggregated metrics, separated by
+supervision linestaff, facilities linestaff, and supervision supervisors. These metrics
+are used for user reports and information about users' eligible clients for email
 reminders"""
 
 import datetime
@@ -36,8 +36,10 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION,
     DISTINCT_OUTLIER_OFFICERS,
     DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE,
+    DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION,
     DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION,
     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE,
+    DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION,
     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION,
     DISTINCT_PROVISIONED_INSIGHTS_USERS,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
@@ -56,7 +58,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def _build_workflows_supervision_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+def _build_workflows_supervision_user_metrics_aggregated_metrics_collection_config() -> (
+    AggregatedMetricsCollection
+):
 
     current_date = current_date_us_eastern()
 
@@ -174,7 +178,9 @@ def _build_insights_user_metrics_aggregated_metrics_collection_config() -> (
     )
 
 
-def _build_workflows_facilities_user_metrics_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
+def _build_workflows_facilities_user_metrics_aggregated_metrics_collection_config() -> (
+    AggregatedMetricsCollection
+):
 
     current_date = current_date_us_eastern()
 
@@ -191,6 +197,8 @@ def _build_workflows_facilities_user_metrics_aggregated_metrics_collection_confi
                 metrics=[
                     DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE,
                     DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE,
+                    *DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION,
+                    *DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION,
                 ],
             ),
         },

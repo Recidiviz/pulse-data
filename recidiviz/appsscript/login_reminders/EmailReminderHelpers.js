@@ -40,7 +40,15 @@ const VALID_USER_TYPES = [
 
 // Global EMAIL_SETTINGS that applies to all types of email reminders
 const EMAIL_SETTINGS = {
-  EXCLUDED_DISTRICTS: {
+  EXCLUDED_LOCATIONS: {
+    US_IX: [
+      "IDAHO FALLS COMMUNITY REENTRY CENTER",
+      "POCATELLO WOMEN'S CORRECTIONAL CENTER", // one unit serves as a CRC
+      "TREASURE VALLEY COMMUNITY REENTRY CENTER",
+      "EAST BOISE COMMUNITY REENTRY CENTER",
+      "TWIN FALLS COMMUNITY REENTRY CENTER",
+      "NAMPA COMMUNITY REENTRY CENTER",
+    ],
     US_TN: [
       // Consider normalizing the districts in the admin panel and updating this
       "10",
@@ -70,15 +78,24 @@ const EMAIL_SETTINGS = {
  * {
  *  [event: string]: string
  * }
+ *
+ * See recidiviz/calculator/query/state/views/reference/workflows_opportunity_configs.py
+ * for the list of task completion events
  */
 function stateSpecificOpportunities(stateCode) {
   switch (stateCode) {
+    case "US_AZ":
+      // We are now calling stateSpecificOpportunities for facilities opportunities,
+      // but we are only using the results for Idaho to filter by opportunity type,
+      // so we don't need to fill other facilities opportunities in this method.
+      return {};
     case "US_IA":
       return {
         EARLY_DISCHARGE: "Early Discharge",
       };
     case "US_IX":
       return {
+        CUSTODY_LEVEL_DOWNGRADE: "Custody Level Downgrade",
         EARLY_DISCHARGE: "Earned Discharge",
         TRANSFER_TO_LIMITED_SUPERVISION: "Limited Supervision Unit",
         FULL_TERM_DISCHARGE: "Release from Supervision",
@@ -121,6 +138,11 @@ function stateSpecificOpportunities(stateCode) {
         SUPERVISION_LEVEL_DOWNGRADE: "Supervision Level Downgrade",
         TRANSFER_TO_NO_CONTACT_PAROLE: "Suspension of Direct Supervision",
       };
+    case "US_TX":
+      return {
+        TRANSFER_TO_LIMITED_SUPERVISION: "Annual Report Status",
+        TRANSFER_TO_UNSUPERVISED_PAROLE: "Early Release from Supervision",
+      };
     case "US_UT":
       return {
         EARLY_DISCHARGE: "Early Termination",
@@ -139,7 +161,7 @@ function stateSpecificOpportunities(stateCode) {
  * {
  *  opportunityName: string;
  *  numClients: number;
- * }
+ * }[]
  */
 function parseClientsByOpportunity(stateCode, structArray) {
   const opportunityTypes = stateSpecificOpportunities(stateCode);
@@ -275,6 +297,27 @@ function generateOpportunitySpecificText(
 }
 
 /**
+ * Return the total number of eligible or almost eligible opportunities for Custody Level
+ * Downgrade provided the results from parseClientsByOpportunity.
+ * @param {object[]} eligibleClientsByOpportunity
+ * @param {object[]} almostEligibleClientsByOpportunity
+ */
+function getUsIxTotalOpportunities(
+  eligibleClientsByOpportunity,
+  almostEligibleClientsByOpportunity
+) {
+  const numEligible =
+    eligibleClientsByOpportunity.find(
+      (o) => o.opportunityName === "Custody Level Downgrade"
+    )?.numClients ?? 0;
+  const numAlmostEligible =
+    almostEligibleClientsByOpportunity.find(
+      (o) => o.opportunityName === "Custody Level Downgrade"
+    )?.numClients ?? 0;
+  return numEligible + numAlmostEligible;
+}
+
+/**
  * @param {string} stateCode the state of the person being emailed
  * @param {number} totalOpportunities the sum of almost eligible and eligible opportunities
  * @param {number} almostEligibleOpportunities the number of almost eligible opportunities
@@ -308,8 +351,15 @@ function stateSpecificText(
   const clients = pluralize(totalOpportunities, [], "client");
   const opps = pluralize(totalOpportunities, [], "opportunity");
   const officers = pluralize(totalOutliers, [], "officer");
-  const inmates = pluralize(almostEligibleOpportunities, [], "inmate"); // Special case for Arizona
   const residents = pluralize(totalOpportunities, [], "resident");
+
+  // Special case counts for certain states' facilities emails
+  const usIxTotalOpportunities = getUsIxTotalOpportunities(
+    eligibleClientsByOpportunity,
+    almostEligibleClientsByOpportunity
+  );
+  const usIxInmates = pluralize(usIxTotalOpportunities, [], "inmate");
+  const usAzInmates = pluralize(almostEligibleOpportunities, [], "inmate");
 
   // Note: Many states are in multiple timezones. We use the zone with more people.
   switch (stateCode) {
@@ -323,7 +373,9 @@ function stateSpecificText(
     case "US_IX":
       return {
         supervisionToolName: "the P&P Assistant Tool",
+        facilitiesToolName: "the Recidiviz tool",
         timeZone: "America/Boise",
+        facilitiesOpportunitiesText: `There ${usIxInmates.is} ${usIxTotalOpportunities} ${usIxInmates.pluralNoun} on your caseload who ${usIxInmates.is} eligible or almost eligible for a reclassification and downgrade! Log into Recidiviz now to see how you can prepare for their reclassification!`,
         supervisionOpportunitiesText: `There ${opps.is} ${totalOpportunities} potential ${opps.pluralNoun} for clients under your supervision to receive a supervision level change, early discharge, or other milestone.`,
         supervisionOpportunitySpecificText,
         supervisionSupervisorText: `There ${opps.is} ${totalOpportunities} potential ${opps.pluralNoun} for clients under your officers' supervision to receive a supervision level change, early discharge, or other milestone.`,
@@ -376,11 +428,17 @@ function stateSpecificText(
         supervisionSupervisorText: `There ${opps.is} ${totalOpportunities} eligible ${opps.pluralNoun} for clients under your officers' supervision, such as compliant reporting or supervision level downgrade.`,
         supervisionOpportunitySpecificText,
       };
+    case "US_TX":
+      return {
+        supervisionToolName: "Recidiviz",
+        timeZone: "America/Chicago",
+        supervisionOpportunitySpecificText,
+      };
     case "US_AZ":
       return {
         facilitiesToolName: "the Recidiviz tool",
         timeZone: "America/Phoenix",
-        facilitiesOpportunitiesText: `There ${inmates.is} ${almostEligibleOpportunities} ${inmates.pluralNoun} on your caseload who ${inmates.is} almost eligible for transition release. Log into Recidiviz now to see what actions you can take to prepare for their release!`,
+        facilitiesOpportunitiesText: `There ${usAzInmates.is} ${almostEligibleOpportunities} ${usAzInmates.pluralNoun} on your caseload who ${usAzInmates.is} almost eligible for transition release. Log into Recidiviz now to see what actions you can take to prepare for their release!`,
       };
     case "US_UT":
       return {
@@ -605,15 +663,17 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
     stateCode,
     totalOpportunities,
     almostEligibleOpportunities,
+    eligibleClientsByOpportunity,
+    almostEligibleClientsByOpportunity,
     urgentClientsByOpportunity,
     lastLogin,
   } = info;
   const loggedIn = loggedInThisMonth(lastLogin);
 
-  // If someone logged in within the past 2 days, we should not email them
+  // If someone logged in within the past week, we should not email them
   // as recent tool actions may not be reflected in the aggregated metrics
   const dateCutoff = new Date();
-  dateCutoff.setDate(dateCutoff.getDate() - 2);
+  dateCutoff.setDate(dateCutoff.getDate() - 7);
   if (lastLogin > dateCutoff) {
     return false;
   }
@@ -639,12 +699,27 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
     return false;
   }
 
+  // For Idaho facilities, case managers cannot see CRC opportunities even though
+  // their assigned residents may still be eligible for them.
+  // We only want to email case managers who have residents eligible for the opportunity
+  // they can see, Custody Level Downgrade.
+  if (
+    stateCode === "US_IX" &&
+    userType === FACILITIES_LINESTAFF &&
+    getUsIxTotalOpportunities(
+      eligibleClientsByOpportunity,
+      almostEligibleClientsByOpportunity
+    ) === 0
+  ) {
+    return false;
+  }
+
   // If the staff's district is known and excluded, don't email them
-  const { EXCLUDED_DISTRICTS } = settings;
+  const { EXCLUDED_LOCATIONS } = settings;
   if (
     district &&
-    EXCLUDED_DISTRICTS[stateCode] &&
-    EXCLUDED_DISTRICTS[stateCode].includes(district)
+    EXCLUDED_LOCATIONS[stateCode] &&
+    EXCLUDED_LOCATIONS[stateCode].includes(district)
   ) {
     return false;
   }
@@ -671,7 +746,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
  *                       last login time, # outliers, # opportunities]
  * @param {object} settings settings describing the email to be sent:
  *                          contains RECIDIVIZ_LINK, RECIDIVIZ_LINK_TEXT, FEEDBACK_EMAIL,
- *                          EMAIL_FROM_ALIAS, EXCLUDED_DISTRICTS
+ *                          EMAIL_FROM_ALIAS, EXCLUDED_LOCATIONS
  *                          and has IS_TESTING set to true if this is a test environment
  * @param {string[]} stateCodes the list of state codes we'll attempt to email
  */
@@ -724,6 +799,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
   // Convert the query results to allow for lookup by email address once we've
   // gotten login info from auth0
   const isSupervisionLinestaff = userType === SUPERVISION_LINESTAFF;
+  const isFacilitiesLinestaff = userType === FACILITIES_LINESTAFF;
   const isSupervisors = userType === SUPERVISORS;
   const dataByEmail = Object.fromEntries(
     data.map((row) => [
@@ -737,12 +813,14 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
         eligibleOpportunities: parseInt(row[6]),
         almostEligibleOpportunities: parseInt(row[7]),
         outliers: isSupervisors ? parseInt(row[8]) : 0,
-        eligibleClientsByOpportunity: isSupervisionLinestaff
-          ? parseClientsByOpportunity(row[0], row[8])
-          : [],
-        almostEligibleClientsByOpportunity: isSupervisionLinestaff
-          ? parseClientsByOpportunity(row[0], row[9])
-          : [],
+        eligibleClientsByOpportunity:
+          isSupervisionLinestaff || isFacilitiesLinestaff
+            ? parseClientsByOpportunity(row[0], row[8])
+            : [],
+        almostEligibleClientsByOpportunity:
+          isSupervisionLinestaff || isFacilitiesLinestaff
+            ? parseClientsByOpportunity(row[0], row[9])
+            : [],
         urgentClientsByOpportunity: isSupervisionLinestaff
           ? parseClientsByOpportunity(row[0], row[10])
           : [],
@@ -843,7 +921,7 @@ function getUserLoginInfo(emails, authToken) {
   // UrlFetchApp has a 2082-character URL length limit, so we send requests to
   // auth0 in small batches.
   // Note that auth0 will by default paginate the request if this is more than 50.
-  const batchSize = 45;
+  const batchSize = 40;
   let result = {};
   for (let i = 0; i < emails.length / batchSize; i++) {
     const batch = emails.slice(i * batchSize, (i + 1) * batchSize);
