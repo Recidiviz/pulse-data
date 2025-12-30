@@ -768,7 +768,7 @@ def get_warrants_and_detainers_query(
     WHERE e.ORDER_TYPE IN {tuple(order_types)}
         AND e.OFFENSE_STATUS != 'C'
         -- Removing misdemeanor detainers if specified
-        {"AND e.OFFENSE_DESC NOT LIKE '%(M)%' AND e.OFFENSE_DESC NOT LIKE '%(MisA)%'" if remove_misdemeanor_detainers else ""}
+        {"AND e.OFFENSE_DESC NOT LIKE '%(M)%' AND e.OFFENSE_DESC NOT LIKE '%(MisA)%' AND e.OFFENSE_DESC NOT LIKE '%(Mis A)%'" if remove_misdemeanor_detainers else ""}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY peid.state_code, peid.person_id, e.OFFENSE_DATE ORDER BY {nonnull_end_date_exclusive_clause('iss.end_date')} ASC) = 1
     
 ),
