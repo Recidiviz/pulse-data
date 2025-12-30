@@ -229,9 +229,6 @@ from recidiviz.segment.segment_product_event_big_query_view_collector import (
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.general.on_minimum_after_intake import (
-    VIEW_BUILDER as ON_MINIMUM_AFTER_INTAKE,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
@@ -430,9 +427,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     INCARCERATION_STAFF_CASELOAD_COUNT_SPANS_VIEW_BUILDER.address: (
         "Will be used by roster sync for incarceration staff (Mayuka Sarukkai 02/25/2025)"
-    ),
-    ON_MINIMUM_AFTER_INTAKE.address: (
-        "Will be used after TN launches full new policy B. See #38506 (Damini Sharma 03/03/2025)"
     ),
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER.address: (
         "Referenced by the automated email login reminder process (Justine Kunz 03/31/2025)"

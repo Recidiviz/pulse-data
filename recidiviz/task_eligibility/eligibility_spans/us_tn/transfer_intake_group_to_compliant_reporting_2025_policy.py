@@ -16,8 +16,8 @@
 # =============================================================================
 """Task eligibility spans view that shows the spans of time when someone in TN is
 eligible for Compliant Reporting under the policy implemented in 2025, for those who
-test Low-Compliant (on Vantage 2.0) and are eligible for Compliant Reporting following
-intake.
+test "Low-Compliant" (on the STRONG-R 2.0) and are eligible for Compliant Reporting
+following intake.
 """
 
 # TODO(#40868): Ideally, combine this logic into the eligibility spans for the pre-2025
@@ -57,18 +57,14 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# The new compliant reporting policy has 2 "pathways" to get the opportunity: Group A are people who are on
-# Intake and test Low-Compliant on Vantage 2.0 and meet criteria set A;
-# Group B are people who have been on LOW (new supervision level, mapped to MINIMUM internally)
-# for 6+ months and meeting criteria set B. There is some criteria set
-# that is applied to both groups. This TES file is for Group A, and TRANSFER_MINIMUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
-# is for Group B. Both are combined in one opportunity record query.
-
-# TODO(#38506): Revisit "Minimum after Intake group" (i.e. "in between Groups A and B") after launch of full policy
-# This criteria exists as a safeguard for TN's new Compliant Reporting policy. After the new standards are rolled
-# out, people should not actually be on Low ever - they should either be moved to Compliant Reporting from Intake
-# or moved to Low-Medium. However, there's a chance that with implementation errors/lags, there will be a group of people
-# who were moved from Unassigned to Low (new) or Minimum (current), qualify for Compliant Reporting, but don't receive it
+# The new Compliant Reporting policy has 2 "pathways" to get the opportunity:
+#   - Intake pathway: for people who test Low-Compliant on the STRONG-R 2.0 during
+#     intake and meet the set of intake-specific criteria.
+#   - "Minimum" pathway: for people who have been on "Low" supervision (mapped to
+#     'MINIMUM' internally) for 6+ months and meet the set of criteria for this pathway.
+# There is some criteria set that is applied to both groups. This TES file is for the
+# intake pathway, and TRANSFER_MINIMUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY is for
+# the minimum pathway. Both are combined in one opportunity record query.
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,

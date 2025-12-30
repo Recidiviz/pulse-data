@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Task eligibility spans view that shows the spans of time when someone in TN is
-eligible for Compliant Reporting under the policy implemented in 2025, for the Minimum (Low) group.
+eligible for Compliant Reporting under the policy implemented in 2025, for those who are
+on the "Low" supervision level (which we map to 'MINIMUM').
 """
 
 # TODO(#40868): Ideally, combine this logic into the eligibility spans for the pre-2025
@@ -61,12 +62,14 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# The new compliant reporting policy has 2 "pathways" to get the opportunity: Group A are people who are on
-# Intake for 60 days and test Low-Compliant on Vantage 2.0 and meet criteria set A;
-# Group B are people who have been on LOW (new supervision level, mapped to MINIMUM internally)
-# for 6+ months and meeting criteria set B. There is some criteria set
-# that is applied to both groups. This TES file is for Group B, and TRANSFER_INTAKE_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY
-# is for Group A. Both are combined in one opportunity record query.
+# The new Compliant Reporting policy has 2 "pathways" to get the opportunity:
+#   - Intake pathway: for people who test Low-Compliant on the STRONG-R 2.0 during
+#     intake and meet the set of intake-specific criteria.
+#   - "Minimum" pathway: for people who have been on "Low" supervision (mapped to
+#     'MINIMUM' internally) for 6+ months and meet the set of criteria for this pathway.
+# There is some criteria set that is applied to both groups. This TES file is for the
+# minimum pathway, and TRANSFER_INTAKE_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY is for
+# the intake pathway. Both are combined in one opportunity record query.
 
 _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION = (
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
