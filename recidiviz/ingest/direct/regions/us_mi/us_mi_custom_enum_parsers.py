@@ -39,7 +39,9 @@ from recidiviz.common.constants.state.state_staff_role_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
@@ -553,9 +555,10 @@ def map_incident_type(
     return None
 
 
-def map_supervision_type_based_on_COMS(
+def map_supervision_type_based_on_COMS_level_modifier(
     raw_text: str,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Map supervision type based on the supervision modifier from COMS"""
 
     if re.search(r"ABSCONDED|ESCAPED", raw_text.upper()):
         return StateSupervisionPeriodSupervisionType.ABSCONSION
@@ -565,6 +568,104 @@ def map_supervision_type_based_on_COMS(
         raw_text.upper(),
     ):
         return StateSupervisionPeriodSupervisionType.WARRANT_STATUS
+
+    return None
+
+
+def determine_supervision_type(raw_text: str) -> Optional[tuple]:
+
+    if raw_text:
+        parole_flag = re.search(r"PAROLE", raw_text.upper())
+        probation_flag = re.search(r"PROBATION|DELAYED SENTENCE", raw_text.upper())
+
+        return parole_flag, probation_flag
+
+    return None
+
+
+def map_supervision_type_based_on_COMS_status(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+    """Map supervision type based on the supervision status from COMS"""
+
+    if raw_text:
+        parsed_flags = determine_supervision_type(raw_text)
+
+        if parsed_flags:
+            parole_flag, probation_flag = parsed_flags
+
+            if parole_flag and probation_flag:
+                return StateSupervisionPeriodSupervisionType.DUAL
+
+            if parole_flag:
+                return StateSupervisionPeriodSupervisionType.PAROLE
+
+            if probation_flag:
+                return StateSupervisionPeriodSupervisionType.PROBATION
+
+    return None
+
+
+def map_admission_reason_based_on_COMS_status_start(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodAdmissionReason]:
+    """Map admission reason based on the supervision status start reason from COMS"""
+
+    if raw_text:
+        parsed_flags = determine_supervision_type(raw_text)
+
+        if parsed_flags:
+            parole_flag, probation_flag = parsed_flags
+
+            if parole_flag and probation_flag:
+                return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
+
+            if parole_flag:
+                return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
+
+            if probation_flag:
+                return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+
+    return None
+
+
+def map_termination_reason_based_on_COMS_status_end(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodTerminationReason]:
+    """Map termination reason based on the supervision status end reason from COMS"""
+
+    if raw_text:
+        if re.search(r"DEATH", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.DEATH
+
+        if re.search(r"DEPORTED", raw_text.upper()):
+            return (
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION
+            )
+
+        if re.search(r"REVOKED|RETURN TO PRISON", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.REVOCATION
+
+        if re.search(r"COMMUTED", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.COMMUTED
+
+        if re.search(r"DISMISS", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.VACATED
+
+        if re.search(r"DISCHARGE|CASE CLOSED BY SENDING STATE", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.DISCHARGE
+
+        if re.search(r"EXPIRATION", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.EXPIRATION
+
+        if re.search(r"LEGACY MIGRATION|MDOC CUSTODY CONFIRMED", raw_text.upper()):
+            return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+
+        if re.search(
+            r"CASE MANAGER CHANGED|CLIENT NUMBER|MEDICAL|OTHER|SENTENCE EXTENDED|SENTENCED FROM DELAY",
+            raw_text.upper(),
+        ):
+            return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
 
     return None
 

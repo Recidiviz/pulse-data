@@ -30,6 +30,9 @@ input_columns:
   most_recent_supervision_level_id: STRING
   modifier: STRING
   specialties: STRING
+  statuses: STRING
+  status_start_reasons: STRING
+  status_end_reasons: STRING
 unused_columns:
   - next_order_type_id_list
   - first_name
@@ -70,7 +73,7 @@ output:
                           - $literal("##MODIFIER-")
                           - modifier
                         $separator: ""
-                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_COMS
+                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_COMS_level_modifier
               # Else if this period has a supervision level from OMNI that indicates absconsion or warrant status, map types accordingly
               - $else_if:
                   $in:
@@ -132,7 +135,19 @@ output:
                     $mappings:
                       StateSupervisionPeriodSupervisionType.INVESTIGATION:
                         - "INVESTIGATION-movement_reason_id-2"
-              # If not one of those three special cases, look at legal order first to determine type
+              # Else, if not one of the special cases, parse supervision type based on supervision status from COMS
+              - $else_if:
+                  $not_null: statuses
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION STATUS-")
+                          - statuses
+                        $separator: ""
+                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_COMS_status
+              # If not one of those three special cases, look at legal order from OMNI to determine type
               # (Most of the remaining supervision periods get categorized here)
               - $else_if:
                   $not_null: order_type_id_list
@@ -486,8 +501,15 @@ output:
           supervision_site: dest_name
           admission_reason:
             $conditional:
-              # if the movement is intake and this is the first period of intake with no previous movement or with a previous different movement, then mark admission reason as investigation
+              # if there is a status start reason, map based on that
               - $if:
+                  $not_null: status_start_reasons
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_start_reasons
+                    $custom_parser: us_mi_custom_enum_parsers.map_admission_reason_based_on_COMS_status_start
+              # if the movement is intake and this is the first period of intake with no previous movement or with a previous different movement, then mark admission reason as investigation
+              - $else_if:
                   $and:
                     - $equal:
                         - movement_reason_id
@@ -583,11 +605,20 @@ output:
                         - "3" # Other Movement
           termination_reason:
             $conditional:
-              # if not the two cases above and the next record is associated with the same movement_id, then the next period must have been constructed because some other field changed
+              # if there is a status end reason, map based on that
               - $if:
-                  $equal:
-                    - offender_external_movement_id
-                    - next_offender_external_movement_id
+                  $not_null: status_end_reasons
+                $then:
+                  $enum_mapping:
+                    $raw_text: status_end_reasons
+                    $custom_parser: us_mi_custom_enum_parsers.map_termination_reason_based_on_COMS_status_end
+              # otherwise if not the two cases above and the next record is associated with the same movement_id, then the next period must have been constructed because some other field changed
+              - $else_if:
+                  $and:
+                    - $not_null: period_end
+                    - $equal:
+                        - offender_external_movement_id
+                        - next_offender_external_movement_id
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
               # if this is an absconder situation
               - $else_if:
