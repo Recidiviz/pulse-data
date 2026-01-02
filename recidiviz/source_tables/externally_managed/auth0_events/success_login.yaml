@@ -1,9 +1,7 @@
 address:
   dataset_id: auth0_events
   table_id: success_login
-description:
-  "TODO(#29155): Add a description as to what this is used for and why
-  it isn't managed in code"
+description: "TODO(#29155): Add a description as to what this is used for and why it isn't managed in code"
 schema:
   - name: context_library_name
     type: STRING
@@ -203,23 +201,8 @@ schema:
   - name: external_id
     type: STRING
     mode: NULLABLE
-  - name: feature_variants_us_tn_expiration_submit_to_tomis_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
   - name: allowed_states
     type: STRING
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_me_furlough_release_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_us_me_work_release_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp
-    type: BOOLEAN
     mode: NULLABLE
   - name: authenticationmethod
     type: STRING
@@ -248,23 +231,11 @@ schema:
   - name: session_index
     type: STRING
     mode: NULLABLE
-  - name: feature_variants_rh_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_rh_access_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_enable_snooze_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
   - name: pseudonymized_id
     type: STRING
     mode: NULLABLE
   - name: routes_insights
     type: BOOLEAN
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp_us_tn_annual_reclassification_active_date
-    type: TIMESTAMP
     mode: NULLABLE
   - name: routes_insights_supervision_supervisors_list
     type: BOOLEAN
@@ -277,9 +248,6 @@ schema:
     mode: NULLABLE
   - name: idp_tenant_domain
     type: STRING
-    mode: NULLABLE
-  - name: feature_variants_outliers_client_detail_active_date
-    type: TIMESTAMP
     mode: NULLABLE
 clustering_fields: null
 time_partitioning:

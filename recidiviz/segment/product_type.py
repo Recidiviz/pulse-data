@@ -187,7 +187,8 @@ class ProductType(Enum):
     @property
     def auth_routes(self) -> list[str]:
         """Returns the routes that should be used to identify users who are provisioned
-        to access this product type via auth tables. All routes should be in snake_case."""
+        to access this product type via auth tables. All routes should be in snake_case.
+        """
 
         if self == ProductType.CASE_PLANNING_ASSISTANT:
             return ["cpa"]
@@ -242,7 +243,8 @@ class ProductType(Enum):
     @property
     def auth_feature_variants(self) -> list[str]:
         """Returns the feature variants that should be used to identify users who are provisioned
-        to access this product type via auth0 tables. All feature variants should be in snake_case."""
+        to access this product type via auth0 tables. All feature variants should be in snake_case.
+        """
 
         if self == ProductType.CASE_NOTE_SEARCH:
             return ["case_note_search"]
@@ -368,7 +370,7 @@ class ProductType(Enum):
             conditions.append(
                 " OR ".join(
                     [
-                        f"{table_prefix_str}feature_variants_{fv}_active_date IS NOT NULL"
+                        f"{table_prefix_str}feature_variants_{fv} IS TRUE"
                         for fv in self.auth_feature_variants
                     ]
                 )

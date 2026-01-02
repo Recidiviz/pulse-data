@@ -162,14 +162,17 @@ schema:
   - name: routes_psi
     type: BOOLEAN
     mode: NULLABLE
-  - name: feature_variants_case_note_search_active_date
-    type: TIMESTAMP
+  - name: feature_variants_case_note_search
+    type: BOOLEAN
     mode: NULLABLE
-  - name: feature_variants_supervisor_homepage_active_date
-    type: TIMESTAMP
+  - name: feature_variants_supervisor_homepage
+    type: BOOLEAN
     mode: NULLABLE
-  - name: feature_variants_supervisor_homepage_workflows_active_date
-    type: TIMESTAMP
+  - name: feature_variants_supervisor_homepage_workflows
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: feature_variants_tasks_route_planner
+    type: BOOLEAN
     mode: NULLABLE
 clustering_fields: null
 time_partitioning:

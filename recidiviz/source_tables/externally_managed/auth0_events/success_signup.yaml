@@ -1,9 +1,7 @@
 address:
   dataset_id: auth0_events
   table_id: success_signup
-description:
-  "TODO(#29155): Add a description as to what this is used for and why
-  it isn't managed in code"
+description: "TODO(#29155): Add a description as to what this is used for and why it isn't managed in code"
 schema:
   - name: context_library_name
     type: STRING
@@ -226,18 +224,6 @@ schema:
     mode: NULLABLE
   - name: session_index
     type: STRING
-    mode: NULLABLE
-  - name: feature_variants_rh_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_responsive_revamp_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_rh_access_active_date
-    type: TIMESTAMP
-    mode: NULLABLE
-  - name: feature_variants_enable_snooze_active_date
-    type: TIMESTAMP
     mode: NULLABLE
   - name: pseudonymized_id
     type: STRING
