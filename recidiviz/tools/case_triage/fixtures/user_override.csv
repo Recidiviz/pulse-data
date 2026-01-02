@@ -1,3 +1,4 @@
+state_code,email_address,external_id,district,first_name,last_name,user_hash,created_datetime,updated_datetime,pseudonymized_id,roles,blocked_on
 US_ID,ayesha@recidiviz.org,,D4,Ayesha S.,,"Qeo/aoA+TDB3U5J3UpFfQlvNPhNMYvgKdhLksNqai28=",2023-03-22,2023-03-22,,{supervision_line_staff},
 US_TN,test@recidiviz.org,new,another_district,,,"WP/YPndlvZ49y006IOlzo40CSXH6LO6E9J5P84Goag4=",2023-03-22,2023-03-22,,{},2023-03-22T09:00:00-04:00
 US_CO,jane@testdomain.com,1234,District 7,,,"hHzvOw+i5Lf0/NKtZiqUWk9JQhl9HVXJnOqPtVPCnHQ=",2023-03-22,2023-03-22,,{}, 2023-03-22T09:00:00-04:00

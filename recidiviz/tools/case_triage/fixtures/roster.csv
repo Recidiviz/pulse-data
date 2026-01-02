@@ -1,3 +1,4 @@
+state_code,email_address,external_id,district,first_name,last_name,user_hash,created_datetime,updated_datetime,pseudonymized_id,roles
 US_ID,ayesha@recidiviz.org,XXXXXXXX,D4,Ayesha,Khawaja,"Qeo/aoA+TDB3U5J3UpFfQlvNPhNMYvgKdhLksNqai28=",2023-03-22,2023-03-22,pseudo-XXXXXXXX,{supervision_leadership}
 US_TN,test@recidiviz.org,Y28U1092,District_Office_12,Test,Sample,"WP/YPndlvZ49y006IOlzo40CSXH6LO6E9J5P84Goag4=",2023-03-22,2023-03-22,pseudo-Y28U1092,{supervision_line_staff}
 US_ND,noexternalid@recidiviz.org,,DISTRICT_OFFICE_1,John,Doe,"NKLv+Or7WTrNHLQ01wAELhuIXGALlgHFI31EpiDa1vs=",2023-03-22,2023-03-22,,{supervision_leadership}

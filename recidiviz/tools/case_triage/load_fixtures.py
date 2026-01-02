@@ -66,6 +66,7 @@ def reset_case_triage_fixtures(engine: Engine) -> None:
             "../../..",
             "recidiviz/tools/case_triage/fixtures",
         ),
+        csv_headers=True,
     )
 
 
