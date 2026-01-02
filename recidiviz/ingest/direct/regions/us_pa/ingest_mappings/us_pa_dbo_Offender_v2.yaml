@@ -61,34 +61,9 @@ output:
                 StateRace.OTHER: N
                 StateRace.WHITE: [W, w]
               $ignore:
-                # This is an ethnicity value - ignore when mapping to race.
+                # This is an ethnicity value that's rarely ever used anymore since PA changed this
+                # field in the raw data to be exclusively race - ignore when mapping to race.
                 - H
-                # These are relatively rare erroneous values - ignore them.
-                - EW
-                - F
-                - M
-                - Q
-                - QB
-                - QW
-                - S
-                - U
-                - WSW
-                - WW
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: OffRaceEthnicGroup
-              $mappings:
-                StateEthnicity.HISPANIC: H
-              $ignore:
-                # These are race values - ignore when mapping to ethnicity.
-                - A
-                - B
-                - I
-                - N
-                - W
-                - w
                 # These are relatively rare erroneous values - ignore them.
                 - EW
                 - F
