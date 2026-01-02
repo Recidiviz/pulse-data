@@ -37,6 +37,7 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_case_note_search_note_clicked": [ProductType.CASE_NOTE_SEARCH],
     "frontend_caseload_search": [
         ProductType.CLIENT_PAGE,
+        ProductType.ROUTE_PLANNER,
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
         ProductType.TASKS,
         ProductType.WORKFLOWS,
@@ -198,6 +199,19 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
         ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
         ProductType.WORKFLOWS,
     ],
+    "frontend_route_planner_client_surfaced": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_client_address_clicked": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_client_address_geocoded": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_client_address_geocoding_failure": [
+        ProductType.ROUTE_PLANNER
+    ],
+    "frontend_route_planner_map_opened_mobile": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_route_link_copied": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_route_link_opened": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_route_link_emailed": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_starting_address_changed": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_client_selected": [ProductType.ROUTE_PLANNER],
+    "frontend_route_planner_client_deselected": [ProductType.ROUTE_PLANNER],
     "frontend_sentencing_add_opportunity_to_recommendation_clicked": [
         ProductType.PSI_CASE_INSIGHTS
     ],
@@ -241,6 +255,9 @@ SEGMENT_EVENT_NAME_TO_RELEVANT_PRODUCTS = {
     "frontend_tasks_view_changed": [ProductType.TASKS],
     "frontend_us_ia_early_discharge_opportunity_actions": [
         ProductType.CLIENT_PAGE,
+        ProductType.WORKFLOWS,
+    ],
+    "frontend_workflows_homepage_card_clicked": [
         ProductType.WORKFLOWS,
     ],
 }

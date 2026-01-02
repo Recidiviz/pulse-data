@@ -181,6 +181,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "segment_events__client_page",
     "segment_events__milestones",
     "segment_events__psi_case_insights",
+    "segment_events__route_planner",
     "segment_events__supervisor_homepage_operations_module",
     "segment_events__supervisor_homepage_opportunities_module",
     "segment_events__supervisor_homepage_outcomes_module",

@@ -48,6 +48,7 @@ class ProductType(Enum):
     MILESTONES = "MILESTONES"
     PATHWAYS = "PATHWAYS"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
+    ROUTE_PLANNER = "ROUTE_PLANNER"
     SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE = "SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE"
     SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE = (
         "SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE"
@@ -89,6 +90,7 @@ class ProductType(Enum):
             ProductType.PSI_CASE_INSIGHTS,
             ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
             ProductType.TASKS,
+            ProductType.ROUTE_PLANNER,
             ProductType.WORKFLOWS,
             ProductType.VITALS,
         ]:
@@ -134,9 +136,12 @@ class ProductType(Enum):
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
+        elif self == ProductType.ROUTE_PLANNER:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/tasks/route-planner') "
         elif self == ProductType.TASKS:
             path_filter = (
                 f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/tasks')"
+                f"AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/tasks/route-planner')"
             )
         elif self == ProductType.WORKFLOWS:
             path_filter = (
@@ -222,6 +227,8 @@ class ProductType(Enum):
             return ["insights"]
         if self == ProductType.TASKS:
             return ["tasks"]
+        if self == ProductType.ROUTE_PLANNER:
+            return ["tasks"]
         if self == ProductType.WORKFLOWS:
             return ["workflows", "workflows_supervision", "workflows_facilities"]
         if self == ProductType.VITALS:
@@ -248,6 +255,8 @@ class ProductType(Enum):
 
         if self == ProductType.CASE_NOTE_SEARCH:
             return ["case_note_search"]
+        if self == ProductType.ROUTE_PLANNER:
+            return ["tasks_route_planner"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
             return ["supervisor_homepage_workflows"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
@@ -276,6 +285,10 @@ class ProductType(Enum):
                 "supervision_staff",
                 "facilities_line_staff",
                 "facilities_staff",
+            ]
+        if self == ProductType.ROUTE_PLANNER:
+            return [
+                RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value.lower(),
             ]
         if self == ProductType.TASKS:
             return [
