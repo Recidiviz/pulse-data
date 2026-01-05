@@ -35,12 +35,12 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import not_denied_
 from recidiviz.task_eligibility.criteria.state_specific.us_ix.not_eligible_for_crc_like_bed_icio import (
     IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE,
 )
-from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_release_request import (
-    VIEW_BUILDER as TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_release_request import (
+from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_release_request import (
+    COMMON_CRC_WORK_RELEASE_CRITERIA,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -54,8 +54,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        # All of CRC work-release criteria
-        *TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_VIEW_BUILDER.criteria_spans_view_builders,
+        # Common CRC work-release criteria
+        *COMMON_CRC_WORK_RELEASE_CRITERIA,
         # Must be male (ICIO is a men's facility)
         is_male.VIEW_BUILDER,
         # Must be a resident of ICIO or expected to be released to D1/D2/ISC

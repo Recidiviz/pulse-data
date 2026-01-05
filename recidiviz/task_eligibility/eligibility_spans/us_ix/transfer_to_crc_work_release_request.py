@@ -53,8 +53,29 @@ from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_resident
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    TaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+COMMON_CRC_WORK_RELEASE_CRITERIA: list[TaskCriteriaBigQueryViewBuilder] = [
+    custody_level_is_minimum.VIEW_BUILDER,
+    not_detainers_for_xcrc_and_crc.VIEW_BUILDER,
+    not_serving_for_sexual_offense.VIEW_BUILDER,
+    no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
+    # TODO(#24043) - remove this criteria and add one where we only filter out those already on wr
+    US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
+    crc_work_release_time_based_criteria.VIEW_BUILDER,
+    not_in_treatment_in_prison.VIEW_BUILDER,
+    no_sex_offender_alert.VIEW_BUILDER,
+    not_serving_for_violent_offense.VIEW_BUILDER,
+    incarceration_not_within_6_months_of_upcoming_eprd.VIEW_BUILDER,
+    incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
+    incarceration_not_past_projected_parole_release_date.VIEW_BUILDER,
+    not_serving_a_rider_sentence.VIEW_BUILDER,
+    not_denied_for_crc.VIEW_BUILDER,
+]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
@@ -62,21 +83,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        custody_level_is_minimum.VIEW_BUILDER,
-        not_detainers_for_xcrc_and_crc.VIEW_BUILDER,
-        not_serving_for_sexual_offense.VIEW_BUILDER,
-        no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
-        # TODO(#24043) - remove this criteria and add one where we only filter out those already on wr
-        US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
-        crc_work_release_time_based_criteria.VIEW_BUILDER,
-        not_in_treatment_in_prison.VIEW_BUILDER,
-        no_sex_offender_alert.VIEW_BUILDER,
-        not_serving_for_violent_offense.VIEW_BUILDER,
-        incarceration_not_within_6_months_of_upcoming_eprd.VIEW_BUILDER,
-        incarceration_not_within_6_months_of_full_term_completion_date.VIEW_BUILDER,
-        incarceration_not_past_projected_parole_release_date.VIEW_BUILDER,
-        not_serving_a_rider_sentence.VIEW_BUILDER,
-        not_denied_for_crc.VIEW_BUILDER,
+        *COMMON_CRC_WORK_RELEASE_CRITERIA,
         not_eligible_for_crc_like_bed_icio.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
