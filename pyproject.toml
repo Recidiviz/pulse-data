@@ -248,5 +248,13 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.black]
+extend-exclude = '''
+(
+  /\.venv/
+  | /nbautoexport-scripts/
+)
+'''
+
 [tool.uv]
 index-url = "https://pypi.org/simple"

@@ -62,10 +62,12 @@ if [ "$USE_UV" = true ]; then
   echo "Installing pre-commit hooks..."
   uv run pre-commit install --overwrite
 
-  # Note: The pylint/dill/apache-beam conflict that exists with pipenv may be
-  # resolved by uv's dependency resolver. If you encounter issues with pylint,
-  # you can install it manually with: uv pip install pylint
-  # TODO(#51475): Confirm pylint works with uv and remove this note
+  # Install pylint which is not currently managed by pyproject.toml
+  # There is a not easily-solved requirement conflict on `dill` between `apache-beam` and `pylint`
+  # More details can be found here: https://recidiviz.slack.com/archives/C028X32LRH7/p1701458677360479
+  # TODO(apache/beam#22893): This can be moved into pyproject.toml once Beam moves to cloudpickle or upgrades dill
+  echo "Installing pylint..."
+  uv pip install pylint --python .venv/bin/python
 # TODO(#51475): Remove this else branch after full uv migration
 else
   echo "Syncing dependencies with pipenv..."

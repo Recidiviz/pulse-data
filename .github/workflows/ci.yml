@@ -24,7 +24,7 @@ jobs:
       - name: Run airflow tests in parallel
         working-directory: ./recidiviz/airflow
         run: |
-          pipenv run pytest tests -n logical
+          uv run pytest tests -n logical
 
   airflow-mypy:
     name: Airflow Mypy
@@ -45,7 +45,7 @@ jobs:
         uses: ./.github/actions/airflow-python-setup
       - name: Airflow Mypy
         working-directory: ./recidiviz/airflow
-        run: pipenv run mypy . --cache-dir ${{ github.workspace }}/.cache/airflow-mypy
+        run: uv run mypy . --cache-dir ${{ github.workspace }}/.cache/airflow-mypy
 
   unit-tests:
     name: Pytest
@@ -62,7 +62,7 @@ jobs:
         uses: ./.github/actions/python-setup
       - name: Run unit tests in parallel
         run: |
-          pipenv run pytest recidiviz/tests \
+          uv run pytest recidiviz/tests \
             -n logical \
             -m 'not uses_bq_emulator'
 
@@ -81,10 +81,10 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Pull emulator Docker image
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
+        run: uv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
       - name: Run unittests
         run: |
-          pipenv run pytest recidiviz/tests \
+          uv run pytest recidiviz/tests \
             -m 'uses_bq_emulator and not view_graph_validation' \
             -n logical
         # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
@@ -94,7 +94,7 @@ jobs:
         timeout-minutes: 6
       - name: Remove the emulator docker containers
         if: ${{ always() }}
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
+        run: uv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
 
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
@@ -111,10 +111,10 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Pull emulator Docker image
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
+        run: uv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
       - name: Load view graph to emulator
         # This test suite only contains two tests (staging and production) so we run them in parallel
-        run: pipenv run pytest -s recidiviz/tests/big_query/view_graph_validation_test.py -n 2
+        run: uv run pytest -s recidiviz/tests/big_query/view_graph_validation_test.py -n 2
         # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
         # If the emulator encounters an incorrect / unknown error that is continuously retried,
         # we'd rather the process time out than incur additional billed minutes.
@@ -122,10 +122,10 @@ jobs:
         timeout-minutes: 12
       - name: Remove the emulator docker container
         if: ${{ always() }}
-        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
+        run: uv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
 
-  pipenv-validation:
-    name: Pipenv Validation
+  uv-validation:
+    name: UV Validation
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -137,12 +137,12 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Python Setup
         uses: ./.github/actions/python-setup
-      - name: Check pipenv is locked
-        run: pipenv run python -m recidiviz.tools.is_pipenv_locked
-      - name: Check pipenv is synced
-        run: pipenv run recidiviz/tools/diff_pipenv.sh
+      - name: Check uv is locked
+        run: uv lock --check
+      - name: Check uv is synced
+        run: ./recidiviz/tools/diff_uv.sh
       - name: Validate source visibility
-        run: pipenv run python -m recidiviz.tools.validate_source_visibility
+        run: uv run python -m recidiviz.tools.validate_source_visibility
 
   pylint:
     name: Pylint
@@ -168,9 +168,9 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Install Pylint
-        run: pipenv run pip install pylint
+        run: uv pip install pylint --python .venv/bin/python
       - name: Pylint
-        run: pipenv run ./recidiviz/tools/lint/run_pylint.sh
+        run: uv run --no-sync ./recidiviz/tools/lint/run_pylint.sh
         env:
           PYLINTHOME: ${{ github.workspace }}/.cache/pylint
 
@@ -192,7 +192,7 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Mypy
-        run: pipenv run mypy recidiviz --cache-dir ${{ github.workspace }}/.cache/mypy
+        run: uv run mypy recidiviz --cache-dir ${{ github.workspace }}/.cache/mypy
 
   black:
     name: Black
@@ -212,7 +212,7 @@ jobs:
       - name: Python Setup
         uses: ./.github/actions/python-setup
       - name: Black
-        run: pipenv run black . --check --exclude '^/recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$'
+        run: uv run black . --check
         env:
           BLACK_CACHE_DIR: ${{ github.workspace }}/.cache/black
 
