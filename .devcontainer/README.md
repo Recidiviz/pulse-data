@@ -29,7 +29,7 @@ To use:
 
 After the first time you build the container, you'll also need to do the following:
 
-1. Select the PipEnv python interpreter by choosing "Python: Select Interpreter" from the command palette and selecting the one that says PipEnv next to it
+1. Select the uv python interpreter by choosing "Python: Select Interpreter" from the command palette and selecting the one from the `.venv` directory
 
 Limitations:
 
