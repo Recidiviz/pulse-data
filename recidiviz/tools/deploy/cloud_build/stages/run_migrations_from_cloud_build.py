@@ -121,7 +121,7 @@ class RunMigrations(DeploymentStageInterface):
                     # Run the Cloud SQL Proxy and wait for it to be healthy
                     f"/workspace/cloud-sql-proxy {instance_string} --port {CLOUDSQL_PROXY_MIGRATION_PORT} "
                     "--run-connection-test & sleep 2; "
-                    "pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head "
+                    "uv run python -m recidiviz.tools.migrations.run_migrations_to_head "
                     "--no-launch-proxy "
                     f"--project-id {deployment_context.project_id} "
                     f"--database {schema_type.value} "

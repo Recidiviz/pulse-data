@@ -22,11 +22,11 @@ columns are equivalent, it removes the entry.
 The script can be run against a local database or against one running in Cloud SQL.
 
 Usage against default development database (docker-compose v1) after `docker-compose up` has been
-run: docker exec pulse-data_admin_panel_backend_1 pipenv run python -m
+run: docker exec pulse-data_admin_panel_backend_1 uv run python -m
 recidiviz.tools.auth.cleanup_user_overrides --state_code US_XX
 
 Usage against default development database (docker-compose v2) after `docker-compose up` has been
-run: docker exec pulse-data-admin_panel_backend-1 pipenv run python -m
+run: docker exec pulse-data-admin_panel_backend-1 uv run python -m
 recidiviz.tools.auth.cleanup_user_overrides --state_code US_XX
 
 To run against Cloud SQL, specify the project id: python -m

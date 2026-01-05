@@ -24,10 +24,10 @@ This will delete everything from the operations tables in the local replica of t
 operations DB and then re-add them from the fixture files.
 
 Usage against default development database (docker-compose v1):
-docker exec pulse-data_admin_panel_backend_1 pipenv run python -m recidiviz.tools.admin_panel.load_operations_db_fixtures
+docker exec pulse-data_admin_panel_backend_1 uv run python -m recidiviz.tools.admin_panel.load_operations_db_fixtures
 
 Usage against default development database (docker-compose v2):
-docker exec pulse-data-admin_panel_backend-1 pipenv run python -m recidiviz.tools.admin_panel.load_operations_db_fixtures
+docker exec pulse-data-admin_panel_backend-1 uv run python -m recidiviz.tools.admin_panel.load_operations_db_fixtures
 
 You can check your docker-compose version by running `docker-compose --version`.
 """

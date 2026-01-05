@@ -22,7 +22,7 @@ This will delete everything from the tables, re-add them from the fixture files 
 update the local cache.
 
 Usage against default development database (docker-compose v2):
-docker exec pulse-data-case_triage_backend-1 pipenv run python -m recidiviz.tools.pathways.load_fixtures \
+docker exec pulse-data-case_triage_backend-1 uv run python -m recidiviz.tools.pathways.load_fixtures \
     --data_type GCS \
     --state_codes US_TN US_ID \
     --tables liberty_to_prison_transitions supervision_to_prison_transitions \

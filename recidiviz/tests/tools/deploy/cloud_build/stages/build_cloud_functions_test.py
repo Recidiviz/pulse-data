@@ -65,11 +65,11 @@ class BuildCloudFunctionsTest(unittest.TestCase):
             ]
         )
 
-        _, pipenv_command = create_source_archive_step.args
+        _, uv_command = create_source_archive_step.args
         migrations_args = (
-            pipenv_command.replace("\n", "")
+            uv_command.replace("\n", "")
             .replace(
-                "pipenv run python -m recidiviz.tools.cloud_functions.create_function_source_file_archive ",
+                "uv run python -m recidiviz.tools.cloud_functions.create_function_source_file_archive ",
                 "",
             )
             .strip()

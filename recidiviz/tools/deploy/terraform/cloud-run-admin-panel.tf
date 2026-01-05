@@ -53,7 +53,7 @@ resource "google_cloud_run_service" "admin_panel" {
     spec {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
-        command = ["pipenv"]
+        command = ["uv"]
         args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.admin_panel.server:app"]
 
         env {

@@ -21,11 +21,11 @@ This script should be run only after `docker-compose up` has been run.
 This will delete everything from the tables and then re-add them from the fixture files.
 
 Usage against default development database (docker-compose v1):
-docker exec pulse-data-admin_panel_backend-1 pipenv run python -m recidiviz.tools.workflows.load_local_db \
+docker exec pulse-data_admin_panel_backend_1 uv run python -m recidiviz.tools.workflows.load_local_db \
     --state_codes US_PA
 
 Usage against default development database (docker-compose v2):
-docker exec pulse-data-admin_panel_backend-1 pipenv run python -m recidiviz.tools.workflows.load_local_db \
+docker exec pulse-data-admin_panel_backend-1 uv run python -m recidiviz.tools.workflows.load_local_db \
     --state_codes US_PA
 """
 import argparse

@@ -7,7 +7,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - case_triage_db
-    command: pipenv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
+    command: uv run alembic -c recidiviz/persistence/database/migrations/case_triage_alembic.ini upgrade head
     environment:
       - SQLALCHEMY_DB_HOST=case_triage_db
       - SQLALCHEMY_DB_NAME=postgres
@@ -45,7 +45,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - justice_counts_db
-    command: pipenv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini upgrade head
+    command: uv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini upgrade head
     environment:
       - SQLALCHEMY_DB_HOST=justice_counts_db
       - SQLALCHEMY_DB_NAME=postgres
@@ -71,7 +71,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - operations_db
-    command: pipenv run alembic -c recidiviz/persistence/database/migrations/operations_alembic.ini upgrade head
+    command: uv run alembic -c recidiviz/persistence/database/migrations/operations_alembic.ini upgrade head
     environment:
       - SQLALCHEMY_DB_HOST=operations_db
       - SQLALCHEMY_DB_NAME=postgres
@@ -112,7 +112,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - insights_db
-    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database INSIGHTS
+    command: uv run python -m recidiviz.tools.migrations.run_migrations_docker --database INSIGHTS
     environment:
       - IS_DEV=true
 
@@ -122,7 +122,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - workflows_db
-    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database WORKFLOWS
+    command: uv run python -m recidiviz.tools.migrations.run_migrations_docker --database WORKFLOWS
     environment:
       - IS_DEV=true
 

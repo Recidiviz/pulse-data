@@ -18,7 +18,7 @@
 # =============================================================================
 """Script for generating Reports for the latest month and/or year for each Justice Counts Agency.
 
-Local Usage: docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.create_new_reports
+Local Usage: docker exec pulse-data-control_panel_backend-1 uv run python -m recidiviz.justice_counts.jobs.create_new_reports
 Remote Usage: Execute the `justice-counts-recurring-reports` Cloud Run Job
 """
 

@@ -14,7 +14,7 @@ services:
       - insights_db
     ports:
       - "5000:5000"
-    command: pipenv run flask run -h 0.0.0.0
+    command: uv run flask run -h 0.0.0.0
     environment:
       - FLASK_APP=/app/recidiviz/application_data_import/server.py
       - FLASK_ENV=development

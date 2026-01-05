@@ -61,34 +61,20 @@ ENV PATH_PREFIX=${DEV_MODE:+/usr/lib/postgresql/13/bin/:}
 # Then prepend our path with whatever is in PATH_PREFIX.
 ENV PATH="$PATH_PREFIX$PATH"
 
-# In order to use this Dockerfile with Cloud Run, PIPENV_VENV_IN_PROJECT must be set.
-# If not, Cloud Run will try to "helpfully" create a new virtualenv for us which will not match our
-# expected set of dependencies.
-# The main effect of this variable is to create the pipenv environment in the `.venv` folder in the
-# root of the project.
-ENV PIPENV_VENV_IN_PROJECT="1"
-
 RUN adduser recidiviz && mkdir /app && chown recidiviz /app/
 USER recidiviz
 RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
 ENV PATH=/home/recidiviz/.local/bin:$PATH
-RUN pip install pipenv --user
+RUN pip install uv --user
 
-# Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
-COPY --chown=recidiviz Pipfile /app/
-COPY --chown=recidiviz Pipfile.lock /app/
+# Add only the pyproject.toml/uv.lock first to ensure we cache `uv sync` when application code is updated but not the lock file
+COPY --chown=recidiviz pyproject.toml /app/
+COPY --chown=recidiviz uv.lock /app/
 
 WORKDIR /app
 
-RUN pipenv \
-    # Include user-level site-packages (namely pipenv) in our new virtual environment
-    --site-packages \
-    --python 3.11 && \
-    pipenv install \
-    # This will fail a build if the Pipfile.lock _meta hash is out of date from the Pipfile contents.
-    --deploy \
-    --verbose \
-    $(if [ "$DEV_MODE" = "True" ]; then echo "--dev"; fi)
+# --frozen ensures we use exactly what's in the lock file without updating it
+RUN uv sync --frozen $(if [ "$DEV_MODE" = "True" ]; then echo "--all-extras"; fi)
 
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""

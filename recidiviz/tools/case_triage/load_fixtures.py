@@ -22,10 +22,10 @@ This will delete everything from the etl_* tables and then re-add them from the
 fixture files.
 
 Usage against default development database (docker-compose v1):
-docker exec pulse-data_admin_panel_backend_1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
+docker exec pulse-data_admin_panel_backend_1 uv run python -m recidiviz.tools.case_triage.load_fixtures
 
 Usage against default development database (docker-compose v2):
-docker exec pulse-data-admin_panel_backend-1 pipenv run python -m recidiviz.tools.case_triage.load_fixtures
+docker exec pulse-data-admin_panel_backend-1 uv run python -m recidiviz.tools.case_triage.load_fixtures
 """
 import logging
 import os

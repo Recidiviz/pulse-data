@@ -242,7 +242,7 @@ def build_kubernetes_pod_task(
 ) -> RecidivizKubernetesPodOperator:
     """
     Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace.
-    This is useful for running arbitrary code in the Recidiviz pipenv environment rather than the Airflow environment.
+    This is useful for running arbitrary code in the Recidiviz uv environment rather than the Airflow environment.
     It also allows for dedicated resource allocation to a task, ensuring better isolation and performance for
     resource-intensive operations.
 
@@ -321,7 +321,7 @@ def get_kubernetes_pod_kwargs(
     return {
         "task_id": task_id,
         "name": task_id,
-        "cmds": ["pipenv"],
+        "cmds": ["uv"],
         "env_vars": [
             # TODO(census-instrumentation/opencensus-python#796)
             k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name)

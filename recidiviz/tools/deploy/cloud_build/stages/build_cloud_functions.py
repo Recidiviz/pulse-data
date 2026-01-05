@@ -80,7 +80,7 @@ class BuildCloudFunctions(DeploymentStageInterface):
             name=app_engine_image,
             dir_="/app/",
             command=(
-                "pipenv run python -m recidiviz.tools.cloud_functions.create_function_source_file_archive "
+                "uv run python -m recidiviz.tools.cloud_functions.create_function_source_file_archive "
                 f"--project_id {deployment_context.project_id} "
                 f"--result_path {BUILD_RESULTS_PATH} "
                 "--dry_run False"

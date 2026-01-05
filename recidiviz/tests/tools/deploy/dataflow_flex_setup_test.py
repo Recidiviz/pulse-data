@@ -16,17 +16,17 @@
 # =============================================================================
 """Tests the pulse-data/recidiviz/pipelines/dataflow_flex_setup.py file that specifies required packages
 for the Dataflow VM workers. """
-import json
 import os
+import tomllib
 import unittest
 
 import recidiviz
 
-PIPFILE_LOCK_PATH = os.path.join(
+UV_LOCK_PATH = os.path.join(
     os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     ),
-    "Pipfile.lock",
+    "uv.lock",
 )
 
 SETUP_PATH = os.path.join(
@@ -36,7 +36,7 @@ SETUP_PATH = os.path.join(
 
 
 class TestSetupFilePinnedDependencies(unittest.TestCase):
-    """Tests that dependencies pinned at certain versions are pinned at the version in the Pipfile.lock file."""
+    """Tests that dependencies pinned at certain versions are pinned at the version in the uv.lock file."""
 
     def test_setup_file_pinned_dependencies(self) -> None:
         pinned_dependencies = [
@@ -48,7 +48,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
         ]
 
         for dependency in pinned_dependencies:
-            pipfile_dependency = pipfile_version_for_dependency(dependency)
+            uv_dependency = uv_lock_version_for_dependency(dependency)
             dependency_found = False
 
             with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
@@ -66,10 +66,10 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                             continue
 
                         self.assertEqual(
-                            pipfile_dependency,
+                            uv_dependency,
                             dependency_with_version,
-                            "Try verifying the package's version in dataflow_flex_setup.py or running pipenv sync "
-                            "--dev before running this test again.",
+                            "Try verifying the package's version in dataflow_flex_setup.py or running uv sync "
+                            "--all-extras before running this test again.",
                         )
 
             if not dependency_found:
@@ -78,7 +78,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
     def test_setup_file_non_pinned_dependency(self) -> None:
         dependency = "cattrs"
 
-        pipfile_dependency = pipfile_version_for_dependency(dependency)
+        uv_dependency = uv_lock_version_for_dependency(dependency)
 
         with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
             for line in setup_file:
@@ -89,28 +89,24 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                     )
 
                     # This dependency is not pinned at a particular version, so these should not be equal
-                    self.assertNotEqual(pipfile_dependency, dependency_with_version)
+                    self.assertNotEqual(uv_dependency, dependency_with_version)
 
 
-def pipfile_version_for_dependency(dependency: str) -> str:
-    """Looks in the Pipfile.lock file for the current version of the given dependency. Returns a string in the format
+def uv_lock_version_for_dependency(dependency: str) -> str:
+    """Looks in the uv.lock file for the current version of the given dependency. Returns a string in the format
     'dependency==v.X.X.X'.
     """
-    pipfile_version = None
+    with open(UV_LOCK_PATH, "rb") as uv_lock_file:
+        uv_data = tomllib.load(uv_lock_file)
 
-    with open(PIPFILE_LOCK_PATH, encoding="utf-8") as pipfile_lock_json:
-        pipfile_data = json.load(pipfile_lock_json)
+    # uv.lock uses TOML format with [[package]] entries
+    packages = uv_data.get("package", [])
+    for package in packages:
+        if package.get("name") == dependency:
+            version = package.get("version")
+            if version:
+                return f"{dependency}=={version}"
 
-        if pipfile_data:
-            default_data = pipfile_data.get("default")
-            if default_data:
-                dependency_data = default_data.get(dependency)
-                if dependency_data:
-                    pipfile_version = dependency_data.get("version")
-
-    if not pipfile_version:
-        raise ValueError("Dataflow pipeline dependent on a package not in the Pipfile.")
-
-    pipfile_dependency_version = dependency + pipfile_version
-
-    return pipfile_dependency_version
+    raise ValueError(
+        f"Dataflow pipeline dependent on a package ({dependency}) not in the uv.lock."
+    )

@@ -33,12 +33,12 @@ within insights_db for each state in outliers_enabled_states.yaml you must creat
 `docker compose -f docker-compose.yaml -f docker-compose.application-data-import.yaml up`
 3. Then run this script to load the fixture data (or staging GCS data) into the tables
 Usage against default development database (docker-compose v1):
-docker exec pulse-data_import_service_1 pipenv run python -m recidiviz.tools.insights.load_local_db \
+docker exec pulse-data_import_service_1 uv run python -m recidiviz.tools.insights.load_local_db \
     --data_type FIXTURE \
     --state_codes US_PA
 
 Usage against default development database (docker-compose v2):
-docker exec pulse-data-import_service-1 pipenv run python -m recidiviz.tools.insights.load_local_db \
+docker exec pulse-data-import_service-1 uv run python -m recidiviz.tools.insights.load_local_db \
     --data_type FIXTURE \
     --state_codes US_PA
 

@@ -23,7 +23,7 @@ services:
       - redis
     ports:
       - "5050:5000"
-    command: pipenv run flask run -h 0.0.0.0
+    command: uv run flask run -h 0.0.0.0
     environment:
       - FLASK_APP=/app/recidiviz/admin_panel/server.py
       - FLASK_ENV=development
@@ -53,7 +53,7 @@ services:
       - redis
       # Allow backend to boot prior to cache hydration which takes some time
       - admin_panel_backend
-    command: pipenv run python -m recidiviz.admin_panel.entrypoints.hydrate_cache
+    command: uv run python -m recidiviz.admin_panel.entrypoints.hydrate_cache
     environment:
       - IS_DEV=true
       - GOOGLE_CLOUD_PROJECT=recidiviz-staging

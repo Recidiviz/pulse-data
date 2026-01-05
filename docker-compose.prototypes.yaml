@@ -14,7 +14,7 @@ services:
       - workflows_db
     ports:
       - "8080:8080"
-    command: pipenv run hypercorn recidiviz.prototypes.app:app --bind 0.0.0.0:8080 --reload
+    command: uv run hypercorn recidiviz.prototypes.app:app --bind 0.0.0.0:8080 --reload
     working_dir: /app
     environment:
       - AUTH0_CLAIM_NAMESPACE=https://dashboard-staging.recidiviz.org

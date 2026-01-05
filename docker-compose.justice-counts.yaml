@@ -14,7 +14,7 @@ services:
       - "5001:5000"
       - "5678:5678"
     # Running with threads and no debugger seems to improve latency on first request
-    command: pipenv run flask run -h 0.0.0.0  --with-threads --no-debugger
+    command: uv run flask run -h 0.0.0.0  --with-threads --no-debugger
     environment:
       - FLASK_APP=/app/recidiviz/justice_counts/control_panel/server.py
       - FLASK_ENV=development

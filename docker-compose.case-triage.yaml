@@ -22,7 +22,7 @@ services:
     ports:
       - "5000:5000"
     # Running with threads and no debugger seems to improve latency on first request
-    command: pipenv run flask run -h 0.0.0.0 --with-threads --no-debugger
+    command: uv run flask run -h 0.0.0.0 --with-threads --no-debugger
     environment:
       - AUTH0_CLAIM_NAMESPACE=https://dashboard.recidiviz.org
       - FLASK_APP=/app/recidiviz/case_triage/server.py

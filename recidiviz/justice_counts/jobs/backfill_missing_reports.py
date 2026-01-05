@@ -21,7 +21,7 @@ Script for backfilling missing Reports between the month ranges for each Justice
 Missing reports are created at the first of every month. However, if that job fails for
 a period of time, this script can be used to backfill.
 
-Local Usage: docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.backfill_missing_reports --start_month {} --end_month_inclusive {} --year {}
+Local Usage: docker exec pulse-data-control_panel_backend-1 uv run python -m recidiviz.justice_counts.jobs.backfill_missing_reports --start_month {} --end_month_inclusive {} --year {}
 Remote Usage: Execute the `justice-counts-backfill-missing-reports` Cloud Run Job
 """
 

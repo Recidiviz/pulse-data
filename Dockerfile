@@ -33,17 +33,11 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
 # Make stdout/stderr unbuffered. This prevents delay between output and cloud
 # logging collection.
 ENV PYTHONUNBUFFERED 1
-# In order to use this Dockerfile with Cloud Run, PIPENV_VENV_IN_PROJECT must be set.
-# If not, Cloud Run will try to "helpfully" create a new virtualenv for us which will not match our
-# expected set of dependencies.
-# The main effect of this variable is to create the pipenv environment in the `.venv` folder in the
-# root of the project.
-ENV PIPENV_VENV_IN_PROJECT="1"
 RUN adduser recidiviz && mkdir /app && chown recidiviz /app/
 USER recidiviz
 RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
 ENV PATH=/home/recidiviz/.local/bin:$PATH
-RUN pip install pipenv --user
+RUN pip install uv --user
 WORKDIR /app
 
 FROM recidiviz-init AS recidiviz-dev
@@ -81,9 +75,9 @@ ENV PATH=/usr/lib/postgresql/${PG_VERSION}/bin/:$PATH
 RUN apt-get update -y && apt-get upgrade -y
 USER recidiviz
 RUN npm install prettier
-COPY Pipfile /app/
-COPY Pipfile.lock /app/
-RUN pipenv sync --dev --verbose
+COPY pyproject.toml /app/
+COPY uv.lock /app/
+RUN uv sync --all-extras --frozen
 EXPOSE 8888
 
 FROM node:20-alpine AS admin-panel-build
@@ -99,17 +93,11 @@ COPY ./frontends/admin-panel/public /usr/admin-panel/public
 RUN yarn build
 
 FROM recidiviz-init AS recidiviz-app
-# Add only the Pipfiles first to ensure we cache `pipenv install` when application code is updated but not the Pipfiles
-COPY --chown=recidiviz Pipfile /app/
-COPY --chown=recidiviz Pipfile.lock /app/
-RUN pipenv \
-    # Include user-level site-packages (namely pipenv) in our new virtual environment
-    --site-packages \
-    --python 3.11 && \
-    pipenv install \
-    # This will fail a build if the Pipfile.lock _meta hash is out of date from the Pipfile contents.
-    --deploy \
-    --verbose
+# Add only the pyproject.toml/uv.lock first to ensure we cache `uv sync` when application code is updated but not the lock file
+COPY --chown=recidiviz pyproject.toml /app/
+COPY --chown=recidiviz uv.lock /app/
+# --frozen ensures we use exactly what's in the lock file without updating it
+RUN uv sync --frozen
 # Add the rest of the application code once all dependencies are installed
 COPY --chown=recidiviz . /app
 # Add the built Admin Panel frontend to the image

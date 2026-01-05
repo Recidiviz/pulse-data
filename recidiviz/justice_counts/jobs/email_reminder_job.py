@@ -18,7 +18,7 @@
 # =============================================================================
 """Script for sending reminder emails to agencies to upload missing metrics.
 
-Local Usage: docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.email_reminder_job
+Local Usage: docker exec pulse-data-control_panel_backend-1 uv run python -m recidiviz.justice_counts.jobs.email_reminder_job
 Remote Usage: Execute the `email_reminder_job` Cloud Run Job
 """
 

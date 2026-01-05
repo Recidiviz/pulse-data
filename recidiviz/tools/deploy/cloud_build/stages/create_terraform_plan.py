@@ -107,7 +107,7 @@ def _get_airflow_file_sync_steps(
         name=app_engine_image,
         dir_="/app/",
         command=(
-            "pipenv run python -m recidiviz.tools.airflow.get_airflow_source_files "
+            "uv run python -m recidiviz.tools.airflow.get_airflow_source_files "
             f"--output-path {AIRFLOW_SOURCE_FILES_DIR} "
             "--dry-run False"
         ),
@@ -259,7 +259,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
                         dir_="/app/",
                         # https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values#using_default_substitutions
                         command=(
-                            "pipenv run python -m recidiviz.tools.github.upsert_terraform_plan "
+                            "uv run python -m recidiviz.tools.github.upsert_terraform_plan "
                             "--pull-request-number $_PR_NUMBER "
                             f"--commit-ref {deployment_context.commit_ref} "
                             "--terraform-plan-output-path /workspace/terraform-plan-output.txt "

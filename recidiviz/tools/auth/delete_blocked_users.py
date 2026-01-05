@@ -28,18 +28,18 @@ The script can be run against a local database or against one running in Cloud S
 script will prompt for confirmation with a list of affected users before deleting.
 
 Usage against default development database (docker-compose v1) after `docker-compose up` has been
-run: docker exec -it pulse-data_admin_panel_backend_1 pipenv run python -m
+run: docker exec -it pulse-data_admin_panel_backend_1 uv run python -m
 recidiviz.tools.auth.delete_blocked_users --state_code US_XX
 
 Usage against default development database (docker-compose v2) after `docker-compose up` has been
-run: docker exec -it pulse-data-admin_panel_backend-1 pipenv run python -m
+run: docker exec -it pulse-data-admin_panel_backend-1 uv run python -m
 recidiviz.tools.auth.delete_blocked_users --state_code US_XX
 
 To run against Cloud SQL, specify the project id: python -m
 recidiviz.tools.auth.delete_blocked_users --project_id recidiviz-staging --state_code US_XX
 
 You can also optionally include a comma-separated list of email addresses for the specific users you would like
-to delete: docker exec -it pulse-data-admin_panel_backend-1 pipenv run python -m
+to delete: docker exec -it pulse-data-admin_panel_backend-1 uv run python -m
 recidiviz.tools.auth.delete_blocked_users --state_code US_XX --emails user1@recidiviz.org,user2@recidiviz.org
 """
 

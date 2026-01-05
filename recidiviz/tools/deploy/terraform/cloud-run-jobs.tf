@@ -23,7 +23,7 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
     template {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
-        command = ["pipenv"]
+        command = ["uv"]
         args    = ["run", "python", "-m", "recidiviz.admin_panel.entrypoints.hydrate_cache"]
         env {
           name  = "RECIDIVIZ_ENV"
@@ -74,7 +74,7 @@ resource "google_cloud_run_v2_job" "utah_data_transfer_sync" {
     template {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
-        command = ["pipenv"]
+        command = ["uv"]
         args    = ["run", "python", "-m", "recidiviz.tools.ingest.regions.us_ut.sync_bq_mirror_to_ingest_bucket", "--dry-run", "False"]
         env {
           name  = "RECIDIVIZ_ENV"
@@ -136,7 +136,7 @@ resource "google_cloud_run_v2_job" "jii_jobs" {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         args    = each.value.args
-        command = ["pipenv"]
+        command = ["uv"]
         name    = "default-1"
         env {
           name  = "RECIDIVIZ_ENV"

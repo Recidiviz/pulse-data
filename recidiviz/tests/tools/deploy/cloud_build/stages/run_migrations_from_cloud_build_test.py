@@ -70,11 +70,11 @@ class RunMigrationsTest(unittest.TestCase):
 
         for migration_step in migration_steps:
             _, shell_command = migration_step.args
-            _, pipenv_command = shell_command.split(";")
+            _, uv_command = shell_command.split(";")
             migrations_args = (
-                pipenv_command.replace("\n", "")
+                uv_command.replace("\n", "")
                 .replace(
-                    "pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head ",
+                    "uv run python -m recidiviz.tools.migrations.run_migrations_to_head ",
                     "",
                 )
                 .strip()

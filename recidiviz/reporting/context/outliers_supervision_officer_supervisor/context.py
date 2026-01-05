@@ -20,16 +20,16 @@ This module can be run as a script for local development. It is intended to be r
 the admin_panel container in docker-compose. It will generate one or more HTML files that you can open 
 in the browser or tool of your choice for inspection.
 
-You can populate the template with the fixture data that is written into this file: 
+You can populate the template with the fixture data that is written into this file:
 
-docker exec pulse-data-admin_panel_backend-1 pipenv run \
+docker exec pulse-data-admin_panel_backend-1 uv run \
     python -m recidiviz.reporting.context.outliers_supervision_officer_supervisor.context \
     fixture
 
 Or you can point it at your local database, if you have populated it with staging data using
 recidiviz.tools.outliers.load_local_db. This option assumes your data is current as of this month.
 
-docker exec pulse-data-admin_panel_backend-1 pipenv run \
+docker exec pulse-data-admin_panel_backend-1 uv run \
     python -m recidiviz.reporting.context.outliers_supervision_officer_supervisor.context \
     db --state_code US_PA
 

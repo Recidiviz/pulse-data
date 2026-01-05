@@ -20,10 +20,10 @@ Tool for resetting the cache in our Pathways development database.
 This script should be run only after `docker-compose up` has been run.
 
 Usage against default development database (docker-compose v1):
-docker exec pulse-data_case_triage_backend_1 pipenv run python -m recidiviz.tools.pathways.reset_cache
+docker exec pulse-data_case_triage_backend_1 uv run python -m recidiviz.tools.pathways.reset_cache
 
 Usage against default development database (docker-compose v2):
-docker exec pulse-data-case_triage_backend-1 pipenv run python -m recidiviz.tools.pathways.reset_cache
+docker exec pulse-data-case_triage_backend-1 uv run python -m recidiviz.tools.pathways.reset_cache
 """
 import logging
 

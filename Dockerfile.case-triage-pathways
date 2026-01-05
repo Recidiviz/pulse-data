@@ -25,7 +25,7 @@ COPY --chown=recidiviz ./recidiviz/workflows/ workflows/
 
 WORKDIR /app
 
-CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.case_triage.server:app
+CMD uv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.case_triage.server:app
 
 # This makes docker not report that our container is healthy until the flask workers are
 # started and returning 200 on the `/health` endpoint. This is initially only used by
