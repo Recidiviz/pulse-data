@@ -163,7 +163,7 @@ function pre_deploy_configure_infrastructure {
 
     echo "Deploying terraform inside Cloud Build"
     verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+    run_cmd uv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
       --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
@@ -172,7 +172,7 @@ function pre_deploy_configure_infrastructure {
 
     verify_hash "$COMMIT_HASH"
     echo "Running migrations asynchronously"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+    run_cmd uv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
       --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
@@ -180,7 +180,7 @@ function pre_deploy_configure_infrastructure {
       --execute-async
 
     echo "Building Cloud Functions asynchronously"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+    run_cmd uv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
       --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
@@ -202,21 +202,25 @@ function copy_docker_image_to_repository {
     cp "${IMAGE_FROM}" "${IMAGE_TO}"
 }
 
-function check_running_in_pipenv_shell {
-    if [[ -z $(printenv PIPENV_ACTIVE) ]]; then
-        echo_error "Must be running inside the pipenv shell to deploy."
+function check_running_in_venv {
+    if [[ -z "${VIRTUAL_ENV:-}" ]]; then
+        echo_error "Must be running inside the virtual environment to deploy."
+        echo_error "Run 'source .venv/bin/activate' or use 'uv run' prefix."
         exit 1
     fi
 }
 
 function check_python_version {
   PYTHON_VERSION=$(python -V | grep "Python " | cut -d ' ' -f 2)
-  # Fetch the required Python version from the Pipfile
+  # Fetch the required Python version from pyproject.toml
   PYTHON_SCRIPT=$(cat << EOM
 import tomllib
-with open("Pipfile", "r", encoding="utf-8") as f:
-  config = tomllib.loads(f.read())
-  print(config['requires']['python_version'])
+with open("pyproject.toml", "rb") as f:
+  config = tomllib.load(f)
+  requires_python = config['project']['requires-python']
+  # Extract version from ">=3.11" format
+  version = requires_python.replace('>=', '').replace('==', '')
+  print(version)
 EOM
 )
   MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python) || exit_on_fail
@@ -295,8 +299,8 @@ function verify_can_deploy {
 
     run_cmd check_gcloud_authed
 
-    echo "Checking script is executing in a pipenv shell"
-    run_cmd check_running_in_pipenv_shell
+    echo "Checking script is executing in a virtual environment"
+    run_cmd check_running_in_venv
 
     echo "Checking Python is correct version"
     run_cmd check_python_version
@@ -313,13 +317,13 @@ function verify_can_deploy {
     echo "Checking terraform is installed"
     run_cmd check_terraform_installed
 
-    echo "Checking pipenv is synced"
-    if ! "${BASH_SOURCE_DIR}"/../diff_pipenv.sh; then
-      echo "Pipenv is not synced. Running 'pipenv sync --dev'..."
-      run_cmd pipenv sync --dev
-      echo "Re-checking pipenv sync"
-      if ! "${BASH_SOURCE_DIR}"/../diff_pipenv.sh; then
-        echo "Pipenv still not synced after running 'pipenv sync --dev'"
+    echo "Checking uv is synced"
+    if ! "${BASH_SOURCE_DIR}"/../diff_uv.sh; then
+      echo "uv is not synced. Running 'uv sync --all-extras'..."
+      run_cmd uv sync --all-extras
+      echo "Re-checking uv sync"
+      if ! "${BASH_SOURCE_DIR}"/../diff_uv.sh; then
+        echo "uv still not synced after running 'uv sync --all-extras'"
         exit 1
       fi
     fi
@@ -389,7 +393,7 @@ function post_deploy_triggers {
 
     echo "Triggering post-deploy tasks"
 
-    run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT}"
+    run_cmd uv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT}"
 }
 
 

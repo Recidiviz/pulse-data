@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Script for deploying tagged versions to production. Must be run within the pipenv shell.
+# Script for deploying tagged versions to production. Must be run within the virtual environment.
 #
 
 # Used to track total time required to deploy to production.
@@ -112,7 +112,7 @@ echo "Release candidate staging deploy completed in ${MINUTES} minutes."
 
 echo "Checking for PRs open against the release branch"
 GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat) || exit_on_fail
-run_cmd_no_exiting_no_echo pipenv run  python -m recidiviz.tools.deploy.generate_release_notes \
+run_cmd_no_exiting_no_echo uv run python -m recidiviz.tools.deploy.generate_release_notes \
   --previous_tag "${LAST_DEPLOYED_GIT_VERSION_TAG}" \
   --new_tag "${GIT_VERSION_TAG}" \
   --github_token "${GITHUB_DEPLOY_BOT_TOKEN}" || exit_on_fail
