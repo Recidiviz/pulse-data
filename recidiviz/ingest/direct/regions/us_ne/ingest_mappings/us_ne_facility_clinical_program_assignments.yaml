@@ -12,6 +12,7 @@ input_columns:
   dateScreened: DATE
   treatmentStarted: DATE
   treatmentCompleted: DATE
+  dateAcceptRefuse: DATE
 unused_columns: []
 output:
   StatePerson:
@@ -44,3 +45,4 @@ output:
           referral_metadata:
             $normalized_values_json_dict:
               recommendation_name: recommendation
+              dateAcceptRefuse: dateAcceptRefuse
