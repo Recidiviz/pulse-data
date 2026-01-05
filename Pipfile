@@ -31,7 +31,8 @@ parameterized = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
-google-generativeai = "*"
+# TODO(#51475): Unpin once we have migrated to uv and can successfully lock again.
+google-generativeai = "==0.8.5"
 gspread = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.

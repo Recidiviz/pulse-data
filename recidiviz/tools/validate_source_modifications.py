@@ -145,6 +145,9 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
 
 ADMIN_PANEL_KEY = "admin_panel"
 PIPFILE_KEY = "pipfile"
+UV_KEY = "uv"
+# TODO(#51475): Remove after full uv migration
+PIPFILE_UV_SYNC_KEY = "pipfile_uv_sync"
 IGNORE_KEY = "ignore"
 BUILD_INFRA_KEY = "build_infra"
 
@@ -188,6 +191,29 @@ def get_modified_file_assertions() -> Dict[str, List[RequiredModificationSets]]:
                 if_modified_files=frozenset({"Pipfile"}),
                 then_modified_files=frozenset({"Pipfile.lock"}),
             )
+        ],
+        # uv (pyproject.toml must update uv.lock)
+        UV_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset({"pyproject.toml"}),
+                then_modified_files=frozenset({"uv.lock"}),
+            ),
+            RequiredModificationSets(
+                if_modified_files=frozenset({"recidiviz/airflow/pyproject.toml"}),
+                then_modified_files=frozenset({"recidiviz/airflow/uv.lock"}),
+            ),
+        ],
+        # Keep pipenv and uv in sync during coexistence
+        # TODO(#51475): Remove after full uv migration
+        PIPFILE_UV_SYNC_KEY: [
+            RequiredModificationSets.for_symmetric_check(
+                frozenset({"Pipfile", "pyproject.toml"})
+            ),
+            RequiredModificationSets.for_symmetric_check(
+                frozenset(
+                    {"recidiviz/airflow/Pipfile", "recidiviz/airflow/pyproject.toml"}
+                )
+            ),
         ],
         # ignore files
         IGNORE_KEY: [

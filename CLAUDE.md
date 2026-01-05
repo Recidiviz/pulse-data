@@ -9,9 +9,11 @@ https://docs.claude.com/en/docs/claude-code/memory
 ## Development Commands
 
 ### Environment Setup
-- Use Python 3.11 with pipenv for dependency management
-- Install dependencies: `pipenv sync --dev` (or `./initial_pipenv_setup.sh` on first run)
-- Activate environment: `pipenv shell`
+- Use Python 3.11 with pipenv or uv for dependency management
+- First time setup: `./initial_setup.sh` (auto-detects uv or pipenv; prefers uv if installed)
+- Manual sync: `uv sync --all-extras` (uv) or `pipenv sync --dev` (pipenv)
+- Run commands with either `uv run <cmd>` or `pipenv run <cmd>`
+- Activate environment: `source .venv/bin/activate` (uv) or `pipenv shell` (pipenv)
 - Whenever possible, use `gh` to examine pull requests (PRs), create PRs, etc -- this is because the `gh` cli has been authenticated to access our private repo.
 
 ### Python testing

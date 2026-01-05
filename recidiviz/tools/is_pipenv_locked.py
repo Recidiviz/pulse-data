@@ -29,8 +29,8 @@ def is_locked() -> bool:
         return True
     logging.error(
         "Pipfile.lock (%s) is out of date (expected %s).",
-        lock_hash[-6:],
-        pipfile_hash[-6:],
+        lock_hash,
+        pipfile_hash,
     )
     return False
 
