@@ -58,7 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_VIEW_BUILDER.criteria_spans_view_builders,
         # Must be male (ICIO is a men's facility)
         is_male.VIEW_BUILDER,
-        # Must be a resident of ICIO or expected to be released to D1/D2
+        # Must be a resident of ICIO or expected to be released to D1/D2/ISC
         IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE,
     ],
     # TODO(#54358): Find out which completion event should be used here
