@@ -9,7 +9,7 @@ description: Upgrade Cloud Composer (Apache Airflow) to a new version. Use when 
 
 This skill defines how to upgrade Cloud Composer (Google Cloud's managed Apache Airflow) to a new version in the pulse-data repository. This involves updating the Composer image version and syncing all Python dependencies.
 
-**What Claude does**: Updates terraform config and Pipfile with new versions.
+**What Claude does**: Updates terraform config and pyproject.toml with new versions.
 **What the user does**: Provides package list, commits/pushes changes, triggers GitHub Actions, creates PR, verifies DB size.
 
 ## Instructions
@@ -23,13 +23,13 @@ This skill defines how to upgrade Cloud Composer (Google Cloud's managed Apache 
    Version format: `composer-X.Y.Z-airflow-A.B.C`
 
 3. **Search for Dependabot alerts**: Check for Dependabot security alerts that might be resolved by this upgrade:
-   - **Get unfixed alerts**: `gh api --paginate /repos/Recidiviz/pulse-data/dependabot/alerts --jq '.[] | select(.state == "open" or .state == "dismissed" or .state == "auto_dismissed") | select(.dependency.manifest_path | contains("recidiviz/airflow/Pipfile")) | {number, state, package: .dependency.package.name, manifest: .dependency.manifest_path, severity: .security_advisory.severity, url: .html_url}'`
+   - **Get unfixed alerts**: `gh api --paginate /repos/Recidiviz/pulse-data/dependabot/alerts --jq '.[] | select(.state == "open" or .state == "dismissed" or .state == "auto_dismissed") | select(.dependency.manifest_path | contains("recidiviz/airflow/pyproject.toml")) | {number, state, package: .dependency.package.name, manifest: .dependency.manifest_path, severity: .security_advisory.severity, url: .html_url}'`
      - **IMPORTANT**: Use `--paginate` to get all alerts (the API paginates at 30 items per page)
      - Get all unfixed alerts by filtering for states: "open", "dismissed", and "auto_dismissed" (everything except "fixed")
      - **Why check dismissed/auto_dismissed?** These represent unfixed vulnerabilities. Dismissing an alert doesn't update the Composer environment. Only a Cloud Composer upgrade can resolve them.
-     - Filter for alerts where `manifest_path` contains `recidiviz/airflow/Pipfile` - these are relevant to Cloud Composer upgrades
+     - Filter for alerts where `manifest_path` contains `recidiviz/airflow/pyproject.toml` - these are relevant to Cloud Composer upgrades
    - **Also check for open Dependabot PRs**: `gh pr list --author app/dependabot --state open`
-     - Look for PRs that update packages in `recidiviz/airflow/Pipfile` (these often fail to actually fix the issue because they only update the Pipfile, not the production Composer environment)
+     - Look for PRs that update packages in `recidiviz/airflow/pyproject.toml` (these often fail to actually fix the issue because they only update the pyproject.toml, not the production Composer environment)
      - Cross-reference PR package names with the alerts from above
    - Note the Dependabot alert URLs (format: `https://github.com/Recidiviz/pulse-data/security/dependabot/XXXX`)
    - Keep track of which packages have alerts, their states, what versions are needed to resolve them, and any associated PRs
@@ -75,11 +75,11 @@ image_version = "composer-X.Y.Z-airflow-A.B.C"
 
 Use the Edit tool to make this change.
 
-### Step 4: Update Python Dependencies in Pipfile
+### Step 4: Update Python Dependencies in pyproject.toml
 
-**CRITICAL**: The `recidiviz/airflow/Pipfile` contains ALL dependencies pinned to exact versions. These MUST match the Cloud Composer environment.
+**CRITICAL**: The `recidiviz/airflow/pyproject.toml` contains ALL dependencies pinned to exact versions. These MUST match the Cloud Composer environment.
 
-**Use the update script** to update the Pipfile efficiently:
+**Use the update script** to update the pyproject.toml efficiently:
 
 1. **Save the package list** that the user provided to a temporary file:
    ```bash
@@ -90,9 +90,9 @@ Use the Edit tool to make this change.
 
 2. **Run the update script**:
    ```bash
-   python .claude/skills/upgrade_cloud_composer/update_pipfile.py \
+   python .claude/skills/upgrade_cloud_composer/update_pyproject.py \
      /tmp/composer_packages.txt \
-     recidiviz/airflow/Pipfile
+     recidiviz/airflow/pyproject.toml
    ```
 
 3. **Review the script output**:
@@ -102,33 +102,33 @@ Use the Edit tool to make this change.
 
 **Package Name Normalization**:
 - Google Cloud docs sometimes use dots (`.`) or underscores (`_`) in package names
-- Pipfile uses dashes (`-`) for the same packages
+- pyproject.toml uses dashes (`-`) for the same packages
 - Examples:
-  - `backports.tarfile` in docs → `backports-tarfile` in Pipfile
-  - `jaraco.classes` in docs → `jaraco-classes` in Pipfile
+  - `backports.tarfile` in docs → `backports-tarfile` in pyproject.toml
+  - `jaraco.classes` in docs → `jaraco-classes` in pyproject.toml
 - The script automatically handles this normalization
 
-**Note**: The Pipfile has a comment explaining why packages are pinned:
+**Note**: The pyproject.toml has a comment explaining why packages are pinned:
 ```python
 # We pin all dependencies to make sure they remain on versions supported by our current
 # Cloud Composer environment. We must manually update the dependencies when we update
 # our Cloud Composer version.
 ```
 
-### Step 5: User Action - Commit, Push, and Regenerate Pipfile.lock
+### Step 5: User Action - Commit, Push, and Regenerate uv.lock
 
-**DO NOT regenerate Pipfile.lock locally**.
+**DO NOT regenerate uv.lock locally**.
 
 Prompt the user to perform the following steps:
 
 1. Create a new branch for this upgrade
-2. Commit the changes (terraform + Pipfile)
+2. Commit the changes (terraform + pyproject.toml)
 3. Push the branch to GitHub
-4. Trigger the "Re-lock Airflow Pipenv" GitHub Action for their branch:
-   - Go to: https://github.com/Recidiviz/pulse-data/actions/workflows/pipenv-lock-airflow.yaml
+4. Trigger the "Re-lock Airflow dependencies" GitHub Action for their branch:
+   - Go to: https://github.com/Recidiviz/pulse-data/actions/workflows/uv-lock-airflow.yaml
    - Click "Run workflow" and select their branch
 5. Wait for the action to complete
-6. Pull the updated `Pipfile.lock` from their branch
+6. Pull the updated `uv.lock` from their branch
 
 ### Step 6: Check for Test Updates
 
@@ -240,7 +240,7 @@ After the PR is merged, remind the user to:
 
 - **Large Metadata DB**: If DB > 3 GiB, upgrade may timeout. Run maintenance DAG first.
 - **Breaking API Changes**: Major Airflow version jumps may require test updates.
-- **Never regenerate Pipfile.lock locally**: Always use the GitHub Action.
+- **Never regenerate uv.lock locally**: Always use the GitHub Action.
 - **Version Availability**: Cloud Composer versions aren't released simultaneously across regions.
 - **Failed Upgrades**: If upgrade fails (timeout, etc.), you may need to revert and address root cause first.
 
@@ -252,11 +252,11 @@ After the PR is merged, remind the user to:
 
 **Claude actions**:
 1. Check current version: `composer-2.13.1-airflow-2.10.5`
-2. Check for unfixed Dependabot alerts related to airflow/Pipfile (open/dismissed/auto_dismissed), and cross-reference with open Dependabot PRs
+2. Check for unfixed Dependabot alerts related to airflow/pyproject.toml (open/dismissed/auto_dismissed), and cross-reference with open Dependabot PRs
 3. Suggest target: `composer-2.13.8-airflow-2.10.5`
 4. Provide package list URL to user: `https://docs.cloud.google.com/composer/docs/versions-packages#composer-2-13-8-airflow-2-10-5`
 5. After user provides packages, update `cloud-composer.tf`: `image_version = "composer-2.13.8-airflow-2.10.5"`
-6. Save package list to `/tmp/composer_packages.txt` and run update script to update Pipfile
+6. Save package list to `/tmp/composer_packages.txt` and run update script to update pyproject.toml
 7. Review script output for normalization warnings
 8. Note: No test updates likely needed (minor version bump)
 9. Provide PR template with draft description
@@ -264,7 +264,7 @@ After the PR is merged, remind the user to:
 **User actions**:
 1. Copy-paste package list from Google docs
 2. Create branch, commit, and push changes
-3. Trigger "Re-lock Airflow Pipenv" action
+3. Trigger "Re-lock Airflow dependencies" action
 4. Verify DB size in Cloud Monitoring
 5. Create PR referencing security alerts and noting the long deploy time
 6. Notify platform on-call and update deploy log before merging
@@ -278,11 +278,11 @@ See: PR #45946
 
 **Claude actions**:
 1. Check current version: `composer-2.9.7-airflow-2.7.3`
-2. Check for unfixed Dependabot alerts related to airflow/Pipfile (open/dismissed/auto_dismissed), and cross-reference with open Dependabot PRs
+2. Check for unfixed Dependabot alerts related to airflow/pyproject.toml (open/dismissed/auto_dismissed), and cross-reference with open Dependabot PRs
 3. Suggest target: `composer-2.13.1-airflow-2.10.5`
 4. Provide package list URL to user
 5. After user provides packages, update `cloud-composer.tf`
-6. Save package list and run update script to update Pipfile (many changes expected)
+6. Save package list and run update script to update pyproject.toml (many changes expected)
 7. Review script output for new packages and normalization warnings
 8. Review test changes from similar PRs - major version jump may need:
    - Updates to `kubernetes_helper_functions.py`
@@ -292,7 +292,7 @@ See: PR #45946
 **User actions**:
 1. Copy-paste package list from Google docs
 2. Create branch, commit, and push changes
-3. Trigger "Re-lock Airflow Pipenv" action
+3. Trigger "Re-lock Airflow dependencies" action
 4. Verify DB size < 3 GiB (critical for major upgrades)
 5. Create PR referencing support end date issue and noting the long deploy time
 6. Notify platform on-call and update deploy log before merging

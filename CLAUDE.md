@@ -112,6 +112,7 @@ Available skills:
 - [Create Recidiviz Data GitHub Tasks](./.claude/skills/create_recidiviz_data_github_tasks/SKILL.md)
 - [Maintain Skill Files](./.claude/skills/maintain_skill_files/SKILL.md)
 - [Maintain CLAUDE.md Documentation](./.claude/skills/maintain_claude_md/SKILL.md)
+- [Upgrade Cloud Composer](./.claude/skills/upgrade_cloud_composer/SKILL.md)
 
 # Personal preferences
 - @.claude/pulse-data-local-settings.md
