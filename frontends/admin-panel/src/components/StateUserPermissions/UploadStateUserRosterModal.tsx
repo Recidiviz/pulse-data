@@ -61,7 +61,7 @@ export const UploadStateUserRosterModal = ({
         setReason={setReason}
         reason={reason}
         stateRoleData={stateRoleData}
-        warningMessage="This form should be used to update users in the roster. If an existing user is found with a matching email address and state_code, the remaining fields will be updated to the value listed in the CSV. A corresponding State Role Default Permission entry must exist for each role in the CSV otherwise the roster upload will fail."
+        warningMessage="Add or update roster users via CSV upload. Matches existing users by email_address + state_code. Empty external_id preserves the existing value; other empty fields will clear existing values. All roles must have a State Role Default Permission entry."
       />
     </DraggableModal>
   );

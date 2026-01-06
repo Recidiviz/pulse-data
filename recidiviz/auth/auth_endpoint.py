@@ -137,6 +137,14 @@ def _upsert_user_rows(
             for column in columns_to_delete:
                 del row[column]
 
+        # For UserOverride (admin panel CSV uploads): if external_id is
+        # None/empty, remove it from the row so _upsert() doesn't overwrite
+        # an existing value with NULL. This prevents orphaned pseudonymized_ids
+        # (where external_id is cleared but pseudonymized_id remains, causing
+        # lookup mismatches). For Roster (ingestion), we allow clearing values.
+        if table == UserOverride and row.get("external_id") is None:
+            row.pop("external_id", None)
+
         if not row["email_address"]:
             raise ValueError(
                 "Roster contains a row that is missing an email address (required)"

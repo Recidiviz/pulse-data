@@ -1677,6 +1677,10 @@ class AuthUsersEndpointTestCase(TestCase):
             self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_then_sync_roster")  # type: ignore[attr-defined]
 
     def test_upload_roster_missing_external_id(self) -> None:
+        """Test that uploading a CSV with empty external_id preserves the existing
+        external_id for a user in the Roster table. See also
+        test_upload_roster_missing_external_id_preserves_existing_override which
+        tests the same behavior for users in the UserOverride table."""
         roster_leadership_user = generate_fake_rosters(
             email="leadership@testdomain.com",
             region_code="US_XX",
@@ -1724,6 +1728,70 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
             )
             self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_missing_external_id")  # type: ignore[attr-defined]
+
+    def test_upload_roster_missing_external_id_preserves_existing_override(
+        self,
+    ) -> None:
+        """Test that uploading a CSV with empty external_id does NOT wipe out
+        an existing external_id in the UserOverride table. This prevents orphaned
+        pseudonymized_ids where external_id is cleared but pseudonymized_id remains."""
+        # Create a UserOverride with existing external_id and pseudonymized_id
+        override_user = generate_fake_user_overrides(
+            email="leadership@testdomain.com",
+            region_code="US_XX",
+            roles=[LEADERSHIP_ROLE],
+            external_id="EXISTING_EXTERNAL_ID",
+            pseudonymized_id="existing_pseudo_id",
+            district="OLD DISTRICT",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                override_user,
+                leadership_default,
+            ],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_external_id.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(
+            level="INFO"
+        ) as log:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            response = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertReasonLog(
+                log.output,
+                "uploading roster for state US_XX with reason: test",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            result = json.loads(response.data)
+
+            # Verify the existing external_id and pseudonymized_id were preserved
+            self.assertEqual(len(result), 1)
+            user = result[0]
+            self.assertEqual(user["externalId"], "EXISTING_EXTERNAL_ID")
+            self.assertEqual(user["pseudonymizedId"], "existing_pseudo_id")
+            # District should be updated from the CSV
+            self.assertEqual(user["district"], "NEW DISTRICT")
 
     def test_upload_roster_multiple_roles(self) -> None:
         leadership_default = generate_fake_default_permissions(
