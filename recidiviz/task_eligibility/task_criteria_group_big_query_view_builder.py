@@ -202,7 +202,14 @@ class TaskCriteriaGroupQueryBuilder:
     ) -> str:
         """Return the ordering clause used to aggregate the reasons fields when provided"""
         if reason.name in reasons_aggregate_function_use_ordering_clause:
-            return f" ORDER BY ARRAY_TO_STRING({extract_object_from_json(reason.name, reason.type.value, 'reason_v2')}, ',')"
+            if reason.type == bigquery.enums.StandardSqlTypeNames.STRING:
+                return f" ORDER BY {extract_object_from_json(reason.name, reason.type.value, 'reason_v2')}"
+            if reason.type == bigquery.enums.StandardSqlTypeNames.ARRAY:
+                return f" ORDER BY ARRAY_TO_STRING({extract_object_from_json(reason.name, reason.type.value, 'reason_v2')}, ',')"
+            raise ValueError(
+                f"Unsupported type {reason.type} for ordering clause. "
+                f"Only STRING and ARRAY types are supported for reasons_aggregate_function_use_ordering_clause."
+            )
         return ""
 
     @classmethod

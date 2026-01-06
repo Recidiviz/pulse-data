@@ -101,6 +101,7 @@ class TaskCompletionEventType(Enum):
     # between within-facility and outside-the-facility assignments within a state.
     GRANTED_INSTITUTIONAL_WORKER_STATUS = "GRANTED_INSTITUTIONAL_WORKER_STATUS"
     GRANTED_FURLOUGH = "GRANTED_FURLOUGH"
+    GRANTED_SUPERVISION_SENTENCE_REDUCTION = "GRANTED_SUPERVISION_SENTENCE_REDUCTION"
     # TODO(#35580): determine if this should be split into separate events
     # (potentially transfer to minimum facility & transfer to re-entry facility)
     TRANSFER_TO_MINIMUM_FACILITY = "TRANSFER_TO_MINIMUM_FACILITY"
@@ -178,6 +179,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
+            TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
         ]:
             return WorkflowsSystemType.SUPERVISION
         raise ValueError(
@@ -273,6 +275,10 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
         ]:
             return DecarceralImpactType.TRANSFER_TO_NO_CONTACT_SUPERVISION
+        if self in [
+            TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
+        ]:
+            return DecarceralImpactType.CREDIT_REDUCTION_GRANTED
         raise ValueError(
             f"No decarceral impact type configured for completion event type {self.value}"
         )
@@ -324,6 +330,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
+            TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
         ]:
             return True
         if self in [
@@ -395,6 +402,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
+            TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
         ]:
             return False
         raise ValueError(

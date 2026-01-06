@@ -38,6 +38,7 @@ class DecarceralImpactType(Enum):
     TRANSFER_TO_NO_CONTACT_SUPERVISION = "TRANSFER_TO_NO_CONTACT_SUPERVISION"
     TRANSFER_TO_REENTRY_PREP_UNIT = "TRANSFER_TO_REENTRY_PREP_UNIT"
     TRANSFER_TO_WORK_RELEASE = "TRANSFER_TO_WORK_RELEASE"
+    CREDIT_REDUCTION_GRANTED = "CREDIT_REDUCTION_GRANTED"
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -81,4 +82,7 @@ _DECARCERAL_IMPACT_TYPE_DESCRIPTIONS: Dict[DecarceralImpactType, str] = {
     DecarceralImpactType.TRANSFER_TO_WORK_RELEASE: "Events related to transitions to a work release"
     " facility, unit, or status. This event indicates when the work release privilege is granted, and"
     " not when someone is actually released temporarily.",
+    DecarceralImpactType.CREDIT_REDUCTION_GRANTED: "Events related to a credit reduction being granted,"
+    " which reduces the time remaining on a sentence. This is distinct from early discharge as the"
+    " reduction may be granted months before the actual release date.",
 }

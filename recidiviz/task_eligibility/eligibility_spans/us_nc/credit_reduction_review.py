@@ -23,14 +23,16 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     community_confinement_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    release_to_community_confinement_supervision,
+from recidiviz.task_eligibility.completion_events.state_specific.us_nc import (
+    granted_supervision_sentence_reduction,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    continuous_employment_or_student_for_90_days,
+    continuous_employment_for_90_days,
+    continuous_student_for_90_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
-    continuous_enrollment_at_rehab_facility_for_90_days,
+    completion_of_facility_program_during_prs,
+    continuous_enrollment_at_facility_for_90_days,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -53,17 +55,22 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             criteria_name="US_NC_90_CONSECUTIVE_DAYS_OF_POSITIVE_BEHAVIOR_FOR_CRR",
             sub_criteria_list=[
                 # 1. 90 consecutive days of active enrollment in an education program OR
+                continuous_student_for_90_days.VIEW_BUILDER,
                 # 2. 90 consecutive days of employment, demonstrated by proof of wages OR
-                continuous_employment_or_student_for_90_days.VIEW_BUILDER,
+                continuous_employment_for_90_days.VIEW_BUILDER,
                 # 3. 90 consecutive days at a facility or institution for medical or
                 #       psychological treatment or facility providing rehabilitation,
                 #       instruction, recreation, or residence  OR
-                continuous_enrollment_at_rehab_facility_for_90_days.VIEW_BUILDER,
+                continuous_enrollment_at_facility_for_90_days.VIEW_BUILDER,
+                completion_of_facility_program_during_prs.VIEW_BUILDER,
             ],
+            reasons_aggregate_function_override={"employment_status": "STRING_AGG"},
+            reasons_aggregate_function_use_ordering_clause={"employment_status"},
+            allowed_duplicate_reasons_keys=["employment_status"],
         ),
     ],
-    # TODO(#54787): Create the right completion event
-    completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
+    # TODO(#54787): Hydrate completion event
+    completion_event_builder=granted_supervision_sentence_reduction.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

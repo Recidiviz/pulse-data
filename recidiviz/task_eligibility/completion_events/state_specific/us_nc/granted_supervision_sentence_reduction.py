@@ -14,32 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that displays periods when someone has maintained 
-continuous employment or been a student for at least 90 days
-"""
-
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    employed_for_at_least_x_time_criteria_builder,
+"""Defines a view that shows granted credit reductions produced after a 
+Credit Reduction Review (CRR)."""
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
+    TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    employed_for_at_least_x_time_criteria_builder(
-        date_interval=90,
-        date_part="DAY",
-        criteria_name="CONTINUOUS_EMPLOYMENT_OR_STUDENT_FOR_90_DAYS",
-        description=__doc__,
-        employment_status_values=[
-            "EMPLOYED_UNKNOWN_AMOUNT",
-            "EMPLOYED_FULL_TIME",
-            "EMPLOYED_PART_TIME",
-            "STUDENT",
-        ],
-    )
+# TODO(#54787): Hydrate completion event
+_QUERY_TEMPLATE = """
+SELECT
+    'US_NC' AS state_code,
+    123 AS person_id,
+    CURRENT_DATE('US/Central') AS completion_event_date
+FROM (SELECT 1)
+WHERE FALSE
+"""
+
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+    state_code=StateCode.US_NC,
+    completion_event_type=TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
+    description=__doc__,
+    completion_event_query_template=_QUERY_TEMPLATE,
 )
 
 if __name__ == "__main__":
