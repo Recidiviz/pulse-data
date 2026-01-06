@@ -234,6 +234,13 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Violation_Incidents"
   }
 
+  join: us_mi_Table_Data_TRANSCASE_FORMS_Prod {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_Table_Data_TRANSCASE_FORMS_Prod.OffenderNumber};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_Table_Data_TRANSCASE_FORMS_Prod"
+  }
+
   join: us_mi_ADH_CASE_NOTE_DETAIL {
     sql_on: ${us_mi_ADH_OFFENDER_BOOKING.offender_booking_id} = ${us_mi_ADH_CASE_NOTE_DETAIL.offender_booking_id};;
     type: full_outer
