@@ -74,7 +74,9 @@ COPY --chown=recidiviz uv.lock /app/
 WORKDIR /app
 
 # --frozen ensures we use exactly what's in the lock file without updating it
-RUN uv sync --frozen $(if [ "$DEV_MODE" = "True" ]; then echo "--all-extras"; fi)
+# --no-install-project avoids installing the project itself (source code isn't copied yet)
+# --python specifies Python 3.11 since the system default may be different
+RUN uv sync --frozen --no-install-project --python python3.11 $(if [ "$DEV_MODE" = "True" ]; then echo "--all-extras"; fi)
 
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""

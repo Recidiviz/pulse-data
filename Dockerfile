@@ -77,7 +77,9 @@ USER recidiviz
 RUN npm install prettier
 COPY pyproject.toml /app/
 COPY uv.lock /app/
-RUN uv sync --all-extras --frozen
+# --no-install-project avoids installing the project itself (source code isn't copied yet)
+# --python specifies Python 3.11 since the system default may be different
+RUN uv sync --all-extras --frozen --no-install-project --python python3.11
 EXPOSE 8888
 
 FROM node:20-alpine AS admin-panel-build
@@ -97,7 +99,9 @@ FROM recidiviz-init AS recidiviz-app
 COPY --chown=recidiviz pyproject.toml /app/
 COPY --chown=recidiviz uv.lock /app/
 # --frozen ensures we use exactly what's in the lock file without updating it
-RUN uv sync --frozen
+# --no-install-project avoids installing the project itself (source code isn't copied yet)
+# --python specifies Python 3.11 since the system default may be different
+RUN uv sync --frozen --no-install-project --python python3.11
 # Add the rest of the application code once all dependencies are installed
 COPY --chown=recidiviz . /app
 # Add the built Admin Panel frontend to the image
