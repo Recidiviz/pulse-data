@@ -2052,6 +2052,7 @@ class StateStaff(StateBase):
     state_code = Column(String(255), nullable=False, index=True)
     full_name = Column(String(255))
     email = Column(String(255))
+    phone_number = Column(String(255))
 
     # Cross-entity relationships
     external_ids = relationship(

@@ -291,6 +291,50 @@ def is_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> No
         raise ValueError(f"Email has a suspicious username {local_part}")
 
 
+def is_opt_valid_phone_number(
+    _instance: Any, _attribute: attr.Attribute, value: str
+) -> None:
+    if value is not None:
+        is_valid_phone_number(_instance, _attribute, value)
+
+
+def is_valid_phone_number(
+    _instance: Any, _attribute: attr.Attribute, string_value: str
+) -> None:
+    """
+    Validates phone number matches NANP (North American Number Plan) format, i.e.
+    it is a valid US/Canada phone number:
+    - 10 digits, or 11 digits with leading 1
+    - Area code (NXX): N=2-9, X=0-8, X=0-9, cannot end in 11
+    - Exchange code (NXX): N=2-9, cannot end in 11
+    """
+    digits = string_value
+
+    # Handle 11-digit numbers (must have leading 1)
+    if len(digits) == 11:
+        if digits[0] != "1":
+            raise ValueError(
+                f"Incorrect format: Phone number field with {string_value} is not valid"
+            )
+        digits = digits[1:]
+    elif len(digits) != 10:
+        raise ValueError(
+            f"Incorrect format: Phone number field with {string_value} is not valid"
+        )
+
+    # Area code (indices 0-2) cannot end in "11"
+    if digits[1:3] == "11":
+        raise ValueError(
+            f"Incorrect format: Phone number field with {string_value} has invalid area code"
+        )
+
+    # Exchange code (indices 3-5) cannot end in "11"
+    if digits[4:6] == "11":
+        raise ValueError(
+            f"Incorrect format: Phone number field with {string_value} has invalid exchange code"
+        )
+
+
 # String field validators
 is_str = attr.validators.instance_of(str)
 is_opt_str = is_opt(str)

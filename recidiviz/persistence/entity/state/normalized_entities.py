@@ -3932,6 +3932,9 @@ class NormalizedStateStaff(
     email: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_valid_email
     )
+    phone_number: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_valid_phone_number
+    )
 
     # Primary key
     staff_id: int = attr.ib(validator=attr_validators.is_int)

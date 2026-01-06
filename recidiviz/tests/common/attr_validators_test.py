@@ -508,6 +508,239 @@ class TestEmailValidator(unittest.TestCase):
             self._TestClass(my_email="tex@example.com", my_opt_email=email_value)
 
 
+@attr.s(frozen=True)
+class _TestPhoneNumberClass:
+    """
+    Used in TestPhoneNumberValidator
+    """
+
+    my_phone: str = attr.ib(validator=attr_validators.is_valid_phone_number)
+    my_opt_phone: Optional[str] = attr.ib(
+        validator=attr_validators.is_opt_valid_phone_number
+    )
+
+
+class TestPhoneNumberValidator(unittest.TestCase):
+    """Tests for is_valid_phone_number and is_opt_valid_phone_number"""
+
+    _TestClass: type[_TestPhoneNumberClass]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._TestClass = _TestPhoneNumberClass
+
+    def test_valid_phone_10_digits(self) -> None:
+        """Test that a 10-digit phone number is valid."""
+        valid_phone = "2345678901"
+        instance = self._TestClass(my_phone=valid_phone, my_opt_phone=None)
+        self.assertEqual(instance.my_phone, valid_phone)
+
+    def test_valid_phone_11_digits_with_1(self) -> None:
+        """Test that an 11-digit phone number starting with 1 is valid."""
+        valid_phone = "12345678901"
+        instance = self._TestClass(my_phone=valid_phone, my_opt_phone=None)
+        self.assertEqual(instance.my_phone, valid_phone)
+
+    def test_invalid_phone_11_digits_not_starting_with_1(self) -> None:
+        """Test that an 11-digit phone number not starting with 1 is invalid."""
+        invalid_phone = "22345678901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_with_plus(self) -> None:
+        """Test that a phone number with +1 prefix is invalid."""
+        invalid_phone = "+12345678901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_with_formatting(self) -> None:
+        """Test that a formatted phone number (with parens and dashes) is invalid."""
+        invalid_phone = "(234) 567-8901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_with_dashes(self) -> None:
+        """Test that a phone number with dashes is invalid."""
+        invalid_phone = "234-567-8901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_with_dots(self) -> None:
+        """Test that a phone number with dots is invalid."""
+        invalid_phone = "234.567.8901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_with_spaces(self) -> None:
+        """Test that a phone number with spaces is invalid."""
+        invalid_phone = "234 567 8901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_too_few_digits(self) -> None:
+        """Test that a phone number with too few digits is invalid."""
+        invalid_phone = "123456789"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_too_many_digits(self) -> None:
+        """Test that a phone number with too many digits is invalid."""
+        invalid_phone = "123456789012"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_empty_string(self) -> None:
+        """Test that an empty string is invalid."""
+        invalid_phone = ""
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_area_code_ending_in_11(self) -> None:
+        """Test that a phone number with area code ending in 11 is invalid."""
+        invalid_phone = "2115678901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} has invalid area code"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_exchange_code_ending_in_11(self) -> None:
+        """Test that a phone number with exchange code ending in 11 is invalid."""
+        invalid_phone = "2345118901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} has invalid exchange code"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_both_area_and_exchange_ending_in_11(self) -> None:
+        """Test that a phone number with both area and exchange ending in 11 is invalid (area code checked first)."""
+        invalid_phone = "2115118901"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} has invalid area code"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_11_digits_area_code_ending_in_11(self) -> None:
+        """Test that 11-digit phone with area code ending in 11 is rejected."""
+        invalid_phone = "12115678901"  # 1 + area code 211
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} has invalid area code"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_invalid_phone_11_digits_exchange_code_ending_in_11(self) -> None:
+        """Test that 11-digit phone with exchange code ending in 11 is rejected."""
+        invalid_phone = "12345118901"  # 1 + valid area + exchange ending in 11
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} has invalid exchange code"
+            ),
+        ):
+            self._TestClass(my_phone=invalid_phone, my_opt_phone=None)
+
+    def test_validator_does_not_enforce_full_nanp_first_digit_rules(self) -> None:
+        """Test that the validator does NOT enforce NANP N=2-9 rules for first digits.
+
+        According to NANP, area code and exchange code first digits should be 2-9,
+        but the current implementation only validates:
+        - Length is exactly 10 or 11 digits
+        - If 11 digits, first digit is '1'
+        - Area code doesn't end in '11'
+        - Exchange code doesn't end in '11'
+
+        This test documents that phones with 0 or 1 as first digits are accepted.
+        """
+        phones_violating_nanp_but_accepted = [
+            "0125678901",  # Area code 012 (first digit 0, not 2-9)
+            "2340128901",  # Exchange code 012 (first digit 0, not 2-9)
+        ]
+        for phone in phones_violating_nanp_but_accepted:
+            instance = self._TestClass(my_phone=phone, my_opt_phone=None)
+            self.assertEqual(instance.my_phone, phone)
+
+    def test_optional_phone_with_none(self) -> None:
+        """Test that None is valid for optional phone number."""
+        valid_phone = "2345678901"
+        instance = self._TestClass(my_phone=valid_phone, my_opt_phone=None)
+        self.assertIsNone(instance.my_opt_phone)
+
+    def test_optional_phone_with_valid_value(self) -> None:
+        """Test that a valid phone number is accepted for optional field."""
+        required_phone = "2345678901"
+        optional_phone = "9876543210"
+        instance = self._TestClass(my_phone=required_phone, my_opt_phone=optional_phone)
+        self.assertEqual(instance.my_opt_phone, optional_phone)
+
+    def test_optional_phone_with_invalid_value(self) -> None:
+        """Test that an invalid phone number raises error for optional field."""
+        required_phone = "2345678901"
+        invalid_phone = "12345"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Phone number field with {invalid_phone} is not valid"
+            ),
+        ):
+            self._TestClass(my_phone=required_phone, my_opt_phone=invalid_phone)
+
+
 class TestIsListOfValidator(unittest.TestCase):
     """Tests for the is_list_of() validator."""
 

@@ -2887,6 +2887,9 @@ class StateStaff(
     email: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_valid_email
     )
+    phone_number: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_valid_phone_number
+    )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer

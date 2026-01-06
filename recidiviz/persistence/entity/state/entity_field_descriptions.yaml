@@ -552,6 +552,9 @@ state_staff:
       The staff member's official email. The value in this field may change over
       time if the staff member's official email changes. We enforce that this value is unique
       across all state_staff rows (case-insensitive).
+    phone_number: >-
+      The staff's official phone number. This must be a valid US/Canadian phone number 
+      according to North American Numbering Plan (NANP) rules.
     full_name: >-
       The staff member's full name. The value in this field may change over
       time as the staff member's name changes.
