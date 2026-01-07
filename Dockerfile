@@ -17,6 +17,7 @@ RUN apt install -y \
     libxml2-dev libxslt1-dev \
     default-jre \
     libpq-dev \
+    libgeos-dev \
     build-essential \
     python3.11-dev \
     curl && rm -rf /var/lib/apt/lists/* && \
