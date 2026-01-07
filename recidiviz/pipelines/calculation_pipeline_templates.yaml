@@ -235,6 +235,13 @@ metric_pipelines:
     metric_types: VIOLATION
     machine_type: c4a-highcpu-32
 
+  # US_NC supervision population span metrics (staging only - not a production state)
+  - pipeline: population_span_metrics
+    state_code: US_NC
+    metric_types: SUPERVISION_POPULATION_SPAN
+    machine_type: c4d-highcpu-32
+    staging_only: True
+
     # Full US_NE calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_NE
