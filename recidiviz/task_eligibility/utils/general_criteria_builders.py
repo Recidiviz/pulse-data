@@ -1844,6 +1844,121 @@ def not_on_specific_supervision_case_type(
     )
 
 
+def no_recent_marked_ineligible_criteria_builder(
+    criteria_name: str,
+    description: str,
+    opportunity_type: str,
+    acceptable_denial_reasons: List[str],
+    state_code: Optional[StateCode] = None,
+    any_acceptable_reason_sufficient: bool = False,
+) -> (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder
+    | StateSpecificTaskCriteriaBigQueryViewBuilder
+):
+    """
+    Returns a criteria view builder that shows spans of time when someone has NOT been
+    marked ineligible in the Workflows dashboard, or has been marked ineligible but only
+    for "acceptable" reasons that shouldn't disqualify them.
+
+    This is useful for criteria like:
+    - "Not denied for LSU unless only reason is FFR (fines/fees)"
+    - "Not denied for CRC work-release if reason includes MEDICAL"
+
+    Args:
+        criteria_name (str): Name of the criterion.
+        description (str): Description of the criterion.
+        opportunity_type (str): The workflow opportunity type to filter on
+            (e.g., 'LSU', 'usTnExpiration', 'usIxCRCWorkRelease').
+        acceptable_denial_reasons (List[str]): List of denial reasons that should still
+            result in `meets_criteria=True`. Example: ['FFR'], ['MEDICAL'].
+        state_code (StateCode, optional): The state code for this criterion. If provided,
+            returns a StateSpecificTaskCriteriaBigQueryViewBuilder. If None, returns a
+            StateAgnosticTaskCriteriaBigQueryViewBuilder.
+        any_acceptable_reason_sufficient (bool, optional): If False (default), ALL denial
+            reasons must be in the acceptable list for meets_criteria=True. If True, having
+            ANY acceptable denial reason is sufficient to meet criteria.
+
+    Returns:
+        Either a state-specific or state-agnostic TES criterion view builder.
+    """
+    acceptable_reasons_list = list_to_query_string(
+        acceptable_denial_reasons, quoted=True
+    )
+
+    state_code_filter = ""
+    if state_code:
+        state_code_filter = f"AND state_code = '{state_code.value}'"
+
+    # Choose aggregation logic based on parameter
+    if any_acceptable_reason_sufficient:
+        agg_logic = f"LOGICAL_OR(denial_reason IN ({acceptable_reasons_list})) AS reasons_acceptable"
+        agg_comment = "-- Check if ANY denial reason is in the acceptable list"
+    else:
+        agg_logic = f"LOGICAL_AND(denial_reason IN ({acceptable_reasons_list})) AS reasons_acceptable"
+        agg_comment = "-- Check if ALL denial reasons are in the acceptable list"
+
+    criteria_query = f"""
+    WITH denial_reasons_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            snooze_start_date AS start_date,
+            -- If the snooze was not still active as of the last day we have data for
+            -- (presumably today), take the last day it was active. Otherwise assume
+            -- it is still active and assign an end date of NULL.
+            IF(
+                MAX(as_of) < (SELECT MAX(as_of) FROM `{{project_id}}.workflows_views.snooze_status_archive_materialized`),
+                MAX(as_of),
+                NULL
+            ) AS end_date,
+            STRING_AGG(DISTINCT denial_reason, ' - ' ORDER BY denial_reason) AS denial_reasons_str,
+            {agg_comment}
+            {agg_logic},
+        FROM `{{project_id}}.workflows_views.snooze_status_archive_materialized`,
+        UNNEST(denial_reasons) AS denial_reason
+        WHERE opportunity_type = '{opportunity_type}'
+            {state_code_filter}
+        GROUP BY 1, 2, 3
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        reasons_acceptable AS meets_criteria,
+        TO_JSON(STRUCT(denial_reasons_str AS denial_reasons_str)) AS reason,
+        denial_reasons_str,
+    FROM denial_reasons_spans
+    WHERE start_date != end_date
+    """
+
+    reasons_fields = [
+        ReasonsField(
+            name="denial_reasons_str",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="List of distinct denial reasons for the latest snooze",
+        ),
+    ]
+
+    if state_code:
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            criteria_name=criteria_name,
+            state_code=state_code,
+            description=description,
+            criteria_spans_query_template=criteria_query,
+            meets_criteria_default=True,
+            reasons_fields=reasons_fields,
+        )
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        meets_criteria_default=True,
+        reasons_fields=reasons_fields,
+    )
+
+
 def supervision_case_type_is_criteria_builder(
     case_types: List[str], criteria_name: str, description: str
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:

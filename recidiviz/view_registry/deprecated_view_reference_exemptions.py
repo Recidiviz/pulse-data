@@ -243,6 +243,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_inelig
 from recidiviz.task_eligibility.criteria.state_specific.us_az.only_drug_offense_convictions import (
     VIEW_BUILDER as US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_ix.has_high_severity_crime import (
+    VIEW_BUILDER as US_IX_HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_me.supervision_past_half_full_term_release_date_from_probation_start import (
     VIEW_BUILDER as US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER,
 )
@@ -319,6 +322,10 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
             "sentences migration"
         ),
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove state_charge reference as part of the v2 "
+            "sentences migration"
+        ),
+        US_IX_HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_charge reference as part of the v2 "
             "sentences migration"
         ),

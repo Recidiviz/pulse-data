@@ -103,6 +103,9 @@ from recidiviz.persistence.entity.state.entities import StateCharge
 from recidiviz.pipelines.ingest.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_ix.has_high_severity_crime import (
+    VIEW_BUILDER as HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER,
+)
 
 # For each US_IX metric export, for each product view in that export, a mapping of
 #   deprecated v1 sentences views that are a) referenced directly without going through
@@ -137,6 +140,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
@@ -168,6 +172,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
@@ -199,6 +204,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
@@ -335,6 +341,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
@@ -347,6 +354,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },

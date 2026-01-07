@@ -648,13 +648,9 @@ SELECT
 """
 
 
-def eprd_within_x_months_query(
-    num_months: int, meets_criteria_bool: bool = True
-) -> str:
+def eprd_cte() -> str:
     """
-    Defines a criteria span view that shows periods of time during which someone is
-    within x months of their Earliest Possible Release Date (EPRD) and has not yet
-    passed that date.
+    Defines a CTE that calculates the Earliest Possible Release Date (EPRD) for individuals in Idaho.
 
     The EPRD is calculated as specified below:
         EPRD = TPD, if the TPD exists
@@ -662,113 +658,133 @@ def eprd_within_x_months_query(
         EPRD = PED, if TPD does not exist, the PHD is prior to the PED, and the PED after today.
         EPRD = PHD, if TPD does not exist and PHD is after PED.
     """
+
+    return f"""ped_tpd_ftrd_spans AS (
+SELECT
+    span.state_code,
+    span.person_id,
+    span.start_date,
+    span.end_date_exclusive AS end_date,
+    span.group_parole_eligibility_date AS parole_eligibility_date,
+    span.group_projected_parole_release_date AS tentative_parole_date,
+    span.group_projected_full_term_release_date_max AS full_term_release_date
+FROM `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sessions_materialized` span
+WHERE span.state_code = 'US_IX'
+),
+ped_tpd_phd_ftrd_spans AS (
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    -- Only retain PEDs in the future
+    LEAST({nonnull_end_date_clause('end_date')}, parole_eligibility_date) AS end_date,
+    parole_eligibility_date,
+    NULL AS tentative_parole_date,
+    NULL AS parole_hearing_date,
+    NULL AS full_term_release_date
+FROM ped_tpd_ftrd_spans
+WHERE parole_eligibility_date IS NOT NULL
+
+UNION ALL
+
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NULL AS parole_eligibility_date,
+    tentative_parole_date,
+    NULL AS parole_hearing_date,
+    full_term_release_date
+FROM ped_tpd_ftrd_spans ped
+
+UNION ALL
+
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date_exclusive AS end_date,
+    NULL AS parole_eligibility_date,
+    NULL AS tentative_parole_date,
+    pds.initial_parole_hearing_date AS parole_hearing_date,
+    NULL AS full_term_release_date
+FROM `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
+
+UNION ALL
+
+SELECT 
+    pds.state_code,
+    pds.person_id,
+    start_date,
+    end_date_exclusive AS end_date,
+    NULL AS parole_eligibility_date,
+    NULL AS tentative_parole_date,
+    pds.next_parole_hearing_date AS parole_hearing_date,
+    NULL AS full_term_release_date
+FROM `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
+),
+{create_sub_sessions_with_attributes(
+table_name="ped_tpd_phd_ftrd_spans"
+)},
+grouped_sub_sessions AS (
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    MIN(parole_eligibility_date) AS parole_eligibility_date, 
+    MIN(tentative_parole_date) AS tentative_parole_date, 
+    --take the MIN of all future parole hearing dates, or if none exist, the MAX of all past parole hearing dates
+    --this only works based on the subsessionizing done in us_ix_parole_dates_spans_preprocessing_materialized
+    COALESCE(
+        MIN(IF(parole_hearing_date > start_date, parole_hearing_date, NULL)),
+        MAX(parole_hearing_date)
+    ) AS parole_hearing_date,
+    MIN(full_term_release_date) AS full_term_release_date,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4
+),
+eprd_sessions AS (
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    parole_eligibility_date,
+    tentative_parole_date,
+    parole_hearing_date,
+    full_term_release_date,
+    CASE
+        WHEN tentative_parole_date IS NOT NULL THEN tentative_parole_date
+        WHEN parole_hearing_date IS NULL THEN full_term_release_date
+        WHEN parole_eligibility_date > parole_hearing_date THEN parole_eligibility_date
+        WHEN (parole_hearing_date >= parole_eligibility_date OR parole_eligibility_date IS NULL) THEN parole_hearing_date
+        ELSE NULL
+    END AS earliest_possible_release_date
+FROM grouped_sub_sessions
+)"""
+
+
+def eprd_within_x_months_query(
+    num_months: int,
+    meets_criteria_bool: bool = True,
+    indent_level: int = 8,
+) -> str:
+    """
+    Defines a criteria span view that shows periods of time during which someone is
+    within x months of their Earliest Possible Release Date (EPRD) and has not yet
+    passed that date.
+
+    Args:
+        num_months (int): Number of months to use for the leading window time.
+        meets_criteria_bool (bool): Whether to return spans that meet or do not meet
+            the criteria. Defaults to True.
+        indent_level (int): Indent level for the query. Defaults to 8.
+    """
     meets_criteria_condition = "" if meets_criteria_bool else "NOT"
-    return f"""
-    WITH ped_tpd_ftrd_spans AS (
-        SELECT
-            span.state_code,
-            span.person_id,
-            span.start_date,
-            span.end_date_exclusive AS end_date,
-            span.group_parole_eligibility_date AS parole_eligibility_date,
-            span.group_projected_parole_release_date AS tentative_parole_date,
-            span.group_projected_full_term_release_date_max AS full_term_release_date
-        FROM `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sessions_materialized` span
-        WHERE span.state_code = 'US_IX'
-    ),
-    ped_tpd_phd_ftrd_spans AS (
-        SELECT 
-            state_code,
-            person_id,
-            start_date,
-            -- Only retain PEDs in the future
-            LEAST({nonnull_end_date_clause('end_date')}, parole_eligibility_date) AS end_date,
-            parole_eligibility_date,
-            NULL AS tentative_parole_date,
-            NULL AS parole_hearing_date,
-            NULL AS full_term_release_date
-        FROM ped_tpd_ftrd_spans
-        WHERE parole_eligibility_date IS NOT NULL
-
-        UNION ALL
-
-        SELECT 
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            NULL AS parole_eligibility_date,
-            tentative_parole_date,
-            NULL AS parole_hearing_date,
-            full_term_release_date
-        FROM ped_tpd_ftrd_spans ped
-
-        UNION ALL
-
-        SELECT 
-            state_code,
-            person_id,
-            start_date,
-            end_date_exclusive AS end_date,
-            NULL AS parole_eligibility_date,
-            NULL AS tentative_parole_date,
-            pds.initial_parole_hearing_date AS parole_hearing_date,
-            NULL AS full_term_release_date
-        FROM `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
-
-        UNION ALL
-
-        SELECT 
-            pds.state_code,
-            pds.person_id,
-            start_date,
-            end_date_exclusive AS end_date,
-            NULL AS parole_eligibility_date,
-            NULL AS tentative_parole_date,
-            pds.next_parole_hearing_date AS parole_hearing_date,
-            NULL AS full_term_release_date
-        FROM `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized` pds
-    ),
-    {create_sub_sessions_with_attributes(
-        table_name="ped_tpd_phd_ftrd_spans"
-    )},
-    grouped_sub_sessions AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            MIN(parole_eligibility_date) AS parole_eligibility_date, 
-            MIN(tentative_parole_date) AS tentative_parole_date, 
-            --take the MIN of all future parole hearing dates, or if none exist, the MAX of all past parole hearing dates
-            --this only works based on the subsessionizing done in us_ix_parole_dates_spans_preprocessing_materialized
-            COALESCE(
-                MIN(IF(parole_hearing_date > start_date, parole_hearing_date, NULL)),
-                MAX(parole_hearing_date)
-            ) AS parole_hearing_date,
-            MIN(full_term_release_date) AS full_term_release_date,
-        FROM sub_sessions_with_attributes
-        GROUP BY 1,2,3,4
-    ),
-    eprd_sessions AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            parole_eligibility_date,
-            tentative_parole_date,
-            parole_hearing_date,
-            full_term_release_date,
-            CASE
-                WHEN tentative_parole_date IS NOT NULL THEN tentative_parole_date
-                WHEN parole_hearing_date IS NULL THEN full_term_release_date
-                WHEN parole_eligibility_date > parole_hearing_date THEN parole_eligibility_date
-                WHEN (parole_hearing_date >= parole_eligibility_date OR parole_eligibility_date IS NULL) THEN parole_hearing_date
-                ELSE NULL
-            END AS earliest_possible_release_date
-        FROM grouped_sub_sessions
-    ),
+    query = f"""
+    WITH {eprd_cte()},
     critical_date_spans AS (
         SELECT
             state_code,
@@ -810,8 +826,9 @@ def eprd_within_x_months_query(
         full_term_release_date,
         earliest_possible_release_date
     FROM critical_date_has_passed_spans
-    WHERE start_date IS DISTINCT FROM end_date
-"""
+    WHERE start_date IS DISTINCT FROM end_date"""
+
+    return fix_indent(query, indent_level=indent_level)
 
 
 def us_ix_active_supervision_population_view_builder(
@@ -1086,3 +1103,76 @@ FROM critical_date_has_passed_spans
             ),
         ],
     )
+
+
+def release_district_criteria_query(release_districts: list[str]) -> str:
+    """
+    Returns a SQL query template for release district criteria.
+
+    This query identifies spans of time during which someone has a CRC release
+    district case note matching the specified districts.
+
+    Args:
+        release_districts: List of release districts to match (e.g., ['1', '2', 'ISC']
+            or ['3', '4', '5', '6', '7']).
+
+    Returns:
+        str: SQL query template as a string.
+    """
+    release_districts_str = "('" + "', '".join(release_districts) + "')"
+
+    return f"""
+WITH case_notes AS ({ix_general_case_notes(
+    where_clause_addition="AND ContactModeDesc LIKE '%CRC Request%'",
+    criteria_str="CRC Release District case note")}
+    --choose the most recent note
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY external_id, event_date
+        -- If there's multiple notes on the same date for a person,
+        -- pick one deterministically
+        ORDER BY note_title
+    ) = 1
+),
+case_notes_plus_sentinel AS (
+    -- Add a sentinel date
+    SELECT external_id, event_date, note_title
+    FROM case_notes
+
+    UNION ALL
+
+    SELECT DISTINCT external_id, SAFE_CAST('1900-01-01' AS DATE) AS event_date, '' AS note_title
+    FROM case_notes
+),
+super_sessions_with_case_notes AS (
+    -- Join incarceration sessions to case notes to get spans with release districts
+    SELECT
+        sess.state_code,
+        sess.person_id,
+        GREATEST(sess.start_date, c.event_date) AS start_date,
+        LEAST({nonnull_end_date_exclusive_clause("sess.end_date_exclusive")},
+            IFNULL(LEAD(c.event_date) OVER (
+                PARTITION BY sess.state_code, sess.person_id ORDER BY c.event_date),
+            '9999-12-31')
+        ) AS end_date,
+        REGEXP_EXTRACT(c.note_title, r'ISC|\\d+') AS release_district
+    FROM `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` sess
+    INNER JOIN `{{project_id}}.reference_views.product_stable_person_external_ids_materialized` pei
+        USING (state_code, person_id)
+    INNER JOIN case_notes c
+        ON c.event_date BETWEEN sess.start_date AND {nonnull_end_date_exclusive_clause("sess.end_date_exclusive")}
+            AND c.external_id = pei.stable_person_external_id
+            AND pei.system_type = 'INCARCERATION'
+            AND pei.state_code='US_IX'
+    WHERE sess.compartment_level_1 = 'INCARCERATION'
+)
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    release_district IN {release_districts_str} AS meets_criteria,
+    TO_JSON(STRUCT(release_district AS release_district)) AS reason,
+    release_district,
+FROM super_sessions_with_case_notes
+"""

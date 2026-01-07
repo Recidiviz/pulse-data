@@ -16,8 +16,8 @@
 # =============================================================================
 """
 Shows the spans of time during which someone in ID is eligible
-for a transfer to a Community Reentry Center (CRC)-like bed in Idaho Correctional
-Institutional Orofino (ICIO)
+for a transfer to a Community Reentry Center (CRC)-like bed in South Idaho
+Correctional Institution (SICI) according to criteria B.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -26,18 +26,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
     granted_work_release,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    custody_level_is_minimum,
-    is_male,
-    not_serving_for_violent_offense,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import not_denied_for_crc
-from recidiviz.task_eligibility.criteria.state_specific.us_ix.not_eligible_for_crc_like_bed_icio import (
-    IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE,
-)
-from recidiviz.task_eligibility.criteria_condition import (
-    NotEligibleCriteriaCondition,
-    PickNCompositeCriteriaCondition,
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    in_sici_or_has_d3_through_d7_release_note,
+    no_recent_marked_ineligible_unless_medical,
 )
 from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_release_request import (
     CRC_WORK_RELEASE_NOT_TIME_BASED,
@@ -51,38 +42,21 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
-    task_name="TRANSFER_TO_CRC_LIKE_BED_ICIO_REQUEST",
+    task_name="TRANSFER_TO_CRC_LIKE_BED_SICI_B_REQUEST",
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # Not time-based criteria for CRC work release
         *CRC_WORK_RELEASE_NOT_TIME_BASED,
-        # Time-based criteria specific to CRC work release
+        # Time-based criteria for CRC work release
         *CRC_WORK_RELEASE_TIME_BASED,
-        # Must be male (ICIO is a men's facility)
-        is_male.VIEW_BUILDER,
-        # Must be a resident of ICIO or expected to be released to D1/D2/ISC
-        IN_ICIO_OR_HAS_D1_OR_D2_RELEASE_NOTE,
+        # Must be a resident of SICI or expected to be released to D3/D4/D5/D6/D7
+        in_sici_or_has_d3_through_d7_release_note.VIEW_BUILDER,
+        # Not denied for CRC work release unless only reason is MEDICAL
+        no_recent_marked_ineligible_unless_medical.VIEW_BUILDER,
     ],
     # TODO(#54358): Find out which completion event should be used here
     completion_event_builder=granted_work_release.VIEW_BUILDER,
-    almost_eligible_condition=PickNCompositeCriteriaCondition(
-        sub_conditions_list=[
-            NotEligibleCriteriaCondition(
-                criteria=not_serving_for_violent_offense.VIEW_BUILDER,
-                description="Serving a sentence for a violent offense",
-            ),
-            NotEligibleCriteriaCondition(
-                criteria=not_denied_for_crc.VIEW_BUILDER,
-                description="Denied for CRC eligibility",
-            ),
-            NotEligibleCriteriaCondition(
-                criteria=custody_level_is_minimum.VIEW_BUILDER,
-                description="Custody level is not minimum",
-            ),
-        ],
-        at_most_n_conditions_true=1,
-    ),
 )
 
 if __name__ == "__main__":
