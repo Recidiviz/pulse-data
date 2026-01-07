@@ -368,6 +368,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ca_state.state_task_deadline",
     "us_co_ingest_view_results.IncarcerationPeriod",
     "us_co_ingest_view_results.SentencesAndCharges",
+    "us_co_ingest_view_results.StateAssessment",
     "us_co_ingest_view_results.StatePerson",
     "us_co_ingest_view_results.StateStaff",
     "us_co_ingest_view_results.SupervisionContact",

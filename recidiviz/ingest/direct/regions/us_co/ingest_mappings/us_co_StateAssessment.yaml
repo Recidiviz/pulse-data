@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_security_assessment` to
+# corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  RISKASSESSMENTDATE: DATE
+  RISKASSESSMENTTIME: STRING
+  RISKASSESSMENTCODE: STRING
+  RISKASSESSMENTTYPE: STRING
+  RISKASMTFACILITY: STRING
+  RISKLEVELSCORE1: STRING
+  RISKLEVELOFNEED1: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $separator: "@@"
+              $values:
+                - OFFENDERID
+                - RISKASSESSMENTCODE
+                - RISKASSESSMENTDATE
+                - RISKASSESSMENTTIME
+                - RISKASMTFACILITY
+          assessment_date: RISKASSESSMENTDATE
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: RISKASSESSMENTTYPE
+              $mappings:
+                StateAssessmentType.ORAS_PRISON_INTAKE:
+                  - PIT Scoring Tool
+                StateAssessmentType.ORAS_REENTRY:
+                  - RT Scoring Tool
+                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY:
+                  - SRT Scoring Tool
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION:
+                  - CST Scoring Tool
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  - PIT Interview Guide
+                  - CST Interview Guide
+          assessment_score: RISKLEVELSCORE1
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RISKLEVELOFNEED1
+              $mappings:
+                StateAssessmentLevel.INTERNAL_UNKNOWN:
+                  - "0"
+                StateAssessmentLevel.HIGH:
+                  - "H"
+                StateAssessmentLevel.MEDIUM:
+                  - "M"
+                StateAssessmentLevel.LOW:
+                  - "L"
+          assessment_metadata:
+            $normalized_values_json_dict:
+              security_score: RISKASMTFACILITY
