@@ -284,7 +284,7 @@ function check_gcloud_authed {
 
   if ! gcloud auth print-access-token >/dev/null 2>&1; then
     echo "No valid user credentials; running gcloud auth login..."
-    gcloud auth login
+    gcloud auth login --update-adc
     return 0
   fi
 
