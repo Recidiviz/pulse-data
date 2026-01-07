@@ -14,171 +14,112 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Observation view configuration."""
+"""Segment view configuration."""
+from collections import defaultdict
 from typing import Sequence
 
-from more_itertools import one
-
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.segment.all_segment_pages import ALL_SEGMENT_PAGES_VIEW_BUILDER
+from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_big_query_view_builder import (
     SegmentEventBigQueryViewBuilder,
 )
-from recidiviz.segment.segment_event_utils import SEGMENT_DATASETS
-from recidiviz.segment.segment_product_event_big_query_view_builder import (
-    SegmentProductEventBigQueryViewBuilder,
-)
-from recidiviz.segment.segment_product_event_big_query_view_collector import (
-    SegmentProductEventBigQueryViewCollector,
-)
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    collect_externally_managed_source_table_collections,
+from recidiviz.segment.segment_event_big_query_view_collector import (
+    SegmentEventBigQueryViewCollector,
 )
 
 
-# TODO(#46240): Reframe this as `_get_product_specific_attribute_columns_statement`
-# and rename / restructure columns_to_include_in_unioned_segment_view to something like
-# get_product_specific_columns.
-def _get_shared_columns_statement(
-    vb: SegmentProductEventBigQueryViewBuilder,
-) -> str:
-    """Generates a SQL statement for shared columns in unioned segment event views
-    that fills in NULL for columns not present in the specific segment event view."""
+def _get_unioned_product_specific_segment_event_builders(
+    event_builders: Sequence[SegmentEventBigQueryViewBuilder],
+) -> list[SimpleBigQueryViewBuilder]:
+    """Generates a list of view builders for unioned segment events by product type.
 
-    if not vb.product_type.columns_to_include_in_unioned_segment_view:
-        return ""
+    These union views query event-level views with product_type filters.
+    """
+    # Group event builders by product type
+    event_builders_by_product: dict[
+        ProductType, list[SegmentEventBigQueryViewBuilder]
+    ] = defaultdict(list)
 
-    shared_columns: list[str] = []
-    for col in vb.product_type.columns_to_include_in_unioned_segment_view:
-        if vb.additional_attribute_cols and (col in vb.additional_attribute_cols):
-            shared_columns.append(col)
-        else:
-            shared_columns.append(f"CAST(NULL AS STRING) AS {col}")
-    return list_to_query_string(shared_columns)
+    for event_builder in event_builders:
+        for product_type in event_builder.relevant_product_types:
+            event_builders_by_product[product_type].append(event_builder)
 
-
-def _get_unioned_segment_event_builders() -> list[UnionAllBigQueryViewBuilder]:
-    """Generates a list of UnionAllBigQueryViewBuilder instances for each product type"""
-
-    def _select_statement(vb: SegmentProductEventBigQueryViewBuilder) -> str:
-        session_id_select = (
-            "session_id,"
-            if vb.has_session_id
-            else "CAST(NULL AS STRING) AS session_id,"
-        )
-        return f"""
-SELECT
-    state_code,
-    email_address,
-    "{vb.segment_event_name}" AS event,
-    event_ts,
-    person_id,
-    context_page_path,
-    {session_id_select}
-    {_get_shared_columns_statement(vb)}
-"""
-
+    # Create union view for each product
     product_union_builders = []
-    for product_type, builders in (
-        SegmentProductEventBigQueryViewCollector()
-        .collect_segment_product_event_view_builders_by_product()
-        .items()
-    ):
+    for product_type, builders in event_builders_by_product.items():
         view_id = f"all_{product_type.pretty_name}_segment_events"
-        product_dataset_id = builders[0].address.dataset_id
-        unioned_builder = UnionAllBigQueryViewBuilder(
-            dataset_id=product_dataset_id,
+
+        # Get product-specific columns that should be included in the union view
+        product_specific_cols = product_type.columns_to_include_in_unioned_segment_view
+
+        ctes = []
+        for builder in sorted(builders, key=lambda b: b.segment_event_name):
+            event_table_address = builder.table_for_query
+
+            # Build the SELECT columns
+            select_cols = [
+                "state_code",
+                "email_address",
+                f'"{builder.segment_event_name}" AS event',
+                "event_ts",
+                "person_id",
+                "context_page_path",
+                "session_id",
+            ]
+
+            for col in product_specific_cols:
+                if (
+                    builder.additional_attribute_cols
+                    and col in builder.additional_attribute_cols
+                ):
+                    # Include the actual column from the event
+                    select_cols.append(col)
+                else:
+                    # Include NULL placeholder for schema consistency
+                    select_cols.append(f"CAST(NULL AS STRING) AS {col}")
+
+            # Join all columns with commas
+            columns_statement = ",\n    ".join(select_cols)
+
+            ctes.append(
+                f"""
+SELECT
+    {columns_statement}
+FROM `{{project_id}}.{event_table_address.to_str()}`
+WHERE product_type = "{product_type.value}"
+"""
+            )
+
+        view_query_template = "\nUNION ALL\n".join(ctes)
+
+        unioned_builder = SimpleBigQueryViewBuilder(
+            dataset_id="segment_events",
             view_id=view_id,
-            description="Union of all segment events for a product.",
-            parents=builders,
+            description=f"Union of all segment events for {product_type.display_name}.",
+            view_query_template=view_query_template,
+            should_materialize=True,
             clustering_fields=["state_code", "person_id"],
-            parent_view_to_select_statement=_select_statement,
         )
         product_union_builders.append(unioned_builder)
     return product_union_builders
 
 
-def _get_segment_event_view_builders() -> Sequence[SegmentEventBigQueryViewBuilder]:
-    """Generates a sequence of SegmentEventBigQueryViewBuilder instances for each
-    segment event view. Excludes `pages` and `identifies` events as logins and pageviews
-    do not count toward active usage events.
-    """
-    # Collect source tables from all segment event datasets
-    segment_event_source_table_addresses = {}
-    for dataset_id in SEGMENT_DATASETS:
-        try:
-            collection = one(
-                c
-                for c in collect_externally_managed_source_table_collections(
-                    project_id=None
-                )
-                if c.dataset_id == dataset_id
-            )
-            segment_event_source_table_addresses.update(
-                collection.source_tables_by_address
-            )
-        except ValueError:
-            # Dataset doesn't exist, skip
-            pass
-
-    # TODO(#46239): Derive segment_table_jii_pseudonymized_id_columns/additional_attribute_cols
-    #  directly from an event-specific config and remove this
-    product_event_builders_by_source_table_address = (
-        SegmentProductEventBigQueryViewCollector().collect_segment_product_event_view_builders_by_event_source_table_address()
-    )
-
-    event_view_builders = []
-
-    for event_source_table_address in segment_event_source_table_addresses:
-        # TODO(#46788): Remove this exemption once `identifies` and `pages` use standard view builders
-        if event_source_table_address.table_id not in ["identifies", "pages"]:
-            product_event_builders = product_event_builders_by_source_table_address[
-                event_source_table_address
-            ]
-            segment_table_jii_pseudonymized_id_columns = sorted(
-                {
-                    col
-                    for b in product_event_builders
-                    for col in (b.segment_table_jii_pseudonymized_id_columns or [])
-                }
-            )
-            additional_attribute_cols = sorted(
-                {
-                    col
-                    for b in product_event_builders
-                    for col in (b.additional_attribute_cols or [])
-                }
-            )
-
-            # If any product event builder has has_session_id=False, use False for the event view
-            has_session_id = all(b.has_session_id for b in product_event_builders)
-            # If any product event builder has has_user_id=False, use False for the event view
-            has_user_id = all(b.has_user_id for b in product_event_builders)
-
-            event_view_builders.append(
-                SegmentEventBigQueryViewBuilder(
-                    description=f"Segment event view for {event_source_table_address.table_id} events",
-                    segment_events_source_table_address=event_source_table_address,
-                    segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
-                    additional_attribute_cols=additional_attribute_cols,
-                    has_session_id=has_session_id,
-                    has_user_id=has_user_id,
-                )
-            )
-    return event_view_builders
-
-
-def _get_unioned_segment_event_view_builder() -> UnionAllBigQueryViewBuilder:
+def _get_unioned_segment_event_view_builder(
+    parents: Sequence[SegmentEventBigQueryViewBuilder],
+) -> UnionAllBigQueryViewBuilder:
     """Generates a UnionAllBigQueryViewBuilder for all segment events."""
     return UnionAllBigQueryViewBuilder(
         dataset_id="segment_events",
         view_id="all_segment_events",
         description="Union of all segment events across products.",
-        parents=_get_segment_event_view_builders(),
+        parents=parents,
         clustering_fields=["state_code", "email_address"],
         parent_view_to_select_statement=lambda vb: f"""
 SELECT
@@ -195,14 +136,18 @@ SELECT
 
 
 def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
+    event_level_view_builders = (
+        SegmentEventBigQueryViewCollector().collect_view_builders()
+    )
     return [
-        # TODO(#46239): Replace SegmentProductEventBigQueryViewCollector /
-        #  SegmentProductEventBigQuery with simple fn that loops over all
-        #  (event, product_type) pairs and simply selects from the appropriate
-        #  event-level with a product_type filter.
-        *SegmentProductEventBigQueryViewCollector().collect_view_builders(),
-        *_get_unioned_segment_event_builders(),
-        *_get_segment_event_view_builders(),
-        _get_unioned_segment_event_view_builder(),
+        # Event-level views
+        *event_level_view_builders,
+        # Union of all event-level views
+        _get_unioned_segment_event_view_builder(event_level_view_builders),
+        # Union of all events for a single product (queries event-level views with product filters)
+        *_get_unioned_product_specific_segment_event_builders(
+            event_level_view_builders
+        ),
+        # Pages view
         ALL_SEGMENT_PAGES_VIEW_BUILDER,
     ]

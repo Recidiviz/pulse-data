@@ -23,7 +23,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 from recidiviz.segment.product_type import ProductType
-from recidiviz.segment.segment_event_config import get_product_types_for_event
 
 # The first US_IX export for workflows was on 1/11 in staging and 1/17 in prod.
 # For simplicity, use the prod date.
@@ -60,13 +59,15 @@ def _get_product_type_case_when_statement_pages() -> str:
     return product_type_query_fragment
 
 
-def _get_product_type_case_when_statement_usage_event(event_name: str) -> str:
+def _get_product_type_case_when_statement_usage_event(
+    relevant_product_types: list[ProductType],
+) -> str:
     """Loops through products having segment usage events and uses a combination of
     context page and event type to assign the correct product."""
     product_type_conditionals = [
         f"""WHEN {product_type.context_page_filter_query_fragment(context_page_url_col_name='context_page_url')}
   THEN '{product_type.value}'"""
-        for product_type in get_product_types_for_event(event_name)
+        for product_type in relevant_product_types
     ]
     product_type_conditionals.append('ELSE "UNKNOWN_PRODUCT_TYPE"')
     product_type_query_fragment = (
@@ -75,25 +76,20 @@ def _get_product_type_case_when_statement_usage_event(event_name: str) -> str:
     return product_type_query_fragment
 
 
-# TODO(#46239): Move this helper into recidiviz/segment/segment_event_big_query_view_builder.py
-#  once the product x event views no longer use it.
+# TODO(#46861): Move this helper into recidiviz/segment/segment_event_big_query_view_builder.py
+#  once pages and identifies have been incorporated into the standard segment view infrastructure
 def build_segment_event_view_query_template(
     *,
     segment_table_sql_source: BigQueryAddress,
     segment_table_jii_pseudonymized_id_columns: list[str],
     additional_attribute_cols: list[str],
-    # TODO(#46239): Remove this argument once the product x event views read directly
-    #  from event_specific views and don't need to use the
-    #  build_segment_event_view_query_template() helper.
-    product_type_filter: ProductType | None,
+    relevant_product_types: list[ProductType],
     has_session_id: bool = True,
     has_user_id: bool = True,
 ) -> str:
     """Builds the SQL query template for a Segment event view by transforming
-    hashed user and client id's into internal id's and pulling any additonal
-    attribute columns from the sql source table. If product_type is provided,
-    it will be used to filter the context_page_url to only include events from
-    the specified product type."""
+    hashed user and client id's into internal id's and pulling any additional
+    attribute columns from the sql source table."""
 
     if not additional_attribute_cols:
         additional_attribute_cols = []
@@ -107,7 +103,7 @@ def build_segment_event_view_query_template(
         product_type_clause = _get_product_type_case_when_statement_pages()
     else:
         product_type_clause = _get_product_type_case_when_statement_usage_event(
-            segment_table_sql_source.table_id
+            relevant_product_types
         )
     is_pages_event = segment_table_sql_source.table_id == "pages"
 
@@ -161,7 +157,7 @@ FROM (
         `{{project_id}}.{segment_table_sql_source.to_str()}`
     -- events from prod deployment only
     WHERE
-        {f"context_page_url LIKE '{product_type_filter.url_base}/%'" if product_type_filter else _get_url_filter_for_all_products()}
+        {_get_url_filter_for_all_products()}
     -- dedupes events loaded more than once
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
@@ -179,12 +175,7 @@ USING
 -- because they may match between both states. Instead, use the timestamp of the event to
 -- determine whether it is a US_ID event or a US_IX event.
 WHERE
-    state_code != "US_ID" 
+    state_code != "US_ID"
     OR timestamp < "{FIRST_IX_EXPORT_DATE}"
-"""
-    if product_type_filter:
-        template = f"""
-WITH all_events AS ({template})
-SELECT * FROM all_events WHERE product_type = "{product_type_filter.value}"
 """
     return template

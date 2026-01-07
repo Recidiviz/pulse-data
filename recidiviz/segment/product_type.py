@@ -32,10 +32,7 @@ class ProductType(Enum):
 
     If changing the values of this enum, note that the name of the table that unions
     together all usage events for a given product type is derived from the value of
-    the enum, e.g., `all_workflows_segment_events`. The name of the Segment dataset for
-    a given product type is also derived from the value of the enum, e.g.,
-    `segment_events__workflows`, and so downstream references should be
-    updated accordingly. Generally we would not change the values of this enum,
+    the enum, e.g., `all_workflows_segment_events`. Generally we would not change the values of this enum,
     but rather add new values for new product types, unless it is helpful to break
     up impact tracking (Looker, leadership reports, etc.) for a new sub-component of an
     existing product.
@@ -161,11 +158,6 @@ class ProductType(Enum):
 
         # Combine url_base check with path filter
         return f"({url_base_check}) AND ({path_filter})"
-
-    @property
-    def segment_dataset_name(self) -> str:
-        """Returns the dataset for a segment view with a given product type."""
-        return f"segment_events__{self.value.lower()}"
 
     @property
     def columns_to_include_in_unioned_segment_view(self) -> list[str]:

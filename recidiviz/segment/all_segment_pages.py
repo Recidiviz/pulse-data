@@ -19,6 +19,7 @@ along with the product type associated with each page."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
     SEGMENT_DATASETS,
     build_segment_event_view_query_template,
@@ -30,11 +31,12 @@ _VIEW_ID = "all_segment_pages"
 
 
 def _get_pages_query_template(dataset: str) -> str:
+    # Pages events are relevant to all product types
     return build_segment_event_view_query_template(
         segment_table_sql_source=BigQueryAddress(dataset_id=dataset, table_id="pages"),
         segment_table_jii_pseudonymized_id_columns=[],
         additional_attribute_cols=[],
-        product_type_filter=None,
+        relevant_product_types=list(ProductType),
     )
 
 

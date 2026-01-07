@@ -48,9 +48,6 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibili
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_funnel_status_sessions import (
-    INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
@@ -450,21 +447,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="observations__person_event", table_id="impact_transition"
             ),
-            # Active usage event observation unions across all events for a given product
-            BigQueryAddress(
-                dataset_id="observations__tasks_primary_user_event",
-                table_id="tasks_active_usage_event",
-            ),
-            BigQueryAddress(
-                dataset_id="observations__insights_primary_user_event",
-                table_id="insights_active_usage_event",
-            ),
-            BigQueryAddress(
-                dataset_id="observations__workflows_primary_user_event",
-                table_id="workflows_active_usage_event",
-            ),
             # Funnel analysis requires referencing all unioned segment events.
-            INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
             # Views to help calculate compliance metrics pull from the unioned view of all tasks for a given state.
             BigQueryAddress(

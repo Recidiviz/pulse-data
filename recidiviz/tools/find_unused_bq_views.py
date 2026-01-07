@@ -223,9 +223,6 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.segment.segment_product_event_big_query_view_collector import (
-    SegmentProductEventBigQueryViewCollector,
-)
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
@@ -523,6 +520,44 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address: (
         "Preprocessed view of address and form information entry, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
     ),
+    BigQueryAddress.from_str("segment_events.all_client_page_segment_events"): (
+        "Union view for client page segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str("segment_events.all_case_note_search_segment_events"): (
+        "Union view for case note search segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str(
+        "segment_events.all_case_planning_assistant_segment_events"
+    ): (
+        "Union view for case planning assistant segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str("segment_events.all_milestones_segment_events"): (
+        "Union view for milestones segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str("segment_events.all_psi_case_insights_segment_events"): (
+        "Union view for PSI case insights segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str("segment_events.all_route_planner_segment_events"): (
+        "Union view for route planner segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str(
+        "segment_events.all_supervisor_homepage_operations_module_segment_events"
+    ): (
+        "Union view for supervisor homepage operations module segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str(
+        "segment_events.all_supervisor_homepage_opportunities_module_segment_events"
+    ): (
+        "Union view for supervisor homepage opportunities module segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-12-29)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
@@ -551,12 +586,6 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
         dataset_for_observation_type_cls(unit_of_observation_type, SpanType)
         for unit_of_observation_type in MetricUnitOfObservationType
     ],
-    # Views in segment event datasets will be used to generate observations that will be
-    # referenced by Looker
-    *{
-        builder.dataset_id
-        for builder in SegmentProductEventBigQueryViewCollector().collect_view_builders()
-    },
 }
 
 

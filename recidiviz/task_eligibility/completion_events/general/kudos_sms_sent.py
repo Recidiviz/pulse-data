@@ -30,7 +30,7 @@ SELECT
     mc.state_code,
     mc.person_id,
     SAFE_CAST(mc.event_ts AS DATE) AS completion_event_date
-FROM `{project_id}.segment_events__milestones.frontend_milestones_congratulations_sent_materialized` mc
+FROM `{project_id}.segment_events.frontend_milestones_congratulations_sent_materialized` mc
 """
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (

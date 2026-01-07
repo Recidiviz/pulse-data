@@ -19,6 +19,7 @@
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
     build_segment_event_view_query_template,
 )
@@ -41,6 +42,8 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         segment_table_jii_pseudonymized_id_columns: list[str],
         # Any additional attribute columns that should be included in the view
         additional_attribute_cols: list[str],
+        # Product types that this event is relevant for
+        relevant_product_types: list[ProductType],
         # Whether the source table has a session_id column
         has_session_id: bool = True,
         # Whether the source table has a user_id column (for staff users)
@@ -52,6 +55,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
         self.additional_attribute_cols = additional_attribute_cols
         self.segment_event_name = segment_events_source_table_address.table_id
+        self.relevant_product_types = relevant_product_types
         self.has_session_id = has_session_id
         self.has_user_id = has_user_id
 
@@ -64,6 +68,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 segment_table_sql_source=segment_events_source_table_address,
                 segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
                 additional_attribute_cols=additional_attribute_cols,
+                relevant_product_types=relevant_product_types,
                 has_session_id=has_session_id,
                 has_user_id=has_user_id,
             ),
@@ -87,18 +92,19 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         segment_table_sql_source: BigQueryAddress,
         segment_table_jii_pseudonymized_id_columns: list[str],
         additional_attribute_cols: list[str],
+        relevant_product_types: list[ProductType],
         has_session_id: bool = True,
         has_user_id: bool = True,
     ) -> str:
-        """Builds the SQL query template for the Segment event view for a single product type
-        by transforming hashed user and client id's into internal id's and pulling any additonal
+        """Builds the SQL query template for the Segment event view for a set of relevant product types
+        by transforming hashed user and client id's into internal id's and pulling any additional
         attribute columns from the sql source table."""
 
         return build_segment_event_view_query_template(
             segment_table_sql_source=segment_table_sql_source,
             segment_table_jii_pseudonymized_id_columns=segment_table_jii_pseudonymized_id_columns,
             additional_attribute_cols=additional_attribute_cols,
-            product_type_filter=None,
+            relevant_product_types=relevant_product_types,
             has_session_id=has_session_id,
             has_user_id=has_user_id,
         )
