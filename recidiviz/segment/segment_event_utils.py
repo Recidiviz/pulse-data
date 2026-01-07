@@ -35,7 +35,7 @@ SEGMENT_DATASETS = [PULSE_DASHBOARD_SEGMENT_DATASET, CASE_PLANNING_PRODUCTION_DA
 def _get_url_filter_for_all_products() -> str:
     """Returns a SQL WHERE clause that filters for URLs from all product types."""
     # Get unique URL bases from all product types
-    unique_url_bases = list({product_type.url_base for product_type in ProductType})
+    unique_url_bases = sorted({product_type.url_base for product_type in ProductType})
     url_conditions = [
         f"context_page_url LIKE '{url_base}/%'" for url_base in unique_url_bases
     ]
