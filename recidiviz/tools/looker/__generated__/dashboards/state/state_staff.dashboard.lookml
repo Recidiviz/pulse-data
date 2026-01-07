@@ -63,6 +63,7 @@
     type: looker_grid
     fields: [state_staff.email,
       state_staff.full_name,
+      state_staff.phone_number,
       state_staff.staff_id,
       state_staff.state_code]
     sorts: []
