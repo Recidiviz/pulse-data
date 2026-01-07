@@ -11,7 +11,7 @@ ENV TZ America/New_York
 RUN apt update -y && apt upgrade -y && \
     apt install -y software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa
-RUN apt install -y \
+RUN apt-get update -y && apt install -y \
     locales \
     git \
     libxml2-dev libxslt1-dev \
