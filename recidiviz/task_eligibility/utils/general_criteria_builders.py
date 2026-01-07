@@ -1133,10 +1133,12 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
             event_count = 0 as meets_criteria,
             TO_JSON(STRUCT(
                 event_dates,
-                event_dates[SAFE_ORDINAL(1)] AS latest_event_date
+                event_dates[SAFE_ORDINAL(1)] AS latest_event_date,
+                DATE_ADD(event_dates[SAFE_ORDINAL(1)], INTERVAL {date_interval} {date_part}) AS latest_eligible_date 
             )) AS reason,
             event_dates,
             event_dates[SAFE_ORDINAL(1)] AS latest_event_date,
+            DATE_ADD(event_dates[SAFE_ORDINAL(1)], INTERVAL {date_interval} {date_part}) AS latest_eligible_date 
         FROM event_count_spans
     """
 
@@ -1155,6 +1157,11 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
                 name="latest_event_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the latest sanction occurred",
+            ),
+            ReasonsField(
+                name="latest_eligible_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when the latest sanction will age out of the time interval",
             ),
         ],
     )

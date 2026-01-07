@@ -20,6 +20,9 @@ for good time restoration.
 from typing import List
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.almost_eligible_spans_big_query_view_builder import (
+    EligibleCriteriaCondition,
+)
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
@@ -87,18 +90,33 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     completion_event_builder=good_time_reinstated.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
+            # We want somebody to be almost eligible if they are eligible or within 3 months of eligibility
+            # for 6 months without an IDC MR and 1 year without a Class 1 MR.
+            # We include both the actual eligibility and almost-eligibility spans to capture the case
+            # where a person is eligible (and therefore no longer almost eligible) while they are
+            # almost eligible for the other criteria.
+            #
+            # --- eligible or almost eligible for: no class 1 MRs in the last year -----
+            EligibleCriteriaCondition(
+                criteria=no_highest_severity_incarceration_sanctions_within_1_year.VIEW_BUILDER,
+                description="No Class 1 MRs in the last year.",
+            ),
             TimeDependentCriteriaCondition(
                 criteria=no_highest_severity_incarceration_sanctions_within_1_year.VIEW_BUILDER,
                 # Select the most recent incident date
-                reasons_date_field="latest_event_date",
+                reasons_date_field="latest_eligible_date",
                 interval_length=_ALMOST_ELIGIBLE_MONTHS,
                 interval_date_part=BigQueryDateInterval.MONTH,
                 description=f"Less than {_ALMOST_ELIGIBLE_MONTHS} months until this Class I MR is no longer disqualifying.",
             ),
+            # --- eligible or almost eligible for: no IDC MRs in the last 6 months -----
+            EligibleCriteriaCondition(
+                criteria=no_idc_mrs_in_past_6_months.VIEW_BUILDER,
+                description="No IDC MRs in past 6 months.",
+            ),
             TimeDependentCriteriaCondition(
                 criteria=no_idc_mrs_in_past_6_months.VIEW_BUILDER,
-                # Select the most recent incident date
-                reasons_date_field="latest_incident_date",
+                reasons_date_field="latest_eligible_date",
                 interval_length=_ALMOST_ELIGIBLE_MONTHS,
                 interval_date_part=BigQueryDateInterval.MONTH,
                 description=f"Less than {_ALMOST_ELIGIBLE_MONTHS} months until this MR which went to the IDC is no longer disqualifying.",
