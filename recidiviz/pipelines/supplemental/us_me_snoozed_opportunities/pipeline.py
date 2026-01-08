@@ -74,7 +74,9 @@ class Snooze:
     is_recidiviz_snooze_note: bool = attr.ib(validator=attr_validators.is_bool)
     person_external_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     opportunity_type: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    officer_email: str = attr.ib(validator=attr_validators.is_valid_email)
+    # TODO(#55650): Migrate to the new `is_valid_email` validator once we've confirmed
+    #  the us_me_snoozed_opportunity pipeline won't crash.
+    officer_email: str = attr.ib(validator=attr_validators.is_valid_email_legacy)
     start_date: str = attr.ib(validator=attr_validators.is_str_iso_formatted_date)
     end_date: str = attr.ib(validator=attr_validators.is_str_iso_formatted_date)
     denial_reasons: List[str] = attr.ib(validator=attr_validators.is_list_of(str))

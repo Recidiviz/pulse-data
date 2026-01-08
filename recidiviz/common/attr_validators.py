@@ -248,12 +248,18 @@ def is_opt_reasonable_past_datetime(
     )
 
 
-def is_opt_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
+# TODO(#55651): Delete once all usages have been migrated to is_opt_valid_email
+def is_opt_valid_email_legacy(
+    _instance: Any, _attribute: attr.Attribute, value: str
+) -> None:
     if value is not None:
-        is_valid_email(_instance, _attribute, value)
+        is_valid_email_legacy(_instance, _attribute, value)
 
 
-def is_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
+# TODO(#55651): Delete once all usages have been migrated to is_valid_email
+def is_valid_email_legacy(
+    _instance: Any, _attribute: attr.Attribute, value: str
+) -> None:
     """
     Checks if the given value is a valid email based on certain conditions
     Raises an error if an email fails to meet a requirement otherwise returns None
@@ -332,6 +338,62 @@ def is_valid_phone_number(
     if digits[4:6] == "11":
         raise ValueError(
             f"Incorrect format: Phone number field with {string_value} has invalid exchange code"
+        )
+
+
+INVALID_EMAIL_CHARACTERS = re.compile(r"[(),:;<>[\]\\]")
+WHITESPACE_PATTERN = re.compile(r"\s")
+
+
+def is_opt_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
+    if value is not None:
+        is_valid_email(_instance, _attribute, value)
+
+
+def is_valid_email(instance: Any, attribute: attr.Attribute, value: str) -> None:
+    """
+    Checks if the given value is a valid email based on certain conditions
+    Raises an error if an email fails to meet a requirement otherwise returns None
+    """
+    error_message_prefix = (
+        f"Incorrectly formatted [{attribute.name}] value [{value}] on "
+        f"[{type(instance).__name__}]:"
+    )
+
+    if "@" not in value:
+        raise ValueError(f"{error_message_prefix} missing '@' symbol")
+    if value.count("@") != 1:
+        raise ValueError(f"{error_message_prefix}: more than one '@' symbol")
+    if re.search(WHITESPACE_PATTERN, value):
+        raise ValueError(f"{error_message_prefix}: contains whitespace")
+
+    local_part, domain = value.split("@")  # only does this when value.count('@') is 1
+    if not local_part:
+        raise ValueError(f"{error_message_prefix}: has no text before '@' symbol")
+
+    if not domain:
+        raise ValueError(f"{error_message_prefix}: has no text after '@' symbol")
+
+    if "." not in domain:
+        raise ValueError(f"{error_message_prefix}: has no '.' in domain")
+
+    if domain.startswith("."):
+        raise ValueError(f"{error_message_prefix}: domain starts with '.'")
+    if domain.endswith("."):
+        raise ValueError(f"{error_message_prefix}: domain ends with '.'")
+
+    matches = re.findall(INVALID_EMAIL_CHARACTERS, value)
+
+    if matches:  # If email contains invalid character
+        invalid_chars = ",".join(matches)
+        raise ValueError(
+            f"Incorrect format: Email field with {value} contains invalid character {invalid_chars}"
+        )
+
+    suspicious_usernames = ["x", "unknown", "none", "noname", "nobody", "test"]
+    if local_part.lower() in suspicious_usernames:
+        raise ValueError(
+            f"{error_message_prefix}: has a suspicious username {local_part}"
         )
 
 

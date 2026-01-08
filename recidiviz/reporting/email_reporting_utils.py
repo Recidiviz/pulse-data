@@ -65,6 +65,7 @@ def format_test_address(test_address: str, recipient_email_address: str) -> str:
     return f"{test_name}+{recipient_name}@{domain}"
 
 
+# TODO(#55655): Consider unifying with is_valid_email in attr_validators.py
 def validate_email_address(email_address: Optional[str] = None) -> None:
     """Basic sanity check that the email address is formatted correctly.
     Example of a valid email address pattern: any_number_of_letters.123+-@123.multiple.domain-names.com

@@ -397,8 +397,10 @@ class _TestEmailClass:
     Used in TestEmailValidator
     """
 
-    my_email: str = attr.ib(validator=attr_validators.is_valid_email)
-    my_opt_email: Optional[str] = attr.ib(validator=attr_validators.is_opt_valid_email)
+    my_email: str = attr.ib(validator=attr_validators.is_valid_email_legacy)
+    my_opt_email: Optional[str] = attr.ib(
+        validator=attr_validators.is_opt_valid_email_legacy
+    )
 
 
 class TestEmailValidator(unittest.TestCase):
@@ -506,6 +508,193 @@ class TestEmailValidator(unittest.TestCase):
             ValueError, f"Email has a suspicious username {email_value.split('@',1)[0]}"
         ):
             self._TestClass(my_email="tex@example.com", my_opt_email=email_value)
+
+
+@attr.s(frozen=True)
+class _TestNewEmailClass:
+    """
+    Used in TestNewEmailValidator for testing the new is_valid_email / is_opt_valid_email validators.
+    """
+
+    my_email: str = attr.ib(validator=attr_validators.is_valid_email)
+    my_opt_email: str | None = attr.ib(validator=attr_validators.is_opt_valid_email)
+
+
+class TestNewEmailValidator(unittest.TestCase):
+    """Tests for the new stricter is_valid_email and is_opt_valid_email validators"""
+
+    valid_email: str
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.valid_email = "valid@example.com"
+
+    def test_valid_email(self) -> None:
+        """Test that valid emails pass validation."""
+        instance = _TestNewEmailClass(
+            my_email=self.valid_email, my_opt_email="another@test.org"
+        )
+        self.assertEqual(instance.my_email, self.valid_email)
+        self.assertEqual(instance.my_opt_email, "another@test.org")
+
+    def test_optional_none(self) -> None:
+        """Test that None is valid for optional email field."""
+        instance = _TestNewEmailClass(my_email=self.valid_email, my_opt_email=None)
+        self.assertIsNone(instance.my_opt_email)
+
+    def test_email_without_at(self) -> None:
+        """Test that email without @ symbol fails."""
+        email_value = "testexample.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]: missing '@' symbol"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+        # Optional value missing @
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_opt_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]: missing '@' symbol"
+            ),
+        ):
+            _TestNewEmailClass(my_email=self.valid_email, my_opt_email=email_value)
+
+    def test_email_with_multiple_at(self) -> None:
+        """Test that email with more than one @ symbol fails."""
+        email_value = "test@example@.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: more than one '@' symbol"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_no_text_before_at(self) -> None:
+        """Test that email with no text before @ fails."""
+        email_value = "@example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: has no text before '@' symbol"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_no_text_after_at(self) -> None:
+        """Test that email with no text after @ fails."""
+        email_value = "test@"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: has no text after '@' symbol"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_no_dot_in_domain(self) -> None:
+        """Test that email with no . in domain fails."""
+        email_value = "test@examplecom"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: has no '.' in domain"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_domain_starts_with_dot(self) -> None:
+        """Test that email with domain starting with . fails."""
+        email_value = "test@.example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: domain starts with '.'"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_domain_ends_with_dot(self) -> None:
+        """Test that email with domain ending with . fails."""
+        email_value = "test@example.com."
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: domain ends with '.'"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_with_whitespace(self) -> None:
+        """Test that email with whitespace fails."""
+        email_value = "test @example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: contains whitespace"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+        # Test with tab character
+        email_value_tab = "test\t@example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value_tab}] on "
+                f"[_TestNewEmailClass]:: contains whitespace"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value_tab, my_opt_email=None)
+
+    def test_email_with_invalid_characters(self) -> None:
+        """Test that email with invalid characters fails."""
+        email_value = r"<<test\:@example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Email field with {email_value} contains invalid character"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_suspicious_usernames(self) -> None:
+        """Test that emails with suspicious usernames fail."""
+        suspicious_usernames = ["x", "unknown", "none", "noname", "nobody", "test"]
+        for username in suspicious_usernames:
+            email_value = f"{username}@example.com"
+            with self.assertRaisesRegex(
+                ValueError,
+                re.escape(
+                    f"Incorrectly formatted [my_email] value [{email_value}] on "
+                    f"[_TestNewEmailClass]:: has a suspicious username {username}"
+                ),
+            ):
+                _TestNewEmailClass(my_email=email_value, my_opt_email=None)
+
+    def test_email_suspicious_username_case_insensitive(self) -> None:
+        """Test that suspicious username check is case insensitive."""
+        email_value = "UNKNOWN@example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrectly formatted [my_email] value [{email_value}] on "
+                f"[_TestNewEmailClass]:: has a suspicious username UNKNOWN"
+            ),
+        ):
+            _TestNewEmailClass(my_email=email_value, my_opt_email=None)
 
 
 @attr.s(frozen=True)

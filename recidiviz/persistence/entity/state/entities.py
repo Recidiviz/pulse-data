@@ -585,7 +585,21 @@ class StatePerson(
     )
 
     current_email_address: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None,
+        validator=attr.validators.and_(
+            attr_validators.is_opt_str,
+            state_exempted_validator(
+                attr_validators.is_opt_valid_email,
+                exempted_states={
+                    # TODO(#55643): US_IX has ~27 invalid emails as of 1/6/26
+                    StateCode.US_IX,
+                    # TODO(#55644): US_NE has ~25 invalid emails as of 1/6/26
+                    StateCode.US_NE,
+                    # TODO(#55645): US_UT has ~200+ invalid emails as of 1/6/26
+                    StateCode.US_UT,
+                },
+            ),
+        ),
     )
     current_phone_number: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -2885,7 +2899,23 @@ class StateStaff(
         default=None, validator=attr_validators.is_opt_str
     )
     email: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_valid_email
+        default=None,
+        validator=attr.validators.and_(
+            attr_validators.is_opt_valid_email_legacy,
+            state_exempted_validator(
+                attr_validators.is_opt_valid_email,
+                exempted_states={
+                    # TODO(#55646): US_AZ has 1 invalid email (suspicious username) as of 1/6/26
+                    StateCode.US_AZ,
+                    # TODO(#55647): US_IA has 1 invalid email (empty domain) as of 1/6/26
+                    StateCode.US_IA,
+                    # TODO(#55648): US_ME has 2 invalid emails (domain ends with dot) as of 1/6/26
+                    StateCode.US_ME,
+                    # TODO(#55649): US_TX has 1 invalid email (suspicious username) as of 1/6/26
+                    StateCode.US_TX,
+                },
+            ),
+        ),
     )
     phone_number: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_valid_phone_number
