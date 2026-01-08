@@ -28,7 +28,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute(
-        f"""
+        """
             DELETE FROM direct_ingest_instance_status
             WHERE region_code = 'US_AR';
         """

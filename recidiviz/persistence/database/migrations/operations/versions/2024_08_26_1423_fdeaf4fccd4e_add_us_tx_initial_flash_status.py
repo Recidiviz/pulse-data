@@ -27,7 +27,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute(
-        f"""
+        """
                    DELETE FROM direct_ingest_raw_data_flash_status
                    WHERE region_code = 'US_TX';
                """

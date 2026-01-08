@@ -146,8 +146,8 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
             )
 
         should_throw_on_conflicts = (
-            not self.ingest_view
-            in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(self.state_code, {})
+            self.ingest_view
+            not in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(self.state_code, {})
         )
         merged_entity: RootEntity = one(
             ingest_view_tree_merger.merge(root_entities, should_throw_on_conflicts)

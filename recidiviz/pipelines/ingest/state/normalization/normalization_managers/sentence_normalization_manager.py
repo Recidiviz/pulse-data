@@ -96,7 +96,7 @@ def _sort_sentences_by_severity(
             0 if len(violent_or_sex_offense_charges) > 0 else -1
         )
         first_sentence_length = first(
-            sorted(sentence.sentence_lengths, key=lambda l: l.length_update_datetime),
+            sorted(sentence.sentence_lengths, key=lambda sl: sl.length_update_datetime),
             default=None,
         )
         # Return -1 for the length priority value if there is no sentence length data for this sentence

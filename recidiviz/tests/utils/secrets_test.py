@@ -25,7 +25,7 @@ from google.cloud import exceptions
 from google.cloud.secretmanager_v1 import AccessSecretVersionResponse, SecretPayload
 from mock import Mock
 
-from recidiviz.utils import metadata, secrets
+from recidiviz.utils import secrets
 
 
 class TestSecrets:

@@ -625,7 +625,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
 
         python_type = one(column_value_types)
 
-        if python_type == float:
+        if python_type is float:
             return float
 
         if python_type in DTYPES["integer"]:

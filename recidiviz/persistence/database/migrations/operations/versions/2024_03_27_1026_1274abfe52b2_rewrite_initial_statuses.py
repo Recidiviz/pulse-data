@@ -22,25 +22,25 @@ depends_on = None
 # PASSES.
 def upgrade() -> None:
     op.execute(
-        f"UPDATE direct_ingest_instance_status "
-        f"SET status = 'INITIAL_STATE' "
-        f"WHERE status = 'STANDARD_RERUN_STARTED';"
+        "UPDATE direct_ingest_instance_status "
+        "SET status = 'INITIAL_STATE' "
+        "WHERE status = 'STANDARD_RERUN_STARTED';"
     )
     op.execute(
-        f"UPDATE direct_ingest_instance_status "
-        f"SET status = 'NO_RAW_DATA_REIMPORT_IN_PROGRESS' "
-        f"WHERE status = 'NO_RERUN_IN_PROGRESS';"
+        "UPDATE direct_ingest_instance_status "
+        "SET status = 'NO_RAW_DATA_REIMPORT_IN_PROGRESS' "
+        "WHERE status = 'NO_RERUN_IN_PROGRESS';"
     )
 
 
 def downgrade() -> None:
     op.execute(
-        f"UPDATE direct_ingest_instance_status "
-        f"SET status = 'STANDARD_RERUN_STARTED' "
-        f"WHERE status = 'INITIAL_STATE';"
+        "UPDATE direct_ingest_instance_status "
+        "SET status = 'STANDARD_RERUN_STARTED' "
+        "WHERE status = 'INITIAL_STATE';"
     )
     op.execute(
-        f"UPDATE direct_ingest_instance_status "
-        f"SET status = 'NO_RERUN_IN_PROGRESS' "
-        f"WHERE status = 'NO_RAW_DATA_REIMPORT_IN_PROGRESS';"
+        "UPDATE direct_ingest_instance_status "
+        "SET status = 'NO_RERUN_IN_PROGRESS' "
+        "WHERE status = 'NO_RAW_DATA_REIMPORT_IN_PROGRESS';"
     )

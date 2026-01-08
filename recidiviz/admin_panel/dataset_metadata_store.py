@@ -135,11 +135,11 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                 continue
 
             lines = result.split("\n")
-            for l in lines:
-                l = l.strip()
-                if not l:
+            for line in lines:
+                line = line.strip()
+                if not line:
                     continue
-                struct = json.loads(l)
+                struct = json.loads(line)
                 col_store[struct[col_name]][struct["state_code"].upper()] = struct
             store[table_name][col_name] = col_store
 

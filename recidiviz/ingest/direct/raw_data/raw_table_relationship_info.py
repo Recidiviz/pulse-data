@@ -86,7 +86,7 @@ class JoinTransform:
     transformation: str = attr.ib()
 
     def __attrs_post_init__(self) -> None:
-        if not "{col_name}" in self.transformation:
+        if "{col_name}" not in self.transformation:
             raise ValueError(
                 f"Transformation {self.transformation} does not include "
                 f"the string {{col_name}}"

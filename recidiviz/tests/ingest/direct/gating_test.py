@@ -37,7 +37,7 @@ def test_manual_raw_data_pruning_states() -> None:
     """Test that the manual raw data pruning states are correct."""
     with open(PRUNING_SCRIPT, encoding="utf-8") as f:
         state_declaration = one(
-            l for l in f.readlines() if l.startswith("declare -a states")
+            line for line in f.readlines() if line.startswith("declare -a states")
         )
     assert MANUAL_RAW_DATA_PRUNING_STATES == set(
         map(StateCode, re.findall(r"US_\w\w", state_declaration))

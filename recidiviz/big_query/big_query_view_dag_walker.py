@@ -1181,7 +1181,7 @@ class BigQueryViewDagWalker:
         ancestors = set(node.ancestors_sub_dag.nodes_by_address)
         related_addresses |= ancestors
         for ancestor in ancestors:
-            if not ancestor.dataset_id in terminating_datasets:
+            if ancestor.dataset_id not in terminating_datasets:
                 node = self.nodes_by_address[ancestor]
                 related_addresses |= node.parent_node_addresses | node.source_addresses
         return related_addresses

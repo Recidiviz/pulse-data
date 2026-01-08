@@ -645,7 +645,7 @@ def gen_cohort_time_to_first_event(
 
     # Check that all necessary columns are present in event_df
     for var in [event_date_field] + join_field_list:
-        if not var in event_df.columns:
+        if var not in event_df.columns:
             raise AttributeError(f"Column {var} can not be found in `event_df`.")
 
     # Convert date fields
@@ -786,7 +786,7 @@ def gen_aggregated_cohort_event_df(
         + cohort_attribute_col_list
         + event_attribute_col_list
     ):
-        if not var in df.columns:
+        if var not in df.columns:
             raise AttributeError(f"Column {var} can not be found in `df`.")
 
     # Set the last day of data to be the max event date if not specified. Print the date

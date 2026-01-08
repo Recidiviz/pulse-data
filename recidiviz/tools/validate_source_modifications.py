@@ -36,7 +36,7 @@ import re
 import sys
 from collections import defaultdict
 from inspect import getmembers, isfunction
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import attr
 from werkzeug.routing import Rule
@@ -334,7 +334,7 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
     commit_lines = get_commits_with_pattern(commit_range, _SKIP_COMMIT_REGEX)
     commit_output = "\n".join(commit_lines)
 
-    sets_to_skip = set()  # type: Set[str]
+    sets_to_skip: set[str] = set()
     full_validation_message = re.findall(r"\[skip validation(.*?)\]", commit_output)
     if full_validation_message:
         for valid_message in full_validation_message:

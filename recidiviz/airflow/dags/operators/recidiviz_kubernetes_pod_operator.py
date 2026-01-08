@@ -97,7 +97,7 @@ class KubernetesEntrypointResourceAllocator:
         if not entrypoint_arg:
             raise ValueError("Must specify an entrypoint arg to allocate resources")
 
-        if not entrypoint_arg in self.resources_config:
+        if entrypoint_arg not in self.resources_config:
             raise ValueError(
                 f"Entrypoint {entrypoint_arg} must have a recidiviz_kubernetes_resources.yaml entry"
             )

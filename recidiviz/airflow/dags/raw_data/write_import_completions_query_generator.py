@@ -208,7 +208,7 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
                     else None
                 ),
             ]
-        row_as_str = [str(value) if not value is None else "NULL" for value in row]
+        row_as_str = [str(value) if value is not None else "NULL" for value in row]
         return f"({','.join(row_as_str)})"
 
     def _create_update_file_import_run_sql_query(

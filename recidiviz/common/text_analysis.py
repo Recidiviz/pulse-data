@@ -152,7 +152,7 @@ class TextAnalyzer:
         from recidiviz.common.data_sets import nltk_data
 
         _nltk_path = os.path.dirname(nltk_data.__file__)
-        if not _nltk_path in data.path:
+        if _nltk_path not in data.path:
             data.path.append(_nltk_path)
 
         self.configuration = configuration

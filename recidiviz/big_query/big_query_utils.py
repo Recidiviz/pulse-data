@@ -160,11 +160,11 @@ def bq_schema_column_type_for_sqlalchemy_column(
         or col_postgres_type.timezone
     ):
         return bigquery.enums.SqlTypeNames.TIMESTAMP
-    if col_python_type == dict and isinstance(
+    if col_python_type is dict and isinstance(
         col_postgres_type, (postgresql.JSON, postgresql.JSONB)
     ):
         return bigquery.enums.SqlTypeNames.STRING
-    if col_python_type == list:
+    if col_python_type is list:
         if isinstance(col_postgres_type.item_type, sqlalchemy.sql.sqltypes.String):
             return bigquery.enums.SqlTypeNames.STRING
         if isinstance(col_postgres_type.item_type, sqlalchemy.sql.sqltypes.Numeric):

@@ -3783,7 +3783,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 6
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
 
             self.dag_kick_off_mock.assert_not_called()
 
@@ -3927,7 +3927,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 3
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
@@ -4031,7 +4031,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 6
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             chunking_mock.side_effect = original
@@ -4128,7 +4128,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 9
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_pre_import_norm(self) -> None:
@@ -4271,7 +4271,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 3
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
@@ -4371,7 +4371,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 6
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             chunking_mock.side_effect = original
@@ -4468,7 +4468,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 9
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_load_and_prep(self) -> None:
@@ -4614,7 +4614,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 3
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
@@ -4719,7 +4719,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 6
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
 
             # third time, no failures this time!
             should_fail = False
@@ -4815,7 +4815,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 9
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_append_step(self) -> None:
@@ -4948,7 +4948,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 3
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
@@ -5048,7 +5048,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 6
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
 
             # third time, no failures this time!
@@ -5151,5 +5151,5 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
             )
             assert len(locks) == 9
-            assert all(l[0] for l in locks)
+            assert all(lock[0] for lock in locks)
             self.dag_kick_off_mock.assert_not_called()
