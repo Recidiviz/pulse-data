@@ -164,6 +164,13 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK077"
   }
 
+  join: us_mo_LBAKRDTA_TAK118 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK118.DP_DOC};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mo_LBAKRDTA_TAK118"
+  }
+
   join: us_mo_LBAKRDTA_TAK142 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK142.E6_DOC};;
     type: full_outer
