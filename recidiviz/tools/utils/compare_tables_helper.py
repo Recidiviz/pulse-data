@@ -53,6 +53,7 @@ from typing import List, Optional
 
 import attr
 import pandas as pd
+import pandas_gbq
 
 from recidiviz.big_query.big_query_address import (
     BigQueryAddress,
@@ -230,7 +231,7 @@ def _get_columns_info_df(
         table_name=address.table_id,
     )
     logging.info("Running query:\n%s", column_query)
-    column_df = pd.read_gbq(column_query)
+    column_df = pandas_gbq.read_gbq(column_query)
     column_df["is_directly_comparable"] = column_df.data_type.isin(
         _DIRECTLY_COMPARABLE_DATA_TYPES
     )
@@ -406,7 +407,7 @@ def compare_table_or_view(
         )
     )
     logging.info("Running Query:\n%s", stats_query)
-    stats = pd.read_gbq(stats_query)
+    stats = pandas_gbq.read_gbq(stats_query)
     stats[STATS_NEW_ERROR_RATE_COL] = (
         stats[STATS_IN_NEW_NOT_ORIGINAL_COL] / stats[STATS_COUNT_NEW_COL]
     )
