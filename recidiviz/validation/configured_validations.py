@@ -608,6 +608,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_PA_NO_NEEDS_CATEGORY_RELEASE_STATUS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=45,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_PA_NO_UNKNOWN_RELEASE_STATUS_VIEW_BUILDER,
