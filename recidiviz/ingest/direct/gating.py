@@ -60,7 +60,6 @@ class AutomaticRawDataPruningExemptionReason(Enum):
     """
 
     NEEDS_FULL_REIMPORT = "This file needs a full reimport before it can be included in automatic raw data pruning."
-    IS_DELETED_NOT_YET_SUPPORTED = "We can't properly access is_deleted information right now, which prevents us from writing ingest views we may otherwise be able to write."
 
 
 FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
@@ -1138,8 +1137,6 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "OFNT3CE1": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "OFNT3DE1": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "OFNT9BE1": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
-        # TODO(#54125) Remove when we can prune offenders
-        "offenders": AutomaticRawDataPruningExemptionReason.IS_DELETED_NOT_YET_SUPPORTED,
     },
     # TODO(#51183) Enable automatic raw data pruning for all files - note: this state has export_lookback_window: FULL_HISTORICAL_LOOKBACK, coordinate approach with #platform-team
     StateCode.US_ND: {

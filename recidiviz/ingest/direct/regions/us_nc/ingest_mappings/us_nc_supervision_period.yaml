@@ -5,13 +5,13 @@ manifest_language: 1.0.0
 input_columns:
   OPUS: STRING
   CDOFICER: STRING
-  CDBGDTSP: STRING
+  sentence_seq: INTEGER
   period_start_date: DATETIME
   end_date: DATETIME
   SUPVLEVL: STRING
   SUPERVISION: STRING
   CDPPSLOC: STRING
-  seq: INTEGER
+  within_sentence_seq: INTEGER
 unused_columns: []
 output:
   StatePerson:
@@ -25,8 +25,8 @@ output:
             $concat:
               $values:
                 - OPUS
-                - CDBGDTSP
-                - seq
+                - sentence_seq
+                - within_sentence_seq
           supervision_type:
             $enum_mapping:
               $raw_text: SUPERVISION
