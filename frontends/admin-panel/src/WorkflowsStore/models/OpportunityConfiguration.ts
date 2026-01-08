@@ -62,6 +62,10 @@ export const notificationsSchema = z
     z.object({
       id: z.string(),
       title: nullishAsUndefined(z.string()),
+      pages: z
+        .array(z.enum(["caseload", "profile", "supervisionSupervisor"]))
+        .default(["caseload"]),
+      type: z.enum(["info", "alert"]).default("info"),
       body: z.string(),
       cta: nullishAsUndefined(z.string()),
     })

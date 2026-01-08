@@ -216,6 +216,8 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     class NotificationSchema(CamelCaseSchema):
         id = fields.Str()
         title = fields.Str(required=False)
+        pages = fields.List(fields.Str(), required=False)
+        type = fields.Str(required=False)
         body = fields.Str()
         cta = fields.Str(required=False)
 
