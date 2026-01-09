@@ -20,7 +20,8 @@ dependencies = [
     "aiodebug==2.3.0",
     "aiofiles==24.1.0",
     "aiohappyeyeballs==2.6.1",
-    "aiohttp==3.13.1",
+    # TODO(#55636): Uncomment when Cloud Composer upgrade includes aiohttp >= 3.13.3
+    # "aiohttp==3.13.1",
     "aiohttp-cors==0.8.1",
     "aiomysql==0.3.2",
     "aiosignal==1.4.0",
@@ -315,7 +316,8 @@ dependencies = [
     "pem==23.1.0",
     "pendulum==3.1.0",
     "pillow==12.0.0",
-    "pip==23.2.1",
+    # TODO(#55635): Uncomment when Cloud Composer upgrade includes pip >= 25.3
+    # "pip==23.2.1",
     "pipdeptree==2.23.1",
     "platformdirs==4.3.6",
     "pluggy==1.6.0",
