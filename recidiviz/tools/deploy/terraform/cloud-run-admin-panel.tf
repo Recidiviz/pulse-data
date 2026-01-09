@@ -54,7 +54,7 @@ resource "google_cloud_run_service" "admin_panel" {
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["sh"]
-        args    = [
+        args = [
           "-c",
           join(" ", [
             "uv",

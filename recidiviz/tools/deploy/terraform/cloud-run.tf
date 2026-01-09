@@ -224,7 +224,7 @@ resource "google_cloud_run_service" "case-triage" {
         resources {
           limits = {
             cpu    = "1000m"
-            memory = "1024Mi"
+            memory = var.project_id == "recidiviz-123" ? "1024Mi" : "2048Mi"
           }
         }
       }
