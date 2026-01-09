@@ -27,8 +27,8 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
-    supervision_level_is_not_unassigned,
     supervision_level_is_not_residential_program,
+    supervision_level_is_not_unassigned,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     served_at_least_one_year_for_dui_if_lsir_level_low,
