@@ -47,28 +47,28 @@ repos:
         pass_filenames: true
       - id: ensure_jupyter_notebook_is_exported
         name: Export Jupyter Notebooks to nbautoexport-scripts directory
-        entry: pipenv run python -m recidiviz.research.export_notebooks_pre_commit
+        entry: uv run python -m recidiviz.research.export_notebooks_pre_commit
         language: system
         always_run: true
         files: ^recidiviz/research/.*notebooks/.*\.ipynb$
         require_serial: true
       - id: validate_scripts_and_notebooks_are_changed_together
         name: validate_scripts_and_notebooks_are_changed_together
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.research.validate_script_changes_pre_commit
         language: system
         files: ^recidiviz/research/.*notebooks/.*/nbautoexport-scripts/.*\.py$
         require_serial: true
       - id: generate_docs_for_region
         name: generate_docs_for_region
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.tools.docs.region_documentation_generator
         language: system
         files: ^recidiviz/ingest/direct/regions/|^recidiviz/view_registry/raw_data_reference_reasons.yaml
         require_serial: true
       - id: generate_docs_for_endpoint
         name: generate_docs_for_endpoint
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.tools.docs.endpoint_documentation_generator
         language: system
         files: (?x)(^recidiviz/tools/docs/endpoint_documentation_generator.py|^recidiviz/server_blueprint_registry.py|.*/routes/|.*routes.py|.*/server.py|.*control.py|.*endpoint.py|.*endpoints.py|^recidiviz/backup/backup_manager.py|^recidiviz/pipelines/calculation_data_storage_manager.py)$
@@ -76,7 +76,7 @@ repos:
         require_serial: true
       - id: generate_entity_documentation
         name: generate_entity_documentation
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.tools.docs.entity_documentation_generator
         language: system
         files: >
@@ -84,7 +84,7 @@ repos:
         require_serial: true
       - id: generate_calc_documentation
         name: generate_calc_documentation
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.calculator.calculation_documentation_generator
         language: system
         files: ^recidiviz/calculator/query/|^recidiviz/.*/views/|^recidiviz/task_eligibility/|^recidiviz/monitoring/platform_kpis/|^recidiviz/ingest/direct/regions/.*/raw_data/
@@ -92,7 +92,7 @@ repos:
         require_serial: true
       - id: generate_ingest_mappings_schema_documentation
         name: generate_ingest_mappings_schema_documentation
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.tools.docs.ingest_mappings_schema_documentation_generator
         language: system
         files: ^recidiviz/ingest/direct/ingest_mappings/yaml_schema/|^docs/engineering/ingest_mapping_schema/
@@ -110,13 +110,13 @@ repos:
         files: ^recidiviz/tools/deploy/terraform/
       - id: alphabetize_yaml
         name: alphabetize_yaml
-        entry: pipenv run python -m
+        entry: uv run python -m
           recidiviz.tools.alphabetize_raw_data_reference_reasons
         language: system
         files: recidiviz/view_registry/raw_data_reference_reasons.yaml
       - id: generate_lookml
         name: generate_lookml
-        entry: pipenv run python -m recidiviz.tools.looker.generate_all_lookml
+        entry: uv run python -m recidiviz.tools.looker.generate_all_lookml
         language: system
         # If you modify this list, also update LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX mapping in generate_all_lookml.py
         files: ^recidiviz/persistence/entity/state/|^recidiviz/tools/looker/|^recidiviz/aggregated_metrics/|^recidiviz/observations/views/|^recidiviz/ingest/direct/regions/.*/raw_data/|^recidiviz/segment/product_type/|^recidiviz/calculator/query/state/views/analyst_data/global_provisioned_user_sessions
