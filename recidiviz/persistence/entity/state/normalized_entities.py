@@ -408,19 +408,17 @@ class NormalizedStateAssessment(
         default=None,
         # TODO(#40499): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40500): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 5018-05-17.
-                    StateCode.US_IX,
-                    # TODO(#40501): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 3013-04-30.
-                    StateCode.US_PA,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#40500): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 5018-05-17.
+                StateCode.US_IX,
+                # TODO(#40501): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 3013-04-30.
+                StateCode.US_PA,
+            },
         ),
     )
 
@@ -512,22 +510,20 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
         default=None,
         # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1015-10-12.
-                    StateCode.US_AR,
-                    # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 3502-01-01.
-                    StateCode.US_IX,
-                    # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 2109-06-19.
-                    StateCode.US_NE,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1015-10-12.
+                StateCode.US_AR,
+                # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 3502-01-01.
+                StateCode.US_IX,
+                # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 2109-06-19.
+                StateCode.US_NE,
+            },
         ),
     )
     date_charged: date | None = attr.ib(
@@ -672,6 +668,7 @@ class NormalizedStateSentenceStatusSnapshot(
             attr_validators.is_not_future_datetime,
             state_exempted_validator(
                 STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
+                exempted_state_validator=attr_validators.is_datetime,
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1900-01-01 00:00:00.
@@ -740,6 +737,7 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
             attr_validators.is_not_future_datetime,
             state_exempted_validator(
                 STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
+                exempted_state_validator=attr_validators.is_datetime,
                 exempted_states={
                     # TODO(#38800): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1900-01-01 00:00:00.
@@ -1045,19 +1043,17 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
         default=None,
         # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1875-09-25.
-                    StateCode.US_MO,
-                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0004-02-22.
-                    StateCode.US_ND,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1875-09-25.
+                StateCode.US_MO,
+                # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 0004-02-22.
+                StateCode.US_ND,
+            },
         ),
     )
     sentencing_authority: StateSentencingAuthority = attr.ib(
@@ -1069,16 +1065,14 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
         default=None,
         # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_AR,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_AR,
+            },
         ),
     )
     most_severe_charge_v2_id: int = attr.ib(validator=attr_validators.is_int)
@@ -1167,19 +1161,17 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
         default=None,
         # TODO(#38799): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1875-09-25.
-                    StateCode.US_MO,
-                    # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0004-02-22.
-                    StateCode.US_ND,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1875-09-25.
+                StateCode.US_MO,
+                # TODO(#38803): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 0004-02-22.
+                StateCode.US_ND,
+            },
         ),
     )
 
@@ -1807,16 +1799,14 @@ class NormalizedStateIncarcerationPeriod(
     admission_date: date = attr.ib(
         # TODO(#41434): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#41446): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1000-01-01.
-                    StateCode.US_AR,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#41446): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1000-01-01.
+                StateCode.US_AR,
+            },
         ),
     )
     release_date: date | None = attr.ib(
@@ -2003,32 +1993,28 @@ class NormalizedStateSupervisionPeriod(
     start_date: date = attr.ib(
         # TODO(#41433): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#41438): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1000-01-01.
-                    StateCode.US_AR,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#41438): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1000-01-01.
+                StateCode.US_AR,
+            },
         )
     )
     termination_date: date | None = attr.ib(
         default=None,
         # TODO(#41433): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#41438): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1000-01-01.
-                    StateCode.US_AR,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#41438): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1000-01-01.
+                StateCode.US_AR,
+            },
         ),
     )
 
@@ -2412,31 +2398,29 @@ class NormalizedStateSupervisionViolationResponse(
         default=None,
         # TODO(#40455): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 2913-10-22.
-                    StateCode.US_AR,
-                    # TODO(#40458): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 2105-12-30.
-                    StateCode.US_CA,
-                    # TODO(#40459): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1800-06-25.
-                    #  - Found dates as high as 9994-12-31.
-                    StateCode.US_MI,
-                    # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1004-02-02.
-                    #  - Found dates as high as 9914-07-01.
-                    StateCode.US_OR,
-                    # TODO(#40463): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    #  - Found dates as high as 2029-01-28.
-                    StateCode.US_PA,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 2913-10-22.
+                StateCode.US_AR,
+                # TODO(#40458): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 2105-12-30.
+                StateCode.US_CA,
+                # TODO(#40459): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1800-06-25.
+                #  - Found dates as high as 9994-12-31.
+                StateCode.US_MI,
+                # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1004-02-02.
+                #  - Found dates as high as 9914-07-01.
+                StateCode.US_OR,
+                # TODO(#40463): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                #  - Found dates as high as 2029-01-28.
+                StateCode.US_PA,
+            },
         ),
     )
 
@@ -2546,28 +2530,26 @@ class NormalizedStateSupervisionViolation(NormalizedStateEntity, HasExternalIdEn
         default=None,
         # TODO(#40455): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 0019-07-02.
-                    #  - Found dates as high as 2109-03-18.
-                    StateCode.US_AR,
-                    # TODO(#40464): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 3201-01-22.
-                    StateCode.US_IX,
-                    # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1004-02-02.
-                    #  - Found dates as high as 9914-07-01.
-                    StateCode.US_OR,
-                    # TODO(#40463): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    #  - Found dates as high as 6200-06-15.
-                    StateCode.US_PA,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#40456): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 0019-07-02.
+                #  - Found dates as high as 2109-03-18.
+                StateCode.US_AR,
+                # TODO(#40464): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 3201-01-22.
+                StateCode.US_IX,
+                # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1004-02-02.
+                #  - Found dates as high as 9914-07-01.
+                StateCode.US_OR,
+                # TODO(#40463): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                #  - Found dates as high as 6200-06-15.
+                StateCode.US_PA,
+            },
         ),
     )
 
@@ -3024,61 +3006,57 @@ class NormalizedStateEmploymentPeriod(NormalizedStateEntity, HasExternalIdEntity
     start_date: date = attr.ib(
         # TODO(#42889): Reset validator to just STANDARD_REASONABLE_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#42890): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1000-01-01.
-                    #  - Found dates as high as 9999-12-31.
-                    StateCode.US_AR,
-                    # TODO(#42891): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as high as 2328-08-20.
-                    StateCode.US_CA,
-                    # TODO(#42892): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1108-11-08.
-                    #  - Found dates as high as 9999-07-15.
-                    StateCode.US_IX,
-                    # TODO(#42894): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1780-01-01.
-                    #  - Found dates as high as 9999-12-28.
-                    StateCode.US_MI,
-                    # TODO(#42895): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0001-01-22.
-                    #  - Found dates as high as 3012-08-30.
-                    StateCode.US_UT,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#42890): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1000-01-01.
+                #  - Found dates as high as 9999-12-31.
+                StateCode.US_AR,
+                # TODO(#42891): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as high as 2328-08-20.
+                StateCode.US_CA,
+                # TODO(#42892): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1108-11-08.
+                #  - Found dates as high as 9999-07-15.
+                StateCode.US_IX,
+                # TODO(#42894): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1780-01-01.
+                #  - Found dates as high as 9999-12-28.
+                StateCode.US_MI,
+                # TODO(#42895): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 0001-01-22.
+                #  - Found dates as high as 3012-08-30.
+                StateCode.US_UT,
+            },
         )
     )
     end_date: date | None = attr.ib(
         default=None,
         # TODO(#42889): Reset validator to just STANDARD_REASONABLE_OPT_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#42890): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1000-01-01.
-                    #  - Found dates as high as 9999-12-20.
-                    StateCode.US_AR,
-                    # TODO(#42892): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1900-01-01.
-                    #  - Found dates as high as 4201-01-01.
-                    StateCode.US_IX,
-                    # TODO(#42894): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 1753-01-01.
-                    #  - Found dates as high as 9999-12-01.
-                    StateCode.US_MI,
-                    # TODO(#42895): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                    #  - Found dates as low as 0020-10-12.
-                    #  - Found dates as high as 8201-09-12.
-                    StateCode.US_UT,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#42890): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1000-01-01.
+                #  - Found dates as high as 9999-12-20.
+                StateCode.US_AR,
+                # TODO(#42892): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1900-01-01.
+                #  - Found dates as high as 4201-01-01.
+                StateCode.US_IX,
+                # TODO(#42894): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 1753-01-01.
+                #  - Found dates as high as 9999-12-01.
+                StateCode.US_MI,
+                # TODO(#42895): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
+                #  - Found dates as low as 0020-10-12.
+                #  - Found dates as high as 8201-09-12.
+                StateCode.US_UT,
+            },
         ),
     )
     last_verified_date: date | None = attr.ib(
@@ -3140,17 +3118,15 @@ class NormalizedStateDrugScreen(NormalizedStateEntity, HasExternalIdEntity):
     drug_screen_date: date = attr.ib(
         # TODO(#40505): Reset validator to just `STANDARD_REASONABLE_PAST_DATE_VALIDATOR`
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40507): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 0010-01-02.
-                    #  - Found dates as high as 9200-02-11.
-                    StateCode.US_UT,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#40507): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 0010-01-02.
+                #  - Found dates as high as 9200-02-11.
+                StateCode.US_UT,
+            },
         )
     )
 
@@ -3483,28 +3459,26 @@ class NormalizedStatePerson(
         default=None,
         # TODO(#40483): Reset validator to just REASONABLE_OPT_BIRTHDATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                REASONABLE_OPT_BIRTHDATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#36562): Stop hydrating CO ingest data
-                    StateCode.US_CO,
-                    # TODO(#40486): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
-                    #  - Found dates as high as 2068-12-29.
-                    StateCode.US_MA,
-                    # TODO(#40487): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
-                    #  - Found dates as high as 9999-01-01.
-                    StateCode.US_ME,
-                    # TODO(#40488): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
-                    #  - Found dates as low as 0001-01-01.
-                    StateCode.US_NC,
-                    # TODO(#40489): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
-                    #  - Found dates as low as 0973-07-14.
-                    #  - Found dates as high as 6196-10-12.
-                    StateCode.US_UT,
-                },
-            ),
+        validator=state_exempted_validator(
+            REASONABLE_OPT_BIRTHDATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#36562): Stop hydrating CO ingest data
+                StateCode.US_CO,
+                # TODO(#40486): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                #  - Found dates as high as 2068-12-29.
+                StateCode.US_MA,
+                # TODO(#40487): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                #  - Found dates as high as 9999-01-01.
+                StateCode.US_ME,
+                # TODO(#40488): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                #  - Found dates as low as 0001-01-01.
+                StateCode.US_NC,
+                # TODO(#40489): Fix bad dates so all non-null dates fall within the bounds (1700-01-01, <current date>).
+                #  - Found dates as low as 0973-07-14.
+                #  - Found dates as high as 6196-10-12.
+                StateCode.US_UT,
+            },
         ),
     )
 
@@ -3532,19 +3506,17 @@ class NormalizedStatePerson(
 
     current_email_address: str | None = attr.ib(
         default=None,
-        validator=attr.validators.and_(
-            attr_validators.is_opt_str,
-            state_exempted_validator(
-                attr_validators.is_opt_valid_email,
-                exempted_states={
-                    # TODO(#55643): US_IX has ~27 invalid emails as of 1/6/26
-                    StateCode.US_IX,
-                    # TODO(#55644): US_NE has ~25 invalid emails as of 1/6/26
-                    StateCode.US_NE,
-                    # TODO(#55645): US_UT has ~200+ invalid emails as of 1/6/26
-                    StateCode.US_UT,
-                },
-            ),
+        validator=state_exempted_validator(
+            attr_validators.is_opt_valid_email,
+            exempted_state_validator=attr_validators.is_opt_str,
+            exempted_states={
+                # TODO(#55643): US_IX has ~27 invalid emails as of 1/6/26
+                StateCode.US_IX,
+                # TODO(#55644): US_NE has ~25 invalid emails as of 1/6/26
+                StateCode.US_NE,
+                # TODO(#55645): US_UT has ~200+ invalid emails as of 1/6/26
+                StateCode.US_UT,
+            },
         ),
     )
     current_phone_number: str | None = attr.ib(
@@ -3706,48 +3678,44 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
     start_date: date = attr.ib(
         # TODO(#40469): Reset validator to just STANDARD_REASONABLE_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1111-01-01.
-                    #  - Found dates as high as 3012-03-28.
-                    StateCode.US_AR,
-                    # TODO(#40471): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_ME,
-                    # TODO(#40472): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_MI,
-                    # TODO(#40473): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_MO,
-                    # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_TN,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1111-01-01.
+                #  - Found dates as high as 3012-03-28.
+                StateCode.US_AR,
+                # TODO(#40471): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_ME,
+                # TODO(#40472): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_MI,
+                # TODO(#40473): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_MO,
+                # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_TN,
+            },
         )
     )
     end_date: date | None = attr.ib(
         default=None,
         # TODO(#40469): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40470): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 2025-04-01.
-                    StateCode.US_AR,
-                    # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_TN,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#40470): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 2025-04-01.
+                StateCode.US_AR,
+                # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_TN,
+            },
         ),
     )
 
@@ -3794,16 +3762,14 @@ class NormalizedStateStaffSupervisorPeriod(NormalizedStateEntity, HasExternalIdE
     start_date: date = attr.ib(
         # TODO(#40469): Reset validator to just STANDARD_REASONABLE_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_TN,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_TN,
+            },
         )
     )
     end_date: date | None = attr.ib(
@@ -3845,35 +3811,31 @@ class NormalizedStateStaffLocationPeriod(NormalizedStateEntity, HasExternalIdEnt
     start_date: date = attr.ib(
         # TODO(#40469): Reset validator to just STANDARD_REASONABLE_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 2025-04-07.
-                    StateCode.US_AR,
-                    # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_TN,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_date,
+            exempted_states={
+                # TODO(#40470): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as high as 2025-04-07.
+                StateCode.US_AR,
+                # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_TN,
+            },
         )
     )
     end_date: date | None = attr.ib(
         default=None,
         # TODO(#40469): Reset validator to just STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR
         #  once all state exemptions have been fixed.
-        validator=attr.validators.and_(
-            attr_validators.is_opt_date,
-            state_exempted_validator(
-                STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-                exempted_states={
-                    # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as low as 1900-01-01.
-                    StateCode.US_TN,
-                },
-            ),
+        validator=state_exempted_validator(
+            STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
+            exempted_state_validator=attr_validators.is_opt_date,
+            exempted_states={
+                # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
+                #  - Found dates as low as 1900-01-01.
+                StateCode.US_TN,
+            },
         ),
     )
 
@@ -3945,21 +3907,19 @@ class NormalizedStateStaff(
     full_name: str | None = attr.ib(default=None, validator=attr_validators.is_opt_str)
     email: str | None = attr.ib(
         default=None,
-        validator=attr.validators.and_(
-            attr_validators.is_opt_valid_email_legacy,
-            state_exempted_validator(
-                attr_validators.is_opt_valid_email,
-                exempted_states={
-                    # TODO(#55646): US_AZ has 1 invalid email (suspicious username) as of 1/6/26
-                    StateCode.US_AZ,
-                    # TODO(#55647): US_IA has 1 invalid email (empty domain) as of 1/6/26
-                    StateCode.US_IA,
-                    # TODO(#55648): US_ME has 2 invalid emails (domain ends with dot) as of 1/6/26
-                    StateCode.US_ME,
-                    # TODO(#55649): US_TX has 1 invalid email (suspicious username) as of 1/6/26
-                    StateCode.US_TX,
-                },
-            ),
+        validator=state_exempted_validator(
+            attr_validators.is_opt_valid_email,
+            exempted_state_validator=attr_validators.is_opt_valid_email_legacy,
+            exempted_states={
+                # TODO(#55646): US_AZ has 1 invalid email (suspicious username) as of 1/6/26
+                StateCode.US_AZ,
+                # TODO(#55647): US_IA has 1 invalid email (empty domain) as of 1/6/26
+                StateCode.US_IA,
+                # TODO(#55648): US_ME has 2 invalid emails (domain ends with dot) as of 1/6/26
+                StateCode.US_ME,
+                # TODO(#55649): US_TX has 1 invalid email (suspicious username) as of 1/6/26
+                StateCode.US_TX,
+            },
         ),
     )
     phone_number: str | None = attr.ib(

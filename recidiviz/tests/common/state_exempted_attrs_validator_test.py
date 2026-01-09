@@ -34,7 +34,9 @@ class AttrValidatorsTest(unittest.TestCase):
             my_required_str: str = attr.ib(
                 default=None,
                 validator=state_exempted_validator(
-                    attr_validators.is_str, exempted_states={StateCode.US_YY}
+                    attr_validators.is_str,
+                    exempted_state_validator=None,
+                    exempted_states={StateCode.US_YY},
                 ),
             )
 
@@ -69,7 +71,9 @@ class AttrValidatorsTest(unittest.TestCase):
                 validator=attr.validators.and_(
                     attr_validators.is_opt_str,
                     state_exempted_validator(
-                        attr_validators.is_str, exempted_states={StateCode.US_YY}
+                        attr_validators.is_str,
+                        exempted_state_validator=None,
+                        exempted_states={StateCode.US_YY},
                     ),
                 ),
             )
@@ -114,7 +118,9 @@ class AttrValidatorsTest(unittest.TestCase):
                 validator=[  # type: ignore
                     attr_validators.is_opt_str,
                     state_exempted_validator(
-                        attr_validators.is_str, exempted_states={StateCode.US_YY}
+                        attr_validators.is_str,
+                        exempted_state_validator=None,
+                        exempted_states={StateCode.US_YY},
                     ),
                 ],
             )
@@ -142,4 +148,52 @@ class AttrValidatorsTest(unittest.TestCase):
             _ = _TestClass(
                 state_code="US_YY",
                 my_required_str=True,  # type: ignore[arg-type]
+            )
+
+    def test_state_exempted_validator_with_exempted_state_validator(self) -> None:
+        """Test the new exempted_state_validator parameter that provides a fallback
+        validator for exempted states.
+        """
+
+        @attr.s
+        class _TestClass:
+            state_code: str = attr.ib(validator=attr_validators.is_str)
+            my_field: str | None = attr.ib(
+                default=None,
+                validator=state_exempted_validator(
+                    # Primary validator: requires non-None string
+                    attr_validators.is_str,
+                    # Fallback for exempted states: allows None
+                    exempted_state_validator=attr_validators.is_opt_str,
+                    exempted_states={StateCode.US_YY},
+                ),
+            )
+
+        # Non-exempted state: primary validator runs (requires non-None string)
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_field=None,
+            )
+        # Non-exempted state: valid string works
+        _ = _TestClass(
+            state_code="US_XX",
+            my_field="valid",
+        )
+
+        # Exempted state: fallback validator runs (allows None)
+        _ = _TestClass(
+            state_code="US_YY",
+            my_field=None,
+        )
+        # Exempted state: valid string also works
+        _ = _TestClass(
+            state_code="US_YY",
+            my_field="valid",
+        )
+        # Exempted state: invalid type fails (fallback validator still checks type)
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_YY",
+                my_field=True,  # type: ignore[arg-type]
             )

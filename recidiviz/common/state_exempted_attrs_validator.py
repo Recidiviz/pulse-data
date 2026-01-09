@@ -29,10 +29,17 @@ def state_exempted_validator(
     validator: Callable[[Any, attr.Attribute, T], None],
     *,
     exempted_states: Set[StateCode],
+    exempted_state_validator: Callable[[Any, attr.Attribute, T], None] | None,
 ) -> Callable[[Any, attr.Attribute, T], None]:
     """A wrapper around any attr field validator that can be used to exempt certain
     states from the validation. In order to use this validator, the class with the field
     you're validating must also have a hydrated state_code field.
+
+    Args:
+        validator: The validator to run for non-exempted states.
+        exempted_states: Set of state codes that are exempt from the primary validator.
+        exempted_state_validator: Optional fallback validator to run for exempted states.
+            If not provided, no validation is performed for exempted states.
     """
 
     def _wrapper(instance: Any, attribute: attr.Attribute, value: T) -> None:
@@ -41,10 +48,10 @@ def state_exempted_validator(
 
         state_code = StateCode(assert_type(getattr(instance, "state_code"), str))
 
-        try:
+        if state_code in exempted_states:
+            if exempted_state_validator is not None:
+                exempted_state_validator(instance, attribute, value)
+        else:
             validator(instance, attribute, value)
-        except Exception as e:
-            if state_code not in exempted_states:
-                raise e
 
     return _wrapper
