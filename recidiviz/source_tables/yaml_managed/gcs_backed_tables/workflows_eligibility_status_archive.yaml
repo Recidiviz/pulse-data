@@ -1,0 +1,38 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_eligibility_status_archive
+description:
+  This table contains daily archives of the workflows_eligibility_status export,
+  which tracks eligibility status for all persons across all Workflows opportunities.
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: opportunity_type
+    type: STRING
+    mode: NULLABLE
+  - name: person_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: stable_person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: stable_person_external_id_type
+    type: STRING
+    mode: NULLABLE
+  - name: eligibility_status
+    type: STRING
+    mode: NULLABLE
+  - name: opp_specific_eligibility_grouping
+    type: STRING
+    mode: NULLABLE
+  - name: opp_specific_eligibility_subgrouping
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-practices-etl-data-archive/*/workflows_eligibility_status.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE

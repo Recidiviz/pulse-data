@@ -66,6 +66,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_sapphire_pr
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_eligibility_status_archive_sessions import (
+    WORKFLOWS_ELIGIBILITY_STATUS_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
@@ -200,6 +203,9 @@ from recidiviz.calculator.query.state.views.user_metrics.workflows_supervision_u
 )
 from recidiviz.calculator.query.state.views.workflows.person_record import (
     PERSON_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.workflows_eligibility_status_archive import (
+    WORKFLOWS_ELIGIBILITY_STATUS_ARCHIVE_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
@@ -347,6 +353,14 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     JII_TEXTING_WELCOME_MESSAGES_VIEW_BUILDER.address: (
         "State agnostic view that joins WelcomeMessageSeries and WelcomeMessageAttempt tables"
         "used by validation views in validation_views__jii_texting dataset (Samantha Norcia, 12/15/2025)"
+    ),
+    WORKFLOWS_ELIGIBILITY_STATUS_ARCHIVE_VIEW_BUILDER.address: (
+        "New view that parses archived workflows_eligibility_status exports from GCS. "
+        "Will be used for eligibility status analysis. (Hugo Salas, 2025-12-29)"
+    ),
+    WORKFLOWS_ELIGIBILITY_STATUS_SESSIONS_VIEW_BUILDER.address: (
+        "New view that sessionizes eligibility status changes per person and opportunity. "
+        "Will be used for eligibility status analysis. (Hugo Salas, 2025-12-29)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
