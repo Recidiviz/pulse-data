@@ -32,8 +32,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import google.auth
+from google.auth.credentials import Credentials
 from google.oauth2 import service_account
-from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import Resource, build
 
 from recidiviz.admin_panel.routes.workflows import refine_state_code

@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 from flask import g, session
-from google.oauth2.service_account import Credentials
+from google.auth.credentials import Credentials
 from googleapiclient.discovery import build
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
