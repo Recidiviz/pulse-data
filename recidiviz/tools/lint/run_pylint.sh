@@ -33,9 +33,9 @@ get_changed_files() {
     git diff --diff-filter=d --name-only "$(git merge-base HEAD origin/main)" | grep --invert-match -e '/nbautoexports/' -e '/migrated_notebooks/'
 }
 
-# Look for changes in Pipfile.lock and .pylintrc - changes in these files could mean that python files that have not
+# Look for changes in uv.lock and .pylintrc - changes in these files could mean that python files that have not
 # been touched now have new lint errors.
-pylint_config_files_in_change_list=$(get_changed_files | grep -e Pipfile.lock -e .pylintrc -e run_pylint.sh)
+pylint_config_files_in_change_list=$(get_changed_files | grep -e uv.lock -e .pylintrc -e run_pylint.sh)
 
 if ! pip show pylint; then
   pip install "pylint"

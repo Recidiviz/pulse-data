@@ -38,15 +38,15 @@ pyenv install 3.11.6
 # Install Airflow Python version
 pyenv install 3.11.8
 
-# Install latest pipenv and pip for Airflow Python version
+# Install latest uv and pip for Airflow Python version
 pyenv local 3.11.8
 pip install --upgrade pip
-pip install pipenv
+pip install uv
 
-# Install latest pipenv and pip for data platform Python version
+# Install latest uv and pip for data platform Python version
 pyenv local 3.11.6
 pip install --upgrade pip
-pip install pipenv
+pip install uv
 
 # Set global default Python version
 pyenv global 3.11.6

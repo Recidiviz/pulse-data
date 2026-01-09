@@ -1,6 +1,6 @@
 #!/bin/sh
 
-recidiviz/tools/diff_pipenv.sh
+recidiviz/tools/diff_uv.sh
 
 # The post-checkout hook is called at the start of rebase and if the hook exits with a non-zero status, the entire
 # rebase is aborted and you end up in a detached HEAD state. To avoid this, we always exit with zero, but the error

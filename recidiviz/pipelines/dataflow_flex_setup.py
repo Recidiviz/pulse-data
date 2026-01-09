@@ -31,7 +31,7 @@ REQUIRED_PACKAGES = [
     # Do not include `apache-beam` in dataflow_flex_setup.py
     "cattrs",
     "dateparser",
-    # Must stay up-to-date with latest dill and cloudpickle versions in the Pipfile
+    # Must stay up-to-date with latest dill and cloudpickle versions in pyproject.toml
     # these libraries are used for template serialization and
     # it's critical that the local version used to serialize the templates and the version used to deserialize on the
     # remote workers match.

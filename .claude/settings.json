@@ -16,7 +16,7 @@
       "Bash(gh pr diff:*)",
       "Bash(gh label list:*)",
 
-      "Bash(pipenv run pytest:*)",
+      "Bash(uv run pytest:*)",
 
       "Bash(gcloud builds list:*)",
       "Bash(gcloud builds log:*)",

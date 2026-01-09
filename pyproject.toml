@@ -158,7 +158,7 @@ dev = [
     "google-api-python-client",
     "google-auth-httplib2",
     "google-auth-oauthlib",
-    # TODO(#51475): Unpin once we've completed migration to uv and can update dependencies again.
+    # TODO(#55440): Unpin once we've completed migration to uv and can update dependencies again.
     "google-generativeai==0.8.5",
     "gspread",
     # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated

@@ -242,7 +242,7 @@ def action_update_image() -> None:
                 "------------",
                 "",
                 "# To build a new appengine image from local source code, run the following:",
-                f'pipenv run docker-build -t "{COMPOSER_EXPERIMENT_APPENGINE_IMAGE_NAME}"',
+                f'make docker-build ARGS="-t {COMPOSER_EXPERIMENT_APPENGINE_IMAGE_NAME}"',
                 f'docker push "{COMPOSER_EXPERIMENT_APPENGINE_IMAGE_NAME}"',
                 "",
                 "------------",

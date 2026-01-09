@@ -21,8 +21,6 @@ from typing import FrozenSet, List, Tuple
 
 from recidiviz.tools.validate_source_modifications import (
     BUILD_INFRA_KEY,
-    PIPFILE_KEY,
-    PIPFILE_UV_SYNC_KEY,
     UV_KEY,
     check_assertions,
 )
@@ -63,33 +61,8 @@ class CheckAssertionsTest(unittest.TestCase):
 
         self._run_test(modified_files, [], [BUILD_INFRA_KEY])
 
-    def test_pipfile_happy(self) -> None:
-        # During coexistence, both Pipfile and pyproject.toml must be updated together
-        modified_files = ["Pipfile", "Pipfile.lock", "pyproject.toml", "uv.lock"]
-
-        self._run_test(modified_files, [], [])
-
-    def test_pipfile_unhappy(self) -> None:
-        modified_files = ["Pipfile"]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
-            (frozenset(["Pipfile"]), frozenset(["Pipfile.lock"]), PIPFILE_KEY),
-            (
-                frozenset(["Pipfile"]),
-                frozenset(["pyproject.toml"]),
-                PIPFILE_UV_SYNC_KEY,
-            ),
-        ]
-
-        self._run_test(modified_files, expected_failures, [])
-
-    def test_pipfile_skipped(self) -> None:
-        modified_files = ["Pipfile"]
-
-        self._run_test(modified_files, [], [PIPFILE_KEY, PIPFILE_UV_SYNC_KEY])
-
     def test_uv_happy(self) -> None:
-        # During coexistence, both pyproject.toml and Pipfile must be updated together
-        modified_files = ["pyproject.toml", "uv.lock", "Pipfile", "Pipfile.lock"]
+        modified_files = ["pyproject.toml", "uv.lock"]
 
         self._run_test(modified_files, [], [])
 
@@ -97,11 +70,6 @@ class CheckAssertionsTest(unittest.TestCase):
         modified_files = ["pyproject.toml"]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (frozenset(["pyproject.toml"]), frozenset(["uv.lock"]), UV_KEY),
-            (
-                frozenset(["pyproject.toml"]),
-                frozenset(["Pipfile"]),
-                PIPFILE_UV_SYNC_KEY,
-            ),
         ]
 
         self._run_test(modified_files, expected_failures, [])
@@ -109,7 +77,7 @@ class CheckAssertionsTest(unittest.TestCase):
     def test_uv_skipped(self) -> None:
         modified_files = ["pyproject.toml"]
 
-        self._run_test(modified_files, [], [UV_KEY, PIPFILE_UV_SYNC_KEY])
+        self._run_test(modified_files, [], [UV_KEY])
 
     # TODO(#8217) excluding the admin panel from endpoint documentation,
     #  write new test to test the admin panel routes
