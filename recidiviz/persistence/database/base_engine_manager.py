@@ -49,6 +49,8 @@ class BaseEngineManager:
                 return "case_triage"
             case SchemaType.PATHWAYS:
                 return "pathways"
+            case SchemaType.PUBLIC_PATHWAYS:
+                return "public_pathways"
             case SchemaType.WORKFLOWS:
                 return "workflows"
             case SchemaType.INSIGHTS:

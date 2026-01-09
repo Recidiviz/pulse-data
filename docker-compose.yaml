@@ -137,6 +137,27 @@ services:
       - insights_db_data:/var/lib/postgresql/data
       - insights_db_socket:/var/run/postgresql/
 
+  public_pathways_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: public_pathways_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5439:5432"
+    volumes:
+      - public_pathways_db_data:/var/lib/postgresql/data
+      - public_pathways_db_socket:/var/run/postgresql/
+
+  public_pathways_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - public_pathways_db
+    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database PUBLIC_PATHWAYS
+    environment:
+      - IS_DEV=true
+
 volumes:
   case_triage_db_data:
   case_triage_db_socket:
@@ -150,3 +171,5 @@ volumes:
   workflows_db_socket:
   insights_db_data:
   insights_db_socket:
+  public_pathways_db_data:
+  public_pathways_db_socket:

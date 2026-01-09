@@ -42,9 +42,14 @@ class TestServerConfig(unittest.TestCase):
         f"{server_config.__name__}.get_pathways_enabled_states_for_cloud_sql",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
+    @patch(
+        f"{server_config.__name__}.get_public_pathways_enabled_states_for_cloud_sql",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+    )
     def test_get_database_keys_for_schema(
         self,
         _pathways_enabled_states: Mock,
+        _public_pathways_enabled_states: Mock,
         _outliers_enabled_states: Mock,
         _workflows_enabled_states: Mock,
     ) -> None:
@@ -60,6 +65,8 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
+            SQLAlchemyDatabaseKey(SchemaType.PUBLIC_PATHWAYS, db_name="us_xx"),
+            SQLAlchemyDatabaseKey(SchemaType.PUBLIC_PATHWAYS, db_name="us_ww"),
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_oz"),
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_yy"),
             SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_xx"),

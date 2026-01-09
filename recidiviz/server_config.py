@@ -23,6 +23,9 @@ from flask import Flask
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states_for_cloud_sql,
 )
+from recidiviz.calculator.query.state.views.dashboard.public_pathways.public_pathways_enabled_states import (
+    get_public_pathways_enabled_states_for_cloud_sql,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -55,9 +58,22 @@ def database_keys_for_schema_type(
 
     match schema_type:
         case SchemaType.PATHWAYS:
+            db_manager = PathwaysDatabaseManager(
+                get_pathways_enabled_states_for_cloud_sql(), SchemaType.PATHWAYS
+            )
             return [
-                PathwaysDatabaseManager.database_key_for_state(state_code)
+                db_manager.database_key_for_state(state_code)
                 for state_code in get_pathways_enabled_states_for_cloud_sql()
+            ]
+
+        case SchemaType.PUBLIC_PATHWAYS:
+            db_manager = PathwaysDatabaseManager(
+                get_public_pathways_enabled_states_for_cloud_sql(),
+                SchemaType.PUBLIC_PATHWAYS,
+            )
+            return [
+                db_manager.database_key_for_state(state_code)
+                for state_code in get_public_pathways_enabled_states_for_cloud_sql()
             ]
 
         case SchemaType.WORKFLOWS:
@@ -93,6 +109,9 @@ def state_codes_for_schema_type(
     match schema_type:
         case SchemaType.PATHWAYS:
             return get_pathways_enabled_states_for_cloud_sql()
+
+        case SchemaType.PUBLIC_PATHWAYS:
+            return get_public_pathways_enabled_states_for_cloud_sql()
 
         case SchemaType.WORKFLOWS:
             return get_workflows_enabled_states()

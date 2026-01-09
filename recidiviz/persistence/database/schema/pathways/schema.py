@@ -16,7 +16,7 @@
 # ============================================================================
 """Define the ORM schema objects that map directly to the database, for Pathways related entities.
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from sqlalchemy import (
     TIMESTAMP,
@@ -39,6 +39,9 @@ from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.ddl import DDLElement
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.shared_pathways.schema_helpers import (
+    build_covered_indexes,
+)
 
 PathwaysBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="PathwaysBase"
@@ -46,28 +49,6 @@ PathwaysBase: DeclarativeMeta = declarative_base(
 
 # Key to pass to __table_args__["info"] to keep the table up-to-date with alembic migrations.
 RUN_MIGRATIONS = "run_migrations"
-
-
-def build_covered_indexes(
-    *,
-    index_base_name: str,
-    dimensions: List[str],
-    includes: Optional[List[str]] = None,
-) -> List[Index]:
-    dimensions = sorted(dimensions)
-    dimension_set = set(dimensions)
-    includes = [] if includes is None else includes
-    return [
-        Index(
-            f"{index_base_name}_{dimension}",
-            dimension,
-            postgresql_include=[
-                *sorted(list(dimension_set - set([dimension]))),
-                *includes,
-            ],
-        )
-        for dimension in dimensions
-    ]
 
 
 class TransitionsOverTimeMixin:

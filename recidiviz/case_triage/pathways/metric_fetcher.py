@@ -24,6 +24,9 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    get_pathways_enabled_states_for_cloud_sql,
+)
 from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
@@ -35,6 +38,7 @@ from recidiviz.case_triage.pathways.pathways_database_manager import (
 from recidiviz.case_triage.util import to_json_serializable
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
+from recidiviz.persistence.database.schema_type import SchemaType
 
 
 @attr.s(auto_attribs=True)
@@ -42,7 +46,11 @@ class PathwaysMetricFetcher:
     """Interface for fetching metrics from Cloud SQL"""
 
     state_code: StateCode
-    database_manager: PathwaysDatabaseManager = attr.ib(factory=PathwaysDatabaseManager)
+    database_manager: PathwaysDatabaseManager = attr.ib(
+        factory=lambda: PathwaysDatabaseManager(
+            get_pathways_enabled_states_for_cloud_sql(), SchemaType.PATHWAYS
+        )
+    )
 
     @cached_property
     def database_session(self) -> sessionmaker:

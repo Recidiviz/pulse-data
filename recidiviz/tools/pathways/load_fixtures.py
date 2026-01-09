@@ -173,7 +173,9 @@ def main(
     create_dbs(state_codes, SchemaType.PATHWAYS)
 
     for state in state_codes:
-        database_key = PathwaysDatabaseManager.database_key_for_state(state)
+        database_key = PathwaysDatabaseManager(
+            state_codes, SchemaType.PATHWAYS
+        ).database_key_for_state(state)
         pathways_engine = SQLAlchemyEngineManager.init_engine(database_key)
 
         if data_type == "FIXTURE":

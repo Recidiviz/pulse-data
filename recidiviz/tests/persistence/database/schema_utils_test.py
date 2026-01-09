@@ -166,6 +166,11 @@ class TestSchemaUtils(unittest.TestCase):
             "supervision_to_liberty_transitions",
             "supervision_to_prison_transitions",
         ]
+        public_pathways_table_names = [
+            "metric_metadata",
+            "prison_population_over_time",
+            "prison_population_by_dimension",
+        ]
         state_table_names = [
             "state_assessment",
             "state_charge",
@@ -245,6 +250,7 @@ class TestSchemaUtils(unittest.TestCase):
             + justice_counts_table_names
             + operations_table_names
             + pathways_table_names
+            + public_pathways_table_names
             + state_table_names
             + workflows_table_names
             + insights_table_names

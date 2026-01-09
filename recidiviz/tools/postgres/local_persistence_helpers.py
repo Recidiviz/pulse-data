@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.public_pathways.schema import (
+    PublicPathwaysBase,
+)
 from recidiviz.persistence.database.schema.state.schema import StateBase
 from recidiviz.persistence.database.schema.workflows.schema import WorkflowsBase
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -196,6 +199,7 @@ DECLARATIVE_BASES = [
     FakeBase,
     CaseTriageBase,
     PathwaysBase,
+    PublicPathwaysBase,
     WorkflowsBase,
     InsightsBase,
 ]

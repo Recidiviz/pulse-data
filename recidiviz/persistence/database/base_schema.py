@@ -24,6 +24,9 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.public_pathways.schema import (
+    PublicPathwaysBase,
+)
 from recidiviz.persistence.database.schema.state.schema import StateBase
 from recidiviz.persistence.database.schema.workflows.schema import WorkflowsBase
 
@@ -33,6 +36,7 @@ SQLAlchemyModelType = Union[
     JusticeCountsBase,
     CaseTriageBase,
     PathwaysBase,
+    PublicPathwaysBase,
     WorkflowsBase,
     InsightsBase,
 ]

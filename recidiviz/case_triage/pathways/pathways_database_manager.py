@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,13 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Contains the database manager for Pathways """
-from typing import Dict
+from typing import Dict, List
 
 from sqlalchemy.orm import sessionmaker
 
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states_for_cloud_sql,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -32,14 +29,16 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 
 # TODO(#20601): Switch to using the StateSegmentedDatabaseManager
 class PathwaysDatabaseManager:
-    """Class for managing Pathways database engine initialization / session factories"""
+    """Class for managing both Public and Private Pathways database engine initialization / session factories"""
 
     pathways_session_factories: Dict[str, sessionmaker]
 
-    def __init__(self) -> None:
+    def __init__(self, enabled_states: List[str], schema_type: SchemaType) -> None:
+        self.enabled_states = enabled_states
+        self.schema_type = schema_type
         self.database_keys = {
             state_code: self.database_key_for_state(state_code)
-            for state_code in get_pathways_enabled_states_for_cloud_sql()
+            for state_code in enabled_states
         }
 
         # Initialize engines. Silently no-ops if engines have already been initialized,
@@ -56,11 +55,10 @@ class PathwaysDatabaseManager:
         }
 
     def get_pathways_session(self, state_code: StateCode) -> sessionmaker:
-        if state_code.value not in get_pathways_enabled_states_for_cloud_sql():
+        if state_code.value not in self.enabled_states:
             raise ValueError(f"StateCode {state_code} does not have Pathways enabled")
 
         return self.pathways_session_factories[state_code.value]
 
-    @classmethod
-    def database_key_for_state(cls, state_code: str) -> SQLAlchemyDatabaseKey:
-        return SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name=state_code.lower())
+    def database_key_for_state(self, state_code: str) -> SQLAlchemyDatabaseKey:
+        return SQLAlchemyDatabaseKey(self.schema_type, db_name=state_code.lower())

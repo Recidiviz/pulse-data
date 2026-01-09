@@ -29,6 +29,9 @@ from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    get_pathways_enabled_states_for_cloud_sql,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
@@ -187,7 +190,9 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         )
     )
 
-    database_key = PathwaysDatabaseManager.database_key_for_state(state_code)
+    database_key = PathwaysDatabaseManager(
+        get_pathways_enabled_states_for_cloud_sql(), SchemaType.PATHWAYS
+    ).database_key_for_state(state_code)
     import_gcs_csv_to_cloud_sql(
         database_key=database_key,
         model=db_entity,

@@ -268,6 +268,7 @@ class MigrationsTestBase(TestCase):
             - set(migration_indices)
             - self.expected_missing_indices()
         )
+        print("***", schema_indices, migration_indices, self.expected_missing_indices())
         if indices_not_in_migrations:
             raise ValueError(
                 f"Found indices defined in schema.py but not in migrations. If you are "
@@ -568,6 +569,33 @@ class TestPathwaysMigrations(MigrationsTestBase):
             "supervision_population_projection_pkey",
             "supervision_to_liberty_transitions_pkey",
             "supervision_to_prison_transitions_pkey",
+        }
+
+
+class TestPublicPathwaysMigrations(MigrationsTestBase):
+    __test__ = True
+
+    @classmethod
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.PUBLIC_PATHWAYS
+
+    def expected_missing_indices(self) -> Set[str]:
+        # We don't manage the schemas of some of the Public Pathways tables via alembic
+        # migrations because they are loaded to our Public Pathways DB via a separate ETL
+        # process. For indices on these tables, we're ok if they are not defined in
+        # migrations.
+        return {
+            "prison_population_by_dimension_age_group",
+            "prison_population_by_dimension_facility",
+            "prison_population_by_dimension_gender",
+            "prison_population_by_dimension_sex",
+            "prison_population_by_dimension_pk",
+            "prison_population_by_dimension_pkey",
+            "prison_population_by_dimension_race",
+            "prison_population_over_time_pk",
+            "prison_population_over_time_pkey",
+            "prison_population_over_time_time_series",
+            "prison_population_over_time_watermark",
         }
 
 

@@ -27,6 +27,9 @@ from fakeredis import FakeRedis
 from flask import json
 
 from recidiviz.application_data_import.server import _dashboard_event_level_bucket, app
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    get_pathways_enabled_states_for_cloud_sql,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -90,9 +93,9 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
         self.fs = FakeGCSFileSystem()
         self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
         self.fs_patcher.start()
-        self.database_key = PathwaysDatabaseManager.database_key_for_state(
-            self.state_code
-        )
+        self.database_key = PathwaysDatabaseManager(
+            get_pathways_enabled_states_for_cloud_sql(), SchemaType.PATHWAYS
+        ).database_key_for_state(self.state_code)
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result, self.database_key
         )

@@ -26,6 +26,7 @@ class SchemaType(enum.Enum):
     JUSTICE_COUNTS = "JUSTICE_COUNTS"
     CASE_TRIAGE = "CASE_TRIAGE"
     PATHWAYS = "PATHWAYS"
+    PUBLIC_PATHWAYS = "PUBLIC_PATHWAYS"
     WORKFLOWS = "WORKFLOWS"
     INSIGHTS = "INSIGHTS"
 
@@ -35,6 +36,7 @@ class SchemaType(enum.Enum):
         return self in [
             SchemaType.STATE,
             SchemaType.PATHWAYS,
+            SchemaType.PUBLIC_PATHWAYS,
             SchemaType.WORKFLOWS,
             SchemaType.INSIGHTS,
         ]

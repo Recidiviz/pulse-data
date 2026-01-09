@@ -60,6 +60,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch(
+        f"{server_config.__name__}.get_public_pathways_enabled_states_for_cloud_sql",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+    )
+    @patch(
         f"{server_config.__name__}.get_outliers_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
@@ -81,6 +85,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_create_engine: mock.MagicMock,
         _mock_workflows_enabled: mock.MagicMock,
         _mock_outliers_enabled: mock.MagicMock,
+        _mock_public_pathways_enabled: mock.MagicMock,
         _mock_pathways_enabled: mock.MagicMock,
     ) -> None:
         # Arrange
@@ -179,6 +184,38 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
+                        username="public_pathways_db_user_value",
+                        password="public_pathways_db_password_value",
+                        port=5432,
+                        database="us_xx",
+                        query={
+                            "host": "/cloudsql/public_pathways_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="public_pathways_db_user_value",
+                        password="public_pathways_db_password_value",
+                        port=5432,
+                        database="us_ww",
+                        query={
+                            "host": "/cloudsql/public_pathways_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
                         username="workflows_db_user_value",
                         password="workflows_db_password_value",
                         port=5432,
@@ -244,6 +281,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch(
+        f"{server_config.__name__}.get_public_pathways_enabled_states_for_cloud_sql",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+    )
+    @patch(
         f"{server_config.__name__}.get_outliers_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
@@ -263,6 +304,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_create_engine: mock.MagicMock,
         _mock_workflows_enabled: mock.MagicMock,
         _mock_outliers_enabled: mock.MagicMock,
+        _mock_public_pathways_enabled: mock.MagicMock,
         _mock_pathways_enabled: mock.MagicMock,
     ) -> None:
         # Arrange
@@ -357,6 +399,38 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
+                        username="public_pathways_db_user_value",
+                        password="public_pathways_db_password_value",
+                        port=5432,
+                        database="us_xx",
+                        query={
+                            "host": "/cloudsql/public_pathways_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="public_pathways_db_user_value",
+                        password="public_pathways_db_password_value",
+                        port=5432,
+                        database="us_ww",
+                        query={
+                            "host": "/cloudsql/public_pathways_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
                         username="workflows_db_user_value",
                         password="workflows_db_password_value",
                         port=5432,
@@ -429,19 +503,21 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:444",
             "project:region:555",
             "project:region:666",
+            "project:region:777",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666"])
+        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666", "777"])
         mock_secrets.assert_has_calls(
             [
                 mock.call("operations_v2_cloudsql_instance_id"),
                 mock.call("justice_counts_cloudsql_instance_id"),
                 mock.call("case_triage_cloudsql_instance_id"),
                 mock.call("pathways_cloudsql_instance_id"),
+                mock.call("public_pathways_cloudsql_instance_id"),
                 mock.call("workflows_cloudsql_instance_id"),
                 mock.call("insights_cloudsql_instance_id"),
             ],

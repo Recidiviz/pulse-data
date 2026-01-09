@@ -11,11 +11,13 @@ services:
       - "~/.config:/home/recidiviz/.config" # use user's credentials to access GCP APIs
       - case_triage_db_socket:/cloudsql/case_triage
       - pathways_db_socket:/cloudsql/pathways
+      - public_pathways_db_socket:/cloudsql/public_pathways
       - insights_db_socket:/cloudsql/insights
       - workflows_db_socket:/cloudsql/workflows
     depends_on:
       - case_triage_db
       - pathways_db
+      - public_pathways_db
       - insights_db
       - workflows_db
 
