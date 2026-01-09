@@ -21,7 +21,7 @@ package recidiviz.admin_panel.models;
 
 // To regenerate, ensure `mypy-protobuf` is installed:
 // ```bash
-// pipenv install --dev
+// uv sync --all-extras
 // ```
 // and that `protoc-gen-ts` is installed (from `frontends/admin-panel`)
 // ```bash

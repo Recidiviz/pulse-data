@@ -40,7 +40,7 @@ def fake_k8s_operator_for_entrypoint(
     read-only filesystem).
 
     n.b.: this is a brittle testing mechanism; because EntrypointInterface uses
-    the pulse-data Pipfile and not the airflow Pipfile, execution of arbitrary
+    the pulse-data pyproject.toml and not the airflow pyproject.toml, execution of arbitrary
     code might fail.
     """
 

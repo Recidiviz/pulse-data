@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script for moving files from storage back into an ingest bucket to be re-ingested. Should be run in the pipenv shell.
+Script for moving files from storage back into an ingest bucket to be re-ingested.
 
 Steps:
-1. Finds all sub-folders in storage for dates we want to re-ingest, based on 
+1. Finds all sub-folders in storage for dates we want to re-ingest, based on
    start-date-bound, end-date-bound and file tag filters.
 2. Finds all files in those sub-folders.
 3. Acquires raw data resource lock for the destination ingest bucket
@@ -26,9 +26,9 @@ Steps:
 5. Writes operations to a logfile.
 6. Release raw data resource lock for the ingest bucket
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
+uv run python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
     --source-project-id recidiviz-staging --source-raw-data-instance PRIMARY \
     --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
     --region us_tn --start-date-bound 2025-03-10 --dry-run True

@@ -16,8 +16,8 @@
 # =============================================================================
 """Class providing methods for generating documentation regarding endpoints.
 
-The script can be run using pipenv shell:
-    python -m recidiviz.tools.docs.endpoint_documentation_generator
+The script can be run using:
+    uv run python -m recidiviz.tools.docs.endpoint_documentation_generator
 """
 import logging
 import os

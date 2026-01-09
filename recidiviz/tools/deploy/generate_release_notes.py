@@ -16,9 +16,9 @@
 # =============================================================================
 """Script for creating release notes of production deploys.
 
-Run the following command within a pipenv shell to execute:
+Example usage:
 
-python -m recidiviz.tools.deploy.generate_release_notes --previous_tag [PREVIOUS_TAG] --new_tag [NEW_TAG] --github_token [GITHUB_TOKEN]
+uv run python -m recidiviz.tools.deploy.generate_release_notes --previous_tag [PREVIOUS_TAG] --new_tag [NEW_TAG] --github_token [GITHUB_TOKEN]
 """
 import argparse
 import logging

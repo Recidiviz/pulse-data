@@ -16,9 +16,9 @@
 # =============================================================================
 """Script for generating metric export timeliness monitoring time series.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.entrypoints.monitoring.report_metric_export_timeliness \
+uv run python -m recidiviz.entrypoints.monitoring.report_metric_export_timeliness \
     --project_id recidiviz-123
 """
 import argparse

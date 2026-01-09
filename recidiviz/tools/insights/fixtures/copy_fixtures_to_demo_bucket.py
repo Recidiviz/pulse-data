@@ -18,7 +18,7 @@
 """
 Script that copies fixutre files to a demo GCP bucket.
 
-pipenv run python -m recidiviz.tools.insights.fixtures.copy_fixtures_to_demo_bucket
+uv run python -m recidiviz.tools.insights.fixtures.copy_fixtures_to_demo_bucket
 """
 from google.cloud import storage
 

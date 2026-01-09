@@ -26,9 +26,9 @@ Note that the stamped alembic migration must exist for it to be run properly.
 
 
 
-Example usage (run from `pipenv shell` locally):
+Example usage:
 
-python -m recidiviz.tools.migrations.run_stamp_migration \
+uv run python -m recidiviz.tools.migrations.run_stamp_migration \
     --database STATE \
     --project-id recidiviz-staging \
     --current-revision [revision_id] \

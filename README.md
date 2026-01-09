@@ -96,37 +96,11 @@ and `libpq` with:
 $ apt update -y && apt install -y python3.9-dev python3-pip libpq-dev
 ```
 
-You do not need to change your default python version, as `pipenv` will look for
-3.9.
-
-Upgrade your `pip` to the latest version:
+Install [`uv`](https://docs.astral.sh/uv/) for dependency management:
 
 ```bash
-$ pip install -U pip
-```
-
-**NOTE**: if you get `ImportError: cannot import name 'main'` after upgrading
-pip, follow the suggestions in
-[this issue](https://github.com/pypa/pip/issues/5599).
-
-If you do not already have `pip` installed, you can install it on a Mac with
-these commands:
-
-```bash
-$ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-$ python get-pip.py --user
-```
-
-On Ubuntu 18.04, you can install `pip` with:
-
-```
-$ sudo apt-get install python-pip
-```
-
-Install [`pipenv`](https://pipenv.readthedocs.io/en/latest/):
-
-```bash
-$ pip install pipenv --user
+$ pip install uv
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 [Fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone
@@ -137,32 +111,29 @@ $ git clone git@github.com:your_github_username/pulse-data.git
 $ cd pulse-data
 ```
 
-To create a new pipenv environment and install all project and development
-dependencies on mac and debian machines, run the `initial_pipenv_setup` script.
-
-**NOTE**: Installation of one of our dependencies (`psycopg2`) requires OpenSSL,
-and as OpenSSL is not linked on Macs by default, this script temporarily sets
-the necessary compiler flags and then runs `pipenv sync --dev`. After this
-initial installation all `pipenv sync/install`s should work without this script.
+To create a new virtual environment and install all project and development
+dependencies, run the `initial_setup` script:
 
 ```bash
-$ ./initial_pipenv_setup.sh
+$ ./initial_setup.sh
 ```
 
-On a Linux machine, run the following:
+On a Linux machine, you can also run:
 
 ```bash
-$ pipenv sync --dev
+$ uv sync --all-extras
 ```
 
-**NOTE**: if you get `pipenv: command not found`, add the binary directory to
-your PATH as described
-[here](https://pipenv.readthedocs.io/en/latest/install#pragmatic-installation-of-pipenv).
-
-To activate your pipenv environment, run:
+To activate your virtual environment, run:
 
 ```bash
-$ pipenv shell
+$ source .venv/bin/activate
+```
+
+Or run commands directly with `uv run`:
+
+```bash
+$ uv run pytest recidiviz/tests/path/to/test.py
 ```
 
 On a Mac with [Homebrew](https://brew.sh/), you can install the JRE with:
@@ -240,16 +211,16 @@ Open a `bash` shell within the instance:
 $ docker exec -it recidiviz bash
 ```
 
-Once in the instance's `bash` shell, update your pipenv environment:
+Once in the instance's `bash` shell, sync your dependencies:
 
 ```bash
-$ pipenv sync --dev
+$ uv sync --all-extras
 ```
 
-To activate your pipenv environment, run:
+To activate your virtual environment, run:
 
 ```bash
-$ pipenv shell
+$ source .venv/bin/activate
 ```
 
 Finally, run `pytest`. If no tests fail, you are ready to develop!
@@ -360,7 +331,7 @@ that change as part of your inbound pull request.
 We use `black` to ensure consistent formatting across the code base and `isort`
 to sort imports. There is a pre-commit hook that will format all of your files
 automatically. It is defined in `githooks/pre-commit` and is installed by
-`./initial_pipenv_setup.sh`.
+`./initial_setup.sh`.
 
 You can also set up your editor to run `black` and `isort` on save. See
 [the black docs](https://black.readthedocs.io/en/stable/integrations/editors.html)
@@ -395,7 +366,7 @@ Install the GCloud SDK using the
 Note: make sure the installer did not add
 `google-cloud-sdk/platform/google_appengine` or subdirectories thereof to your
 `$PYTHONPATH`, e.g. in your bash profile. This could break attempts to run tests
-within the `pipenv shell` by hijacking certain dependencies.
+within the virtual environment by hijacking certain dependencies.
 
 Make sure you have docker installed (see instructions above), then configure
 docker authentication:
@@ -407,7 +378,7 @@ $ gcloud auth configure-docker
 
 ### Troubleshooting
 
-If you see a pipenv error (either during install or sync) with the following:
+If you see an error installing `psycopg2`:
 
 ```
 An error occurred while installing psycopg2==...
@@ -417,7 +388,7 @@ On a Mac:
 
 1. Ensure `postgresql` and `openssl` are installed with:
    `brew install postgresql openssl`
-2. Run the initial pipenv setup script: `./initial_pipenv_setup.sh`
+2. Run the setup script: `./initial_setup.sh`
 
 On Linux: Ensure `libpq` is installed with:
 `apt update -y && apt install -y libpq-dev`

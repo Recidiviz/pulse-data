@@ -16,7 +16,7 @@
 # =============================================================================
 """This module generates a local postgres instance for use in scripts and testing.
 It is purposely separated from SQLAlchemyEngine / DatabaseKey dependencies for use in
-both the Airflow and Recidiviz pipenvs"""
+both the Airflow and Recidiviz virtual environments."""
 import logging
 import os
 import pwd

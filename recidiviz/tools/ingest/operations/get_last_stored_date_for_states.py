@@ -18,9 +18,9 @@
 Determines latest dates in storage for various states. Could be used to when copying
 data from prod to staging.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.ingest.operations.get_last_stored_date_for_states \
+uv run python -m recidiviz.tools.ingest.operations.get_last_stored_date_for_states \
     --states US_ND,US_TN,US_MI,US_OR
 """
 

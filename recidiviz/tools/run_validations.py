@@ -22,9 +22,9 @@ NOTE: This only picks up changes to the text of the validation queries. If you m
 changes to sub-views, this will not be cognizant of any changes made there that
 are not yet uploaded.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.run_validations \
+uv run python -m recidiviz.tools.run_validations \
     --project-id recidiviz-staging \
     --state-code [state_code] \
     --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \

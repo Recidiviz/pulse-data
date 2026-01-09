@@ -19,10 +19,10 @@ This script runs alembic migrations against production and staging database inst
 It fetches the appropriate secrets and validates with the user that the intended migrations
 are being run before executing them.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
 # Dry run on the jails database:
-python -m recidiviz.tools.migrations.run_migrations_to_head \
+uv run python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JAILS \
     --project-id recidiviz-staging \
     --dry-run

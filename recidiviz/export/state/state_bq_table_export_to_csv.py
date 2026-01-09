@@ -17,9 +17,9 @@
 
 """Exports data from the state dataset in BigQuery to CSV files uploaded to a bucket in Google Cloud Storage.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.export.state.state_bq_table_export_to_csv --project-id recidiviz-staging \
+uv run python -m recidiviz.export.state.state_bq_table_export_to_csv --project-id recidiviz-staging \
 --dry-run True --target-bucket recidiviz-staging-jessex-test --state-code US_PA
 """
 

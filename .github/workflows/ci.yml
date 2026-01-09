@@ -7,7 +7,7 @@ concurrency:
 
 jobs:
   # These unit tests need to be run separately because they depend on a different Python
-  # environment defined in the Pipfile in the recidiviz/airflow package.
+  # environment defined in the pyproject.toml in the recidiviz/airflow package.
   airflow-tests:
     name: Airflow Pytest
     runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4

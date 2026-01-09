@@ -28,9 +28,9 @@ In remote mode (i.e. when a value for --project-id is set), the script points at
 database associated with the given project and auto-generates a new migration based on the difference
 between the existing database and the current schema. These operations proceed in readonly mode.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.migrations.autogenerate_migration --database OPERATIONS --message add_field_foo
+uv run python -m recidiviz.tools.migrations.autogenerate_migration --database OPERATIONS --message add_field_foo
 """
 import argparse
 import logging

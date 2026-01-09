@@ -67,7 +67,7 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
         self.assertTrue(
             is_sorted(RawDataReferenceReasonsYamlLoader.get_raw_yaml_data()),
             f"Entries in {RAW_DATA_REFERENCES_YAML} must be in alphabetical order. "
-            f"Please run `pipenv run python -m "
+            f"Please run `uv run python -m "
             f"recidiviz.tools.alphabetize_raw_data_reference_reasons` to sort the "
             f"entries.",
         )

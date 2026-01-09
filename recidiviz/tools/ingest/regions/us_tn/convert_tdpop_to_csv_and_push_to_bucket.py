@@ -17,8 +17,8 @@
 """ Script that reads the TDPOP excel spreadsheet specified in the command line arguments,
     converts it to a CSV, add a date column with the passed in as a command line argument,
     cleans up the headers, and uploads to a specified GCS bucket.
-    Example usage (run from `pipenv shell`):
-    python -m recidiviz.tools.ingest.regions.us_tn.convert_tdpop_to_csv_and_push_to_bucket \
+    Example usage:
+    uv run python -m recidiviz.tools.ingest.regions.us_tn.convert_tdpop_to_csv_and_push_to_bucket \
     --excel_absolute_file_path ~/Desktop/TDPOP.xlsx --date 2022-09-22 --region us_tn \
     --project_id recidiviz-staging --destination_bucket recidiviz-staging-us-tn-scratch
 """

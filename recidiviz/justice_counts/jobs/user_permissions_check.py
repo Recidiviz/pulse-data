@@ -17,7 +17,7 @@
 """Job that posts to Slack with data about users with incorrect permissions.
 Called from the production data_pull_job script that runs weekly.
 
-pipenv run python -m recidiviz.justice_counts.jobs.user_permissions_check \
+uv run python -m recidiviz.justice_counts.jobs.user_permissions_check \
   --project-id=justice-counts-local
 """
 import argparse

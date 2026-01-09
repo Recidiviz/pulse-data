@@ -1,4 +1,4 @@
-# If the requirements grow more than ~5 packages we should move to Pipenv
+# If the requirements grow more than ~5 packages we should move to uv
 Flask==3.0.0
 PyYAML==6.0.1
 requests==2.31.0

@@ -16,9 +16,9 @@
 # =============================================================================
 """Script to check for open PRs against the branch we're cutting an RC from. The check is a noop if base_branch is main.
 
-Run the following command within a pipenv shell to execute:
+Example usage:
 
-python -m recidiviz.tools.deploy.check_for_prs --base_branch [BASE_BRANCH] --github_token [GITHUB_TOKEN]
+uv run python -m recidiviz.tools.deploy.check_for_prs --base_branch [BASE_BRANCH] --github_token [GITHUB_TOKEN]
 """
 import argparse
 import logging

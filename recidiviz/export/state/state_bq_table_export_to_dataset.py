@@ -18,9 +18,9 @@
 """Exports data from the state dataset in BigQuery to another dataset in BigQuery.
 
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.export.state.state_bq_table_export_to_dataset --project-id recidiviz-staging \
+uv run python -m recidiviz.export.state.state_bq_table_export_to_dataset --project-id recidiviz-staging \
 --dry-run True --target-dataset my-test --state-codes US_ND US_MO
 """
 

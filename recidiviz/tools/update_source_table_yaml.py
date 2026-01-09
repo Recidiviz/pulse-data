@@ -17,10 +17,10 @@
 """
 This script writes BigQuery table schemas to YAML files in our recidiviz/source_tables/schema directory
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
 # Update the YAML definitions for referenced tables in the `static_reference_tables` dataset
-python -m recidiviz.tools.update_source_table_yaml \
+uv run python -m recidiviz.tools.update_source_table_yaml \
     --dataset-id static_reference_tables \
     --project-id [project id]
 

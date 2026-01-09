@@ -22,9 +22,9 @@ the files to the ingest bucket for processing.
 
 When run in dry-run mode (the default), will only log copies, but will not execute them.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.ingest.operations.copy_raw_state_files_between_projects \
+uv run python -m recidiviz.tools.ingest.operations.copy_raw_state_files_between_projects \
     --region us_tn --source-project-id recidiviz-123  --source-raw-data-instance PRIMARY \
     --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
     --start-date-bound 2022-03-24 --dry-run True

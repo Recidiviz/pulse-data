@@ -29,24 +29,24 @@ are good for seeing dependencies and the Gantt view is good for understanding du
 
 Airflow and Composer have certain restrictions on Python dependencies that we otherwise do
 not have with our other applications (like App Engine or Cloud Run). This means that we do
-need a specific Pipfile within the `recidiviz/airflow` directory in order to get started with
+need a specific `pyproject.toml` within the `recidiviz/airflow` directory in order to get started with
 local development.
 
-Before developing and installing the dependencies of this Pipenv for the first time, run
+Before developing and installing the dependencies for the first time, run
 
 ```
 brew install mysql
 ```
 
-To initialize a virtualenv with this Pipfile,
+To initialize a virtualenv for the Airflow package,
 
 ```
 cd recidiviz/airflow
-pipenv shell
-pipenv sync --dev
+uv sync --all-extras
+source .venv/bin/activate
 ```
 
-If you have an M2 Apple Chip and run into a `command '/usr/bin/clang' failed with exit code 1` error when syncing that 
+If you have an M2 Apple Chip and run into a `command '/usr/bin/clang' failed with exit code 1` error when syncing that
 looks similar to the issues reported [here](https://github.com/Homebrew/homebrew-core/issues/130258), try these commands
 to fix:
 ```
@@ -54,38 +54,34 @@ brew install zlib
 ln -sv $(brew --prefix zlib)/lib/libz.dylib $(brew --prefix)/lib/libzlib.dylib
 ```
 
-To add new dependencies to the Pipfile
+To add new dependencies
 
-* Edit `recidiviz/airflow/Pipfile` to include the new package (if needed only for tests, add to [dev-packages]).
+* Edit `recidiviz/airflow/pyproject.toml` to include the new package (if needed only for tests, add to [project.optional-dependencies]).
 * Push the branch.
-* Trigger the "Re-lock Airflow Pipenv" Github action for the branch.
+* Trigger the "Re-lock Airflow dependencies" Github action for the branch.
 * Pull changes that are added once it succeeds.
 * Run the following:
 
 ```
 cd recidiviz/airflow
-pipenv shell
-pipenv sync --dev
+uv sync --all-extras
 ```
 
 To run unit tests,
 
 ```
 cd recidiviz/airflow
-pipenv shell
-pytest tests
+uv run pytest tests
 ```
 
-If you want to be able to run / debug these tests within PyCharm, you will need to set up a new Python interpreter for the `recidiviz/airflow` pipenv.
+If you want to be able to run / debug these tests within PyCharm, you will need to set up a new Python interpreter for the `recidiviz/airflow` venv.
 
-To exit the virtualenv and go back to the main root Pipfile
+To exit the virtualenv and go back to the main root
 
 ```
-cd recidiviz/airflow
-pipenv shell
-exit # exits the airflow pipenv shell
-cd ../.. # go back to pulse-data root folder
-pipenv shell # starts the pipenv in pulse-data/Pipfile
+deactivate  # exits the airflow venv
+cd ../..    # go back to pulse-data root folder
+source .venv/bin/activate  # activates the root venv
 ```
 
 If you are adding new pulse-data code dependencies within the Airflow package, you
@@ -93,7 +89,7 @@ must update the `recidiviz/tools/validate_source_visibility.py` script to be abl
 recognize those dependencies. You'll need to do this for both your test files and also
 the source code files for the DAG.
 
-The `Pipfile.lock` will be updated every week as part of our automated dependency update
+The `uv.lock` will be updated every week as part of our automated dependency update
 process.
 
 ## Testing DAGs in GCP

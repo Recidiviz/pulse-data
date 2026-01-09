@@ -16,9 +16,9 @@
 # =============================================================================
 """Script for generating metrics describe Airflow environment creation time.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.entrypoints.monitoring.report_airflow_environment_age \
+uv run python -m recidiviz.entrypoints.monitoring.report_airflow_environment_age \
     --project_id recidiviz-123
 """
 import argparse

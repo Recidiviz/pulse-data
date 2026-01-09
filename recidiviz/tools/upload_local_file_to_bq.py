@@ -19,9 +19,9 @@ Script for uploading a local, delimited file into BigQuery.
 
 When in dry-run mode (default), this will only log the output, rather than uploading it to BigQuery.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.upload_local_file_to_bq \
+uv run python -m recidiviz.tools.upload_local_file_to_bq \
     --project-id recidiviz-staging \
     --destination-table test_dataset.table_name \
     --local-filepath ~/Downloads/test.csv \

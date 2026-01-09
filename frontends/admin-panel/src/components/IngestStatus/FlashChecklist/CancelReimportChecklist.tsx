@@ -187,15 +187,16 @@ const CancelReimportChecklist = (): JSX.Element => {
         <StyledStepContent
           description={
             <p>
-              Use the command below within the <code>pipenv shell</code> to move
-              SECONDARY storage raw files to deprecated
+              Use the command below to move SECONDARY storage raw files to
+              deprecated
               <CodeBlock
                 enabled={
                   currentStepSection ===
                   CancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
-                python -m recidiviz.tools.ingest.operations.deprecate_raw_data
+                uv run python -m
+                recidiviz.tools.ingest.operations.deprecate_raw_data
                 --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
                 --ingest-instance SECONDARY --skip-prompts True --dry-run False
               </CodeBlock>

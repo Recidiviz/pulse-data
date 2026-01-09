@@ -18,9 +18,9 @@
 Script for cleaning up BigQuery temp tables that were abandoned by Dataflow and are
 at least one day old.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.delete_temp_bq_tables --project-id recidiviz-staging --dry-run
+uv run python -m recidiviz.tools.delete_temp_bq_tables --project-id recidiviz-staging --dry-run
 """
 import argparse
 import logging

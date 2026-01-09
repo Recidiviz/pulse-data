@@ -19,9 +19,9 @@ Script for uploading a file/files manually to a region's ingest bucket so that t
 date that should be associated with that file/files. Should be used for any new historical files or files we're asked to
 upload manually due to an upload script failure.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date \
+uv run python -m recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date \
     ~/Downloads/MyHistoricalDump/ --date 2019-08-12 \
     --project-id recidiviz-staging --region us_nd --dry-run True \
     [--destination-bucket recidiviz-staging-my-test-bucket]

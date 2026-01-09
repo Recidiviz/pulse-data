@@ -37,9 +37,9 @@ python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq
     --project-id [project-id]
     --local-filepath [file-path]
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq
+uv run python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq
     --project-id recidiviz-staging
     --local-filepath ~/Downloads/example.csv
 

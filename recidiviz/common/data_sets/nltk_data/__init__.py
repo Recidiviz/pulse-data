@@ -17,9 +17,9 @@
 """This package houses any assets needed for NLTK functions. If there are additional
 corpora, grammars that are needed, download them into this package.
 
-You can do this by opening a python console within the pulse-data pipenv shell
+You can do this by running:
 
-python -m nltk.downloader -d recidiviz/common/data_sets/nltk_data
+uv run python -m nltk.downloader -d recidiviz/common/data_sets/nltk_data
 
 https://www.nltk.org/nltk_data/ - this has the complete list of samples, corpora, models
 most commonly used by NLTK functions."""

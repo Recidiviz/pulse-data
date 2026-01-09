@@ -18,7 +18,7 @@
 """A script which will be called using a pre-commit githook to generate portions of a State Ingest Specification.
 
 Can be run on-demand via:
-    $ pipenv run python -m recidiviz.tools.docs.region_documentation_generator [--force-all]
+    $ uv run python -m recidiviz.tools.docs.region_documentation_generator [--force-all]
 """
 
 import argparse

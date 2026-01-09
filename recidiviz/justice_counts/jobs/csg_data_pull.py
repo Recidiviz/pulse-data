@@ -18,7 +18,7 @@
 all agencies with Publisher accounts. Includes fields like "num_record_with_data",
 "num_metrics_configured", etc.
 
-pipenv run python -m recidiviz.justice_counts.jobs.csg_data_pull \
+uv run python -m recidiviz.justice_counts.jobs.csg_data_pull \
   --project-id=PROJECT_ID \
   --dry-run=true \
   --credentials-path=<path>

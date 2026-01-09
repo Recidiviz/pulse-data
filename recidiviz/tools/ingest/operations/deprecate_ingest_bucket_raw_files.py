@@ -23,9 +23,9 @@ Example path transformation:
 gs://recidiviz-staging-direct-ingest-state-us-nd/unprocessed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv ->
 gs://recidiviz-staging-direct-ingest-state-storage/us_nd/deprecated/deprecated_on_2020-07-22/unprocessed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.ingest.operations.deprecate_ingest_bucket_raw_files \
+uv run python -m recidiviz.tools.ingest.operations.deprecate_ingest_bucket_raw_files \
     --project-id recidiviz-staging \
     --state-code US_ND \
     --ingest-instance PRIMARY \

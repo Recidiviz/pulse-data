@@ -19,9 +19,9 @@ This script runs a single downgrade migration against the specified database. No
 the downgrade alembic migration must exist for it to be run properly, so this script
 should be run on a rev where the to-be-rolled-back upgrade migration exists.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.migrations.run_downgrade_migration \
+uv run python -m recidiviz.tools.migrations.run_downgrade_migration \
     --database STATE \
     --project-id recidiviz-staging \
     --target-revision [revision_id]

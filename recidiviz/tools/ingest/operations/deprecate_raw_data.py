@@ -30,9 +30,9 @@ When run in dry-run mode (the default), will log the move of each file, but will
 You can use EITHER --file-tag-filters OR --file-tag-regex, but NOT BOTH.
 Note that --file-tag-regex is not a traditional regex, and needs to adhere to https://cloud.google.com/storage/docs/wildcards.
 
-Example usage (run from `pipenv shell`):
+Example usage:
 
-python -m recidiviz.tools.ingest.operations.deprecate_raw_data \
+uv run python -m recidiviz.tools.ingest.operations.deprecate_raw_data \
     --project-id recidiviz-staging \
     --region us_nd \
     --ingest-instance PRIMARY \

@@ -19,7 +19,7 @@
 from astroid import bases, nodes
 
 # TODO(apache/beam#22893): Apache beam has a strict requirement on `dill` which is used by Pylint.
-# As a result, Pylint was removed from our Pipenv and can be installed locally on an as-needed basis
+# As a result, Pylint is installed separately and can be installed locally on an as-needed basis
 # We try/except ImportErrors in this file as not all developers may have Pylint installed
 try:
     from pylint import lint

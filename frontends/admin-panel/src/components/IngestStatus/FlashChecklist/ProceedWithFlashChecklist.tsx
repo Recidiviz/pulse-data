@@ -304,15 +304,16 @@ const ProceedWithFlashChecklist = (): JSX.Element => {
         <StyledStepContent
           description={
             <p>
-              Use the command below within the <code>pipenv shell</code> to move
-              SECONDARY storage raw files to deprecated
+              Use the command below to move SECONDARY storage raw files to
+              deprecated
               <CodeBlock
                 enabled={
                   currentStepSection ===
                   FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
                 }
               >
-                python -m recidiviz.tools.ingest.operations.deprecate_raw_data
+                uv run python -m
+                recidiviz.tools.ingest.operations.deprecate_raw_data
                 --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
                 --ingest-instance SECONDARY --skip-prompts True --dry-run False
               </CodeBlock>
