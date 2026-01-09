@@ -2,6 +2,7 @@
 Defines tests that no new / unexpected references to v1 sentence views are added upstream
 of any view that is part of the given metric export for the given state code.
 """
+
 from collections import defaultdict
 from functools import cache
 
@@ -44,6 +45,9 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mi_sentenc
 )
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mo_sentences_v1_burndown import (
     US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
+)
+from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nc_sentences_v1_burndown import (
+    US_NC_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nd_sentences_v1_burndown import (
     US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
@@ -90,6 +94,7 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     StateCode.US_ME: US_ME_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MI: US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MO: US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
+    StateCode.US_NC: US_NC_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_ND: US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_NE: US_NE_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_NY: US_NY_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
