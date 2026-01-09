@@ -672,7 +672,7 @@ FROM `{{project_id}}.{{sentence_sessions_v2_dataset}}.person_projected_date_sess
 WHERE span.state_code = 'US_IX'
 ),
 ped_tpd_phd_ftrd_spans AS (
-SELECT 
+SELECT
     state_code,
     person_id,
     start_date,
@@ -684,6 +684,8 @@ SELECT
     NULL AS full_term_release_date
 FROM ped_tpd_ftrd_spans
 WHERE parole_eligibility_date IS NOT NULL
+  -- Avoid zero-day spans when parole_eligibility_date <= start_date
+  AND parole_eligibility_date > start_date
 
 UNION ALL
 

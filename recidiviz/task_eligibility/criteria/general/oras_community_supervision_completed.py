@@ -45,6 +45,7 @@ _QUERY_TEMPLATE = """
   WHERE
     assessment_type = 'ORAS_COMMUNITY_SUPERVISION'
     AND assessment_class = 'RISK'
+    AND assessment_date IS DISTINCT FROM score_end_date
 """
 
 _REASONS_FIELDS = [
