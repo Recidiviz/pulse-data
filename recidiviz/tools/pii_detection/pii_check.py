@@ -13,8 +13,8 @@ import time
 from copy import copy
 from typing import Iterable, List
 
-import google.generativeai as genai  # type: ignore # pylint: disable = no-name-in-module
 import requests
+from google import genai
 from tabulate import tabulate
 
 # NOTE: If you change the model, you may need to change update the token limit!
@@ -267,9 +267,7 @@ def generate_prompts(
         yield prompt
 
 
-def run_prompt_and_collect_findings(
-    model: genai.GenerativeModel, prompt: str
-) -> list[dict]:
+def run_prompt_and_collect_findings(client: genai.Client, prompt: str) -> list[dict]:
     """
     Runs a prompt against the Gemini model and collects PII findings.
     Retries on transient errors with exponential backoff.
@@ -284,10 +282,14 @@ def run_prompt_and_collect_findings(
     max_attempts = 3
     for attempt in range(1, max_attempts + 1):
         try:
-            response = model.generate_content(prompt)
+            # TODO(#55197): Update this to generate parsed json instead of us rolling our own. https://ai.google.dev/gemini-api/docs/migrate#json-response
+            response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
             gemini_output = response.text
             print(f"📨 Gemini API Response (attempt {attempt}):")
             print(f"Raw response: {repr(gemini_output)}")
+
+            if not gemini_output:
+                raise RuntimeError("Empty response from Gemini")
 
             json_text = extract_json_from_markdown(gemini_output)
             print(f"Extracted JSON: {repr(json_text)}")
@@ -331,8 +333,7 @@ def main(head: str, pr_number: str) -> int:
     """
     Main function to analyze code changes for PII and update the pull request with findings.
     """
-    genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
-    model = genai.GenerativeModel(MODEL_NAME)
+    client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
 
     repo = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
@@ -349,7 +350,7 @@ def main(head: str, pr_number: str) -> int:
     findings = []
     for prompt in generate_prompts(changed_file_to_diff):
         try:
-            findings.extend(run_prompt_and_collect_findings(model, prompt))
+            findings.extend(run_prompt_and_collect_findings(client, prompt))
         except Exception as e:
             error_msg = str(e).lower()
 
