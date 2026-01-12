@@ -253,11 +253,17 @@ def _normalize_single_sentence(
         sentence.current_state_provided_start_date or earliest_serving_status_date
     )
 
+    sentence_type = assert_type(sentence.sentence_type, StateSentenceType)
+    if sentence_type_override := delegate.get_sentence_type_override(
+        sentence_type, normalized_snapshots
+    ):
+        sentence_type = sentence_type_override
+
     return NormalizedStateSentence(
         sentence_id=assert_type(sentence.sentence_id, int),
         external_id=sentence.external_id,
         state_code=sentence.state_code,
-        sentence_type=assert_type(sentence.sentence_type, StateSentenceType),
+        sentence_type=sentence_type,
         sentence_type_raw_text=sentence.sentence_type_raw_text,
         sentencing_authority=assert_type(
             sentence.sentencing_authority, StateSentencingAuthority

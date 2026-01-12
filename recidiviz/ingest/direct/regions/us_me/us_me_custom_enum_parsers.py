@@ -523,6 +523,59 @@ def parse_supervision_sentence_status(
     return StateSentenceStatus.PRESENT_WITHOUT_INFO
 
 
+def parse_sentence_status(
+    raw_text: str,
+) -> Optional[StateSentenceStatus]:
+    """Parses the sentence status from a combination of the community override reason code,
+    the custody override reason code, and the court order status code. The three codes may
+    conflict since they are derived from a single court order that captures statuses across
+    different points in time. Therefore, we parse statuses in order of "finality" of the status.
+    """
+    (
+        community_override_reason,
+        custody_override_reason,
+        court_order_status_description,
+    ) = raw_text.upper().split("@@")
+
+    if custody_override_reason in ["DECEASED"] or community_override_reason in [
+        "DECEASED"
+    ]:
+        return StateSentenceStatus.DEATH
+
+    if custody_override_reason in ["VACATED"] or community_override_reason in [
+        "VACATED SENTENCE"
+    ]:
+        return StateSentenceStatus.VACATED
+
+    if community_override_reason in [
+        "FULL REVOCATION",
+        "PARTIAL REVOCATION - TERMINATE",
+    ]:
+        return StateSentenceStatus.REVOKED
+
+    if court_order_status_description in ["INFERRED - COMPLETED"]:
+        return StateSentenceStatus.COMPLETED
+
+    # We previously classified any sentence with a community override reason of
+    # "COMMUTATION/PARDON" as COMMUTED, but since we treat commuted status as a
+    # serving status, I think the completed status should take precedence.
+    if community_override_reason in ["COMMUTATION/PARDON"]:
+        return StateSentenceStatus.COMMUTED
+
+    if court_order_status_description in [
+        "INFERRED - SERVING",
+    ]:
+        return StateSentenceStatus.SERVING
+    if court_order_status_description in ["PENDING", "PREDISPOSITION"]:
+        return StateSentenceStatus.PENDING
+    if court_order_status_description in ["COURT SANCTION"]:
+        return StateSentenceStatus.SANCTIONED
+    if court_order_status_description in ["TOLLED"]:
+        return StateSentenceStatus.SUSPENDED
+
+    raise ValueError(f"Cannot convert {raw_text} to a sentence_status.")
+
+
 def parse_supervision_type(
     raw_text: str,
 ) -> StateSupervisionPeriodSupervisionType:

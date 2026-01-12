@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_status` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Client_Id: STRING
+  Court_Order_Id: STRING
+  status: STRING
+  Comm_Override_Reason: STRING
+  Cust_Override_Reason: STRING
+  status_change_datetime: DATETIME
+  seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Client_Id
+          id_type: $literal("US_ME_DOC")
+    sentences:
+      - StateSentence:
+          external_id: Court_Order_Id
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - Comm_Override_Reason
+                          - Cust_Override_Reason
+                          - status
+                        $include_nulls: True
+                    $custom_parser: us_me_custom_enum_parsers.parse_sentence_status
+                status_update_datetime: status_change_datetime
+                sequence_num: seq_num

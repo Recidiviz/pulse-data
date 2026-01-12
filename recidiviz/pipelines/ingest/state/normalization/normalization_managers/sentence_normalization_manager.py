@@ -42,6 +42,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateIncarcerationSentence,
     NormalizedStateSentence,
+    NormalizedStateSentenceStatusSnapshot,
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
@@ -342,6 +343,18 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         ):
             return True
         return sentences_have_contiguous_or_overlapping_serving(s1, s2)
+
+    def get_sentence_type_override(
+        self,
+        sentence_type: StateSentenceType,
+        normalized_snapshots: list[NormalizedStateSentenceStatusSnapshot],
+    ) -> StateSentenceType | None:
+        """If necessary, returns a sentence_type override for this sentence which should
+        be set on the normalized version of this sentence. This may be useful in cases
+        where we learn info about the sentence type based on the types of statuses we
+        see for this sentence.
+        """
+        return None
 
 
 class SentenceNormalizationManager(EntityNormalizationManager):
