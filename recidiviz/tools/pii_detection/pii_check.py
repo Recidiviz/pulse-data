@@ -333,7 +333,11 @@ def main(head: str, pr_number: str) -> int:
     """
     Main function to analyze code changes for PII and update the pull request with findings.
     """
-    client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
+    client = genai.Client(
+        vertexai=True,
+        project=os.environ.get("GOOGLE_CLOUD_PROJECT", "recidiviz-security"),
+        location="us-central1",
+    )
 
     repo = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
