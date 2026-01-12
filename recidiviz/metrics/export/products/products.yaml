@@ -125,6 +125,8 @@ products:
         environment: production
       - state_code: US_CA
         environment: production
+      - state_code: US_CO
+        environment: production
       - state_code: US_IA
         environment: production
       - state_code: US_IX

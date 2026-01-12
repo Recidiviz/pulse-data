@@ -28,6 +28,9 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_az_sentenc
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ca_sentences_v1_burndown import (
     US_CA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
+from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_co_sentences_v1_burndown import (
+    US_CO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
+)
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ia_sentences_v1_burndown import (
     US_IA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
@@ -88,6 +91,7 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     StateCode.US_AR: US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_AZ: US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_CA: US_CA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
+    StateCode.US_CO: US_CO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_IA: US_IA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_IX: US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MA: US_MA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
