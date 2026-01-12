@@ -29,12 +29,13 @@ const sidebarComponentNames = [
   "UsMiEarlyDischargeIcDetails",
   "UsMiRecommendedSupervisionLevel",
   "UsMoRestrictiveHousing",
+  "UsMoViolations",
+  "UsMoEscapes",
+  "UsMoC3Sanctions",
   "UsTnCommonlyUsedOverrideCodes",
   "UsMiRestrictiveHousing",
   "UsMiSecondaryOfficersAndDockets",
   "UsMiLastAssessment",
-  "UsNeORASScores",
-  "UsNeSpecialConditions",
   "UsIaActionPlansAndNotes",
   "UsIaVictimContactInfo",
   "UsIaEarlyDischargeIcOutDetails",
@@ -43,10 +44,18 @@ const sidebarComponentNames = [
   "Incarceration",
   "ResidentHousing",
   "UsMoIncarceration",
+  "UsMoAssessmentScores",
+  "UsMoSentences",
+  "UsMoResidentDates",
+  "UsMoGangInvolvement",
+  "UsMoOffenseHistory",
+  "UsMoProgramParticipation",
+  "UsMoSolitary",
   "UsIdPastTwoYearsAlert",
   "UsIdParoleDates",
   "UsAzDates",
   "UsAzAcisInformation",
+  "UsNeGoodTimeLedger",
 
   // Client-related components
   "Supervision",
@@ -59,6 +68,8 @@ const sidebarComponentNames = [
   "ClientProfileDetails",
   "ActiveSentences",
   "UsUtDates",
+  "UsNeORASScores",
+  "UsNeSpecialConditions",
 ];
 
 export const SidebarComponentsView: MultiEntryChild = ({ name, ...field }) => (
