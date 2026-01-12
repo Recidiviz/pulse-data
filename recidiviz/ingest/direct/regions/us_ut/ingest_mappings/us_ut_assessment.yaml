@@ -128,6 +128,7 @@ output:
                   - "R&R SU / MH ASSESSMENT"
                   - "CMHS - MEN"
                   - "CMHS - WOMEN"
+                  - "CPORT"
           assessment_date: tst_dt
           assessment_score: tot_score
           assessment_level:
