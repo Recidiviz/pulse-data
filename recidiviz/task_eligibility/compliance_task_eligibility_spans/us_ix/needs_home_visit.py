@@ -46,6 +46,10 @@ meets_home_visit_or_address_changes_triggers = (
             meets_address_changes_triggers.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=["contact_due_date", "last_contact_date"],
+        reasons_aggregate_function_override={
+            "contact_due_date": "MIN",
+            "last_contact_date": "MAX",
+        },
     )
 )
 # TODO(#51098): Change candidate population so it filters to relevant case types and supervision levels

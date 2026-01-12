@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_case_type_is_sex_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    case_type_is_not_xcrc_and_level_is_not_minimum,
     has_low_lsir_for_reassessment,
     is_missing_annual_lsir_assessment,
     meets_initial_lsir_assessment_trigger,
@@ -114,11 +115,13 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_lsir_reassessment_or_initial_assessment_triggers,
+        case_type_is_not_xcrc_and_level_is_not_minimum.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="assessment_due_date",
     due_date_criteria_builder=meets_lsir_reassessment_or_initial_assessment_triggers,
     last_task_completed_date_field="last_assessment_date",
+    last_task_completed_date_criteria_builder=meets_lsir_reassessment_or_initial_assessment_triggers,
 )
 
 if __name__ == "__main__":
