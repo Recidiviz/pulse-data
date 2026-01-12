@@ -79,6 +79,7 @@ output:
                   - "G10 // Caseload Reassignment"
                   - "S11 // EM Started/Continued"
                   - "S12 // EM Ended"
+                  - "G14 // Returned to Community"
                 StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - "G03 // Returned From Interstate Compact"
                   - "G04 // Returned From Other Jurisdiction"
@@ -154,6 +155,7 @@ output:
                   - "S11 // EM Started/Continued"
                   - "S12 // EM Ended"
                   - "S60 // Appeared in Court"
+                  - "G14 // Returned to Community"
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - "G03 // Returned From Other Jurisdiction"
                   - "G12 // Parole Officer Assigned"
