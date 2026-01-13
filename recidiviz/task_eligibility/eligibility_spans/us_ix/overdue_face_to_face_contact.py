@@ -37,7 +37,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     meets_overdue_face_to_face_contact_alert,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -29,7 +29,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import recidiviz
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+from recidiviz.calculator.query.state.views.dashboard.shared_pathways.pathways_helpers import (
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
