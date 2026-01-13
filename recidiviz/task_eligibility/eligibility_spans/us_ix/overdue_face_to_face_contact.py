@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that shows spans of time when supervision clients are overdue 
+Defines a criteria view that shows spans of time when supervision clients are overdue
 for a face-to-face contact. We will consider someone as overdue when the following
 is true for each supervision level:
 
@@ -27,30 +27,31 @@ is true for each supervision level:
 - SO Low: > 4 month without a contact
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
     active_supervision_population_for_tasks,
 )
-from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
-    ComplianceTaskEligibilitySpansBigQueryViewBuilder,
+from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
+    face_to_face_contact,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     meets_overdue_face_to_face_contact_alert,
 )
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
+VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
-    task_name="overdue_face_to_face_contact",
+    task_name="OVERDUE_FACE_TO_FACE_CONTACT",
+    description=__doc__,
     candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_overdue_face_to_face_contact_alert.VIEW_BUILDER,
     ],
-    compliance_type=ComplianceType.CONTACT,
-    due_date_field="overdue_for_contact_alert_date",
-    last_task_completed_date_field="last_contact_date",
+    completion_event_builder=face_to_face_contact.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

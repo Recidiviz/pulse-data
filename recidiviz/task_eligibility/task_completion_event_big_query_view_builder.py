@@ -129,6 +129,7 @@ class TaskCompletionEventType(Enum):
         "SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM"
     )
     GOOD_TIME_REINSTATED = "GOOD_TIME_REINSTATED"
+    FACE_TO_FACE_CONTACT = "FACE_TO_FACE_CONTACT"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -180,6 +181,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
+            TaskCompletionEventType.FACE_TO_FACE_CONTACT,
         ]:
             return WorkflowsSystemType.SUPERVISION
         raise ValueError(
@@ -217,6 +219,7 @@ class TaskCompletionEventType(Enum):
             return DecarceralImpactType.DOWNGRADE_CUSTODY_LEVEL
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
+            TaskCompletionEventType.FACE_TO_FACE_CONTACT,
         ]:
             return DecarceralImpactType.NO_DECARCERAL_IMPACT
         if self in [
@@ -343,6 +346,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
             TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
+            TaskCompletionEventType.FACE_TO_FACE_CONTACT,
         ]:
             return False
         raise ValueError(
@@ -367,6 +371,7 @@ class TaskCompletionEventType(Enum):
             # TODO(#35491): move restrictive housing transitions w/o a mandatory date into a new event
             TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
+            TaskCompletionEventType.FACE_TO_FACE_CONTACT,
         ]:
             return True
         if self in [
