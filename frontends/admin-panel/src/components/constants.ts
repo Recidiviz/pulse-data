@@ -54,6 +54,11 @@ export const CPA_PERMISSIONS_LABELS = {
   cpa: "CPA",
 };
 
+export const MEETINGS_PERMISSIONS_LABELS = {
+  meetingsSupervision: "Meeting Mode (supervision-side)",
+  meetingsFacilities: "Meeting Mode (facilities-side)",
+};
+
 export const LANTERN_PERMISSIONS_LABELS = {
   lantern: "Lantern (legacy)",
 };
@@ -65,6 +70,7 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...PATHWAYS_PERMISSIONS_LABELS,
   ...PSI_PERMISSIONS_LABELS,
   ...CPA_PERMISSIONS_LABELS,
+  ...MEETINGS_PERMISSIONS_LABELS,
   ...LANTERN_PERMISSIONS_LABELS,
 } satisfies Record<string, string>;
 

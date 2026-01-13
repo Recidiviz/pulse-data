@@ -22,6 +22,7 @@ import {
   CPA_PERMISSIONS_LABELS,
   INSIGHTS_PERMISSIONS_LABELS,
   LANTERN_PERMISSIONS_LABELS,
+  MEETINGS_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   PSI_PERMISSIONS_LABELS,
   ROUTES_PERMISSIONS_LABELS,
@@ -204,6 +205,13 @@ export const CustomPermissionsPanel = ({
     <h4>Case Planning Assistant (CPA) Pages:</h4>
     <RoutePermissionList
       labels={CPA_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
+
+    <h4>Meeting Mode Pages:</h4>
+    <RoutePermissionList
+      labels={MEETINGS_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
