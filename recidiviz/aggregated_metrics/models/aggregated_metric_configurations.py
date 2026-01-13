@@ -3540,6 +3540,20 @@ DISTINCT_ACTIVE_CASE_PLANNING_ASSISTANT_USERS = EventDistinctUnitCountMetric(
     ),
 )
 
+AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE = DailyAvgSpanCountMetric(
+    name="avg_daily_population_task_marked_ineligible",
+    display_name="Average Population: Task Marked Ineligible",
+    description="Average daily count of residents marked ineligible",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "marked_ineligible": ["true"],
+            "is_eligible": ["true"],
+            "is_surfaceable": ["true"],
+        },
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
     DailyAvgSpanCountMetric(
         name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",
@@ -3577,6 +3591,24 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION = [
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
 ]
+
+AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED = DailyAvgSpanCountMetric(
+    name="avg_daily_population_task_marked_submitted",
+    display_name="Average Population: Task Marked Submitted",
+    description="Average daily count of clients marked submitted",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "in_progress": ["true"],
+            "is_eligible": ["true"],
+            # We specify that marked_ineligible must be false because it's possible for clients to be both marked submitted
+            # and marked ineligible at the same time, due to context described here: https://github.com/Recidiviz/recidiviz-dashboards/issues/10864
+            # Related ticket here: https://github.com/Recidiviz/pulse-data/issues/54345
+            "marked_ineligible": ["false"],
+            "is_surfaceable": ["true"],
+        },
+    ),
+)
 
 AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_SUPERVISION = [
     DailyAvgSpanCountMetric(
@@ -3969,6 +4001,42 @@ DISTINCT_ACTIVE_USERS_ALL_SUPERVISION_TASKS = EventDistinctUnitCountMetric(
     ),
 )
 
+DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_workflows_users_with_eligible_caseload_in_past_year_supervision",
+    display_name="Distinct Active Primary Workflows Users with Eligible Caseload in Past Year - All Supervision Tasks",
+    description="Number of distinct primary (line staff) Workflows users having at least one active usage event and an eligible caseload in the past year, for all supervision tasks",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "system_type": ["SUPERVISION"],
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_USERS_ALL_SUPERVISION_TASKS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_users_supervision",
+    display_name="Distinct Logged In Users",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows during the time period, for all supervision tasks",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={"task_type": supervision_task_types},
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_workflows_primary_users_with_eligible_caseload_in_past_year_supervision",
+    display_name="Distinct Logged In Workflows Primary Users with Eligible Caseload in Past Year - All Supervision Tasks",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows during the time period and had an eligible caseload in the past year, for all supervision tasks",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={
+            "system_type": ["SUPERVISION"],
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+
 incarceration_task_types = [
     b.task_type_name
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
@@ -3985,6 +4053,43 @@ DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS = EventDistinctUnitCountMetric(
     ),
 )
 
+
+DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_workflows_users_with_eligible_caseload_in_past_year_incarceration",
+    display_name="Distinct Active Primary Workflows Users with Eligible Caseload in Past Year - All Incarceration Tasks",
+    description="Number of distinct primary (line staff) Workflows users having at least one active usage event and an eligible caseload in the past year, for all incarceration tasks",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "system_type": ["INCARCERATION"],
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_USERS_ALL_INCARCERATION_TASKS = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_users_incarceration",
+    display_name="Distinct Logged In Users",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows during the time period, for all incarceration tasks",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={"task_type": incarceration_task_types},
+    ),
+)
+
+DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_workflows_users_with_eligible_caseload_in_past_year_incarceration",
+    display_name="Distinct Logged In Primary Workflows Users with Eligible Caseload in Past Year - All Incarceration Tasks",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows during the time period and had an eligible caseload in the past year, for all incarceration tasks",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={
+            "system_type": ["INCARCERATION"],
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+
 DISTINCT_REGISTERED_USERS_SUPERVISION = SpanDistinctUnitCountMetric(
     name="distinct_registered_users_supervision",
     display_name="Distinct Total Registered Users",
@@ -3995,6 +4100,19 @@ DISTINCT_REGISTERED_USERS_SUPERVISION = SpanDistinctUnitCountMetric(
     ),
 )
 
+DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_workflows_users_with_eligible_caseload_in_past_year_supervision",
+    display_name="Distinct Registered Primary Workflows Users with Eligible Caseload in Past Year, Supervision",
+    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once and had an eligible caseload in the past year, supervision",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={
+            "system_type": ["SUPERVISION"],
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
+    ),
+)
+
 DISTINCT_REGISTERED_USERS_INCARCERATION = SpanDistinctUnitCountMetric(
     name="distinct_registered_users_incarceration",
     display_name="Distinct Total Registered Users",
@@ -4002,6 +4120,19 @@ DISTINCT_REGISTERED_USERS_INCARCERATION = SpanDistinctUnitCountMetric(
     span_selector=SpanSelector(
         span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
         span_conditions_dict={"system_type": ["INCARCERATION"]},
+    ),
+)
+
+DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_workflows_users_with_eligible_caseload_in_past_year_incarceration",
+    display_name="Distinct Registered Primary Workflows Users with Eligible Caseload in Past Year, Incarceration",
+    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once and had an eligible caseload in the past year, incarceration",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={
+            "system_type": ["INCARCERATION"],
+            "user_has_eligible_caseload_in_past_year": ["true"],
+        },
     ),
 )
 

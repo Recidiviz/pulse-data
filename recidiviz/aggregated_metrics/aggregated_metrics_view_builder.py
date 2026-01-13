@@ -218,6 +218,10 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             "start_date",
             "end_date",
             f"{MetricTimePeriodConfig.METRIC_TIME_PERIOD_PERIOD_COLUMN}",
+            *(
+                attribute
+                for attribute in self.disaggregate_by_observation_attributes or []
+            ),
             *sorted(metric.name for metric in self.metrics),
         ]
 

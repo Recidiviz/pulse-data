@@ -284,6 +284,7 @@ def collect_aggregated_metric_view_builders_for_collection(
                 metrics=population_config.metrics,
                 dataset_id_override=population_config.output_dataset_id,
                 collection_tag=collection_config.collection_tag,
+                disaggregate_by_observation_attributes=collection_config.disaggregate_by_observation_attributes,
             )
 
             builders[all_metrics_builder.address] = all_metrics_builder

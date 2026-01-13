@@ -30,24 +30,44 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
+    AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
+    AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,
     AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_LESS_THAN_30_DAYS,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE,
     AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION,
+    AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED,
     AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED_METRICS_SUPERVISION,
+    CONTACT_DUE_DATES,
+    CONTACT_DUE_DATES_MET,
+    DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR,
+    DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION,
+    DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION,
     DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS,
     DISTINCT_ACTIVE_USERS_ALL_SUPERVISION_TASKS,
     DISTINCT_ACTIVE_USERS_INCARCERATION,
     DISTINCT_ACTIVE_USERS_SUPERVISION,
+    DISTINCT_LOGGED_IN_PRIMARY_USERS_ALL_INCARCERATION_TASKS,
+    DISTINCT_LOGGED_IN_PRIMARY_USERS_ALL_SUPERVISION_TASKS,
+    DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR,
+    DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION,
+    DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION,
+    DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR,
+    DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION,
+    DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION,
     DISTINCT_REGISTERED_USERS_INCARCERATION,
     DISTINCT_REGISTERED_USERS_SUPERVISION,
     TASK_COMPLETED_AFTER_ELIGIBLE_7_DAYS_METRICS_INCARCERATION,
@@ -64,6 +84,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 IMPACT_REPORTS_LOOKBACK_MONTHS = 2
+
+EXCLUSIVE_FUNNEL_METRICS = [
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_LESS_THAN_30_DAYS,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED,
+    AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE,
+    AVG_DAILY_POPULATION_TASK_MARKED_SUBMITTED,
+]
 
 
 def _build_impact_reports_usage_aggregated_metrics_collection() -> (
@@ -102,10 +130,21 @@ def _build_impact_reports_usage_aggregated_metrics_collection() -> (
                     AVG_DAILY_POPULATION,
                     *DISTINCT_ACTIVE_USERS_SUPERVISION,
                     DISTINCT_ACTIVE_USERS_ALL_SUPERVISION_TASKS,
+                    DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION,
+                    DISTINCT_LOGGED_IN_PRIMARY_USERS_ALL_SUPERVISION_TASKS,
+                    DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION,
                     DISTINCT_REGISTERED_USERS_SUPERVISION,
+                    DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_SUPERVISION,
                     *DISTINCT_ACTIVE_USERS_INCARCERATION,
                     DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS,
+                    DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION,
                     DISTINCT_REGISTERED_USERS_INCARCERATION,
+                    DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION,
+                    DISTINCT_LOGGED_IN_PRIMARY_USERS_ALL_INCARCERATION_TASKS,
+                    DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR_INCARCERATION,
+                    DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR,
+                    DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR,
+                    DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_WITH_ELIGIBLE_CASELOAD_IN_PAST_YEAR,
                 ],
             ),
         },
@@ -165,6 +204,45 @@ def _build_impact_reports_impact_funnel_aggregated_metrics_collection() -> (
     )
 
 
+def _build_impact_reports_impact_funnel_exclusive_aggregated_metrics_collection() -> (
+    AggregatedMetricsCollection
+):
+    time_periods = [
+        MetricTimePeriodConfig.day_periods(
+            # Look back at LEAST 2 whole months to capture the last day of the last
+            # two months.
+            lookback_days=(IMPACT_REPORTS_LOOKBACK_MONTHS * 31)
+        )
+    ]
+
+    return AggregatedMetricsCollection.build(
+        output_dataset_id=IMPACT_REPORTS_DATASET_ID,
+        collection_tag="impact_funnel_exclusive",
+        time_periods=time_periods,
+        unit_of_analysis_types_by_population_type={
+            MetricPopulationType.SUPERVISION: [
+                MetricUnitOfAnalysisType.STATE_CODE,
+                MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+            ],
+            MetricPopulationType.INCARCERATION: [
+                MetricUnitOfAnalysisType.STATE_CODE,
+                MetricUnitOfAnalysisType.FACILITY,
+            ],
+        },
+        metrics_by_population_type={
+            MetricPopulationType.SUPERVISION: [
+                AVG_DAILY_POPULATION,
+                *EXCLUSIVE_FUNNEL_METRICS,
+            ],
+            MetricPopulationType.INCARCERATION: [
+                AVG_DAILY_POPULATION,
+                *EXCLUSIVE_FUNNEL_METRICS,
+            ],
+        },
+        disaggregate_by_observation_attributes=["task_type"],
+    )
+
+
 def _build_impact_reports_report_metrics_aggregated_metrics_collection() -> (
     AggregatedMetricsCollection
 ):
@@ -199,11 +277,44 @@ def _build_impact_reports_report_metrics_aggregated_metrics_collection() -> (
     )
 
 
+def _build_impact_reports_compliance_aggregated_metrics_collection() -> (
+    AggregatedMetricsCollection
+):
+    time_periods = [
+        MetricTimePeriodConfig.month_periods(lookback_months=24),
+    ]
+
+    return AggregatedMetricsCollection(
+        output_dataset_id=IMPACT_REPORTS_DATASET_ID,
+        collection_tag="compliance",
+        population_configs={
+            MetricPopulationType.SUPERVISION: AggregatedMetricsCollectionPopulationConfig(
+                output_dataset_id=IMPACT_REPORTS_DATASET_ID,
+                population_type=MetricPopulationType.SUPERVISION,
+                units_of_analysis={
+                    MetricUnitOfAnalysisType.STATE_CODE,
+                },
+                metrics=[
+                    AVG_DAILY_POPULATION,
+                    AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,
+                    AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
+                    CONTACT_DUE_DATES,
+                    CONTACT_DUE_DATES_MET,
+                ],
+            ),
+        },
+        time_periods=time_periods,
+        disaggregate_by_observation_attributes=None,
+    )
+
+
 def get_aggregated_metrics_collections() -> list[AggregatedMetricsCollection]:
     return [
         _build_impact_reports_usage_aggregated_metrics_collection(),
         _build_impact_reports_impact_funnel_aggregated_metrics_collection(),
+        _build_impact_reports_impact_funnel_exclusive_aggregated_metrics_collection(),
         _build_impact_reports_report_metrics_aggregated_metrics_collection(),
+        _build_impact_reports_compliance_aggregated_metrics_collection(),
     ]
 
 

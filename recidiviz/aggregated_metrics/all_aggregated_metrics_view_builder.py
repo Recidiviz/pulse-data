@@ -50,6 +50,7 @@ def generate_all_aggregated_metrics_view_builder(
     metrics: List[AggregatedMetric],
     dataset_id_override: Optional[str],
     collection_tag: str | None,
+    disaggregate_by_observation_attributes: list[str] | None,
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that joins together all metric views for
@@ -171,7 +172,7 @@ USING
     # construct query template
     query_template = f"""
 SELECT
-    {unit_of_analysis.get_index_columns_query_string()},
+    {unit_of_analysis.get_index_columns_query_string()},{", ".join(disaggregate_by_observation_attributes) + "," if disaggregate_by_observation_attributes else ""}
     start_date,
     end_date,
     period,

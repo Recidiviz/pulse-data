@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for all_aggregated_metrics_view_builder.py"""
 
+import re
 import unittest
 
 from recidiviz.aggregated_metrics.all_aggregated_metrics_view_builder import (
@@ -28,9 +29,14 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
+from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
+    MY_LOGINS_BY_PRIMARY_WORKFLOWS,
+)
 
 
 class GenerateAggregatedAllMetricsViewBuilderTest(unittest.TestCase):
+    """Tests for all_aggregated_metrics_view_builder()"""
+
     # verify that generate_aggregated_metrics_view_builder called with no metrics
     # raises an error
     def test_no_metrics(self) -> None:
@@ -45,4 +51,32 @@ class GenerateAggregatedAllMetricsViewBuilderTest(unittest.TestCase):
                 metrics=[],  # no metrics
                 dataset_id_override=None,
                 collection_tag=None,
+                disaggregate_by_observation_attributes=None,
             )
+
+    def test_with_disaggregation_attributes(self) -> None:
+        builder = generate_all_aggregated_metrics_view_builder(
+            unit_of_analysis=MetricUnitOfAnalysis.for_type(
+                MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER
+            ),
+            population_type=MetricPopulationType.JUSTICE_INVOLVED,
+            metrics=[
+                MY_LOGINS_BY_PRIMARY_WORKFLOWS,
+            ],
+            dataset_id_override=None,
+            collection_tag=None,
+            disaggregate_by_observation_attributes=[
+                "task_type",
+            ],
+        )
+
+        select_statement = re.search(
+            r"SELECT\s+(.*?)\s+FROM",
+            builder.view_query_template,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if not select_statement:
+            self.fail("Could not find SELECT statement in view query template")
+        else:
+            selected_columns_str = select_statement.group(1)
+            self.assertIn("task_type", selected_columns_str)

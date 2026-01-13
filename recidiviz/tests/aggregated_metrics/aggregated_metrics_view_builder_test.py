@@ -270,3 +270,28 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
             ],
             builder.output_columns,
         )
+
+    def test_builder__period_event_with_disaggregation_attribute(self) -> None:
+        builder = AggregatedMetricsBigQueryViewBuilder(
+            dataset_id="my_aggregated_metrics",
+            population_type=MetricPopulationType.JUSTICE_INVOLVED,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+            metric_class=PeriodEventAggregatedMetric,
+            metrics=[MY_LOGINS_BY_PRIMARY_WORKFLOWS],
+            time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            collection_tag=None,
+            disaggregate_by_observation_attributes=["task_type"],
+        )
+
+        self.assertEqual(
+            [
+                "state_code",
+                "email_address",
+                "start_date",
+                "end_date",
+                "period",
+                "task_type",
+                "my_logins_primary_workflows_user",
+            ],
+            builder.output_columns,
+        )
