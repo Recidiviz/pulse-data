@@ -950,6 +950,61 @@
     width: 24
     height: 6
 
+  - name: LBAKRDTA_TAK040
+    title: LBAKRDTA_TAK040
+    explore: us_mo_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mo_LBAKRDTA_TAK040.primary_key,
+      us_mo_LBAKRDTA_TAK040.DQ_DOC,
+      us_mo_LBAKRDTA_TAK040.DQ_CYC,
+      us_mo_LBAKRDTA_TAK040.DQ_SSR,
+      us_mo_LBAKRDTA_TAK040.DQ_NRN,
+      us_mo_LBAKRDTA_TAK040.DQ_PND,
+      us_mo_LBAKRDTA_TAK040.DQ_CD,
+      us_mo_LBAKRDTA_TAK040.DQ_FD,
+      us_mo_LBAKRDTA_TAK040.DQ_OAB,
+      us_mo_LBAKRDTA_TAK040.DQ_OA,
+      us_mo_LBAKRDTA_TAK040.DQ_OFB,
+      us_mo_LBAKRDTA_TAK040.DQ_OF,
+      us_mo_LBAKRDTA_TAK040.DQ_TSE,
+      us_mo_LBAKRDTA_TAK040.DQ_MSO,
+      us_mo_LBAKRDTA_TAK040.DQ_NDM,
+      us_mo_LBAKRDTA_TAK040.DQ_NDO,
+      us_mo_LBAKRDTA_TAK040.DQ_NEM,
+      us_mo_LBAKRDTA_TAK040.DQ_NEO,
+      us_mo_LBAKRDTA_TAK040.DQ_NPM,
+      us_mo_LBAKRDTA_TAK040.DQ_NPO,
+      us_mo_LBAKRDTA_TAK040.DQ_NCM,
+      us_mo_LBAKRDTA_TAK040.DQ_NCO,
+      us_mo_LBAKRDTA_TAK040.DQ_NBM,
+      us_mo_LBAKRDTA_TAK040.DQ_NBO,
+      us_mo_LBAKRDTA_TAK040.DQ_OCA,
+      us_mo_LBAKRDTA_TAK040.DQ_OCL,
+      us_mo_LBAKRDTA_TAK040.DQ_OC1,
+      us_mo_LBAKRDTA_TAK040.DQ_OC2,
+      us_mo_LBAKRDTA_TAK040.DQ_OC3,
+      us_mo_LBAKRDTA_TAK040.DQ_SOP,
+      us_mo_LBAKRDTA_TAK040.DQ_DCR,
+      us_mo_LBAKRDTA_TAK040.DQ_TCR,
+      us_mo_LBAKRDTA_TAK040.DQ_DLU,
+      us_mo_LBAKRDTA_TAK040.DQ_TLU,
+      us_mo_LBAKRDTA_TAK040.file_id,
+      us_mo_LBAKRDTA_TAK040.is_deleted]
+    sorts: [us_mo_LBAKRDTA_TAK040.DQ_DOC, us_mo_LBAKRDTA_TAK040.DQ_CYC]
+    note_display: hover
+    note_text: "Offender Cycles. Column prefix: DQ.  MODOC has the concept of \"offender cycles\" which represent entirely new \"cycles\" through the MODOC justice system, i.e. new sentences to incarceration or supervision from liberty. New cycles are not created when a person, for example, is sent back to prison because their supervision was revoked.  The `LBAKRDTA.TAK040` table contains a list of all \"offender cycles\" The primary identifier for these cycles is referenced from many ingest views that capture data downstream of the cycle and is pervasive through MODOC tables. That identifier, `DQ_CYC`, is not globally unique. Rather, it is unique within the context of a `DQ_DOC`, like a cycle \"sequence number\" for a given person (in reality, it's the YYYYMMDD date of the cycle start). So the globally unique cycle id is really the concatenation of the DOC person id and the cycle id. Thus when downstream ingest views reference the cycle id, they also reference the DOC id in order to concatenate them together into a global id for entity matching.  The `LBAKRDTA.TAK040` table also acts as a \"roll-up\" table within the MODOC data warehouse, aggregating together bits of data from a variety of tables that contain sentencing information elsewhere. Since we ingest the information we need directly from those lower-level tables, we do not ingest this data directly (as of 2022-01-03)."
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 114
+    col: 0
+    width: 24
+    height: 6
+
   - name: LBAKRDTA_TAK042
     title: LBAKRDTA_TAK042
     explore: us_mo_raw_data
@@ -977,7 +1032,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 114
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -1020,7 +1075,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 120
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -1051,7 +1106,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -1082,7 +1137,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1114,7 +1169,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1149,7 +1204,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1202,7 +1257,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 150
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1242,7 +1297,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1287,7 +1342,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1322,7 +1377,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1355,7 +1410,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 174
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1390,7 +1445,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 180
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1419,7 +1474,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 186
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1457,7 +1512,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 192
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1496,7 +1551,7 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 198
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -1528,7 +1583,49 @@
       US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
       US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
       US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
-    row: 204
+    row: 210
+    col: 0
+    width: 24
+    height: 6
+
+  - name: ORAS_MO_ASSESSMENTS_DB2
+    title: ORAS_MO_ASSESSMENTS_DB2
+    explore: us_mo_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mo_ORAS_MO_ASSESSMENTS_DB2.primary_key,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OFFENDER_ID,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.ASSESSMENT_ID,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.DOC_ID,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.MOCIS_DOC_ID,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OWNING_AGENCY,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.ASSESSMENT_NAME,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.ASSESSMENT_STATUS,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OVERALL_ASSESSMENT_SCORE,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.RISK_LEVEL,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OVERRIDE_RISK_LEVEL,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OVERRIDE_RISK_REASON,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.ASSESSMENT_OUTCOME,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OFFENDER_FIRST_NAME,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OFFENDER_LAST_NAME,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.OFFICER_NAME,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.CREATED_AT__raw,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.UPDATED_AT__raw,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.BACKDATED__raw,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.DELETED_AT__raw,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.ASSESSMENT_DATE__raw,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.file_id,
+      us_mo_ORAS_MO_ASSESSMENTS_DB2.is_deleted]
+    sorts: [us_mo_ORAS_MO_ASSESSMENTS_DB2.CREATED_AT__raw]
+    note_display: hover
+    note_text: "ORAS assessment information"
+    listen: 
+      View Type: us_mo_LBAKRDTA_TAK001.view_type
+      US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
+      US_MO_SID: us_mo_LBAKRDTA_TAK001.EK_SID
+      US_MO_FBI: us_mo_LBAKRDTA_TAK001.EK_FBI
+      US_MO_OLN: us_mo_LBAKRDTA_TAK001.EK_OLN
+    row: 216
     col: 0
     width: 24
     height: 6

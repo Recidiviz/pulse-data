@@ -136,6 +136,13 @@ explore: us_mo_raw_data_template {
     view_label: "us_mo_LBAKRDTA_TAK039"
   }
 
+  join: us_mo_LBAKRDTA_TAK040 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK040.DQ_DOC};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mo_LBAKRDTA_TAK040"
+  }
+
   join: us_mo_LBAKRDTA_TAK042 {
     sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_LBAKRDTA_TAK042.CF_DOC};;
     type: full_outer
@@ -246,6 +253,13 @@ explore: us_mo_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_mo_OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF"
+  }
+
+  join: us_mo_ORAS_MO_ASSESSMENTS_DB2 {
+    sql_on: ${us_mo_LBAKRDTA_TAK001.EK_DOC} = ${us_mo_ORAS_MO_ASSESSMENTS_DB2.DOC_ID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mo_ORAS_MO_ASSESSMENTS_DB2"
   }
 
 }

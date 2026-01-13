@@ -1004,15 +1004,26 @@ def parse_staff_role_type(raw_text: str) -> Optional[StateStaffRoleType]:
 DOMESTIC_VIOLENCE_CASE_TYPES = [
     "DVS",  # Domestic Violence Supervision
     "DOM",  # Domestic Violence
+    "Domestic Violence Offender",
 ]
 
 SERIOUS_MENTAL_ILLNESS_CASE_TYPES = [
     "SMI",  # Seriously Mentally Ill Caseload
+    "Seriously Mentally Ill Offender",
 ]
 
 SEX_OFFENSE_CASE_TYPES = [
     "DSO",  # Designated Sex Offenders
     "ISO",  # Interstate Sex Offenders
+    "Sex Offender",
+]
+
+UNCATEGORIZED_CASE_TYPES = [
+    "ICTS Treatment Offender",
+    "JRI Treatment Pilot Offender",
+    "Parole or Condition Release Less than 12 months",
+    "Specialty Court Offender",
+    "Treatment Court Offender",
 ]
 
 
@@ -1028,6 +1039,9 @@ def parse_case_types(raw_text: str) -> Optional[StateSupervisionCaseType]:
 
         if case_type in SEX_OFFENSE_CASE_TYPES:
             return StateSupervisionCaseType.SEX_OFFENSE
+
+        if case_type in UNCATEGORIZED_CASE_TYPES:
+            return StateSupervisionCaseType.INTERNAL_UNKNOWN
 
     return None
 
