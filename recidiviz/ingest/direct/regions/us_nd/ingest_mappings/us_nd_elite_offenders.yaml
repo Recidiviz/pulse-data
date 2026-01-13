@@ -4,11 +4,12 @@
 manifest_language: 1.0.0
 input_columns:
   ROOT_OFFENDER_ID: STRING
-  LAST_NAME: STRING
-  FIRST_NAME: STRING
   SEX_CODE: STRING
-  RACE_CODE: STRING
   BIRTH_DATE: STRING
+  FIRST_NAME_PRIMARY: STRING
+  LAST_NAME_PRIMARY: STRING
+  RACE_CODE_LIST: STRING
+  ALIAS_LIST: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -19,15 +20,51 @@ output:
     birthdate: BIRTH_DATE
     full_name:
       $person_name:
-        $given_names: FIRST_NAME
-        $surname: LAST_NAME
+        $given_names: FIRST_NAME_PRIMARY
+        $surname: LAST_NAME_PRIMARY
     aliases:
-      - StatePersonAlias:
-          full_name:
-            $person_name:
-              $given_names: FIRST_NAME
-              $surname: LAST_NAME
-          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+      - $foreach:
+          $iterable:
+            $split_json: ALIAS_LIST
+          $result:
+            StatePersonAlias:
+              alias_type:
+                $enum_mapping:
+                  $raw_text:
+                    $json_extract:
+                      $key: alias_type
+                      $json: $iter_item
+                  $mappings:
+                    StatePersonAliasType.AFFILIATION_NAME:
+                      - GNG
+                    StatePersonAliasType.ALIAS:
+                      - A
+                      - O
+                    StatePersonAliasType.GIVEN_NAME:
+                      - G
+                      - CN
+                    StatePersonAliasType.MAIDEN_NAME:
+                      - M
+                    StatePersonAliasType.NICKNAME:
+                      - N
+              full_name:
+                $person_name:
+                  $given_names:
+                    $json_extract:
+                      $key: first_name
+                      $json: $iter_item
+                  $middle_names:
+                    $json_extract:
+                      $key: middle_name
+                      $json: $iter_item
+                  $surname:
+                    $json_extract:
+                      $key: last_name
+                      $json: $iter_item
+                  $name_suffix:
+                    $json_extract:
+                      $key: suffix
+                      $json: $iter_item
     sex:
       $enum_mapping:
         $raw_text: SEX_CODE
@@ -35,19 +72,37 @@ output:
           StateSex.MALE: "M"
           StateSex.FEMALE: "F"
     races:
-      - $conditional:
-          - $if:
-              $not_null: RACE_CODE
-            $then:
-              StatePersonRace:
-                race:
-                  $enum_mapping:
-                    $raw_text: RACE_CODE
-                    $mappings:
-                      StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: NAT
-                      StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAW
-                      StateRace.ASIAN: ASIAN
-                      StateRace.BLACK: [BLACK, AFRICAN_AMER]
-                      StateRace.WHITE: CAUCASIAN
-                      StateRace.OTHER: MUL
-                    $ignore: [HIS]
+      - $foreach:
+          $iterable: RACE_CODE_LIST
+          $result:
+            StatePersonRace:
+              race:
+                $enum_mapping:
+                  $raw_text: $iter_item
+                  $mappings:
+                    StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: NAT
+                    StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAW
+                    StateRace.ASIAN: ASIAN
+                    StateRace.BLACK: [BLACK, AFRICAN_AMER]
+                    StateRace.WHITE: CAUCASIAN
+                    StateRace.OTHER: MUL
+                  $ignore: [HIS]
+    ethnicities:
+      # There are not separate ethnicity fields in DOCR files. Rather, it is included under race fields. Thus, we look for race
+      # fields with specific values that indicate a Hispanic ethnicity,
+      - $foreach:
+          $iterable: RACE_CODE_LIST
+          $result:
+            StatePersonEthnicity:
+              ethnicity:
+                $enum_mapping:
+                  $raw_text: $iter_item
+                  $mappings:
+                    StateEthnicity.HISPANIC: HIS
+                  $ignore:
+                    - NAT
+                    - HAW
+                    - CAUCASIAN
+                    - BLACK
+                    - ASIAN
+                    - MUL

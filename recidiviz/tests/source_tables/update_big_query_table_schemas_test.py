@@ -1313,7 +1313,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nd_ingest_view_results.docstars_staff_location_periods",
     "us_nd_ingest_view_results.docstars_staff_role_periods",
     "us_nd_ingest_view_results.docstars_staff_supervisor_periods",
-    "us_nd_ingest_view_results.elite_alias",
     "us_nd_ingest_view_results.elite_incarceration_sentences",
     "us_nd_ingest_view_results.elite_movements_incarceration_periods",
     "us_nd_ingest_view_results.elite_offenderbookingstable",
