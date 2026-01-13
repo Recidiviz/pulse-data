@@ -40,7 +40,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_within_5_or_more_months_of_parole_review_date,
     no_escape_offense_within_1_year,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (

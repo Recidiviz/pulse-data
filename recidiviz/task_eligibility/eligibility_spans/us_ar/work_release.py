@@ -38,7 +38,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ar import (
     eligible_criminal_history_work_release,
     no_filed_but_undisposed_detainers,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (

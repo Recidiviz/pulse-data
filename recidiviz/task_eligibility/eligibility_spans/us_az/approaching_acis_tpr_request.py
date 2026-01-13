@@ -36,7 +36,7 @@ from recidiviz.task_eligibility.eligibility_spans.us_az.overdue_for_acis_tpr_req
 from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
     StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -51,7 +51,7 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_minimum_group_to_compliant_reporting_2025_policy import (
     _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

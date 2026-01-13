@@ -35,13 +35,13 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.string import StrictStringFormatter
 
 ALL_COMPLIANCE_TASK_ELIGIBILITY_SPANS_DESCRIPTION_TEMPLATE = """
-This view contains all compliance task eligiblity spans for {state_code} tasks. It unions the 
+This view contains all compliance task eligibility spans for {state_code} tasks. It unions the 
 results of all single-task views for this state, aka all the other views in this 
 dataset (`{state_specific_spans_dataset_id}`).
 """
 
 ALL_COMPLIANCE_TASK_ELIGIBILITY_SPANS_ALL_STATES_DESCRIPTION = """
-This view contains all COMPLIANCE task eligiblity spans for tasks across states. It unions the 
+This view contains all COMPLIANCE task eligibility spans for tasks across states. It unions the 
 results of all single-state `all_compliance_task_eligibility_spans` views (e.g. `compliance_task_eligibility_spans_us_xx.all_compliance_task_eligibility_spans`).
 """
 
@@ -50,7 +50,7 @@ ALL_COMPLIANCE_TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = (
 )
 
 
-def get_compliance_eligiblity_spans_unioned_view_builders() -> Sequence[
+def get_compliance_eligibility_spans_unioned_view_builders() -> Sequence[
     BigQueryViewBuilder
 ]:
     """Returns a list of view builders containing:

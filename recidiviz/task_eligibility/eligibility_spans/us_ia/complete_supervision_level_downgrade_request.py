@@ -44,7 +44,7 @@ from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCon
 from recidiviz.task_eligibility.eligibility_spans.us_ia.complete_early_discharge_form import (
     not_supervision_past_group_full_term_completion_date_or_upcoming_30_days_view_builder,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (

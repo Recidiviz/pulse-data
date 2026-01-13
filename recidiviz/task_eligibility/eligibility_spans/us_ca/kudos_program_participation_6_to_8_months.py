@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.completion_events.general import kudos_sms_sent
 from recidiviz.task_eligibility.criteria.general import (
     participated_in_programming_for_6_to_8_months,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

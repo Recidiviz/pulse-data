@@ -50,7 +50,7 @@ from recidiviz.task_eligibility.criteria_condition import (
 from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_resident_worker_request import (
     US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (

@@ -35,7 +35,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
 from recidiviz.task_eligibility.eligibility_spans.us_mo.work_release import (
     WORK_RELEASE_AND_OUTSIDE_CLEARANCE_SHARED_CRITERIA,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (

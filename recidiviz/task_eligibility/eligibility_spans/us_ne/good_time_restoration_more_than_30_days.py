@@ -29,7 +29,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
 from recidiviz.task_eligibility.eligibility_spans.us_ne.good_time_restoration_30_days import (
     US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

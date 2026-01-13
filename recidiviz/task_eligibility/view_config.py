@@ -20,9 +20,9 @@ import itertools
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.task_eligibility import task_eligiblity_spans
+from recidiviz.task_eligibility import task_eligibility_spans
 from recidiviz.task_eligibility.all_compliance_task_eligibility_spans import (
-    get_compliance_eligiblity_spans_unioned_view_builders,
+    get_compliance_eligibility_spans_unioned_view_builders,
 )
 from recidiviz.task_eligibility.almost_eligible_task_spans_big_query_view_collector import (
     AlmostEligibleSpansBigQueryViewCollector,
@@ -76,9 +76,9 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
                 almost_eligible_tes_builders,
                 tes_builders,
                 collapsed_tes_builders,
-                task_eligiblity_spans.get_unioned_view_builders(),
+                task_eligibility_spans.get_unioned_view_builders(),
                 ComplianceTaskEligibilitySpansBigQueryViewCollector().collect_view_builders(),
-                get_compliance_eligiblity_spans_unioned_view_builders(),
+                get_compliance_eligibility_spans_unioned_view_builders(),
             )
         )
     )

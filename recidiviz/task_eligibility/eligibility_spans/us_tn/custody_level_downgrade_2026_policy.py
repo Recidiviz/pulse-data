@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

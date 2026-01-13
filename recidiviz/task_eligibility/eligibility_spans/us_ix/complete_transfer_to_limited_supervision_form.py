@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligiblity spans view that shows the spans of time during which
+"""Builder for a task eligibility spans view that shows the spans of time during which
 someone in ID is eligible to complete the form for transfer to limited unit supervision.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
@@ -44,7 +44,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (

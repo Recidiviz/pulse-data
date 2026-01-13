@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.completion_events.general import custody_level_d
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     actual_placement_level_less_than_custody_level,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

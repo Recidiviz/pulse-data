@@ -34,7 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     not_already_medium_trustee,
     not_in_msp_imhu,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -41,7 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     within_24_months_of_earliest_established_release_date_itim,
     within_48_months_of_earliest_established_release_date_itim,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (

@@ -26,7 +26,7 @@ from recidiviz.task_eligibility.criteria.general import (
     incarcerated_at_least_1_year,
     incarceration_past_parole_eligibility_date,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

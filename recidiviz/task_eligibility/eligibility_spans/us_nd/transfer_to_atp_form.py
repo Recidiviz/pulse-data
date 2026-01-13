@@ -49,7 +49,7 @@ from recidiviz.task_eligibility.eligibility_spans.us_nd.transfer_to_minimum_faci
     HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT,
     INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

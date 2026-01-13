@@ -716,7 +716,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             ),
         ]
 
-        # disqualifying event - does not meet eligiblity criteria
+        # disqualifying event - does not meet eligibility criteria
         events = [
             ActionStrategySurfacedEvent(
                 state_code="us_pa",

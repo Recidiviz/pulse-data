@@ -33,7 +33,7 @@ from recidiviz.task_eligibility.criteria_condition import (
     TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (

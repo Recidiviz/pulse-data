@@ -23,7 +23,7 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.string import StrictStringFormatter

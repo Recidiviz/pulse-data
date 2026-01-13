@@ -34,7 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     served_at_least_one_year_for_dui_if_lsir_level_low,
     supervision_level_higher_than_assessment_level,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

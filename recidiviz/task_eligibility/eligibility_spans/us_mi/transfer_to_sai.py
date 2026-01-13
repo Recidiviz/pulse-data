@@ -37,7 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     served_minimum_sentence_for_firearm_felony,
     true_security_level_not_iv_or_v,
 )
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

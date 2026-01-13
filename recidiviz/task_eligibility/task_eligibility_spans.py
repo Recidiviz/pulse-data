@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a function that returns a list of view builders that union all task
-eligiblity spans into central locations.
+eligibility spans into central locations.
 """
 from collections import defaultdict
 from typing import List, Sequence
@@ -146,20 +146,20 @@ unions the results of all single-state `all_state_specific_completion_events` vi
 ALL_COMPLETION_EVENTS_VIEW_ID = "all_completion_events"
 
 ALL_TASKS_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
-This view contains all task eligiblity spans for {state_code} tasks. It unions the 
+This view contains all task eligibility spans for {state_code} tasks. It unions the 
 results of all single-task views for this state, aka all the other views in this 
 dataset (`{state_specific_spans_dataset_id}`), excluding *__collapsed derivative views.
 """
 
 ALL_TASKS_ALL_STATES_DESCRIPTION = """
-This view contains all task eligiblity spans for tasks across states. It unions the 
+This view contains all task eligibility spans for tasks across states. It unions the 
 results of all single-state `all_tasks` views (e.g. `task_eligibility_us_xx.all_tasks`).
 """
 
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = "all_tasks"
 
 ALL_TASKS_COLLAPSED_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
-This view contains all task eligiblity spans for {state_code} tasks, where adjacent 
+This view contains all task eligibility spans for {state_code} tasks, where adjacent 
 spans of the same task with the same is_eligible/is_almost_eligible values are collapsed
 into a single span. It unions the results of all single-task *__collapsed views for this
 state, aka all the other *__collapsed views in this dataset 
@@ -167,7 +167,7 @@ state, aka all the other *__collapsed views in this dataset
 """
 
 ALL_TASKS_COLLAPSED_ALL_STATES_DESCRIPTION = """
-This view contains all task eligiblity spans for tasks across states, where adjacent 
+This view contains all task eligibility spans for tasks across states, where adjacent 
 spans of the same task with the same is_eligible/is_almost_eligible values are collapsed
 into a single span. It unions the results of all single-state `all_tasks__collapsed` 
 views (e.g. `task_eligibility_us_xx.all_tasks__collapsed`).
@@ -177,9 +177,9 @@ views (e.g. `task_eligibility_us_xx.all_tasks__collapsed`).
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_COLLAPSED_VIEW_ID = "all_tasks__collapsed"
 
 
-def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
+def _get_eligibility_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
     """Returns a list of view builders containing:
-    a) one view per state, which unions task eligiblity spans for that state into
+    a) one view per state, which unions task eligibility spans for that state into
         a single 'all_tasks' view for that state, and
     b) one view that unions all the data from the state-specific 'all_tasks' views
     into one place.
@@ -229,11 +229,11 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
     ]
 
 
-def _get_collapsed_eligiblity_spans_unioned_view_builders() -> Sequence[
+def _get_collapsed_eligibility_spans_unioned_view_builders() -> Sequence[
     BigQueryViewBuilder
 ]:
     """Returns a list of view builders containing:
-    a) one view per state, which unions collapsed task eligiblity spans for that state into
+    a) one view per state, which unions collapsed task eligibility spans for that state into
         a single 'all_tasks__collapsed' view for that state, and
     b) one view that unions all the data from the state-specific 'all_tasks__collapsed'
     views into one place.
@@ -542,6 +542,6 @@ def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
         *_get_criteria_unioned_view_builders(),
         *_get_candidate_population_unioned_view_builders(),
         *_get_completion_events_unioned_view_builders(),
-        *_get_eligiblity_spans_unioned_view_builders(),
-        *_get_collapsed_eligiblity_spans_unioned_view_builders(),
+        *_get_eligibility_spans_unioned_view_builders(),
+        *_get_collapsed_eligibility_spans_unioned_view_builders(),
     ]

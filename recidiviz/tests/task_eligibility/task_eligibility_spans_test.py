@@ -18,7 +18,7 @@
 import unittest
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.task_eligibility.task_eligiblity_spans import get_unioned_view_builders
+from recidiviz.task_eligibility.task_eligibility_spans import get_unioned_view_builders
 
 
 class TestGetUnionedViewBuilders(unittest.TestCase):

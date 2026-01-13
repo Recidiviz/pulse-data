@@ -19,11 +19,11 @@ import unittest
 from collections import defaultdict
 from unittest.mock import Mock, patch
 
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
-)
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
-    SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
@@ -87,7 +87,7 @@ class TestSingleTaskEligibilityBigQueryViewCollector(unittest.TestCase):
                     builder, SingleTaskEligibilitySpansBigQueryViewBuilder
                 ):
                     raise ValueError(
-                        f"Found unexpected task eligiblity view builder type "
+                        f"Found unexpected task eligibility view builder type "
                         f"[{type(builder)}]: {builder}"
                     )
 
@@ -109,7 +109,7 @@ class TestSingleTaskEligibilityBigQueryViewCollector(unittest.TestCase):
                 task_builder, SingleTaskEligibilitySpansBigQueryViewBuilder
             ):
                 raise ValueError(
-                    f"Found unexpected task eligiblity view builder type "
+                    f"Found unexpected task eligibility view builder type "
                     f"[{type(task_builder)}]: {task_builder}"
                 )
 

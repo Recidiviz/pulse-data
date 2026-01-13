@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligiblity spans view that shows the spans of time during which
+"""Builder for a task eligibility spans view that shows the spans of time during which
 someone in ID is eligible to request early discharge from probation supervision.
 """
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
@@ -32,7 +32,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     lsir_level_low_moderate_for_x_days,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

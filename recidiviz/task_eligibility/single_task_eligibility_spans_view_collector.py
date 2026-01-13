@@ -26,7 +26,7 @@ from recidiviz.big_query.big_query_view_collector import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility import eligibility_spans
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 

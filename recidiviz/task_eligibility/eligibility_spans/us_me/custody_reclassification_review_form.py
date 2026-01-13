@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     incarceration_past_semi_annual_classification_date,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (

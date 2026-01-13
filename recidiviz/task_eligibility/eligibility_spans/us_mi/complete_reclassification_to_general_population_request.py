@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     eligible_for_reclassification_from_solitary_to_general,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

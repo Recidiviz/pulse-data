@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 
@@ -253,14 +253,14 @@ def sort_criteria_least_to_most_impactful_cumulative_impact(
     Args:
         crtieria_names (List): list returned by get_criteria_names
         df_task_query_copy (DataFrame): DataFrame that indicates eligible population and
-            inelegible_criteria
+            ineligible_criteria
     """
     df_task_query_copy = df_task_query.copy()
     final_sorted_lst = []
     while criteria_names:
         criteria_impact = {}
         for criteria in criteria_names:
-            # Elegible population considering x criteria minus elegible ppulation considering all criterion. Impact
+            # Eligible population considering x criteria minus eligible population considering all criterion. Impact
             criteria_impact[criteria] = (
                 df_task_query_copy[f"meets_criterion_{criteria}"].sum()
                 - df_task_query_copy["is_eligible"].sum()
