@@ -321,12 +321,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "duplicate_counts",
         ],
         "supervision_staff": ["APFX_ALL"],
-        "supervision_staff_role_periods": [
-            "apfx90_periods",
-            "apfx91_periods",
-            "apfx_all",
-            "collapsed",
-        ],
         "tak158_tak026_incarceration_periods": [
             "all_sub_sub_cycle_critical_dates",
             "most_recent_status_updates",

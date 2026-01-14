@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `staff_role_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  BDGNO: STRING
+  CLSTTL: STRING
+  start_date: STRING
+  end_date: STRING
+  SEQ: INTEGER
+unused_columns: []
+variables:
+  - end_date:
+      $custom:
+        $function: us_mo_custom_parsers.null_if_invalid_date
+        $args:
+          date: end_date
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: BDGNO
+          id_type: $literal("US_MO_STAFF_BADGE_NUMBER")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - BDGNO
+                - SEQ
+          start_date: start_date
+          end_date:
+            $conditional:
+              - $if:
+                  $not_null: $variable(end_date)
+                $then: $variable(end_date)
+          role_type:
+            $enum_mapping:
+              $raw_text: CLSTTL
+              $custom_parser: us_mo_custom_enum_parsers.parse_staff_role_type
