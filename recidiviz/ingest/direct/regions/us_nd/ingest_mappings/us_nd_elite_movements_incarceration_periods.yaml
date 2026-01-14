@@ -97,6 +97,7 @@ output:
                   - ADMN
                   - RAB
                   - DEF
+                  - DEF_SHORT
                 StateIncarcerationPeriodAdmissionReason.REVOCATION:
                   # Parole revocations
                   - PARL
