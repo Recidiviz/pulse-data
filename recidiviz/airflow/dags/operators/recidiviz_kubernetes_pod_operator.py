@@ -62,6 +62,8 @@ RESOURCES_YAML_PATH = os.path.join(
 
 ENTRYPOINT_ARGUMENTS = [
     "run",
+    # Use --no-sync because dependencies are already installed in the Docker image
+    "--no-sync",
     "python",
     "-m",
     "recidiviz.entrypoints.entrypoint_executor",

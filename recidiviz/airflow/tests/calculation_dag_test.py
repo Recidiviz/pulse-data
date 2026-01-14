@@ -34,6 +34,7 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    ENTRYPOINT_ARGUMENTS,
     RecidivizKubernetesPodOperator,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
@@ -287,7 +288,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertEqual(task.trigger_rule, TriggerRule.ALL_SUCCESS)
 
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             self.entrypoint_args_fixture["test_update_all_managed_views_endpoint"],
         )
 
@@ -314,7 +315,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
 
         self.assertEqual(task.task_id, "refresh_bq_dataset_OPERATIONS")
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task"],
         )
 
@@ -341,7 +342,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             self.entrypoint_args_fixture["test_validations_task"],
         )
 
@@ -370,7 +371,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.assertEqual(task.task_id, "export_ingest_metadata_metric_view_data")
 
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             self.entrypoint_args_fixture["test_trigger_metric_view_data_operator"],
         )
 
@@ -389,7 +390,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             "export_ingest_metadata_us_xx_metric_view_data",
         )
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             self.entrypoint_args_fixture[
                 "test_trigger_metric_view_data_operator_state_code"
             ],
@@ -408,7 +409,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             [
                 "--entrypoint=BigQueryRefreshEntrypoint",
                 "--schema_type=OPERATIONS",
@@ -429,7 +430,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
 
         # Assert sandbox_prefix is not included
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             [
                 "--entrypoint=UpdateAllManagedViewsEntrypoint",
             ],
@@ -444,7 +445,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
 
         # Assert sandbox_prefix is not included when set to empty string
         self.assertEqual(
-            task.arguments[4:],
+            task.arguments[len(ENTRYPOINT_ARGUMENTS) :],
             [
                 "--entrypoint=UpdateAllManagedViewsEntrypoint",
             ],

@@ -21,6 +21,9 @@ from airflow.models import BaseOperator
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    ENTRYPOINT_ARGUMENTS,
+)
 from recidiviz.airflow.tests.utils.dag_helper_functions import set_k8s_operator_env_vars
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
@@ -75,7 +78,8 @@ def fake_k8s_operator_for_entrypoint(
         def execute(self, context: Context) -> None:
             set_k8s_operator_env_vars(context)
 
-            unknown_args = self.arguments[5:]
+            # Skip ENTRYPOINT_ARGUMENTS and the --entrypoint=... argument
+            unknown_args = self.arguments[len(ENTRYPOINT_ARGUMENTS) + 1 :]
             entrypoint_parser = entrypoint_cls.get_parser()
             entrypoint_args = entrypoint_parser.parse_args(unknown_args)
 
