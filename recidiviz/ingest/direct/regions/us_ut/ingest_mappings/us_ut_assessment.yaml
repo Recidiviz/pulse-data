@@ -6,6 +6,7 @@ input_columns:
   ofndr_num: STRING
   ofndr_tst_id: STRING
   tst_title: STRING
+  score_by_name: STRING
   tst_dt: DATE
   tot_score: STRING
   eval_desc: STRING
@@ -131,6 +132,12 @@ output:
                   - "CPORT"
           assessment_date: tst_dt
           assessment_score: tot_score
+          conducting_staff_external_id: score_by_name
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: score_by_name
+                $then: $literal("US_UT_USR_ID")
           assessment_level:
             # Infer the level for LSIR assessments where eval_desc is null
             $conditional:
