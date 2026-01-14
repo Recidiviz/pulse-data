@@ -53,6 +53,9 @@ from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_not
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.public_pathways.public_pathways_views import (
+    PUBLIC_PATHWAYS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.reentry.reentry_views import (
     REENTRY_VIEW_BUILDERS,
 )
@@ -274,6 +277,7 @@ JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-texting-etl-data
 REENTRY_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-reentry-etl-data"
 MEETINGS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-meetings-etl-data"
 USER_DATA_DOWNLOADS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-user-data-downloads"
+PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-pathways-data"
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
@@ -473,6 +477,13 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=USER_DATA_DOWNLOADS_VIEW_BUILDERS,
         output_directory_uri_template=USER_DATA_DOWNLOADS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="USER_DATA_DOWNLOADS",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+    ),
+    # All modules for the Public Pathways product
+    ExportViewCollectionConfig(
+        view_builders_to_export=PUBLIC_PATHWAYS_VIEW_BUILDERS,
+        output_directory_uri_template=PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PUBLIC_PATHWAYS",
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
 ]

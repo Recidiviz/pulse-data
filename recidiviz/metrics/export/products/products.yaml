@@ -248,3 +248,11 @@ products:
     states:
       - state_code: US_TX
         environment: production
+  - name: Public Pathways
+    description: Prison populations over time which can be
+      drilled down by geographic region, demographic categories, time period, etc.
+    exports:
+      - PUBLIC_PATHWAYS
+    states:
+      - state_code: US_NY
+        environment: staging

@@ -99,6 +99,14 @@ module "dashboard-data" {
   storage_class = "MULTI_REGIONAL"
 }
 
+module "public-pathways-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id    = var.project_id
+  name_suffix   = "public-pathways-data"
+  storage_class = "MULTI_REGIONAL"
+}
+
 module "dashboard-event-level-data" {
   source = "./modules/cloud-storage-bucket"
 

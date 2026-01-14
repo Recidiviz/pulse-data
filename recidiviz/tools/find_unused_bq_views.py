@@ -105,12 +105,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.public_pathways.event_level.prison_population_by_dimension import (
-    PUBLIC_PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_pathways.event_level.prison_population_over_time import (
-    PUBLIC_PRISON_POPULATION_OVER_TIME_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.ingested_incarceration_and_supervision_product_users import (
     INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -577,12 +571,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "Union view for supervisor homepage opportunities module segment events. Kept for potential future use. "
         "(Mayuka Sarukkai, 2025-12-29)"
-    ),
-    PUBLIC_PRISON_POPULATION_OVER_TIME_VIEW_BUILDER.address: (
-        "Will be used in an export config once we are ready to start exporting Public Pathways - see #56365 (Jen Overgaag, 1/8/2026)"
-    ),
-    PUBLIC_PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER.address: (
-        "Will be used in an export config once we are ready to start exporting Public Pathways - see #56365 (Jen Overgaag, 1/8/2026)"
     ),
 }
 
