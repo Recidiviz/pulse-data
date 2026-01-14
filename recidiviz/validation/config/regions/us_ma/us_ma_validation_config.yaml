@@ -4,6 +4,26 @@ region_code: US_MA
 # TODO(#31854): Enable validations for US_MA.
 dev_mode: True
 exclusions:
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      Uniquely, MA has sessions but no ingested incarceration / supervision periods or sentences.
+      Therefore, validations like this one can be disabled until meaningful ingest happens in MA.
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      Uniquely, MA has sessions but no ingested incarceration / supervision periods or sentences.
+      Therefore, validations like this one can be disabled until meaningful ingest happens in MA.
+  - validation_name: sessions_persons_in_incarceration_or_supervision
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      Uniquely, MA has sessions but no ingested incarceration / supervision periods or sentences.
+      Therefore, validations like this one can be disabled until meaningful ingest happens in MA.
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason:
+      Uniquely, MA has sessions but no ingested incarceration / supervision periods or sentences.
+      Therefore, validations like this one can be disabled until meaningful ingest happens in MA.
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
