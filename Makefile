@@ -7,8 +7,14 @@ help: ## Show this help
 uv-sync: ## Sync Python dependencies
 	uv sync --all-extras
 
-uv-shell: ## Enter venv shell
-	source .venv/bin/activate
+uv-shell: ## Instructions for how to enter a uv-shell
+	@echo "The \`make\` tool cannot activate a virtual environment directly, because \`make\` runs commands in a subprocess that cannot modify your shell."
+	@echo ""
+	@echo "Run this command directly to activate your shell:"
+	@echo "  source .venv/bin/activate"
+	@echo ""
+	@echo "To create a shortcut for activating the uv shell, add this to your ~/.zshrc:"
+	@echo "  alias pulse-data-uv-shell='cd $(PWD) && source .venv/bin/activate'"
 
 pylint: ## Run pylint
 	./recidiviz/tools/lint/run_pylint.sh
