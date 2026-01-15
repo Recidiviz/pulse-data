@@ -2590,18 +2590,7 @@ class StateDrugScreen(
     # Attributes
     #   - When
     drug_screen_date: datetime.date = attr.ib(
-        # TODO(#40505): Reset validator to just `STANDARD_REASONABLE_PAST_DATE_VALIDATOR`
-        #  once all state exemptions have been fixed.
-        validator=state_exempted_validator(
-            STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
-            exempted_state_validator=attr_validators.is_date,
-            exempted_states={
-                # TODO(#40507): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 0010-01-02.
-                #  - Found dates as high as 9200-02-11.
-                StateCode.US_UT,
-            },
-        )
+        validator=STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     )
 
     #   - What
