@@ -3915,8 +3915,6 @@ class NormalizedStateStaff(
                 StateCode.US_AZ,
                 # TODO(#55647): US_IA has 1 invalid email (empty domain) as of 1/6/26
                 StateCode.US_IA,
-                # TODO(#55648): US_ME has 2 invalid emails (domain ends with dot) as of 1/6/26
-                StateCode.US_ME,
                 # TODO(#55649): US_TX has 1 invalid email (suspicious username) as of 1/6/26
                 StateCode.US_TX,
             },
