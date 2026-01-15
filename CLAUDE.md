@@ -156,6 +156,10 @@ skill, add a directory with a `SKILL.md` file:
 
 Available skills:
 
+- [Commit](./.claude/skills/commit/SKILL.md) - Commit uncommitted changes with
+  clear commit messages
+- [Create PR](./.claude/skills/create-pr/SKILL.md) - Create a GitHub PR for the
+  current branch
 - [Create Recidiviz Data GitHub Tasks](./.claude/skills/create_recidiviz_data_github_tasks/SKILL.md)
 - [Maintain Skill Files](./.claude/skills/maintain_skill_files/SKILL.md)
 - [Maintain CLAUDE.md Documentation](./.claude/skills/maintain_claude_md/SKILL.md)
