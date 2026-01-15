@@ -3902,8 +3902,8 @@ class NormalizedStateStaff(
                 StateCode.US_AZ,
                 # TODO(#55647): US_IA has 1 invalid email (empty domain) as of 1/6/26
                 StateCode.US_IA,
-                # TODO(#55649): US_TX has 1 invalid email (suspicious username) as of 1/6/26
-                StateCode.US_TX,
+                # TODO(#55648): US_ME has 2 invalid emails (domain ends with dot) as of 1/6/26
+                StateCode.US_ME,
             },
         ),
     )
@@ -3966,11 +3966,6 @@ class NormalizedStateStaff(
                     #  ingest so there are no longer duplicate emails across multiple
                     #  staff and remove this exemption.
                     StateCode.US_AZ,
-                    # TODO(#45914): As of 8/1/25 there are 28 distinct emails across 56
-                    #  staff which violate this constraint for US_TX. We should fix
-                    #  ingest so there are no longer duplicate emails across multiple
-                    #  staff and remove this exemption.
-                    StateCode.US_TX,
                 },
             )
         ]
