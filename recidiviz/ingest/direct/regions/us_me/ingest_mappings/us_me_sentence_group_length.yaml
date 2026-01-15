@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  Cis_100_Client_Id: STRING
+  Term_Id: STRING
+  Early_Rel_Date: DATETIME
+  Max_Rel_Date: DATETIME
+  Critical_Date: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Cis_100_Client_Id
+          id_type: $literal("US_ME_DOC")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: Term_Id
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                group_update_datetime: Critical_Date
+                projected_full_term_release_date_min_external: Early_Rel_Date
+                projected_full_term_release_date_max_external: Max_Rel_Date

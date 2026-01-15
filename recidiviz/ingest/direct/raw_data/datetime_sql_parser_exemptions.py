@@ -120,13 +120,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "CIS_124_SUPERVISION_HISTORY": ["Assignment_Date", "Supervision_End_Date"],
         "CIS_125_CURRENT_STATUS_HIST": ["Effct_Date", "End_Date", "Ineffct_Date"],
         "CIS_309_MOVEMENT": ["Movement_Date"],
-        "CIS_319_TERM": [
-            "Comm_Rel_Date",
-            "Curr_Cust_Rel_Date",
-            "Early_Cust_Rel_Date",
-            "Intake_Date",
-            "Max_Cust_Rel_Date",
-        ],
         "CIS_400_CHARGE": ["Offense_Date", "Referral_Date"],
         "CIS_403_CONDITION": ["Due_Date"],
         "CIS_480_VIOLATION": [
