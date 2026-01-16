@@ -154,7 +154,7 @@ services:
       - "./recidiviz:/app/recidiviz/"
     depends_on:
       - public_pathways_db
-    command: pipenv run python -m recidiviz.tools.migrations.run_migrations_docker --database PUBLIC_PATHWAYS
+    command: uv run python -m recidiviz.tools.migrations.run_migrations_docker --database PUBLIC_PATHWAYS
     environment:
       - IS_DEV=true
 

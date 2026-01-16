@@ -34,6 +34,9 @@ cloudsql: ## Access Cloud SQL instance
 docker-admin: ## Run admin panel locally
 	docker compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up
 
+docker-case-triage: ## Run admin panel locally
+	docker-compose -f docker-compose.yaml -f docker-compose.case-triage.yaml up
+
 docker-build-prototypes: ## Build prototypes Docker image
 	docker build . -f Dockerfile.prototypes -t us-central1-docker.pkg.dev/recidiviz-staging/prototypes/main:latest --platform=linux/amd64
 
