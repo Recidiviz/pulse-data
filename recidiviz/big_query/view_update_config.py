@@ -35,7 +35,12 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="observations__officer_span",
         table_id="supervision_officer_eligibility_sessions",
-    ): (90 * 10),
+    ): (60 * 15),
+    # TODO(#56622) Reduce runtime of workflows_active_usage_event view
+    BigQueryAddress(
+        dataset_id="observations__workflows_primary_user_event",
+        table_id="workflows_active_usage_event",
+    ): (60 * 10),
     # TODO(#29291) Need to investigate views to improve performance
     BigQueryAddress(
         dataset_id="impact_reports",
