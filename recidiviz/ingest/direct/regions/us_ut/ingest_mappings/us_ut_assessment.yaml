@@ -130,6 +130,7 @@ output:
                   - "CMHS - MEN"
                   - "CMHS - WOMEN"
                   - "CPORT"
+                  - "CASIC"
           assessment_date: tst_dt
           assessment_score: tot_score
           conducting_staff_external_id: score_by_name
