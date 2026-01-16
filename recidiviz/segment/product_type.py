@@ -46,6 +46,7 @@ class ProductType(Enum):
     PATHWAYS = "PATHWAYS"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
     ROUTE_PLANNER = "ROUTE_PLANNER"
+    SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE = "SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE"
     SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE = "SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE"
     SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE = (
         "SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE"
@@ -96,6 +97,7 @@ class ProductType(Enum):
             ProductType.CASE_NOTE_SEARCH,
             ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE,
             ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE,
+            ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE,
         ]:
             return False
         raise ValueError(
@@ -127,6 +129,8 @@ class ProductType(Enum):
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
         elif self == ProductType.PSI_CASE_INSIGHTS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
+        elif self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
@@ -249,6 +253,8 @@ class ProductType(Enum):
             return ["case_note_search"]
         if self == ProductType.ROUTE_PLANNER:
             return ["tasks_route_planner"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
+            return ["insights_staff_usage"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
             return ["supervisor_homepage_workflows"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE:
@@ -264,6 +270,8 @@ class ProductType(Enum):
         """Returns the primary role types for this product type in the product roster."""
         if self == ProductType.CASE_PLANNING_ASSISTANT:
             return ["cpa_staff"]
+        if self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
+            return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
             return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
