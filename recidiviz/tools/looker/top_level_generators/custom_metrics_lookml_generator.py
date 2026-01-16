@@ -37,6 +37,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.case_triage.util import MessageType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.tools.looker.aggregated_metrics.custom_cpa_metrics_configurations import (
     CPA_ASSIGNMENT_NAMES_TO_TYPES,
@@ -56,6 +57,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configura
 from recidiviz.tools.looker.aggregated_metrics.custom_jii_tablet_app_metrics_configurations import (
     JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
     JII_TABLET_APP_IMPACT_LOOKER_METRICS,
+)
+from recidiviz.tools.looker.aggregated_metrics.custom_jii_texts_metrics_configurations import (
+    JII_TEXTS_ASSIGNMENT_NAMES_TO_TYPES,
+    JII_TEXTS_IMPACT_LOOKER_METRICS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     build_assignments_by_time_period_lookml_view,
@@ -226,6 +231,15 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             metrics=CPA_IMPACT_LOOKER_METRICS,
             assignment_types_dict=CPA_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
+        )
+
+        # JII Texts
+        collect_and_build_custom_metrics_views_for_package(
+            lookml_views_package_name="jii_texts_metrics",
+            output_directory=output_subdir,
+            metrics=JII_TEXTS_IMPACT_LOOKER_METRICS,
+            assignment_types_dict=JII_TEXTS_ASSIGNMENT_NAMES_TO_TYPES,
+            json_field_filters_with_suggestions={"message_type": list(MessageType)},
         )
 
 

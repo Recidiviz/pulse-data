@@ -144,3 +144,4 @@ def to_json_serializable(value: Any) -> str:
 class MessageType(Enum):
     INITIAL_TEXT = "INITIAL_TEXT"
     ELIGIBILITY_TEXT = "ELIGIBILITY_TEXT"
+    CONTACT_REMINDER = "CONTACT_REMINDER"

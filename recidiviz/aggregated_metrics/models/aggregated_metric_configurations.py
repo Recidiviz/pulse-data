@@ -1561,6 +1561,66 @@ INCARCERATIONS_TEMPORARY = EventCountMetric(
     ),
 )
 
+JII_CONTACT_REMINDERS_DISTINCT_CLIENTS = EventDistinctUnitCountMetric(
+    name="jii_contact_reminders_distinct_clients",
+    display_name="JII Contact Reminders: Distinct Clients",
+    description="Number of distinct clients who received at least one JII contact reminder message",
+    event_selector=EventSelector(
+        event_type=EventType.JII_OUTGOING_TEXT_MESSAGE,
+        event_conditions_dict={"message_type": ["CONTACT_REMINDER"]},
+    ),
+)
+
+JII_TEXT_MESSAGES_ATTEMPTED = EventCountMetric(
+    name="jii_text_messages_attempted",
+    display_name="JII Text Messages: Attempted",
+    description="Count of JII text message attempts (any status)",
+    event_selector=EventSelector(
+        event_type=EventType.JII_OUTGOING_TEXT_MESSAGE,
+        event_conditions_dict={},
+    ),
+)
+
+JII_TEXT_MESSAGES_ATTEMPTED_DISTINCT_CLIENTS = EventDistinctUnitCountMetric(
+    name="jii_text_messages_attempted_distinct_clients",
+    display_name="JII Text Messages: Distinct Clients (Attempted)",
+    description="Number of distinct clients with any JII text message attempt",
+    event_selector=EventSelector(
+        event_type=EventType.JII_OUTGOING_TEXT_MESSAGE,
+        event_conditions_dict={},
+    ),
+)
+
+JII_TEXT_MESSAGES_SUCCESSFUL_DISTINCT_CLIENTS = EventDistinctUnitCountMetric(
+    name="jii_text_messages_successful_distinct_clients",
+    display_name="JII Text Messages: Distinct Clients (Successful)",
+    description="Number of distinct clients who received at least one successfully sent JII text message",
+    event_selector=EventSelector(
+        event_type=EventType.JII_OUTGOING_TEXT_MESSAGE,
+        event_conditions_dict={"status": ["SUCCESS"]},
+    ),
+)
+
+JII_TEXT_MESSAGES_FAILED = EventCountMetric(
+    name="jii_text_messages_failed",
+    display_name="JII Text Messages: Failed",
+    description="Count of failed JII text message attempts",
+    event_selector=EventSelector(
+        event_type=EventType.JII_OUTGOING_TEXT_MESSAGE,
+        event_conditions_dict={"status": ["FAILURE"]},
+    ),
+)
+
+JII_TEXT_MESSAGES_SUCCESSFUL = EventCountMetric(
+    name="jii_text_messages_successful",
+    display_name="JII Text Messages: Successful",
+    description="Count of successfully sent JII text messages",
+    event_selector=EventSelector(
+        event_type=EventType.JII_OUTGOING_TEXT_MESSAGE,
+        event_conditions_dict={"status": ["SUCCESS"]},
+    ),
+)
+
 LATE_OPPORTUNITY_METRICS_INCARCERATION = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
