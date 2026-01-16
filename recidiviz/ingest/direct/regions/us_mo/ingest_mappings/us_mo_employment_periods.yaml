@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_employment_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  DOC_ID: STRING
+  EMPLOY_TYPE_CD: STRING
+  EMPLOY_TYPE_DESC: STRING
+  EMPLOY_CAT_CD: STRING
+  start_date: DATE
+  end_date: DATE
+  session_id: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - DOC_ID
+                - session_id
+          start_date: start_date
+          end_date: end_date
+          job_title:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: EMPLOY_CAT_CD
+                    $options:
+                      - $literal("NON")
+                $then: EMPLOY_TYPE_DESC
+          employment_status:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - EMPLOY_TYPE_CD
+                    - EMPLOY_CAT_CD
+              $custom_parser: us_mo_custom_enum_parsers.parse_employment_status

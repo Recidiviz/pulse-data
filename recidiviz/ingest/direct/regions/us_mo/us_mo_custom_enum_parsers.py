@@ -28,6 +28,9 @@ from more_itertools import one
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+)
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
@@ -1491,3 +1494,37 @@ def sentencing_authority_from_county(raw_text: str) -> StateSentencingAuthority:
     if not raw_text:
         return StateSentencingAuthority.PRESENT_WITHOUT_INFO
     return StateSentencingAuthority.COUNTY
+
+
+def parse_employment_status(raw_text: str) -> StateEmploymentPeriodEmploymentStatus:
+    """
+    Maps job type / category codes to employment status enums.
+    IMPORTANT: The ALTERNATE_INCOME_SOURCE and UNABLE_TO_WORK statuses are relevant for
+    MO Tasks contact requirements. If mapping additional raw text values to these enums
+    in the future, make sure to also add them to EMPLOYMENT_TYPES_TO_PRIORITIZE in the employment
+    periods view, to ensure that if statuses overlap, we prioritize the status with downstream significance.
+    """
+    employment_type, employment_category = raw_text.split("@@")
+    if employment_type in [
+        "L15",  # STUDENT-ACADEMIC
+        "L39",  # STUDENT-VOCATIONAL
+        "L48",  # STUDENT-YOUTHFUL OFFENDER PROGRAM
+    ]:
+        return StateEmploymentPeriodEmploymentStatus.STUDENT
+
+    if employment_type in [
+        "L06",  # GOVERNMENT ASSISTANCE
+        "L09",  # HOMEMAKER
+        "L12",  # RETIREE
+    ]:
+        return StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE
+
+    if employment_type == "L03":  # DISABLED
+        return StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK
+
+    # If an employment type code doesn't fall into the above categories, but has a category
+    # of NON ("non-workforce"), then map to UNEMPLOYED.
+    if employment_category == "NON":  # NON-WORKFORCE
+        return StateEmploymentPeriodEmploymentStatus.UNEMPLOYED
+
+    return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
