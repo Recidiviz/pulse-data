@@ -1544,7 +1544,7 @@
       us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.is_deleted]
     sorts: [us_mo_OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW.ACTUAL_START_DT__raw]
     note_display: hover
-    note_text: "Supervision Enhancements."
+    note_text: "Supervision Enhancements (view)."
     listen: 
       View Type: us_mo_LBAKRDTA_TAK001.view_type
       US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
