@@ -183,6 +183,7 @@ output:
                       StateSupervisionPeriodTerminationReason.DEATH:
                         - Death - Natural
                         - Death - Unnatural
+                        - Execution
                       StateSupervisionPeriodTerminationReason.COMMUTED:
                         - Commuted
                       StateSupervisionPeriodTerminationReason.DISCHARGE:
