@@ -9,6 +9,7 @@ input_columns:
   OFCR_SUFFIX: STRING
   staff_id_list: STRING
   OFCR_EMAIL: STRING
+  officer_phone: STRING
 unused_columns: []
 output:
   StateStaff:
@@ -26,3 +27,4 @@ output:
         $surname: OFCR_LAST_NAME
         $name_suffix: OFCR_SUFFIX
     email: OFCR_EMAIL
+    phone_number: officer_phone
