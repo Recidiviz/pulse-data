@@ -32,7 +32,6 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    supervision_case_type_is_not_general_and_level_is_not_minimum,
     supervision_case_type_is_sex_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
@@ -72,18 +71,14 @@ does_not_have_low_lsir_and_sexual_offense = (
     )
 )
 
-# This criteria is met when the individual is missing an annual LSI-R assessment. But it excludes
-# two groups who do not need reassessments:
-# 1) SEX OFFENDERS with LOW LSIR scores, and
-# 2) GENERAL case type and MINIMUM supervision.
-# These groups don't need reassessments.
+# This criteria is met when the individual is missing an annual LSI-R assessment.
+# It excludes SEX OFFENDERS with LOW LSIR scores
 meets_lsir_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name="US_IX_MEETS_LSIR_REASSESSMENT_TRIGGER",
     sub_criteria_list=[
         does_not_have_low_lsir_and_sexual_offense,
         is_missing_annual_lsir_assessment.VIEW_BUILDER,
-        supervision_case_type_is_not_general_and_level_is_not_minimum.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=["case_type"],
 )
@@ -115,6 +110,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_lsir_reassessment_or_initial_assessment_triggers,
+        # These folks don't ever need LSIR assessments
         case_type_is_not_xcrc_and_level_is_not_minimum.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
