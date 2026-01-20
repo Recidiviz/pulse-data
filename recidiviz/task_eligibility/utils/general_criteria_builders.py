@@ -1996,3 +1996,74 @@ def supervision_case_type_is_criteria_builder(
             ),
         ],
     )
+
+
+def no_session_starts_with_reason_within_time_interval_criteria_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    date_interval: int,
+    date_part: str,
+    start_reasons: list[str],
+    compartment_level_1_filter: str | None = None,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query builder that has spans of time when someone has not started
+    a session with a given start reason within a given time interval.
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        date_interval (int): Number of <date_part> when the session start will be counted
+            as valid.
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR".
+        start_reasons (list[str]): List of compartment level start reasons to filter on.
+        compartment_level_1_filter (str): The compartment level 1 filter to apply to the
+            session start sessions. Defaults to "".
+    """
+    raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
+
+    start_reasons_str = "', '".join(start_reasons)
+
+    criteria_query = f"""
+    WITH session_starts_with_start_reason_sessions AS (
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            DATE_ADD(start_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            FALSE AS meets_criteria,
+            start_date AS session_start_date,
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+        WHERE 
+            start_reason in ('{start_reasons_str}')
+            {"AND compartment_level_1 = '" + compartment_level_1_filter + "'" if compartment_level_1_filter else ""}
+        ),
+
+        {create_sub_sessions_with_attributes('session_starts_with_start_reason_sessions')}
+
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            LOGICAL_OR(meets_criteria) AS meets_criteria,
+            TO_JSON(STRUCT(MAX(session_start_date) AS most_recent_session_start_date)) AS reason,
+            MAX(session_start_date) AS most_recent_session_start_date,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1,2,3,4"""
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_session_start_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Start date of most recent session with matching session start reason",
+            ),
+        ],
+    )

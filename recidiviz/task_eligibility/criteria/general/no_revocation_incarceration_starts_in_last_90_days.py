@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,23 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Defines a criterion that shows spans of time when incarcerated clients
-have been incarcerated in state prison for at least 1 year.
+"""Defines a criteria span view that shows if an individual has had no revocation-related
+incarceration starts in the last 90 days.
 """
 
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    get_minimum_time_served_criteria_query,
+    no_session_starts_with_reason_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER = get_minimum_time_served_criteria_query(
-    criteria_name="INCARCERATED_IN_STATE_PRISON_AT_LEAST_1_YEAR",
-    description=__doc__,
-    minimum_time_served=1,
-    time_served_interval="YEAR",
-    custodial_authority_types=["STATE_PRISON"],
+_CRITERIA_NAME = "NO_REVOCATION_INCARCERATION_STARTS_IN_LAST_90_DAYS"
+
+
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    no_session_starts_with_reason_within_time_interval_criteria_builder(
+        criteria_name=_CRITERIA_NAME,
+        description=__doc__,
+        date_interval=90,
+        date_part="DAY",
+        start_reasons=["REVOCATION"],
+        compartment_level_1_filter="INCARCERATION",
+    )
 )
 
 if __name__ == "__main__":
