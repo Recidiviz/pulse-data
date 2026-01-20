@@ -45,7 +45,11 @@ meets_home_visit_or_address_changes_triggers = (
             meets_home_visit_triggers.VIEW_BUILDER,
             meets_address_changes_triggers.VIEW_BUILDER,
         ],
-        allowed_duplicate_reasons_keys=["contact_due_date", "last_contact_date"],
+        allowed_duplicate_reasons_keys=[
+            "contact_due_date",
+            "last_contact_date",
+            "contact_cadence",
+        ],
         reasons_aggregate_function_override={
             "contact_due_date": "MIN",
             "last_contact_date": "MAX",
