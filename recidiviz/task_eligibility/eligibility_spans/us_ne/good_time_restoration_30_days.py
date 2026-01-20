@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
     has_lost_restorable_good_time,
     less_than_3_udc_mrs_in_past_6_months,
     no_idc_mrs_in_past_6_months,
+    no_ongoing_clinical_treatment_program_refusal,
     not_in_custody_level_1a,
     over_4_months_from_trd,
 )
@@ -77,6 +78,7 @@ US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS: List[
     less_than_3_udc_mrs_in_past_6_months.VIEW_BUILDER,
     over_4_months_from_trd.VIEW_BUILDER,
     at_least_2_weeks_since_last_good_time_restoration.VIEW_BUILDER,
+    no_ongoing_clinical_treatment_program_refusal.VIEW_BUILDER,
 ]
 
 _ALMOST_ELIGIBLE_MONTHS = 3
