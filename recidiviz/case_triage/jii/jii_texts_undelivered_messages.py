@@ -220,10 +220,14 @@ def get_replies(
             if jii_level_dict is None:
                 continue
 
+            batch_ids = jii_level_dict.get("batch_ids", [])
+            if not isinstance(batch_ids, list):
+                continue
+
             # Check that this particular jii was included in at least 1 of the batches
             if (
                 len(
-                    set(jii_level_dict.get("batch_ids"))
+                    set(batch_ids)
                     & set(
                         [
                             initial_batch_id,

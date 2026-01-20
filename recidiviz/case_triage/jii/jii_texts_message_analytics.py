@@ -166,7 +166,7 @@ def calculate_text_analytics(
 def _print_initial_analytics(
     initial_batch_id: str,
     firestore_client: FirestoreClientImpl,
-    opt_out_document_ids: Set[int],
+    opt_out_document_ids: Set[str],
 ) -> Set[str]:
     """
     Helper function to print analytics for after a given initial_batch_id.
@@ -262,7 +262,7 @@ def _print_initial_analytics(
 def _print_eligibility_analytics(
     eligibility_batch_id: str,
     firestore_client: FirestoreClientImpl,
-    opt_out_document_ids: Set[int],
+    opt_out_document_ids: Set[str],
 ) -> Set[str]:
     """
     Helper function to print analytics for after a given eligibility_batch_id.
