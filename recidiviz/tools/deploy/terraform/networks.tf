@@ -161,3 +161,78 @@ module "nat_us_west3" {
 locals {
   nat_prefix = var.project_id == "recidiviz-123" ? "recidiviz-production" : var.project_id
 }
+
+
+locals {
+  # Private Google Access IPs
+  # https://cloud.google.com/vpc/docs/configure-private-google-access#config-domain
+  private_google_access_ips = [
+    "199.36.153.8",
+    "199.36.153.9",
+    "199.36.153.10",
+    "199.36.153.11",
+  ]
+
+  # Domains required for Private IP Cloud Composer
+  private_dns_zones = {
+    "googleapis" = {
+      dns_name    = "googleapis.com."
+      description = "Private Google Access for googleapis.com"
+    }
+    "pkg-dev" = {
+      dns_name    = "pkg.dev."
+      description = "Private Google Access for pkg.dev"
+    }
+    "gcr-io" = {
+      dns_name    = "gcr.io."
+      description = "Private Google Access for gcr.io"
+    }
+  }
+}
+
+
+data "google_compute_network" "vpc" {
+  name    = "default"
+  project = var.project_id
+}
+
+# Create private DNS zones
+resource "google_dns_managed_zone" "private_google_access" {
+  for_each = local.private_dns_zones
+
+  project     = var.project_id
+  name        = "private-${each.key}"
+  dns_name    = each.value.dns_name
+  description = each.value.description
+  visibility  = "private"
+
+  private_visibility_config {
+    networks {
+      network_url = data.google_compute_network.vpc.id
+    }
+  }
+}
+
+# Create A records pointing to Private Google Access IPs
+resource "google_dns_record_set" "private_google_access_a" {
+  for_each = local.private_dns_zones
+
+  project      = var.project_id
+  managed_zone = google_dns_managed_zone.private_google_access[each.key].name
+  name         = each.value.dns_name
+  type         = "A"
+  ttl          = 300
+  rrdatas      = local.private_google_access_ips
+}
+
+# Create CNAME records for wildcard subdomains
+resource "google_dns_record_set" "private_google_access_cname" {
+  for_each = local.private_dns_zones
+
+  project      = var.project_id
+  managed_zone = google_dns_managed_zone.private_google_access[each.key].name
+  name         = "*.${each.value.dns_name}"
+  type         = "CNAME"
+  ttl          = 300
+  rrdatas      = [each.value.dns_name]
+}
