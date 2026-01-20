@@ -26,6 +26,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.client import (
+    REENTRY_CLIENT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import (
     CHARGES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -311,6 +314,42 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
+            CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_SEXUAL_EXPLOITATION_OF_CHILDREN_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_SEXUAL_OFFENSE_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_VIOLENT_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
+            },
+            SENTENCE_SPANS_VIEW_BUILDER.address: {
+                US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_SEXUAL_EXPLOITATION_OF_CHILDREN_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_SEXUAL_OFFENSE_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_VIOLENT_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER.address,
+                US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
+            },
+            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_SEXUAL_EXPLOITATION_OF_CHILDREN_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_SEXUAL_OFFENSE_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_VIOLENT_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION_VIEW_BUILDER.address,
+                US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER.address,
+                US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "REENTRY": {
+        REENTRY_CLIENT_VIEW_BUILDER.address: {
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
                 US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION_VIEW_BUILDER.address,

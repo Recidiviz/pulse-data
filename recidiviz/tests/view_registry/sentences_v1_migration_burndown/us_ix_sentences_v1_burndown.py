@@ -47,6 +47,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reentry.client import (
+    REENTRY_CLIENT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.case_disposition import (
     SENTENCING_CASE_DISPOSITION_VIEW_BUILDER,
 )
@@ -360,6 +363,20 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "REENTRY": {
+        REENTRY_CLIENT_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+            },
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
+                table_id=StateCharge.get_table_id(),
+            ): {
+                US_IX_SLS_Q1_VIEW_BUILDER.address,
+                US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
     },
