@@ -28,7 +28,6 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import good_time_reinstated
 from recidiviz.task_eligibility.criteria.general import (
-    housing_unit_type_is_solitary_confinement,
     no_highest_severity_incarceration_sanctions_within_1_year,
     no_revocation_incarceration_starts_in_last_90_days,
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year,
@@ -40,16 +39,13 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
     no_gt_restoration_denials_in_last_90_days,
     no_idc_mrs_in_past_6_months,
     no_ongoing_clinical_treatment_program_refusal,
-    not_in_custody_level_1a,
+    not_in_ltrh_for_90_days,
     over_4_months_from_trd,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     BigQueryDateInterval,
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
-)
-from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -60,18 +56,11 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-not_in_restrictive_housing_view_builder = (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-        sub_criteria=housing_unit_type_is_solitary_confinement.VIEW_BUILDER
-    )
-)
-
 US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS: List[
     TaskCriteriaBigQueryViewBuilder
 ] = [
     has_lost_restorable_good_time.VIEW_BUILDER,
-    not_in_custody_level_1a.VIEW_BUILDER,
-    not_in_restrictive_housing_view_builder,
+    not_in_ltrh_for_90_days.VIEW_BUILDER,
     # TODO(#54986): make sure we're also accounting for out to court and are classifying a
     # handful of pending supervision/release CLs
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year.VIEW_BUILDER,
