@@ -19,6 +19,8 @@ probation, is eligible to be transferred to Early Release from Supervision. ERS 
 fully release clients from supervision, but eliminates any required contact. This status
 only affects their parole status, not their probation status.
 """
+from datetime import date
+
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -32,7 +34,6 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_minimum_or_limited_for_3_years,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    after_ars_ers_policy_effective_date,
     case_type_eligible_for_ars_ers,
     no_warrant_with_sustained_violation_within_2_years,
     not_supervision_within_6_months_of_release_date,
@@ -61,9 +62,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
         not_supervision_within_6_months_of_release_date.VIEW_BUILDER,
         case_type_eligible_for_ars_ers.VIEW_BUILDER,
-        after_ars_ers_policy_effective_date.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_unsupervised_parole.VIEW_BUILDER,
+    policy_start_date=date(2025, 7, 1),
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             TimeDependentCriteriaCondition(

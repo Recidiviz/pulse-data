@@ -745,3 +745,556 @@ class TestBasicSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTes
                 },
             ],
         )
+
+    def test_policy_start_date_turns_eligibility_false_before_date(self) -> None:
+        """Test that spans starting before policy_start_date have is_eligible=False.
+
+        This test sets up criteria data with a boundary at the policy date to verify
+        that eligibility is correctly set based on the policy date check.
+        """
+        load_data_for_task_criteria_view(
+            emulator=self,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 3, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "before_start"},
+                    "reason_v2": {"test_reason": "before_start"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 4, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "within_range"},
+                    "reason_v2": {"test_reason": "within_range"},
+                },
+            ],
+        )
+        load_data_for_candidate_population_view(
+            emulator=self, population_date_spans=[(date(2024, 1, 1), date(2024, 4, 1))]
+        )
+
+        tes_query_builder_with_policy_start = (
+            BasicSingleTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[TEST_CRITERIA_BUILDER_1],
+                policy_start_date=date(2024, 3, 1),
+            )
+        )
+
+        self.run_query_test(
+            query_str=tes_query_builder_with_policy_start.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 3, 1),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "before_start"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "before_start"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 4, 1),
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "within_range"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "within_range"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+            ],
+        )
+
+    def test_policy_end_date_turns_eligibility_false_after_date(self) -> None:
+        """Test that spans starting after policy_end_date have is_eligible=False.
+
+        policy_end_date is inclusive, so spans starting ON that date are still eligible.
+        """
+        load_data_for_task_criteria_view(
+            emulator=self,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "before_end"},
+                    "reason_v2": {"test_reason": "before_end"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 1),
+                    "end_date": date(2024, 3, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "at_end"},
+                    "reason_v2": {"test_reason": "at_end"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 4, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "after_end"},
+                    "reason_v2": {"test_reason": "after_end"},
+                },
+            ],
+        )
+        load_data_for_candidate_population_view(
+            emulator=self, population_date_spans=[(date(2024, 1, 1), date(2024, 4, 1))]
+        )
+
+        tes_query_builder_with_policy_end = (
+            BasicSingleTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[TEST_CRITERIA_BUILDER_1],
+                policy_end_date=date(2024, 2, 1),
+            )
+        )
+
+        self.run_query_test(
+            query_str=tes_query_builder_with_policy_end.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 1),
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "before_end"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "before_end"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 1),
+                    "end_date": date(2024, 3, 1),
+                    "is_eligible": True,  # inclusive: Feb 1 <= Feb 1
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "at_end"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "at_end"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 4, 1),
+                    "is_eligible": False,  # Mar 1 > Feb 1
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "after_end"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "after_end"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+            ],
+        )
+
+    def test_policy_date_range_both_dates(self) -> None:
+        """Test that spans are only eligible within the policy date range.
+
+        Both policy_start_date and policy_end_date are inclusive.
+        """
+        load_data_for_task_criteria_view(
+            emulator=self,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "before_start"},
+                    "reason_v2": {"test_reason": "before_start"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 1),
+                    "end_date": date(2024, 3, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "at_start"},
+                    "reason_v2": {"test_reason": "at_start"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 4, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "at_end"},
+                    "reason_v2": {"test_reason": "at_end"},
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 4, 1),
+                    "end_date": date(2024, 6, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "after_end"},
+                    "reason_v2": {"test_reason": "after_end"},
+                },
+            ],
+        )
+        load_data_for_candidate_population_view(
+            emulator=self, population_date_spans=[(date(2024, 1, 1), date(2024, 6, 1))]
+        )
+
+        tes_query_builder_with_policy_range = (
+            BasicSingleTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[TEST_CRITERIA_BUILDER_1],
+                policy_start_date=date(2024, 2, 1),
+                policy_end_date=date(2024, 3, 1),
+            )
+        )
+
+        self.run_query_test(
+            query_str=tes_query_builder_with_policy_range.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 1),
+                    "is_eligible": False,  # Jan 1 < Feb 1
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "before_start"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "before_start"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 1),
+                    "end_date": date(2024, 3, 1),
+                    "is_eligible": True,  # Feb 1 >= Feb 1 AND Feb 1 <= Mar 1
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "at_start"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "at_start"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 4, 1),
+                    "is_eligible": True,  # inclusive: Mar 1 <= Mar 1
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "at_end"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "at_end"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 4, 1),
+                    "end_date": date(2024, 6, 1),
+                    "is_eligible": False,  # Apr 1 > Mar 1
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "after_end"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "after_end"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+            ],
+        )
+
+    def test_policy_date_splits_span_at_boundary(self) -> None:
+        """Test that spans are split at policy date boundaries.
+
+        This test verifies that when a criteria span crosses a policy date boundary,
+        it gets split into separate eligibility spans - one before the policy date
+        (ineligible) and one after (eligible for policy_start_date, or vice versa
+        for policy_end_date).
+        """
+        # Single criteria span that crosses the policy_start_date boundary
+        load_data_for_task_criteria_view(
+            emulator=self,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 6, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "eligible"},
+                    "reason_v2": {"test_reason": "eligible"},
+                },
+            ],
+        )
+        load_data_for_candidate_population_view(
+            emulator=self, population_date_spans=[(date(2024, 1, 1), date(2024, 6, 1))]
+        )
+
+        # Policy start date is 2024-03-01, which is in the middle of the criteria span
+        tes_query_builder_with_policy_start = (
+            BasicSingleTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[TEST_CRITERIA_BUILDER_1],
+                policy_start_date=date(2024, 3, 1),
+            )
+        )
+
+        # The span should be split at 2024-03-01:
+        # - Before: 2024-01-01 to 2024-03-01, is_eligible=False (before policy start)
+        # - After: 2024-03-01 to 2024-06-01, is_eligible=True (within policy range)
+        self.run_query_test(
+            query_str=tes_query_builder_with_policy_start.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 3, 1),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 1),
+                    "end_date": date(2024, 6, 1),
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+            ],
+        )
+
+    def test_policy_date_range_splits_span_at_both_boundaries(self) -> None:
+        """Test that spans are split at both policy start and end date boundaries.
+
+        This test verifies that when a criteria span crosses both policy date
+        boundaries, it gets split into three separate eligibility spans.
+        Both policy_start_date and policy_end_date are inclusive.
+        """
+        # Single criteria span that crosses both policy date boundaries
+        load_data_for_task_criteria_view(
+            emulator=self,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_1,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 6, 1),
+                    "meets_criteria": True,
+                    "reason": {"test_reason": "eligible"},
+                    "reason_v2": {"test_reason": "eligible"},
+                },
+            ],
+        )
+        load_data_for_candidate_population_view(
+            emulator=self, population_date_spans=[(date(2024, 1, 1), date(2024, 6, 1))]
+        )
+
+        # Policy range is 2024-02-01 to 2024-03-31 (inclusive), both in the middle of the span
+        tes_query_builder_with_policy_range = (
+            BasicSingleTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[TEST_CRITERIA_BUILDER_1],
+                policy_start_date=date(2024, 2, 1),
+                policy_end_date=date(2024, 3, 31),
+            )
+        )
+
+        # The span should be split at both policy dates:
+        # - Before: 2024-01-01 to 2024-02-01, is_eligible=False (before policy start)
+        # - Within: 2024-02-01 to 2024-03-31, is_eligible=True (within policy range, inclusive)
+        # - After: 2024-03-31 to 2024-06-01, is_eligible=True (starts on policy end date, inclusive)
+        self.run_query_test(
+            query_str=tes_query_builder_with_policy_range.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 1),
+                    "is_eligible": False,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 1),
+                    "end_date": date(2024, 3, 31),
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 3, 31),
+                    "end_date": date(2024, 6, 1),
+                    "is_eligible": True,
+                    "reasons": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "reasons_v2": [
+                        {
+                            "criteria_name": TEST_CRITERIA_BUILDER_1.criteria_name,
+                            "reason": {"test_reason": "eligible"},
+                        }
+                    ],
+                    "ineligible_criteria": [],
+                },
+            ],
+        )

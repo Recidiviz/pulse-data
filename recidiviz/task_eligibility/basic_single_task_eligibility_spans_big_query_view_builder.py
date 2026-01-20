@@ -17,6 +17,7 @@
 """View builder that auto-generates task spans with the `is_eligible` flag
 from component criteria and candidate population views.
 """
+import datetime
 from typing import List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -48,6 +49,8 @@ class BasicSingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuild
         task_name: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        policy_start_date: datetime.date | None = None,
+        policy_end_date: datetime.date | None = None,
     ) -> None:
 
         query_builder = BasicSingleTaskEligibilitySpansBigQueryQueryBuilder(
@@ -55,6 +58,8 @@ class BasicSingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuild
             task_name=task_name,
             candidate_population_view_builder=candidate_population_view_builder,
             criteria_spans_view_builders=criteria_spans_view_builders,
+            policy_start_date=policy_start_date,
+            policy_end_date=policy_end_date,
         )
         address = self._address_for_task_name(state_code, task_name)
         super().__init__(

@@ -18,6 +18,7 @@
 task completion/decarceral transition events, and candidate population views, along with optional
 almost-eligible conditions.
 """
+import datetime
 from textwrap import indent
 from typing import List, Optional, Sequence
 
@@ -36,6 +37,7 @@ from recidiviz.task_eligibility.almost_eligible_spans_big_query_view_builder imp
 )
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_query_builder import (
     BasicSingleTaskEligibilitySpansBigQueryQueryBuilder,
+    build_policy_date_check,
 )
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -93,6 +95,8 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
         almost_eligible_condition: Optional[CriteriaCondition] = None,
+        policy_start_date: datetime.date | None = None,
+        policy_end_date: datetime.date | None = None,
     ) -> None:
         self._validate_builder_state_codes(
             state_code,
@@ -105,6 +109,8 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             criteria_spans_view_builders=criteria_spans_view_builders,
             completion_event_builder=completion_event_builder,
             include_almost_eligible=bool(almost_eligible_condition),
+            policy_start_date=policy_start_date,
+            policy_end_date=policy_end_date,
         )
         view_address = self._view_address_for_task_name(state_code, task_name)
 
@@ -125,6 +131,8 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.almost_eligible_condition = almost_eligible_condition
         self.candidate_population_view_builder = candidate_population_view_builder
         self.criteria_spans_view_builders = criteria_spans_view_builders
+        self.policy_start_date = policy_start_date
+        self.policy_end_date = policy_end_date
 
     @staticmethod
     def _view_address_for_task_name(
@@ -162,6 +170,8 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
         include_almost_eligible: bool,
+        policy_start_date: datetime.date | None = None,
+        policy_end_date: datetime.date | None = None,
     ) -> str:
         """Builds the view query template that combines span collapsing logic to generate
         task eligibility spans from component criteria, population spans, and optionally,
@@ -177,7 +187,14 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             task_name=task_name,
             candidate_population_view_builder=candidate_population_view_builder,
             criteria_spans_view_builders=criteria_spans_view_builders,
+            policy_start_date=policy_start_date,
+            policy_end_date=policy_end_date,
         )
+
+        # Build policy date check for is_almost_eligible.
+        # We apply the same policy date check to is_almost_eligible as we do to is_eligible
+        # so that spans outside the policy date range have is_almost_eligible=FALSE.
+        policy_date_check = build_policy_date_check(policy_start_date, policy_end_date)
 
         completion_event_span_cte = StrictStringFormatter().format(
             TASK_COMPLETION_EVENT_CTE,
@@ -211,7 +228,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             SELECT
                 * EXCEPT(end_date_exclusive, is_almost_eligible),
                 end_date_exclusive AS end_date,
-                IFNULL(is_almost_eligible, FALSE) AS is_almost_eligible
+                (IFNULL(is_almost_eligible, FALSE){policy_date_check}) AS is_almost_eligible
             FROM almost_eligible_and_eligible_intersection
             """
         else:

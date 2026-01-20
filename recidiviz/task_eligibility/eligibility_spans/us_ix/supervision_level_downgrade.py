@@ -17,9 +17,11 @@
 """Shows the spans of time during which someone in ID may be eligible to have their supervision
 level downgraded.
 """
+from datetime import date
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    active_supervision_population_08_2020_present,
+    active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events.general import (
     supervision_level_downgrade,
@@ -44,7 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="SUPERVISION_LEVEL_DOWNGRADE",
     description=__doc__,
-    candidate_population_view_builder=active_supervision_population_08_2020_present.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
@@ -54,6 +56,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         served_at_least_one_year_for_dui_if_lsir_level_low.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
+    # Data became reliable around August 2020
+    policy_start_date=date(2020, 8, 1),
 )
 
 if __name__ == "__main__":

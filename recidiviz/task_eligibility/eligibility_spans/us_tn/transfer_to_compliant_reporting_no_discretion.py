@@ -16,6 +16,7 @@
 # =============================================================================
 """Shows the spans of time during which someone in TN may be eligible for compliant reporting.
 """
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,

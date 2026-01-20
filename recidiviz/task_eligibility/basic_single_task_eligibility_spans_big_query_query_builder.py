@@ -17,6 +17,7 @@
 """Query builder that generates the eligibility query (not a view) for task
 eligibility spans from component criteria and candidate population views.
 """
+import datetime
 from typing import List
 
 from recidiviz.calculator.query.bq_utils import (
@@ -75,6 +76,31 @@ CRITERIA_INFO_STRUCT_FRAGMENT = """STRUCT(
         )"""
 
 
+def build_policy_date_check(
+    policy_start_date: datetime.date | None,
+    policy_end_date: datetime.date | None,
+    *,
+    start_date_column: str = "start_date",
+) -> str:
+    """Builds a SQL condition checking if start_date is within [policy_start_date, policy_end_date].
+
+    Returns an empty string if no policy dates are set, otherwise returns a condition
+    prefixed with " AND ".
+    """
+    policy_date_conditions = []
+    if policy_start_date is not None:
+        policy_date_conditions.append(
+            f"{start_date_column} >= DATE '{policy_start_date.isoformat()}'"
+        )
+    if policy_end_date is not None:
+        policy_date_conditions.append(
+            f"{start_date_column} <= DATE '{policy_end_date.isoformat()}'"
+        )
+    if not policy_date_conditions:
+        return ""
+    return " AND " + " AND ".join(policy_date_conditions)
+
+
 class BasicSingleTaskEligibilitySpansBigQueryQueryBuilder:
     """Query builder that generates the eligibility query for task eligibility spans
     from component criteria and candidate population views.
@@ -87,6 +113,8 @@ class BasicSingleTaskEligibilitySpansBigQueryQueryBuilder:
         task_name: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        policy_start_date: datetime.date | None = None,
+        policy_end_date: datetime.date | None = None,
     ) -> None:
         self._validate_builder_state_codes(
             state_code,
@@ -97,11 +125,15 @@ class BasicSingleTaskEligibilitySpansBigQueryQueryBuilder:
             state_code=state_code,
             candidate_population_view_builder=candidate_population_view_builder,
             criteria_spans_view_builders=criteria_spans_view_builders,
+            policy_start_date=policy_start_date,
+            policy_end_date=policy_end_date,
         )
         self.state_code = state_code
         self.task_name = task_name
         self.candidate_population_view_builder = candidate_population_view_builder
         self.criteria_spans_view_builders = criteria_spans_view_builders
+        self.policy_start_date = policy_start_date
+        self.policy_end_date = policy_end_date
 
     @staticmethod
     def _build_query_template(
@@ -109,6 +141,8 @@ class BasicSingleTaskEligibilitySpansBigQueryQueryBuilder:
         state_code: StateCode,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        policy_start_date: datetime.date | None = None,
+        policy_end_date: datetime.date | None = None,
     ) -> str:
         """Builds the view query template that does span collapsing logic to generate
         task eligibility spans from component criteria and population spans views.
@@ -159,6 +193,48 @@ class BasicSingleTaskEligibilitySpansBigQueryQueryBuilder:
         )
         criteria_info_structs_str = ",\n\t\t".join(criteria_info_structs)
 
+        # Build policy date boundary CTE if policy dates are provided
+        # This creates synthetic boundary points so spans get split at policy dates
+        policy_dates_list = []
+        if policy_start_date is not None:
+            policy_dates_list.append(f"DATE '{policy_start_date.isoformat()}'")
+        if policy_end_date is not None:
+            policy_dates_list.append(f"DATE '{policy_end_date.isoformat()}'")
+
+        if policy_dates_list:
+            policy_dates_array = ", ".join(policy_dates_list)
+            policy_boundary_cte = f"""
+policy_date_boundaries AS (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        policy_date AS start_date,
+        policy_date AS end_date,
+        "POLICY_IS_ACTIVE" AS criteria_name
+    FROM candidate_population
+    CROSS JOIN UNNEST([{policy_dates_array}]) AS policy_date
+    -- Only create boundary points where the policy date falls strictly within
+    -- an existing population span (not at the edges) to avoid zero-day spans.
+    WHERE policy_date > start_date
+      AND policy_date < {nonnull_end_date_clause("end_date")}
+),"""
+            policy_boundary_union = """
+    UNION ALL
+    SELECT * FROM policy_date_boundaries"""
+        else:
+            policy_boundary_cte = ""
+            policy_boundary_union = ""
+
+        # Build the is_eligible expression with optional policy date check
+        policy_date_check = build_policy_date_check(
+            policy_start_date,
+            policy_end_date,
+            start_date_column="spans.start_date",
+        )
+        is_eligible_expr = "LOGICAL_AND(COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default))"
+        if policy_date_check:
+            is_eligible_expr = f"({is_eligible_expr}{policy_date_check})"
+
         return f"""
 WITH
 all_criteria AS (
@@ -169,12 +245,13 @@ all_criteria AS (
 ),
 {all_criteria_spans_cte_str},
 {population_span_cte},
+{policy_boundary_cte}
 combined_cte AS (
     SELECT * EXCEPT(meets_criteria, reason, reason_v2) FROM criteria_spans
     UNION ALL
     -- Add an indicator for the population spans so the population sub-sessions can be
     -- used as the base spans in the span collapsing logic below
-    SELECT *, "POPULATION" AS criteria_name FROM candidate_population
+    SELECT *, "POPULATION" AS criteria_name FROM candidate_population {policy_boundary_union}
 ),
 /*
 Split the candidate population spans into sub-spans separated on every criteria boundary
@@ -189,9 +266,10 @@ SELECT
     spans.person_id,
     spans.start_date,
     {revert_nonnull_end_date_clause("spans.end_date")} AS end_date,
-    -- Only set the eligibility to TRUE if all criteria are TRUE. Use the criteria 
+    -- Only set the eligibility to TRUE if all criteria are TRUE. Use the criteria
     -- default value for criteria spans that do not overlap this sub-span.
-    LOGICAL_AND(COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default)) AS is_eligible,
+    -- If policy dates are provided, eligibility is also FALSE outside that date range.
+    {is_eligible_expr} AS is_eligible,
     -- Assemble the reasons array from all the overlapping criteria reasons
     TO_JSON(ARRAY_AGG(
         TO_JSON(STRUCT(all_criteria.criteria_name AS criteria_name, reason AS reason))
@@ -211,9 +289,11 @@ SELECT
         ORDER BY all_criteria.criteria_name
     ) AS ineligible_criteria,
 FROM (
-    -- Form the eligibility spans around all of the population sub-spans
+    -- Form the eligibility spans around all of the population sub-spans.
     SELECT * FROM sub_sessions_with_attributes
     WHERE criteria_name = "POPULATION"
+    -- Filter out zero-day spans created with policy_date_boundaries
+      AND start_date < {nonnull_end_date_clause("end_date")}
 ) spans
 -- Add 1 row per criteria type to ensure all are included in the results
 INNER JOIN all_criteria
