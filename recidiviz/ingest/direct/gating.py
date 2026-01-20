@@ -972,6 +972,7 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "ADH_REPORT": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ADH_REPORTING_STATION": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ADH_SANCTION": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "ADH_SECURITY_CLASSIFICATION": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ADH_SENTENCE_FEE": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ADH_SHOFFENDER": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "ADH_SHPERSON": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
@@ -1022,7 +1023,6 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "RECIDIVIZ_REFERENCE_mclxwalk": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_offense_exclusion_list": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REFERENCE_supervision_location_ids": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
-        "Table_Data_TRANSCASE_FORMS_Prod": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
     },
     # TODO(#51227) Enable automatic raw data pruning for all files
     StateCode.US_MO: {

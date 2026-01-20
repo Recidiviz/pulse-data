@@ -631,6 +631,39 @@
     width: 24
     height: 6
 
+  - name: ADH_SECURITY_CLASSIFICATION
+    title: ADH_SECURITY_CLASSIFICATION
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_ADH_SECURITY_CLASSIFICATION.primary_key,
+      us_mi_ADH_SECURITY_CLASSIFICATION.OffenderNumber,
+      us_mi_ADH_SECURITY_CLASSIFICATION.FinalizedDate__raw,
+      us_mi_ADH_SECURITY_CLASSIFICATION.DecisionCategory,
+      us_mi_ADH_SECURITY_CLASSIFICATION.OffenderAssessmentId,
+      us_mi_ADH_SECURITY_CLASSIFICATION.OffenderBookingId,
+      us_mi_ADH_SECURITY_CLASSIFICATION.OffenderId,
+      us_mi_ADH_SECURITY_CLASSIFICATION.ConfinementLevel,
+      us_mi_ADH_SECURITY_CLASSIFICATION.ManagementLevel,
+      us_mi_ADH_SECURITY_CLASSIFICATION.TrueSecurityLevel,
+      us_mi_ADH_SECURITY_CLASSIFICATION.ActualPlacementLevel,
+      us_mi_ADH_SECURITY_CLASSIFICATION.WaiverReason,
+      us_mi_ADH_SECURITY_CLASSIFICATION.DepartureReason,
+      us_mi_ADH_SECURITY_CLASSIFICATION.file_id,
+      us_mi_ADH_SECURITY_CLASSIFICATION.is_deleted]
+    sorts: [us_mi_ADH_SECURITY_CLASSIFICATION.FinalizedDate__raw]
+    note_display: hover
+    note_text: "Table containing historical security classification screens data with overrides.  Note:  this is a custom table DTMB is pulling for us and not the full ADH_SECURITY_CLASSFICIATION table  in the original OMNI schema."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 78
+    col: 0
+    width: 24
+    height: 6
+
   - name: ADH_SHOFFENDER
     title: ADH_SHOFFENDER
     explore: us_mi_raw_data
@@ -657,7 +690,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 78
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -691,7 +724,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 84
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -719,7 +752,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 90
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -745,7 +778,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 96
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -776,7 +809,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 102
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -804,7 +837,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 108
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -829,7 +862,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 114
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -858,7 +891,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 120
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -883,7 +916,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -922,7 +955,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -954,7 +987,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -985,7 +1018,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1027,7 +1060,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 150
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1057,7 +1090,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1085,7 +1118,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1113,7 +1146,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1145,7 +1178,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 174
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1174,7 +1207,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 180
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1201,7 +1234,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 186
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1227,36 +1260,6 @@
     sorts: [us_mi_COMS_Violation_Incidents.Incident_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the supervision violation incidents (where supervision violation incidents ladder up into a supervision violation).  This table is active starting 8/14/2023 and should only hold supervision violation incident information that was relevant from 8/14/2023 onwards."
-    listen: 
-      View Type: us_mi_ADH_OFFENDER.view_type
-      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
-      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
-      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 192
-    col: 0
-    width: 24
-    height: 6
-
-  - name: Table_Data_TRANSCASE_FORMS_Prod
-    title: Table_Data_TRANSCASE_FORMS_Prod
-    explore: us_mi_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_mi_Table_Data_TRANSCASE_FORMS_Prod.primary_key,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.OffenderNumber,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.FinalizedDate__raw,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.DecisionCategory,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.ConfinementLevel,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.ManagementLevel,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.TrueSecurityLevel,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.ActualPlacementLevel,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.WaiverReason,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.DepartureReason,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.file_id,
-      us_mi_Table_Data_TRANSCASE_FORMS_Prod.is_deleted]
-    sorts: [us_mi_Table_Data_TRANSCASE_FORMS_Prod.FinalizedDate__raw]
-    note_display: hover
-    note_text: "Table containing historical security classification screens data with overrides"
     listen: 
       View Type: us_mi_ADH_OFFENDER.view_type
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
