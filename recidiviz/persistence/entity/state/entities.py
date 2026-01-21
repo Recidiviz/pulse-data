@@ -846,9 +846,6 @@ class StateAssessment(
             STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
             exempted_state_validator=attr_validators.is_opt_date,
             exempted_states={
-                # TODO(#40500): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as high as 5018-05-17.
-                StateCode.US_IX,
                 # TODO(#40501): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as high as 3013-04-30.
                 StateCode.US_PA,
@@ -1191,9 +1188,6 @@ class StateIncarcerationPeriod(
             STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
             exempted_state_validator=attr_validators.is_opt_date,
             exempted_states={
-                # TODO(#41447): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as high as 4202-02-02.
-                StateCode.US_IX,
                 # TODO(#41448): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                 #  - Found dates as high as 8024-03-18.
                 StateCode.US_MI,
@@ -1795,9 +1789,6 @@ class StateSupervisionViolation(
                 #  - Found dates as low as 0019-07-02.
                 #  - Found dates as high as 2109-03-18.
                 StateCode.US_AR,
-                # TODO(#40464): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as high as 3201-01-22.
-                StateCode.US_IX,
                 # TODO(#40462): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1004-02-02.
                 #  - Found dates as high as 9914-07-01.
@@ -2486,10 +2477,6 @@ class StateEmploymentPeriod(
                 # TODO(#42891): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
                 #  - Found dates as high as 2328-08-20.
                 StateCode.US_CA,
-                # TODO(#42892): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as low as 1108-11-08.
-                #  - Found dates as high as 9999-07-15.
-                StateCode.US_IX,
                 # TODO(#42894): Fix bad dates so all dates fall within the bounds (1900-01-02, 2300-01-01).
                 #  - Found dates as low as 1780-01-01.
                 #  - Found dates as high as 9999-12-28.
@@ -2513,10 +2500,6 @@ class StateEmploymentPeriod(
                 #  - Found dates as low as 1000-01-01.
                 #  - Found dates as high as 9999-12-20.
                 StateCode.US_AR,
-                # TODO(#42892): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as low as 1900-01-01.
-                #  - Found dates as high as 4201-01-01.
-                StateCode.US_IX,
                 # TODO(#42894): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                 #  - Found dates as low as 1753-01-01.
                 #  - Found dates as high as 9999-12-01.
@@ -3244,9 +3227,6 @@ class StateSentence(
                 STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
                 exempted_state_validator=attr_validators.is_opt_date,
                 exempted_states={
-                    # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                    #  - Found dates as high as 2099-09-25.
-                    StateCode.US_IX,
                     # TODO(#38802): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                     #  - Found dates as low as 1875-09-25.
                     StateCode.US_MO,
@@ -3417,9 +3397,6 @@ class StateChargeV2(
                 # TODO(#38800): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1015-10-12.
                 StateCode.US_AR,
-                # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as high as 3502-01-01.
-                StateCode.US_IX,
                 # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as high as 2109-06-19.
                 StateCode.US_NE,
@@ -3759,9 +3736,6 @@ class StateSentenceGroupLength(
         default=None,
         validator=reasonable_projected_sentence_date_validator(
             exempted_states={
-                # TODO(#38805): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
-                #  - Found dates as high as 9999-12-31.
-                StateCode.US_IX,
                 # TODO(#38804): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, 2300-01-01).
                 #  - Found dates as high as 2924-02-01.
                 StateCode.US_NE,
