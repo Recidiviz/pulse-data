@@ -3,43 +3,42 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  SID_Number: STRING
-  Assessment_Type: STRING
-  Assessment_Level: STRING
-  Assessment_Class: STRING
-  ASSESSMENT_DATE: DATE
+  TROA_SID_NO: STRING
+  TROA_ID: STRING
+  TRAS_CODE: STRING
+  TROA_SCORE: STRING
+  TRAM_RISK_LEVEL: STRING
+  # Assessment_Class: STRING
+  assessment_date: DATE
 unused_columns: []
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: SID_Number
+          external_id: TROA_SID_NO
           id_type: $literal("US_TX_SID")
     assessments:
       - StateAssessment:
-          external_id:
-            $concat:
-              $values:
-                - SID_Number
-                - Assessment_Type
-                - ASSESSMENT_DATE
-          assessment_date: ASSESSMENT_DATE
-          assessment_class:
-            $enum_mapping:
-              $raw_text: Assessment_Class
-              $mappings:
-                StateAssessmentClass.RISK:
-                  - "PAROLE"
-                StateAssessmentClass.INTERNAL_UNKNOWN:
-                  - "RID"
-                  - "CJAD"
-                  - "RPD"
-                  - "PRRID"
-                StateAssessmentClass.EXTERNAL_UNKNOWN:
-                  - "UNKNOWN"
+          external_id: TROA_ID
+          assessment_score: TROA_SCORE
+          assessment_date: assessment_date
+          #TODO(#55188): Hydrate assessment_class when we have the data
+          # assessment_class:
+          #   $enum_mapping:
+          #     $raw_text: Assessment_Class
+          #     $mappings:
+          #       StateAssessmentClass.RISK:
+          #         - "PAROLE"
+          #       StateAssessmentClass.INTERNAL_UNKNOWN:
+          #         - "RID"
+          #         - "CJAD"
+          #         - "RPD"
+          #         - "PRRID"
+          #       StateAssessmentClass.EXTERNAL_UNKNOWN:
+          #         - "UNKNOWN"
           assessment_type:
             $enum_mapping:
-              $raw_text: Assessment_Type
+              $raw_text: TRAS_CODE
               $mappings:
                 StateAssessmentType.TX_CSST:
                   - "CSST"
@@ -52,17 +51,25 @@ output:
           assessment_level:
             $conditional:
               - $if:
-                  $not_null: Assessment_Level
+                  $not_null: TRAM_RISK_LEVEL
                 $then:
                   $enum_mapping:
-                    $raw_text: Assessment_Level
+                    $raw_text: TRAM_RISK_LEVEL
                     $mappings:
                       StateAssessmentLevel.LOW:
                         - L
+                        - LOW
                       StateAssessmentLevel.LOW_MODERATE:
                         - LM
+                        - LOW-MODERATE
                       StateAssessmentLevel.MODERATE:
                         - M
+                        - MODERATE
                       StateAssessmentLevel.HIGH:
-                        - H
+                        - HIGH
                         - MH
+                        - MODERATE-HIGH
+                        - H
+                      StateAssessmentLevel.INTERNAL_UNKNOWN:
+                        - NO FURTHER EVALUATION NEEDED
+                        - FURTHER EVALUATION NEEDED
