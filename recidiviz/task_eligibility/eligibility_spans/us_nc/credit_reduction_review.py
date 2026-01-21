@@ -33,6 +33,8 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
     completion_of_facility_program_during_prs,
     continuous_enrollment_at_facility_for_90_days,
+    no_pending_violations_or_convictions_precluding_crr,
+    reporting_as_directed,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -68,6 +70,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             reasons_aggregate_function_use_ordering_clause={"employment_status"},
             allowed_duplicate_reasons_keys=["employment_status"],
         ),
+        # Stub criteria that always return True - can be toggled via admin panel
+        no_pending_violations_or_convictions_precluding_crr.VIEW_BUILDER,
+        reporting_as_directed.VIEW_BUILDER,
     ],
     # TODO(#54787): Hydrate completion event
     completion_event_builder=granted_supervision_sentence_reduction.VIEW_BUILDER,
