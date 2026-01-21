@@ -56,7 +56,6 @@ meets_home_visit_or_address_changes_triggers = (
         },
     )
 )
-# TODO(#51098): Change candidate population so it filters to relevant case types and supervision levels
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_home_visit",

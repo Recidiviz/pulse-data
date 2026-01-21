@@ -26,7 +26,7 @@ need an LSI-R assessment. Specifically:
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
-    active_supervision_population_for_tasks,
+    active_supervision_population_for_tasks_without_minimum_or_xcrc,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -35,7 +35,6 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_case_type_is_sex_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    case_type_is_not_xcrc_and_level_is_not_minimum,
     has_low_lsir_for_reassessment,
     is_missing_annual_lsir_assessment,
     meets_initial_lsir_assessment_trigger,
@@ -103,15 +102,12 @@ meets_lsir_reassessment_or_initial_assessment_triggers = (
         },
     )
 )
-# TODO(#51098): Rethink our candidate population
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_lsir_assessment",
-    candidate_population_view_builder=active_supervision_population_for_tasks.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population_for_tasks_without_minimum_or_xcrc.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_lsir_reassessment_or_initial_assessment_triggers,
-        # These folks don't ever need LSIR assessments
-        case_type_is_not_xcrc_and_level_is_not_minimum.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="assessment_due_date",
