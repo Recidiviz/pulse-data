@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  PREF_ID: STRING
+  PREF_SID_NO: STRING
+  referral_date: DATE
+  start_date: DATE
+  discharge_date: DATE
+  RSCL_DIR_NAME: STRING
+  STATUS: STRING
+  LKUP_VALUE: STRING
+  RSCL_CTGRY_NAME: STRING
+  RSCL_OFFC_REGION: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PREF_SID_NO
+          id_type: $literal("US_TX_SID")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id: PREF_ID
+          participation_status:
+            $enum_mapping:
+              $raw_text: STATUS
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - "COMPLETED" # Successful
+                StateProgramAssignmentParticipationStatus.PENDING:
+                  - "WAITLIST"
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - "ACTIVE"
+                  - "REFERRED"
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  - "INTERNAL_UNKNOWN"
+                  - "EXCUSE/OPEN"
+          program_id: RSCL_CTGRY_NAME
+          program_location_id: RSCL_OFFC_REGION
+          referral_date: referral_date
+          # If we don't see an explicit start date, use the referral date as a start date
+          start_date:
+            $conditional:
+              - $if:
+                  $not_null: start_date
+                $then: start_date
+              - $else: referral_date
+          discharge_date: discharge_date
+          referral_metadata:
+            $normalized_values_json_dict:
+              provider: RSCL_DIR_NAME
+              program_type: LKUP_VALUE
