@@ -207,6 +207,7 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     facility_id_name_map = object_metadata.get("facility_id_name_map", None)
     gender_id_name_map = object_metadata.get("gender_id_name_map", None)
     race_id_name_map = object_metadata.get("race_id_name_map", None)
+    dynamic_filter_options = object_metadata.get("dynamic_filter_options", None)
 
     # Updating/merging the metadata fields separately allows us to maintain any
     # previously set fields that are not included in the current import
@@ -247,6 +248,16 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
                 MetricMetadata(
                     metric=db_entity.__name__,
                     race_id_name_map=race_id_name_map,
+                )
+            )
+
+    if dynamic_filter_options:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            # Replace any existing entries with this state code + metric with the new one
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity.__name__,
+                    dynamic_filter_options=dynamic_filter_options,
                 )
             )
 

@@ -72,6 +72,7 @@ class MetricMetadata(PathwaysBase):
     facility_id_name_map = Column(JSONB, nullable=True)
     gender_id_name_map = Column(JSONB, nullable=True)
     race_id_name_map = Column(JSONB, nullable=True)
+    dynamic_filter_options = Column(JSONB, nullable=True)
 
     def to_json(self) -> Dict[str, Any]:
         json_dict = {}
@@ -85,6 +86,8 @@ class MetricMetadata(PathwaysBase):
             json_dict["genderIdNameMap"] = self.gender_id_name_map
         if self.race_id_name_map:
             json_dict["raceIdNameMap"] = self.race_id_name_map
+        if self.dynamic_filter_options:
+            json_dict["dynamicFilterOptions"] = self.dynamic_filter_options
         return json_dict
 
 
