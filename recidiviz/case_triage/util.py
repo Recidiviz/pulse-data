@@ -135,6 +135,18 @@ def get_pathways_metric_redis() -> Redis:
     return Redis(host=host, port=int(port), **get_redis_connection_options())
 
 
+def get_public_pathways_metric_redis() -> Redis:
+    host = get_secret("public_pathways_metric_redis_host")
+    port = get_secret("public_pathways_metric_redis_port")
+
+    if host is None or port is None:
+        raise ValueError(
+            f"Unable to create Public Pathways metric cache with host: {host} port: {port}"
+        )
+
+    return Redis(host=host, port=int(port), **get_redis_connection_options())
+
+
 def to_json_serializable(value: Any) -> str:
     if isinstance(value, date):
         return value.isoformat()

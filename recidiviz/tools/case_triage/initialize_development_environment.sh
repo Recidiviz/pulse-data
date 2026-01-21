@@ -16,6 +16,9 @@ write_to_file "$DASHBOARD_AUTH0_CONFIGURATION" recidiviz/local/gsm/dashboard_aut
 write_to_file 'pathways_metric_cache' recidiviz/local/gsm/pathways_metric_redis_host
 write_to_file '6379' recidiviz/local/gsm/pathways_metric_redis_port
 
+write_to_file 'public_pathways_metric_cache' recidiviz/local/gsm/public_pathways_metric_redis_host
+write_to_file '6379' recidiviz/local/gsm/public_pathways_metric_redis_port
+
 write_to_file 'rate_limit_cache' recidiviz/local/gsm/case_triage_rate_limiter_redis_host
 write_to_file '6379' recidiviz/local/gsm/case_triage_rate_limiter_redis_port
 

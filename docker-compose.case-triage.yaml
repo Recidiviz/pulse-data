@@ -39,3 +39,4 @@ services:
       - "redis:rate_limit_cache"
       - "redis:sessions_cache"
       - "redis:pathways_metric_cache"
+      - "redis:public_pathways_metric_cache"
