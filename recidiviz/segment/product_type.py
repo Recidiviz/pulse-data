@@ -122,11 +122,11 @@ class ProductType(Enum):
             # No additional path filtering needed - just the url_base check
             return url_base_check
         elif self == ProductType.CLIENT_PAGE:
-            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/clients|/workflows/residents')"
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/client|/workflows/residents')"
         elif self == ProductType.MILESTONES:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
         elif self == ProductType.PATHWAYS:
-            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system|/methodology/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
         elif self == ProductType.PSI_CASE_INSIGHTS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
@@ -150,9 +150,7 @@ class ProductType(Enum):
                 f"AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/(clients|residents|milestones|tasks)')"
             )
         elif self == ProductType.VITALS:
-            path_filter = (
-                f"REGEXP_CONTAINS({context_page_url_col_name}, r'/operations')"
-            )
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/operations|/methodology/operations')"
         elif self == ProductType.LANTERN:
             path_filter = (
                 f"REGEXP_CONTAINS({context_page_url_col_name}, r'/revocations')"

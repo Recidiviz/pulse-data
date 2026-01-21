@@ -210,6 +210,9 @@ from recidiviz.validation.views.state.revocation_matrix_distribution_by_gender_c
 from recidiviz.validation.views.state.revocation_matrix_distribution_by_race_comparison import (
     REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.segment_events_unknown_product_type import (
+    SEGMENT_EVENTS_UNKNOWN_PRODUCT_TYPE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentence_sessions.open_sessions_without_active_sentences import (
     OPEN_SESSIONS_WITHOUT_ACTIVE_SENTENCES_VIEW_BUILDER,
 )
@@ -1119,6 +1122,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=MISSING_CLIENT_RECORD_ROWS_UNKNOWN_REASON_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SEGMENT_EVENTS_UNKNOWN_PRODUCT_TYPE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
     ]

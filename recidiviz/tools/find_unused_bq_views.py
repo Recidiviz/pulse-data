@@ -509,9 +509,17 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Union view for case planning assistant segment events. Kept for potential future use. "
         "(Mayuka Sarukkai, 2025-12-29)"
     ),
+    BigQueryAddress.from_str("segment_events.all_lantern_segment_events"): (
+        "Union view for lantern segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-01-06)"
+    ),
     BigQueryAddress.from_str("segment_events.all_milestones_segment_events"): (
         "Union view for milestones segment events. Kept for potential future use. "
         "(Mayuka Sarukkai, 2025-12-29)"
+    ),
+    BigQueryAddress.from_str("segment_events.all_pathways_segment_events"): (
+        "Union view for pathways segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-01-06)"
     ),
     BigQueryAddress.from_str("segment_events.all_psi_case_insights_segment_events"): (
         "Union view for PSI case insights segment events. Kept for potential future use. "
@@ -538,6 +546,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "Union view for supervisor homepage last login module segment events. Kept for potential future use. "
         "(Mayuka Sarukkai, 2026-01-15)"
+    ),
+    BigQueryAddress.from_str("segment_events.all_vitals_segment_events"): (
+        "Union view for vitals segment events. Kept for potential future use. "
+        "(Mayuka Sarukkai, 2025-01-06)"
     ),
 }
 
