@@ -838,7 +838,8 @@ def us_ix_active_supervision_population_view_builder(
     description: str,
     case_types: List[str],
     supervision_levels: List[str],
-    gender: Optional[str] = None,
+    additional_where_clause: Optional[str] = None,
+    additional_cte: Optional[str] = None,
 ) -> StateSpecificTaskCandidatePopulationBigQueryViewBuilder:
     """
     Creates a VIEW_BUILDER for Idaho active supervision population with specified filters.
@@ -851,29 +852,43 @@ def us_ix_active_supervision_population_view_builder(
         description: The description/docstring for the population
         case_types: List of case types to include (e.g., ['GENERAL', 'SEX_OFFENSE'])
         supervision_levels: List of supervision levels to include (e.g., ['MINIMUM', 'MEDIUM', 'HIGH'])
-        gender: Optional gender filter (e.g., 'MALE', 'FEMALE'). If None, no gender filter is applied.
+        additional_where_clause: Optional additional WHERE clause to apply to compartment_sub_sessions.
+            Should start with 'AND'. Example: "AND css.sex = 'MALE'"
+        additional_cte: Optional additional CTE to intersect with the population. Should be a CTE
+            name that selects (state_code, person_id, start_date, end_date). When provided, the
+            population will only include spans where all criteria overlap. Example:
+            "able_to_work AS (SELECT state_code, person_id, start_date, end_date FROM ...)"
     """
     case_types_str = "('" + "', '".join(case_types) + "')"
     supervision_levels_str = "('" + "', '".join(supervision_levels) + "')"
 
-    # Build gender filter CTE and join if gender is specified
-    gender_cte = ""
-    gender_join = ""
-    if gender:
-        gender_cte = f"""
-gender_filter AS (
-    SELECT person_id
-    FROM `{{project_id}}.normalized_state.state_person`
-    WHERE state_code = 'US_IX'
-        AND gender = '{gender}'
-),
-"""
-        gender_join = """
-    INNER JOIN gender_filter gf
-        ON css.person_id = gf.person_id"""
+    # Build additional where clause if specified
+    where_clause_addition = additional_where_clause or ""
 
-    query_template = f"""
-WITH {gender_cte}active_supervision_population AS (
+    # Build additional CTE and union if specified
+    additional_cte_definition = ""
+    additional_union = ""
+    # Base count is 2 (active_supervision_population + supervision_case_and_level)
+    required_count = 2
+    if additional_cte:
+        # Extract the CTE name from the definition (assumes format "cte_name AS (...)")
+        cte_name = additional_cte.split(" AS ")[0].strip()
+        additional_cte_definition = f"""{additional_cte},"""
+        additional_union = f"""UNION ALL
+
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        SAFE_CAST(NULL AS STRING) AS compartment_level_1,
+        SAFE_CAST(NULL AS STRING) AS compartment_level_2,
+        SAFE_CAST(NULL AS STRING) AS case_type,
+        SAFE_CAST(NULL AS STRING) AS supervision_level
+    FROM {cte_name}"""
+        required_count = 3
+
+    query_template = f"""WITH active_supervision_population AS (
     -- Active supervision population on PROBATION, PAROLE, or DUAL supervision
     SELECT
         css.state_code,
@@ -885,12 +900,13 @@ WITH {gender_cte}active_supervision_population AS (
         SAFE_CAST(NULL AS STRING) AS case_type,
         SAFE_CAST(NULL AS STRING) AS supervision_level
     FROM
-        `{{project_id}}.sessions.compartment_sub_sessions_materialized` css{gender_join}
+        `{{project_id}}.sessions.compartment_sub_sessions_materialized` css
     WHERE css.compartment_level_1 IN ('SUPERVISION')
         AND css.metric_source != "INFERRED"
         AND css.compartment_level_2 IN ('PROBATION', 'PAROLE', 'DUAL', 'COMMUNITY_CONFINEMENT')
         AND css.correctional_level NOT IN ('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')
         AND css.start_date >= '1900-01-01'
+        {where_clause_addition}
 ),
 
 supervision_case_and_level AS (
@@ -909,6 +925,8 @@ supervision_case_and_level AS (
             AND ctsl.supervision_level IN {supervision_levels_str}
 ),
 
+{additional_cte_definition}
+
 combine AS (
     SELECT *
     FROM active_supervision_population
@@ -917,6 +935,8 @@ combine AS (
 
     SELECT *
     FROM supervision_case_and_level
+    
+    {additional_union}
 ),
 
 {create_sub_sessions_with_attributes(table_name="combine")}
@@ -929,8 +949,8 @@ SELECT
 FROM sub_sessions_with_attributes
 WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
--- We only want spans where both criteria are met, so we filter to those with count > 1
-HAVING COUNT(*) > 1
+-- We only want spans where all criteria are met
+HAVING COUNT(*) >= {required_count}
 """
 
     return StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
