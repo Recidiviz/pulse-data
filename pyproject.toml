@@ -229,7 +229,7 @@ dev = [
     "SyntheticControlMethods",
     "ydata-profiling",
     # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed
-    "urllib3==1.26.15",
+    "urllib3==2.6.3",
     "docker",
     "docker-stubs",
     "types-tabulate",
