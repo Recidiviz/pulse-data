@@ -33,7 +33,7 @@ from recidiviz.task_eligibility.criteria.general import (
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
-    at_least_2_weeks_since_last_good_time_restoration,
+    at_least_2_weeks_or_start_of_next_month_between_good_time_restorations,
     has_lost_restorable_good_time,
     less_than_3_udc_mrs_in_past_6_months,
     no_gt_restoration_denials_in_last_90_days,
@@ -68,7 +68,7 @@ US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS: List[
     no_idc_mrs_in_past_6_months.VIEW_BUILDER,
     less_than_3_udc_mrs_in_past_6_months.VIEW_BUILDER,
     over_4_months_from_trd.VIEW_BUILDER,
-    at_least_2_weeks_since_last_good_time_restoration.VIEW_BUILDER,
+    at_least_2_weeks_or_start_of_next_month_between_good_time_restorations.VIEW_BUILDER,
     no_ongoing_clinical_treatment_program_refusal.VIEW_BUILDER,
     no_gt_restoration_denials_in_last_90_days.VIEW_BUILDER,
     no_revocation_incarceration_starts_in_last_90_days.VIEW_BUILDER,
