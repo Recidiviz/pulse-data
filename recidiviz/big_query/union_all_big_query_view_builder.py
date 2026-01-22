@@ -227,14 +227,14 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             description=self.description,
-            bq_description=self.bq_description
-            if self.bq_description
-            else self.description,
+            bq_description=(
+                self.bq_description if self.bq_description else self.description
+            ),
             view_query_template=view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
             time_partitioning=None,
             sandbox_context=sandbox_context,
-            materialized_table_schema=None,
+            schema=None,
             **query_format_args,
         )

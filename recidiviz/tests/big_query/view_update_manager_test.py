@@ -125,7 +125,7 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                materialized_table_schema=None,
+                schema=None,
                 **view,
             )
             for view in sample_views
@@ -531,7 +531,7 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                materialized_table_schema=None,
+                schema=None,
                 **view,
             )
             for view in sample_views

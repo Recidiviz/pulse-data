@@ -1461,7 +1461,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
         self.mock_client.query.assert_not_called()
 
-    def test_materialize_view_to_table_with_materialized_table_schema(
+    def test_materialize_view_to_table_with_schema(
         self,
     ) -> None:
         """
@@ -1480,7 +1480,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
-            materialized_table_schema=fake_schema,
+            schema=fake_schema,
         ).build()
 
         # Pretend like the table doesn't exist so create_table_with_schema doesn't error

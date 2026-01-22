@@ -330,6 +330,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             if schema is None
         }
 
+        self._verify_declared_schemas_match_actual_schemas(
+            filtered_view_address_to_schema, skipped_view_addresses
+        )
         self._verify_views_all_have_state_code_column(
             filtered_view_address_to_schema, skipped_view_addresses
         )
@@ -398,6 +401,99 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 schema = future.result()
                 view_address_to_schema[address] = schema
         return view_address_to_schema
+
+    # TODO(#54941): move this to BigQuerySchemaField once it's defined
+    # TODO(#54941): match on description when descriptions are deployed to views
+    def _schema_fields_match(
+        self, field1: bigquery.SchemaField, field2: bigquery.SchemaField
+    ) -> bool:
+        """Returns True if two fields match, treating REQUIRED and NULLABLE as equivalent."""
+        return (
+            field1.field_type,
+            field1.name,
+            "NULLABLE" if field1.mode == "REQUIRED" else field1.mode,
+        ) == (
+            field2.field_type,
+            field2.name,
+            "NULLABLE" if field2.mode == "REQUIRED" else field2.mode,
+        )
+
+    def _schema_diff(
+        self,
+        source_schema: list[bigquery.SchemaField],
+        deployed_schema: list[bigquery.SchemaField],
+    ) -> list[tuple[str, bigquery.SchemaField]]:
+        """Determine the differences between two BigQuery schemas.
+
+        Returns:
+            A list of (indicator, field) tuples sorted alphabetically by field name.
+            The indicator is "+" for deployed fields missing from source, and "-"
+            for source fields missing from deployed.
+        """
+        source_by_name = {f.name: f for f in source_schema}
+        deployed_by_name = {f.name: f for f in deployed_schema}
+
+        field_names = sorted(set(source_by_name.keys()) | set(deployed_by_name.keys()))
+
+        diff: list[tuple[str, bigquery.SchemaField]] = []
+        for name in field_names:
+            source_field = source_by_name.get(name)
+            deployed_field = deployed_by_name.get(name)
+
+            if deployed_field and not source_field:
+                diff.append(("+", deployed_field))
+            elif source_field and not deployed_field:
+                diff.append(("-", source_field))
+            elif source_field and deployed_field:
+                if not self._schema_fields_match(source_field, deployed_field):
+                    diff.append(("-", source_field))
+                    diff.append(("+", deployed_field))
+
+        return diff
+
+    def _verify_declared_schemas_match_actual_schemas(
+        self,
+        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
+        skipped_addresses: set[BigQueryAddress],
+    ) -> None:
+        """Throws if we find a view whose declared schema does not match the
+        schema of the loaded view.
+        """
+        mismatched_schemas: dict[str, list[tuple[str, bigquery.SchemaField]]] = {}
+        source_views = [
+            vb.build()
+            for vb in self._view_builders_to_update
+            if vb.address not in skipped_addresses
+        ]
+
+        for v in source_views:
+            declared_schema = v.schema
+            # TODO(#54941): Once all views have declared schemas, remove this check
+            if declared_schema is None:
+                continue
+
+            actual_schema = view_address_to_schema.get(v.address) or []
+            schema_diff = self._schema_diff(declared_schema, actual_schema)
+            if len(schema_diff) > 0:
+                mismatched_schemas[v.address.to_str()] = schema_diff
+
+        if mismatched_schemas:
+            error_messages = []
+
+            for address, schema_diff in mismatched_schemas.items():
+                error_messages.append(
+                    f"{address}:\n"
+                    + "\n".join(
+                        f"  {indicator} {field.name} ({field.mode} {field.field_type})"
+                        for indicator, field in schema_diff
+                    )
+                )
+            full_error_message = "\n".join(error_messages)
+            raise ValueError(
+                f"Found {len(mismatched_schemas)} view(s) with declared schemas that don't"
+                f" match the deployed view schemas:\n"
+                f"{full_error_message}"
+            )
 
     def _verify_views_all_have_state_code_column(
         self,

@@ -2283,7 +2283,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=view.time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
-            output_schema=view.materialized_table_schema,
+            output_schema=view.schema,
         )
         materialize_job.result()
 

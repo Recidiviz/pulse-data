@@ -18,7 +18,6 @@
 import copy
 import unittest
 
-from google.cloud import bigquery
 from mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -129,22 +128,6 @@ class BigQueryViewTest(unittest.TestCase):
                 view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
                 select_col_2="date",
-            )
-
-    def test_materialized_table_schema_without_materialized_address_throws(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            "Cannot set materialized_table_schema if materialized_address is not set",
-        ):
-            _ = BigQueryView(
-                dataset_id="view_dataset",
-                view_id="my_view",
-                description="my_view description",
-                bq_description="my_view description",
-                view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
-                materialized_table_schema=[bigquery.SchemaField("field1", "STRING")],
             )
 
     def test_materialized_address_override_same_as_view_throws(self) -> None:
@@ -717,19 +700,3 @@ class BigQueryViewTest(unittest.TestCase):
             r"long to deploy to BigQuery.",
         ):
             _ = v.materialized_table_bq_description
-
-    def test_materialized_table_schema_without_should_materialize_should_throw(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            "Cannot set materialized_table_schema if should_materialize is False.",
-        ):
-            _ = SimpleBigQueryViewBuilder(
-                dataset_id="view_dataset",
-                view_id="my_view",
-                description="my_view description",
-                should_materialize=False,
-                view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
-                materialized_table_schema=[bigquery.SchemaField("field1", "STRING")],
-            )

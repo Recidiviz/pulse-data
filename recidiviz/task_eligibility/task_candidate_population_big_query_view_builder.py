@@ -58,7 +58,7 @@ def _get_candidate_population_query_from_criteria_group(
     criteria_group: Union[
         StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
         StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    ]
+    ],
 ) -> str:
     return f"""
         SELECT
@@ -129,7 +129,7 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            materialized_table_schema=None,
+            schema=None,
             **query_format_kwargs,
         )
         self.state_code = state_code
@@ -225,7 +225,7 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            materialized_table_schema=None,
+            schema=None,
             **query_format_kwargs,
         )
         self.population_name = population_name
