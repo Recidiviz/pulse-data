@@ -66,9 +66,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 continuous_enrollment_at_facility_for_90_days.VIEW_BUILDER,
                 completion_of_facility_program_during_prs.VIEW_BUILDER,
             ],
-            reasons_aggregate_function_override={"employment_status": "STRING_AGG"},
-            reasons_aggregate_function_use_ordering_clause={"employment_status"},
-            allowed_duplicate_reasons_keys=["employment_status"],
+            reasons_aggregate_function_override={
+                "employment_status": "ARRAY_CONCAT_AGG",
+                "employment_start_date": "ARRAY_CONCAT_AGG",
+            },
+            allowed_duplicate_reasons_keys=[
+                "employment_status",
+                "employment_start_date",
+            ],
         ),
         # Stub criteria that always return True - can be toggled via admin panel
         no_pending_violations_or_convictions_precluding_crr.VIEW_BUILDER,

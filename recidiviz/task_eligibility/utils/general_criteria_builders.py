@@ -56,6 +56,12 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     supervision_violations_cte,
 )
 
+# Valid BigQuery types that can be used in CAST expressions (excludes complex types)
+_EXCLUDED_TYPES = {"TYPE_KIND_UNSPECIFIED", "ARRAY", "STRUCT", "RANGE", "FOREIGN"}
+VALID_BIGQUERY_TYPES = frozenset(
+    t.name for t in bigquery.enums.StandardSqlTypeNames if t.name not in _EXCLUDED_TYPES
+)
+
 
 def at_least_X_time_since_drug_screen(
     criteria_name: str,
@@ -1421,23 +1427,6 @@ def no_absconsion_within_time_interval_criteria_builder(
     )
 
 
-def custom_tuple(input_list: list) -> str:
-    """
-    Converts a list to a string that looks like a tuple. If the list has only one element,
-    returns a single-element string tuple. If the list has more than one element, returns a
-    string tuple with all elements.
-
-    Args:
-        input_list (list): The input list.
-
-    Returns:
-        str: The tuple as a string.
-    """
-    if len(input_list) == 1:
-        return "('" + input_list[0] + "')"
-    return str(tuple(input_list))
-
-
 def employed_for_at_least_x_time_criteria_builder(
     criteria_name: str,
     description: str,
@@ -1466,14 +1455,16 @@ def employed_for_at_least_x_time_criteria_builder(
         #  resolved. This filter was added to avoid date overflow when adding time to
         #  dates close to the max date 9999-12-31.
         additional_where_clause=f"""
-            AND employment_status IN {custom_tuple(employment_status_values)} 
+            AND employment_status IN ({list_to_query_string(employment_status_values, quoted=True, single_quote=True)})
             # If end_date is more than 3000-01-01, drop period. Don't drop NULL end_dates
             AND (end_date IS NULL OR end_date < '3000-01-01')""",
         date_interval=date_interval,
         date_part=date_part,
-        start_date="start_date",
         end_date="DATE_ADD(end_date, INTERVAL 1 DAY)",
-        additional_column="employment_status",
+        columns_for_reasons=[
+            ("employment_status", "employment_status", "STRING"),
+            ("start_date", "employment_start_date", "DATE"),
+        ],
     )
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -1483,8 +1474,13 @@ def employed_for_at_least_x_time_criteria_builder(
         reasons_fields=[
             ReasonsField(
                 name="employment_status",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="employment_status",
+            ),
+            ReasonsField(
+                name="employment_start_date",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Employment start date",
             ),
         ],
     )
@@ -1513,12 +1509,15 @@ def housed_for_at_least_x_time_criteria_builder(
     """
     query_template = status_for_at_least_x_time_criteria_query(
         table_name="{project_id}.normalized_state.state_person_housing_status_period",
-        additional_where_clause=f"""AND housing_status_type IN {custom_tuple(housing_status_values)}""",
+        additional_where_clause=f"""AND housing_status_type IN ({list_to_query_string(housing_status_values, quoted=True, single_quote=True)})""",
         date_interval=date_interval,
         date_part=date_part,
         start_date="housing_status_start_date",
         end_date="DATE_ADD(housing_status_end_date, INTERVAL 1 DAY)",
-        additional_column="housing_status_type",
+        columns_for_reasons=[
+            ("housing_status_type", "housing_status_type", "STRING"),
+            ("housing_status_start_date", "housing_status_start_date", "DATE"),
+        ],
     )
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -1528,105 +1527,148 @@ def housed_for_at_least_x_time_criteria_builder(
         reasons_fields=[
             ReasonsField(
                 name="housing_status_type",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="Housing status type",
+            ),
+            ReasonsField(
+                name="housing_status_start_date",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Housing status start date",
             ),
         ],
     )
 
 
 def status_for_at_least_x_time_criteria_query(
-    start_date: str,
-    end_date: str,
     table_name: str,
     date_interval: int,
     date_part: str = "MONTH",
+    start_date: str = "start_date",
+    end_date: str = "end_date",
     additional_where_clause: str = "",
-    additional_column: str = "",
+    columns_for_reasons: list[tuple[str, str, str]] | None = None,
+    extra_column_for_reasons: tuple[str, str] | None = None,
 ) -> str:
     """
-    Returns a criteria query builder that has spans of time when someone has been in a
-    certain status for at least a given amount of time.
+    Returns a criteria query that identifies spans when someone has been in a certain
+    status (e.g. employed, housed) for at least a given amount of time.
+
+    The "status" is defined by the combination of table_name and additional_where_clause:
+    - table_name: A table containing spans (with start/end dates) representing periods
+      when someone was in various statuses.
+    - additional_where_clause: Filters to select only the qualifying statuses from the
+      table (e.g., "AND employment_status IN ('EMPLOYED', 'EMPLOYED_PART_TIME')").
 
     Args:
-        start_date (str): The name of the start date field in the table.
-        end_date (str): The name of the end date field in the table.
-        table_name (str): The name of the table that contains the status information.
-        date_interval (int, optional): Number of <date_part> when the status will be counted as
-            valid.
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
-        additional_where_clause (str, optional): Any additional WHERE-clause filters for
-            selecting statuses. Defaults to "".
-        additional_column (str, optional): The name of an a column you'd like to keep in
-            final output.
+        table_name: The table containing status information.
+        date_interval: Number of date_parts before the person can meet the criterion.
+        date_part: BigQuery date_part value ("DAY", "WEEK", "MONTH", etc.). Defaults to "MONTH".
+        start_date: Name of the start date column. Defaults to 'start_date'.
+        end_date: Name of the end date column. Defaults to 'end_date'.
+        additional_where_clause: Additional WHERE-clause filters.
+        columns_for_reasons: A list of tuples in the form (source_column,
+            alias, data_type). Each tuple specifies a column from the source data to be
+            included in the reasons columns. These columns are added as arrays, where
+            `source_column` is the name of the column in the input data, `alias` is the
+            name under which the column will appear in the reasons blob, and `data_type`
+            is the column's data type. Example: [("status", "status_new", "STRING")]
+        extra_column_for_reasons: A tuple (source_column, alias) for an additional column
+            to include in the reason STRUCT. The source must be a column that exists in
+            the final CTE. Example: ("critical_date_has_passed", "meets_housing_criteria")
     """
-    left_join_statement = (
-        f"""LEFT JOIN sessions ses ON adj.state_code = ses.state_code
-                AND adj.person_id = ses.person_id
-                AND adj.start_date < {nonnull_end_date_clause('ses.end_date')}
-                AND ses.start_date < {nonnull_end_date_clause('adj.end_date')}"""
-        if additional_column != ""
-        else ""
+    columns_for_reasons = columns_for_reasons or []
+
+    # Validate that all column types are valid BigQuery types
+    for src, _, col_type in columns_for_reasons:
+        if col_type not in VALID_BIGQUERY_TYPES:
+            raise ValueError(
+                f"Invalid BigQuery type '{col_type}' for column '{src}'. "
+                f"Valid types are: {sorted(VALID_BIGQUERY_TYPES)}"
+            )
+    # Pull the aliases only
+    aliases_for_reasons = [alias for _, alias, _ in columns_for_reasons]
+
+    def _to_sql_columns(items: list[str], suffix: str = "") -> str:
+        """Joins items with commas and appends suffix. Returns empty string if items is empty."""
+        return (", ".join(items) + suffix) if items else ""
+
+    def _cast_columns(src: str, alias: str, col_type: str) -> str:
+        """Builds a SQL SAFE_CAST() expression. STRING columns get a row number
+        to clearly identify ordering of statuses"""
+        if col_type == "STRING":
+            return f"CONCAT(SAFE_CAST(ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY {start_date}) AS STRING), ' - ', SAFE_CAST({src} AS STRING)) AS {alias}"
+        return f"SAFE_CAST({src} AS {col_type}) AS {alias}"
+
+    # CAST all the columns in additional_columns_for_reasons with its relevant type
+    columns_to_cast_for_reasons = _to_sql_columns(
+        [
+            _cast_columns(src, alias, col_type)
+            for src, alias, col_type in columns_for_reasons
+        ]
     )
+    # Build reasons v1 struct fields (for TO_JSON(STRUCT(...)))
+    reasons_v1_fields = [f"{a} AS {a}" for a in aliases_for_reasons]
+    # Build reasons v2 fields (standalone columns in final SELECT)
+    reasons_v2_fields = list(aliases_for_reasons)
+
+    if extra_column_for_reasons:
+        extra_src, extra_alias = extra_column_for_reasons
+        reasons_v1_fields.append(f"{extra_src} AS {extra_alias}")
+        reasons_v2_fields.append(f"{extra_src} AS {extra_alias}")
 
     return f"""WITH spans AS (
-        -- Spans that are relevant for the criteria
-        SELECT *
-        FROM (
-            SELECT 
-                state_code,
-                person_id,
-                {start_date} AS start_date,
-                {end_date} AS end_date,
-                state_code AS column_placeholder,
-                {additional_column}
-            FROM `{table_name}`
-            WHERE {start_date} < '9999-01-01'
-                {additional_where_clause}
-        )
-        WHERE start_date < {nonnull_end_date_exclusive_clause('end_date')}
+        SELECT
+            state_code, person_id,
+            {start_date} AS start_date,
+            {end_date} AS end_date,
+            -- Placeholder column required by create_sub_sessions_with_attributes
+            -- when additional_columns_select is empty
+            state_code AS column_placeholder,
+            {columns_to_cast_for_reasons}
+        FROM `{table_name}`
+        -- Filter out sentinel/placeholder dates to avoid date overflow when
+        -- adding intervals to dates close to the max date 9999-12-31
+        WHERE {start_date} < '9999-01-01'
+            AND {start_date} < {nonnull_end_date_exclusive_clause(end_date)}
+            {additional_where_clause}
     ),
-
     {create_sub_sessions_with_attributes('spans')},
-
-    sessions AS (
-        -- Aggregate the spans to get non-overlapping sessions
+    sub_sessions_with_attributes_deduped AS (
         SELECT 
-            state_code,
-            person_id,
-            start_date,
+            state_code, 
+            person_id, 
+            start_date, 
             end_date,
-            {f"STRING_AGG(DISTINCT {additional_column}, ', ' ORDER BY {additional_column}) AS {additional_column}," if additional_column != '' else ''}
+            {_to_sql_columns([f"ARRAY_AGG({a} ORDER BY {a}) AS {a}" for a in aliases_for_reasons], ",")}
         FROM sub_sessions_with_attributes
-        GROUP BY 1,2,3,4
+        GROUP BY 1, 2, 3, 4
     ),
     critical_date_spans AS (
-        -- Aggregate adjacent spans and calculate the critical date
-        SELECT 
-            adj.state_code,
-            adj.person_id,
-            adj.start_date AS start_datetime,
-            adj.end_date AS end_datetime,
+        SELECT
+            ses.state_code,
+            ses.person_id,
+            ses.start_date AS start_datetime,
+            ses.end_date AS end_datetime,
+            -- We use adj.start_date to capture the first time the person entered this status,
+            --      rather than subsequent occurrences.
             DATE_ADD(adj.start_date, INTERVAL {date_interval} {date_part}) AS critical_date,
-            {f"STRING_AGG(DISTINCT ses.{additional_column}, ', ' ORDER BY ses.{additional_column}) AS {additional_column}," if additional_column != '' else ''}
-        FROM ({aggregate_adjacent_spans(
-            table_name='sessions',
-            end_date_field_name="end_date",
-            )}) AS adj
-        {left_join_statement}
-
-        GROUP BY 1,2,3,4
+            {_to_sql_columns([f"ses.{a}" for a in aliases_for_reasons], ",")}
+        FROM sub_sessions_with_attributes_deduped ses
+        LEFT JOIN ({aggregate_adjacent_spans('sub_sessions_with_attributes_deduped', end_date_field_name="end_date")}) AS adj
+            ON adj.state_code = ses.state_code
+                AND adj.person_id = ses.person_id
+                AND adj.start_date < {nonnull_end_date_clause('ses.end_date')}
+                AND ses.start_date < {nonnull_end_date_clause('adj.end_date')}
     ),
-    {critical_date_has_passed_spans_cte(attributes = [additional_column])}
+    {critical_date_has_passed_spans_cte(attributes=aliases_for_reasons)}
     SELECT
-        state_code,
-        person_id,
-        start_date,
+        state_code, 
+        person_id, 
+        start_date, 
         end_date,
         critical_date_has_passed AS meets_criteria,
-        TO_JSON(STRUCT({additional_column} AS {additional_column})) AS reason,
-        {additional_column},
+        TO_JSON(STRUCT({_to_sql_columns(reasons_v1_fields)})) AS reason,
+        {_to_sql_columns(reasons_v2_fields, ",")}
     FROM critical_date_has_passed_spans"""
 
 
@@ -1982,7 +2024,7 @@ def supervision_case_type_is_criteria_builder(
         )) AS reason,
         ctsl.case_type
     FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized` ctsl
-        WHERE {f"ctsl.case_type IN {custom_tuple(case_types)}" if case_types else "FALSE"}
+        WHERE {f"ctsl.case_type IN ({list_to_query_string(case_types, quoted=True, single_quote=True)})" if case_types else "FALSE"}
 """
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
