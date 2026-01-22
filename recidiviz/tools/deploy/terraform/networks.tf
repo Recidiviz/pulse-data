@@ -23,6 +23,8 @@ data "google_secret_manager_secret_version" "vpc_access_connector_cf_cidr" { sec
 
 data "google_secret_manager_secret_version" "us_tx_sftp_host_ip" { secret = "us_tx_sftp_host_ip" }
 
+data "google_secret_manager_secret_version" "us_pa_sftp_host_ip" { secret = "us_pa_sftp_host_ip" }
+
 resource "google_project_service" "vpc_access_connector" {
   service = "vpcaccess.googleapis.com"
 
@@ -87,6 +89,14 @@ resource "google_compute_address" "us_tx_sftp_outbound_requests" {
   region       = var.us_central_region
 }
 
+# TODO(#57660) rollback once we confirm w/ pennsylvania this was an ip-based issue
+resource "google_compute_address" "us_pa_sftp_outbound_requests" {
+  name         = "us-pa-sftp-temp-outbound-requests"
+  address_type = "EXTERNAL"
+  description  = "Static IP for making requests directly to Pennsylvania. *Should* hopefully a temporary address, see #57660"
+  region       = var.us_central_region
+}
+
 # The names of the following NATs and Routers all say "dataflow", but they're actually for all
 # resources in the "default" network.
 module "nat_us_central1" {
@@ -98,6 +108,7 @@ module "nat_us_central1" {
   nat_ips     = [google_compute_address.external_system_outbound_requests.self_link]
 
   # TODO(#37766) rollback once we confirm w/ texas this was an ip-based issue
+  # TODO(#57660) rollback once we confirm w/ pennsylvania this was an ip-based issue
 
   # Determines whether existing port mappings can be used for the multiple connections
   # from teh same internal to external IP.
@@ -105,14 +116,21 @@ module "nat_us_central1" {
   enable_endpoint_independent_mapping = false
   rules = [
     {
-      # rule_number determines the order in which the rules are checked. The lower the 
-      # number, the higher the priority. As this is the only rule, the rule number
-      # can really be anything
-      rule_number = 64999
+      # rule_number determines the order in which the rules are checked. The lower the
+      # number, the higher the priority.
+      rule_number = 64998
       description = "Route requests to the US_TX SFTP server through a separate IP"
       match       = "destination.ip == '${data.google_secret_manager_secret_version.us_tx_sftp_host_ip.secret_data}'"
       action = {
         source_nat_active_ips = [google_compute_address.us_tx_sftp_outbound_requests.self_link]
+      }
+    },
+    {
+      rule_number = 64999
+      description = "Route requests to the US_PA SFTP server through a separate IP"
+      match       = "destination.ip == '${data.google_secret_manager_secret_version.us_pa_sftp_host_ip.secret_data}'"
+      action = {
+        source_nat_active_ips = [google_compute_address.us_pa_sftp_outbound_requests.self_link]
       }
     }
   ]
