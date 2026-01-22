@@ -484,6 +484,12 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=PUBLIC_PATHWAYS_VIEW_BUILDERS,
         output_directory_uri_template=PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PUBLIC_PATHWAYS",
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: [
+                ExportValidationType.EXISTS,
+                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+            ]
+        },
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
 ]
