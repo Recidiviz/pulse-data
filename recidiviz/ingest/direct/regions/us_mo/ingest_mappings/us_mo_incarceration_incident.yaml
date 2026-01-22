@@ -114,6 +114,11 @@ output:
                       StateIncarcerationIncidentOutcomeType.SOLITARY:
                         - "D1" # DISCIPLINARY SEGREGATION ASSIGNMENTS
                         - "C1" # Refer to the Administrative Segregation Committee
+                        - "C6" # Refer to ERH Committee (Make a request for the committee to review for assignment to Extended Restrictive Housing in the RHU for the security and good order of the institution.)
+                        - "D12" # Progressive Discipline 1 (Restrictive Housing: Placement in a RHU cell: 10 days)
+                        - "D13" # Progressive Discipline 2 (Restrictive Housing: Placement in a RHU cell: 14 days)
+                        - "D14" # Progressive Discipline 3 (Restrictive Housing: Placement in a RHU cell: 21 days)
+                        - "D15" # Progressive Discipline 4 (Restrictive Housing: Placement in a RHU cell: 28 days)
                       StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
                         - "D10" # EXTRA DUTY: Work assignment under the supervision of a staff member in addition to regular duties.
                       StateIncarcerationIncidentOutcomeType.WARNING:
