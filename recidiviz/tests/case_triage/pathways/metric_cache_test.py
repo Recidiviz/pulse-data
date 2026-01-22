@@ -29,14 +29,15 @@ from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
 )
 from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
-from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.pathways.metrics.query_builders.count_by_dimension_metric_query_builder import (
     CountByDimensionMetricParams,
 )
+from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 
 
 class PathwaysMetricCacheTest(TestCase):
@@ -48,7 +49,9 @@ class PathwaysMetricCacheTest(TestCase):
 
         self.metric_cache = PathwaysMetricCache(
             state_code=StateCode.US_XX,
-            metric_fetcher=PathwaysMetricFetcher(state_code=StateCode.US_XX),
+            metric_fetcher=PathwaysMetricFetcher(
+                state_code=StateCode.US_XX, schema_type=SchemaType.PATHWAYS
+            ),
             redis=self.redis,
         )
 

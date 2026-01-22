@@ -27,12 +27,15 @@ from sqlalchemy.orm.exc import NoResultFound
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states_for_cloud_sql,
 )
+from recidiviz.calculator.query.state.views.dashboard.public_pathways.public_pathways_enabled_states import (
+    get_public_pathways_enabled_states_for_cloud_sql,
+)
 from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )
-from recidiviz.case_triage.pathways.pathways_database_manager import (
+from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
 from recidiviz.case_triage.util import to_json_serializable
@@ -41,16 +44,28 @@ from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
+def _get_enabled_states_for_schema(schema_type: SchemaType) -> list[str]:
+    """Returns the enabled states for the given schema type."""
+    if schema_type == SchemaType.PATHWAYS:
+        return get_pathways_enabled_states_for_cloud_sql()
+    if schema_type == SchemaType.PUBLIC_PATHWAYS:
+        return get_public_pathways_enabled_states_for_cloud_sql()
+    raise ValueError(f"Unsupported schema type: {schema_type}")
+
+
 @attr.s(auto_attribs=True)
 class PathwaysMetricFetcher:
     """Interface for fetching metrics from Cloud SQL"""
 
     state_code: StateCode
-    database_manager: PathwaysDatabaseManager = attr.ib(
-        factory=lambda: PathwaysDatabaseManager(
-            get_pathways_enabled_states_for_cloud_sql(), SchemaType.PATHWAYS
+    schema_type: SchemaType = SchemaType.PATHWAYS
+    database_manager: PathwaysDatabaseManager = attr.ib()
+
+    @database_manager.default
+    def _default_database_manager(self) -> PathwaysDatabaseManager:
+        return PathwaysDatabaseManager(
+            _get_enabled_states_for_schema(self.schema_type), self.schema_type
         )
-    )
 
     @cached_property
     def database_session(self) -> sessionmaker:

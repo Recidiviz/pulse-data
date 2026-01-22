@@ -22,7 +22,6 @@ from unittest import TestCase
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
-from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
@@ -30,7 +29,9 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     FetchMetricParams,
     MetricQueryBuilder,
 )
+from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
 )
@@ -48,7 +49,9 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
         ...
 
     def test_metrics_base(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        metric_fetcher = PathwaysMetricFetcher(
+            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+        )
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(list(results.keys()), ["data", "metadata"])
@@ -175,7 +178,9 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
         return {"lastUpdated": "2022-08-05"}
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(
+            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+        ).fetch(
             self.query_builder,
             FetchMetricParams(
                 filters={
@@ -224,7 +229,9 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
 
     def test_filter_timePeriod(self) -> None:
         """Tests that person id 6 is not included in the response"""
-        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(
+            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+        ).fetch(
             self.query_builder,
             FetchMetricParams(
                 filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},

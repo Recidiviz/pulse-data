@@ -35,14 +35,15 @@ from recidiviz.case_triage.pathways.enabled_metrics import (
 )
 from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
-from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
+from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import in_offline_mode
 
 PATHWAYS_ALLOWED_ORIGINS = [
@@ -158,9 +159,9 @@ def create_pathways_api_blueprint() -> Blueprint:
             # small enough in offline mode that we don't need to worry too much about slow queries,
             # so just use the fetcher directly instead of the cache.
             return jsonify(
-                PathwaysMetricFetcher(state_code).fetch(
-                    metric_mapper, fetch_metric_params
-                )
+                PathwaysMetricFetcher(
+                    state_code, schema_type=SchemaType.PATHWAYS
+                ).fetch(metric_mapper, fetch_metric_params)
             )
         return jsonify(
             PathwaysMetricCache.build(state_code).fetch(

@@ -53,7 +53,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
 )
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
-from recidiviz.case_triage.pathways.pathways_database_manager import (
+from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem

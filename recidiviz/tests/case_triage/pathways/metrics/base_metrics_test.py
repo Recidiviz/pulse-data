@@ -28,16 +28,16 @@ from recidiviz.case_triage.pathways.enabled_metrics import (
     ENABLED_METRICS_BY_STATE_BY_NAME,
     get_metrics_for_entity,
 )
-from recidiviz.case_triage.pathways.metric_fetcher import (
-    MetricNotEnabledError,
-    PathwaysMetricFetcher,
-)
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
+)
+from recidiviz.case_triage.shared_pathways.metric_fetcher import (
+    MetricNotEnabledError,
+    PathwaysMetricFetcher,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
@@ -165,7 +165,9 @@ class TestPathwaysMetricFetcher(TestCase):
         )
 
     def test_enabled_metric_without_table(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(state_code=StateCode.US_TN)
+        metric_fetcher = PathwaysMetricFetcher(
+            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+        )
 
         with self.assertRaises(MetricNotEnabledError):
             metric_fetcher.fetch(

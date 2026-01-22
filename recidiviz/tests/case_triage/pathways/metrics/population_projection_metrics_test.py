@@ -19,7 +19,6 @@ import abc
 from typing import Any, Dict, List, Union
 from unittest import TestCase
 
-from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
@@ -27,7 +26,9 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     FetchMetricParams,
     MetricQueryBuilder,
 )
+from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
 )
@@ -45,7 +46,9 @@ class PathwaysPopulationProjectionMetricTestBase(PathwaysMetricTestBase):
         ...
 
     def test_metrics_base(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        metric_fetcher = PathwaysMetricFetcher(
+            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+        )
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(

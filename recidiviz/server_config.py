@@ -32,7 +32,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
     get_workflows_enabled_states,
 )
-from recidiviz.case_triage.pathways.pathways_database_manager import (
+from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX

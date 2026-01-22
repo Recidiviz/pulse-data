@@ -25,14 +25,15 @@ from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
     DimensionOperation,
 )
 from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
-from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )
+from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.util import get_pathways_metric_redis
 from recidiviz.cloud_memorystore import utils as cloud_memorystore_utils
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 
 
 @attr.s(auto_attribs=True)
@@ -99,6 +100,8 @@ class PathwaysMetricCache:
     def build(cls, state_code: StateCode) -> "PathwaysMetricCache":
         return PathwaysMetricCache(
             state_code=state_code,
-            metric_fetcher=PathwaysMetricFetcher(state_code=state_code),
+            metric_fetcher=PathwaysMetricFetcher(
+                state_code=state_code, schema_type=SchemaType.PATHWAYS
+            ),
             redis=get_pathways_metric_redis(),
         )

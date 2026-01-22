@@ -36,7 +36,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
-from recidiviz.case_triage.pathways.pathways_database_manager import (
+from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
