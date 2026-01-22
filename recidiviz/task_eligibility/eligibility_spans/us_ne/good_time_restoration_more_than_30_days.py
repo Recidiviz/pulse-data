@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import good_time_reinstated
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
-    has_received_good_time_restoration_5_consecutive_months,
+    eligible_for_more_than_30_days_of_good_time_restoration,
 )
 from recidiviz.task_eligibility.eligibility_spans.us_ne.good_time_restoration_30_days import (
     US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS,
@@ -41,7 +41,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS
-    + [has_received_good_time_restoration_5_consecutive_months.VIEW_BUILDER],
+    + [eligible_for_more_than_30_days_of_good_time_restoration.VIEW_BUILDER],
     completion_event_builder=good_time_reinstated.VIEW_BUILDER,
 )
 
