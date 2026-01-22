@@ -110,9 +110,6 @@ resource "google_secret_manager_secret_version" "admin_panel_redis_host" {
 
 resource "google_secret_manager_secret" "public_pathways_metric_redis_host" {
   secret_id = "public_pathways_metric_redis_host"
-  labels = {
-    label = "Public Pathways Metric Redis Host"
-  }
 
   replication {
     user_managed {
@@ -185,9 +182,6 @@ resource "google_secret_manager_secret_version" "admin_panel_redis_port" {
 
 resource "google_secret_manager_secret" "public_pathways_metric_redis_port" {
   secret_id = "public_pathways_metric_redis_port"
-  labels = {
-    label = "Public Pathways Metric Redis Port"
-  }
 
   replication {
     user_managed {
