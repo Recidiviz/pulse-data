@@ -35,6 +35,8 @@ WHERE state_code = 'US_AZ'
   -- This extracts the string within the first and second '@@', which will tell us
   -- if the person was transferred from a higher level of supervision
   AND REGEXP_EXTRACT(supervision_level_raw_text, r'@@([^@]+)@@') = 'NONE'
+  -- Only count transfers where the previous level was not limited
+  AND IFNULL(previous_supervision_level, "UNKNOWN") != "LIMITED"
 """
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
