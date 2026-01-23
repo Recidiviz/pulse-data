@@ -54,6 +54,7 @@ def generate_sccp_form_opportunity_record_view_builder(
     tes_view_builder: SingleTaskEligibilitySpansBigQueryViewBuilder,
     latest_scc_review_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
     latest_scc_review_date_reasons_field: str,
+    spans_subset_type: TaskEligibilitySpansSubsetType = TaskEligibilitySpansSubsetType.ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY,
 ) -> SimpleBigQueryViewBuilder:
     """
     Creates a big query view builder that generates the opportunity record query needed for all
@@ -71,13 +72,15 @@ def generate_sccp_form_opportunity_record_view_builder(
         latest_scc_review_date_reasons_field (str): The name of the field in the reasons
             blob for latest_scc_review_date_criteria_builder that we should use to pull
             the latest_scc_review_date value.
+        spans_subset_type (TaskEligibilitySpansSubsetType): The subset type for task
+            eligibility spans. Defaults to ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY.
 
     Returns:
         SimpleBigQueryViewBuilder
     """
     filtered_tes_query = select_relevant_task_eligibility_spans_for_record(
         tes_view_builder=tes_view_builder,
-        spans_subset_type=TaskEligibilitySpansSubsetType.ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY,
+        spans_subset_type=spans_subset_type,
         include_eligible_date=False,
         include_reasons_v2=False,
     )

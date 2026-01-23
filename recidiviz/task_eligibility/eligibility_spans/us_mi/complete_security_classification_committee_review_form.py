@@ -18,8 +18,8 @@
                     a security classification committee review"""
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.candidate_populations.general import (
-    general_incarceration_population,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_mi import (
+    scc_solitary_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     security_classification_committee_review,
@@ -64,7 +64,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM",
     description=__doc__,
-    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=scc_solitary_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
