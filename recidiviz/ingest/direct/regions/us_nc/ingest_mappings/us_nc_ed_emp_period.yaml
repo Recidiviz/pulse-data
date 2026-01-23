@@ -27,7 +27,14 @@ output:
           start_date: start_date
           end_date: end_date
           last_verified_date: start_date
-          employer_name: employment
+          employer_name:
+            $conditional:
+              - $if:
+                  $not_null: employment
+                $then: employment
+              - $else_if:
+                  $not_null: ed_pgm
+                $then: ed_pgm
           employment_status:
             $conditional:
               - $if:
@@ -35,10 +42,7 @@ output:
                 $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT)
               - $else_if:
                   $not_null: ed_pgm
-                $then:
-                  $enum_mapping:
-                    $raw_text: ed_pgm
-                    $custom_parser: us_nc_custom_enum_parsers.parse_student_employment_status
+                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.STUDENT)
               - $else_if:
                   $not_null: special_status
                 $then:

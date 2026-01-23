@@ -14,29 +14,79 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that displays periods when someone has maintained 
+"""Defines a criteria span view that displays periods when someone has maintained
 continuous employment for at least 90 days
 """
 
+from google.cloud import bigquery
+
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    employed_for_at_least_x_time_criteria_builder,
+    AGGREGATED_EMPLOYMENT_PERIODS_TABLE,
+    status_for_at_least_x_time_criteria_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_EMPLOYMENT_STATUS_VALUES = [
+    "EMPLOYED_UNKNOWN_AMOUNT",
+    "EMPLOYED_FULL_TIME",
+    "EMPLOYED_PART_TIME",
+]
+_CRITERIA_NAME = "CONTINUOUS_EMPLOYMENT_FOR_90_DAYS"
+
+_QUERY_TEMPLATE = status_for_at_least_x_time_criteria_query(
+    table_name=AGGREGATED_EMPLOYMENT_PERIODS_TABLE,
+    # TODO(#38963): Remove the end_date < '3000-01-01' once we are enforcing that
+    #  employment period end dates are reasonable and all exemptions have been
+    #  resolved. This filter was added to avoid date overflow when adding time to
+    #  dates close to the max date 9999-12-31.
+    additional_where_clause=f"""
+        AND employment_status IN {tuple(_EMPLOYMENT_STATUS_VALUES)}
+        AND (end_date IS NULL OR end_date < '3000-01-01')""",
+    date_interval=90,
+    date_part="DAY",
+    end_date="DATE_ADD(end_date, INTERVAL 1 DAY)",
+    columns_for_reasons=[
+        ("employment_status", "employment_status", "STRING"),
+        ("employer_name", "employer_name", "STRING"),
+        ("start_date", "employment_start_date", "DATE"),
+    ],
+    extra_column_for_reasons=(
+        "critical_date_has_passed",
+        _CRITERIA_NAME.lower(),
+    ),
+)
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    employed_for_at_least_x_time_criteria_builder(
-        date_interval=90,
-        date_part="DAY",
-        criteria_name="CONTINUOUS_EMPLOYMENT_FOR_90_DAYS",
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         description=__doc__,
-        employment_status_values=[
-            "EMPLOYED_UNKNOWN_AMOUNT",
-            "EMPLOYED_FULL_TIME",
-            "EMPLOYED_PART_TIME",
+        reasons_fields=[
+            ReasonsField(
+                name="employment_status",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Normalized employment status",
+            ),
+            ReasonsField(
+                name="employer_name",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Employer status",
+            ),
+            ReasonsField(
+                name="employment_start_date",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Employment start date",
+            ),
+            ReasonsField(
+                name=_CRITERIA_NAME.lower(),
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Returns TRUE if client has been employed for 90 days",
+            ),
         ],
     )
 )

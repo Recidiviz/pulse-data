@@ -1449,7 +1449,7 @@ def employed_for_at_least_x_time_criteria_builder(
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
     """
     query_template = status_for_at_least_x_time_criteria_query(
-        table_name="{project_id}.normalized_state.state_employment_period",
+        table_name="`{project_id}.normalized_state.state_employment_period`",
         # TODO(#38963): Remove the end_date < '3000-01-01' once we are enforcing that
         #  employment period end dates are reasonable and all exemptions have been
         #  resolved. This filter was added to avoid date overflow when adding time to
@@ -1508,7 +1508,7 @@ def housed_for_at_least_x_time_criteria_builder(
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
     """
     query_template = status_for_at_least_x_time_criteria_query(
-        table_name="{project_id}.normalized_state.state_person_housing_status_period",
+        table_name="`{project_id}.normalized_state.state_person_housing_status_period`",
         additional_where_clause=f"""AND housing_status_type IN ({list_to_query_string(housing_status_values, quoted=True, single_quote=True)})""",
         date_interval=date_interval,
         date_part=date_part,
@@ -1554,13 +1554,16 @@ def status_for_at_least_x_time_criteria_query(
     status (e.g. employed, housed) for at least a given amount of time.
 
     The "status" is defined by the combination of table_name and additional_where_clause:
-    - table_name: A table containing spans (with start/end dates) representing periods
-      when someone was in various statuses.
+    - table_name: A table or subquery containing spans (with start/end dates) representing
+      periods when someone was in various statuses.
     - additional_where_clause: Filters to select only the qualifying statuses from the
       table (e.g., "AND employment_status IN ('EMPLOYED', 'EMPLOYED_PART_TIME')").
 
     Args:
-        table_name: The table containing status information.
+        table_name: The table or subquery containing status information. For regular
+            table names, include backticks (e.g., "`{project_id}.dataset.table`").
+            For subqueries, pass the subquery directly without outer backticks
+            (e.g., "(SELECT ... FROM `{project_id}.dataset.table`)").
         date_interval: Number of date_parts before the person can meet the criterion.
         date_part: BigQuery date_part value ("DAY", "WEEK", "MONTH", etc.). Defaults to "MONTH".
         start_date: Name of the start date column. Defaults to 'start_date'.
@@ -1625,7 +1628,7 @@ def status_for_at_least_x_time_criteria_query(
             -- when additional_columns_select is empty
             state_code AS column_placeholder,
             {columns_to_cast_for_reasons}
-        FROM `{table_name}`
+        FROM {table_name}
         -- Filter out sentinel/placeholder dates to avoid date overflow when
         -- adding intervals to dates close to the max date 9999-12-31
         WHERE {start_date} < '9999-01-01'
@@ -2109,3 +2112,20 @@ def no_session_starts_with_reason_within_time_interval_criteria_builder(
             ),
         ],
     )
+
+
+# Aggregate adjacent employment spans with the same employment_status into single
+# continuous spans, collecting all employer_names into an array.
+AGGREGATED_EMPLOYMENT_PERIODS_TABLE = f"""(
+        SELECT
+            a.state_code,
+            a.person_id,
+            a.start_date,
+            a.end_date,
+            a.employment_status,
+            a.employer_name,
+        FROM ({aggregate_adjacent_spans(
+            table_name='`{project_id}.normalized_state.state_employment_period`',
+            attribute=['employment_status', 'employer_name']
+        )}) a
+)"""
