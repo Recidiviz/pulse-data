@@ -339,7 +339,40 @@ case_notes_cte AS (
 ),
 array_case_notes_cte AS (
 {array_agg_case_notes_by_person_id()}
+),
+-- This CTE pulls potential ad seg start dates that we are most confident in being accurate 
+updated_ad_seg_start_dates AS (
+    SELECT person_id, start_date AS potential_ad_seg_start_date
+    FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
+    WHERE
+      state_code = 'US_MI'
+      AND compartment_level_1 = "INCARCERATION"
+      AND housing_unit_type = "ADMINISTRATIVE_SOLITARY_CONFINEMENT"
+-- When housing unit type does not start with 7, that means the person is assigned to segregation status, and we 
+-- are more confident in these ad seg assignment dates
+      AND housing_unit_type_raw_text NOT LIKE '7%'
+),
+--This CTE joins the potential ad seg start dates into collapsed solitary sessions, choosing the 
+-- MIN(potential_ad_seg_start_date) for each session. That date will be used as the form information ad seg start date 
+-- in the final CTE, if it exists AND housing unit type is not temp seg (otherwise will default to the collapsed seg 
+-- session start). 
+npc_collapsed_seg_sessions_w_ad_seg_start_date as (
+    SELECT npc.*, ads.potential_ad_seg_start_date AS npc_ad_seg_start_date
+    FROM
+      `{{project_id}}.sessions.housing_unit_type_non_protective_custody_solitary_sessions_materialized` npc
+    LEFT JOIN updated_ad_seg_start_dates ads
+      ON ads.person_id = npc.person_id
+        AND (ads.potential_ad_seg_start_date BETWEEN npc.start_date
+          AND {nonnull_end_date_exclusive_clause('npc.end_date_exclusive')} )
+    WHERE
+      npc.state_code = "US_MI"
+      AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
+      AND CURRENT_DATE('US/Eastern') BETWEEN npc.start_date AND {nonnull_end_date_exclusive_clause('npc.end_date_exclusive')} 
+      AND potential_ad_seg_start_date IS NOT NULL
+    QUALIFY
+      (ROW_NUMBER() OVER (PARTITION BY npc.person_id ORDER BY potential_ad_seg_start_date ASC)) = 1
 )
+    
 SELECT 
     person_id,
     state_code,
@@ -364,7 +397,10 @@ SELECT
          ELSE stg.STG_Level 
       END AS form_information_STG,
     h.housing_unit_type AS form_information_segregation_type,
-    h.start_date AS form_information_segregation_classification_date,
+-- use the more accurate form information ad seg start date determined in CTE above IF it exists AND housing unit type is ad seg 
+    IF(h.housing_unit_type != "ADMINISTRATIVE_SOLITARY_CONFINEMENT", h.start_date, 
+        COALESCE(hc.npc_ad_seg_start_date, h.start_date)) 
+        AS form_information_segregation_classification_date,
     m.bondable_offenses_within_6_months AS form_information_bondable_offenses_within_6_months,
     m.nonbondable_offenses_within_1_year AS form_information_nonbondable_offenses_within_1_year,
     pf.form_ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
@@ -435,11 +471,7 @@ LEFT JOIN (
     WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
 ) h
     USING (state_code, person_id)
-LEFT JOIN (
-    SELECT state_code, person_id, start_date
-    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_non_protective_custody_solitary_sessions_materialized`
-    WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
-) hc
+LEFT JOIN npc_collapsed_seg_sessions_w_ad_seg_start_date hc
     USING (state_code, person_id)
 LEFT JOIN reasons_for_eligibility e
     USING (person_id)
