@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies when a client is a candidate for supervision Tasks in MO under routine
-contact standards we support in our Tasks tool.
+contact standards applying only to Serious Mental Illness (SMI) clients.
 """
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -23,12 +23,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    supervision_level_is_high,
-    supervision_level_is_maximum,
-    supervision_level_is_medium,
+    supervision_case_type_is_serious_mental_illness_or_disability,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
-    in_supervision_initial_assessment_phase,
     not_in_transition_center_on_supervision,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
@@ -41,7 +38,7 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_POPULATION"
+_POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_SMI_POPULATION"
 
 # TODO(#50537): Update/refine candidate population to ensure it's correct.
 # TODO(#50537): Exclude clients residing in Community Supervision Centers (CSCs).
@@ -53,23 +50,7 @@ _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             criteria_name="IN_ACTIVE_SUPERVISION_CANDIDATE_POPULATION",
             sessions_dataset=SESSIONS_DATASET,
         ),
-        # we only support Tasks for clients at these supervision levels
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.OR,
-            criteria_name="US_MO_IN_SUPERVISION_INITIAL_ASSESSMENT_PHASE_OR_SUPERVISION_LEVEL_IS_MAXIMUM_OR_HIGH_OR_MEDIUM",
-            sub_criteria_list=[
-                in_supervision_initial_assessment_phase.VIEW_BUILDER,
-                supervision_level_is_high.VIEW_BUILDER,
-                supervision_level_is_maximum.VIEW_BUILDER,
-                supervision_level_is_medium.VIEW_BUILDER,
-            ],
-            # These should be the same across all three sub-criteria, so we don't need
-            # to worry about how they're deduplicated!
-            allowed_duplicate_reasons_keys=[
-                "supervision_level",
-                "supervision_level_start_date",
-            ],
-        ),
+        supervision_case_type_is_serious_mental_illness_or_disability.VIEW_BUILDER,
         not_in_transition_center_on_supervision.VIEW_BUILDER,
     ],
 )

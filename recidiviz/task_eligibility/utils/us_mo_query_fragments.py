@@ -21,12 +21,12 @@ from typing import List, Optional
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
-    list_to_query_string,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
@@ -906,6 +906,246 @@ def us_mo_contact_compliance_builder(
                 name=reasons_field_name_supplementary_contacts,
                 type=bigquery.enums.StandardSqlTypeNames.ARRAY,
                 description="Supplementary contacts to include in reasons blob",
+            ),
+        ],
+    )
+
+
+def us_mo_create_initial_contact_period_reason() -> str:
+    return """
+        CASE
+            WHEN period = 1
+                THEN CONCAT(quantity, " WITHIN FIRST ", period_date_part) 
+            ELSE
+                CONCAT(quantity, " WITHIN FIRST ", period, " ", period_date_part, "S") 
+        END
+    """
+
+
+def us_mo_non_recurring_contact_compliance_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    contact_category: str,
+    contact_types_accepted: List[str],
+    contact_period_spans_query: str,
+    quantity: str,
+    time_period: str,
+    time_period_date_part: str,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a state-specific criterion view builder identifying when someone in MO
+    is due (i.e., has not met requirements) for some category of contact with one or
+    more qualifying contact types, where such requirements are one-time/non-recurring
+    and due within some certain initial period.
+
+    Args:
+        criteria_name (str): The name of the criterion view.
+        description (str): A brief description of the criterion view.
+        contact_category (str): The category of contact being considered.
+        contact_types_accepted (List[str]): The types of contacts that count toward
+            contact requirements for that category of contact.
+        contact_period_spans_query (str): Query to pull contact periods relevant for the
+            criterion. Must return `state_code`, `person_id`, `start_date` (when the
+            non-recurring contact requirement begins to apply), and `end_date` (an
+            exclusive end date, when the requirement ceases to be relevant).
+        quantity (str): The number of contacts required in the period (e.g., 2).
+        time_period (str): Number of <date_part> within which the requirement must be
+            met.
+        time_period_date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR".
+    Returns:
+        StateSpecificTaskCriteriaBigQueryViewBuilder: View builder for spans of time
+            when someone is due for a contact.
+    """
+
+    criterion_query = f"""
+    WITH contact_events AS (
+        SELECT 
+            state_code,
+            person_id,
+            contact_external_id,
+            contact_date,
+        FROM `{{project_id}}.tasks_views.us_mo_contact_events_preprocessed_materialized` 
+        WHERE status = 'COMPLETED'
+            AND contact_type IN ({list_to_query_string(contact_types_accepted, quoted=True)})
+        /* Sometimes, a single contact (with one `contact_external_id`) may include
+        multiple types of contacts that count toward a requirement, and those types may
+        be split out into different rows. However, even though that single contact may
+        have multiple qualifying types, we only want to count that contact once toward
+        meeting requirements. Here, in cases where there are multiple rows coming from
+        the preprocessed contacts view with the same `contact_external_id`, we'll reduce
+        it to one row and treat it as one contact. If all that differs between the two
+        rows is the `contact_type`, it doesn't matter which row we choose, since we're
+        not keeping the `contact_type` as output from this CTE anyways. */
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY state_code, person_id, contact_external_id
+            ORDER BY contact_type DESC
+        ) = 1
+    ),
+    contact_period_spans AS (
+        {contact_period_spans_query}
+    ),
+    due_date_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            {quantity} AS quantity,
+            {time_period} AS period,
+            '{time_period_date_part}' AS period_date_part,
+            start_date AS contact_period_start_date,
+            DATE_ADD(start_date, INTERVAL {time_period} {time_period_date_part}) AS compliance_due_date,
+            0 AS contact_count,
+            CAST(NULL AS DATE) AS last_contact_date,
+        FROM contact_period_spans
+        UNION ALL
+        SELECT
+            cps.state_code,
+            cps.person_id,
+            ce.contact_date AS start_date,
+            cps.end_date,
+            {quantity} AS quantity,
+            {time_period} AS period,
+            '{time_period_date_part}' AS period_date_part,
+            cps.start_date AS contact_period_start_date,
+            CAST(NULL AS DATE) AS compliance_due_date,
+            1 AS contact_count,
+            ce.contact_date AS last_contact_date,
+        FROM contact_events ce
+        INNER JOIN contact_period_spans cps
+            ON ce.state_code = cps.state_code
+            AND ce.person_id = cps.person_id
+            AND ce.contact_date BETWEEN cps.start_date AND {nonnull_end_date_exclusive_clause('cps.end_date')}
+    ),
+    -- sub-sessionize to combine due dates from all of the spans
+    {create_sub_sessions_with_attributes(table_name="due_date_spans")},
+    -- aggregate sub-sessions to deduplicate between overlapping spans
+    sub_sessions_with_attributes_aggregated AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            -- these should all be the same across all rows anyways
+            ANY_VALUE(quantity) AS quantity,
+            ANY_VALUE(period) AS period,
+            ANY_VALUE(period_date_part) AS period_date_part,
+            ANY_VALUE(contact_period_start_date) AS contact_period_start_date,
+            -- should pick up the one non-null date
+            ANY_VALUE(compliance_due_date) AS compliance_due_date,
+            SUM(contact_count) AS contact_count,
+            -- pull most recent contact date
+            MAX(last_contact_date) AS last_contact_date,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1, 2, 3, 4
+    ),
+    /* Next, we'll use "critical date has passed" logic to split spans by contact due
+    dates, enabling us to identify when a contact will be overdue. */
+    critical_date_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            /* We add one day to the due date to get our critical date to reflect the
+            fact that the contact would not become overdue until the due date passes. */
+            DATE_ADD(compliance_due_date, INTERVAL 1 DAY) AS critical_date,
+            quantity,
+            period,
+            period_date_part,
+            contact_period_start_date,
+            compliance_due_date,
+            contact_count,
+            last_contact_date,
+        FROM sub_sessions_with_attributes_aggregated
+    ),
+    {critical_date_has_passed_spans_cte(
+        table_name="critical_date_spans",
+        attributes=[
+            "quantity",
+            "period",
+            "period_date_part",
+            "contact_period_start_date",
+            "compliance_due_date",
+            "contact_count",
+            "last_contact_date",
+        ],
+    )}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        (contact_count < quantity) AS meets_criteria,
+        '{contact_category}' AS contact_category,
+        '{list_to_query_string(contact_types_accepted)}' AS contact_types_accepted,
+        {us_mo_create_initial_contact_period_reason()} AS contact_cadence,
+        contact_count,
+        compliance_due_date AS contact_due_date,
+        last_contact_date,
+        -- if contact count is too low & critical date has passed, contact is overdue
+        ((contact_count < quantity) AND critical_date_has_passed) AS overdue_flag,
+        contact_period_start_date,
+        TO_JSON(STRUCT(
+            '{contact_category}' AS contact_category,
+            '{list_to_query_string(contact_types_accepted)}' AS contact_types_accepted,
+            {us_mo_create_initial_contact_period_reason()} AS contact_cadence,
+            contact_count,
+            compliance_due_date AS contact_due_date,
+            last_contact_date,
+            -- if contact count is too low & critical date has passed, contact is overdue
+            ((contact_count < quantity) AND critical_date_has_passed) AS overdue_flag,
+            contact_period_start_date
+        )) AS reason,
+        FROM critical_date_has_passed_spans
+    """
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_MO,
+        criteria_name=criteria_name,
+        criteria_spans_query_template=criterion_query,
+        description=description,
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="contact_category",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Category of contact due",
+            ),
+            ReasonsField(
+                name="contact_types_accepted",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Types of contacts included in category",
+            ),
+            ReasonsField(
+                name="contact_cadence",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Initial contact period requirement",
+            ),
+            ReasonsField(
+                name="contact_count",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Number of contacts done within the initial contact period",
+            ),
+            ReasonsField(
+                name="contact_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Due date of the contact",
+            ),
+            ReasonsField(
+                name="last_contact_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the last contact",
+            ),
+            ReasonsField(
+                name="overdue_flag",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Flag that indicates whether contact was missed",
+            ),
+            ReasonsField(
+                name="contact_period_start_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when the relevant contact period began",
             ),
         ],
     )
