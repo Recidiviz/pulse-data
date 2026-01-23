@@ -1621,6 +1621,36 @@ JII_TEXT_MESSAGES_SUCCESSFUL = EventCountMetric(
     ),
 )
 
+JII_INCOMING_TEXT_MESSAGES = EventCountMetric(
+    name="jii_incoming_text_messages",
+    display_name="JII Incoming Text Messages",
+    description="Count of all incoming text messages from JII clients",
+    event_selector=EventSelector(
+        event_type=EventType.JII_INCOMING_TEXT_MESSAGE,
+        event_conditions_dict={},
+    ),
+)
+
+JII_INCOMING_TEXT_MESSAGES_OPT_OUT = EventCountMetric(
+    name="jii_incoming_text_messages_opt_out",
+    display_name="JII Incoming Text Messages: Opt Out",
+    description="Count of incoming text messages from JII clients that are opt-outs",
+    event_selector=EventSelector(
+        event_type=EventType.JII_INCOMING_TEXT_MESSAGE,
+        event_conditions_dict={"opt_out_type": ["STOP"]},
+    ),
+)
+
+JII_INCOMING_TEXT_MESSAGES_OPT_OUT_DISTINCT_CLIENTS = EventDistinctUnitCountMetric(
+    name="jii_incoming_text_messages_opt_out_distinct_clients",
+    display_name="JII Incoming Text Messages: Opt Out Distinct Clients",
+    description="Number of distinct clients who sent an opt-out text message",
+    event_selector=EventSelector(
+        event_type=EventType.JII_INCOMING_TEXT_MESSAGE,
+        event_conditions_dict={"opt_out_type": ["STOP"]},
+    ),
+)
+
 LATE_OPPORTUNITY_METRICS_INCARCERATION = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",

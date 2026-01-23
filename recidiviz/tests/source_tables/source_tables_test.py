@@ -110,8 +110,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "export_archives.us_tx_supervision_tasks_record_archive",
             # This source table only exists & in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
-            # This table is used by text_responses view which only deploys to production (cross-project view)
-            "twilio_webhook_requests.jii_texting_incoming_messages",
             *COMMON_VESTIGES,
         ]
     },

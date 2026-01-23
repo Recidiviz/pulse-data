@@ -72,9 +72,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_eligibility_s
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.jii_texting.jii_to_text_archive import (
-    JII_TO_TEXT_ARCHIVE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
 )
@@ -468,9 +465,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): "TODO(#53520): This will be used to add incident and infraction descriptions to facility tools (Lydia Masr, 11/26/2025)",
     SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER.address: (
         "Will be exported to power Operations module drilldown view in Supervisor Homepage (Mayuka Sarukkai, 11/6/2025)"
-    ),
-    JII_TO_TEXT_ARCHIVE_VIEW_BUILDER.address: (
-        "This view will be used just for validation of the jii_to_text view and we'd only want to delete the archive / validation if we delete or stop using the jii_to_text view itself (Samantha Norcia, 11/10/2025)"
     ),
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
         "This view will be used just for validation views (Samantha Norcia, 11/10/2025)"
