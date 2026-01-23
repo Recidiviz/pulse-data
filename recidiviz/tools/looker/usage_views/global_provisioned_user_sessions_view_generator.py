@@ -49,7 +49,11 @@ def build_global_provisioned_user_sessions_lookml_view() -> LookMLView:
         "location_id",
         "location_name",
         "state_staff_supervision_district",
+        "state_staff_supervision_district_name",
         "state_staff_supervision_office",
+        "state_staff_supervision_office_name",
+        "state_staff_facility",
+        "state_staff_facility_name",
         "staff_external_id",
     ]
     base_dimensions: list[LookMLViewField] = [
