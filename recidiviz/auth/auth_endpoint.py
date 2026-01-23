@@ -862,6 +862,7 @@ def get_auth_endpoint_blueprint(
                     "supervision_regional_leadership",
                     "state_leadership",
                     "facilities_manager",
+                    "facilities_segregation_staff",
                     "facilities_non_primary_staff",
                 ]
                 not_line_staff_users = (
