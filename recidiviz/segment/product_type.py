@@ -126,7 +126,7 @@ class ProductType(Enum):
         elif self == ProductType.MILESTONES:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
         elif self == ProductType.PATHWAYS:
-            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system|/methodology/system') AND NOT REGEXP_CONTAINS({context_page_url_col_name}, r'methodology') "
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system')"
         elif self == ProductType.PSI_CASE_INSIGHTS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
