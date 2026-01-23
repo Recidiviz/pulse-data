@@ -18,7 +18,8 @@
 import logging
 import os
 from http import HTTPStatus
-from typing import Tuple
+from types import ModuleType
+from typing import Callable, List, Tuple
 
 import google.cloud.pubsub_v1 as pubsub
 from flask import Flask, request
@@ -26,6 +27,7 @@ from google.cloud import datastore
 
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -44,6 +46,12 @@ from recidiviz.calculator.query.state.views.outliers.outliers_views import (
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enabled_states import (
+    get_public_pathways_enabled_states_for_cloud_sql,
+)
+from recidiviz.calculator.query.state.views.public_pathways.public_pathways_views import (
+    PUBLIC_PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
@@ -65,6 +73,7 @@ from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
     INSIGHTS_VIEWS_DEMO_OUTPUT_DIRECTORY_URI,
     INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
+    PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.outliers.utils.routes import get_outliers_utils_blueprint
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
@@ -73,11 +82,15 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
 from recidiviz.persistence.database.schema.insights import schema as insights_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
+from recidiviz.persistence.database.schema.public_pathways import (
+    schema as public_pathways_schema,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
@@ -128,12 +141,20 @@ for blueprint, url_prefix in APPLICATION_DATA_IMPORT_BLUEPRINTS:
     app.register_blueprint(blueprint, url_prefix=url_prefix)
 
 PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import-v2"
+PUBLIC_PATHWAYS_DB_IMPORT_QUEUE = "public_pathways-db-import-v2"
 OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import-v2"
 
 
 def _dashboard_event_level_bucket() -> str:
     return StrictStringFormatter().format(
         DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+        project_id=metadata.project_id(),
+    )
+
+
+def _public_pathways_data_bucket() -> str:
+    return StrictStringFormatter().format(
+        PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI,
         project_id=metadata.project_id(),
     )
 
@@ -150,122 +171,62 @@ def _insights_bucket(demo: bool = False) -> str:
     )
 
 
+def _get_view_builder(
+    state_code: str,
+    filename: str,
+    view_builders: List[SelectedColumnsBigQueryViewBuilder] | List[BigQueryViewBuilder],
+) -> SelectedColumnsBigQueryViewBuilder | BigQueryViewBuilder:
+    if not StateCode.is_state_code(state_code.upper()):
+        raise ValueError(
+            f"Unknown state_code [{state_code}] received, must be a valid state code."
+        )
+    view_builder = None
+    view_id = None
+    for builder in view_builders:
+        if filename in (f"{builder.view_id}.csv", f"{builder.view_id}.json"):
+            view_builder = builder
+            view_id = builder.view_id
+    if not view_builder and not view_id:
+        view_ids = ", ".join(builder.view_id for builder in view_builders)
+        raise ValueError(f"Invalid filename {filename}, must match one of: {view_ids}")
+    if not view_builder:
+        raise ValueError(f"View builder not found for {filename}")
+
+    return view_builder
+
+
 @app.route("/import/pathways/<state_code>/<filename>", methods=["POST"])
 def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     """Imports a CSV file from GCS into the Pathways Cloud SQL database"""
-    # TODO(#20600): Create a helper for the shared logic between this endpoint and /import/outliers
-    if not StateCode.is_state_code(state_code.upper()):
-        return (
-            f"Unknown state_code [{state_code}] received, must be a valid state code.",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    view_builder = None
-    view_id = ""
-    for pathways_view_builder in PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS:
-        if f"{pathways_view_builder.view_id}.csv" == filename:
-            view_builder = pathways_view_builder.delegate
-            view_id = pathways_view_builder.view_id
-    if not view_builder and not view_id:
-        return (
-            f"Invalid filename {filename}, must match a Pathways event-level view",
-            HTTPStatus.BAD_REQUEST,
-        )
-    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
-        return (
-            f"Unexpected view builder type found when importing {filename}",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-    try:
-        db_entity = get_database_entity_by_table_name(pathways_schema, view_id)
-
-    except ValueError as e:
-        return str(e), HTTPStatus.BAD_REQUEST
-
-    csv_path = GcsfsFilePath.from_absolute_path(
-        os.path.join(
-            _dashboard_event_level_bucket(),
-            state_code + "/" + filename,
-        )
+    return _import_pathways_helper(
+        state_code=state_code,
+        filename=filename,
+        view_builders=[
+            builder.delegate for builder in PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS
+        ],
+        schema_module=pathways_schema,
+        bucket_path=_dashboard_event_level_bucket(),
+        enabled_states_getter=get_pathways_enabled_states_for_cloud_sql,
+        schema_type=SchemaType.PATHWAYS,
+        reset_cache=True,
     )
 
-    database_key = PathwaysDatabaseManager(
-        get_pathways_enabled_states_for_cloud_sql(), SchemaType.PATHWAYS
-    ).database_key_for_state(state_code)
-    import_gcs_csv_to_cloud_sql(
-        database_key=database_key,
-        model=db_entity,
-        gcs_uri=csv_path,
-        columns=view_builder.columns,
+
+@app.route("/import/public_pathways/<state_code>/<filename>", methods=["POST"])
+def _import_public_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
+    """Imports a CSV file from GCS into the Public Pathways Cloud SQL database"""
+    return _import_pathways_helper(
+        state_code=state_code,
+        filename=filename,
+        view_builders=[
+            builder.delegate for builder in PUBLIC_PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS
+        ],
+        schema_module=public_pathways_schema,
+        bucket_path=_public_pathways_data_bucket(),
+        enabled_states_getter=get_public_pathways_enabled_states_for_cloud_sql,
+        schema_type=SchemaType.PUBLIC_PATHWAYS,
+        reset_cache=False,
     )
-    logging.info("View (%s) successfully imported", view_id)
-
-    gcsfs = GcsfsFactory.build()
-    object_metadata = gcsfs.get_metadata(csv_path) or {}
-    last_updated = object_metadata.get("last_updated", None)
-    facility_id_name_map = object_metadata.get("facility_id_name_map", None)
-    gender_id_name_map = object_metadata.get("gender_id_name_map", None)
-    race_id_name_map = object_metadata.get("race_id_name_map", None)
-    dynamic_filter_options = object_metadata.get("dynamic_filter_options", None)
-
-    # Updating/merging the metadata fields separately allows us to maintain any
-    # previously set fields that are not included in the current import
-    if last_updated:
-        with SessionFactory.using_database(database_key=database_key) as session:
-            # Replace any existing entries with this state code + metric with the new one
-            session.merge(
-                MetricMetadata(
-                    metric=db_entity.__name__,
-                    last_updated=last_updated,
-                )
-            )
-
-    if facility_id_name_map:
-        with SessionFactory.using_database(database_key=database_key) as session:
-            # Replace any existing entries with this state code + metric with the new one
-            session.merge(
-                MetricMetadata(
-                    metric=db_entity.__name__,
-                    facility_id_name_map=facility_id_name_map,
-                )
-            )
-
-    if gender_id_name_map:
-        with SessionFactory.using_database(database_key=database_key) as session:
-            # Replace any existing entries with this state code + metric with the new one
-            session.merge(
-                MetricMetadata(
-                    metric=db_entity.__name__,
-                    gender_id_name_map=gender_id_name_map,
-                )
-            )
-
-    if race_id_name_map:
-        with SessionFactory.using_database(database_key=database_key) as session:
-            # Replace any existing entries with this state code + metric with the new one
-            session.merge(
-                MetricMetadata(
-                    metric=db_entity.__name__,
-                    race_id_name_map=race_id_name_map,
-                )
-            )
-
-    if dynamic_filter_options:
-        with SessionFactory.using_database(database_key=database_key) as session:
-            # Replace any existing entries with this state code + metric with the new one
-            session.merge(
-                MetricMetadata(
-                    metric=db_entity.__name__,
-                    dynamic_filter_options=dynamic_filter_options,
-                )
-            )
-
-    metric_cache = PathwaysMetricCache.build(StateCode(state_code))
-    for metric in get_metrics_for_entity(db_entity):
-        metric_cache.reset_cache(metric)
-
-    return "", HTTPStatus.OK
 
 
 @app.route("/import/trigger_pathways", methods=["POST"])
@@ -284,6 +245,29 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
             gcs_bucket=_dashboard_event_level_bucket(),
             import_queue_name=PATHWAYS_DB_IMPORT_QUEUE,
             task_url="/import/pathways",
+        )
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    return "", HTTPStatus.OK
+
+
+@app.route("/import/trigger_public_pathways", methods=["POST"])
+def _import_trigger_public_pathways() -> Tuple[str, HTTPStatus]:
+    """Exposes an endpoint to trigger standard GCS imports."""
+
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    try:
+        create_import_task_helper(
+            request_path=request.path,
+            message=message,
+            gcs_bucket=_public_pathways_data_bucket(),
+            import_queue_name=PUBLIC_PATHWAYS_DB_IMPORT_QUEUE,
+            task_url="/import/public_pathways",
         )
     except ValueError as e:
         return str(e), HTTPStatus.BAD_REQUEST
@@ -402,25 +386,156 @@ def create_import_task_helper(
     logging.info("Enqueued gcs_import task to %s", import_queue_name)
 
 
+def skip_import_for_insights_file(state_code: str, filename: str) -> bool:
+    """Determines whether to skip importing a given file based on state and filename."""
+    # Skip importing archive files and the district managers file for non-email states
+    if filename in OUTLIERS_ARCHIVE_VIEW_BUILDERS or (
+        filename == SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER.view_id
+        and StateCode(state_code.upper()) != "US_PA"
+    ):
+        return True
+    return False
+
+
+def _validate_selected_columns_view_builder(
+    filename: str, view_builder: BigQueryViewBuilder
+) -> SelectedColumnsBigQueryViewBuilder:
+    """Validates that the given view_builder is of the correct type and returns it cast to SelectedColumnsBigQueryViewBuilder."""
+    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
+        raise TypeError(
+            f"Unexpected view builder found when importing {filename}",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+    return view_builder
+
+
+def _merge_metric_metadata(
+    database_key: SQLAlchemyDatabaseKey,
+    db_entity_name: str,
+    last_updated: str | None = None,
+    facility_id_name_map: str | None = None,
+    gender_id_name_map: str | None = None,
+    race_id_name_map: str | None = None,
+    dynamic_filter_options: str | None = None,
+) -> None:
+    """Merges metadata fields into the database separately to maintain previously set fields."""
+    if last_updated:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity_name,
+                    last_updated=last_updated,
+                )
+            )
+
+    if facility_id_name_map:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity_name,
+                    facility_id_name_map=facility_id_name_map,
+                )
+            )
+
+    if gender_id_name_map:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity_name,
+                    gender_id_name_map=gender_id_name_map,
+                )
+            )
+
+    if race_id_name_map:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity_name,
+                    race_id_name_map=race_id_name_map,
+                )
+            )
+
+    if dynamic_filter_options:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            session.merge(
+                MetricMetadata(
+                    metric=db_entity_name,
+                    dynamic_filter_options=dynamic_filter_options,
+                )
+            )
+
+
+def _import_pathways_helper(
+    state_code: str,
+    filename: str,
+    view_builders: List[SelectedColumnsBigQueryViewBuilder],
+    schema_module: ModuleType,
+    bucket_path: str,
+    enabled_states_getter: Callable[[], list[str]],
+    schema_type: SchemaType,
+    reset_cache: bool = True,
+) -> Tuple[str, HTTPStatus]:
+    """Helper function to import CSV files from GCS into a pathways-related Cloud SQL database."""
+    try:
+        view_builder = _get_view_builder(state_code, filename, view_builders)
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    try:
+        view_builder = _validate_selected_columns_view_builder(filename, view_builder)
+        db_entity = get_database_entity_by_table_name(
+            schema_module, view_builder.view_id
+        )
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+    except TypeError as e:
+        return str(e), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    csv_path = GcsfsFilePath.from_absolute_path(
+        os.path.join(bucket_path, state_code + "/" + filename)
+    )
+
+    database_key = PathwaysDatabaseManager(
+        enabled_states_getter(), schema_type
+    ).database_key_for_state(state_code)
+
+    import_gcs_csv_to_cloud_sql(
+        database_key=database_key,
+        model=db_entity,
+        gcs_uri=csv_path,
+        columns=view_builder.columns,
+    )
+    logging.info("View (%s) successfully imported", view_builder.view_id)
+
+    gcsfs = GcsfsFactory.build()
+    object_metadata = gcsfs.get_metadata(csv_path) or {}
+
+    _merge_metric_metadata(
+        database_key=database_key,
+        db_entity_name=db_entity.__name__,
+        last_updated=object_metadata.get("last_updated", None),
+        facility_id_name_map=object_metadata.get("facility_id_name_map", None),
+        gender_id_name_map=object_metadata.get("gender_id_name_map", None),
+        race_id_name_map=object_metadata.get("race_id_name_map", None),
+        dynamic_filter_options=object_metadata.get("dynamic_filter_options", None),
+    )
+
+    # TODO(#57285) Remove the schema_type conditional once we have PublicPathwaysMetricCache
+    if reset_cache and schema_type == SchemaType.PATHWAYS:
+        metric_cache = PathwaysMetricCache.build(StateCode(state_code))
+        for metric in get_metrics_for_entity(db_entity):
+            metric_cache.reset_cache(metric)
+
+    return "", HTTPStatus.OK
+
+
 @app.route("/import/insights/<state_code>/<filename>", methods=["POST"])
 def _import_insights(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     """Imports a JSON file from GCS into the Insights Cloud SQL database"""
-    # TODO(#20600): Create a helper for the shared logic between this endpoint and /import/outliers
-    if not StateCode.is_state_code(state_code.upper()):
-        return (
-            f"Unknown state_code [{state_code}] received, must be a valid state code.",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    view_builder = None
-    for builder in OUTLIERS_VIEW_BUILDERS:
-        if f"{builder.view_id}.json" == filename:
-            view_builder = builder
-    if not view_builder:
-        return (
-            f"Invalid filename {filename}, must match a Outliers view",
-            HTTPStatus.BAD_REQUEST,
-        )
+    try:
+        view_builder = _get_view_builder(state_code, filename, OUTLIERS_VIEW_BUILDERS)
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
 
     # Skip importing archive files and the district managers file for non-email states
     if view_builder in OUTLIERS_ARCHIVE_VIEW_BUILDERS or (
@@ -432,19 +547,16 @@ def _import_insights(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
             HTTPStatus.OK,
         )
 
-    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
-        return (
-            f"Unexpected view builder delegate found when importing {filename}",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
     try:
+        view_builder = _validate_selected_columns_view_builder(filename, view_builder)
         db_entity = get_database_entity_by_table_name(
             insights_schema, view_builder.view_id
         )
 
     except ValueError as e:
         return str(e), HTTPStatus.BAD_REQUEST
+    except TypeError as e:
+        return str(e), HTTPStatus.INTERNAL_SERVER_ERROR
 
     # If loadDemoDataIntoInsights is True and triggering notification is from demo bucket: read data from demo bucket
     # If loadDemoDataIntoInsights is False and triggering notification is from regular bucket: read data from regular bucket

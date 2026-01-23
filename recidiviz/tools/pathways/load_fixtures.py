@@ -26,6 +26,7 @@ docker exec pulse-data-case_triage_backend-1 uv run python -m recidiviz.tools.pa
     --data_type GCS \
     --state_codes US_TN US_ID \
     --tables liberty_to_prison_transitions supervision_to_prison_transitions \
+    --database PATHWAYS \
     --gcs_bucket recidiviz-staging-dashboard-event-level-data
 
 Note that when running with FIXTURE data and the --tables parameter, metric_metadata will need to be
@@ -169,14 +170,18 @@ def main(
     state_codes: List[str],
     tables: List[SQLAlchemyModelType],
     gcs_bucket: str,
+    database: SchemaType,
 ) -> None:
-    create_dbs(state_codes, SchemaType.PATHWAYS)
+    """Creates and initializes databases, then resets the fixtures or imports data from GCS"""
+    create_dbs(state_codes, database)
 
     for state in state_codes:
         database_key = PathwaysDatabaseManager(
-            state_codes, SchemaType.PATHWAYS
+            state_codes, database
         ).database_key_for_state(state)
-        pathways_engine = SQLAlchemyEngineManager.init_engine(database_key)
+        pathways_engine = SQLAlchemyEngineManager.get_engine_for_database(database_key)
+        if pathways_engine is None:
+            pathways_engine = SQLAlchemyEngineManager.init_engine(database_key)
 
         if data_type == "FIXTURE":
             reset_pathways_fixtures(pathways_engine, tables, state)
@@ -235,6 +240,16 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         default="recidiviz-staging-dashboard-event-level-data",
     )
 
+    parser.add_argument(
+        "--database",
+        help="The database to load data into. Either PATHWAYS or PUBLIC_PATHWAYS",
+        choices=[
+            "PATHWAYS",
+            "PUBLIC_PATHWAYS",
+        ],
+        default="PATHWAYS",
+    )
+
     return parser.parse_known_args(argv)
 
 
@@ -250,4 +265,10 @@ if __name__ == "__main__":
         get_database_entity_by_table_name(pathways_schema, table)
         for table in args.tables
     ]
-    main(args.data_type, args.state_codes, table_classes, args.gcs_bucket)
+    main(
+        args.data_type,
+        args.state_codes,
+        table_classes,
+        args.gcs_bucket,
+        SchemaType[args.database],
+    )

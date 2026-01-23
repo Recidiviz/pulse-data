@@ -1,0 +1,8 @@
+state_code,person_id,time_period,date_in_population,gender,sex,facility,age_group,race
+US_XX,1,months_0_6,2021-11-01,MALE,MALE,F1,25-29,WHITE
+US_XX,2,months_0_6,2021-11-01,FEMALE,MALE,F1,60+,BLACK
+US_XX,1,months_0_6,2021-12-01,NON_BINARY,MALE,F1,25-29,WHITE
+US_XX,2,months_0_6,2021-12-01,FEMALE,MALE,F1,60+,BLACK
+US_XX,2,months_0_6,2021-12-01,MALE,MALE,F2,60+,BLACK
+US_XX,1,months_0_6,2022-01-01,MALE,MALE,F1,25-29,WHITE
+US_XX,2,months_0_6,2022-01-01,MALE,MALE,F1,60+,BLACK
