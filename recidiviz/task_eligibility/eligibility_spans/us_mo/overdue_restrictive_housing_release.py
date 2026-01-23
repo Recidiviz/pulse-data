@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in MO is overdue for release from Restrictive Housing."""
+"""Shows the spans of time during which someone in MO is overdue for release from
+Restrictive Housing.
+"""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
@@ -23,10 +26,10 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_out_of_solitary_confinement,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
-    d1_sanction_after_most_recent_hearing,
-    d1_sanction_after_restrictive_housing_start,
     in_restrictive_housing,
-    no_active_d1_sanctions,
+    no_active_progressive_discipline_sanctions,
+    progressive_discipline_sanction_after_most_recent_hearing,
+    progressive_discipline_sanction_after_restrictive_housing_start,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     ReasonDateInCalendarWeekCriteriaCondition,
@@ -43,14 +46,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        no_active_d1_sanctions.VIEW_BUILDER,
+        no_active_progressive_discipline_sanctions.VIEW_BUILDER,
         in_restrictive_housing.VIEW_BUILDER,
-        d1_sanction_after_most_recent_hearing.VIEW_BUILDER,
-        d1_sanction_after_restrictive_housing_start.VIEW_BUILDER,
+        progressive_discipline_sanction_after_most_recent_hearing.VIEW_BUILDER,
+        progressive_discipline_sanction_after_restrictive_housing_start.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_out_of_solitary_confinement.VIEW_BUILDER,
     almost_eligible_condition=ReasonDateInCalendarWeekCriteriaCondition(
-        criteria=no_active_d1_sanctions.VIEW_BUILDER,
+        criteria=no_active_progressive_discipline_sanctions.VIEW_BUILDER,
         reasons_date_field="latest_sanction_end_date",
         description="Restrictive housing release due this week",
     ),

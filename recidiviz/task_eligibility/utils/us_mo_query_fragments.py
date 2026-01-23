@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -146,6 +146,16 @@ MO_CHARGE_CODES_ROBBERY_FIRST_DEGREE = [
     "12AAC",
 ]
 
+# The following sanction codes are for progressive-discipline sanctions. MO is
+# transitioning from using D1 to using D12, D13, D14, and D15 in early 2026.
+MO_PROGRESSIVE_DISCIPLINE_SANCTIONS = [
+    "D1",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+]
+
 
 def classes_cte() -> str:
     """Helper method that returns a CTE getting
@@ -233,19 +243,20 @@ def current_bed_stay_cte() -> str:
     )"""
 
 
-def latest_d1_sanction_spans_cte() -> str:
-    return """d1_sanctions_dedup AS (
-            -- Multiple D1 sanctions incurred on the same day may be distinct, but we only
-            -- need to count them once in determining when someone's last sanction began.
+def latest_progressive_discipline_sanction_spans_cte() -> str:
+    return f"""progressive_discipline_sanctions_dedup AS (
+            -- Multiple progressive-discipline sanctions incurred on the same day may
+            -- be distinct, but we only need to count them once in determining when
+            -- someone's last sanction began.
             SELECT DISTINCT
                 state_code,
                 person_id,
                 date_effective
-            FROM `{project_id}.normalized_state.state_incarceration_incident_outcome`
-            WHERE outcome_type_raw_text = 'D1'
+            FROM `{{project_id}}.us_mo_normalized_state.state_incarceration_incident_outcome`
+            WHERE outcome_type_raw_text IN ({list_to_query_string(MO_PROGRESSIVE_DISCIPLINE_SANCTIONS, quoted=True)})
         )
         ,
-        latest_d1_sanction_spans AS (
+        latest_progressive_discipline_sanction_spans AS (
             SELECT
                 state_code,
                 person_id,
@@ -253,8 +264,8 @@ def latest_d1_sanction_spans_cte() -> str:
                 -- will be that sanction's start date until the next time they incur a sanction.
                 date_effective AS start_date,
                 LEAD(date_effective) OVER w AS end_date,
-                date_effective AS latest_d1_sanction_start_date,
-            FROM d1_sanctions_dedup
+                date_effective AS latest_progressive_discipline_sanction_start_date,
+            FROM progressive_discipline_sanctions_dedup
             WINDOW w AS (
                 PARTITION BY state_code, person_id
                 ORDER BY date_effective ASC

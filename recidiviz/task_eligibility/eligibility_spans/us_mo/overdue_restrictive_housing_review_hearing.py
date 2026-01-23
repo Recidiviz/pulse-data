@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in MO has an overdue Restrictive Housing review hearing"""
+"""Shows the spans of time during which someone in MO has an overdue Restrictive Housing
+review hearing.
+"""
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
@@ -25,7 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     hearing_after_restrictive_housing_start,
     in_restrictive_housing,
-    no_d1_sanction_after_most_recent_hearing,
+    not_progressive_discipline_sanction_after_most_recent_hearing,
     past_latest_scheduled_review_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -46,7 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         past_latest_scheduled_review_date.VIEW_BUILDER,
         in_restrictive_housing.VIEW_BUILDER,
         hearing_after_restrictive_housing_start.VIEW_BUILDER,
-        no_d1_sanction_after_most_recent_hearing.VIEW_BUILDER,
+        not_progressive_discipline_sanction_after_most_recent_hearing.VIEW_BUILDER,
     ],
     completion_event_builder=hearing_occurred.VIEW_BUILDER,
     almost_eligible_condition=ReasonDateInCalendarWeekCriteriaCondition(
