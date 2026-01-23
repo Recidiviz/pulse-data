@@ -1816,7 +1816,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "sent_stsfy_dt",
         ],
         "agnt_rspns_actn": ["agent_acknowledge_dt"],
-        "cap": ["mstr_updt_dt"],
         "case_mgr": ["lst_eff_dt"],
         "dio_bed": ["end_dt"],
         "dio_ofndr_bed": ["end_dt"],
