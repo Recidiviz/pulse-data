@@ -84,6 +84,7 @@ output:
                   - "CONVERTED LS/RNR RISK-NEED-RES"
                 StateAssessmentType.INTERNAL_UNKNOWN:
                   - "MIO ASSESSMENT"
+                  - "CAMS FIRST SESSION"
                   - "TREATMENT PLAN"
                   - "INITIAL SCREENING"
                   - "TREATMENT DISCHARGE"
