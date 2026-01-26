@@ -1,0 +1,33 @@
+# Infrastructure configuration for components that will be deployed to the public-pathways-staging project
+
+import:
+  - ../catalogs/terraform-backend # Import Terraform backend configuration
+  - ../catalogs/organization-settings # Import billing_account and organization_id `settings.context`
+
+settings:
+  context:
+    project_id: public-pathways-staging
+
+# The variables set here are automatically provided to any components used in this stack.
+vars:
+  project_id: "{{ .settings.context.project_id }}"
+
+components:
+  terraform:
+    # Provisions the public-pathways-staging
+    vendor/core-project-factory:
+      vars:
+        name: "{{ .settings.context.project_id }}"
+        org_id: "{{ .settings.context.organization_id }}"
+        folder_id: "{{ .settings.context.hipaa_folder_id }}"
+        billing_account: "{{ .settings.context.billing_account }}"
+        # Grant the owner security group owner access (can be gained with go/jit)
+        group_name: "s-{{ .settings.context.project_id }}-owner"
+        group_role: roles/owner
+        default_service_account: deprivilege
+        deletion_policy: PREVENT
+        activate_apis:
+          - compute.googleapis.com # GCE
+          - container.googleapis.com # GKE
+          - secretmanager.googleapis.com
+          - storagetransfer.googleapis.com
