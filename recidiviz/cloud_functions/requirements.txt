@@ -3,7 +3,8 @@ requests==2.31.0
 oauth2client==3.0.0 #TODO(#2922): Remove deprecated oauth2client dependency
 
 google-api-python-client==2.127.0
-google-auth==2.29.0
+google-auth==2.47.0
+pyasn1>=0.6.2
 google-cloud-storage==2.16.0
 attrs==23.2.0
 pytz==2024.1
