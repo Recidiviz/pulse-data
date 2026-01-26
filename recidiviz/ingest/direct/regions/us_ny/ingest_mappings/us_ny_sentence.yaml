@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  new_nysid: STRING
+  new_din: STRING
+  file_date: DATE
+  vfo_desc: STRING
+  county_desc: STRING
+  aggmin_desc: STRING
+  aggmax_desc: STRING
+  seq: INTEGER
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - new_nysid
+          - new_din
+          - seq
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: new_nysid
+          id_type: $literal("US_NY_SID")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_group_external_id:
+            $concat:
+              $values:
+                - new_nysid
+                - new_din
+          sentencing_authority: $literal_enum(StateSentencingAuthority.STATE)
+          sentence_type: $literal_enum(StateSentenceType.STATE_PRISON)
+          imposed_date: file_date
+          # NY sentence lengths get stored in sentence_metadata instead of the state_sentence_length
+          # entity for 2 reasons:
+
+          # 1. The NY Pathways view will display sentence length information in categorical buckets,
+          # e.g. "37-53 MONTHS", "54-71 MONTHS", etc. This can be obtained directly from the aggmin
+          # and aggmax columns. The aggmin3 and aggmax3 columns give the sentence length in months,
+          # which we could ingest in state_sentence_length and then categorize into buckets downstream, but...
+
+          # 2. Sentences in NY can have a greater aggmin3 than aggmax3, and the population by
+          # sentence length breakdowns need to reflect exactly what appears in the raw data,
+          # even if they don't make logical sense. This poses a problem, because our sentence
+          # schema doesn't support min lengths that are greater than max lengths, switching
+          # the two as needed to ensure minima are less then maxima.
+
+          # Therefore, we instead store the categorical sentence length strings from aggmin
+          # and aggmax in sentence_metadata.
+          sentence_metadata:
+            $normalized_values_json_dict:
+              aggmin: aggmin_desc
+              aggmax: aggmax_desc
+          charges:
+            - StateChargeV2:
+                external_id: $variable(sentence_external_id)
+                county_code: county_desc
+                offense_type: vfo_desc
+                status: $literal_enum(StateChargeV2Status.CONVICTED)

@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_status` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  new_nysid: STRING
+  new_din: STRING
+  seq: INTEGER
+  critical_date: DATE
+  critical_date_type: STRING
+  snapshot_seq: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: new_nysid
+          id_type: $literal("US_NY_SID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - new_nysid
+                - new_din
+                - seq
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: snapshot_seq
+                status_update_datetime: critical_date
+                status:
+                  $enum_mapping:
+                    $raw_text: critical_date_type
+                    $mappings:
+                      StateSentenceStatus.SERVING:
+                        - "OPEN"
+                        - "RESUME"
+                      StateSentenceStatus.COMPLETED: "CLOSE"
+                      StateSentenceStatus.INTERNAL_UNKNOWN: "INACTIVE"
