@@ -111,7 +111,7 @@ function stateSpecificOpportunities(stateCode) {
           "Classification Review",
         EARLY_DISCHARGE: "Early Discharge",
         TRANSFER_TO_LIMITED_SUPERVISION: "Minimum Telephone Reporting",
-        FULL_TERM_DISCHARGE: "Overdue for Discharge",
+        FULL_TERM_DISCHARGE: "Full-Term Release",
         SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE:
           "Supervision Level Mismatch",
       };
@@ -250,7 +250,7 @@ function generateClientText(clientCounts, opportunityName) {
 function generateOpportunitySpecificText(
   eligibleClients,
   almostEligibleClients,
-  urgentClients
+  urgentClients,
 ) {
   const opportunityNames = new Set([
     ...eligibleClients.map((c) => c.opportunityName),
@@ -267,7 +267,7 @@ function generateOpportunitySpecificText(
           ?.numClients ?? 0,
       almostEligibleCount:
         almostEligibleClients?.find(
-          (o) => o.opportunityName === opportunityName
+          (o) => o.opportunityName === opportunityName,
         )?.numClients ?? 0,
     };
 
@@ -304,15 +304,15 @@ function generateOpportunitySpecificText(
  */
 function getUsIxTotalOpportunities(
   eligibleClientsByOpportunity,
-  almostEligibleClientsByOpportunity
+  almostEligibleClientsByOpportunity,
 ) {
   const numEligible =
     eligibleClientsByOpportunity.find(
-      (o) => o.opportunityName === "Custody Level Downgrade"
+      (o) => o.opportunityName === "Custody Level Downgrade",
     )?.numClients ?? 0;
   const numAlmostEligible =
     almostEligibleClientsByOpportunity.find(
-      (o) => o.opportunityName === "Custody Level Downgrade"
+      (o) => o.opportunityName === "Custody Level Downgrade",
     )?.numClients ?? 0;
   return numEligible + numAlmostEligible;
 }
@@ -340,12 +340,12 @@ function stateSpecificText(
   totalOutliers,
   eligibleClientsByOpportunity,
   almostEligibleClientsByOpportunity,
-  urgentClientsByOpportunity
+  urgentClientsByOpportunity,
 ) {
   const supervisionOpportunitySpecificText = generateOpportunitySpecificText(
     eligibleClientsByOpportunity,
     almostEligibleClientsByOpportunity,
-    urgentClientsByOpportunity
+    urgentClientsByOpportunity,
   );
 
   const clients = pluralize(totalOpportunities, [], "client");
@@ -356,7 +356,7 @@ function stateSpecificText(
   // Special case counts for certain states' facilities emails
   const usIxTotalOpportunities = getUsIxTotalOpportunities(
     eligibleClientsByOpportunity,
-    almostEligibleClientsByOpportunity
+    almostEligibleClientsByOpportunity,
   );
   const usIxInmates = pluralize(usIxTotalOpportunities, [], "inmate");
   const usAzInmates = pluralize(almostEligibleOpportunities, [], "inmate");
@@ -516,7 +516,7 @@ function buildLoginReminderBody(info, userType, settings) {
     outliers,
     eligibleClientsByOpportunity,
     almostEligibleClientsByOpportunity,
-    urgentClientsByOpportunity
+    urgentClientsByOpportunity,
   );
 
   const loggedIn = loggedInThisMonth(lastLogin);
@@ -545,7 +545,7 @@ function buildLoginReminderBody(info, userType, settings) {
       supervisionToolName,
       currentMonth,
       urgentClientsByOpportunity,
-      loggedIn
+      loggedIn,
     );
     if (supervisionOpportunitySpecificText && totalOpportunities > 0) {
       bulletPoints = supervisionOpportunitySpecificText
@@ -556,7 +556,7 @@ function buildLoginReminderBody(info, userType, settings) {
       if (urgentClientsByOpportunity.length) {
         const urgentOpportunities = urgentClientsByOpportunity.reduce(
           (total, opp) => (total += opp.numClients),
-          0
+          0,
         );
         const urgent = pluralize(urgentOpportunities);
         additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities, and ${urgentOpportunities} ${urgent.has} been unviewed for 30+ days.<br><br>`;
@@ -573,7 +573,7 @@ function buildLoginReminderBody(info, userType, settings) {
       facilitiesToolName,
       currentMonth,
       urgentClientsByOpportunity,
-      loggedIn
+      loggedIn,
     );
     if (facilitiesOpportunitiesText && totalOpportunities > 0) {
       bulletPoints = `<li>${facilitiesOpportunitiesText}</li>`;
@@ -583,7 +583,7 @@ function buildLoginReminderBody(info, userType, settings) {
       supervisionToolName,
       currentMonth,
       urgentClientsByOpportunity,
-      loggedIn
+      loggedIn,
     );
     const outliersBulletPoint =
       outliersText && outliers > 0 ? `<li>${outliersText}</li>` : "";
@@ -708,7 +708,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings, userType) {
     userType === FACILITIES_LINESTAFF &&
     getUsIxTotalOpportunities(
       eligibleClientsByOpportunity,
-      almostEligibleClientsByOpportunity
+      almostEligibleClientsByOpportunity,
     ) === 0
   ) {
     return false;
@@ -754,8 +754,8 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
   if (!VALID_USER_TYPES.includes(userType)) {
     throw new Error(
       `${userType} is not valid. userType should be one of the following values ${VALID_USER_TYPES.join(
-        ", "
-      )}.`
+        ", ",
+      )}.`,
     );
   }
   const { IS_TESTING } = settings;
@@ -825,7 +825,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
           ? parseClientsByOpportunity(row[0], row[10])
           : [],
       },
-    ])
+    ]),
   );
 
   const emails = Object.keys(dataByEmail);
@@ -833,7 +833,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
     stateCodes.map((stateCode) => [
       stateCode,
       !!stateSpecificText(stateCode, -1, -1, -1, [], [], []).outliersText,
-    ])
+    ]),
   );
 
   console.log("Getting user login information from auth0...");
@@ -843,7 +843,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
   console.log("Sending emails...");
 
   let emailsSentByState = Object.fromEntries(
-    stateCodes.map((stateCode) => [stateCode, 0])
+    stateCodes.map((stateCode) => [stateCode, 0]),
   );
 
   for (const [email, lastLogin] of Object.entries(userLoginInfo)) {
@@ -870,7 +870,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
         emailInfo,
         shouldCheckOutliers,
         settings,
-        userType
+        userType,
       )
     ) {
       const body = buildLoginReminderBody(emailInfo, userType, settings);
@@ -880,7 +880,7 @@ function sendAllLoginReminders(userType, query, settings, stateCodes) {
   }
 
   console.log(
-    `Done! Emails sent were written to the spreadsheet "${sheetName}".`
+    `Done! Emails sent were written to the spreadsheet "${sheetName}".`,
   );
 }
 
@@ -906,7 +906,7 @@ function getAuth0Token() {
   };
   const response = UrlFetchApp.fetch(
     "https://recidiviz.auth0.com/oauth/token",
-    options
+    options,
   );
   return JSON.parse(response.getContentText())["access_token"];
 }
@@ -977,11 +977,11 @@ function onOpen() {
     .createMenu("Send Emails")
     .addItem(
       "Send facilities line staff emails",
-      "sendFacilitiesLinestaffEmailRemindersMenuItem"
+      "sendFacilitiesLinestaffEmailRemindersMenuItem",
     )
     .addItem(
       "Send supervision line staff emails",
-      "sendSupervisionLinestaffEmailRemindersMenuItem"
+      "sendSupervisionLinestaffEmailRemindersMenuItem",
     )
     .addItem("Send supervisor emails", "sendSupervisorEmailRemindersMenuItem")
     .addItem("Check login status", "checkLoginStatusMenuItem")
@@ -998,7 +998,7 @@ function sendFacilitiesLinestaffEmailRemindersMenuItem() {
   if (confirmation) {
     sendFacilitiesLinestaffEmailReminders_();
     sheet.alert(
-      "Facilities Line staff emails sent successfully! Please hide the previous month's sheet."
+      "Facilities Line staff emails sent successfully! Please hide the previous month's sheet.",
     );
   }
 }
@@ -1013,7 +1013,7 @@ function sendSupervisionLinestaffEmailRemindersMenuItem() {
   if (confirmation) {
     sendSupervisionLinestaffEmailReminders_();
     sheet.alert(
-      "Supervision line staff emails sent successfully! Please hide the previous month's sheet."
+      "Supervision line staff emails sent successfully! Please hide the previous month's sheet.",
     );
   }
 }
@@ -1028,7 +1028,7 @@ function sendSupervisorEmailRemindersMenuItem() {
   if (confirmation) {
     sendSupervisorEmailReminders_();
     sheet.alert(
-      "Supervisor emails sent successfully! Please hide the previous month's sheet."
+      "Supervisor emails sent successfully! Please hide the previous month's sheet.",
     );
   }
 }
@@ -1048,18 +1048,18 @@ function checkLoginStatusMenuItem() {
     `The sheets are: ${sheets
       .map((s) => s.getName())
       .join()}. \n Do you wish to proceed?`,
-    sheetUI.ButtonSet.YES_NO
+    sheetUI.ButtonSet.YES_NO,
   );
 
   if (response === sheetUI.Button.YES) {
     // checkLoginStatus returns the login summaries
     const statements = checkLoginStatus();
     sheetUI.alert(
-      "Checked login status successfully!\n" + statements.join(" \n")
+      "Checked login status successfully!\n" + statements.join(" \n"),
     );
   } else {
     sheetUI.alert(
-      `Move the ${NUM_SHEETS_TO_CHECK_LOGIN_STATUS} sheets you want to check to the left`
+      `Move the ${NUM_SHEETS_TO_CHECK_LOGIN_STATUS} sheets you want to check to the left`,
     );
   }
 }
@@ -1076,7 +1076,7 @@ function getConfirmation(sheet, userType) {
     "Please confirm",
     `This will send login reminder emails to ${userType}. 
     Are you sure you want to continue?`,
-    sheet.ButtonSet.YES_NO
+    sheet.ButtonSet.YES_NO,
   );
 
   return result === sheet.Button.YES;
