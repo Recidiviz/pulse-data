@@ -7,12 +7,14 @@ input_columns:
   sexOffenderTreatmentId: STRING
   recommendationCode: STRING
   recommendation: STRING
-  acceptRefuse: STRING
+  acceptedOrRefused: STRING
   treatmentOutcome: STRING
   dateScreened: DATE
+  dateRescreening: DATE
   treatmentStarted: DATE
   treatmentCompleted: DATE
   dateAcceptRefuse: DATE
+  AcceptRefuseHistory: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -35,7 +37,7 @@ output:
                 $concat:
                   $separator: "@@"
                   $values:
-                    - acceptRefuse
+                    - acceptedOrRefused
                     - treatmentOutcome
                     - treatmentCompleted
               $custom_parser: us_ne_custom_enum_parsers.parse_clinical_participation
@@ -46,3 +48,5 @@ output:
             $normalized_values_json_dict:
               recommendation_name: recommendation
               dateAcceptRefuse: dateAcceptRefuse
+              dateRescreening: dateRescreening
+              AcceptRefuseHistory: AcceptRefuseHistory
