@@ -85,6 +85,7 @@ output:
                 StateAssessmentType.INTERNAL_UNKNOWN:
                   - "MIO ASSESSMENT"
                   - "CAMS FIRST SESSION"
+                  - "CAMS STABILIZATION PLAN"
                   - "TREATMENT PLAN"
                   - "INITIAL SCREENING"
                   - "TREATMENT DISCHARGE"
