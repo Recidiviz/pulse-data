@@ -105,4 +105,9 @@ build {
     environment_vars = ["HELPER_SCRIPTS=${var.helper_script_folder}","DEBIAN_FRONTEND=noninteractive"]
     script = "${path.root}/../scripts/build/provision.sh"
   }
+
+  post-processor "manifest" {
+    output = "python311-postgres-13-build-manifest.json"
+    strip_path = true
+  }
 }
