@@ -124,7 +124,9 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         """Builds and returns the query template for this event view."""
 
         if isinstance(sql_source, BigQueryAddress):
-            source_query_fragment = f"`{{project_id}}.{sql_source.to_str()}`"
+            source_query_fragment = (
+                f"`{sql_source.format_address_for_query_template()}`"
+            )
         else:
             source_query_fragment = f"""(
 {BigQueryQueryProvider.strip_semicolon(fix_indent(sql_source, indent_level=4))}

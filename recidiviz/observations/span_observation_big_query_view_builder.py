@@ -121,8 +121,13 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         span_start_date_col: str,
         span_end_date_col: str,
     ) -> str:
+        """Given attributes about a time-period observation, builds a basic query template
+        for the resulting query.
+        """
         if isinstance(sql_source, BigQueryAddress):
-            source_query_fragment = f"`{{project_id}}.{sql_source.to_str()}`"
+            source_query_fragment = (
+                f"`{sql_source.format_address_for_query_template()}`"
+            )
         else:
             source_query_fragment = f"""(
 {BigQueryQueryProvider.strip_semicolon(fix_indent(sql_source, indent_level=4))}

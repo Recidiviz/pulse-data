@@ -628,12 +628,12 @@ time_periods AS (
 {fix_indent(time_period.build_query(), indent_level=4)}
 ),
 assignment_sessions AS (
-    SELECT 
+    SELECT
         * EXCEPT(assignment_date, end_date_exclusive),
         assignment_date AS {cls.ASSIGNMENT_START_DATE_COLUMN_NAME},
         {nonnull_end_date_clause("end_date_exclusive")} AS {cls.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME}
     FROM
-        `{{project_id}}.{assignment_sessions_address.to_str()}`
+        `{assignment_sessions_address.format_address_for_query_template()}`
 )
 SELECT
 {fix_indent(columns_str, indent_level=4)}

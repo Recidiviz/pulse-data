@@ -244,7 +244,7 @@ class TaskCriteriaGroupQueryBuilder:
         criteria_queries = [
             f"""
 SELECT *, "{sub_criteria.criteria_name}" AS criteria_name,
-FROM `{{project_id}}.{sub_criteria.table_for_query.to_str()}`{cls._general_criteria_state_code_filter(state_code, sub_criteria)}
+FROM `{sub_criteria.table_for_query.format_address_for_query_template()}`{cls._general_criteria_state_code_filter(state_code, sub_criteria)}
 """
             for sub_criteria in sub_criteria_list
         ]

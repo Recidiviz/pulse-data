@@ -92,7 +92,7 @@ def _get_unioned_product_specific_segment_event_builders(
                 f"""
 SELECT
     {columns_statement}
-FROM `{{project_id}}.{event_table_address.to_str()}`
+FROM `{event_table_address.format_address_for_query_template()}`
 WHERE product_type = "{product_type.value}"
 """
             )

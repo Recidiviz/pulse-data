@@ -154,7 +154,7 @@ FROM (
         "{segment_table_sql_source.table_id}" AS event,
         {list_to_query_string(additional_attribute_cols)}
     FROM
-        `{{project_id}}.{segment_table_sql_source.to_str()}`
+        `{segment_table_sql_source.format_address_for_query_template()}`
     -- events from prod deployment only
     WHERE
         {_get_url_filter_for_all_products()}

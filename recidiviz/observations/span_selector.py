@@ -79,7 +79,7 @@ class SpanSelector(ObservationSelector[SpanType]):
         return f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.{span_observation_address.to_str()}`
+    FROM `{span_observation_address.format_address_for_query_template()}`
     {filter_clause}
 )
 ,

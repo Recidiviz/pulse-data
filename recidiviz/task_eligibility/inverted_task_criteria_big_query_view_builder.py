@@ -84,7 +84,7 @@ SELECT
     reason,
 {f"    {reason_columns}" if len(sub_criteria.reasons_fields) > 0 else ""}
 FROM
-    `{{project_id}}.{sub_criteria.table_for_query.to_str()}`
+    `{sub_criteria.table_for_query.format_address_for_query_template()}`
 """
 
 

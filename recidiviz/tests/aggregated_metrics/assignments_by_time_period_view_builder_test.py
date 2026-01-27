@@ -406,7 +406,7 @@ time_periods AS (
         )) AS metric_period_end_date_exclusive
 ),
 assignment_sessions AS (
-    SELECT 
+    SELECT
         * EXCEPT(assignment_date, end_date_exclusive),
         assignment_date AS assignment_start_date,
         IFNULL(end_date_exclusive, "9999-12-31") AS assignment_end_date_exclusive_nonnull
@@ -506,7 +506,7 @@ time_periods AS (
         )) AS metric_period_end_date_exclusive
 ),
 assignment_sessions AS (
-    SELECT 
+    SELECT
         * EXCEPT(assignment_date, end_date_exclusive),
         assignment_date AS assignment_start_date,
         IFNULL(end_date_exclusive, "9999-12-31") AS assignment_end_date_exclusive_nonnull
@@ -570,7 +570,7 @@ time_periods AS (
         )) AS metric_period_end_date_exclusive
 ),
 assignment_sessions AS (
-    SELECT 
+    SELECT
         * EXCEPT(assignment_date, end_date_exclusive),
         assignment_date AS assignment_start_date,
         IFNULL(end_date_exclusive, "9999-12-31") AS assignment_end_date_exclusive_nonnull

@@ -336,9 +336,7 @@ class AlmostEligibleSpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         else:
             split_spans_by_critical_date_cte = "SELECT * FROM potential_almost_eligible"
 
-        eligibility_source_table = (
-            f"`{{project_id}}.{basic_tes_view_builder.table_for_query.to_str()}`"
-        )
+        eligibility_source_table = f"`{basic_tes_view_builder.table_for_query.format_address_for_query_template()}`"
 
         return f"""
 WITH 

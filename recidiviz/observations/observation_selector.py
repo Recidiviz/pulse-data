@@ -173,6 +173,12 @@ class ObservationSelector(Generic[ObservationTypeT]):
             observation_type
         )
 
+        source_table = (
+            observations_address.format_address_for_query_template()
+            if include_project_id_format_arg
+            else observations_address.to_str()
+        )
+
         filter_clauses = [
             selector.generate_observation_conditions_query_fragment(
                 filter_by_observation_type=False,
@@ -193,13 +199,12 @@ class ObservationSelector(Generic[ObservationTypeT]):
             *sorted(output_attribute_columns),
         ]
         output_columns_str = ",\n".join(output_columns)
-        project_id_str = "{project_id}." if include_project_id_format_arg else ""
 
         return f"""
 SELECT
 {fix_indent(output_columns_str, indent_level=4)}
 FROM 
-    `{project_id_str}{observations_address.to_str()}`
+    `{source_table}`
 WHERE
 {fix_indent(filters_str, indent_level=4)}
 """

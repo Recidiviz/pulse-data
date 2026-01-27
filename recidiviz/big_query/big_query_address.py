@@ -76,7 +76,10 @@ class BigQueryAddress:
                 f"build a SELECT query for [{self.to_str()}] with statement "
                 f"[{select_statement}]"
             )
-        return f"{select_statement} FROM `{{project_id}}.{self.to_str()}`"
+        return f"{select_statement} FROM `{self.format_address_for_query_template()}`"
+
+    def format_address_for_query_template(self) -> str:
+        return f"{{project_id}}.{self.dataset_id}.{self.table_id}"
 
     def to_project_specific_address(
         self, project_id: str

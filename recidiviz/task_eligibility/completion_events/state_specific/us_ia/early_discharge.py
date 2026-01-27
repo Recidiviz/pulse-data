@@ -41,9 +41,9 @@ SELECT DISTINCT
     sessions.person_id,
     sessions.end_date_exclusive AS completion_event_date,
 FROM
-    `{{project_id}}.{COMPARTMENT_SESSIONS_VIEW_BUILDER.table_for_query.to_str()}` sessions
+    `{COMPARTMENT_SESSIONS_VIEW_BUILDER.table_for_query.format_address_for_query_template()}` sessions
 INNER JOIN
-    `{{project_id}}.{PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.table_for_query.to_str()}` sentences
+    `{PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.table_for_query.format_address_for_query_template()}` sentences
 ON
     sessions.state_code = sentences.state_code
     AND sessions.person_id = sentences.person_id
