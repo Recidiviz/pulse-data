@@ -80,54 +80,51 @@ output:
                 - "Hispanic"
                 - "M"
                 - "Mexican"
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: Ethnic
-              $mappings:
-                StateEthnicity.HISPANIC:
-                  - "Hispanic"
-                  - "Mexican"
-                  - "Puerto Rican"
-                  - "Salvadorian"
-                  - "Guatemalan"
-                  - "Nicaraguan"
-                  - "Columbian"
-                  - "Cuban"
-                StateEthnicity.NOT_HISPANIC:
-                  - "Other"
-                  - "American Indian"
-                  - "Other Asian"
-                  - "Filipino"
-                  - "Vietnamese"
-                  - "Pacific Islander"
-                  - "Chinese"
-                  - "Samoan"
-                  - "Cambodian"
-                  - "Laotian"
-                  - "Indian"
-                  - "Korean"
-                  - "Hawaiian"
-                  - "Guamanian"
-                  - "Japanese"
-                  - "Thai"
-                  # Consider raw data migration for this
-                  - "Other Paciific Islander Not Listed"
-                  - "Other Pacific Islander Not Listed"
-                  - "Jamaican"
-                  - "Other Asian Not Listed"
-                  - "Tongan"
-                  - "Sri Lankan"
-                  - "Guamanian or Chamorro"
-                  - "Pakistani"
-                  - "Bangladeshi"
-                StateEthnicity.EXTERNAL_UNKNOWN:
-                  - "Unknown"
-              $ignore:
-                # These are races, not ethnicities
-                - "Black"
-                - "White"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: Ethnic
+        $mappings:
+          StateEthnicity.HISPANIC:
+            - "Hispanic"
+            - "Mexican"
+            - "Puerto Rican"
+            - "Salvadorian"
+            - "Guatemalan"
+            - "Nicaraguan"
+            - "Columbian"
+            - "Cuban"
+          StateEthnicity.NOT_HISPANIC:
+            - "Other"
+            - "American Indian"
+            - "Other Asian"
+            - "Filipino"
+            - "Vietnamese"
+            - "Pacific Islander"
+            - "Chinese"
+            - "Samoan"
+            - "Cambodian"
+            - "Laotian"
+            - "Indian"
+            - "Korean"
+            - "Hawaiian"
+            - "Guamanian"
+            - "Japanese"
+            - "Thai"
+            # These are races, not ethnicities
+            - "Black"
+            - "White"
+            # Consider raw data migration for this
+            - "Other Paciific Islander Not Listed"
+            - "Other Pacific Islander Not Listed"
+            - "Jamaican"
+            - "Other Asian Not Listed"
+            - "Tongan"
+            - "Sri Lankan"
+            - "Guamanian or Chamorro"
+            - "Pakistani"
+            - "Bangladeshi"
+          StateEthnicity.EXTERNAL_UNKNOWN:
+            - "Unknown"
     residency_status:
       $enum_mapping:
         $raw_text: AddressType

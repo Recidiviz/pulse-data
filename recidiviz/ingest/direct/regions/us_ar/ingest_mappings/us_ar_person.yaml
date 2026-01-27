@@ -110,12 +110,10 @@ output:
                   - O
                   - C
                   - M
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: OFFNETHNICGROUP
-              $custom_parser: us_ar_custom_enum_parsers.parse_ethnic_group
+    ethnicity:
+      $enum_mapping:
+        $raw_text: OFFNETHNICGROUP
+        $custom_parser: us_ar_custom_enum_parsers.parse_ethnic_group
     current_address:
       $custom:
         $function: us_ar_custom_parsers.parse_address_pieces

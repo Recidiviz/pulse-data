@@ -18,8 +18,9 @@
 NormalizedStatePerson.
 """
 import datetime
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -218,7 +219,7 @@ def build_normalized_state_person(
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
 
-    person_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
+    person_subtree_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
         "assessments": normalized_assessments,
         "external_ids": normalized_person_external_ids,
         "incarceration_periods": normalized_incarceration_periods,
@@ -235,11 +236,16 @@ def build_normalized_state_person(
         "supervision_violations": normalized_violations,
         "staff_relationship_periods": normalized_staff_relationship_periods,
     }
+
+    person_flat_field_kwargs: dict[str, Any] = {
+        "ethnicity": person.ethnicity or StateEthnicity.PRESENT_WITHOUT_INFO
+    }
     return assert_type(
         build_normalized_root_entity(
             pre_normalization_root_entity=person,
             normalized_root_entity_cls=NormalizedStatePerson,
-            root_entity_subtree_kwargs=person_kwargs,
+            root_entity_subtree_kwargs=person_subtree_kwargs,
+            root_entity_flat_field_kwargs=person_flat_field_kwargs,
         ),
         NormalizedStatePerson,
     )

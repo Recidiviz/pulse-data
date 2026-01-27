@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -92,7 +93,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_identifier
         )
         self.identifier = IncarcerationIdentifier(StateCode.US_XX)
-        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
+        self.person = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=99000123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:

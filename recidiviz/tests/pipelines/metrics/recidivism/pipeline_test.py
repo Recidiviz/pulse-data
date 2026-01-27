@@ -124,6 +124,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.HISPANIC,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
         )
@@ -145,15 +146,6 @@ class TestRecidivismPipeline(unittest.TestCase):
         )
 
         races_data = normalized_database_base_dict_list([race_1, race_2])
-
-        ethnicity = schema.StatePersonEthnicity(
-            person_ethnicity_id=111,
-            state_code="US_XX",
-            ethnicity=StateEthnicity.HISPANIC,
-            person_id=fake_person_id,
-        )
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -207,7 +199,6 @@ class TestRecidivismPipeline(unittest.TestCase):
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
         }
         data_dict.update(data_dict_overrides)
@@ -259,10 +250,13 @@ class TestRecidivismPipeline(unittest.TestCase):
             birthdate=date(1990, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
         )
-
         persons_data = [
-            normalized_database_base_dict(fake_person_1),
-            normalized_database_base_dict(fake_person_2),
+            normalized_database_base_dict(
+                fake_person_1, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
+            normalized_database_base_dict(
+                fake_person_2, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
         ]
 
         initial_incarceration_1 = schema.StateIncarcerationPeriod(
@@ -435,6 +429,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         initial_incarceration = NormalizedStateIncarcerationPeriod(
@@ -550,6 +545,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         only_incarceration = NormalizedStateIncarcerationPeriod(
@@ -619,6 +615,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         person_incarceration_periods = {
@@ -685,6 +682,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             person_id=self.fake_person_id,
             gender=StateGender.MALE,
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         first_recidivism_release_event = RecidivismReleaseEvent(
@@ -771,6 +769,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             person_id=self.fake_person_id,
             gender=StateGender.MALE,
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         person_release_events: Iterable[Tuple[NormalizedStatePerson, Dict]] = [

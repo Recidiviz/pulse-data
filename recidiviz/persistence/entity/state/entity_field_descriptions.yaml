@@ -292,6 +292,8 @@ state_person:
     gender_raw_text: The raw text value of the person's gender of record.
     sex: The person's sex of record.
     sex_raw_text: The raw text value of the person's sex of record.
+    ethnicity: The ethnicity of the person.
+    ethnicity_raw_text: The raw text value of the ethnicity of the person.
     residency_status: The person's reported residency status.
     residency_status_raw_text:
       The raw text used to derive a person's reported residency
@@ -319,11 +321,6 @@ state_person_alias:
     alias_type: The type of the name alias.
     alias_type_raw_text: The raw text value for the alias type.
     full_name: A person's name.
-
-state_person_ethnicity:
-  fields:
-    ethnicity: A person's reported ethnicity.
-    ethnicity_raw_text: The raw text value of the ethnicity.
 
 state_person_external_id:
   fields:

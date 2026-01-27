@@ -54,21 +54,19 @@ output:
                 - H
                 - M
                 - C
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              # TODO(#50107): Add in CULTURALETHNICAFFILIATION to better hydrate this field.
-              $raw_text: INMATERACECODE
-              $mappings:
-                StateEthnicity.HISPANIC: H
-              $ignore:
-                - A
-                - B
-                - I
-                - N
-                - W
-                - O
-                - U
-                - M
-                - C
+    ethnicity:
+      $enum_mapping:
+        # TODO(#50107): Add in CULTURALETHNICAFFILIATION to better hydrate this field.
+        $raw_text: INMATERACECODE
+        $mappings:
+          StateEthnicity.HISPANIC: H
+          StateEthnicity.NOT_HISPANIC:
+            - A
+            - B
+            - I
+            - N
+            - W
+            - O
+            - U
+            - M
+            - C

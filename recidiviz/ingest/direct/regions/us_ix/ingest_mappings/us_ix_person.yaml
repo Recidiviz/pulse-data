@@ -77,13 +77,11 @@ output:
                 StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian or Alaskan Native"
                 StateRace.EXTERNAL_UNKNOWN: "Unknown"
                 StateRace.WHITE: "White"
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: EthnicOriginDesc
-              $mappings:
-                StateEthnicity.HISPANIC: "Hispanic"
-                StateEthnicity.NOT_HISPANIC: "Other"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: EthnicOriginDesc
+        $mappings:
+          StateEthnicity.HISPANIC: "Hispanic"
+          StateEthnicity.NOT_HISPANIC: "Other"
     current_phone_number: PhoneNumber
     current_email_address: EmailAddress

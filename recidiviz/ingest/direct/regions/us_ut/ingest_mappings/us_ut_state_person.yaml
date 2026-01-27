@@ -58,17 +58,15 @@ output:
                   - P
                   - H
                   - I
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: ethnic_cd_ncic
-              # TODO(#35794): Confirm these mappings
-              $mappings:
-                StateEthnicity.INTERNAL_UNKNOWN:
-                  - "1"
-                  - "2"
-                  - "3"
-                  - "4"
-                  - "5"
-                  - "7"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: ethnic_cd_ncic
+        # TODO(#35794): Confirm these mappings
+        $mappings:
+          StateEthnicity.INTERNAL_UNKNOWN:
+            - "1"
+            - "2"
+            - "3"
+            - "4"
+            - "5"
+            - "7"

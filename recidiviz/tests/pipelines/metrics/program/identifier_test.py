@@ -25,6 +25,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -56,7 +57,11 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.ProgramIdentifier()
-        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
+        self.person = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=99000123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
     def _test_find_program_events(
         self,

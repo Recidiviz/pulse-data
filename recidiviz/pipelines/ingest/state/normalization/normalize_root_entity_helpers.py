@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper for converting a RootEntity to its corresponding Normalized* type."""
-from typing import Mapping, Sequence, Type, TypeVar
+from typing import Any, Dict, Mapping, Sequence, Type, TypeVar
 
 from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
@@ -49,6 +49,7 @@ def build_normalized_root_entity(
     pre_normalization_root_entity: RootEntity,
     normalized_root_entity_cls: Type[NormalizedRootEntityT],
     root_entity_subtree_kwargs: Mapping[str, Sequence[NormalizedStateEntity]],
+    root_entity_flat_field_kwargs: Dict[str, Any],
 ) -> NormalizedRootEntityT:
     """Helper for converting a RootEntity to its corresponding Normalized* type.
 
@@ -57,8 +58,13 @@ def build_normalized_root_entity(
         normalized_root_entity_cls: The expected output type.
         root_entity_subtree_kwargs: A dictionary of keyword args for normalized child
             entities that needed non-standard normalization.
+        root_entity_flat_field_kwargs: A dictionary of keyword args for normalized flat
+            fields that need non-standard normalization.
     """
-    normalized_root_entity_kwargs = {**root_entity_subtree_kwargs}
+    normalized_root_entity_kwargs = {
+        **root_entity_subtree_kwargs,
+        **root_entity_flat_field_kwargs,
+    }
     class_reference = attribute_field_type_reference_for_class(
         normalized_root_entity_cls
     )

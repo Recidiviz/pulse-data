@@ -36,7 +36,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.violation import metric_producer, pipeline
@@ -65,6 +64,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         self.race = NormalizedStatePersonRace(
@@ -73,13 +73,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
         self.person.races = [self.race]
 
-        self.ethnicity = NormalizedStatePersonEthnicity(
-            state_code=self.state_code,
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        self.person.ethnicities = [self.ethnicity]
         self.metric_producer = metric_producer.ViolationMetricProducer()
         self.pipeline_class = pipeline.ViolationMetricsPipeline
 

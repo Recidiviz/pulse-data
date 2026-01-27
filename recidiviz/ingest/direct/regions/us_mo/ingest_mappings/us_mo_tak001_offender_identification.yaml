@@ -63,12 +63,10 @@ output:
                 StateRace.BLACK: B
                 StateRace.WHITE: W
                 StateRace.EXTERNAL_UNKNOWN: U
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: EK_ETH
-              $mappings:
-                StateEthnicity.HISPANIC: H
-                StateEthnicity.NOT_HISPANIC: N
-                StateEthnicity.EXTERNAL_UNKNOWN: U
+    ethnicity:
+      $enum_mapping:
+        $raw_text: EK_ETH
+        $mappings:
+          StateEthnicity.HISPANIC: H
+          StateEthnicity.NOT_HISPANIC: N
+          StateEthnicity.EXTERNAL_UNKNOWN: U

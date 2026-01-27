@@ -32,6 +32,7 @@ import unittest
 from typing import List, Type
 from unittest.mock import MagicMock, patch
 
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -100,6 +101,7 @@ class LedgerEntityTestCaseProtocol:
         return normalized_entities.NormalizedStatePerson(
             state_code=self.state_code,
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 normalized_entities.NormalizedStatePersonExternalId(
                     external_id="1",

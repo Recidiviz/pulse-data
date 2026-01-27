@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -80,7 +80,11 @@ class TestCaseCompliance(unittest.TestCase):
     """Tests the get_case_compliance_on_date function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     @patch.object(UsNdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
@@ -1359,7 +1363,11 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
     """Tests the _next_recommended_assessment_date function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests()
 
     def test_us_ix_next_recommended_assessment_date(self) -> None:

@@ -12,7 +12,6 @@ explore: state_person_template {
     state_incarceration_sentence,
     state_person_address_period,
     state_person_alias,
-    state_person_ethnicity,
     state_person_external_id,
     state_person_housing_status_period,
     state_person_race,
@@ -74,11 +73,6 @@ explore: state_person_template {
 
   join: state_person_alias {
     sql_on: ${state_person.person_id} = ${state_person_alias.person_id};;
-    relationship: one_to_many
-  }
-
-  join: state_person_ethnicity {
-    sql_on: ${state_person.person_id} = ${state_person_ethnicity.person_id};;
     relationship: one_to_many
   }
 
@@ -216,10 +210,6 @@ explore: state_person_address_period {
 
 }
 explore: state_person_alias {
-  extension: required
-
-}
-explore: state_person_ethnicity {
   extension: required
 
 }

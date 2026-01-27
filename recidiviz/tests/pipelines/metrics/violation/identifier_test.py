@@ -22,6 +22,7 @@ from typing import Dict, List, Sequence, Union
 
 import attr
 
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
 )
@@ -64,7 +65,11 @@ class TestFindViolationEvents(unittest.TestCase):
             violation_identifier
         )
         self.identifier = ViolationIdentifier(StateCode.US_XX)
-        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
+        self.person = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=99000123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:

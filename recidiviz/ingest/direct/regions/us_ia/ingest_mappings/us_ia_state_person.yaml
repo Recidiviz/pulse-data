@@ -48,15 +48,13 @@ output:
                 #StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: Asian or Pacific Islander
                 StateRace.WHITE: White
                 StateRace.EXTERNAL_UNKNOWN: Unknown
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: EthnicOrigin
-              $mappings:
-                StateEthnicity.HISPANIC: Hispanic
-                StateEthnicity.EXTERNAL_UNKNOWN: Unknown
-                StateEthnicity.NOT_HISPANIC: Non-Hispanic
+    ethnicity:
+      $enum_mapping:
+        $raw_text: EthnicOrigin
+        $mappings:
+          StateEthnicity.HISPANIC: Hispanic
+          StateEthnicity.EXTERNAL_UNKNOWN: Unknown
+          StateEthnicity.NOT_HISPANIC: Non-Hispanic
     current_phone_number: PhoneNo
     current_address:
       $conditional:

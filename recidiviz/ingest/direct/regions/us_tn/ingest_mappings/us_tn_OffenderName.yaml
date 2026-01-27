@@ -46,14 +46,12 @@ output:
                 StateRace.BLACK: B
                 StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
                 StateRace.WHITE: W
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: Ethnicity
-              $mappings:
-                StateEthnicity.HISPANIC: HISPANIC
-                StateEthnicity.NOT_HISPANIC: NOT_HISPANIC
+    ethnicity:
+      $enum_mapping:
+        $raw_text: Ethnicity
+        $mappings:
+          StateEthnicity.HISPANIC: HISPANIC
+          StateEthnicity.NOT_HISPANIC: NOT_HISPANIC
     current_address:
       $physical_address:
         $address_1: AddressLine1

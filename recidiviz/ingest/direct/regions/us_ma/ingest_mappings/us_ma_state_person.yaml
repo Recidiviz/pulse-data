@@ -18,3 +18,4 @@ output:
         $given_names: COMMIT_FNAME
         $surname: COMMIT_LNAME
     sex: $literal_enum(StateSex.INTERNAL_UNKNOWN)
+    ethnicity: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)

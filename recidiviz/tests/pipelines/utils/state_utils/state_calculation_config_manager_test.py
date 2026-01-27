@@ -20,6 +20,7 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -122,7 +123,11 @@ class TestStateCalculationConfigManager(unittest.TestCase):
                 sequence_num=1,
             )
             _ = get_state_specific_case_compliance_manager(
-                person=NormalizedStatePerson(state_code=state_code.value, person_id=1),
+                person=NormalizedStatePerson(
+                    state_code=state_code.value,
+                    person_id=1,
+                    ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+                ),
                 supervision_period=test_sp,
                 case_type=StateSupervisionCaseType.INTERNAL_UNKNOWN,
                 start_of_supervision=datetime.date(2020, 1, 1),

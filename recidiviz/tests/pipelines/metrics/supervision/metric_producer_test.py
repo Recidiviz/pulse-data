@@ -43,7 +43,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.supervision import identifier
@@ -96,6 +95,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -103,14 +103,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -154,6 +146,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -161,14 +154,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -215,6 +200,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -222,14 +208,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -276,6 +254,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -283,14 +262,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -338,6 +309,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -345,14 +317,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -413,6 +377,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -420,14 +385,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -474,6 +431,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -481,14 +439,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -545,6 +495,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -552,14 +503,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -627,17 +570,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
         )
         person.races = [race]
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-        person.ethnicities = [ethnicity]
 
         start_event = SupervisionStartEvent(
             state_code="US_XX",
@@ -674,6 +612,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -681,14 +620,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         termination_event = SupervisionTerminationEvent(
             state_code="US_XX",
@@ -731,6 +662,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -738,14 +670,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         termination_event = SupervisionTerminationEvent(
             state_code="US_XX",
@@ -786,6 +710,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -793,14 +718,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         first_termination_event = SupervisionTerminationEvent(
             state_code="US_XX",
@@ -855,6 +772,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -862,14 +780,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         termination_event = SupervisionTerminationEvent(
             state_code="US_XX",
@@ -915,6 +825,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -922,14 +833,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -969,6 +872,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -976,14 +880,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -1035,6 +931,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1042,14 +939,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -1105,6 +994,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1112,14 +1002,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_IX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         event = SupervisionPopulationEvent(
             state_code="US_IX",
@@ -1167,6 +1049,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1174,14 +1057,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_IX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         event = SupervisionPopulationEvent(
             state_code="US_IX",
@@ -1229,6 +1104,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1236,14 +1112,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_IX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -1279,6 +1147,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1286,14 +1155,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_IX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
@@ -1328,6 +1189,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1335,14 +1197,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(

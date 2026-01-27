@@ -32,7 +32,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.metrics.program import metric_producer, pipeline
@@ -63,6 +62,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -70,14 +70,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_ND",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         program_events: List[ProgramEvent] = [
             ProgramParticipationEvent(
@@ -104,6 +96,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -111,14 +104,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_ND",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         event_date = date(2009, 10, 31)
 
@@ -150,6 +135,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -157,14 +143,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_ND",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         event_date = date(2009, 10, 31)
 
@@ -196,6 +174,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -203,14 +182,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_ND",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         event_date = date(2009, 10, 7)
 

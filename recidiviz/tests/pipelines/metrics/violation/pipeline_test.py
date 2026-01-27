@@ -122,7 +122,11 @@ class TestViolationPipeline(unittest.TestCase):
             gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
-        persons_data = [normalized_database_base_dict(fake_person)]
+        persons_data = [
+            normalized_database_base_dict(
+                fake_person, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            )
+        ]
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
@@ -138,15 +142,6 @@ class TestViolationPipeline(unittest.TestCase):
         )
 
         races_data = normalized_database_base_dict_list([race_1, race_2])
-
-        ethnicity = schema.StatePersonEthnicity(
-            person_ethnicity_id=111,
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_id=fake_person_id,
-        )
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         violation_decision = schema.StateSupervisionViolationResponseDecisionEntry(
             state_code="US_XX",
@@ -197,7 +192,6 @@ class TestViolationPipeline(unittest.TestCase):
         data_dict_overrides: Dict[str, Iterable[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateSupervisionViolation.__tablename__: violations_data,
             schema.StateSupervisionViolationResponse.__tablename__: violation_responses_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__: violation_types_data,
@@ -297,6 +291,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
         self.identifier = ViolationIdentifier(self.state_code)
         self.pipeline_class = pipeline.ViolationMetricsPipeline
@@ -487,6 +482,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         violation_events = [

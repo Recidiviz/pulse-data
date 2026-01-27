@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeStatus,
     StateChargeV2Status,
 )
-from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.serialization import (
     json_serializable_dict,
@@ -171,6 +171,8 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "current_address": None,
                 "current_email_address": None,
                 "current_phone_number": None,
+                "ethnicity": None,
+                "ethnicity_raw_text": None,
                 "full_name": None,
                 "gender": "FEMALE",
                 "gender_raw_text": None,
@@ -268,7 +270,10 @@ class TestJsonSerializableDict(unittest.TestCase):
 
     def test_serialize_entity_into_json_normalized(self) -> None:
         person = NormalizedStatePerson(
-            person_id=123, state_code="US_XX", gender=StateGender.FEMALE
+            person_id=123,
+            state_code="US_XX",
+            gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         assessment = NormalizedStateAssessment(
@@ -306,6 +311,8 @@ class TestJsonSerializableDict(unittest.TestCase):
                 "current_address": None,
                 "current_email_address": None,
                 "current_phone_number": None,
+                "ethnicity": "PRESENT_WITHOUT_INFO",
+                "ethnicity_raw_text": None,
                 "full_name": None,
                 "gender": "FEMALE",
                 "gender_raw_text": None,

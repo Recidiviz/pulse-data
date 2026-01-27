@@ -54,7 +54,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import (
-    StateEthnicity,
     StateGender,
     StateRace,
     StateResidencyStatus,
@@ -623,22 +622,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             state_code="US_XX",
             condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
             condition_raw_text="SOBER",
-        )
-
-        self.assertEqual(expected_result, result)
-
-    def test_deserialize_StatePersonEthnicity(self) -> None:
-        result = deserialize_entity_factories.StatePersonEthnicityFactory.deserialize(
-            ethnicity=StateEthnicity.HISPANIC,
-            ethnicity_raw_text="H",
-            state_code="us_xx",
-        )
-
-        # Assert
-        expected_result = entities.StatePersonEthnicity(
-            ethnicity=StateEthnicity.HISPANIC,
-            ethnicity_raw_text="H",
-            state_code="US_XX",
         )
 
         self.assertEqual(expected_result, result)

@@ -19,6 +19,7 @@
 import unittest
 from typing import Any, Dict, Iterable
 
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStatePerson,
@@ -34,7 +35,11 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
     """Tests the person_and_kwargs_for_identifier function."""
 
     def test_person_and_kwargs_for_identifier(self) -> None:
-        person_input = NormalizedStatePerson(state_code="US_XX", person_id=123)
+        person_input = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
         assessment = NormalizedStateAssessment(
             state_code="US_XX", assessment_id=1, sequence_num=1, external_id="a1"
@@ -53,9 +58,17 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
         self.assertEqual(expected_kwargs, kwargs)
 
     def test_person_and_kwargs_for_identifier_two_people_same_id(self) -> None:
-        person_input_1 = NormalizedStatePerson(state_code="US_XX", person_id=123)
+        person_input_1 = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
-        person_input_2 = NormalizedStatePerson(state_code="US_XX", person_id=123)
+        person_input_2 = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
         assessment = NormalizedStateAssessment(
             state_code="US_XX", assessment_id=1, sequence_num=1, external_id="a1"

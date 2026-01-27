@@ -359,27 +359,6 @@ class NormalizedStatePersonRace(NormalizedStateEntity, EnumEntity):
 
 
 @attr.s(eq=False, kw_only=True)
-class NormalizedStatePersonEthnicity(NormalizedStateEntity, EnumEntity):
-    """Models an ethnicity associated with a particular StatePerson."""
-
-    # Attributes
-    ethnicity: StateEthnicity = attr.ib(
-        validator=attr.validators.instance_of(StateEthnicity)
-    )
-    ethnicity_raw_text: str | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Primary key
-    person_ethnicity_id: int = attr.ib(validator=attr_validators.is_int)
-
-    # Cross-entity relationships
-    person: Optional["NormalizedStatePerson"] = attr.ib(
-        default=None, validator=IsNormalizedPersonBackedgeValidator()
-    )
-
-
-@attr.s(eq=False, kw_only=True)
 class NormalizedStateAssessment(
     NormalizedStateEntity, HasExternalIdEntity, SequencedEntityMixin
 ):
@@ -3463,6 +3442,13 @@ class NormalizedStatePerson(
         default=None, validator=attr_validators.is_opt_str
     )
 
+    ethnicity: Optional[StateEthnicity] = attr.ib(
+        validator=attr.validators.instance_of(StateEthnicity)
+    )  # non-nullable
+    ethnicity_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     # NOTE: This may change over time - we track these changes in history tables
     residency_status: StateResidencyStatus | None = attr.ib(
         default=None, validator=attr_validators.is_opt(StateResidencyStatus)
@@ -3505,10 +3491,6 @@ class NormalizedStatePerson(
     races: list["NormalizedStatePersonRace"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStatePersonRace),
-    )
-    ethnicities: list["NormalizedStatePersonEthnicity"] = attr.ib(
-        factory=list,
-        validator=attr_validators.is_list_of(NormalizedStatePersonEthnicity),
     )
     assessments: list["NormalizedStateAssessment"] = attr.ib(
         factory=list,

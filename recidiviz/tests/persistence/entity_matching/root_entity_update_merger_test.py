@@ -47,7 +47,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_person import (
-    StateEthnicity,
     StateGender,
     StateRace,
     StateResidencyStatus,
@@ -250,7 +249,6 @@ _REFERENCE_ENTITY_EXAMPLES: dict[type[Entity], list[Entity]] = {
     state_entities.StatePersonAddressPeriod: [],
     state_entities.StatePersonHousingStatusPeriod: [],
     state_entities.StatePersonAlias: [],
-    state_entities.StatePersonEthnicity: [],
     state_entities.StatePersonExternalId: [],
     state_entities.StatePersonRace: [],
     state_entities.StateProgramAssignment: [
@@ -521,16 +519,6 @@ _HAS_MEANINGFUL_DATA_ENTITIES: dict[type[Entity], list[Entity]] = {
     state_entities.StatePersonAlias: [
         state_entities.StatePersonAlias(
             state_code=StateCode.US_XX.value, full_name="Name"
-        ),
-    ],
-    state_entities.StatePersonEthnicity: [
-        state_entities.StatePersonEthnicity(
-            state_code=StateCode.US_XX.value,
-            ethnicity=StateEthnicity.HISPANIC,
-            ethnicity_raw_text="H",
-        ),
-        state_entities.StatePersonEthnicity(
-            state_code=StateCode.US_XX.value, ethnicity=StateEthnicity.NOT_HISPANIC
         ),
     ],
     state_entities.StatePersonExternalId: [

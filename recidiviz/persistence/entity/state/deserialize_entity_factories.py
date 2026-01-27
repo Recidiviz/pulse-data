@@ -92,19 +92,6 @@ class StatePersonRaceFactory(EntityFactory):
         )
 
 
-class StatePersonEthnicityFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StatePersonEthnicity:
-        return entity_deserialize(
-            cls=entities.StatePersonEthnicity,
-            converter_overrides={},
-            defaults={},
-            **kwargs,
-        )
-
-
 class StateAssessmentFactory(EntityFactory):
     @staticmethod
     def deserialize(

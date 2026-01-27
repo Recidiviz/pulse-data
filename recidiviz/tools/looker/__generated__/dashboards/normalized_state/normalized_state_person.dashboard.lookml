@@ -476,6 +476,8 @@
       normalized_state_person.current_address,
       normalized_state_person.current_email_address,
       normalized_state_person.current_phone_number,
+      normalized_state_person.ethnicity,
+      normalized_state_person.ethnicity_raw_text,
       normalized_state_person.full_name,
       normalized_state_person.full_name_clean,
       normalized_state_person.gender,
@@ -486,7 +488,6 @@
       normalized_state_person.sex,
       normalized_state_person.sex_raw_text,
       normalized_state_person.state_code,
-      normalized_state_person_ethnicity.count,
       normalized_state_person_race.count]
     sorts: [normalized_state_person.birthdate_date desc]
     listen: 

@@ -63,6 +63,7 @@ output:
         $mappings:
           StateSex.MALE: MALE
           StateSex.FEMALE: FEMALE
+    ethnicity: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)
     races:
       # Race information from DOC tables assigns a single race to a single person. Conversely, race information from PBPP
       # tables assigns one to many races to a single person. Because we ingest both, we ingest one to many races for each

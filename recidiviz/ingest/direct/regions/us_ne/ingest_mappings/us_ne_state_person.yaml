@@ -44,20 +44,18 @@ output:
                 StateRace.EXTERNAL_UNKNOWN:
                   - OT
               $ignore: [HS]
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: RACE_CD
-              $mappings:
-                StateEthnicity.HISPANIC: HS
-              $ignore:
-                - BK
-                - WT
-                - NA
-                - OT
-                - AS
-                - PI
-                - HI
+    ethnicity:
+      $enum_mapping:
+        $raw_text: RACE_CD
+        $mappings:
+          StateEthnicity.HISPANIC: HS
+          StateEthnicity.NOT_HISPANIC:
+            - BK
+            - WT
+            - NA
+            - OT
+            - AS
+            - PI
+            - HI
     current_email_address: emailAddress
     current_phone_number: residencePhoneNumber

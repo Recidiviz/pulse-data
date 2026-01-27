@@ -18,7 +18,7 @@
 import datetime
 import unittest
 
-from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactReason,
@@ -119,6 +119,7 @@ class TestNormalizeStatePerson(unittest.TestCase):
             person_id=1,
             state_code=StateCode.US_XX.value,
             birthdate=datetime.date(day=1, month=1, year=1991),
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             full_name='{"given_names": "FIRST1", "middle_names": "MID1", "name_suffix": "", "surname": "LAST1"}',
             gender=StateGender.MALE,
             gender_raw_text="M",

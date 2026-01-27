@@ -12,7 +12,6 @@ explore: normalized_state_person_template {
     normalized_state_incarceration_sentence,
     normalized_state_person_address_period,
     normalized_state_person_alias,
-    normalized_state_person_ethnicity,
     normalized_state_person_external_id,
     normalized_state_person_housing_status_period,
     normalized_state_person_race,
@@ -76,11 +75,6 @@ explore: normalized_state_person_template {
 
   join: normalized_state_person_alias {
     sql_on: ${normalized_state_person.person_id} = ${normalized_state_person_alias.person_id};;
-    relationship: one_to_many
-  }
-
-  join: normalized_state_person_ethnicity {
-    sql_on: ${normalized_state_person.person_id} = ${normalized_state_person_ethnicity.person_id};;
     relationship: one_to_many
   }
 
@@ -228,10 +222,6 @@ explore: normalized_state_person_address_period {
 
 }
 explore: normalized_state_person_alias {
-  extension: required
-
-}
-explore: normalized_state_person_ethnicity {
   extension: required
 
 }

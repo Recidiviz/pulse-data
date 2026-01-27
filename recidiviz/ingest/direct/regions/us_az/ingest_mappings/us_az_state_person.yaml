@@ -77,16 +77,14 @@ output:
                       StateRace.EXTERNAL_UNKNOWN:
                         - Unknown
               - $else: $literal_enum(StateRace.INTERNAL_UNKNOWN)
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              # Pipe race into the ethnicity parser so that we can appropriately map Mexican Americans
-              # and Mexican Nationals as Hispanic.
-              $raw_text:
-                $concat:
-                  $values:
-                    - ETHNICITY
-                    - RACE
-                  $separator: "##"
-              $custom_parser: us_az_custom_enum_parsers.parse_ethnicity
+    ethnicity:
+      $enum_mapping:
+        # Pipe race into the ethnicity parser so that we can appropriately map Mexican Americans
+        # and Mexican Nationals as Hispanic.
+        $raw_text:
+          $concat:
+            $values:
+              - ETHNICITY
+              - RACE
+            $separator: "##"
+        $custom_parser: us_az_custom_enum_parsers.parse_ethnicity

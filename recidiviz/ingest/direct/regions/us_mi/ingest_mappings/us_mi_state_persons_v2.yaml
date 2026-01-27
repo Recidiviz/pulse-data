@@ -49,112 +49,108 @@ output:
                 StateRace.INTERNAL_UNKNOWN:
                   - "20096" # Latino
                   - "20095" # Middle Eastern/North African
-
-    ethnicities:
-      - $conditional:
-          - $if:
-              $equal:
-                - hispanic_flag
-                - $literal("1")
-            $then:
-              StatePersonEthnicity:
-                ethnicity: $literal_enum(StateEthnicity.HISPANIC)
-          - $else_if:
-              $not_null: cultural_affiliation_id
-            $then:
-              StatePersonEthnicity:
-                ethnicity:
-                  $enum_mapping:
-                    $raw_text: cultural_affiliation_id
-                    $mappings:
-                      StateEthnicity.HISPANIC:
-                        - "608" # Mexican
-                        - "602" # Hispanic
-                        - "20054" # Puerto Rican
-                        - "20082" # Cuban
-                        - "20070" # Guatemalan
-                        - "20056" # Nicaraguan
-                        - "20059" # Peruvian
-                        - "20078" # El Salvadorian
-                        - "20076" # Ecuadorian
-                        - "20071" # Honduran
-                        - "20124" # Dominican
-                        - "20081" # Colombian
-                    $ignore:
-                      - "603"
-                      - "624"
-                      - "606"
-                      - "621"
-                      - "1172"
-                      - "1171"
-                      - "1170"
-                      - "622"
-                      - "607"
-                      - "625"
-                      - "605"
-                      - "604"
-                      - "601"
-                      - "20092"
-                      - "20079"
-                      - "20049"
-                      - "20067"
-                      - "20052"
-                      - "20075"
-                      - "20063"
-                      - "20065"
-                      - "20080"
-                      - "20060"
-                      - "20066"
-                      - "20055"
-                      - "20053"
-                      - "20101"
-                      - "20074"
-                      - "20100"
-                      - "20122"
-                      - "20104"
-                      - "20135"
-                      - "20093"
-                      - "20061"
-                      - "20140"
-                      - "20046"
-                      - "20044"
-                      - "20132"
-                      - "20138"
-                      - "20117"
-                      - "20051"
-                      - "20102"
-                      - "20057"
-                      - "20069"
-                      - "20072"
-                      - "20045"
-                      - "20064"
-                      - "20120"
-                      - "20047"
-                      - "20077"
-                      - "20125"
-                      - "20105"
-                      - "20116"
-                      - "20043"
-                      - "20073"
-                      - "20118"
-                      - "20087"
-                      - "20050"
-                      - "20121"
-                      - "20048"
-                      - "20068"
-                      - "20062"
-                      - "20119"
-                      - "20058"
-                      - "20042"
-                      - "20099"
-                      - "20103"
-                      - "20123"
-                      - "20134"
-                      - "20086"
-                      - "20085"
-                      - "20139"
-                      - "20133"
-                      - "20320"
-                      - "20328"
-                      - "20331"
-                      - "20335"
+    ethnicity:
+      $conditional:
+        - $if:
+            $equal:
+              - hispanic_flag
+              - $literal("1")
+          $then: $literal_enum(StateEthnicity.HISPANIC)
+        - $else_if:
+            $not_null: cultural_affiliation_id
+          $then:
+            $enum_mapping:
+              $raw_text: cultural_affiliation_id
+              $mappings:
+                StateEthnicity.HISPANIC:
+                  - "608" # Mexican
+                  - "602" # Hispanic
+                  - "20054" # Puerto Rican
+                  - "20082" # Cuban
+                  - "20070" # Guatemalan
+                  - "20056" # Nicaraguan
+                  - "20059" # Peruvian
+                  - "20078" # El Salvadorian
+                  - "20076" # Ecuadorian
+                  - "20071" # Honduran
+                  - "20124" # Dominican
+                  - "20081" # Colombian
+                StateEthnicity.NOT_HISPANIC:
+                  - "603"
+                  - "624"
+                  - "606"
+                  - "621"
+                  - "1172"
+                  - "1171"
+                  - "1170"
+                  - "622"
+                  - "607"
+                  - "625"
+                  - "605"
+                  - "604"
+                  - "601"
+                  - "20092"
+                  - "20079"
+                  - "20049"
+                  - "20067"
+                  - "20052"
+                  - "20075"
+                  - "20063"
+                  - "20065"
+                  - "20080"
+                  - "20060"
+                  - "20066"
+                  - "20055"
+                  - "20053"
+                  - "20101"
+                  - "20074"
+                  - "20100"
+                  - "20122"
+                  - "20104"
+                  - "20135"
+                  - "20093"
+                  - "20061"
+                  - "20140"
+                  - "20046"
+                  - "20044"
+                  - "20132"
+                  - "20138"
+                  - "20117"
+                  - "20051"
+                  - "20102"
+                  - "20057"
+                  - "20069"
+                  - "20072"
+                  - "20045"
+                  - "20064"
+                  - "20120"
+                  - "20047"
+                  - "20077"
+                  - "20125"
+                  - "20105"
+                  - "20116"
+                  - "20043"
+                  - "20073"
+                  - "20118"
+                  - "20087"
+                  - "20050"
+                  - "20121"
+                  - "20048"
+                  - "20068"
+                  - "20062"
+                  - "20119"
+                  - "20058"
+                  - "20042"
+                  - "20099"
+                  - "20103"
+                  - "20123"
+                  - "20134"
+                  - "20086"
+                  - "20085"
+                  - "20139"
+                  - "20133"
+                  - "20320"
+                  - "20328"
+                  - "20331"
+                  - "20335"
+        - $else: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)

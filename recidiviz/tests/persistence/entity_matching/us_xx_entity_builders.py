@@ -27,7 +27,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationIncidentOutcome,
     StateIncarcerationSentence,
     StatePerson,
-    StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
     StateStaff,
@@ -58,10 +57,6 @@ def make_staff_external_id(**kwargs: Any) -> StateStaffExternalId:
 
 def make_person_race(**kwargs: Any) -> StatePersonRace:
     return StatePersonRace.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_person_ethnicity(**kwargs: Any) -> StatePersonEthnicity:
-    return StatePersonEthnicity.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
 def make_incarceration_incident(**kwargs: Any) -> StateIncarcerationIncident:

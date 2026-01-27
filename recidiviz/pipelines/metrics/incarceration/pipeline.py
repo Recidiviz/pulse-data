@@ -38,7 +38,6 @@ class IncarcerationMetricsPipeline(MetricPipeline):
         return [
             normalized_entities.NormalizedStatePerson,
             normalized_entities.NormalizedStatePersonRace,
-            normalized_entities.NormalizedStatePersonEthnicity,
             normalized_entities.NormalizedStatePersonExternalId,
             normalized_entities.NormalizedStateAssessment,
             normalized_entities.NormalizedStateIncarcerationPeriod,

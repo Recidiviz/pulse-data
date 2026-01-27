@@ -23,6 +23,7 @@ import attr
 from apache_beam.pipeline_test import assert_that
 from apache_beam.testing.util import matches_all
 
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
@@ -1640,6 +1641,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 NormalizedStatePerson(
                     state_code="US_DD",
                     person_id=1234,
+                    ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                     external_ids=[
                         NormalizedStatePersonExternalId(
                             person_external_id_id=11111,
@@ -1675,6 +1677,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1237,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -1721,6 +1724,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11112,
@@ -1772,6 +1776,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1234,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -1798,6 +1803,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=4567,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=22222,
@@ -1865,7 +1871,10 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         entities = [
             self._set_backedges(
                 NormalizedStatePerson(
-                    state_code="US_DD", person_id=1234, external_ids=[]
+                    state_code="US_DD",
+                    person_id=1234,
+                    ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+                    external_ids=[],
                 )
             )
         ]
@@ -1890,6 +1899,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1234,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -1936,6 +1946,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11112,
@@ -1992,6 +2003,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -2038,6 +2050,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11112,
@@ -2093,6 +2106,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1237,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -2171,6 +2185,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11112,
@@ -2219,6 +2234,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1237,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -2313,6 +2329,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=1111,
@@ -2372,6 +2389,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1237,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -2450,6 +2468,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=111222,
@@ -2515,6 +2534,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=1237,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11111,
@@ -2593,6 +2613,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3000,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11112,
@@ -2627,6 +2648,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             NormalizedStatePerson(
                 state_code="US_DD",
                 person_id=3111,
+                ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
                 external_ids=[
                     NormalizedStatePersonExternalId(
                         person_external_id_id=11114,
@@ -2693,6 +2715,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         person1 = NormalizedStatePerson(
             state_code="US_DD",
             person_id=1234,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
         person1.external_ids.append(
             NormalizedStatePersonExternalId(
@@ -2711,6 +2734,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         person2 = NormalizedStatePerson(
             state_code="US_DD",
             person_id=1235,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         person2.external_ids.append(
@@ -2755,6 +2779,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         person1 = NormalizedStatePerson(
             state_code="US_DD",
             person_id=1237,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
         person1.external_ids.append(
             NormalizedStatePersonExternalId(
@@ -2837,6 +2862,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         person2 = NormalizedStatePerson(
             state_code="US_DD",
             person_id=3000,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         person2.external_ids.append(
@@ -2925,6 +2951,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         person = NormalizedStatePerson(
             state_code="US_DD",
             person_id=3111,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 NormalizedStatePersonExternalId(
                     person_external_id_id=11114,

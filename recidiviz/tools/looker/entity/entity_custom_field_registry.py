@@ -92,16 +92,6 @@ COMMON_CUSTOM_FIELDS: dict[str, list[LookMLViewField]] = {
             ]
         ),
     ],
-    "state_person_ethnicity": [
-        EntityLookMLFieldFactory.count_measure(
-            drill_fields=[
-                "person_ethnicity_id",
-                "state_code",
-                "ethnicity",
-                "ethnicity_raw_text",
-            ]
-        ),
-    ],
     "state_person_alias": [
         EntityLookMLFieldFactory.count_measure(
             drill_fields=[

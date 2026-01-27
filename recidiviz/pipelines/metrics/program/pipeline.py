@@ -36,7 +36,6 @@ class ProgramMetricsPipeline(MetricPipeline):
         return [
             normalized_entities.NormalizedStatePerson,
             normalized_entities.NormalizedStatePersonRace,
-            normalized_entities.NormalizedStatePersonEthnicity,
             normalized_entities.NormalizedStateAssessment,
             normalized_entities.NormalizedStateProgramAssignment,
             normalized_entities.NormalizedStateSupervisionPeriod,

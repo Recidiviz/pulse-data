@@ -59,19 +59,17 @@ output:
                   - "WHITE"
                   - "HISPANIC"
                 StateRace.OTHER: "OTHER"
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: race
-              $mappings:
-                StateEthnicity.HISPANIC: "HISPANIC"
-                StateEthnicity.NOT_HISPANIC:
-                  - "ASIAN OR PACIFIC ISLANDER"
-                  - "BLACK"
-                  - "AMERICAN INDIAN OR ALASKAN"
-                  - "WHITE"
-                  - "ASIAN/PACIFIC ISLANDER"
-                  - "OTHER"
-                  - "AMERICAN INDIAN/ALASKAN"
-                StateEthnicity.EXTERNAL_UNKNOWN: "UNKNOWN"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: race
+        $mappings:
+          StateEthnicity.HISPANIC: "HISPANIC"
+          StateEthnicity.NOT_HISPANIC:
+            - "ASIAN OR PACIFIC ISLANDER"
+            - "BLACK"
+            - "AMERICAN INDIAN OR ALASKAN"
+            - "WHITE"
+            - "ASIAN/PACIFIC ISLANDER"
+            - "OTHER"
+            - "AMERICAN INDIAN/ALASKAN"
+          StateEthnicity.EXTERNAL_UNKNOWN: "UNKNOWN"

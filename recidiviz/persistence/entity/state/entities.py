@@ -477,34 +477,6 @@ class StatePersonRace(StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAt
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonEthnicity(
-    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
-):
-    """
-    Each StatePersonEthnicity holds a single reported ethnicity for a single person.
-    A StatePerson may have multiple StatePersonEthnicity objects, because they may be
-    multi-ethnic, or because different data sources may report different ethnicities.
-    """
-
-    # Attributes
-    ethnicity: StateEthnicity = attr.ib(
-        validator=attr.validators.instance_of(StateEthnicity)
-    )
-    ethnicity_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Primary key - Only optional when hydrated in the parsing layer, before we have
-    # written this entity to the persistence layer
-    person_ethnicity_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-
-
-@attr.s(eq=False, kw_only=True)
 class StatePerson(
     HasMultipleExternalIdsEntity[StatePersonExternalId],
     RootEntity,
@@ -567,6 +539,13 @@ class StatePerson(
         default=None, validator=attr_validators.is_opt_str
     )
 
+    ethnicity: Optional[StateEthnicity] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateEthnicity)
+    )
+    ethnicity_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     sex: Optional[StateSex] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateSex)
     )
@@ -616,9 +595,6 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
     races: List["StatePersonRace"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    ethnicities: List["StatePersonEthnicity"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     assessments: List["StateAssessment"] = attr.ib(

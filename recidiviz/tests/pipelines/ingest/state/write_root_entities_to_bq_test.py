@@ -154,6 +154,8 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
                             "current_address": None,
                             "current_email_address": None,
                             "current_phone_number": None,
+                            "ethnicity": None,
+                            "ethnicity_raw_text": None,
                             "full_name": None,
                             "gender": "FEMALE",
                             "gender_raw_text": None,

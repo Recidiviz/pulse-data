@@ -17,7 +17,7 @@
 """Functionality for normalizing the given StateStaff root entity into a
 NormalizedStateStaff.
 """
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -99,16 +99,17 @@ def build_normalized_state_staff(
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
 
-    staff_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
+    staff_subtree_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
         "role_periods": role_periods,
         "supervisor_periods": supervisor_periods,
     }
-
+    staff_flat_field_kwargs: dict[str, Any] = {}
     return assert_type(
         build_normalized_root_entity(
             pre_normalization_root_entity=staff,
             normalized_root_entity_cls=NormalizedStateStaff,
-            root_entity_subtree_kwargs=staff_kwargs,
+            root_entity_subtree_kwargs=staff_subtree_kwargs,
+            root_entity_flat_field_kwargs=staff_flat_field_kwargs,
         ),
         NormalizedStateStaff,
     )

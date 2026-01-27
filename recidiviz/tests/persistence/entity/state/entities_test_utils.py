@@ -429,14 +429,6 @@ def generate_full_graph_state_person(
         ),
     ]
 
-    person.ethnicities = [
-        entities.StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            ethnicity_raw_text="NOT HISPANIC",
-        )
-    ]
-
     assessment1 = entities.StateAssessment.new_with_defaults(
         external_id="a1",
         assessment_class=StateAssessmentClass.RISK,
@@ -1568,6 +1560,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
     person = normalized_entities.NormalizedStatePerson(
         person_id=1,
         state_code="US_XX",
+        ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         external_ids=[
             normalized_entities.NormalizedStatePersonExternalId(
                 person_external_id_id=1,
@@ -1605,14 +1598,6 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
                 race=StateRace.BLACK,
                 race_raw_text="BLACK",
             ),
-        ],
-        ethnicities=[
-            normalized_entities.NormalizedStatePersonEthnicity(
-                person_ethnicity_id=1,
-                state_code="US_XX",
-                ethnicity=StateEthnicity.NOT_HISPANIC,
-                ethnicity_raw_text="NOT HISPANIC",
-            )
         ],
         assessments=[assessment1, assessment2],
         program_assignments=[program_assignment, program_assignment2],

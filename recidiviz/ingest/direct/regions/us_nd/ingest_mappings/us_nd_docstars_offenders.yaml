@@ -170,19 +170,17 @@ output:
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "6"
               $ignore:
                 - "5" # Hispanic
-    ethnicities:
-      - StatePersonEthnicity:
-          # There are not separate ethnicity fields in DOCR files. Rather, it is included under race fields. Thus, we look for race
-          # fields with specific values that indicate a Hispanic ethnicity.
-          ethnicity:
-            $enum_mapping:
-              $raw_text: RACE
-              $mappings:
-                StateEthnicity.HISPANIC: "5"
-              $ignore:
-                # These are race values - ignore when mapping to ethnicity.
-                - "1"
-                - "2"
-                - "3"
-                - "4"
-                - "6"
+    # There are not separate ethnicity fields in DOCR files. Rather, it is included under race fields. Thus, we look for race
+    # fields with specific values that indicate a Hispanic ethnicity.
+    ethnicity:
+      $enum_mapping:
+        $raw_text: RACE
+        $mappings:
+          StateEthnicity.HISPANIC: "5"
+          StateEthnicity.NOT_HISPANIC:
+            # These are race values, so assume that people with these codes are not Hispanic.
+            - "1"
+            - "2"
+            - "3"
+            - "4"
+            - "6"

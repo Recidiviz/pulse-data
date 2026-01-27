@@ -26,6 +26,7 @@ from parameterized import parameterized
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
@@ -67,7 +68,11 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
     """Tests for assessments_in_compliance_month."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_ND", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_ND",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
@@ -171,7 +176,11 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for face_to_face_contacts_in_compliance_month."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_ND", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_ND",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
@@ -283,7 +292,11 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_ND", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_ND",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
@@ -528,7 +541,11 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
     """Tests the next_recommended_face_to_face_date functions."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_ND", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_ND",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
@@ -1004,7 +1021,11 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_ND", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_ND",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )
@@ -1113,7 +1134,11 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
     """Tests the next_recommended_home_visit_date function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_ND", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_ND",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsNdIncarcerationDelegate()
         )

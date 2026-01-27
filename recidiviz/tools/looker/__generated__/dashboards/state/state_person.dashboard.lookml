@@ -462,6 +462,8 @@
       state_person.current_address,
       state_person.current_email_address,
       state_person.current_phone_number,
+      state_person.ethnicity,
+      state_person.ethnicity_raw_text,
       state_person.full_name,
       state_person.full_name_clean,
       state_person.gender,
@@ -472,7 +474,6 @@
       state_person.sex,
       state_person.sex_raw_text,
       state_person.state_code,
-      state_person_ethnicity.count,
       state_person_race.count]
     sorts: [state_person.birthdate_date desc]
     listen: 

@@ -36,6 +36,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_person import (
+    StateEthnicity,
     StateGender,
     StateRace,
     StateResidencyStatus,
@@ -161,7 +162,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        persons_data = [normalized_database_base_dict(fake_person)]
+        persons_data = [
+            normalized_database_base_dict(
+                fake_person, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            )
+        ]
 
         fake_person_race = schema.StatePersonRace(
             person_race_id=1,
@@ -443,7 +448,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        persons_data = [normalized_database_base_dict(fake_person)]
+        persons_data = [
+            normalized_database_base_dict(
+                fake_person, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            )
+        ]
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -639,8 +648,12 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
         persons_data = [
-            normalized_database_base_dict(fake_person_1),
-            normalized_database_base_dict(fake_person_2),
+            normalized_database_base_dict(
+                fake_person_1, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
+            normalized_database_base_dict(
+                fake_person_2, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
         ]
 
         initial_incarceration_1 = schema.StateIncarcerationPeriod(
@@ -835,6 +848,7 @@ class TestClassifyEvents(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod(
@@ -975,6 +989,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         supervision_time_events = [
@@ -1038,6 +1053,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         inputs: list[tuple[NormalizedStatePerson, list[SupervisionMetric]]] = [

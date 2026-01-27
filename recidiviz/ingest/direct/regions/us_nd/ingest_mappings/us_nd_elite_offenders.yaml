@@ -10,6 +10,7 @@ input_columns:
   LAST_NAME_PRIMARY: STRING
   RACE_CODE_LIST: STRING
   ALIAS_LIST: STRING
+  HISPANIC_INDICATOR: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -87,22 +88,13 @@ output:
                     StateRace.WHITE: CAUCASIAN
                     StateRace.OTHER: MUL
                   $ignore: [HIS]
-    ethnicities:
+    ethnicity:
       # There are not separate ethnicity fields in DOCR files. Rather, it is included under race fields. Thus, we look for race
       # fields with specific values that indicate a Hispanic ethnicity,
-      - $foreach:
-          $iterable: RACE_CODE_LIST
-          $result:
-            StatePersonEthnicity:
-              ethnicity:
-                $enum_mapping:
-                  $raw_text: $iter_item
-                  $mappings:
-                    StateEthnicity.HISPANIC: HIS
-                  $ignore:
-                    - NAT
-                    - HAW
-                    - CAUCASIAN
-                    - BLACK
-                    - ASIAN
-                    - MUL
+      $conditional:
+        - $if:
+            $equal:
+              - HISPANIC_INDICATOR
+              - $literal("HISPANIC")
+          $then: $literal_enum(StateEthnicity.HISPANIC)
+        - $else: $literal_enum(StateEthnicity.NOT_HISPANIC)

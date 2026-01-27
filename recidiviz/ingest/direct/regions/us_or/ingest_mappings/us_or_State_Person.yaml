@@ -51,18 +51,16 @@ output:
                   - U
                   - "2" # erroneous value sent by OR
               $ignore: [H]
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: RACE
-              $mappings:
-                StateEthnicity.HISPANIC: H
-              $ignore:
-                - A
-                - B
-                - I
-                - W
-                - P
-                - U
-                - "2"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: RACE
+        $mappings:
+          StateEthnicity.HISPANIC: H
+          StateEthnicity.NOT_HISPANIC:
+            - A
+            - B
+            - I
+            - W
+            - P
+            - U
+            - "2"

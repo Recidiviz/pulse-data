@@ -31,7 +31,6 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonExternalId,
     NormalizedStatePersonRace,
 )
@@ -330,6 +329,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -337,14 +337,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -389,20 +381,13 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1908: [
@@ -465,20 +450,13 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1910: [
@@ -533,20 +511,13 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1908: [
@@ -600,20 +571,13 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1908: [
@@ -671,6 +635,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -678,14 +643,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -730,20 +687,13 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -784,20 +734,13 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
             state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
         )
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             1998: [
@@ -841,6 +784,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race_white = NormalizedStatePersonRace(
@@ -852,148 +796,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race_white, race_black]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
-
-        release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
-            2008: [
-                RecidivismReleaseEvent(
-                    "US_XX",
-                    date(2005, 7, 19),
-                    date(2008, 9, 19),
-                    "Hudson",
-                    date(2014, 5, 12),
-                    "Upstate",
-                )
-            ]
-        }
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS,
-            _PIPELINE_JOB_ID,
-        )
-
-        expected_count = self.expected_metric_counts(release_events_by_cohort)
-
-        self.assertEqual(expected_count, len(metrics))
-        self.assertEqual(
-            len(set(id(metric) for metric in metrics)),
-            len(metrics),
-        )
-
-        for metric in metrics:
-            if isinstance(metric, ReincarcerationRecidivismRateMetric):
-                if metric.follow_up_period <= 5:
-                    self.assertFalse(metric.did_recidivate)
-                else:
-                    self.assertTrue(metric.did_recidivate)
-
-    def test_produce_recidivism_metrics_multiple_ethnicities(self) -> None:
-        """Tests the produce_recidivism_metrics function where there is
-        recidivism, and the person has more than one ethnicity."""
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.BLACK
-        )
-        person.races = [race]
-
-        ethnicity_hispanic = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.HISPANIC,
-        )
-
-        ethnicity_not_hispanic = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity_hispanic, ethnicity_not_hispanic]
-
-        release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
-            2008: [
-                RecidivismReleaseEvent(
-                    "US_XX",
-                    date(2005, 7, 19),
-                    date(2008, 9, 19),
-                    "Hudson",
-                    date(2014, 5, 12),
-                    "Upstate",
-                )
-            ]
-        }
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS,
-            _PIPELINE_JOB_ID,
-        )
-
-        expected_count = self.expected_metric_counts(release_events_by_cohort)
-
-        self.assertEqual(expected_count, len(metrics))
-        self.assertEqual(
-            len(set(id(metric) for metric in metrics)),
-            len(metrics),
-        )
-
-        for metric in metrics:
-            if isinstance(metric, ReincarcerationRecidivismRateMetric):
-                if metric.follow_up_period <= 5:
-                    self.assertFalse(metric.did_recidivate)
-                else:
-                    self.assertTrue(metric.did_recidivate)
-
-    def test_produce_recidivism_metrics_multiple_races_ethnicities(self) -> None:
-        """Tests the produce_recidivism_metrics function where there is
-        recidivism, and the person has multiple races and multiple
-        ethnicities."""
-        person = NormalizedStatePerson(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race_white = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-        )
-
-        race_black = NormalizedStatePersonRace(
-            state_code="US_XX", person_race_id=123345, race=StateRace.BLACK
-        )
-
-        person.races = [race_white, race_black]
-
-        ethnicity_hispanic = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.HISPANIC,
-        )
-
-        ethnicity_not_hispanic = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity_hispanic, ethnicity_not_hispanic]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -1038,6 +840,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1045,14 +848,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -1096,6 +891,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1103,14 +899,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -1156,6 +944,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1163,14 +952,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -1213,6 +994,7 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -1220,14 +1002,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         release_events_by_cohort: Dict[int, List[ReleaseEvent]] = {
             2008: [
@@ -1262,16 +1036,10 @@ class TestProduceMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             races=[
                 NormalizedStatePersonRace(
                     state_code="US_ND", person_race_id=12345, race=StateRace.WHITE
-                )
-            ],
-            ethnicities=[
-                NormalizedStatePersonEthnicity(
-                    state_code="US_ND",
-                    person_ethnicity_id=12345,
-                    ethnicity=StateEthnicity.NOT_HISPANIC,
                 )
             ],
             external_ids=[

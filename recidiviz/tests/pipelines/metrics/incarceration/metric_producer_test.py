@@ -42,7 +42,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonExternalId,
     NormalizedStatePersonRace,
 )
@@ -78,6 +77,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -85,14 +85,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_event = IncarcerationStandardAdmissionEvent(
             state_code="US_XX",
@@ -125,6 +117,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -132,14 +125,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_events = [
             IncarcerationStandardAdmissionEvent(
@@ -185,6 +170,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -192,14 +178,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_events = [
             IncarcerationStandardAdmissionEvent(
@@ -234,6 +212,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -241,14 +220,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_events = [
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
@@ -296,6 +267,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -303,14 +275,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_events = [
             IncarcerationReleaseEvent(
@@ -344,6 +308,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -351,14 +316,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_event = IncarcerationStandardAdmissionEvent(
             state_code="US_XX",
@@ -392,6 +349,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -399,14 +357,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_event = IncarcerationStandardAdmissionEvent(
             state_code="US_XX",
@@ -435,6 +385,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -442,14 +393,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_event_include = IncarcerationStandardAdmissionEvent(
             state_code="US_XX",
@@ -492,6 +435,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
         )
 
         race = NormalizedStatePersonRace(
@@ -499,14 +443,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         )
 
         person.races = [race]
-
-        ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            person_ethnicity_id=12345,
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-        )
-
-        person.ethnicities = [ethnicity]
 
         incarceration_event = IncarcerationStandardAdmissionEvent(
             state_code="US_XX",
@@ -537,16 +473,10 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             races=[
                 NormalizedStatePersonRace(
                     state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
-                )
-            ],
-            ethnicities=[
-                NormalizedStatePersonEthnicity(
-                    state_code="US_XX",
-                    person_ethnicity_id=12345,
-                    ethnicity=StateEthnicity.NOT_HISPANIC,
                 )
             ],
             external_ids=[

@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeStatus,
     StateChargeV2Status,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
@@ -509,6 +510,7 @@ class TestEntityValidations(unittest.TestCase):
         normalized_person = normalized_entities.NormalizedStatePerson(
             state_code="US_XX",
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 normalized_entities.NormalizedStatePersonExternalId(
                     state_code="US_XX",
@@ -557,6 +559,7 @@ class TestEntityValidations(unittest.TestCase):
         normalized_person = normalized_entities.NormalizedStatePerson(
             state_code="US_XX",
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 normalized_entities.NormalizedStatePersonExternalId(
                     state_code="US_XX",
@@ -646,6 +649,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         self.state_person = normalized_entities.NormalizedStatePerson(
             state_code=self.state_code,
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 NormalizedStatePersonExternalId(
                     external_id="1",
@@ -1563,6 +1567,7 @@ class TestNormalizedEarlyDischargeChecks(unittest.TestCase):
         self.state_person = normalized_entities.NormalizedStatePerson(
             state_code=self.state_code,
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 normalized_entities.NormalizedStatePersonExternalId(
                     person_external_id_id=1,
@@ -1805,6 +1810,7 @@ class TestNormalizedStatePersonStaffRelationshipPeriodChecks(unittest.TestCase):
         person = normalized_entities.NormalizedStatePerson(
             state_code=self.STATE_CODE_VALUE,
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=[
                 normalized_entities.NormalizedStatePersonExternalId(
                     person_external_id_id=1,
@@ -2055,6 +2061,7 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
         person = NormalizedStatePerson(
             state_code=StateCode.US_XX.value,
             person_id=1,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             external_ids=external_ids,
         )
         for pei in person.external_ids:

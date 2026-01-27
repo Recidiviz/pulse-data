@@ -46,12 +46,10 @@ output:
                 StateRace.OTHER:
                   - "8"
                   - "9"
-    ethnicities:
-      - StatePersonEthnicity:
-          ethnicity:
-            $enum_mapping:
-              $raw_text: Ethnicity
-              $mappings:
-                StateEthnicity.HISPANIC: "186"
-                StateEthnicity.NOT_HISPANIC: "187"
-                StateEthnicity.EXTERNAL_UNKNOWN: "188"
+    ethnicity:
+      $enum_mapping:
+        $raw_text: Ethnicity
+        $mappings:
+          StateEthnicity.HISPANIC: "186"
+          StateEthnicity.NOT_HISPANIC: "187"
+          StateEthnicity.EXTERNAL_UNKNOWN: "188"

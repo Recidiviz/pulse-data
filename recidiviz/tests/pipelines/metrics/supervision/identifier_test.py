@@ -46,6 +46,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -139,7 +140,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self.state_code = StateCode.US_XX
         self.identifier = SupervisionIdentifier(self.state_code)
         self.person = NormalizedStatePerson(
-            state_code=self.state_code.value, person_id=99000123
+            state_code=self.state_code.value,
+            person_id=99000123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
     def tearDown(self) -> None:
@@ -2087,7 +2090,9 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         self.identifier = SupervisionIdentifier(self.state_code)
 
         self.person = NormalizedStatePerson(
-            state_code=self.state_code.value, person_id=12345
+            state_code=self.state_code.value,
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
     def tearDown(self) -> None:

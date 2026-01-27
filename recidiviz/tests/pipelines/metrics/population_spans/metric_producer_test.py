@@ -40,7 +40,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonExternalId,
     NormalizedStatePersonRace,
 )
@@ -71,6 +70,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1982, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             races=[
                 NormalizedStatePersonRace(
                     state_code="US_XX", person_race_id=12345, race=StateRace.WHITE
@@ -97,13 +97,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     id_active_from_datetime=datetime(2020, 1, 1),
                     id_active_to_datetime=None,
                 ),
-            ],
-            ethnicities=[
-                NormalizedStatePersonEthnicity(
-                    state_code="US_XX",
-                    person_ethnicity_id=12345,
-                    ethnicity=StateEthnicity.NOT_HISPANIC,
-                )
             ],
         )
 

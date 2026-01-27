@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -54,7 +55,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
         self.identifier = identifier.RecidivismIdentifier(StateCode.US_XX)
-        self.person = NormalizedStatePerson(state_code="US_XX", person_id=99000123)
+        self.person = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=99000123,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
     def tearDown(self) -> None:
         for patcher in self.delegate_patchers:

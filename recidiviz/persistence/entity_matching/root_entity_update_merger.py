@@ -130,7 +130,7 @@ def is_reference_only_state_entity(entity: Entity) -> bool:
     """
     set_flat_fields = _get_explicitly_set_flat_fields(entity)
     if isinstance(entity, state_entities.StatePerson):
-        if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
+        if set_flat_fields or any([entity.races, entity.aliases]):
             return False
         return bool(entity.external_ids)
 

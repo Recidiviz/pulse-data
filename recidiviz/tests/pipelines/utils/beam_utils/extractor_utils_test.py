@@ -51,7 +51,6 @@ from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStatePersonAlias,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonExternalId,
     NormalizedStatePersonRace,
 )
@@ -95,20 +94,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
         schema_person_data = [normalized_database_base_dict(schema_person)]
-
-        schema_ethnicity = schema.StatePersonEthnicity(
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_id=person_id,
-            person_ethnicity_id=234,
-        )
-
-        ethnicities_data = [normalized_database_base_dict(schema_ethnicity)]
 
         schema_alias = schema.StatePersonAlias(
             state_code="US_XX",
@@ -158,7 +149,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         data_dict_overrides = {
             schema.StatePerson.__tablename__: schema_person_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
             schema.StateAssessment.__tablename__: assessment_data,
@@ -171,10 +161,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_person = assert_type(
             entity_converter.convert(schema_person, populate_back_edges=True),
             entities.StatePerson,
-        )
-        entity_ethnicity = assert_type(
-            entity_converter.convert(schema_ethnicity, populate_back_edges=True),
-            entities.StatePersonEthnicity,
         )
         entity_alias = assert_type(
             entity_converter.convert(schema_alias, populate_back_edges=True),
@@ -195,7 +181,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             entities.StateAssessment,
         )
 
-        entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
         entity_person.external_ids = [entity_external_id]
         entity_person.races = entity_races
@@ -219,7 +204,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
-                    entities.StatePersonEthnicity,
                     entities.StatePersonAlias,
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
@@ -239,9 +223,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                             {
                                 entities.StatePerson.__name__: [entity_person],
                                 entities.StatePersonRace.__name__: entity_races,
-                                entities.StatePersonEthnicity.__name__: [
-                                    entity_ethnicity
-                                ],
                                 entities.StatePersonAlias.__name__: [entity_alias],
                                 entities.StatePersonExternalId.__name__: [
                                     entity_external_id
@@ -429,15 +410,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         person_id = 12345
 
-        schema_ethnicity = schema.StatePersonEthnicity(
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_id=person_id,
-            person_ethnicity_id=234,
-        )
-
-        ethnicities_data = [normalized_database_base_dict(schema_ethnicity)]
-
         schema_alias = schema.StatePersonAlias(
             state_code="US_XX",
             full_name="Bernie Madoff",
@@ -485,7 +457,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
 
         data_dict_overrides = {
-            schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
             schema.StateAssessment.__tablename__: assessment_data,
@@ -495,9 +466,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_ethnicity = entity_converter.convert(
-            schema_ethnicity, populate_back_edges=True
-        )
         entity_alias = entity_converter.convert(schema_alias, populate_back_edges=True)
         entity_external_id = entity_converter.convert(
             schema_external_id, populate_back_edges=True
@@ -526,7 +494,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 entities_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePersonRace,
-                    entities.StatePersonEthnicity,
                     entities.StatePersonAlias,
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
@@ -545,9 +512,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                             12345,
                             {
                                 entities.StatePersonRace.__name__: entity_races,
-                                entities.StatePersonEthnicity.__name__: [
-                                    entity_ethnicity
-                                ],
                                 entities.StatePersonAlias.__name__: [entity_alias],
                                 entities.StatePersonExternalId.__name__: [
                                     entity_external_id
@@ -872,20 +836,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
         schema_person_data = [normalized_database_base_dict(schema_person)]
-
-        schema_ethnicity = schema.StatePersonEthnicity(
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_id=person_id,
-            person_ethnicity_id=234,
-        )
-
-        ethnicities_data = [normalized_database_base_dict(schema_ethnicity)]
 
         schema_alias = schema.StatePersonAlias(
             state_code="US_XX",
@@ -944,7 +900,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         data_dict_overrides = {
             schema.StatePerson.__tablename__: schema_person_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
             schema.StateAssessment.__tablename__: assessment_data,
@@ -958,10 +913,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_person = assert_type(
             entity_converter.convert(schema_person, populate_back_edges=True),
             entities.StatePerson,
-        )
-        entity_ethnicity = assert_type(
-            entity_converter.convert(schema_ethnicity, populate_back_edges=True),
-            entities.StatePersonEthnicity,
         )
         entity_alias = assert_type(
             entity_converter.convert(schema_alias, populate_back_edges=True),
@@ -982,7 +933,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             entities.StateAssessment,
         )
 
-        entity_person.ethnicities = [entity_ethnicity]
         entity_person.aliases = [entity_alias]
         entity_person.external_ids = [entity_external_id]
         entity_person.races = entity_races
@@ -1006,7 +956,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
-                    entities.StatePersonEthnicity,
                     entities.StatePersonAlias,
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
@@ -1028,9 +977,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                             {
                                 entities.StatePerson.__name__: [entity_person],
                                 entities.StatePersonRace.__name__: entity_races,
-                                entities.StatePersonEthnicity.__name__: [
-                                    entity_ethnicity
-                                ],
                                 entities.StatePersonAlias.__name__: [entity_alias],
                                 entities.StatePersonExternalId.__name__: [
                                     entity_external_id
@@ -1280,20 +1226,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
         )
 
         schema_person_data = [normalized_database_base_dict(schema_person)]
-
-        schema_ethnicity = schema.StatePersonEthnicity(
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_id=person_id,
-            person_ethnicity_id=234,
-        )
-
-        ethnicities_data = [normalized_database_base_dict(schema_ethnicity)]
 
         schema_alias = schema.StatePersonAlias(
             state_code="US_XX",
@@ -1354,7 +1292,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         data_dict_overrides = {
             schema.StatePerson.__tablename__: schema_person_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
             schema.StatePersonExternalId.__tablename__: external_ids_data,
             schema.StateProgramAssignment.__tablename__: program_data,
@@ -1368,13 +1305,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             full_name="Bernard Madoff",
             birthdate=date(1970, 1, 1),
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
-        )
-        expected_entity_ethnicity = NormalizedStatePersonEthnicity(
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_ethnicity_id=234,
         )
         expected_entity_alias = NormalizedStatePersonAlias(
             state_code="US_XX",
@@ -1411,7 +1344,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             sequence_num=0,
         )
 
-        expected_entity_person.ethnicities = [expected_entity_ethnicity]
         expected_entity_person.aliases = [expected_entity_alias]
         expected_entity_person.external_ids = [expected_entity_external_id]
         expected_entity_person.races = expected_entity_races
@@ -1435,7 +1367,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 required_entity_classes=[
                     normalized_entities.NormalizedStatePerson,
                     normalized_entities.NormalizedStatePersonRace,
-                    normalized_entities.NormalizedStatePersonEthnicity,
                     normalized_entities.NormalizedStatePersonAlias,
                     normalized_entities.NormalizedStatePersonExternalId,
                     normalized_entities.NormalizedStateProgramAssignment,
@@ -1457,9 +1388,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                     expected_entity_person
                                 ],
                                 normalized_entities.NormalizedStatePersonRace.__name__: expected_entity_races,
-                                normalized_entities.NormalizedStatePersonEthnicity.__name__: [
-                                    expected_entity_ethnicity
-                                ],
                                 normalized_entities.NormalizedStatePersonAlias.__name__: [
                                     expected_entity_alias
                                 ],
@@ -1515,7 +1443,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         schema_person.supervision_violations = [schema_supervision_violation]
 
-        person_data = [normalized_database_base_dict(schema_person)]
+        person_data = [
+            normalized_database_base_dict(
+                schema_person, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            )
+        ]
         supervision_violation_data = [
             normalized_database_base_dict(schema_supervision_violation)
         ]
@@ -1543,6 +1475,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
             gender=StateGender.MALE,
             residency_status=StateResidencyStatus.PERMANENT,
             state_code="US_XX",
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
         expected_entity_violation = (
             normalized_entities.NormalizedStateSupervisionViolation(

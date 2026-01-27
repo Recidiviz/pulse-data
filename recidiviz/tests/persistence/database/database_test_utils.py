@@ -366,15 +366,8 @@ def generate_test_person(
                 person_id=person_id,
             )
         ],
-        ethnicities=[
-            state_schema.StatePersonEthnicity(
-                person_ethnicity_id=345,
-                state_code="US_XX",
-                ethnicity=StateEthnicity.NOT_HISPANIC.value,
-                ethnicity_raw_text="HISP",
-                person_id=person_id,
-            )
-        ],
+        ethnicity=StateEthnicity.NOT_HISPANIC.value,
+        ethnicity_raw_text="HISP",
         incarceration_incidents=incarceration_incidents,
         supervision_violations=supervision_violations,
         supervision_contacts=supervision_contacts,

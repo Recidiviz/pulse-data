@@ -155,6 +155,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             state_code=state_code,
             person_id=fake_person_id,
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.HISPANIC,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
         )
@@ -176,15 +177,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
 
         races_data = normalized_database_base_dict_list([race_1, race_2])
-
-        ethnicity = schema.StatePersonEthnicity(
-            person_ethnicity_id=111,
-            state_code=state_code,
-            ethnicity=StateEthnicity.HISPANIC,
-            person_id=fake_person_id,
-        )
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -299,7 +291,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
@@ -411,8 +402,12 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
 
         persons_data = [
-            normalized_database_base_dict(fake_person_1),
-            normalized_database_base_dict(fake_person_2),
+            normalized_database_base_dict(
+                fake_person_1, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
+            normalized_database_base_dict(
+                fake_person_2, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
         ]
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
@@ -485,6 +480,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod(
@@ -591,6 +587,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         person_entities = self.load_person_entities_dict(person=fake_person)
@@ -652,6 +649,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         incarceration_events = [
@@ -717,6 +715,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         test_pipeline = create_test_pipeline()

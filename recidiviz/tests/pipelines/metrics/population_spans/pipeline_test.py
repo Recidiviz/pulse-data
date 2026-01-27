@@ -143,6 +143,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.NOT_HISPANIC,
             birthdate=date(1985, 2, 1),
         )
         persons_data = [normalized_database_base_dict(fake_person)]
@@ -161,15 +162,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         )
 
         races_data = normalized_database_base_dict_list([race_1, race_2])
-
-        ethnicity = schema.StatePersonEthnicity(
-            person_ethnicity_id=111,
-            state_code="US_XX",
-            ethnicity=StateEthnicity.NOT_HISPANIC,
-            person_id=fake_person_id,
-        )
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         incarceration_period = schema.StateIncarcerationPeriod(
             incarceration_period_id=fake_incarceration_period_id,
@@ -213,7 +205,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
         }
@@ -314,6 +305,7 @@ class TestClassifyResults(unittest.TestCase):
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             birthdate=date(1985, 2, 1),
         )
         self.delegate_patchers = start_pipeline_delegate_getter_patchers(
@@ -506,6 +498,7 @@ class TestProduceMetrics(unittest.TestCase):
             state_code="US_XX",
             person_id=self.fake_person_id,
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
             birthdate=date(1985, 2, 1),
         )
         population_span_events = [

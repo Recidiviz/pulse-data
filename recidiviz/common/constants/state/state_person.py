@@ -104,10 +104,11 @@ class StateEthnicity(StateEntityEnum):
     NOT_HISPANIC = state_enum_strings.state_ethnicity_not_hispanic
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
 
     @classmethod
     def get_enum_description(cls) -> str:
-        return "An ethnicity of the person."
+        return "The ethnicity of the person."
 
     @classmethod
     def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:

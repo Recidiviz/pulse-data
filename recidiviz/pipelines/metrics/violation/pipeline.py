@@ -36,7 +36,6 @@ class ViolationMetricsPipeline(MetricPipeline):
         return [
             normalized_entities.NormalizedStatePerson,
             normalized_entities.NormalizedStatePersonRace,
-            normalized_entities.NormalizedStatePersonEthnicity,
             normalized_entities.NormalizedStateSupervisionViolation,
             normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
             normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,

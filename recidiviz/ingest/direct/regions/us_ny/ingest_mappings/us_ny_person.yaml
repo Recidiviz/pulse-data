@@ -34,6 +34,7 @@ output:
           StateSex.FEMALE: "2" # FEMALE
           StateSex.OTHER: "9" # NOT CODED
     birthdate: birth
+    ethnicity: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)
     races:
       - StatePersonRace:
           race:

@@ -26,7 +26,7 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 
 # pylint: disable=protected-access
-from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
@@ -101,7 +101,11 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
     """Tests for _completed_assessments_on_date."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -204,7 +208,11 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for _face_to_face_contacts_on_dates."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -321,7 +329,11 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -1571,7 +1583,11 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -1947,7 +1963,11 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
 
     def setUp(self) -> None:
-        self.person = NormalizedStatePerson(state_code="US_IX", person_id=12345)
+        self.person = NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
         self.empty_ip_index = default_normalized_ip_index_for_tests(
             incarceration_delegate=UsIxIncarcerationDelegate()
         )
@@ -2206,7 +2226,12 @@ class TestSupervisionDowngrades(unittest.TestCase):
         )
 
     def _person_with_gender(self, gender: StateGender) -> NormalizedStatePerson:
-        return NormalizedStatePerson(state_code="US_IX", person_id=12345, gender=gender)
+        return NormalizedStatePerson(
+            state_code="US_IX",
+            person_id=12345,
+            gender=gender,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
     def _supervision_period_with_level(
         self, supervision_level: StateSupervisionLevel

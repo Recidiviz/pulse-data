@@ -45,19 +45,17 @@ output:
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: HAWAIIAN/PACIFIC ISLANDER
                 StateRace.EXTERNAL_UNKNOWN: UNKNOWN
                 StateRace.INTERNAL_UNKNOWN: OTHER
-    ethnicities:
-      - $conditional:
-          - $if:
-              $not_null: ethnicity
-            $then:
-              StatePersonEthnicity:
-                ethnicity:
-                  $enum_mapping:
-                    $raw_text: ethnicity
-                    $mappings:
-                      StateEthnicity.HISPANIC: HISPANIC/LATINO
-                      StateEthnicity.NOT_HISPANIC:
-                        - NOT HISPANIC/LATINO
-                        - EUROPEAN/N.AM./AUSTR
-                        - AFRICAN
-                      StateEthnicity.EXTERNAL_UNKNOWN: UNKNOWN
+    ethnicity:
+      $conditional:
+        - $if:
+            $not_null: ethnicity
+          $then:
+            $enum_mapping:
+              $raw_text: ethnicity
+              $mappings:
+                StateEthnicity.HISPANIC: HISPANIC/LATINO
+                StateEthnicity.NOT_HISPANIC:
+                  - NOT HISPANIC/LATINO
+                  - EUROPEAN/N.AM./AUSTR
+                  - AFRICAN
+                StateEthnicity.EXTERNAL_UNKNOWN: UNKNOWN

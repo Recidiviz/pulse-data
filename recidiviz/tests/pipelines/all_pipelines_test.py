@@ -37,7 +37,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
-    NormalizedStatePersonEthnicity,
     NormalizedStatePersonRace,
 )
 from recidiviz.pipelines.ingest.dataset_config import (
@@ -155,7 +154,6 @@ class TestPipelineValidations(unittest.TestCase):
                 default_entities: Set[Type[Entity]] = {
                     NormalizedStatePerson,
                     NormalizedStatePersonRace,
-                    NormalizedStatePersonEthnicity,
                 }
                 self.assertFalse(len(pipeline_class.required_entities()) == 0)
                 missing_default_entities = default_entities.difference(

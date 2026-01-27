@@ -337,6 +337,7 @@ state_ethnicity = Enum(
     state_enum_strings.state_ethnicity_not_hispanic,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
+    state_enum_strings.present_without_info,
     name="state_ethnicity",
 )
 
@@ -1131,18 +1132,6 @@ class StatePersonRace(StateBase, _ReferencesStatePersonSharedColumns):
     race_raw_text = Column(String(255))
 
 
-class StatePersonEthnicity(StateBase, _ReferencesStatePersonSharedColumns):
-    """Represents a state person in the SQL schema"""
-
-    __tablename__ = "state_person_ethnicity"
-
-    person_ethnicity_id = Column(Integer, primary_key=True)
-
-    state_code = Column(String(255), nullable=False, index=True)
-    ethnicity = Column(state_ethnicity, nullable=False)
-    ethnicity_raw_text = Column(String(255))
-
-
 class StatePerson(StateBase):
     """Represents a StatePerson in the state SQL schema"""
 
@@ -1157,6 +1146,9 @@ class StatePerson(StateBase):
     full_name = Column(String(255), index=True)
 
     birthdate = Column(Date, index=True)
+
+    ethnicity = Column(state_ethnicity)
+    ethnicity_raw_text = Column(String(255))
 
     gender = Column(state_gender)
     gender_raw_text = Column(String(255))
@@ -1175,9 +1167,6 @@ class StatePerson(StateBase):
     )
     aliases = relationship("StatePersonAlias", backref="person", lazy="selectin")
     races = relationship("StatePersonRace", backref="person", lazy="selectin")
-    ethnicities = relationship(
-        "StatePersonEthnicity", backref="person", lazy="selectin"
-    )
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
     sentences = relationship("StateSentence", backref="person", lazy="selectin")
     incarceration_sentences = relationship(

@@ -118,6 +118,7 @@ class TestProgramPipeline(unittest.TestCase):
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.HISPANIC,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
         )
@@ -139,15 +140,6 @@ class TestProgramPipeline(unittest.TestCase):
         )
 
         races_data = normalized_database_base_dict_list([race_1, race_2])
-
-        ethnicity = schema.StatePersonEthnicity(
-            person_ethnicity_id=111,
-            state_code="US_XX",
-            ethnicity=StateEthnicity.HISPANIC,
-            person_id=fake_person_id,
-        )
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         program_assignment = schema.StateProgramAssignment(
             state_code="US_XX",
@@ -209,7 +201,6 @@ class TestProgramPipeline(unittest.TestCase):
         data_dict_overrides: Dict[str, Iterable[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
@@ -296,6 +287,7 @@ class TestProgramPipeline(unittest.TestCase):
             state_code="US_XX",
             person_id=fake_person_id,
             gender=StateGender.MALE,
+            ethnicity=StateEthnicity.HISPANIC,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
         )
@@ -308,7 +300,12 @@ class TestProgramPipeline(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        persons_data = normalized_database_base_dict_list([fake_person, fake_person_2])
+        persons_data = [
+            normalized_database_base_dict(fake_person),
+            normalized_database_base_dict(
+                fake_person_2, {"ethnicity": "PRESENT_WITHOUT_INFO"}
+            ),
+        ]
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
@@ -325,15 +322,6 @@ class TestProgramPipeline(unittest.TestCase):
         )
 
         races_data = normalized_database_base_dict_list([race_1, race_2])
-
-        ethnicity = schema.StatePersonEthnicity(
-            person_ethnicity_id=111,
-            state_code="US_XX",
-            ethnicity=StateEthnicity.HISPANIC,
-            person_id=fake_person_id,
-        )
-
-        ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         # Program assignment for a different person
         program_assignment = schema.StateProgramAssignment(
@@ -396,7 +384,6 @@ class TestProgramPipeline(unittest.TestCase):
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
@@ -431,6 +418,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment(
@@ -517,6 +505,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment(
@@ -602,6 +591,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         assessment = normalized_entities.NormalizedStateAssessment(
@@ -660,6 +650,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment(
@@ -748,6 +739,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         program_events = [
@@ -799,6 +791,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=StateResidencyStatus.PERMANENT,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         test_pipeline = create_test_pipeline()

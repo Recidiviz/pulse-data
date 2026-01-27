@@ -20,7 +20,7 @@ from datetime import date, datetime
 
 from freezegun import freeze_time
 
-from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.utils import calculator_utils
 from recidiviz.pipelines.metrics.utils.calculator_utils import (
@@ -36,7 +36,10 @@ class TestAgeAtDate(unittest.TestCase):
         birthdate = date(1989, 6, 17)
         check_date = date(2014, 4, 15)
         person = NormalizedStatePerson(
-            state_code="US_XX", person_id=12345, birthdate=birthdate
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=birthdate,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(calculator_utils.age_at_date(person, check_date), 24)
@@ -45,7 +48,10 @@ class TestAgeAtDate(unittest.TestCase):
         birthdate = date(1989, 6, 17)
         check_date = date(2014, 6, 16)
         person = NormalizedStatePerson(
-            state_code="US_XX", person_id=12345, birthdate=birthdate
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=birthdate,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(calculator_utils.age_at_date(person, check_date), 24)
@@ -54,7 +60,10 @@ class TestAgeAtDate(unittest.TestCase):
         birthdate = date(1989, 6, 17)
         check_date = date(2014, 6, 17)
         person = NormalizedStatePerson(
-            state_code="US_XX", person_id=12345, birthdate=birthdate
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=birthdate,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(calculator_utils.age_at_date(person, check_date), 25)
@@ -63,7 +72,10 @@ class TestAgeAtDate(unittest.TestCase):
         birthdate = date(1989, 6, 17)
         check_date = date(2014, 6, 18)
         person = NormalizedStatePerson(
-            state_code="US_XX", person_id=12345, birthdate=birthdate
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=birthdate,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(calculator_utils.age_at_date(person, check_date), 25)
@@ -72,7 +84,10 @@ class TestAgeAtDate(unittest.TestCase):
         birthdate = date(1989, 6, 17)
         check_date = date(2014, 7, 11)
         person = NormalizedStatePerson(
-            state_code="US_XX", person_id=12345, birthdate=birthdate
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=birthdate,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(calculator_utils.age_at_date(person, check_date), 25)
@@ -80,7 +95,11 @@ class TestAgeAtDate(unittest.TestCase):
     def test_age_at_date_birthdate_unknown(self) -> None:
         self.assertIsNone(
             calculator_utils.age_at_date(
-                NormalizedStatePerson(state_code="US_XX", person_id=12345),
+                NormalizedStatePerson(
+                    state_code="US_XX",
+                    person_id=12345,
+                    ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+                ),
                 datetime.today(),
             )
         )
@@ -95,6 +114,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         event_date = date(2010, 9, 1)
@@ -117,6 +137,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
         )
 
         event_date = date(2010, 9, 1)
@@ -133,7 +154,11 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         self.assertEqual(updated_characteristics, expected_output)
 
     def test_add_person_characteristics_NoAttributes(self) -> None:
-        person = NormalizedStatePerson(state_code="US_XX", person_id=12345)
+        person = NormalizedStatePerson(
+            state_code="US_XX",
+            person_id=12345,
+            ethnicity=StateEthnicity.PRESENT_WITHOUT_INFO,
+        )
 
         event_date = date(2010, 9, 1)
 
