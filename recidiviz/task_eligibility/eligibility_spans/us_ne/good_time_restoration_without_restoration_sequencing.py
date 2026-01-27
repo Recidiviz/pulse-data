@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import good_time_reinstated
 from recidiviz.task_eligibility.criteria.general import (
-    no_highest_severity_incarceration_sanctions_within_1_year,
+    no_highest_severity_incarceration_sanctions_within_1_year_of_report,
     no_revocation_incarceration_starts_in_last_90_days,
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year,
 )
@@ -55,7 +55,7 @@ US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS_WITHOUT_RESTORATION_SEQUEN
     has_lost_restorable_good_time.VIEW_BUILDER,
     not_in_ltrh_for_90_days.VIEW_BUILDER,
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year.VIEW_BUILDER,
-    no_highest_severity_incarceration_sanctions_within_1_year.VIEW_BUILDER,
+    no_highest_severity_incarceration_sanctions_within_1_year_of_report.VIEW_BUILDER,
     no_idc_mrs_in_past_6_months.VIEW_BUILDER,
     less_than_3_udc_mrs_in_past_6_months.VIEW_BUILDER,
     over_4_months_from_trd.VIEW_BUILDER,

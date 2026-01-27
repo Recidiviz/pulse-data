@@ -21,7 +21,7 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_HIGHEST_SEVERITY_INCARCERATION_SANCTIONS_WITHIN_1_YEAR"
+_CRITERIA_NAME = "NO_HIGHEST_SEVERITY_INCARCERATION_SANCTIONS_WITHIN_1_YEAR_OF_REPORT"
 
 VIEW_BUILDER = (
     incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
@@ -30,6 +30,8 @@ VIEW_BUILDER = (
         date_interval=1,
         date_part="YEAR",
         incident_severity="HIGHEST",
+        event_column="outcome.report_date",
+        outcome_effective_filter=False,
     )
 )
 

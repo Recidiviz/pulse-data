@@ -1066,6 +1066,7 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
     additional_excluded_outcome_types: Optional[Union[str, List[str]]] = None,
     incident_severity: Optional[Union[str, List[str]]] = None,
     event_column: str = "outcome.date_effective",
+    outcome_effective_filter: bool = True,
 ) -> TaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query with spans of time when someone has not recently had an
@@ -1084,7 +1085,9 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
             counted.
         event_column (str, optional): Specifies which field defines the event date—typically outcome.date_effective
             (when the sanction was assigned) or incident.incident_date (when the incident occurred). Defaults to
-            outcome.date_effective.
+            outcome.date_effective.outcome_effective_filter
+        outcome_effective_filter (bool): Specifies if we should apply a filter on outcome.effective_date. In some case
+            the incident may not have an effective date but we still want to include it
     Returns:
         TaskCriteriaBigQueryViewBuilder: View builder for spans of time when someone has
             not recently had an incarceration sanction.
@@ -1109,6 +1112,9 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
     excluded_outcome_types_bq_list = list_to_query_string(
         excluded_outcome_types, quoted=True
     )
+    outcome_effective_statement = (
+        "AND outcome.date_effective <= '3000-01-01'" if outcome_effective_filter else ""
+    )
 
     criteria_query = f"""
         WITH incarceration_sanction_dates AS (
@@ -1122,8 +1128,8 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
             USING(state_code, person_id, incarceration_incident_id)
             WHERE
                 -- We only want to count sanctions with an actual effective date
-                outcome.date_effective <= '3000-01-01'
-                AND outcome.outcome_type NOT IN ({excluded_outcome_types_bq_list})
+                outcome.outcome_type NOT IN ({excluded_outcome_types_bq_list})
+                {outcome_effective_statement}
                 {incident_severity_filter}
         ),
         {num_events_within_time_interval_spans(
