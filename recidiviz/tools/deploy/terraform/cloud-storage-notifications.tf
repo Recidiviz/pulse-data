@@ -79,6 +79,18 @@ module "archive_insights_file" {
   suffix = "archive-files"
 }
 
+module "handle_pulic_pathways_etl" {
+  source = "./modules/cloud-storage-notification"
+
+  bucket_name                = module.public-pathways-data.name
+  push_endpoint              = "${local.application_data_import_url}/import/trigger_public_pathways"
+  service_account_email      = google_service_account.application_data_import_cloud_run.email
+  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
+  minimum_backoff            = "180s"
+  maximum_backoff            = "600s"
+  message_retention_duration = "86400s"
+}
+
 
 locals {
   application_data_import_url = google_cloud_run_service.application-data-import.status.0.url
