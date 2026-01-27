@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,11 +22,9 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    supervision_case_type_is_serious_mental_illness_or_disability,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     not_in_transition_center_on_supervision,
+    supervision_case_type_is_serious_mental_illness_or_disability,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
