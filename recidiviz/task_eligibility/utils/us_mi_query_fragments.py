@@ -368,7 +368,6 @@ npc_collapsed_seg_sessions_w_ad_seg_start_date as (
       npc.state_code = "US_MI"
       AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
       AND CURRENT_DATE('US/Eastern') BETWEEN npc.start_date AND {nonnull_end_date_exclusive_clause('npc.end_date_exclusive')} 
-      AND potential_ad_seg_start_date IS NOT NULL
     QUALIFY
       (ROW_NUMBER() OVER (PARTITION BY npc.person_id ORDER BY potential_ad_seg_start_date ASC)) = 1
 )
