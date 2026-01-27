@@ -76,7 +76,9 @@ def _read_todo_lines_from_codebase() -> List[str]:
     # Gets all TODOs:
     # - git ls-files -z returns a list of all files tracked by our git repo
     #    and skips files in .gitignore
-    # - The first xargs pass returns a list of all files that match "TODO"
+    # - The first xargs pass returns a list of all files that match "TODO",
+    #   skips binary files (-I) and looks for null delimiters in input (-0)
+    # - tr converts newlines to null delimiters for the next xargs pass
     # - The second xargs pass runs over each matching file to return those
     #    that contain "TODO"
     #
@@ -89,7 +91,7 @@ def _read_todo_lines_from_codebase() -> List[str]:
     # xargs command line. For this reason, we first filter to only files
     # that match
     res = subprocess.run(
-        "git ls-files -z | xargs -0 grep -l 'TODO' | xargs grep -n 'TODO'",
+        "git ls-files -z | xargs -0 grep -Il 'TODO' | tr '\n' '\\0' | xargs -0 grep -n 'TODO'",
         shell=True,
         stdout=subprocess.PIPE,
         check=True,
