@@ -26,6 +26,7 @@ import {
   PATHWAYS_PERMISSIONS_LABELS,
   PSI_PERMISSIONS_LABELS,
   ROUTES_PERMISSIONS_LABELS,
+  SAR_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
   WORKFLOWS_PERMISSIONS_LABELS,
 } from "../constants";
@@ -198,6 +199,13 @@ export const CustomPermissionsPanel = ({
     <h4>PSI Pages:</h4>
     <RoutePermissionList
       labels={PSI_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
+
+    <h4>SAR Pages:</h4>
+    <RoutePermissionList
+      labels={SAR_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />
