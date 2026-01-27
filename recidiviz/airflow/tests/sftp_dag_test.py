@@ -292,6 +292,7 @@ class TestSFTPIntegrationTests(AirflowIntegrationTest):
                 "recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator.SftpDownloadDelegateFactory",
                 "recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator.SftpDownloadDelegateFactory",
                 "recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator.SftpDownloadDelegateFactory",
+                "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory",
             ]
         ]
         for patcher in self.delegate_factory_patchers:  # type: ignore

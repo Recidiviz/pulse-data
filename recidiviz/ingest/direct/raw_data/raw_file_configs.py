@@ -1398,6 +1398,11 @@ class DirectIngestRegionRawFileConfig:
             default_import_blocking_validation_exemptions=default_import_blocking_validation_exemptions,
         )
 
+    @property
+    def default_update_cadence(self) -> RawDataFileUpdateCadence:
+        """Returns the default update cadence for this region's raw data files."""
+        return self.default_config().default_update_cadence
+
     def get_datetime_parsers(self) -> Set[str]:
         """Returns the set of every datetime parser that exists for this raw file config
         config.

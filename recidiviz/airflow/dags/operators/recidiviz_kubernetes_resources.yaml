@@ -81,6 +81,12 @@ ReportAirflowEnvironmentAgeEntrypoint:
       cpu: 500m
       memory: 500Mi
 
+ReportSftpIngestReadyFileTimelinessEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+
 IngestCheckRawDataFlashingEntrypoint:
   default_resources:
     limits:

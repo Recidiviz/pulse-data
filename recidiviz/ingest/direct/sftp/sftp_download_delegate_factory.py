@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains factory class for creating SftpDownloadDelegate objects"""
+import logging
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.us_ca.us_ca_sftp_download_delegate import (
@@ -62,3 +63,21 @@ class SftpDownloadDelegateFactory:
         if region_code == StateCode.US_TX.value:
             return UsTxSftpDownloadDelegate()
         raise ValueError(f"Unexpected region code provided: {region_code}")
+
+
+def states_with_sftp_delegates(project_id: str) -> list[StateCode]:
+    """Returns a list of state codes that have the necessary SFTP infrastructure in
+    pulse-data enabled for |project_id|.
+    """
+    enabled_states: list[StateCode] = []
+    for state_code in StateCode:
+        try:
+            delegate = SftpDownloadDelegateFactory.build(region_code=state_code.value)
+            if project_id in delegate.supported_environments():
+                enabled_states.append(state_code)
+        except ValueError:
+            logging.info(
+                "%s does not have a configured SFTP delegate.", state_code.value
+            )
+            continue
+    return enabled_states

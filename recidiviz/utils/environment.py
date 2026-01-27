@@ -284,16 +284,16 @@ def local_only(func: Callable) -> Callable:
 
 
 def gcp_only(func: Callable) -> Callable:
-    """Decorator function to verify request only runs locally
+    """Decorator function to verify request only runs in GCP
 
-    Decorator function to check run environment. If prod / served on GCP,
+    Decorator function to check run environment. If run locally,
     exits before any work can be done.
 
     Args:
         N/A
 
     Returns:
-        If running locally, results of decorated function.
+        If running in GCP, results of decorated function.
         If not, nothing.
     """
 

@@ -35,6 +35,9 @@ from recidiviz.airflow.dags.monitoring.metadata import (
 from recidiviz.airflow.dags.monitoring.raw_data_file_tag_import_runs_sql_query_generator import (
     RawDataFileTagImportRunSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.monitoring.sftp_ingest_ready_file_upload_times_sql_query_generator import (
+    SftpIngestReadyFileUploadTimesSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     RAW_DATA_INCIDENT_START_DATE_LOOKBACK,
     report_failed_tasks,
@@ -129,6 +132,23 @@ def create_monitoring_dag() -> None:
         python_callable=generate_airflow_dag_run_history,
         op_kwargs={"lookback": DAG_RUN_HISTORY_LOOKBACK},
     )
+
+    fetch_sftp_upload_times = CloudSqlQueryOperator(
+        task_id="fetch_sftp_upload_times",
+        cloud_sql_conn_id=cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS),
+        query_generator=SftpIngestReadyFileUploadTimesSqlQueryGenerator(),
+    )
+
+    report_sftp_metrics = build_kubernetes_pod_task(
+        task_id="report_sftp_ingest_ready_file_timeliness_metrics",
+        container_name="report_sftp_ingest_ready_file_timeliness_metrics",
+        arguments=[
+            "--entrypoint=ReportSftpIngestReadyFileTimelinessEntrypoint",
+            "--upload_times_json={{ task_instance.xcom_pull(task_ids='fetch_sftp_upload_times') | tojson }}",
+        ],
+    )
+
+    fetch_sftp_upload_times >> report_sftp_metrics
 
 
 monitoring_dag = create_monitoring_dag()

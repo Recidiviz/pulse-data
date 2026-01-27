@@ -80,6 +80,12 @@ instruments:
       - attributes:
           - AIRFLOW_ENVIRONMENT_NAME
 
+  - instrument_key: sftp.ingest_ready_files_hours_stale
+    description: Hours since sftp files were last uploaded to ingest bucket, only reported for regions exceeding state-specific thresholds
+    views:
+      - attributes:
+          - REGION
+
   - instrument_key: function_duration
     description: The distribution of function durations
     unit: s

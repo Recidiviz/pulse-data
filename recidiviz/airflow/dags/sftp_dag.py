@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The DAG configuration for downloading files from SFTP."""
-import logging
 from datetime import timedelta
 from typing import Dict, List, Optional, Union
 
@@ -99,6 +98,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
+    states_with_sftp_delegates,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
@@ -114,24 +114,6 @@ retry: Retry = Retry(predicate=lambda _: False)
 # This is the maximum number of tasks to run in parallel when they are dynamically
 # generated. This prevents the scheduler and all workers from being overloaded.
 MAX_TASKS_TO_RUN_IN_PARALLEL = 15
-
-
-def sftp_enabled_states(project_id: str) -> List[StateCode]:
-    """Returns a list of state codes that have the necessary SFTP infrastructure in
-    pulse-data enabled for |project_id|.
-    """
-    enabled_states: List[StateCode] = []
-    for state_code in StateCode:
-        try:
-            delegate = SftpDownloadDelegateFactory.build(region_code=state_code.value)
-            if project_id in delegate.supported_environments():
-                enabled_states.append(state_code)
-        except ValueError:
-            logging.info(
-                "%s does not have a configured SFTP delegate.", state_code.value
-            )
-            continue
-    return enabled_states
 
 
 def is_enabled_in_config(state_code_str: str) -> bool:
@@ -258,7 +240,7 @@ def sftp_dag() -> None:
     rm_dags = remove_queued_up_dags()
     start_sftp >> rm_dags
     end_sftp = EmptyOperator(task_id=END_SFTP, trigger_rule=TriggerRule.ALL_DONE)
-    for state_code in sftp_enabled_states(project_id):
+    for state_code in states_with_sftp_delegates(project_id):
         with TaskGroup(group_id=state_code.value) as state_specific_task_group:
             # We want to make sure that SFTP is enabled for the state, otherwise we skip
             # everything for the state.

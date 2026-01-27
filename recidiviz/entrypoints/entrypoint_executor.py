@@ -69,6 +69,9 @@ from recidiviz.entrypoints.monitoring.report_airflow_environment_age import (
 from recidiviz.entrypoints.monitoring.report_metric_export_timeliness import (
     MetricExportTimelinessEntrypoint,
 )
+from recidiviz.entrypoints.monitoring.report_sftp_ingest_ready_file_timeliness import (
+    ReportSftpIngestReadyFileTimelinessEntrypoint,
+)
 from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
     RawDataFileChunkingEntrypoint,
 )
@@ -100,6 +103,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     MetricViewExportEntrypoint,
     ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,
+    ReportSftpIngestReadyFileTimelinessEntrypoint,
     RawDataChunkNormalizationEntrypoint,
     RawDataFileChunkingEntrypoint,
     UpdateBigQuerySourceTableSchemataEntrypoint,

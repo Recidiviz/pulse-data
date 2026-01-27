@@ -18,6 +18,7 @@
 from typing import Any, overload
 
 from opentelemetry.metrics import Counter, Histogram, ObservableGauge
+from opentelemetry.sdk.metrics._internal.instrument import _Gauge as Gauge
 
 from recidiviz.monitoring.configs import (
     RECIDIVIZ_METER_NAME,
@@ -26,6 +27,7 @@ from recidiviz.monitoring.configs import (
 )
 from recidiviz.monitoring.keys import (
     CounterInstrumentKey,
+    GaugeInstrumentKey,
     HistogramInstrumentKey,
     InstrumentEnum,
     ObservableGaugeInstrumentKey,
@@ -42,6 +44,11 @@ def reset_instrument_cache() -> None:
 
 @overload
 def get_monitoring_instrument(key: CounterInstrumentKey) -> Counter:
+    ...
+
+
+@overload
+def get_monitoring_instrument(key: GaugeInstrumentKey) -> Gauge:
     ...
 
 

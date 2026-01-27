@@ -31,6 +31,15 @@ class ObservableGaugeInstrumentKey(InstrumentEnum):
     AIRFLOW_ENVIRONMENT_AGE = "airflow.environment_age"
 
 
+class GaugeInstrumentKey(InstrumentEnum):
+    """Instruments registered here will be created as opentelemetry.sdk.metrics.Gauge
+    and use the `LastValueAggregation` by default.
+    Unlike ObservableGauge, Gauge is synchronous and does not require callbacks.
+    See: https://opentelemetry-python.readthedocs.io/en/latest/sdk/metrics.view.html"""
+
+    SFTP_INGEST_READY_FILE_AGE = "sftp.ingest_ready_files_hours_stale"
+
+
 class HistogramInstrumentKey(InstrumentEnum):
     """Instruments registered here will be created as a opentelemetry.sdk.metrics.Histogram and
     use the `ExplicitBucketHistogramAggregation` by default
