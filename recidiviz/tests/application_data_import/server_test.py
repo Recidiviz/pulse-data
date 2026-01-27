@@ -357,10 +357,11 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.pathways.metric_cache.PathwaysMetricCache", autospec=True
+        "recidiviz.case_triage.shared_pathways.metric_cache.PathwaysMetricCache",
+        autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
         return_value=FakeRedis(),
     )
     def test_import_pathways_successful(
@@ -398,7 +399,7 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
         return_value=FakeRedis(),
     )
     def test_import_pathways_metadata(
@@ -446,7 +447,7 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
         return_value=FakeRedis(),
     )
     def test_import_pathways_metadata_overwrite_existing(
@@ -511,7 +512,7 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
         return_value=FakeRedis(),
     )
     def test_import_pathways_metadata_missing_facility_id_name_map(
@@ -568,7 +569,7 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
         return_value=FakeRedis(),
     )
     def test_import_pathways_missing_metadata(

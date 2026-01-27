@@ -28,7 +28,8 @@ docker exec pulse-data-case_triage_backend-1 uv run python -m recidiviz.tools.pa
 import logging
 
 from recidiviz.case_triage.pathways.enabled_metrics import ENABLED_METRICS_BY_STATE
-from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
+from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import in_development
 
 if __name__ == "__main__":
@@ -40,6 +41,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     for state, metric_list in ENABLED_METRICS_BY_STATE.items():
-        metric_cache = PathwaysMetricCache.build(state)
+        metric_cache = PathwaysMetricCache.build(state, schema_type=SchemaType.PATHWAYS)
         for metric in metric_list:
             metric_cache.reset_cache(metric)

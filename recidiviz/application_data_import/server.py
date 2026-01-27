@@ -54,7 +54,7 @@ from recidiviz.calculator.query.state.views.public_pathways.public_pathways_view
     PUBLIC_PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
-from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
+from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
@@ -522,7 +522,9 @@ def _import_pathways_helper(
 
     # TODO(#57285) Remove the schema_type conditional once we have PublicPathwaysMetricCache
     if reset_cache and schema_type == SchemaType.PATHWAYS:
-        metric_cache = PathwaysMetricCache.build(StateCode(state_code))
+        metric_cache = PathwaysMetricCache.build(
+            StateCode(state_code), schema_type=SchemaType.PATHWAYS
+        )
         for metric in get_metrics_for_entity(db_entity):
             metric_cache.reset_cache(metric)
 

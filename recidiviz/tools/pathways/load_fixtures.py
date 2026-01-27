@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
-from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
+from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
@@ -173,7 +173,7 @@ def main(
     database: SchemaType,
 ) -> None:
     """Creates and initializes databases, then resets the fixtures or imports data from GCS"""
-    create_dbs(state_codes, database)
+    create_dbs(state_codes, SchemaType.PATHWAYS)
 
     for state in state_codes:
         database_key = PathwaysDatabaseManager(
@@ -193,7 +193,9 @@ def main(
     # Reset cache after all fixtures have been added because PathwaysMetricCache will initialize
     # a DB engine, and we can't import the metrics if the engine has already been initialized.
     for state in state_codes:
-        metric_cache = PathwaysMetricCache.build(StateCode(state))
+        metric_cache = PathwaysMetricCache.build(
+            StateCode(state), schema_type=SchemaType.PATHWAYS
+        )
         for table in tables:
             for metric in get_metrics_for_entity(table):
                 logging.info("resetting cache for %s %s", state, metric.name)

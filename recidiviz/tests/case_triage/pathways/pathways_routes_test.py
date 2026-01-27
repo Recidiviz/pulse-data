@@ -63,7 +63,7 @@ class PathwaysBlueprintTestCase(TestCase):
         self.mock_authorization_handler = MagicMock()
 
         self.redis_patcher = mock.patch(
-            "recidiviz.case_triage.pathways.metric_cache.get_pathways_metric_redis",
+            "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
             return_value=FakeRedis(),
         )
         self.redis_patcher.start()

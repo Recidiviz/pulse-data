@@ -34,13 +34,13 @@ from recidiviz.case_triage.pathways.enabled_metrics import (
     ENABLED_METRICS_BY_STATE_BY_NAME,
 )
 from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
-from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
+from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -164,9 +164,9 @@ def create_pathways_api_blueprint() -> Blueprint:
                 ).fetch(metric_mapper, fetch_metric_params)
             )
         return jsonify(
-            PathwaysMetricCache.build(state_code).fetch(
-                metric_mapper, fetch_metric_params
-            )
+            PathwaysMetricCache.build(
+                state_code, schema_type=SchemaType.PATHWAYS
+            ).fetch(metric_mapper, fetch_metric_params)
         )
 
     return api

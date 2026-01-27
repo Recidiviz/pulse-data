@@ -30,10 +30,22 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     MetricQueryBuilder,
 )
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
-from recidiviz.case_triage.util import get_pathways_metric_redis
+from recidiviz.case_triage.util import (
+    get_pathways_metric_redis,
+    get_public_pathways_metric_redis,
+)
 from recidiviz.cloud_memorystore import utils as cloud_memorystore_utils
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
+
+
+def _get_redis_for_schema(schema_type: SchemaType) -> Redis:
+    """Returns the Redis instance for the given schema type."""
+    if schema_type == SchemaType.PATHWAYS:
+        return get_pathways_metric_redis()
+    if schema_type == SchemaType.PUBLIC_PATHWAYS:
+        return get_public_pathways_metric_redis()
+    raise ValueError(f"Unsupported schema type: {schema_type}")
 
 
 @attr.s(auto_attribs=True)
@@ -97,11 +109,13 @@ class PathwaysMetricCache:
                     self.fetch(mapper=mapper, params=params)
 
     @classmethod
-    def build(cls, state_code: StateCode) -> "PathwaysMetricCache":
+    def build(
+        cls, state_code: StateCode, schema_type: SchemaType = SchemaType.PATHWAYS
+    ) -> "PathwaysMetricCache":
         return PathwaysMetricCache(
             state_code=state_code,
             metric_fetcher=PathwaysMetricFetcher(
-                state_code=state_code, schema_type=SchemaType.PATHWAYS
+                state_code=state_code, schema_type=schema_type
             ),
-            redis=get_pathways_metric_redis(),
+            redis=_get_redis_for_schema(schema_type),
         )
