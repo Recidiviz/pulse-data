@@ -22,7 +22,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_active_supervision_and_supervision_out_of_state_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
+    early_discharge,
+)
 from recidiviz.task_eligibility.criteria.general import (
     custodial_authority_is_supervision_authority_or_other_state,
     supervision_not_past_full_term_completion_date_or_upcoming_30_days,

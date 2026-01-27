@@ -22,7 +22,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_dual_active_supervision_and_supervision_out_of_state_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
+    early_discharge,
+)
 from recidiviz.task_eligibility.criteria.general import (
     custodial_authority_is_supervision_authority_or_other_state,
     serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state,
