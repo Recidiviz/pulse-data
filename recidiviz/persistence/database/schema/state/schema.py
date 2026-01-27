@@ -905,6 +905,7 @@ state_task_type = Enum(
 
 state_staff_role_type = Enum(
     state_enum_strings.state_staff_role_type_supervision_officer,
+    state_enum_strings.state_staff_role_type_reentry_officer,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_staff_role_type",

@@ -373,6 +373,7 @@ state_sentencing_authority_federal = "FEDERAL"
 
 # state_staff_role_period.py
 state_staff_role_type_supervision_officer = "SUPERVISION_OFFICER"
+state_staff_role_type_reentry_officer = "REENTRY_OFFICER"
 state_staff_role_subtype_supervision_officer = "SUPERVISION_OFFICER"
 state_staff_role_subtype_supervision_officer_supervisor = (
     "SUPERVISION_OFFICER_SUPERVISOR"

@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 @unique
 class StateStaffRoleType(StateEntityEnum):
     SUPERVISION_OFFICER = state_enum_strings.state_staff_role_type_supervision_officer
+    REENTRY_OFFICER = state_enum_strings.state_staff_role_type_reentry_officer
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -44,6 +45,9 @@ _STATE_STAFF_ROLE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateStaffRoleType.SUPERVISION_OFFICER: "An official of the state supervision "
     "department who oversees someone while they are on supervision. Also referred to "
     "as a probation/parole officer.",
+    StateStaffRoleType.REENTRY_OFFICER: "An official assigned to someone in a facility "
+    "preparing for release. These individuals are distinct from parole/probation "
+    "officers as they do not oversee them once they are on supervision",
 }
 
 
