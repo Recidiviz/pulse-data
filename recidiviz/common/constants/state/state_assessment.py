@@ -69,6 +69,8 @@ class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
 
     CAF = state_enum_strings.state_assessment_type_caf
+    RCAF = state_enum_strings.state_assessment_type_rcaf
+    DCAF = state_enum_strings.state_assessment_type_dcaf
     CSRA = state_enum_strings.state_assessment_type_csra
     CSSM = state_enum_strings.state_assessment_type_cssm
     CMHS = state_enum_strings.state_assessment_type_cmhs
@@ -149,6 +151,8 @@ class StateAssessmentType(StateEntityEnum):
 
 _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.CAF: "Custody Assessment Form (CAF)",
+    StateAssessmentType.RCAF: "Reclassification Custody Assessment Form (RCAF)",
+    StateAssessmentType.DCAF: "Diagnostic/Initial Custody Assessment Form (DCAF)",
     StateAssessmentType.CSRA: "California Static Risk Assessment",
     StateAssessmentType.CSSM: "Criminal Sentiments Scale – Modified (CSM-R)",
     StateAssessmentType.CMHS: "Correctional Mental Health Screen (CMHS)",

@@ -197,6 +197,8 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.EXTERNAL_UNKNOWN,
                 StateAssessmentType.INTERNAL_UNKNOWN,
                 StateAssessmentType.CAF,
+                StateAssessmentType.RCAF,
+                StateAssessmentType.DCAF,
                 StateAssessmentType.CSRA,
                 StateAssessmentType.CSSM,
                 StateAssessmentType.CMHS,

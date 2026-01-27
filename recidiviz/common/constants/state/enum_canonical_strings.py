@@ -64,6 +64,8 @@ state_assessment_class_medical = "MEDICAL"
 state_assessment_class_work = "WORK"
 
 state_assessment_type_caf = "CAF"
+state_assessment_type_rcaf = "RCAF"
+state_assessment_type_dcaf = "DCAF"
 state_assessment_type_csra = "CSRA"
 state_assessment_type_cssm = "CSSM"
 state_assessment_type_cmhs = "CMHS"
