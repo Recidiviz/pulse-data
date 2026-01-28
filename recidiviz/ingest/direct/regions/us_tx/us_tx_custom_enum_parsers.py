@@ -124,13 +124,13 @@ def parse_supervision_level(
     }:
         return StateSupervisionLevel.MAXIMUM
 
-    if assessment_level == "L":
+    if assessment_level in ("L", "LOW"):
         return StateSupervisionLevel.MINIMUM
-    if assessment_level == "LM":
+    if assessment_level in ("LM", "LOW-MODERATE"):
         return StateSupervisionLevel.MEDIUM
-    if assessment_level == "M":
+    if assessment_level in ("M", "MODERATE"):
         return StateSupervisionLevel.HIGH
-    if assessment_level in ("MH", "H"):
+    if assessment_level in ("MH", "H", "HIGH", "MODERATE-HIGH"):
         return StateSupervisionLevel.MAXIMUM
 
     # If the case type and status do not match any conditions, but the

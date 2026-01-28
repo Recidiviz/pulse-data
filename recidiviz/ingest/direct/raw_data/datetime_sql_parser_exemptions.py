@@ -851,7 +851,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         ],
     },
     StateCode.US_TX: {
-        "Assessment": ["ASSESSMENT_DATE"],
         "Charges": ["OFF_SENT_BEG_DATE", "OFF_SENT_DATE"],
         "Phases": ["OFFC_REGION", "PLM_TYPE_ID", "PLS_STATUS_DATE"],
         "ProgramPhaseTransitions": ["PTMT_UPDATE_DATE"],
@@ -1484,6 +1483,9 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
     },
     StateCode.US_MI: {
         "COMS_dm_Staff_Specialized_Types": ["Entered_Date"],
+    },
+    StateCode.US_TX: {
+        "Assessment": ["ASSESSMENT_DATE"],
     },
     StateCode.US_NC: {
         "APPT7AA1": ["CDCLBRTH", "DTOFUPDT"],
