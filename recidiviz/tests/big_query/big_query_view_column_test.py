@@ -20,7 +20,7 @@ import unittest
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view_column import String
+from recidiviz.big_query.big_query_view_column import Integer, String
 
 
 class BigQueryViewColumnTest(unittest.TestCase):
@@ -55,6 +55,19 @@ class BigQueryViewColumnTest(unittest.TestCase):
             mode="NULLABLE",
         )
 
+        self.assertTrue(column.matches_bq_field(schema_field))
+
+    def test_matches_deployed_field_type(self) -> None:
+        column = Integer(
+            name="test_column",
+            description="A test column",
+            mode="NULLABLE",
+        )
+        schema_field = bigquery.SchemaField(
+            name="test_column",
+            field_type="INTEGER",
+            mode="NULLABLE",
+        )
         self.assertTrue(column.matches_bq_field(schema_field))
 
     def test_matches_bq_field_required_vs_nullable(self) -> None:

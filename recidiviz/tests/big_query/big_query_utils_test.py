@@ -28,6 +28,8 @@ from recidiviz.big_query.big_query_utils import (
     to_big_query_valid_encoding,
 )
 from recidiviz.big_query.big_query_view_column import (
+    Date,
+    Integer,
     String,
     diff_declared_schema_to_bq_schema,
 )
@@ -143,18 +145,21 @@ class BigQueryUtilsTest(unittest.TestCase):
                 assert description == "?" * length
 
 
+# TODO(#54941): move to big_query_view_column_test.py
 class DiffDeclaredSchemaToBqSchemaTest(unittest.TestCase):
     """Tests for diff_declared_schema_to_bq_schema"""
 
     def test_no_differences(self) -> None:
         declared_schema = [
             String(name="col1", description="Column 1", mode="NULLABLE"),
-            String(name="col2", description="Column 2", mode="NULLABLE"),
+            Integer(name="col2", description="Column 2", mode="NULLABLE"),
+            Date(name="col3", description="Column 3", mode="NULLABLE"),
         ]
 
         deployed_schema = [
             bigquery.SchemaField(name="col1", field_type="STRING", mode="NULLABLE"),
-            bigquery.SchemaField(name="col2", field_type="STRING", mode="NULLABLE"),
+            bigquery.SchemaField(name="col2", field_type="INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField(name="col3", field_type="DATE", mode="NULLABLE"),
         ]
 
         diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)
@@ -181,7 +186,7 @@ class DiffDeclaredSchemaToBqSchemaTest(unittest.TestCase):
 
         deployed_schema = [
             bigquery.SchemaField(name="col1", field_type="STRING", mode="NULLABLE"),
-            bigquery.SchemaField(name="col3", field_type="STRING", mode="NULLABLE"),
+            bigquery.SchemaField(name="col3", field_type="INTEGER", mode="NULLABLE"),
         ]
 
         diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)

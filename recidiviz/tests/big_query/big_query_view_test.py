@@ -730,7 +730,7 @@ class BigQueryViewTest(unittest.TestCase):
                 bigquery.SchemaField(
                     name="col2",
                     description="Column 2",
-                    field_type="INT64",
+                    field_type="INTEGER",
                     mode="NULLABLE",
                 ),
             ],

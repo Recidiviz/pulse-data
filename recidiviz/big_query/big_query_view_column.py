@@ -38,7 +38,7 @@ class BigQueryViewColumn(abc.ABC):
     # TODO(#18306) v1 -- enforce that the documentation is meaningfully filled in for
     # column -- like raw data configs, no placeholders
     description: str = attrs.field(validator=attr_validators.is_non_empty_str)
-    field_type: bigquery.StandardSqlTypeNames
+    field_type: bigquery.SqlTypeNames
     mode: SqlFieldMode = attrs.field(
         validator=attrs.validators.in_(get_args(SqlFieldMode))
     )
@@ -48,7 +48,7 @@ class BigQueryViewColumn(abc.ABC):
         return bigquery.SchemaField(
             name=self.name,
             description=self.description,
-            field_type=self.field_type,
+            field_type=self.field_type.value,
             mode=self.mode,
         )
 
@@ -63,7 +63,7 @@ class BigQueryViewColumn(abc.ABC):
             "NULLABLE" if schema_field.mode == "REQUIRED" else schema_field.mode
         )
         # TODO(#54941) compare descriptions after they are deployed with views
-        return (self.field_type, self.name, self_mode,) == (
+        return (self.field_type.value, self.name, self_mode,) == (
             schema_field.field_type,
             schema_field.name,
             other_mode,
@@ -79,21 +79,21 @@ class BigQueryViewColumn(abc.ABC):
 class String(BigQueryViewColumn):
     """A BigQueryViewColumn representing a STRING."""
 
-    field_type: bigquery.StandardSqlTypeNames = bigquery.StandardSqlTypeNames.STRING
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.STRING
 
 
 @attrs.define(kw_only=True)
 class Integer(BigQueryViewColumn):
     """A BigQueryViewColumn representing an INT64."""
 
-    field_type: bigquery.StandardSqlTypeNames = bigquery.StandardSqlTypeNames.INT64
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.INTEGER
 
 
 @attrs.define(kw_only=True)
 class Date(BigQueryViewColumn):
     """A BigQueryViewColumn representing a DATE."""
 
-    field_type: bigquery.StandardSqlTypeNames = bigquery.StandardSqlTypeNames.DATE
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.DATE
 
 
 def diff_declared_schema_to_bq_schema(
