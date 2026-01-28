@@ -37,8 +37,8 @@ get_changed_files() {
 # been touched now have new lint errors.
 pylint_config_files_in_change_list=$(get_changed_files | grep -e uv.lock -e .pylintrc -e run_pylint.sh)
 
-if ! pip show pylint; then
-  pip install "pylint"
+if ! uv pip show pylint; then
+  uv pip install "pylint"
 fi
 
 pylint --version
