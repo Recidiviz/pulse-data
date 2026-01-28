@@ -36,9 +36,10 @@ output:
               $mappings:
                 StateStaffRoleType.INTERNAL_UNKNOWN:
                   - SUPERVISOR
-                  - REENTRY_OFFICER
                   - SUPPORT_STAFF
                   - PAROLE_PROGRAM_DIRECTOR
+                StateStaffRoleType.REENTRY_OFFICER:
+                  - REENTRY_OFFICER
                 StateStaffRoleType.SUPERVISION_OFFICER:
                   - OFFICER
           role_subtype:
