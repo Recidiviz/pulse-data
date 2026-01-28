@@ -36,8 +36,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_IAP_POPULATION"
 
-# TODO(#50537): Update/refine candidate population to ensure it's correct.
-# TODO(#50537): Exclude clients residing in Community Supervision Centers (CSCs).
+# TODO(#57821): Update/refine candidate population to ensure it's correct.
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_POPULATION_NAME,

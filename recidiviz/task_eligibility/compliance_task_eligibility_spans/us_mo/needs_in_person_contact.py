@@ -54,7 +54,6 @@ IN_PERSON_CONTACT_TRIGGERS_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQue
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_in_person_contact",
-    # TODO(#50537): Update/refine candidate population to ensure it's correct.
     candidate_population_view_builder=supervision_tasks_eligible_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         IN_PERSON_CONTACT_TRIGGERS_CRITERIA_GROUP,

@@ -32,6 +32,7 @@ from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASE
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     calc_contact_period_end_date,
     create_contact_cadence_reason,
+    create_initial_contact_period_reason,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -424,7 +425,7 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
     )
 
 
-# TODO(#54133): Validate logic, especially for "2+ per 1 period" contacts and "2+ per 2+
+# TODO(#57815): Validate logic, especially for "2+ per 1 period" contacts and "2+ per 2+
 # period" contacts.
 def us_mo_contact_compliance_builder(
     *,
@@ -552,7 +553,7 @@ def us_mo_contact_compliance_builder(
         contacts but allowing for a full contact interval to come into compliance. (For
         example, for a "once every four months" contact requirement, we allow four
         months from the change before the next contact is due.)
-        TODO(#54133): Do we need to adjust this logic to align with MO's practices? */
+        TODO(#57815): Do we need to adjust this logic to align with MO's practices? */
         SELECT
             state_code,
             person_id,
@@ -911,17 +912,6 @@ def us_mo_contact_compliance_builder(
     )
 
 
-def us_mo_create_initial_contact_period_reason() -> str:
-    return """
-        CASE
-            WHEN period = 1
-                THEN CONCAT(quantity, " WITHIN FIRST ", period_date_part) 
-            ELSE
-                CONCAT(quantity, " WITHIN FIRST ", period, " ", period_date_part, "S") 
-        END
-    """
-
-
 def us_mo_non_recurring_contact_compliance_builder(
     *,
     criteria_name: str,
@@ -1079,8 +1069,8 @@ def us_mo_non_recurring_contact_compliance_builder(
         end_date,
         (contact_count < quantity) AS meets_criteria,
         '{contact_category}' AS contact_category,
-        '{list_to_query_string(contact_types_accepted)}' AS contact_types_accepted,
-        {us_mo_create_initial_contact_period_reason()} AS contact_cadence,
+        '{",".join(contact_types_accepted)}' AS contact_types_accepted,
+        {create_initial_contact_period_reason()} AS contact_cadence,
         contact_count,
         compliance_due_date AS contact_due_date,
         last_contact_date,
@@ -1089,8 +1079,8 @@ def us_mo_non_recurring_contact_compliance_builder(
         contact_period_start_date,
         TO_JSON(STRUCT(
             '{contact_category}' AS contact_category,
-            '{list_to_query_string(contact_types_accepted)}' AS contact_types_accepted,
-            {us_mo_create_initial_contact_period_reason()} AS contact_cadence,
+            '{",".join(contact_types_accepted)}' AS contact_types_accepted,
+            {create_initial_contact_period_reason()} AS contact_cadence,
             contact_count,
             compliance_due_date AS contact_due_date,
             last_contact_date,
@@ -1100,6 +1090,7 @@ def us_mo_non_recurring_contact_compliance_builder(
         )) AS reason,
         FROM critical_date_has_passed_spans
     """
+
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_MO,
         criteria_name=criteria_name,

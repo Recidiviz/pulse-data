@@ -35,7 +35,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_employment_verification",
-    # TODO(#50537): Update/refine candidate population to ensure it's correct. Do we
+    # TODO(#57821): Update/refine candidate population to ensure it's correct. Do we
     # need a different/smaller population for this task in particular, since it may not
     # apply to people who are retired, disabled, and so on?
     candidate_population_view_builder=supervision_tasks_eligible_population.VIEW_BUILDER,

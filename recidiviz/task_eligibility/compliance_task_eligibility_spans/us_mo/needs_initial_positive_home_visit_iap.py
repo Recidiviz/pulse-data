@@ -35,7 +35,6 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_initial_positive_home_visit_iap",
-    # TODO(#50537): Update/refine candidate population to ensure it's correct.
     candidate_population_view_builder=supervision_tasks_eligible_iap_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_initial_positive_home_visit_iap_triggers.VIEW_BUILDER,
