@@ -65,7 +65,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawTableColumnFieldType,
-    is_meaningful_docstring,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -100,6 +99,7 @@ from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integr
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.utils import environment, metadata
+from recidiviz.utils.string import is_meaningful_docstring
 from recidiviz.utils.types import assert_type
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")

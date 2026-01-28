@@ -55,7 +55,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_config_enums import (
 )
 from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
     LIST_ITEM_IDENTIFIER_TAG,
-    is_meaningful_docstring,
     validate_list_item_identifiers,
 )
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
@@ -66,6 +65,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type impo
     RawDataImportBlockingValidationType,
 )
 from recidiviz.utils import environment
+from recidiviz.utils.string import is_meaningful_docstring
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")

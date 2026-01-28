@@ -56,3 +56,21 @@ def get_closest_string(search: str, within: Iterable[str]) -> str:
         ((maybe, lev.distance(search, maybe)) for maybe in within),
         key=operator.itemgetter(1),
     )[0]
+
+
+def is_meaningful_docstring(docstring: str | None) -> bool:
+    """Returns true if the provided docstring gives meaningful information, i.e. it is
+    non-empty and does not start with an obvious placeholder.
+    """
+    if not docstring:
+        return False
+
+    stripped_docstring = docstring.strip()
+    if not stripped_docstring:
+        return False
+
+    return (
+        # Split up into TO and DO to avoid lint errors
+        not stripped_docstring.startswith("TO" + "DO")
+        and not stripped_docstring.startswith("XXX")
+    )

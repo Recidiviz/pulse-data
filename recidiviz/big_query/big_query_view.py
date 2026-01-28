@@ -18,7 +18,7 @@
 import abc
 import hashlib
 import json
-from typing import Any, Generic, List, Optional, Set, TypeVar
+from typing import Any, Generic, List, Optional, Sequence, Set, TypeVar
 
 from google.cloud import bigquery
 
@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.big_query.big_query_utils import build_lineage_link_description
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -52,7 +53,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         # Schema for the deployed view. In materialized tables, this will
         # match exactly. In non-materialized views, REQUIRED fields are created
         # as NULLABLE, and everything else will match.
-        schema: Optional[list[bigquery.SchemaField]] = None,
+        schema: Sequence[BigQueryViewColumn] | None = None,
         # Address this table will be materialized to, if this is a view that is
         # materialized.
         materialized_address: Optional[BigQueryAddress] = None,
@@ -245,6 +246,13 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
             return self.materialized_address
         return self.address
 
+    @property
+    def bq_schema(self) -> list[bigquery.SchemaField] | None:
+        """Returns the schema as a list of bigquery.SchemaField objects."""
+        if self.schema is None:
+            return None
+        return [c.as_schema_field() for c in self.schema]
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
@@ -401,7 +409,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
-        schema: Optional[list[bigquery.SchemaField]] = None,
+        schema: Sequence[BigQueryViewColumn] | None = None,
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         # All query format kwargs args must have string values

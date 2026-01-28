@@ -18,6 +18,7 @@
 import copy
 import unittest
 
+from google.cloud import bigquery
 from mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -30,6 +31,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.big_query_view_column import Integer, String
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -700,3 +702,36 @@ class BigQueryViewTest(unittest.TestCase):
             r"long to deploy to BigQuery.",
         ):
             _ = v.materialized_table_bq_description
+
+    def test_bq_schema(self) -> None:
+        test_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            Integer(name="col2", description="Column 2", mode="NULLABLE"),
+        ]
+        builder = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=test_schema,
+        )
+
+        v = builder.build()
+
+        self.assertEqual(
+            v.bq_schema,
+            [
+                bigquery.SchemaField(
+                    name="col1",
+                    description="Column 1",
+                    field_type="STRING",
+                    mode="NULLABLE",
+                ),
+                bigquery.SchemaField(
+                    name="col2",
+                    description="Column 2",
+                    field_type="INT64",
+                    mode="NULLABLE",
+                ),
+            ],
+        )

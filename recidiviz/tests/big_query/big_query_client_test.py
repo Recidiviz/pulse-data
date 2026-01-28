@@ -49,6 +49,7 @@ from recidiviz.big_query.big_query_address import (
 )
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -1470,8 +1471,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         """
         mock_table = create_autospec(bigquery.Table)
         fake_schema = [
-            bigquery.SchemaField(name="field1", field_type="STRING", mode="REQUIRED"),
-            bigquery.SchemaField(name="field2", field_type="STRING", mode="REQUIRED"),
+            String(name="field1", description="Field 1", mode="REQUIRED"),
+            String(name="field2", description="Field 2", mode="REQUIRED"),
         ]
 
         self.mock_view = SimpleBigQueryViewBuilder(

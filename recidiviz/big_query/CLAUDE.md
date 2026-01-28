@@ -55,6 +55,7 @@ attributes:
   `{project_id}`)
 - **description**: Full description (deployed to Gitbook)
 - **bq_description**: Shortened description (deployed to BigQuery)
+- **schema**: Expected schema for the view, as a list of BigQueryViewColumns
 - **materialized_address**: Optional address where view results are materialized
   to a table
 - **table_for_query**: Returns materialized address if available, otherwise view
@@ -82,6 +83,11 @@ VIEW_BUILDER = SimpleBigQueryViewBuilder(
         FROM `{project_id}.source_dataset.source_table`
         WHERE event_date >= '{min_date}'
     """,
+    schema=[
+        String(name="person_id", description="Person for this view", mode="REQUIRED"),
+        String(name="state_code", description="State code for the view", mode="REQURED"),
+        Date(name="event_date", description="Date of the event", mode="NULLABLE")
+    ]
     should_materialize=True,  # Materialize to my_view_materialized
     clustering_fields=["state_code", "person_id"],
     min_date="2020-01-01",  # Custom query format kwargs

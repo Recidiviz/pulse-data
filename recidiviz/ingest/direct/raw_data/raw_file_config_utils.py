@@ -91,21 +91,3 @@ def validate_list_item_identifiers(
             )
 
         validate_list_item_identifiers(cls=element_type, excluded_tag=excluded_tag)
-
-
-def is_meaningful_docstring(docstring: str | None) -> bool:
-    """Returns true if the provided docstring gives meaningful information, i.e. it is
-    non-empty and does not start with an obvious placeholder.
-    """
-    if not docstring:
-        return False
-
-    stripped_docstring = docstring.strip()
-    if not stripped_docstring:
-        return False
-
-    return (
-        # Split up into TO and DO to avoid lint errors
-        not stripped_docstring.startswith("TO" + "DO")
-        and not stripped_docstring.startswith("XXX")
-    )

@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
 )
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
@@ -402,55 +403,6 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 view_address_to_schema[address] = schema
         return view_address_to_schema
 
-    # TODO(#54941): move this to BigQuerySchemaField once it's defined
-    # TODO(#54941): match on description when descriptions are deployed to views
-    def _schema_fields_match(
-        self, field1: bigquery.SchemaField, field2: bigquery.SchemaField
-    ) -> bool:
-        """Returns True if two fields match, treating REQUIRED and NULLABLE as equivalent."""
-        return (
-            field1.field_type,
-            field1.name,
-            "NULLABLE" if field1.mode == "REQUIRED" else field1.mode,
-        ) == (
-            field2.field_type,
-            field2.name,
-            "NULLABLE" if field2.mode == "REQUIRED" else field2.mode,
-        )
-
-    def _schema_diff(
-        self,
-        source_schema: list[bigquery.SchemaField],
-        deployed_schema: list[bigquery.SchemaField],
-    ) -> list[tuple[str, bigquery.SchemaField]]:
-        """Determine the differences between two BigQuery schemas.
-
-        Returns:
-            A list of (indicator, field) tuples sorted alphabetically by field name.
-            The indicator is "+" for deployed fields missing from source, and "-"
-            for source fields missing from deployed.
-        """
-        source_by_name = {f.name: f for f in source_schema}
-        deployed_by_name = {f.name: f for f in deployed_schema}
-
-        field_names = sorted(set(source_by_name.keys()) | set(deployed_by_name.keys()))
-
-        diff: list[tuple[str, bigquery.SchemaField]] = []
-        for name in field_names:
-            source_field = source_by_name.get(name)
-            deployed_field = deployed_by_name.get(name)
-
-            if deployed_field and not source_field:
-                diff.append(("+", deployed_field))
-            elif source_field and not deployed_field:
-                diff.append(("-", source_field))
-            elif source_field and deployed_field:
-                if not self._schema_fields_match(source_field, deployed_field):
-                    diff.append(("-", source_field))
-                    diff.append(("+", deployed_field))
-
-        return diff
-
     def _verify_declared_schemas_match_actual_schemas(
         self,
         view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
@@ -467,13 +419,12 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         ]
 
         for v in source_views:
-            declared_schema = v.schema
             # TODO(#54941): Once all views have declared schemas, remove this check
-            if declared_schema is None:
+            if v.schema is None:
                 continue
 
             actual_schema = view_address_to_schema.get(v.address) or []
-            schema_diff = self._schema_diff(declared_schema, actual_schema)
+            schema_diff = diff_declared_schema_to_bq_schema(v.schema, actual_schema)
             if len(schema_diff) > 0:
                 mismatched_schemas[v.address.to_str()] = schema_diff
 

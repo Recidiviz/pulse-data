@@ -17,6 +17,8 @@
 """Tests for big_query_utils.py"""
 import unittest
 
+from google.cloud import bigquery
+
 from recidiviz.big_query.big_query_utils import (
     format_description_for_big_query,
     is_big_query_valid_delimiter,
@@ -24,6 +26,10 @@ from recidiviz.big_query.big_query_utils import (
     is_big_query_valid_line_terminator,
     normalize_column_name_for_bq,
     to_big_query_valid_encoding,
+)
+from recidiviz.big_query.big_query_view_column import (
+    String,
+    diff_declared_schema_to_bq_schema,
 )
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 
@@ -135,3 +141,74 @@ class BigQueryUtilsTest(unittest.TestCase):
                 assert description.endswith("(truncated)")
             else:
                 assert description == "?" * length
+
+
+class DiffDeclaredSchemaToBqSchemaTest(unittest.TestCase):
+    """Tests for diff_declared_schema_to_bq_schema"""
+
+    def test_no_differences(self) -> None:
+        declared_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            String(name="col2", description="Column 2", mode="NULLABLE"),
+        ]
+
+        deployed_schema = [
+            bigquery.SchemaField(name="col1", field_type="STRING", mode="NULLABLE"),
+            bigquery.SchemaField(name="col2", field_type="STRING", mode="NULLABLE"),
+        ]
+
+        diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)
+        self.assertEqual([], diff)
+
+    def test_required_vs_nullable_treated_equal(self) -> None:
+        """REQUIRED and NULLABLE modes should be treated as equivalent."""
+        declared_schema = [
+            String(name="col1", description="Column 1", mode="REQUIRED"),
+        ]
+
+        deployed_schema = [
+            bigquery.SchemaField(name="col1", field_type="STRING", mode="NULLABLE"),
+        ]
+
+        diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)
+        self.assertEqual([], diff)
+
+    def test_missing(self) -> None:
+        declared_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            String(name="col2", description="Column 2", mode="NULLABLE"),
+        ]
+
+        deployed_schema = [
+            bigquery.SchemaField(name="col1", field_type="STRING", mode="NULLABLE"),
+            bigquery.SchemaField(name="col3", field_type="STRING", mode="NULLABLE"),
+        ]
+
+        diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)
+        self.assertEqual(2, len(diff))
+        self.assertEqual(
+            diff,
+            [
+                ("-", declared_schema[1].as_schema_field()),
+                ("+", deployed_schema[1]),
+            ],
+        )
+
+    def test_type_mismatch(self) -> None:
+        declared_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+        ]
+
+        deployed_schema = [
+            bigquery.SchemaField(name="col1", field_type="INTEGER", mode="NULLABLE"),
+        ]
+
+        diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)
+        self.assertEqual(2, len(diff))
+        self.assertEqual(
+            diff,
+            [
+                ("-", declared_schema[0].as_schema_field()),
+                ("+", deployed_schema[0]),
+            ],
+        )

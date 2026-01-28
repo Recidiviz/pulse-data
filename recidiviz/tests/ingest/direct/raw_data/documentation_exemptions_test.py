@@ -24,13 +24,11 @@ from recidiviz.ingest.direct.raw_data.documentation_exemptions import (
     DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS,
     FILE_DOCUMENTATION_EXEMPTIONS,
 )
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    get_region_raw_file_config,
-    is_meaningful_docstring,
-)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
+from recidiviz.utils.string import is_meaningful_docstring
 
 
 class TestDocumentationExemptions(unittest.TestCase):

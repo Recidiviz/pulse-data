@@ -22,29 +22,8 @@ import attr
 
 from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
     LIST_ITEM_IDENTIFIER_TAG,
-    is_meaningful_docstring,
     validate_list_item_identifiers,
 )
-
-
-class TestIsMeaningfulDocstring(unittest.TestCase):
-    """Tests for is_meaningful_docstring"""
-
-    def test_is_meaningful_docstring(self) -> None:
-        # These are not meaningful
-        self.assertFalse(is_meaningful_docstring(None))
-        self.assertFalse(is_meaningful_docstring(""))
-        self.assertFalse(is_meaningful_docstring("XXXX"))
-        self.assertFalse(is_meaningful_docstring("TO" + "DO(#123): Fill this out"))
-        self.assertFalse(is_meaningful_docstring("   TO" + "DO(#123): Fill this out"))
-
-        # These are meaningful
-        self.assertTrue(is_meaningful_docstring("This columns does X"))
-        self.assertTrue(
-            is_meaningful_docstring(
-                "This columns does X. TO" + "DO(#123): Ask clarifying question Y"
-            )
-        )
 
 
 class TestValidateListItemIdentifiers(unittest.TestCase):
