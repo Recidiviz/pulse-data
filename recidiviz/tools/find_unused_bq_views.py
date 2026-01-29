@@ -545,6 +545,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Union view for vitals segment events. Kept for potential future use. "
         "(Mayuka Sarukkai, 2025-01-06)"
     ),
+    BigQueryAddress.from_str(
+        "static_reference_data_views.us_tx_task_oriented_offices"
+    ): (
+        "Identifies which TX DPOs are task-oriented and, if applicable, the date that the office became task-oriented. See #57891 for task-oriented definition and other info. Created for analysis of task-oriented offices in TX. Kept for potential future use. "
+        "(Feona, 2026-01-28)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
