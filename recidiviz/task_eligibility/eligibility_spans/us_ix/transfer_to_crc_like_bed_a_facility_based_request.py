@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,23 +17,25 @@
 """
 Shows the spans of time during which someone in ID is eligible
 for a transfer to a Community Reentry Center (CRC)-like bed in South Idaho
-Correctional Institution (SICI) according to criteria A.
+Correctional Institution (SICI) or Idaho Correctional Institution-Orofino (ICIO)
+according to criteria A.
+
+Criteria A uses its own time-based criteria based on offense severity,
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
-    granted_work_release,
+    transfer_to_minimum_facility,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    crc_like_bed_high_severity_criteria,
-    crc_like_bed_low_severity_criteria,
-    in_sici_or_has_d3_through_d7_release_note,
+    crc_like_bed_time_based_criteria,
+    in_sici_or_icio_or_relevant_release_notes,
     not_denied_for_crc,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -46,43 +48,24 @@ from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_rel
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# Time-based criteria: low severity OR high severity criteria
-_TIME_BASED_CRITERIA = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-    logic_type=TaskCriteriaGroupLogicType.OR,
-    criteria_name="US_IX_CRC_LIKE_BED_TIME_BASED_CRITERIA",
-    sub_criteria_list=[
-        crc_like_bed_low_severity_criteria.VIEW_BUILDER,
-        crc_like_bed_high_severity_criteria.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[
-        "earliest_possible_release_date",
-        "tentative_parole_date",
-        "severity_id",
-    ],
-)
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
-    task_name="TRANSFER_TO_CRC_LIKE_BED_SICI_A_REQUEST",
+    task_name="TRANSFER_TO_CRC_LIKE_BED_A_FACILITY_BASED_REQUEST",
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # Not time-based criteria for CRC work release
         *CRC_WORK_RELEASE_NOT_TIME_BASED,
         # Time-based criteria (low severity OR high severity)
-        _TIME_BASED_CRITERIA,
-        # Must be a resident of SICI or expected to be released to D3/D4/D5/D6/D7
-        in_sici_or_has_d3_through_d7_release_note.VIEW_BUILDER,
+        crc_like_bed_time_based_criteria.VIEW_BUILDER,
+        # Must be a resident of SICI, or ICIO, or expected to be released in a relevant district
+        in_sici_or_icio_or_relevant_release_notes.VIEW_BUILDER,
     ],
-    # TODO(#54358): Find out which completion event should be used here
-    completion_event_builder=granted_work_release.VIEW_BUILDER,
+    # TODO(#54358): Hydrate completion event
+    completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             NotEligibleCriteriaCondition(

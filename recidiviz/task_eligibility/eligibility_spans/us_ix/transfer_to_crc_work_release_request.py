@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,12 +35,13 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_work_release_time_based_criteria,
+    has_isc_release_note,
     incarceration_not_within_6_months_of_upcoming_eprd,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_sex_offender_alert,
     not_denied_for_crc,
     not_detainers_for_xcrc_and_crc,
-    not_eligible_for_crc_like_bed_icio,
+    not_eligible_for_crc_like_bed_a,
     not_serving_a_rider_sentence,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -55,6 +56,10 @@ from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder impor
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -90,8 +95,18 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *CRC_WORK_RELEASE_NOT_TIME_BASED,
         # Time-based criteria specific to work release
         *CRC_WORK_RELEASE_TIME_BASED,
-        # Exclude those suitable for CRC-like beds in ICIO
-        not_eligible_for_crc_like_bed_icio.VIEW_BUILDER,
+        # If someone is eligible for a CRC-like bed criteria already, they should be
+        #   excluded from this, unless they have an ISC release note. In that case they
+        #   will be considered for all opportunities.
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            criteria_name="US_IX_NOT_ELIGIBLE_FOR_CRC_LIKE_BED_A_OR_HAS_ISC_RELEASE_NOTE",
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            sub_criteria_list=[
+                not_eligible_for_crc_like_bed_a.VIEW_BUILDER,
+                has_isc_release_note.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=["release_district"],
+        ),
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(

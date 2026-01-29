@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -97,6 +97,12 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_t
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_custody_level_downgrade_record import (
     US_IX_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_like_bed_request_record import (
+    US_IX_TRANSFER_TO_CRC_LIKE_BED_REQUEST_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_transfer_to_crc_work_release_request_record import (
+    US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_record_incarceration_cases_with_dates import (
     US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
@@ -337,6 +343,22 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },
         },
+        US_IX_TRANSFER_TO_CRC_LIKE_BED_REQUEST_VIEW_BUILDER.address: {
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
+                table_id=StateCharge.get_table_id(),
+            ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
+            },
+        },
+        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: {
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
+                table_id=StateCharge.get_table_id(),
+            ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
+            },
+        },
     },
     "VITALS": {
         VITALS_SUMMARIES_VIEW_BUILDER.address: {
@@ -375,6 +397,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
                 table_id=StateCharge.get_table_id(),
             ): {
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
             },

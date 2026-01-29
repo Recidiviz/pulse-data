@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    current_violent_statutes_being_served,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.observations.span_observation_big_query_view_builder import fix_indent
@@ -1125,6 +1128,130 @@ FROM critical_date_has_passed_spans
             ),
         ],
     )
+
+
+def crc_case_notes_cte(
+    crc_denied_months: int = 6,
+    include_work_history: bool = False,
+) -> str:
+    """
+    Returns a SQL query string for case notes relevant to CRC (Community
+    Reentry Center) eligibility in Idaho, with all queries joined by UNION ALL.
+
+    Args:
+        crc_denied_months: Number of months to look back for CRC denied case notes.
+            Defaults to 6 months.
+        include_work_history: Whether to include work history case notes.
+            Defaults to False.
+
+    The case notes include:
+    - Offender alerts (excluding victims)
+    - Institutional behavior notes (corrective action and positive)
+    - Release information
+    - CRC information and denial notes
+    - I-9 documents
+    - Work history (optional)
+    - Medical clearance
+    - Violent charges being served
+    - NCIC/ILETS checks
+    - Escape, absconsion, or eluding police history
+    - Detainers
+    - DORs (Disciplinary Offense Reports)
+    - Program enrollment
+    - Victim alerts
+    """
+    union_separator = "\n\n        UNION ALL\n\n"
+
+    queries = [
+        # Offender alerts (excluding victims)
+        "--Offender alerts (excluding victims)\n"
+        + ix_offender_alerts_case_notes(where_clause="WHERE AlertId != '133'"),
+        # Institutional Behavior Notes - Corrective Action
+        "        --Institutional Behavior Notes - Corrective Action\n"
+        + ix_general_case_notes(
+            where_clause_addition="AND ContactModeDesc = 'Corrective Action'",
+            criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR,
+            in_the_past_x_months=6,
+        ),
+        # Positive behavior notes
+        "        --Positive [behavior notes]\n"
+        + ix_general_case_notes(
+            where_clause_addition="AND ContactModeDesc = 'Positive'",
+            criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR,
+            in_the_past_x_months=6,
+        ),
+        # Release information (in the past 3 years)
+        "        --Release information (in the past 3 years)\n"
+        + ix_general_case_notes(
+            where_clause_addition=f"AND ContactModeDesc IN {RELEASE_INFORMATION_CONTACT_MODES}",
+            criteria_str=RELEASE_INFORMATION_STR,
+            in_the_past_x_months=36,
+        ),
+        # Additional CRC info (in the past 6 months)
+        "        --Additional CRC info (in the past 6 months)\n"
+        + ix_general_case_notes(
+            where_clause_addition=f"AND ContactModeDesc IN {CRC_INFORMATION_CONTACT_MODES}",
+            criteria_str=CRC_INFORMATION_STR,
+            in_the_past_x_months=6,
+        ),
+        # CRC denied case notes
+        f"        --CRC denied case notes (in the past {crc_denied_months} months)\n"
+        + ix_general_case_notes(
+            where_clause_addition="AND ContactModeDesc = 'CRC Termer Denied'",
+            criteria_str="CRC Denial Case Notes",
+            in_the_past_x_months=crc_denied_months,
+        ),
+        # I-9 Documents
+        "        --I-9 Documents\n"
+        + ix_general_case_notes(
+            where_clause_addition=f"AND REGEXP_CONTAINS(UPPER(note.Details), r'{I9_NOTE_TX_REGEX}')",
+            criteria_str=I9_NOTES_STR,
+            in_the_past_x_months=60,
+        ),
+        # Medical clearance
+        "        --Medical clearance\n"
+        + ix_general_case_notes(
+            where_clause_addition=f"AND REGEXP_CONTAINS(UPPER(note.Details), r'{MEDICAL_CLEARANCE_TX_REGEX}')",
+            criteria_str=MEDICAL_CLEARANCE_STR,
+            in_the_past_x_months=6,
+        ),
+        # Violent charges being served
+        "        --Violent charges being served\n"
+        + "("
+        + current_violent_statutes_being_served(state_code="US_IX")
+        + ")",
+        # NCIC/ILETS
+        "        --NCIC/ILETS\n"
+        + ix_fuzzy_matched_case_notes(where_clause="WHERE ncic_ilets_nco_check"),
+        # Recent escape, absconsion or eluding police
+        "        --Recent escape, absconsion or eluding police\n"
+        + escape_absconsion_or_eluding_police_case_notes(),
+        # Detainers
+        "        --Detainers\n" + detainer_case_notes(),
+        # DORs
+        "        --DORs\n"
+        + dor_query(
+            columns_str=DOR_CASE_NOTES_COLUMNS, classes_to_include=["A", "B", "C"]
+        )
+        + "\nWHERE event_date > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)",
+        # Program Enrollment
+        "        --Program Enrollment\n" + program_enrollment_query(),
+        # Victim alerts
+        "        --Victim alerts\n" + victim_alert_notes(),
+    ]
+
+    # Work history (optional, for resident worker)
+    if include_work_history:
+        queries.append(
+            "        --Work History\n"
+            + ix_general_case_notes(
+                where_clause_addition="AND ContactModeDesc = 'Work History'",
+                criteria_str=WORK_HISTORY_STR,
+                in_the_past_x_months=60,
+            )
+        )
+
+    return union_separator.join(queries)
 
 
 def release_district_criteria_query(release_districts: list[str]) -> str:

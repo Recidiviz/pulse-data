@@ -1278,6 +1278,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="task_eligibility_completion_events_us_nc",
                 table_id="granted_supervision_sentence_reduction",
             ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_completion_events_us_ix",
+                table_id="transfer_to_minimum_facility",
+            ),
         }
         if node.view.address in known_empty_parent_view_addresss:
             return

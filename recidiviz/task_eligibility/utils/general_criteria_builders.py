@@ -1902,21 +1902,23 @@ def not_on_specific_supervision_case_type(
     )
 
 
-def no_recent_marked_ineligible_criteria_builder(
+def denial_reasons_criteria_builder(
     criteria_name: str,
     description: str,
     opportunity_type: str,
     acceptable_denial_reasons: List[str],
     state_code: Optional[StateCode] = None,
     any_acceptable_reason_sufficient: bool = False,
+    meets_criteria_default: bool = True,
 ) -> (
     StateAgnosticTaskCriteriaBigQueryViewBuilder
     | StateSpecificTaskCriteriaBigQueryViewBuilder
 ):
     """
-    Returns a criteria view builder that shows spans of time when someone has NOT been
-    marked ineligible in the Workflows dashboard, or has been marked ineligible but only
-    for "acceptable" reasons that shouldn't disqualify them.
+    Returns a criteria view builder that sets meets_criteria = True when a person has
+    not been marked ineligible, or has been marked ineligible only for acceptable
+    reasons. If they are marked ineligible for any non-acceptable reason,
+    meets_criteria = False.
 
     This is useful for criteria like:
     - "Not denied for LSU unless only reason is FFR (fines/fees)"
@@ -1935,6 +1937,9 @@ def no_recent_marked_ineligible_criteria_builder(
         any_acceptable_reason_sufficient (bool, optional): If False (default), ALL denial
             reasons must be in the acceptable list for meets_criteria=True. If True, having
             ANY acceptable denial reason is sufficient to meet criteria.
+        meets_criteria_default (bool, optional): The default value for meets_criteria when
+            no denial spans exist. Defaults to True, meaning people without denials are
+            considered to meet the criteria.
 
     Returns:
         Either a state-specific or state-agnostic TES criterion view builder.
@@ -2004,7 +2009,7 @@ def no_recent_marked_ineligible_criteria_builder(
             state_code=state_code,
             description=description,
             criteria_spans_query_template=criteria_query,
-            meets_criteria_default=True,
+            meets_criteria_default=meets_criteria_default,
             reasons_fields=reasons_fields,
         )
 
@@ -2012,7 +2017,7 @@ def no_recent_marked_ineligible_criteria_builder(
         criteria_name=criteria_name,
         description=description,
         criteria_spans_query_template=criteria_query,
-        meets_criteria_default=True,
+        meets_criteria_default=meets_criteria_default,
         reasons_fields=reasons_fields,
     )
 

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,18 +17,21 @@
 """
 Shows the spans of time during which someone in ID is eligible
 for a transfer to a Community Reentry Center (CRC)-like bed in South Idaho
-Correctional Institution (SICI) according to criteria B.
+Correctional Institution (SICI) or Idaho Correctional Institution-Orofino (ICIO)
+according to criteria B.
+
+Criteria B re-uses the CRC work release time-based criteria and requires them to be
+marked medically ineligible for a CRC release.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
-    granted_work_release,
+    transfer_to_minimum_facility,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    in_sici_or_has_d3_through_d7_release_note,
-    no_recent_marked_ineligible_unless_medical,
+    marked_medically_ineligible_for_crc_work_release,
 )
 from recidiviz.task_eligibility.eligibility_spans.us_ix.transfer_to_crc_work_release_request import (
     CRC_WORK_RELEASE_NOT_TIME_BASED,
@@ -42,7 +45,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
-    task_name="TRANSFER_TO_CRC_LIKE_BED_SICI_B_REQUEST",
+    task_name="TRANSFER_TO_CRC_LIKE_BED_B_MEDICAL_REQUEST",
     description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
@@ -50,13 +53,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *CRC_WORK_RELEASE_NOT_TIME_BASED,
         # Time-based criteria for CRC work release
         *CRC_WORK_RELEASE_TIME_BASED,
-        # Must be a resident of SICI or expected to be released to D3/D4/D5/D6/D7
-        in_sici_or_has_d3_through_d7_release_note.VIEW_BUILDER,
         # Not denied for CRC work release unless only reason is MEDICAL
-        no_recent_marked_ineligible_unless_medical.VIEW_BUILDER,
+        marked_medically_ineligible_for_crc_work_release.VIEW_BUILDER,
     ],
-    # TODO(#54358): Find out which completion event should be used here
-    completion_event_builder=granted_work_release.VIEW_BUILDER,
+    # TODO(#54358): Hydrate completion event
+    completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
