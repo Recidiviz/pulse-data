@@ -46,6 +46,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervi
 from recidiviz.calculator.query.state.views.outliers.supervision_officers import (
     SUPERVISION_OFFICERS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.jii_data import (
+    JII_CPA_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes import (
     CASE_NOTES_VIEW_BUILDER,
 )
@@ -312,6 +315,16 @@ def get_known_views_with_unqualified_external_id(
     )
 
 
+# TODO(#57939): The mechanism to allow *_person_external_id names in fields is tied
+# to _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN...
+# Since this pattern of exporting views to emerging apps will probably grow, this should
+# be differentiated!
+_EXPORTED_VIEWS_THAT_ARE_NOT_METRIC_EXPORT_VIEWS: dict[BigQueryAddress, str] = {
+    JII_CPA_DATA_VIEW_BUILDER.address: (
+        "TODO(#57939): Exported to postgres for CPA v1 :)"
+    ),
+}
+
 # Views that have *person_external_id columns but are NOT part of metric exports.
 # These should eventually be refactored so that person external IDs are only joined
 # at the very end (in the metric export views) rather than passed through internal
@@ -325,6 +338,7 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, st
     # Sentencing views
     US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     US_ND_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    **_EXPORTED_VIEWS_THAT_ARE_NOT_METRIC_EXPORT_VIEWS,
 }
 
 

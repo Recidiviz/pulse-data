@@ -361,6 +361,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "jii_texting",
     "jii_texting_db_export",
     "public_pathways_views",
+    "platform_data_for_cpa",
 }
 
 
