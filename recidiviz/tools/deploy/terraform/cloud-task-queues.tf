@@ -93,6 +93,16 @@ module "pathways-db-import-queue" {
   # at a time.
 }
 
+# Queue used to process tasks that import data into the pathways DB.
+module "public-pathways-db-import-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name = "public-pathways-db-import-v2"
+  region     = var.us_east_region
+  # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
+  # at a time.
+}
+
 # Queue used for tasks to update DBs backing workflows products.
 module "workflows-etl-operations-queue" {
   source = "./modules/base-task-queue"
@@ -121,4 +131,3 @@ module "outliers-db-import-queue" {
   # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
   # at a time.
 }
-

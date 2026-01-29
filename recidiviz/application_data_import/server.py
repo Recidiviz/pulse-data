@@ -141,7 +141,7 @@ for blueprint, url_prefix in APPLICATION_DATA_IMPORT_BLUEPRINTS:
     app.register_blueprint(blueprint, url_prefix=url_prefix)
 
 PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import-v2"
-PUBLIC_PATHWAYS_DB_IMPORT_QUEUE = "public_pathways-db-import-v2"
+PUBLIC_PATHWAYS_DB_IMPORT_QUEUE = "public-pathways-db-import-v2"
 OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import-v2"
 
 
