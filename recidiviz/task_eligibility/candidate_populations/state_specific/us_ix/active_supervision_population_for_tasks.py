@@ -29,11 +29,14 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+CASE_TYPES_FOR_TASKS = ["GENERAL", "SEX_OFFENSE", "XCRC", "MENTAL_HEALTH_COURT"]
+SUPERVISION_LEVELS_FOR_TASKS = ["MINIMUM", "MEDIUM", "HIGH", "XCRC"]
+
 VIEW_BUILDER = us_ix_active_supervision_population_view_builder(
     population_name="US_IX_ACTIVE_SUPERVISION_POPULATION_FOR_TASKS",
     description=__doc__,
-    case_types=["GENERAL", "SEX_OFFENSE", "XCRC", "MENTAL_HEALTH_COURT"],
-    supervision_levels=["MINIMUM", "MEDIUM", "HIGH", "XCRC"],
+    case_types=CASE_TYPES_FOR_TASKS,
+    supervision_levels=SUPERVISION_LEVELS_FOR_TASKS,
 )
 
 if __name__ == "__main__":

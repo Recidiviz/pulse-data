@@ -16,15 +16,7 @@
 # =============================================================================
 """
 Defines a criteria view that shows spans of time when supervision clients are overdue
-for a face-to-face contact. We will consider someone as overdue when the following
-is true for each supervision level:
-
-- High: > 1 month without a contact
-- Moderate: > 2 month without a contact
-- Low: > 7 month without a contact
-- SO High: > 1 month without a contact
-- SO Moderate: > 2 month without a contact
-- SO Low: > 4 month without a contact
+for a face-to-face contact.
 """
 
 from recidiviz.common.constants.states import StateCode
