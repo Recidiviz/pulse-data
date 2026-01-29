@@ -24,6 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     custody_level_higher_than_recommended_2026_policy,
+    has_not_had_2026_policy_initial_classification_in_past_6_months,
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
 )
@@ -42,6 +43,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ineligible_for_annual_reclassification.VIEW_BUILDER,
         ineligible_for_initial_classification.VIEW_BUILDER,
         custody_level_higher_than_recommended_2026_policy.VIEW_BUILDER,
+        has_not_had_2026_policy_initial_classification_in_past_6_months.VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
 )

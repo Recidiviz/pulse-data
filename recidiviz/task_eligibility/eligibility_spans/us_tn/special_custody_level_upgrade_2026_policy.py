@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     custody_level_lower_than_recommended_2026_policy,
+    has_not_been_classified_under_2026_policy,
     ineligible_for_annual_reclassification,
     ineligible_for_initial_classification,
 )
@@ -57,7 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ineligible_for_initial_classification.VIEW_BUILDER,
         custody_level_lower_than_recommended_2026_policy.VIEW_BUILDER,
         custody_level_not_lower_than_recommended_previous_policy_view_builder,
-        # TODO(#54858): Add additional criterion to exclude those who have already been classified under the 2026 policy
+        has_not_been_classified_under_2026_policy.VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_upgrade.VIEW_BUILDER,
 )
