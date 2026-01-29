@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_period`
+# to corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OPUS: STRING
+  CASEMGR: STRING
+  stint_seq: INTEGER
+  period_start_date: DATETIME
+  end_date: DATETIME
+  FACILITY: STRING
+  within_stint_seq: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OPUS
+          id_type: $literal("US_NC_OPUS")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OPUS
+                - stint_seq
+                - within_stint_seq
+          admission_date: period_start_date
+          release_date: end_date
+          facility: FACILITY
+          specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
+    staff_relationship_periods:
+      - $conditional:
+          - $if:
+              $not_null: CASEMGR
+            $then:
+              StatePersonStaffRelationshipPeriod:
+                relationship_start_date: period_start_date
+                relationship_end_date_exclusive: end_date
+                associated_staff_external_id: CASEMGR
+                associated_staff_external_id_type: $literal("US_NC_STAFF")
+                system_type: $literal_enum(StateSystemType.INCARCERATION)
+                relationship_type: $literal_enum(StatePersonStaffRelationshipType.CASE_MANAGER)
