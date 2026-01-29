@@ -283,6 +283,8 @@ class ProductType(Enum):
                 "supervision_staff",
                 "facilities_line_staff",
                 "facilities_staff",
+                "facilities_manager",
+                "facilities_segregation_staff",
             ]
         if self == ProductType.ROUTE_PLANNER:
             return [
