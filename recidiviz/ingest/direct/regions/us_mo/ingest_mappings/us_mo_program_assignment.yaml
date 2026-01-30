@@ -12,6 +12,7 @@ input_columns:
   ACTUAL_EXIT_DT: STRING
   CLASS_TITLE: STRING
   LOC_ACRONYM: STRING
+  PROGRAM_TITLE: STRING
 unused_columns:
   - REFERRED_BY_USER_REF_ID
 output:
@@ -77,3 +78,6 @@ output:
           referral_date: REFERRAL_DT
           start_date: ACTUAL_START_DT
           discharge_date: ACTUAL_EXIT_DT
+          referral_metadata:
+            $normalized_values_json_dict:
+              program_category: PROGRAM_TITLE
