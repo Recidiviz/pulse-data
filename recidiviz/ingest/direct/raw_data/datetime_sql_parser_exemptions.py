@@ -1718,7 +1718,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
             "StartDate",
         ],
         "DisciplinaryAppeal": ["AppealDate", "DispositionDate", "LastUpdateDate"],
-        "DrugTest": ["LastUpdateDate", "PostedDate", "TestDate"],
         "DrugTestAdulterant": ["LastUpdateDate", "TestDate"],
         "FeePriceSheet": ["EndDate", "StartDate"],
         "IncidentPersonInvolved": ["LastUpdateDate"],
