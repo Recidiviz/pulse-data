@@ -55,6 +55,9 @@ DEFAULT_SOURCE_TABLE_DESCRIPTION = (
     f"{PLACEHOLDER_TO_DO_STRING}(XXXXX): Add a description as to what "
     f"this is used for and why it isn't managed in code"
 )
+DEFAULT_COLUMN_DESCRIPTION = (
+    f"{PLACEHOLDER_TO_DO_STRING}(XXXXX): Add a column description"
+)
 
 
 @attr.define(kw_only=True)
@@ -420,7 +423,16 @@ class SourceTableConfig:
 
     @classmethod
     def from_table(cls, table: Table) -> "SourceTableConfig":
-        schema = [*table.schema]
+        schema = [
+            SchemaField(
+                name=field.name,
+                field_type=field.field_type,
+                mode=field.mode,
+                description=field.description or DEFAULT_COLUMN_DESCRIPTION,
+                fields=field.fields,
+            )
+            for field in table.schema
+        ]
 
         return cls(
             address=BigQueryAddress(
