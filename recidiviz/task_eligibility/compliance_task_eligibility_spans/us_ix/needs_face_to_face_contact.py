@@ -40,7 +40,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_face_to_face_contact_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
-    due_date_field="contact_due_date",
+    due_date_field="earliest_unmet_due_date",
     last_task_completed_date_field="last_contact_date",
 )
 
