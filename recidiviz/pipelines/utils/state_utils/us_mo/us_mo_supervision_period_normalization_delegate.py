@@ -277,6 +277,7 @@ class UsMoSupervisionNormalizationDelegate(
             supervision_level_raw_text = (
                 relevant_period.supervision_level_raw_text if relevant_period else None
             )
+
             supervising_officer_staff_external_id = (
                 relevant_period.supervising_officer_staff_external_id
                 if relevant_period
@@ -287,6 +288,11 @@ class UsMoSupervisionNormalizationDelegate(
                 if relevant_period
                 else None
             )
+
+            supervision_period_metadata = (
+                relevant_period.supervision_period_metadata if relevant_period else None
+            )
+
             case_type_entries: List[StateSupervisionCaseTypeEntry] = []
 
             new_supervision_period = StateSupervisionPeriod(
@@ -304,6 +310,7 @@ class UsMoSupervisionNormalizationDelegate(
                 supervision_level_raw_text=supervision_level_raw_text,
                 supervising_officer_staff_external_id=supervising_officer_staff_external_id,
                 supervising_officer_staff_external_id_type=supervising_officer_staff_external_id_type,
+                supervision_period_metadata=supervision_period_metadata,
             )
 
             # Add a unique id to the new SP

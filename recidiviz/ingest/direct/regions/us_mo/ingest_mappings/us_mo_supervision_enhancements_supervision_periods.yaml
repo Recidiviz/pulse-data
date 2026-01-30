@@ -12,6 +12,7 @@ input_columns:
   SUPV_OFFICER_ID: STRING
   CASE_TYPE_LIST: STRING
   SUP_LVL: STRING
+  CUSTODY_TYPE_CD: STRING
   START_STATUS_CODE_LIST: STRING
   END_STATUS_CODE_LIST: STRING
 unused_columns: []
@@ -101,6 +102,13 @@ output:
               - $if:
                   $not_null: SUPV_OFFICER_ID
                 $then: $literal("US_MO_STAFF_BADGE_NUMBER")
+          # CSC cases can be identified using supervision_period_metadata, which will have {'custody_type': 'CSC'}
+          # for CSC cases and {'custody_type': ''} otherwise. We could instead set supervision_level to
+          # RESIDENTIAL_PROGRAM for these cases, but storing this information in the metadata field lets
+          # us preserve the existing supervision level for these cases, in case it's relevant.
+          supervision_period_metadata:
+            $normalized_values_json_dict:
+              custody_type: CUSTODY_TYPE_CD
           case_type_entries:
             - $foreach:
                 $iterable: CASE_TYPE_LIST
