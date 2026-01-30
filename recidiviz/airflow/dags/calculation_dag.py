@@ -380,11 +380,11 @@ def create_calculation_dag() -> None:
             ):
                 create_metric_view_data_export_nodes([export_config])
 
-    dataset_cleanup_task_id = "dataset_cleanup"
-    dataset_cleanup = build_kubernetes_pod_task(
-        task_id=dataset_cleanup_task_id,
-        container_name=dataset_cleanup_task_id,
-        arguments=["--entrypoint=DatasetCleanupEntrypoint"],
+    dataset_cleanup_and_validation_task_id = "dataset_cleanup_and_validation"
+    dataset_cleanup_and_validation = build_kubernetes_pod_task(
+        task_id=dataset_cleanup_and_validation_task_id,
+        container_name=dataset_cleanup_and_validation_task_id,
+        arguments=["--entrypoint=DatasetCleanupAndValidationEntrypoint"],
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
@@ -401,7 +401,7 @@ def create_calculation_dag() -> None:
     (
         update_all_views
         >> [validations, metric_exports]
-        >> dataset_cleanup
+        >> dataset_cleanup_and_validation
         >> apply_row_access_policies
     )
 

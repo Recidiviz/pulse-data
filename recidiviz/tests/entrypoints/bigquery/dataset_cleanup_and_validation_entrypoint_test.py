@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the DatasetCleanupEntrypoint."""
+"""Tests the DatasetCleanupAndValidationEntrypoint."""
 import datetime
 from unittest.mock import MagicMock, Mock, patch
 
@@ -22,10 +22,10 @@ from google.cloud.bigquery import Dataset, SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
-from recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint import (
+from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
     EMPTY_DATASET_DELETION_MIN_SECONDS,
     NON_EMPTY_TEMP_DATASET_DELETION_MIN_SECONDS,
-    DatasetCleanupEntrypoint,
+    DatasetCleanupAndValidationEntrypoint,
 )
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
@@ -70,8 +70,8 @@ def _labels_fake(_self: MagicMock, dataset: Dataset, _cls: type[Dataset]) -> dic
     return _DATASET_LABELS.get(dataset.dataset_id, {})
 
 
-class DatasetCleanupEntrypointTest(BigQueryEmulatorTestCase):
-    """Tests for DatasetCleanupEntrypointTest"""
+class DatasetCleanupAndValidationEntrypointTest(BigQueryEmulatorTestCase):
+    """Tests for DatasetCleanupAndValidationEntrypointTest"""
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
@@ -136,6 +136,9 @@ class DatasetCleanupEntrypointTest(BigQueryEmulatorTestCase):
         ]
 
     @patch(
+        "recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint.validate_clean_source_table_datasets",
+    )
+    @patch(
         "google.cloud.bigquery.dataset.Dataset.created",
     )
     @patch(
@@ -150,6 +153,7 @@ class DatasetCleanupEntrypointTest(BigQueryEmulatorTestCase):
         _mock_routines: Mock,
         _mock_labels: Mock,
         _mock_created: Mock,
+        _mock_validate: Mock,
     ) -> None:
         """Test that _delete_empty_or_temp_datasets does:
         - not delete a dataset if it has tables in it
@@ -172,8 +176,8 @@ class DatasetCleanupEntrypointTest(BigQueryEmulatorTestCase):
             [dataset.dataset_id for dataset in self.bq_client.list_datasets()]
         ) == sorted(all_datasets)
 
-        args = DatasetCleanupEntrypoint.get_parser().parse_args([])
-        DatasetCleanupEntrypoint.run_entrypoint(args=args)
+        args = DatasetCleanupAndValidationEntrypoint.get_parser().parse_args([])
+        DatasetCleanupAndValidationEntrypoint.run_entrypoint(args=args)
 
         assert sorted(
             [dataset.dataset_id for dataset in self.bq_client.list_datasets()]

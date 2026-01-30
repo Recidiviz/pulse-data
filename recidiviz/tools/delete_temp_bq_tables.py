@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 import pytz
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint import (
+from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
     TEMP_DATASET_PREFIXES_TO_CLEAN_UP,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING

@@ -23,13 +23,13 @@ python -m recidiviz.entrypoints.entrypoint_executor \
 
 Example:
 python -m recidiviz.entrypoints.entrypoint_executor \
-    --entrypoint DatasetCleanupEntrypoint \
+    --entrypoint DatasetCleanupAndValidationEntrypoint \
     --dry-run
 
 Running locally, set the following environment variables:
 IS_DEV=true GOOGLE_CLOUD_PROJECT=[PROJECT] python \
     -m recidiviz.entrypoints.entrypoint_executor \
-    --entrypoint DatasetCleanupEntrypoint \
+    --entrypoint DatasetCleanupAndValidationEntrypoint \
     --dry-run
 """
 import argparse
@@ -53,8 +53,8 @@ from recidiviz.entrypoints.bigquery.cloud_sql_to_bq_refresh import (
 from recidiviz.entrypoints.bigquery.dataflow_metric_pruning_entrypoint import (
     DataflowMetricPruningEntrypoint,
 )
-from recidiviz.entrypoints.bigquery.dataset_cleanup_entrypoint import (
-    DatasetCleanupEntrypoint,
+from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
+    DatasetCleanupAndValidationEntrypoint,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
@@ -99,7 +99,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     ApplyRowLevelPermissionsEntrypoint,
     BigQueryRefreshEntrypoint,
     DataflowMetricPruningEntrypoint,
-    DatasetCleanupEntrypoint,
+    DatasetCleanupAndValidationEntrypoint,
     MetricViewExportEntrypoint,
     ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,

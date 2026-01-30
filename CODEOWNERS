@@ -33,6 +33,7 @@ recidiviz/tests/ingest/direct/regions/direct_ingest_region_structure_test.py @Re
 recidiviz/tests/calculator/query/state/views/reference/workflows_opportunity_configs_test.py @Recidiviz/doppler
 recidiviz/tests/calculator/query/state/views/reference/product_person_external_id_helpers_test.py @Recidiviz/doppler
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
+recidiviz/source_tables/untracked_source_table_exemptions.py @Recidiviz/doppler
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
 recidiviz/tests/view_registry/sentence_v1_migration_burndown_test.py @ageiduschek
 recidiviz/tests/view_registry/sentences_v1_migration_burndown/** @ageiduschek
