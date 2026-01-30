@@ -118,6 +118,7 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
         "override_contact_type",
         "contact_cadence",
         "scheduled_contact_dates",
+        "earliest_unmet_due_date",
     ],
 )
 
