@@ -56,6 +56,8 @@ products:
         environment: production
       - state_code: US_TN
         environment: production
+      - state_code: US_TX
+        environment: production
   - name: Public Dashboard
     description:
       The Public Dashboard (Spotlight) is a public data portal designed to make

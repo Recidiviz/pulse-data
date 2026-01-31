@@ -171,11 +171,15 @@ def parse_role_subtype(
     """Parses the role subtype from the job title."""
 
     # Parole Officer
-    if raw_text in ["PAROLE OFFICER I", "PAROLE OFFICER II", "PAROLE OFFICER III"]:
+    if raw_text in ["PAROLE OFFICER I", "PAROLE OFFICER II"]:
         return StateStaffRoleSubtype.SUPERVISION_OFFICER
 
     # Parole Supervisor
-    if raw_text in ["PAROLE OFFICER IV   (PAROLE SUPV.)", "PAROLE OFFICER V"]:
+    if raw_text in [
+        "PAROLE OFFICER III",
+        "PAROLE OFFICER IV   (PAROLE SUPV.)",
+        "PAROLE OFFICER V",
+    ]:
         return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
 
     if raw_text in [
