@@ -59,6 +59,7 @@ output:
                         - "IA // Closed (i.e., OFF SYSTEM)"
                         - "IP // OS (Off System)"
                         - "OS // Interstate Compact"
+                        - "IN // Active Inmate (under Supervision)"
           start_date: start_datetime
           termination_date: end_datetime
           supervision_site: start_location
