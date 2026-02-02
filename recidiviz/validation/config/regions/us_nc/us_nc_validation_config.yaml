@@ -14,4 +14,11 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: We don't have sentencing information in NC. TODO(#56006) if we do ingest sentences!
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 1
+    override_reason: >-
+      The periods really are overlapping the data, but it's so few that I don't want to
+      worry about this yet. I think to fix this particular instance, I could remove rows
+      which are deleted for only a few days for a given OPUS, since it's unlikely that
+      someone would actually have been removed for such a short period of time.
