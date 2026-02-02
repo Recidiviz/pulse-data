@@ -254,6 +254,38 @@
     width: 24
     height: 6
 
+  - name: CASEMANAGEMENTPLAN
+    title: CASEMANAGEMENTPLAN
+    explore: us_ar_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ar_CASEMANAGEMENTPLAN.primary_key,
+      us_ar_CASEMANAGEMENTPLAN.OFFENDERID,
+      us_ar_CASEMANAGEMENTPLAN.PLANESTABLISHEDDATE__raw,
+      us_ar_CASEMANAGEMENTPLAN.CASEPLANTYPE,
+      us_ar_CASEMANAGEMENTPLAN.NEXTPLANREVIEWDATE__raw,
+      us_ar_CASEMANAGEMENTPLAN.PLANSTATUS,
+      us_ar_CASEMANAGEMENTPLAN.PLANSTATUSDATE__raw,
+      us_ar_CASEMANAGEMENTPLAN.PLANREVIEWEDBY,
+      us_ar_CASEMANAGEMENTPLAN.OFFNSTRENGTHCOMMENT,
+      us_ar_CASEMANAGEMENTPLAN.PLANCOMMENT,
+      us_ar_CASEMANAGEMENTPLAN.DATELASTUPDATE__raw,
+      us_ar_CASEMANAGEMENTPLAN.TIMELASTUPDATE,
+      us_ar_CASEMANAGEMENTPLAN.STAFFLASTUPDATE,
+      us_ar_CASEMANAGEMENTPLAN.MAXALLOWABLEUNITS,
+      us_ar_CASEMANAGEMENTPLAN.file_id,
+      us_ar_CASEMANAGEMENTPLAN.is_deleted]
+    sorts: [us_ar_CASEMANAGEMENTPLAN.PLANESTABLISHEDDATE__raw]
+    note_display: hover
+    note_text: "Case management plan"
+    listen: 
+      View Type: us_ar_OFFENDERPROFILE.view_type
+      US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
+    row: 24
+    col: 0
+    width: 24
+    height: 6
+
   - name: CLIENTPROFILE
     title: CLIENTPROFILE
     explore: us_ar_raw_data
@@ -332,7 +364,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 24
+    row: 30
     col: 0
     width: 24
     height: 6
@@ -399,7 +431,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 30
+    row: 36
     col: 0
     width: 24
     height: 6
@@ -474,7 +506,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 36
+    row: 42
     col: 0
     width: 24
     height: 6
@@ -503,7 +535,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 42
+    row: 48
     col: 0
     width: 24
     height: 6
@@ -530,7 +562,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 48
+    row: 54
     col: 0
     width: 24
     height: 6
@@ -599,7 +631,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 54
+    row: 60
     col: 0
     width: 24
     height: 6
@@ -629,7 +661,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 60
+    row: 66
     col: 0
     width: 24
     height: 6
@@ -760,7 +792,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 66
+    row: 72
     col: 0
     width: 24
     height: 6
@@ -794,7 +826,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 72
+    row: 78
     col: 0
     width: 24
     height: 6
@@ -835,7 +867,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 78
+    row: 84
     col: 0
     width: 24
     height: 6
@@ -865,7 +897,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 84
+    row: 90
     col: 0
     width: 24
     height: 6
@@ -982,7 +1014,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 90
+    row: 96
     col: 0
     width: 24
     height: 6
@@ -1013,7 +1045,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 96
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -1045,7 +1077,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 102
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -1072,7 +1104,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 108
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -1115,7 +1147,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 114
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -1151,7 +1183,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 120
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -1186,7 +1218,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -1220,7 +1252,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1261,7 +1293,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1315,7 +1347,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1344,7 +1376,46 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 150
+    row: 156
+    col: 0
+    width: 24
+    height: 6
+
+  - name: PROGRAMREFERRAL
+    title: PROGRAMREFERRAL
+    explore: us_ar_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ar_PROGRAMREFERRAL.primary_key,
+      us_ar_PROGRAMREFERRAL.OFFENDERID,
+      us_ar_PROGRAMREFERRAL.PROGRAMAPPLICATIONDATE__raw,
+      us_ar_PROGRAMREFERRAL.PROGRAMREFERRALSEQNBR,
+      us_ar_PROGRAMREFERRAL.WORKPGMASSIGNMENTCODE,
+      us_ar_PROGRAMREFERRAL.REFERRALSOURCE,
+      us_ar_PROGRAMREFERRAL.PROGRAMREFERRALSTAFF,
+      us_ar_PROGRAMREFERRAL.PROGRAMREFERRALPRIORITY,
+      us_ar_PROGRAMREFERRAL.PGMMANDATEDBYPPTB,
+      us_ar_PROGRAMREFERRAL.SUGGESTEDFACILITY,
+      us_ar_PROGRAMREFERRAL.PROGRAMAPPLICATIONSTATUS,
+      us_ar_PROGRAMREFERRAL.PROGRAMAPPLICATIONSTATDT__raw,
+      us_ar_PROGRAMREFERRAL.VOLPGMPARTICIPATION,
+      us_ar_PROGRAMREFERRAL.PGMREFERRALCOMMENTS,
+      us_ar_PROGRAMREFERRAL.DATELASTUPDATE__raw,
+      us_ar_PROGRAMREFERRAL.TIMELASTUPDATE,
+      us_ar_PROGRAMREFERRAL.STAFFLASTUPDATE,
+      us_ar_PROGRAMREFERRAL.PROGRAMREFERRALTYPE,
+      us_ar_PROGRAMREFERRAL.ELIGIBILITYCONFLICTS,
+      us_ar_PROGRAMREFERRAL.ELIGIBILITYSTATUS,
+      us_ar_PROGRAMREFERRAL.ELIGIBILITYSTATUSDATE__raw,
+      us_ar_PROGRAMREFERRAL.file_id,
+      us_ar_PROGRAMREFERRAL.is_deleted]
+    sorts: [us_ar_PROGRAMREFERRAL.PROGRAMAPPLICATIONDATE__raw]
+    note_display: hover
+    note_text: "Program referral"
+    listen: 
+      View Type: us_ar_OFFENDERPROFILE.view_type
+      US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1387,7 +1458,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 156
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1497,7 +1568,211 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 162
+    row: 174
+    col: 0
+    width: 24
+    height: 6
+
+  - name: RISKASMTTOOL
+    title: RISKASMTTOOL
+    explore: us_ar_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ar_RISKASMTTOOL.primary_key,
+      us_ar_RISKASMTTOOL.OFFENDERID,
+      us_ar_RISKASMTTOOL.RISKASSESSMENTDATE__raw,
+      us_ar_RISKASMTTOOL.RISKASSESSMENTTIME,
+      us_ar_RISKASMTTOOL.RISKASSESSMENTTYPE,
+      us_ar_RISKASMTTOOL.RISKASMTFACILITY,
+      us_ar_RISKASMTTOOL.RISKASMTORGTYPE,
+      us_ar_RISKASMTTOOL.RISKASMTSTAFF,
+      us_ar_RISKASMTTOOL.SELFREPORTSURVEYDATE__raw,
+      us_ar_RISKASMTTOOL.SELFREPORTSURVEYTIME,
+      us_ar_RISKASMTTOOL.RISKAGEATASMT,
+      us_ar_RISKASMTTOOL.RISKPRADFELCONV,
+      us_ar_RISKASMTTOOL.RISKSERARREST,
+      us_ar_RISKASMTTOOL.RISKPRSNTTOJAIL,
+      us_ar_RISKASMTTOOL.RISKRECDMISCONDUCT,
+      us_ar_RISKASMTTOOL.RISKPRSNTTOPROB,
+      us_ar_RISKASMTTOOL.RISKSUPVRVKD,
+      us_ar_RISKASMTTOOL.RISKCMTASJUVENILE,
+      us_ar_RISKASMTTOOL.RISKARRFORVIOLENCE,
+      us_ar_RISKASMTTOOL.RISKPRCMTTOPRISON,
+      us_ar_RISKASMTTOOL.RISKESCAPEATTEMPT,
+      us_ar_RISKASMTTOOL.RISKAGEATARR,
+      us_ar_RISKASMTTOOL.RISKOFFNDRUG,
+      us_ar_RISKASMTTOOL.RISKVIOLINFR,
+      us_ar_RISKASMTTOOL.RISKABSCSUPV,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE1,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE1,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED1,
+      us_ar_RISKASMTTOOL.RISKASMTCRIMHISTCMNTS,
+      us_ar_RISKASMTTOOL.RISKCURREMPL,
+      us_ar_RISKASMTTOOL.RISKHIGHEDUC,
+      us_ar_RISKASMTTOOL.RISKEXPELSUSPFMSCH,
+      us_ar_RISKASMTTOOL.RISKEMPLOYEDATARREST,
+      us_ar_RISKASMTTOOL.RISKUSEOFTIME,
+      us_ar_RISKASMTTOOL.RISKFINANCIALSITUATION,
+      us_ar_RISKASMTTOOL.RISKEMPLFULLTIME,
+      us_ar_RISKASMTTOOL.RISKATTITUDETOBOSS,
+      us_ar_RISKASMTTOOL.RISKLNGTHOFEMPL,
+      us_ar_RISKASMTTOOL.RISKQUITJOB,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE2,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE2,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED2,
+      us_ar_RISKASMTTOOL.RISKASMTEMPLOYMENCMNTS,
+      us_ar_RISKASMTTOOL.RISKPARENTCRIM,
+      us_ar_RISKASMTTOOL.RISKSATISWITHSITUATION,
+      us_ar_RISKASMTTOOL.RISKEMOTPERSONALSUPP,
+      us_ar_RISKASMTTOOL.RISKLVLSATISFWITHSUPP,
+      us_ar_RISKASMTTOOL.RISKSTABOFRESID,
+      us_ar_RISKASMTTOOL.RISKMARITALSTATUS,
+      us_ar_RISKASMTTOOL.RISKLIVSITUATIONPRIORINCAR,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE3,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE3,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED3,
+      us_ar_RISKASMTTOOL.RISKASMTFAMILYCMNTS,
+      us_ar_RISKASMTTOOL.RISKHIGHCRIME,
+      us_ar_RISKASMTTOOL.RISKDRUGSAVAIL,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE4,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE4,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED4,
+      us_ar_RISKASMTTOOL.RISKASMTNEIGHBORHOODCMNTS,
+      us_ar_RISKASMTTOOL.RISKAGEUSEALCOHOL,
+      us_ar_RISKASMTTOOL.RISKPDOFABSALCOHOL,
+      us_ar_RISKASMTTOOL.RISKUSEDDRUGS,
+      us_ar_RISKASMTTOOL.RISKDRUGLEGPROB,
+      us_ar_RISKASMTTOOL.RISKEMPLDRUGUSE,
+      us_ar_RISKASMTTOOL.RISKAGEDRUGUSE,
+      us_ar_RISKASMTTOOL.RISKDIAGNOSEDMH,
+      us_ar_RISKASMTTOOL.RISKHEALTHDRUGUSE,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE5,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE5,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED5,
+      us_ar_RISKASMTTOOL.RISKASMTSUBABUSECMNTS,
+      us_ar_RISKASMTTOOL.RISKCRIMINALFRIEND,
+      us_ar_RISKASMTTOOL.RISKCONTCRIM,
+      us_ar_RISKASMTTOOL.RISKGANGMBR,
+      us_ar_RISKASMTTOOL.RISKCRIMACTIV,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE6,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE6,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED6,
+      us_ar_RISKASMTTOOL.RISKASMTPEERASSOCCMNTS,
+      us_ar_RISKASMTTOOL.RISKCRIMPRIDE,
+      us_ar_RISKASMTTOOL.RISKCONCERNOTH,
+      us_ar_RISKASMTTOOL.RISKLACKCNTL,
+      us_ar_RISKASMTTOOL.RISKTELLLIES,
+      us_ar_RISKASMTTOOL.RISKRISKBEHAV,
+      us_ar_RISKASMTTOOL.RISKWALKFIGHT,
+      us_ar_RISKASMTTOOL.RISKBEFOREDO,
+      us_ar_RISKASMTTOOL.RISKCNTLANGER,
+      us_ar_RISKASMTTOOL.RISKANGERINTIM,
+      us_ar_RISKASMTTOOL.RISKACTSIMPUL,
+      us_ar_RISKASMTTOOL.RISKOVERPAST,
+      us_ar_RISKASMTTOOL.RISKPROBSOLV,
+      us_ar_RISKASMTTOOL.RISKLEVELSCORE7,
+      us_ar_RISKASMTTOOL.RISKLEVELMAXSCORE7,
+      us_ar_RISKASMTTOOL.RISKLEVELOFNEED7,
+      us_ar_RISKASMTTOOL.RISKASMTCRIMLIFECMNTS,
+      us_ar_RISKASMTTOOL.RISKASMTTOTALSCORE,
+      us_ar_RISKASMTTOOL.RISKMAXTOTALSCORE,
+      us_ar_RISKASMTTOOL.RISKASMTCATEGORY,
+      us_ar_RISKASMTTOOL.RISKASMTPROFOVERRIDECMNTS,
+      us_ar_RISKASMTTOOL.RISKASMTRECLEVEL,
+      us_ar_RISKASMTTOOL.MHSTATUSCD,
+      us_ar_RISKASMTTOOL.SUGGESTEDSUPVLEVEL,
+      us_ar_RISKASMTTOOL.OVERRIDEREASON,
+      us_ar_RISKASMTTOOL.RISKCLASSCODE,
+      us_ar_RISKASMTTOOL.RISKASMTSTATUS,
+      us_ar_RISKASMTTOOL.RISKASMTOVERRIDEMGR,
+      us_ar_RISKASMTTOOL.RISKASMTOVERRIDEDATE__raw,
+      us_ar_RISKASMTTOOL.RISKASMTCUSTODY,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN01,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN02,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN03,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN04,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN05,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN06,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN07,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN08,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN09,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN10,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN11,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN12,
+      us_ar_RISKASMTTOOL.RISKASMTCONCERN13,
+      us_ar_RISKASMTTOOL.RISKASMTOTHCONCERNCMNTS,
+      us_ar_RISKASMTTOOL.RISKASMTCOMMENTS,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL01,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL02,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL03,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL04,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL05,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL06,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL07,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL08,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL09,
+      us_ar_RISKASMTTOOL.RISKSUPVREFERRAL10,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL01,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL02,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL03,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL04,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL05,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL06,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL07,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL08,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL09,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL11,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL10,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL12,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL13,
+      us_ar_RISKASMTTOOL.RISKADCREFERRAL14,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL01,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL02,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL03,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL04,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL05,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL06,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL07,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL08,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL09,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL10,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL11,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL12,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL13,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL14,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL15,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL16,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL17,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL18,
+      us_ar_RISKASMTTOOL.RISKCCCREFERRAL19,
+      us_ar_RISKASMTTOOL.RISKASMTPRECAUTION01,
+      us_ar_RISKASMTTOOL.RISKASMTPRECAUTION02,
+      us_ar_RISKASMTTOOL.RISKALCOHOLDRUGTRMTALERT,
+      us_ar_RISKASMTTOOL.RISKSEXOFFENDERLEVEL,
+      us_ar_RISKASMTTOOL.RISKPOLYGRAPHCVSADECEPTION,
+      us_ar_RISKASMTTOOL.RISKDENYOFFENSE,
+      us_ar_RISKASMTTOOL.RISKNONCOMPLIANCEORDEREDPGMS,
+      us_ar_RISKASMTTOOL.RISKUNSUPCONTWITHMINOR,
+      us_ar_RISKASMTTOOL.RISKCONTACTVICTIM,
+      us_ar_RISKASMTTOOL.RISKRESIDENCETRAVELVIOLATION,
+      us_ar_RISKASMTTOOL.RISKELECTRONICMONITORVIOLATION,
+      us_ar_RISKASMTTOOL.RISKCURFEWVIOLATION,
+      us_ar_RISKASMTTOOL.RISKPORNOGRAPHYVIOLATION,
+      us_ar_RISKASMTTOOL.DATELASTUPDATE__raw,
+      us_ar_RISKASMTTOOL.TIMELASTUPDATE,
+      us_ar_RISKASMTTOOL.STAFFLASTUPDATE,
+      us_ar_RISKASMTTOOL.RISKASMTCASENUMBER,
+      us_ar_RISKASMTTOOL.RISKASMTPROFOVERRIDE,
+      us_ar_RISKASMTTOOL.RISKASMTOVERRIDEDECISION,
+      us_ar_RISKASMTTOOL.file_id,
+      us_ar_RISKASMTTOOL.is_deleted]
+    sorts: [us_ar_RISKASMTTOOL.RISKASSESSMENTDATE__raw]
+    note_display: hover
+    note_text: "Risk assessment"
+    listen: 
+      View Type: us_ar_OFFENDERPROFILE.view_type
+      US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1594,7 +1869,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 168
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1694,7 +1969,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 174
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1804,7 +2079,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 180
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1839,7 +2114,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 186
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -1881,7 +2156,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 192
+    row: 210
     col: 0
     width: 24
     height: 6
@@ -1914,7 +2189,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 198
+    row: 216
     col: 0
     width: 24
     height: 6
@@ -1953,7 +2228,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 204
+    row: 222
     col: 0
     width: 24
     height: 6
@@ -1986,7 +2261,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 210
+    row: 228
     col: 0
     width: 24
     height: 6
@@ -2017,7 +2292,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 216
+    row: 234
     col: 0
     width: 24
     height: 6
@@ -2063,7 +2338,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 222
+    row: 240
     col: 0
     width: 24
     height: 6
@@ -2103,7 +2378,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 228
+    row: 246
     col: 0
     width: 24
     height: 6

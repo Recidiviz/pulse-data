@@ -214,6 +214,10 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "SUPVINTERVENTION": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "SUPVTIMELINE": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "VISITATIONSTATUS": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "CASEMANAGEMENTPLAN": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "ORASRESULTMATRIX": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "PROGRAMREFERRAL": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "RISKASMTTOOL": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
     },
     # TODO(#51174) Enable automatic raw data pruning for all files
     StateCode.US_AZ: {

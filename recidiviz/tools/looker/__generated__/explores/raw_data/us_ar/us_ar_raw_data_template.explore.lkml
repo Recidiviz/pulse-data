@@ -31,6 +31,13 @@ explore: us_ar_raw_data_template {
     view_label: "us_ar_BOARDHEARING"
   }
 
+  join: us_ar_CASEMANAGEMENTPLAN {
+    sql_on: ${us_ar_CASEMANAGEMENTPLAN.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ar_CASEMANAGEMENTPLAN"
+  }
+
   join: us_ar_CLIENTPROFILE {
     sql_on: ${us_ar_CLIENTPROFILE.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
     type: full_outer
@@ -185,6 +192,13 @@ explore: us_ar_raw_data_template {
     view_label: "us_ar_PROGRAMACHIEVEMENT"
   }
 
+  join: us_ar_PROGRAMREFERRAL {
+    sql_on: ${us_ar_PROGRAMREFERRAL.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ar_PROGRAMREFERRAL"
+  }
+
   join: us_ar_RELASSOCRELATION {
     sql_on: ${us_ar_RELASSOCRELATION.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
     type: full_outer
@@ -197,6 +211,13 @@ explore: us_ar_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_ar_RELEASEDATECHANGE"
+  }
+
+  join: us_ar_RISKASMTTOOL {
+    sql_on: ${us_ar_RISKASMTTOOL.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ar_RISKASMTTOOL"
   }
 
   join: us_ar_RISKNEEDCLASS {
