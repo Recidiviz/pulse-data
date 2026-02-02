@@ -140,6 +140,10 @@ class PrisonPopulationOverTime(PathwaysBase):
             "sex",
             "admission_reason",
             "race",
+            "sentence_length_min",
+            "sentence_length_max",
+            "charge_county_code",
+            "offense_type",
             unique=True,
         ),
         Index(
@@ -153,6 +157,10 @@ class PrisonPopulationOverTime(PathwaysBase):
                 "facility",
                 "admission_reason",
                 "race",
+                "sentence_length_min",
+                "sentence_length_max",
+                "charge_county_code",
+                "offense_type",
             ],
         ),
         # Allows fast execution of select min(date_in_population)
@@ -182,6 +190,14 @@ class PrisonPopulationOverTime(PathwaysBase):
     admission_reason = Column(String, primary_key=True, nullable=True)
     # Race of the person
     race = Column(String, primary_key=True, nullable=True)
+    # Min sentence length
+    sentence_length_min = Column(String, nullable=True)
+    # Max sentence length
+    sentence_length_max = Column(String, nullable=True)
+    # Charge county code where the person was sentenced
+    charge_county_code = Column(String, nullable=True)
+    # Offense type of the person
+    offense_type = Column(String, nullable=True)
 
 
 class PrisonPopulationByDimension(PathwaysBase):
@@ -202,6 +218,10 @@ class PrisonPopulationByDimension(PathwaysBase):
             "facility",
             "age_group",
             "race",
+            "sentence_length_min",
+            "sentence_length_max",
+            "charge_county_code",
+            "offense_type",
             unique=True,
         ),
         *build_covered_indexes(
@@ -213,6 +233,10 @@ class PrisonPopulationByDimension(PathwaysBase):
                 "sex",
                 "admission_reason",
                 "race",
+                "sentence_length_min",
+                "sentence_length_max",
+                "charge_county_code",
+                "offense_type",
             ],
             includes=["person_id"],
         ),
@@ -236,6 +260,14 @@ class PrisonPopulationByDimension(PathwaysBase):
     race = Column(String, primary_key=True, nullable=False)
     # Binned length of incarceration in months
     length_of_stay = Column(String, nullable=True)
+    # Min sentence length
+    sentence_length_min = Column(String, nullable=True)
+    # Max sentence length
+    sentence_length_max = Column(String, nullable=True)
+    # Charge county code where the person was sentenced
+    charge_county_code = Column(String, nullable=True)
+    # Offense type of the person
+    offense_type = Column(String, nullable=True)
 
 
 class PrisonPopulationProjection(PathwaysBase):

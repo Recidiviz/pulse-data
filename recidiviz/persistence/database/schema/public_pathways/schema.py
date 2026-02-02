@@ -84,6 +84,10 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
             "gender",
             "sex",
             "race",
+            "sentence_length_min",
+            "sentence_length_max",
+            "charge_county_code",
+            "offense_type",
             unique=True,
         ),
         Index(
@@ -96,6 +100,10 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
                 "sex",
                 "facility",
                 "race",
+                "sentence_length_min",
+                "sentence_length_max",
+                "charge_county_code",
+                "offense_type",
             ],
         ),
         # Allows fast execution of select min(date_in_population)
@@ -123,6 +131,14 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
     sex = Column(String, primary_key=True, nullable=True)
     # Race of the person
     race = Column(String, primary_key=True, nullable=True)
+    # Min sentence length
+    sentence_length_min = Column(String, primary_key=True, nullable=True)
+    # Max sentence length
+    sentence_length_max = Column(String, primary_key=True, nullable=True)
+    # Charge county code where the person was sentenced
+    charge_county_code = Column(String, primary_key=True, nullable=True)
+    # Offense type of the person
+    offense_type = Column(String, primary_key=True, nullable=True)
 
 
 class PublicPrisonPopulationByDimension(PublicPathwaysBase):
@@ -142,6 +158,10 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
             "gender",
             "sex",
             "race",
+            "sentence_length_min",
+            "sentence_length_max",
+            "charge_county_code",
+            "offense_type",
             unique=True,
         ),
         *build_covered_indexes(
@@ -152,6 +172,10 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
                 "gender",
                 "sex",
                 "race",
+                "sentence_length_min",
+                "sentence_length_max",
+                "charge_county_code",
+                "offense_type",
             ],
             includes=["person_id"],
         ),
@@ -171,3 +195,11 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
     sex = Column(String, primary_key=True, nullable=False)
     # Race of the person
     race = Column(String, primary_key=True, nullable=False)
+    # Min sentence length
+    sentence_length_min = Column(String, primary_key=True, nullable=True)
+    # Max sentence length
+    sentence_length_max = Column(String, primary_key=True, nullable=True)
+    # Charge county code where the person was sentenced
+    charge_county_code = Column(String, primary_key=True, nullable=True)
+    # Offense type of the person
+    offense_type = Column(String, primary_key=True, nullable=True)
