@@ -9,10 +9,7 @@ input_columns:
   sex: STRING
   race: STRING
   ethnic: STRING
-unused_columns:
-  # TODO(#54092): The mapping for StatePersonEthnicity has been removed so that prioritized_race_or_ethnicity
-  # can reliably be used to get someone's race. We should add it back when this is no longer necessary.
-  - ethnic
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -34,7 +31,6 @@ output:
           StateSex.FEMALE: "2" # FEMALE
           StateSex.OTHER: "9" # NOT CODED
     birthdate: birth
-    ethnicity: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)
     races:
       - StatePersonRace:
           race:
@@ -47,3 +43,10 @@ output:
                 StateRace.ASIAN: "4" # ASIAN
                 StateRace.OTHER: "5" # OTHER
                 StateRace.EXTERNAL_UNKNOWN: "6" # UNKNOWN
+    ethnicity:
+      $enum_mapping:
+        $raw_text: ethnic
+        $mappings:
+          StateEthnicity.HISPANIC: "1" # HISPANIC
+          StateEthnicity.NOT_HISPANIC: "2" # NOT HISPANIC
+          StateEthnicity.EXTERNAL_UNKNOWN: "3" # UNKNOWN
