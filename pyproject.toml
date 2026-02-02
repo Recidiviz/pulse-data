@@ -24,7 +24,12 @@ dependencies = [
     "opentelemetry-instrumentation-sqlalchemy",
     "opentelemetry-semantic-conventions",
     "opentelemetry-propagator-gcp",
-    "alembic",
+    # TODO(#18145): Remove pin once migration 94563473c612 is fixed to not
+    # pass primary_key=True to op.add_column(). Alembic 1.18.2+ emits
+    # PRIMARY KEY inline in ADD COLUMN, breaking tables with existing PKs.
+    # Using the same issue as the sqlalchemy pin below, because updating that
+    # will probably need to be done in tandem with alembic.
+    "alembic<1.18.2",
     # TODO(#18145): Remove the <2.0.0 pin
     "sqlalchemy>=1.4.25,<2.0.0",
     "flask[async]>=2.0.0",
