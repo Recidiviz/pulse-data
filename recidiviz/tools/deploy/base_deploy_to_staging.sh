@@ -252,17 +252,21 @@ else
     echo "Skipping configuration and pipeline deploy steps for debug or no promote release build."
 fi
 
-echo "Deploying $VERSION_TAG to Looker staging project..."
+if [[ -z ${DEBUG_BUILD_NAME} ]]; then
+  echo "Creating local Recidiviz/looker tag $VERSION_TAG"
+  verify_hash "$LOOKER_COMMIT_HASH" "$TEMP_LOOKER_DIR"
+  looker_git tag -m "Version $VERSION_TAG release - $(date +'%Y-%m-%d %H:%M:%S')" "$VERSION_TAG"
 
-FLAGS=""
-[ "$PROMOTE" = "true" ] && FLAGS+="-p"
-[ "$NO_PROMOTE" = "true" ] && FLAGS+="-n"
-[ -n "$DEBUG_BUILD_NAME" ] && FLAGS+=" -d $DEBUG_BUILD_NAME"
+  echo "Pushing tags to remote"
+  looker_git push origin --tags
+fi
 
 if [[ -n ${PROMOTE} ]]; then
-  echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
-  deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
-  echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."
+    echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
+    deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
+    echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."
+else
+    echo "Skipping Looker deploy step for debug or no promote release build."
 fi
 
 if [[ -n ${PROMOTE} ]]; then
@@ -280,13 +284,6 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
 
   echo "Pushing tags to remote"
   run_cmd git push origin --tags
-
-  echo "Creating local Recidiviz/looker tag $VERSION_TAG"
-  verify_hash "$LOOKER_COMMIT_HASH" "$TEMP_LOOKER_DIR"
-  looker_git tag -m "Version $VERSION_TAG release - $(date +'%Y-%m-%d %H:%M:%S')" "$VERSION_TAG"
-
-  echo "Pushing tags to remote"
-  looker_git push origin --tags
 fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
