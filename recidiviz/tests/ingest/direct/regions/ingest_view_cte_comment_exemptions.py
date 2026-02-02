@@ -316,10 +316,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         "ViolationsAndSanctions": ["sanctions_groupings"],
     },
     StateCode.US_MO: {
-        "oras_assessments_weekly_v2": [
-            "assessments_with_duplicates",
-            "duplicate_counts",
-        ],
         "supervision_staff": ["APFX_ALL"],
         "tak158_tak026_incarceration_periods": [
             "all_sub_sub_cycle_critical_dates",

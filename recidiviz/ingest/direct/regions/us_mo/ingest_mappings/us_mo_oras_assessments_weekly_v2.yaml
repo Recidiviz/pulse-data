@@ -4,10 +4,12 @@
 manifest_language: 1.0.0
 input_columns:
   DOC_ID: STRING
-  ASSESSMENT_TYPE: STRING
+  ASSESSMENT_ID: STRING
+  ASSESSMENT_NAME: STRING
   RISK_LEVEL: STRING
-  SCORE: STRING
-  CREATED_DATE: DATE
+  OVERALL_ASSESSMENT_SCORE: STRING
+  ASSESSMENT_DATE: DATE
+  section_results: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -17,16 +19,11 @@ output:
           id_type: $literal("US_MO_DOC")
     assessments:
       - StateAssessment:
-          external_id:
-            $concat:
-              $values:
-                - DOC_ID
-                - CREATED_DATE
-                - ASSESSMENT_TYPE
-          assessment_date: CREATED_DATE
+          external_id: ASSESSMENT_ID
+          assessment_date: ASSESSMENT_DATE
           assessment_type:
             $enum_mapping:
-              $raw_text: ASSESSMENT_TYPE
+              $raw_text: ASSESSMENT_NAME
               $mappings:
                 StateAssessmentType.INTERNAL_UNKNOWN:
                   - "Diversion Instrument" # One record with this entry in DB.
@@ -64,4 +61,7 @@ output:
                         - "High"
                       StateAssessmentLevel.VERY_HIGH:
                         - "Very High"
-          assessment_score: SCORE
+          assessment_score: OVERALL_ASSESSMENT_SCORE
+          assessment_metadata:
+            $normalized_values_json_dict:
+              section_results: section_results
