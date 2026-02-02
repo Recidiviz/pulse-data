@@ -31,8 +31,8 @@ from recidiviz.task_eligibility.criteria.general import (
     no_highest_severity_incarceration_sanctions_within_1_year_of_report,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
-    at_least_2_weeks_or_start_of_next_month_between_good_time_restorations,
     no_idc_mrs_in_past_6_months,
+    wait_until_next_month_before_next_good_time_restoration,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     BigQueryDateInterval,
@@ -55,7 +55,7 @@ US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS: List[
     TaskCriteriaBigQueryViewBuilder
 ] = [
     *US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS_WITHOUT_RESTORATION_SEQUENCING,
-    at_least_2_weeks_or_start_of_next_month_between_good_time_restorations.VIEW_BUILDER,
+    wait_until_next_month_before_next_good_time_restoration.VIEW_BUILDER,
 ]
 
 _ALMOST_ELIGIBLE_MONTHS = 3
