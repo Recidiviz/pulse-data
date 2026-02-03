@@ -1,0 +1,87 @@
+address:
+  dataset_id: pulse_dashboard_segment_metrics
+  table_id: tracks_view
+description: "Materialized view of Segment tracks events for Pulse Dashboard"
+schema:
+  - name: anonymous_id
+    description: "Segment-generated anonymous identifier for the user"
+    type: STRING
+    mode: NULLABLE
+  - name: context_attempts
+    description: "Number of delivery attempts for this event"
+    type: INTEGER
+    mode: NULLABLE
+  - name: context_ip
+    description: "IP address of the client"
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    description: "Name of the Segment client library"
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    description: "Version of the Segment client library"
+    type: STRING
+    mode: NULLABLE
+  - name: context_locale
+    description: "Locale setting of the client browser"
+    type: STRING
+    mode: NULLABLE
+  - name: context_metrics
+    description: "Performance metrics collected by the client library"
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_path
+    description: "URL path of the page where the event was triggered"
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_search
+    description: "Query string of the page URL"
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_url
+    description: "Full URL of the page where the event was triggered"
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent
+    description: "User-Agent string of the client browser"
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    description: "Name of the Segment event"
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    description: "Human-readable text of the Segment event"
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    description: "Unique identifier for this Segment event"
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    description: "Timestamp when the record was loaded into the data warehouse"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    description: "Original client-side timestamp of the event"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    description: "Timestamp when the Segment server received the event"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    description: "Timestamp when the client sent the event"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: timestamp
+    description: "Timestamp of the event, set by Segment"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: uuid_ts
+    description: "Timestamp used for deduplication by Segment"
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning: null
