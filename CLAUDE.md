@@ -45,6 +45,8 @@ Running / configuring tests:
 - Don't add inline comments to explain things that are blatantly obvious just by
   reading the code or to explain something that is only meaningful in the
   context of the current conversation.
+- Never import from `recidiviz/tests/` in production code (code outside of
+  `recidiviz/tests/`). Test utilities and constants should stay in test code.
 
 ### Code Quality
 

@@ -1247,7 +1247,34 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.get_dataset(self.dataset_ref_for_id(dataset_id))
 
     def list_datasets(self) -> Iterator[bigquery.dataset.DatasetListItem]:
-        return self.client.list_datasets()
+        if environment.in_test():
+            # When running in tests, assume we're using the emulator which currently
+            # does not support INFORMATION_SCHEMA.
+            # TODO(https://github.com/goccy/bigquery-emulator/issues/48): Remove this
+            #  branch once the BQ emulator supports INFORMATION_SCHEMA.
+            return self.client.list_datasets()
+
+        # Use INFORMATION_SCHEMA instead of client.list_datasets() which has been
+        # shown to be ~80% faster in some cases.
+        query = (
+            f"SELECT DISTINCT schema_name "
+            f"FROM `{self.project_id}`.INFORMATION_SCHEMA.SCHEMATA;"
+        )
+        job = self.run_query_async(query_str=query, use_query_cache=False)
+
+        return iter(
+            [
+                bigquery.dataset.DatasetListItem(
+                    {
+                        "datasetReference": {
+                            "projectId": self.project_id,
+                            "datasetId": row.schema_name,
+                        }
+                    }
+                )
+                for row in job.result()
+            ]
+        )
 
     def table_exists(self, address: BigQueryAddress) -> bool:
         table_ref = self._table_ref_for_address(address)

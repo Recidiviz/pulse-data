@@ -866,3 +866,31 @@ FROM UNNEST([
                 }
             ],
         )
+
+    def test_information_schema_schemata(self) -> None:
+        """Tests querying INFORMATION_SCHEMA.SCHEMATA to list datasets."""
+        # TODO(https://github.com/goccy/bigquery-emulator/issues/48): Update this test
+        #  once INFORMATION_SCHEMA is supported in the emulator.
+        client = self.bq_client.client
+
+        # Create some datasets
+        client.create_dataset("test_dataset_1")
+        client.create_dataset("test_dataset_2")
+        client.create_dataset("another_dataset")
+
+        # Query INFORMATION_SCHEMA.SCHEMATA to list all datasets
+        query = f"SELECT schema_name FROM `{self.project_id}`.INFORMATION_SCHEMA.SCHEMATA ORDER BY schema_name"
+
+        # This is what SHOULD work once the emulator supports INFORMATION_SCHEMA:
+        # results = list(client.query(query).result())
+        # dataset_names = [row.schema_name for row in results]
+        # self.assertIn("test_dataset_1", dataset_names)
+        # self.assertIn("test_dataset_2", dataset_names)
+        # self.assertIn("another_dataset", dataset_names)
+
+        # But currently the emulator does not support INFORMATION_SCHEMA
+        with self.assertRaisesRegex(
+            InternalServerError,
+            r"Table not found:.*INFORMATION_SCHEMA\.SCHEMATA",
+        ):
+            list(client.query(query).result())
