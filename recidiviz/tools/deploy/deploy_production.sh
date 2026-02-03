@@ -40,6 +40,7 @@ then
 fi
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
+echo "Commit hash: ${COMMIT_HASH}"
 
 echo "Performing pre-deploy verification"
 run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"

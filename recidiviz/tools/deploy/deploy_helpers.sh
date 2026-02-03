@@ -126,9 +126,13 @@ function last_version_tag_on_branch {
 # Returns the last deployed version tag in a given project
 function last_deployed_version_tag {
     PROJECT_ID=$1
-    reconfigure_terraform_backend "${PROJECT_ID}" "" > /dev/null
+    # Redirect output to stderr so output is not returned by this function but still
+    # remains visible to the user.
+    echo "Getting last deployed version tag from Terraform state for project ${PROJECT_ID}..." >&2
+    reconfigure_terraform_backend "${PROJECT_ID}" "" >&2
 
-    DOCKER_IMAGE_TAG="$(terraform -chdir="${BASH_SOURCE_DIR}/terraform" output -raw docker_image_tag)"
+    DOCKER_IMAGE_TAG="$(terraform -chdir="${BASH_SOURCE_DIR}/terraform" output -raw docker_image_tag)" || exit_on_fail
+    echo "Retrieved last deployed version: ${DOCKER_IMAGE_TAG}" >&2
     echo "${DOCKER_IMAGE_TAG}"
 }
 
@@ -253,17 +257,27 @@ function check_terraform_installed {
         exit 1
     fi
 
-    # Check that we're on at least the minimum version of Terraform
+    # Check that we're on the required version of Terraform (matches ~> constraint in terraform.tf)
     TERRAFORM_VERSION=$(terraform --version | grep "^Terraform v" | cut -d ' ' -f 2 | sed 's/v//')
-    # Note: this verison number should be kept in sync with the ones in Dockerfile,
+    echo "Installed Terraform version: v${TERRAFORM_VERSION}"
+    # Note: these version numbers should be kept in sync with the ones in Dockerfile,
     # .devcontainer/devcontainer.json, recidiviz/tools/deploy/terraform/terraform.tf, and
     # .github/workflows/ci.yml
+    # The terraform config uses ~> 1.11.4 which means >= 1.11.4 and < 1.12.0
     MIN_REQUIRED_TERRAFORM_VERSION="1.11.4"
+    MAX_REQUIRED_TERRAFORM_VERSION="1.12.0"
 
     if version_less_than "${TERRAFORM_VERSION}" "${MIN_REQUIRED_TERRAFORM_VERSION}"; then
       echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be at least [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
       echo_error "Please install [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
       echo_error "See instructions at go/terraform for how to upgrade to [$MIN_REQUIRED_TERRAFORM_VERSION]."
+      exit 1
+    fi
+
+    if ! version_less_than "${TERRAFORM_VERSION}" "${MAX_REQUIRED_TERRAFORM_VERSION}"; then
+      echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be less than [v$MAX_REQUIRED_TERRAFORM_VERSION]. "
+      echo_error "The terraform config requires ~> $MIN_REQUIRED_TERRAFORM_VERSION (at least $MIN_REQUIRED_TERRAFORM_VERSION but less than $MAX_REQUIRED_TERRAFORM_VERSION)."
+      echo_error "See instructions at go/terraform for how to install the correct version."
       exit 1
     fi
 }
@@ -285,6 +299,11 @@ function check_gcloud_authed {
   if ! gcloud auth print-access-token >/dev/null 2>&1; then
     echo "No valid user credentials; running gcloud auth login..."
     gcloud auth login --update-adc
+    if ! gcloud auth print-access-token >/dev/null 2>&1; then
+      echo_error "gcloud auth still failed after login attempt"
+      exit 1
+    fi
+    echo "gcloud login successful"
     return 0
   fi
 
@@ -344,7 +363,9 @@ function reconfigure_terraform_backend {
   PROJECT_ID=$1
   TF_STATE_PREFIX=$2
   echo "Reconfiguring Terraform backend..."
+  echo "Cleaning existing Terraform state directory..."
   rm -rf "${BASH_SOURCE_DIR}/.terraform/"
+  echo "Running terraform init..."
   run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" init \
           -backend-config "bucket=${PROJECT_ID}-tf-state" \
           -backend-config "prefix=${TF_STATE_PREFIX}" \
@@ -467,6 +488,8 @@ function validate_release_branch_changes_since_tag {
     GIT_VERSION_TAG=$1
     LOCAL_REPO_PATH=${2:-$(git rev-parse --show-toplevel)}
 
+    echo "Validating no new commits on release branch since ${GIT_VERSION_TAG} in ${LOCAL_REPO_PATH}..."
+
     read -r -a VERSION_PARTS < <(parse_version "${GIT_VERSION_TAG}")
     MAJOR_VERSION="${VERSION_PARTS[1]}"
     MINOR_VERSION="${VERSION_PARTS[2]}"
@@ -476,5 +499,7 @@ function validate_release_branch_changes_since_tag {
         echo "${CHANGES_SINCE_TAG}" | indent_output
         echo "Folks may be expecting the above changes to go out in this production deploy (did we miss a cherry-pick?)."
         script_prompt  "Would you like to continue deploying ${GIT_VERSION_TAG}?"
+    else
+        echo "No new commits on release branch since ${GIT_VERSION_TAG} - OK"
     fi
 }

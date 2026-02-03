@@ -25,9 +25,13 @@ function looker_git {
 function clone_looker_repo_to_temp_dir {
   # Clones the Looker repo into a temporary directory if it does not already exist or is in a bad state,
   # removing any existing directory first.
+  echo "Checking Looker repo temp directory..."
   if [[ ! -d "$TEMP_LOOKER_DIR/.git" ]] || ! git -C "$TEMP_LOOKER_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Looker repo not found or invalid at $TEMP_LOOKER_DIR, cloning fresh..."
     rm -rf "$TEMP_LOOKER_DIR"
     run_cmd git clone "$LOOKER_REPO_URL" "$TEMP_LOOKER_DIR"
+  else
+    echo "Using existing Looker repo at $TEMP_LOOKER_DIR"
   fi
 }
 

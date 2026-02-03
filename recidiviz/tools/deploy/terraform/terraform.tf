@@ -19,5 +19,8 @@ terraform {
   # Note: this verison number should be kept in sync with the ones in Dockerfile,
   # .devcontainer/devcontainer.json, .github/workflows/ci.yml, and
   # recidiviz/tools/deploy/deploy_helpers.sh
+  # NOTE: The ~> operator means 'Greater than or equal to this version but less than the
+  # next minor version. E.g. '~> 1.11.4' means greater than or equal to 1.11.4 but less
+  # than 1.12 (1.11.5 would be allowed).
   required_version = "~> 1.11.4"
 }
