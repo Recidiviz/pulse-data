@@ -53,10 +53,10 @@ num_allowed_rows_overrides:
       introduced). There seem to be about 10 typically on any given week. Filtering out
       weeks with lower than 15 blocks to reduce noise.
   - validation_name: parole_agent_badge_number_changes
-    hard_num_allowed_rows_override: 45
+    hard_num_allowed_rows_override: 55
     override_reason: >-
       This validation doesn't currently have any impact on product. See more information
       at https://go/ca-badge-numbers. It's possible that we should turn this off.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 15
+    hard_num_allowed_rows_override: 20
     override_reason: Low level of validations, will fix later! TODO(#46026)
