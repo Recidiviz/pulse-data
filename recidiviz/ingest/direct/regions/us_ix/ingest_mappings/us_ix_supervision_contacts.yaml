@@ -84,6 +84,7 @@ output:
                   - "GENERAL"
                 StateSupervisionContactReason.INTERNAL_UNKNOWN:
                   - "CONVERSION"
+                  - "CRC_TERMER_DENIED"
                   - "GENERAL REINFORCEMENT"
                   - "GENERAL DISAPPROVAL"
                   - "EMERGENCY,INITIAL"
