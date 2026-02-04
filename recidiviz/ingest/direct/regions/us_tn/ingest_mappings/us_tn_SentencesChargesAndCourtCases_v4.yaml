@@ -18,6 +18,7 @@ input_columns:
   ExpirationDate: STRING
   Conditions: STRING
   SentenceImposeDate: STRING
+  Original_SentenceImposedDate: STRING
   CalculatedMinimumSentenceDays: INTEGER
   CalculatedMaximumSentenceDays: INTEGER
   PretrialJailCredits: STRING
@@ -146,6 +147,7 @@ variables:
         CONVICTION_COUNTY: ConvictionCounty
         FULL_EXP_DATE: FullExpirationDate
         CSL_FLAG: CSL_flag
+        SENTENCE_IMPOSED_DATE: Original_SentenceImposedDate
   - is_violent:
       $equal:
         - AssaultiveOffenseFlag
