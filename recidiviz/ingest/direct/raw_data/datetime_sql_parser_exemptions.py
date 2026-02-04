@@ -243,6 +243,15 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         ],
         "Violations": ["ContactNoteDate"],
     },
+    StateCode.US_MO: {
+        "ORAS_MO_ASSESSMENTS_DB2": [
+            "ASSESSMENT_DATE",
+            "BACKDATED",
+            "CREATED_AT",
+            "DELETED_AT",
+            "UPDATED_AT",
+        ],
+    },
     StateCode.US_UT: {
         "crt_case": [
             "convict_dt",
@@ -612,15 +621,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         ],
         "COMS_dm_Staff_Supervisors": ["End_Date", "Entered_Date", "Start_Date"],
         "RECIDIVIZ_REFERENCE_mclxwalk": ["last_update_date"],
-    },
-    StateCode.US_MO: {
-        "ORAS_MO_ASSESSMENTS_DB2": [
-            "ASSESSMENT_DATE",
-            "BACKDATED",
-            "CREATED_AT",
-            "DELETED_AT",
-            "UPDATED_AT",
-        ],
     },
     StateCode.US_ND: {
         "elite_offenders": ["ModifyDate"],
