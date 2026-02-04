@@ -54,6 +54,7 @@ output:
                 StateAssessmentClass.SEX_OFFENSE:
                   - "SEX OFFENDER"
                   - "SOTP" # Sex Offender Treatment Plan
+                  - "SOTP STATIC / STABLE"
                 StateAssessmentClass.EDUCATION:
                   - "ACADEMIC"
                 StateAssessmentClass.MENTAL_HEALTH:
@@ -68,6 +69,7 @@ output:
                   - "THERAPEUTIC"
                   - "QUESTIONNAIRE"
                   - "BOPP GUIDELINES"
+                  - "CPORT NOT FINAL"
           assessment_type:
             # Note: Some assessments that do not appear in the ingest view have been filtered out.
             # These mappings below don't represent the full set of assessments that appear in the raw data.
@@ -132,6 +134,8 @@ output:
                   - "CMHS - WOMEN"
                   - "CPORT"
                   - "CASIC"
+                  - "SOTP STATIC / STABLE"
+                  - "CPORT NOT FINAL"
           assessment_date: tst_dt
           assessment_score: tot_score
           assessment_level:
