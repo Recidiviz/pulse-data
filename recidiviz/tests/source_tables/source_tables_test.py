@@ -108,6 +108,9 @@ COMMON_VESTIGES = [
     "pulse_dashboard_segment_metrics.tracks",
     "pulse_dashboard_segment_metrics.tracks_view",
     "pulse_dashboard_segment_metrics.users",
+    # GCS-backed reference tables not currently referenced in the view graph
+    "gcs_backed_tables.county_resident_adult_populations",
+    "gcs_backed_tables.county_resident_populations",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

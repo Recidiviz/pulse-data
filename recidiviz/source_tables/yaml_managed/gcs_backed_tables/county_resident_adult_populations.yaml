@@ -1,0 +1,26 @@
+address:
+  dataset_id: gcs_backed_tables
+  table_id: county_resident_adult_populations
+description: County-level adult resident population estimates by year
+schema:
+  - name: fips
+    type: STRING
+    mode: NULLABLE
+  - name: year
+    type: INTEGER
+    mode: NULLABLE
+  - name: population
+    type: INTEGER
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-external-reference-data/county_resident_adult_populations.csv
+  sourceFormat: CSV
+  compression: NONE
+  ignoreUnknownValues: false
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8

@@ -41,25 +41,6 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
         "iob_state",
         "old_ky_state_aggregates_with_fips",
     },
-    # GCS-backed tables
-    "gcs_backed_tables": {
-        "county_fips",
-        "county_resident_adult_populations",
-        "county_resident_populations",
-        "us_co_incarceration_facility_map",
-        "us_co_incarceration_facility_names",
-        "us_id_incarceration_facility_map",
-        "us_id_incarceration_facility_names",
-        "us_id_supervision_district_names",
-        "us_id_supervision_unit_to_district_map",
-        "us_me_incarceration_facility_names",
-        "us_mi_incarceration_facility_names",
-        "us_mo_incarceration_facility_names",
-        "us_nd_incarceration_facility_names",
-        "us_tn_incarceration_facility_map",
-        "us_tn_incarceration_facility_names",
-        "us_tn_supervision_facility_names",
-    },
     # Static reference tables
     "static_reference_tables": {
         "CIS_200_CASE_PLAN",
