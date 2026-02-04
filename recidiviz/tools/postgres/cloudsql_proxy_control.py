@@ -101,5 +101,36 @@ class CloudSQLProxyControl:
             atexit.unregister(self._quit_proxy)
             self._quit_proxy()
 
+    @contextlib.contextmanager
+    def connection_for_instance(
+        self,
+        *,
+        connection_string: str,
+        prompt: Optional[bool] = None,
+    ) -> Generator[None, None, None]:
+        """Like connection(), but accepts a Cloud SQL instance connection string
+        directly (e.g. 'project:region:instance') instead of resolving one from
+        a SchemaType and Secret Manager."""
+        if prompt:
+            prompt_for_confirmation(
+                f"This will start the Cloud SQL proxy for {connection_string}.",
+                connection_string,
+            )
+
+        connection_args = ["-c", connection_string]
+
+        # Verify that the proxy can be run
+        self._run_command([*connection_args, "-d"])
+
+        atexit.register(self._quit_proxy)
+        # Run the proxy
+        self._run_command(connection_args)
+
+        try:
+            yield
+        finally:
+            atexit.unregister(self._quit_proxy)
+            self._quit_proxy()
+
 
 cloudsql_proxy_control = CloudSQLProxyControl(port=CLOUDSQL_PROXY_MIGRATION_PORT)
