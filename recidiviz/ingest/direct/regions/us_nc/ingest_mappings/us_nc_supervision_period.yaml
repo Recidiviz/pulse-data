@@ -10,7 +10,7 @@ input_columns:
   end_date: DATETIME
   SUPVLEVL: STRING
   SUPERVISION: STRING
-  CDPPSLOC: STRING
+  CDPPSLOC_translated: STRING
   within_sentence_seq: INTEGER
 unused_columns: []
 output:
@@ -39,7 +39,7 @@ output:
                   - "PRB: POST RELEASE PROBATION"
           start_date: period_start_date
           termination_date: end_date
-          supervision_site: CDPPSLOC
+          supervision_site: CDPPSLOC_translated
           supervising_officer_staff_external_id: CDOFICER
           supervising_officer_staff_external_id_type:
             $conditional:
