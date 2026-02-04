@@ -30,6 +30,22 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
         "gcp_billing_export_raw",
         "gcp_billing_export_resource_raw",
     },
+    # Auth0 datasets
+    "auth0_events": {
+        "failed_login",
+        "tracks",
+    },
+    "auth0_prod_action_logs": {
+        "tracks",
+    },
+    # Case planning
+    "case_planning_production": {
+        "frontend_cpa_client_intake_chat_history_viewed",
+        "identifies",
+        "pages",
+        "tracks",
+        "users",
+    },
     # External data sources
     "sendgrid_email_data": {
         "raw_sendgrid_email_data",
@@ -330,6 +346,26 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     },
     "us_mi_validation_oneoffs": {
         "person_race_20210730",
+    },
+    # Segment metrics datasets
+    "jii_auth0_production_segment_metrics": {
+        "auth0_login_succeeded",
+        "tracks",
+    },
+    "jii_backend_production_segment_metrics": {
+        "backend_edovo_login_denied",
+        "backend_edovo_login_failed",
+        "backend_edovo_login_internal_error",
+        "backend_edovo_login_succeeded",
+        "tracks",
+    },
+    "pulse_dashboard_segment_metrics": {
+        "hello",
+        "pages",
+        "pages_view",
+        "tracks",
+        "tracks_view",
+        "users",
     },
     # JII texting dashboards
     "jii_texting_dashboards_db_us_ix": {
