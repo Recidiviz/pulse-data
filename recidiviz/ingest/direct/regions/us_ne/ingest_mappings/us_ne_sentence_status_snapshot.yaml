@@ -6,10 +6,9 @@ input_columns:
   inmateNumber: STRING
   pkAggregateSentenceId: STRING
   pkOffenseId: STRING
-  LOCT_RELEASE_DT: STRING
-  INST_RLSE_TYPE_DSC: STRING
+  SENTENCE_STATUS: STRING
   sequenceNum: INTEGER
-  LAST_ACTIVITY_TS: STRING
+  UPDATE_DATE: DATETIME
 unused_columns: []
 output:
   StatePerson:
@@ -27,14 +26,35 @@ output:
                 - pkOffenseId
           sentence_status_snapshots:
             - StateSentenceStatusSnapshot:
-                status_update_datetime: LAST_ACTIVITY_TS
+                status_update_datetime: UPDATE_DATE
                 sequence_num: sequenceNum
                 status:
                   $enum_mapping:
-                    $raw_text:
-                      $concat:
-                        $separator: "@@"
-                        $values:
-                          - LOCT_RELEASE_DT # Release date, if any
-                          - INST_RLSE_TYPE_DSC # Release reason, if any
-                    $custom_parser: us_ne_custom_enum_parsers.parse_sentence_status
+                    $raw_text: SENTENCE_STATUS
+                    $mappings:
+                      StateSentenceStatus.VACATED:
+                        - SENTENCE VACATED
+                        - CASE DISMISSED
+                      StateSentenceStatus.SERVING:
+                        - SERVING
+                      StateSentenceStatus.COMPLETED:
+                        - EXPIRATION OF SENTENCE
+                        - RE-PAROLE # This is actually the date their parole ended, per location history
+                        - DISCHARGED FROM PRS PER PROBTN # NDCS does not have authority of Probation or PRS, so NDCS sentence is done
+                        - OTHER
+                        - RELEASED TO PRS # NDCS does not have authority of PRS, so NDCS sentence is done
+                        - DISCHARGE - INS
+                        - TRANSFER
+                        - MANDATORY DISCHARGE
+                        - DISCRETIONARY PAROLE # This is actually the date their parole ended, per location history
+                        - MANDATORY PAROLE # This is actually the date their parole ended, per location history
+                        - NULL_COMPLETE
+                        - RETURN TO LAW ENFORCEMENT
+                      StateSentenceStatus.AMENDED:
+                        - SENTENCE AMENDED
+                      StateSentenceStatus.EXECUTION:
+                        - EXECUTION
+                      StateSentenceStatus.DEATH:
+                        - DECEASED
+                      StateSentenceStatus.INTERNAL_UNKNOWN:
+                        - ESCAPE
