@@ -150,6 +150,13 @@ tooling, and libraries:
 
 - [BigQuery Documentation](./recidiviz/big_query/CLAUDE.md)
 
+## Task Eligibility Spans
+
+For detailed information about how to work with task eligibility spans
+(criteria, candidate populations, completion events, eligibility spans):
+
+- [Task Eligibility Spans Documentation](./recidiviz/task_eligibility/CLAUDE.md)
+
 ## Skills
 
 Skills are specific workflows or procedures that Claude can follow. Each skill
