@@ -129,6 +129,7 @@ import attr
 import pytz
 import tzlocal  # type: ignore[import-untyped]
 from google.api_core import exceptions
+from google.cloud import bigquery
 from more_itertools import one
 from tabulate import tabulate
 
@@ -142,6 +143,7 @@ from recidiviz.big_query.big_query_address_formatter import (
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
@@ -157,6 +159,7 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.big_query.view_update_manager import (
+    CreateOrUpdateViewResult,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.big_query.view_update_manager_utils import (
@@ -371,9 +374,9 @@ class DeployedViewSignature:
         )
 
 
-def _get_deployed_view_signatures_by_address() -> dict[
-    BigQueryAddress, DeployedViewSignature
-]:
+def _get_deployed_view_signatures_by_address() -> (
+    dict[BigQueryAddress, DeployedViewSignature]
+):
     """Queries the per_view_update_stats table to return information about each view
     updated by the last deployed view update.
     """
@@ -736,21 +739,23 @@ def summary_for_auto_sandbox(
             ),
         ),
         (
-            "UPDATED source tables\n to read from",
-            BigQueryAddress.addresses_to_str(
-                changed_addresses.changed_source_table_addresses
-            ),
-            textwrap.fill(
-                "This is the set of overridden source tables to read from as specified "
-                "by the --input_source_table_dataset_overrides_json flag. Views will "
-                "read from the overridden version of the table in place of these "
-                "tables.",
-                width=descriptions_char_width,
-            ),
-        )
-        if changed_addresses.changed_source_table_addresses
-        # Hide this row if there are no source table overrides
-        else None,
+            (
+                "UPDATED source tables\n to read from",
+                BigQueryAddress.addresses_to_str(
+                    changed_addresses.changed_source_table_addresses
+                ),
+                textwrap.fill(
+                    "This is the set of overridden source tables to read from as specified "
+                    "by the --input_source_table_dataset_overrides_json flag. Views will "
+                    "read from the overridden version of the table in place of these "
+                    "tables.",
+                    width=descriptions_char_width,
+                ),
+            )
+            if changed_addresses.changed_source_table_addresses
+            # Hide this row if there are no source table overrides
+            else None
+        ),
         (
             "ADDED views to load",
             (
@@ -1198,7 +1203,10 @@ def load_collected_views_to_sandbox(
         validate_builders_not_in_current_source_datasets(
             collected_builders, sandbox_context=view_update_sandbox_context
         )
-        create_managed_dataset_and_deploy_views_for_view_builders(
+        (
+            deployment_results,
+            _,
+        ) = create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=collected_builders,
             view_update_sandbox_context=view_update_sandbox_context,
             # Don't clean up datasets when running a sandbox script
@@ -1207,6 +1215,9 @@ def load_collected_views_to_sandbox(
             rematerialize_changed_views_only=rematerialize_changed_views_only,
             failure_mode=failure_mode,
         )
+
+        check_deployed_view_schemas(deployment_results.view_results)
+
     except exceptions.Forbidden as e:
         if "Permission denied while getting Drive credentials" in str(e):
             raise ValueError(
@@ -1215,6 +1226,44 @@ def load_collected_views_to_sandbox(
                 " try running:\n  gcloud auth login --enable-gdrive-access --update-adc"
             ) from e
         raise e
+
+
+def check_deployed_view_schemas(
+    deployment_results: dict[BigQueryView, CreateOrUpdateViewResult],
+) -> None:
+    """Print a warning if any deployed view schemas do not match the expected schema."""
+    mismatched_schemas: dict[str, list[tuple[str, bigquery.SchemaField]]] = {}
+
+    for v, deployment_result in deployment_results.items():
+        if not v.schema or not deployment_result.updated_view:
+            continue
+
+        deployed_schema = deployment_result.updated_view.schema
+
+        diff = diff_declared_schema_to_bq_schema(v.schema, deployed_schema)
+        if diff:
+            mismatched_schemas[v.address.to_str()] = diff
+
+    if mismatched_schemas:
+        error_messages = []
+
+        for address, schema_diff in mismatched_schemas.items():
+            error_messages.append(
+                f"{address}:\n"
+                + "\n".join(
+                    # TODO(#54941) include description when it is loaded
+                    f"  {indicator} {field.name} ({field.mode} {field.field_type})"
+                    for indicator, field in schema_diff
+                )
+            )
+        full_error_message = "\n".join(error_messages)
+        logging.warning(
+            "⚠️ Found %d views with declared schemas that don't"
+            " match the deployed view schemas. If these differences are expected, update"
+            "the `schema` field in the relevant view builders to match the deployed schemas:\n%s",
+            len(mismatched_schemas),
+            full_error_message,
+        )
 
 
 def parse_arguments() -> argparse.Namespace:

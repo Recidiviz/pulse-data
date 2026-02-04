@@ -77,6 +77,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             use_query_cache: bool,
             view_configuration_changed: bool,
             job_labels: Optional[list[ResourceLabel]] = None,
+            use_declared_schema: bool = True,
         ) -> BigQueryViewMaterializationResult:
             return BigQueryViewMaterializationResult(
                 view_address=view.address,

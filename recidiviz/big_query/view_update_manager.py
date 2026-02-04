@@ -21,7 +21,7 @@ from enum import Enum
 from typing import Dict, Iterable, List, Optional, Sequence
 
 import attr
-from google.cloud import exceptions
+from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import (
@@ -30,7 +30,9 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
     BigQueryViewMaterializationResult,
 )
+from recidiviz.big_query.big_query_utils import are_bq_schemas_same
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
@@ -92,6 +94,7 @@ class CreateOrUpdateViewResult:
     """
 
     view: BigQueryView = attr.ib(validator=attr.validators.instance_of(BigQueryView))
+    updated_view: bigquery.Table | None
     status: CreateOrUpdateViewStatus = attr.ib(
         validator=attr.validators.instance_of(CreateOrUpdateViewStatus)
     )
@@ -187,6 +190,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             views_might_exist=views_might_exist,
             allow_slow_views=allow_slow_views,
             failure_mode=failure_mode,
+            sandbox_context=sandbox_context,
         )
     except Exception as e:
         get_monitoring_instrument(CounterInstrumentKey.VIEW_UPDATE_FAILURE).add(
@@ -237,6 +241,7 @@ def _create_managed_dataset_and_deploy_views(
     default_table_expiration_for_new_datasets: int | None,
     views_might_exist: bool,
     allow_slow_views: bool,
+    sandbox_context: BigQueryViewSandboxContext | None,
 ) -> tuple[ProcessDagResult[CreateOrUpdateViewResult], BigQueryViewDagWalker]:
     """Creates or updates all the views in the provided list with the view query in the
     provided view list.
@@ -264,6 +269,9 @@ def _create_managed_dataset_and_deploy_views(
             them, and fallback to creating the views if they do not exist.
         allow_slow_views (bool): If set then we will not fail view update if a view
             takes longer to update than is typically allowed.
+        sandbox_context (BigQueryViewSandboxContext | None): If provided,
+            configures sandbox-specific behavior such as dataset prefix
+            overrides and relaxed schema validation during materialization.
     """
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
     dag_walker = BigQueryViewDagWalker(views_to_update)
@@ -301,6 +309,7 @@ def _create_managed_dataset_and_deploy_views(
             parent_results=parent_results,
             rematerialize_changed_views_only=rematerialize_changed_views_only,
             might_exist=views_might_exist,
+            sandbox_context=sandbox_context,
         )
 
     perf_config = (
@@ -317,6 +326,40 @@ def _create_managed_dataset_and_deploy_views(
     return results, dag_walker
 
 
+def _materialize_view_if_necessary(
+    *,
+    bq_client: BigQueryClient,
+    view: BigQueryView,
+    view_changed: bool,
+    view_configuration_changed: bool,
+    rematerialize_changed_views_only: bool,
+    use_declared_schema: bool,
+) -> BigQueryViewMaterializationResult | None:
+    """Materializes the view if necessary. Raises a clean ValueError if
+    BigQuery rejects the materialization due to a declared schema mismatch."""
+    if not view.materialized_address:
+        return None
+
+    if (
+        rematerialize_changed_views_only
+        and not view_changed
+        and bq_client.table_exists(view.materialized_address)
+    ):
+        logging.info(
+            "Skipping materialization of view [%s.%s] which has not changed.",
+            view.dataset_id,
+            view.view_id,
+        )
+        return None
+
+    return bq_client.materialize_view_to_table(
+        view=view,
+        use_query_cache=True,
+        view_configuration_changed=view_configuration_changed,
+        use_declared_schema=use_declared_schema,
+    )
+
+
 def _create_or_update_view_and_materialize_if_necessary(
     *,
     bq_client: BigQueryClient,
@@ -324,6 +367,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     parent_results: Dict[BigQueryView, CreateOrUpdateViewResult],
     rematerialize_changed_views_only: bool,
     might_exist: bool,
+    sandbox_context: BigQueryViewSandboxContext | None,
 ) -> CreateOrUpdateViewResult:
     """Creates or updates the provided view in BigQuery and materializes that view into
     a table when appropriate. Returns a CreateOrUpdateViewResult object containing
@@ -374,9 +418,24 @@ def _create_or_update_view_and_materialize_if_necessary(
         # Update the view if time partitioning configuration has changed (partitioning
         # info stored on the materialized table)
         or existing_materialized_table.time_partitioning != view.time_partitioning
-        # If the updated view's schema doesn't match the materialized table's data,
-        # we're also in a state where schema changes haven't been fully reflected.
-        or updated_view.schema != existing_materialized_table.schema
+        # If the view declares a schema, the materialized table schema may differ from
+        # the deployed view schema because of mode metadata, but the table schema should
+        # match the declared view schema exactly.
+        # TODO(#54941): adjust these two clauses when all views have declared schemas
+        or (
+            view.bq_schema is not None
+            and not are_bq_schemas_same(
+                view.bq_schema, existing_materialized_table.schema
+            )
+        )
+        # If the view has no declared schema, we expect that the table should be
+        # materialized with the same schema as the view.
+        or (
+            view.bq_schema is None
+            and not are_bq_schemas_same(
+                updated_view.schema, existing_materialized_table.schema
+            )
+        )
     )
 
     view_changed = (
@@ -387,24 +446,32 @@ def _create_or_update_view_and_materialize_if_necessary(
         or parent_changed
     )
 
-    materialization_result = None
-    if view.materialized_address:
-        if (
-            not rematerialize_changed_views_only
-            or view_changed
-            or not bq_client.table_exists(view.materialized_address)
-        ):
-            materialization_result = bq_client.materialize_view_to_table(
-                view=view,
-                use_query_cache=True,
-                view_configuration_changed=view_configuration_changed,
-            )
-        else:
-            logging.info(
-                "Skipping materialization of view [%s.%s] which has not changed.",
-                view.dataset_id,
-                view.view_id,
-            )
+    # In a sandbox, avoid erroring out if declared schema doesn't match deployed schemas.
+    materialize_with_declared_schema = view.schema is not None
+    if (
+        view.schema
+        and sandbox_context
+        and diff_declared_schema_to_bq_schema(
+            view.schema,
+            updated_view.schema,
+        )
+    ):
+
+        logging.warning(
+            "Not using declared schema to materialize [%s] because declared schema "
+            "does not match view schema.",
+            view.address,
+        )
+        materialize_with_declared_schema = False
+
+    materialization_result = _materialize_view_if_necessary(
+        bq_client=bq_client,
+        view=view,
+        view_changed=view_changed,
+        view_configuration_changed=view_configuration_changed,
+        rematerialize_changed_views_only=rematerialize_changed_views_only,
+        use_declared_schema=materialize_with_declared_schema,
+    )
     # View has changes if the view was updated or newly materialized
     has_changes = view_changed or materialization_result is not None
 
@@ -415,5 +482,8 @@ def _create_or_update_view_and_materialize_if_necessary(
     )
 
     return CreateOrUpdateViewResult(
-        view=view, status=update_status, materialization_result=materialization_result
+        view=view,
+        updated_view=updated_view,
+        status=update_status,
+        materialization_result=materialization_result,
     )

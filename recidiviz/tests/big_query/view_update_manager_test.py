@@ -28,6 +28,7 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalkerProcessingFailureMode,
 )
@@ -79,6 +80,7 @@ class ViewManagerTest(unittest.TestCase):
             use_query_cache: bool,
             view_configuration_changed: bool,
             job_labels: Optional[list[ResourceLabel]] = None,
+            use_declared_schema: bool = True,
         ) -> BigQueryViewMaterializationResult:
             return BigQueryViewMaterializationResult(
                 view_address=view.address,
@@ -396,12 +398,14 @@ class ViewManagerTest(unittest.TestCase):
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
                     view_configuration_changed=False,
+                    use_declared_schema=False,
                 ),
                 # Child view of updated view is also materialized
                 mock.call(
                     view=mock_view_builders[2].build(),
                     use_query_cache=True,
                     view_configuration_changed=False,
+                    use_declared_schema=False,
                 ),
             ],
             any_order=True,
@@ -602,6 +606,7 @@ class ViewManagerTest(unittest.TestCase):
                     ),
                     use_query_cache=True,
                     view_configuration_changed=True,
+                    use_declared_schema=False,
                 )
             ],
             any_order=True,
@@ -675,6 +680,7 @@ class ViewManagerTest(unittest.TestCase):
             default_table_expiration_for_new_datasets=None,
             views_might_exist=True,
             allow_slow_views=False,
+            sandbox_context=None,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
         )
 
@@ -982,11 +988,13 @@ class ViewManagerTest(unittest.TestCase):
                     view=mock_view_builders[0].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
+                    use_declared_schema=False,
                 ),
                 mock.call(
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
+                    use_declared_schema=False,
                 ),
             ],
             any_order=True,
@@ -1102,12 +1110,77 @@ class ViewManagerTest(unittest.TestCase):
                     view=mock_view_builders[0].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
+                    use_declared_schema=False,
                 ),
                 mock.call(
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
+                    use_declared_schema=False,
                 ),
             ],
             any_order=True,
         )
+
+    def test_sandbox_context_schema_mismatch_skips_declared_schema(self) -> None:
+        """When sandbox_context exists and the declared schema doesn't match
+        the deployed schema, materialize without the declared schema."""
+        declared_schema = [
+            String(name="field_a", description="A field", mode="NULLABLE")
+        ]
+        # Deployed schema has an extra field not in the declared schema
+        deployed_bq_schema = [
+            bigquery.SchemaField("field_a", "STRING"),
+            bigquery.SchemaField("field_b", "STRING"),
+        ]
+
+        mock_view_builder = SimpleBigQueryViewBuilder(
+            dataset_id=_DATASET_NAME,
+            view_id="my_schema_view",
+            description="view with schema",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=True,
+            schema=declared_schema,
+        )
+
+        # get_table returns the view with the *deployed* (mismatched) schema
+        def mock_get_table(
+            address: BigQueryAddress,
+        ) -> mock.MagicMock:
+            view = mock_view_builder.build()
+            if address == view.materialized_address:
+                return mock.MagicMock(
+                    schema=deployed_bq_schema,
+                    clustering_fields=None,
+                    time_partitioning=None,
+                )
+            return mock.MagicMock(
+                view_query=view.view_query,
+                schema=deployed_bq_schema,
+                clustering_fields=None,
+                time_partitioning=None,
+            )
+
+        self.mock_client.get_table = mock_get_table
+        self.mock_client.create_or_update_view.return_value = mock.MagicMock(
+            view_query=mock_view_builder.build().view_query,
+            schema=deployed_bq_schema,
+        )
+
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
+            view_builders_to_update=[mock_view_builder],
+            historically_managed_datasets_to_clean=None,
+            rematerialize_changed_views_only=False,
+            failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
+            view_update_sandbox_context=BigQueryViewUpdateSandboxContext(
+                output_sandbox_dataset_prefix="my_prefix",
+                state_code_filter=None,
+                input_source_table_overrides=BigQueryAddressOverrides.empty(),
+                parent_address_formatter_provider=None,
+            ),
+        )
+
+        # Ensure materialized view was created with use_declared_schema=False
+        self.mock_client.materialize_view_to_table.assert_called_once()
+        call_kwargs = self.mock_client.materialize_view_to_table.call_args.kwargs
+        self.assertFalse(call_kwargs["use_declared_schema"])

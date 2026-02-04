@@ -183,6 +183,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
             create_or_update_result=CreateOrUpdateViewResult(
                 view=self.view,
+                updated_view=None,
                 status=CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES,
                 materialization_result=None,
             ),
@@ -254,6 +255,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
             create_or_update_result=CreateOrUpdateViewResult(
                 view=self.view,
+                updated_view=None,
                 status=CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES,
                 materialization_result=BigQueryViewMaterializationResult(
                     view_address=self.view.address,
@@ -419,6 +421,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
 
             return CreateOrUpdateViewResult(
                 view=v,
+                updated_view=None,
                 status=CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES,
                 materialization_result=materialization_result,
             )

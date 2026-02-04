@@ -835,6 +835,7 @@ class BigQueryClient:
         use_query_cache: bool,
         view_configuration_changed: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
+        use_declared_schema: bool = True,
     ) -> BigQueryViewMaterializationResult:
         """Materializes the result of a view's view_query into a table and applies row-level permissions
         to the resulting table. The view's materialized_address must be set. The resulting table is put
@@ -851,6 +852,8 @@ class BigQueryClient:
                 If True, the materialized table will be fully deleted and recreated (wiping things like row-level permissions).
                 If False, the data will just be dropped and overwritten.
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+            use_declared_schema: If True, materialize using |view|'s declared schema.
+                If False, materialize using the schema of the deployed view in |view|.address.
         """
 
     @abc.abstractmethod
@@ -2038,6 +2041,7 @@ class BigQueryClientImpl(BigQueryClient):
 
             # If we are truncating, go ahead and delete the table (if it exists)
             if write_disposition == bigquery.WriteDisposition.WRITE_TRUNCATE:
+                logging.info("Deleting table [%s]", destination_address)
                 self.delete_table(destination_address, not_found_ok=True)
                 # pre-create the table with the new schema if there is an output_schema
                 # specified (you can't specify the schema as part of the query job)
@@ -2282,6 +2286,7 @@ class BigQueryClientImpl(BigQueryClient):
         use_query_cache: bool,
         view_configuration_changed: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
+        use_declared_schema: bool = True,
     ) -> BigQueryViewMaterializationResult:
         if view.materialized_address is None:
             raise ValueError(
@@ -2310,7 +2315,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=view.time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
-            output_schema=view.bq_schema,
+            output_schema=view.bq_schema if use_declared_schema else None,
         )
         materialize_job.result()
 

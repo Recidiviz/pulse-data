@@ -119,6 +119,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                 success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
                 create_or_update_result=CreateOrUpdateViewResult(
                     view=view,
+                    updated_view=None,
                     status=CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES,
                     materialization_result=None,
                 ),
@@ -143,6 +144,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
                 success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
                 create_or_update_result=CreateOrUpdateViewResult(
                     view=view_2,
+                    updated_view=None,
                     status=CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES,
                     materialization_result=BigQueryViewMaterializationResult(
                         view_address=view_2.address,

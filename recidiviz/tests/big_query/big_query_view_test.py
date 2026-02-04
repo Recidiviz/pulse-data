@@ -735,3 +735,30 @@ class BigQueryViewTest(unittest.TestCase):
                 ),
             ],
         )
+
+    def test_schema_summary(self) -> None:
+        # Test with no schema
+        vb = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+        )
+        view = vb.build()
+
+        self.assertEqual("No schema defined.", view.schema_summary)
+
+        # Test with schema
+        test_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            Integer(name="col2", description="Column 2", mode="REQUIRED"),
+        ]
+        vb.schema = test_schema
+        view = vb.build()
+
+        expected_summary = (
+            "Schema:\n"
+            "  - col1 (NULLABLE STRING): Column 1\n"
+            "  - col2 (REQUIRED INTEGER): Column 2"
+        )
+        self.assertEqual(expected_summary, view.schema_summary)

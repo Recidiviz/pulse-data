@@ -253,6 +253,20 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
             return None
         return [c.as_schema_field() for c in self.schema]
 
+    @property
+    def schema_summary(self) -> str:
+        """A summary of the view schema for logging/debugging purposes."""
+        # TODO(#54941): remove when schemas are mandatory
+        if not self.schema:
+            return "No schema defined."
+
+        lines = ["Schema:"]
+        for column in self.schema:
+            lines.append(
+                f"  - {column.name} ({column.mode} {column.field_type.value}): {column.description}"
+            )
+        return "\n".join(lines)
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
