@@ -42,4 +42,8 @@ class UsNdIncarcerationDelegate(StateSpecificIncarcerationDelegate):
                 StateCustodialAuthority.STATE_PRISON,
                 StateCustodialAuthority.OTHER_STATE,
             )
+            or bool(
+                incarceration_period.custodial_authority_raw_text
+                and "DEFP" in incarceration_period.custodial_authority_raw_text
+            )
         )
