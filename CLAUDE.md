@@ -39,6 +39,9 @@ Running / configuring tests:
 
 ### Python Code Style
 
+- When creating new Python files, use the current year in the license header
+  (e.g., `Copyright (C) 2026 Recidiviz, Inc.`). Look at recently created files
+  for the correct format.
 - Always add type information to every python function definition. Avoid using
   Any where reasonable. Use modern python types, i.e. `str | None` instead of
   `Optional[str]`.
