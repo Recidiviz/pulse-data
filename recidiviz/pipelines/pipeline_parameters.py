@@ -551,7 +551,9 @@ class PipelineParameters:
                 "parameters": self.template_parameters,
                 # DEFAULTS
                 "environment": {
-                    "additionalUserLabels": self.resource_labels,
+                    # TODO(#58560): Add back in when GCP figures out why this is causing crashes
+                    # "additionalUserLabels": self.resource_labels,
+                    # ----------------------------------------------------
                     "machineType": self.machine_type,
                     "diskSizeGb": self.disk_gb_size,
                     "workerZone": self.worker_zone,
