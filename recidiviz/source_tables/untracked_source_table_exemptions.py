@@ -292,8 +292,6 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     # TODO(#57963): Delete this table from BigQuery and remove this exemption
     "us_tx_raw_data": {"ScheduledMeetings"},
     "us_tx_raw_data_secondary": {"ScheduledMeetings"},
-    # TODO(#57812): Delete this table from BigQuery and remove this exemption
-    "us_tn_raw_data": {"RECIDIVIZ_REFERENCE_incident_infraction_codes"},
     # Legacy validation oneoff tables
     "us_tn_validation_oneoffs": {
         "TDPOP_20220314",
@@ -467,6 +465,4 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     "us_ny_raw_data_secondary": {"ADMISSIONS", "RELEASES"},
     # TODO(#57811): Delete this table from BigQuery and remove this exemption
     "us_or_raw_data_secondary": {"RCDVZ_CISPRDDTA_CMOFRO"},
-    # TODO(#57812): Delete this table from BigQuery and remove this exemption
-    "us_tn_raw_data_secondary": {"RECIDIVIZ_REFERENCE_incident_infraction_codes"},
 }
