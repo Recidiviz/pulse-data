@@ -169,3 +169,4 @@ Always end by showing the user the PR URL so they can review it.
 - ALWAYS show draft before creating PR
 - ALWAYS use HEREDOC for multi-line PR body to preserve formatting
 - If user says "commit and PR", use the `commit` skill first, then this skill
+- NEVER include Personally Identifiable Information (PII) in PR descriptions, even when discussing motivations for the change. Avoid names, person IDs, or other identifying details about individuals.

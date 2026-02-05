@@ -12,6 +12,14 @@ repository.
 
 ## Instructions
 
+**CRITICAL - NO PII**: Never include Personally Identifiable Information (PII) in
+GitHub issues. This includes names, dates of birth, addresses, or any other
+information that could identify a specific individual in the criminal justice
+system. For identifiers: internal `person_id` values are acceptable, but never
+include `external_id`, `person_external_id`, `display_id`, or other external
+identifiers. If context requires referencing specific data, use anonymized
+examples or describe the pattern without real values.
+
 **IMPORTANT**: Always get permission from the user before filing GitHub issues.
 Discuss task granularity with them - multiple related TODOs should reference the
 same issue if they would be addressed as part of the same code change or related
@@ -75,6 +83,7 @@ Create an informative, concise title with an appropriate prefix:
 
 Format the body to EXACTLY match the template structure you read in step 1.
 
+- **Never include PII** - no names, DOBs, IDs, or other identifying information about individuals
 - Whenever possible, give context about what motivated filing this issue
 - If the issue is associated with in-code TODOs, always say "See in-code TODOs"
 - Be concise - avoid verbose descriptions
