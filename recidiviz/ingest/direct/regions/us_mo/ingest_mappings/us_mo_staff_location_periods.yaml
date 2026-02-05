@@ -9,12 +9,6 @@ input_columns:
   end_date: STRING
   SEQ: INTEGER
 unused_columns: []
-variables:
-  - end_date:
-      $custom:
-        $function: us_mo_custom_parsers.null_if_invalid_date
-        $args:
-          date: end_date
 output:
   StateStaff:
     external_ids:
@@ -29,9 +23,5 @@ output:
                 - BDGNO
                 - SEQ
           start_date: start_date
-          end_date:
-            $conditional:
-              - $if:
-                  $not_null: $variable(end_date)
-                $then: $variable(end_date)
+          end_date: end_date
           location_external_id: LOC_ACRONYM
