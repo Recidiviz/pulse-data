@@ -30,8 +30,8 @@ tested in a file whose name / path mirrors its name. For example,
 
 Running / configuring tests:
 
-- Run tests in a specific file: `pytest recidiviz/tests/path/to/test_file.py`
-- Run all tests: `pytest recidiviz`
+- Run tests in a specific file: `uv run pytest recidiviz/tests/path/to/test_file.py`
+- Run all tests: `uv run pytest recidiviz`
   - This is not a common development flow as it is slow and will be handled by
     CI.
 - Test configuration in `setup.cfg` with coverage settings

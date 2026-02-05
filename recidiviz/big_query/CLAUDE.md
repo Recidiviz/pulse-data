@@ -282,7 +282,7 @@ if __name__ == "__main__":
     VIEW_BUILDER.build_and_print()
 ```
 
-Or run: `python -m recidiviz.path.to.view_file`
+Or run: `uv run python -m recidiviz.path.to.view_file`
 
 ### Materialization
 
@@ -879,7 +879,7 @@ to automatically detect which views have changed.
    possible)
 
    ```bash
-   python -m recidiviz.tools.load_views_to_sandbox \
+   uv run python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix my_prefix auto \
        --load_changed_views_only
    ```
@@ -887,7 +887,7 @@ to automatically detect which views have changed.
 2. **`manual` mode**: Manually specify which views/datasets to load
 
    ```bash
-   python -m recidiviz.tools.load_views_to_sandbox \
+   uv run python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix my_prefix manual \
        --view_ids_to_load dataset.view1,dataset.view2 \
        --update_descendants True
@@ -910,13 +910,13 @@ to automatically detect which views have changed.
 
 ```bash
 # Load only changed views for a specific state (fast, cheap)
-python -m recidiviz.tools.load_views_to_sandbox \
+uv run python -m recidiviz.tools.load_views_to_sandbox \
     --sandbox_dataset_prefix my_test \
     --state_code_filter US_ND \
     auto --load_changed_views_only
 
 # Load changed views and all descendants up to specific datasets
-python -m recidiviz.tools.load_views_to_sandbox \
+uv run python -m recidiviz.tools.load_views_to_sandbox \
     --sandbox_dataset_prefix my_test auto \
     --load_up_to_datasets export_dataset,analysis_dataset
 ```
