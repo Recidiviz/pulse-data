@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_status_snapshot` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOMPONENT: STRING
+  COMPSTATUSCODE: STRING
+  status_change_date: DATE
+  SEQUENCENUM: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - COMMITMENTPREFIX
+                - SENTENCECOMPONENT
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: status_change_date
+                sequence_num: SEQUENCENUM
+                status:
+                  $enum_mapping:
+                    $raw_text: COMPSTATUSCODE
+                    $mappings:
+                      StateSentenceStatus.COMMUTED:
+                        - "8 // Commuted"
+                      StateSentenceStatus.COMPLETED:
+                        - "C // Court Ordered Discharge"
+                        - "D // Discharged"
+                        - "K // Administrative Closure"
+                        - "L // Discharged by Parole Board Action"
+                        - "N // Released by Court"
+                        - "X // Expired"
+                        - "Z // Statutory Termination"
+                      StateSentenceStatus.REVOKED:
+                        - "W // Revoked in Part"
+                        - "Y // Revoked"
+                      StateSentenceStatus.SERVING:
+                        - "1 // Active (Imposed)"
+                        - "G // Release on Probation"
+                        - "P // Serving Parole Sentence"
+                      StateSentenceStatus.SUSPENDED:
+                        - "H // Held in Abeyance"
+                        - "S // Suspended"
+                      StateSentenceStatus.PARDONED:
+                        - "U // Pardoned"
+                      StateSentenceStatus.VACATED:
+                        - "9 // Vacated"
+                      StateSentenceStatus.INTERNAL_UNKNOWN: # TODO(#15761): Update these when CO responds with additional context
+                        - "6 // McGirt Ruling"
+                        - "7 // Sealed/Expunged"
+                        - "A // Appeal Bond"
+                        - "B // Accelerated"
+                        - "E // Pending"
+                        - "F // Appeal Bond"
+                        - "I // Invalid"
+                        - "J // YOS-Revoked"
+                        - "M // Merged"
+                        - "O // Held by CRS17-22.5-307"
+                        - "Q // Investigation Completed"
+                        - "R // Ignore for Minimum Calculation"
+                        - "T // Splinter CS/CC"
+                        - "V // Sentence Modified"
+                        - "a // Sentenced"
+                        - "b // Comm. Sent. - All Recs Met (Successful Completion)"
+                        - "c // Comm. Sent. - Removed From Program"
+                        - "d // Comm. Sent. - Not All Recs Met (Successful Completion)"

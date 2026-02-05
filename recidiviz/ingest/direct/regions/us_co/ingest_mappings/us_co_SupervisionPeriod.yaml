@@ -90,6 +90,7 @@ output:
                   - "G05 // AWOL (Absconder) in Custody"
                   - "G07 // Transferred to another County Jail"
                   - "G12 // Parole Officer Assigned"
+                  - "G12 // PCM/CPO Assigned" # Code G12 was updated to this description on 2026-01-12
                   - "G15 // Returned to ISP-I"
                   - "L00 // Ended TSP/Supv. in Comm."
                   - "L03 // Transferred To/Continued in Other Jurisdiction"
@@ -160,6 +161,7 @@ output:
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - "G03 // Returned From Other Jurisdiction"
                   - "G12 // Parole Officer Assigned"
+                  - "G12 // PCM/CPO Assigned" # Code G12 was updated to this description on 2026-01-12
                   - "G13 // Returned to YOS"
                   - "G15 // Returned to ISP-I"
                   - "L00 // Ended TSP/Supv. in Comm."

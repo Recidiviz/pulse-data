@@ -23,3 +23,15 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sente
 
 class UsCoSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelegate):
     """US_CO implementation of the StateSpecificSentenceNormalizationDelegate."""
+
+    # TODO(#55775): There are a handful of times that a status will switch to a terminating status and then back
+    # to a non-terminating status.
+
+    @property
+    def correct_early_completed_statuses(self) -> bool:
+        """
+        CO occasionally has StateSentence entities with that switch from a COMPLETED status
+        and then back to a non-COMPLETED status.
+        We change any non-final COMPLETED status snapshot to SERVING.
+        """
+        return True

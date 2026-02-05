@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_length` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOMPONENT: STRING
+  TIMELINETYPE: STRING
+  DATETIMELASTUPDATE: DATETIME
+  TIMESTARTDATE: STRING
+  PAROLEELIGIBILITYDATEESTIMATED: STRING
+  SENTENCEDISCHARGEDATEESTIMATED: STRING
+  LIFESENTENCETYPE: STRING
+  sequence_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - COMMITMENTPREFIX
+                - SENTENCECOMPONENT
+          sentence_lengths:
+            - StateSentenceLength:
+                sequence_num: sequence_num
+                length_update_datetime: DATETIMELASTUPDATE
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_co_custom_parsers.date_diff_in_days
+                    $args:
+                      start: TIMESTARTDATE
+                      end: SENTENCEDISCHARGEDATEESTIMATED
+                parole_eligibility_date_external:
+                  $conditional:
+                    - $if:
+                        $and:
+                          - $not_in:
+                              $value: LIFESENTENCETYPE
+                              $options:
+                                - $literal("WOP // Life w/o Parole")
+                          - $not_in:
+                              $value: TIMELINETYPE
+                              $options:
+                                - $literal("2 // Parole")
+                      $then: PAROLEELIGIBILITYDATEESTIMATED
+                projected_completion_date_max_external: SENTENCEDISCHARGEDATEESTIMATED
