@@ -314,7 +314,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             [
                 {
                     "age": "22, 23",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "facility": "ABC, DEF",
                     "fullName": "TEST, PERSON",
@@ -322,7 +322,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "62",
-                    "gender": "FEMALE",
+                    "sex": "FEMALE",
                     "race": "BLACK",
                     "facility": "ABC",
                     "fullName": "FAKE, USER",
@@ -330,7 +330,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "64",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "ASIAN",
                     "facility": "ABC",
                     "fullName": "EXAMPLE, INDIVIDUAL",
@@ -338,7 +338,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "63",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "BLACK",
                     "facility": "DEF",
                     "fullName": "FAKE2, USER2",
@@ -346,7 +346,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "61, 61",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "facility": "ABC, DEF",
                     "fullName": "TEST, PERSON2",
@@ -354,7 +354,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "65",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "facility": "GHI",
                     "fullName": "EXAMPLE, TIME",
@@ -364,7 +364,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "age": "39, 40",
                     "facility": "DEF, GHI",
                     "fullName": "EXAMPLE, TIME",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "stateId": "0007",
                 },
@@ -393,7 +393,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             [
                 {
                     "age": "23",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "facility": "DEF",
                     "fullName": "TEST, PERSON",
@@ -401,7 +401,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "63",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "BLACK",
                     "facility": "DEF",
                     "fullName": "FAKE2, USER2",
@@ -409,7 +409,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
                 {
                     "age": "61",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "facility": "DEF",
                     "fullName": "TEST, PERSON2",
@@ -419,7 +419,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     "age": "40",
                     "facility": "DEF",
                     "fullName": "EXAMPLE, TIME",
-                    "gender": "MALE",
+                    "sex": "MALE",
                     "race": "WHITE",
                     "stateId": "0007",
                 },
@@ -486,7 +486,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             query_string=f"group={Dimension.RACE.value}"
             f"&filters[{Dimension.RACE.value}]=BLACK"
             f"&filters[{Dimension.RACE.value}]=WHITE"
-            f"&filters[{Dimension.GENDER.value}]=MALE",
+            f"&filters[{Dimension.SEX.value}]=MALE",
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())

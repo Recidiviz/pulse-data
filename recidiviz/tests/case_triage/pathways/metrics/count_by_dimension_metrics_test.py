@@ -89,10 +89,10 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
-            Dimension.GENDER: [
-                {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 6},
-                {"gender": "NON_BINARY", "count": 1},
+            Dimension.SEX: [
+                {"sex": "FEMALE", "count": 1},
+                {"sex": "MALE", "count": 6},
+                {"sex": "NON_BINARY", "count": 1},
             ],
             Dimension.AGE_GROUP: [
                 {"ageGroup": "20-25", "count": 3},
@@ -131,14 +131,14 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.GENDER,
+                group=Dimension.SEX,
                 filters={
                     Dimension.RACE: ["WHITE"],
                 },
             ),
         )
 
-        self.test.assertEqual([{"gender": "MALE", "count": 4}], results["data"])
+        self.test.assertEqual([{"sex": "MALE", "count": 4}], results["data"])
 
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is dropped from the counts"""
@@ -147,16 +147,16 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.GENDER,
+                group=Dimension.SEX,
                 filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
             ),
         )
 
         self.test.assertEqual(
             [
-                {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 5},
-                {"gender": "NON_BINARY", "count": 1},
+                {"sex": "FEMALE", "count": 1},
+                {"sex": "MALE", "count": 5},
+                {"sex": "NON_BINARY", "count": 1},
             ],
             results["data"],
         )
@@ -176,9 +176,9 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
-            Dimension.GENDER: [
-                {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 9},
+            Dimension.SEX: [
+                {"sex": "FEMALE", "count": 1},
+                {"sex": "MALE", "count": 9},
             ],
             Dimension.AGE_GROUP: [
                 {"ageGroup": "20-25", "count": 2},
@@ -208,7 +208,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.GENDER,
+                group=Dimension.SEX,
                 filters={
                     Dimension.FACILITY: ["ABC"],
                 },
@@ -216,7 +216,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 3}],
+            [{"sex": "FEMALE", "count": 1}, {"sex": "MALE", "count": 3}],
             results["data"],
         )
 
@@ -252,10 +252,10 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
-            Dimension.GENDER: [
-                {"gender": "FEMALE", "count": 2},
-                {"gender": "MALE", "count": 2},
-                {"gender": "NON_BINARY", "count": 1},
+            Dimension.SEX: [
+                {"sex": "FEMALE", "count": 2},
+                {"sex": "MALE", "count": 2},
+                {"sex": "NON_BINARY", "count": 1},
             ],
             Dimension.AGE_GROUP: [
                 {"ageGroup": "20-25", "count": 1},
@@ -330,7 +330,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.GENDER,
+                group=Dimension.SEX,
                 filters={
                     Dimension.TIME_PERIOD: [
                         TimePeriod.MONTHS_0_6.value,
@@ -342,8 +342,8 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
         self.test.assertEqual(
             [
-                {"gender": "FEMALE", "count": 2},
-                {"gender": "NON_BINARY", "count": 1},
+                {"sex": "FEMALE", "count": 2},
+                {"sex": "NON_BINARY", "count": 1},
             ],
             results["data"],
         )
@@ -368,10 +368,10 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
                 {"ageGroup": "26-35", "count": 3},
                 {"ageGroup": "60+", "count": 1},
             ],
-            Dimension.GENDER: [
-                {"gender": "FEMALE", "count": 2},
-                {"gender": "MALE", "count": 2},
-                {"gender": "NON_BINARY", "count": 1},
+            Dimension.SEX: [
+                {"sex": "FEMALE", "count": 2},
+                {"sex": "MALE", "count": 2},
+                {"sex": "NON_BINARY", "count": 1},
             ],
             Dimension.LENGTH_OF_STAY: [
                 {"lengthOfStay": "months_0_3", "count": 1},
@@ -422,7 +422,7 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.GENDER,
+                group=Dimension.SEX,
                 filters={
                     Dimension.RACE: ["WHITE"],
                 },
@@ -431,9 +431,9 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
 
         self.test.assertEqual(
             [
-                {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 1},
-                {"gender": "NON_BINARY", "count": 1},
+                {"sex": "FEMALE", "count": 1},
+                {"sex": "MALE", "count": 1},
+                {"sex": "NON_BINARY", "count": 1},
             ],
             results["data"],
         )

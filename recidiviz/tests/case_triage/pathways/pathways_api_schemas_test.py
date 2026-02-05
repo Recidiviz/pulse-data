@@ -40,6 +40,6 @@ class FetchMetricsParamsSchemaTest(SchemaTestCase):
     test_valid_filters = valid_schema_test(
         {
             "group": Dimension.AGE_GROUP.value,
-            "filters": {Dimension.GENDER.value: ["MALE"]},
+            "filters": {Dimension.SEX.value: ["MALE"]},
         }
     )

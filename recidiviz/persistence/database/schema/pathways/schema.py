@@ -112,8 +112,8 @@ class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     person_id = Column(BigInteger, primary_key=True, nullable=False)
     # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
     age_group = Column(String, nullable=True)
-    # Gender of the person
-    gender = Column(String, nullable=True)
+    # Sex of the person
+    sex = Column(String, nullable=True)
     # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # District the transition occurred in
@@ -319,7 +319,8 @@ class PrisonPopulationPersonLevel(PathwaysBase):
     full_name = Column(String)
     # Current age of the person
     age = Column(String)
-    gender = Column(String)
+    # Sex of the person
+    sex = Column(String)
     # Facility the person resides in
     facility = Column(String)
     # Admission reason
@@ -351,8 +352,8 @@ class PrisonToSupervisionTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age_group = Column(String, nullable=True)
     # Age of the person
     age = Column(Integer, nullable=True)
-    # Gender of the person
-    gender = Column(String, nullable=True)
+    # Sex of the person
+    sex = Column(String, nullable=True)
     # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # Facility the transition occurred from
@@ -500,8 +501,8 @@ class SupervisionToLibertyTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age_group = Column(String, nullable=True)
     # Age of the person
     age = Column(Integer, nullable=True)
-    # Gender of the person
-    gender = Column(String, nullable=True)
+    # Sex of the person
+    sex = Column(String, nullable=True)
     # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # Type of supervision the person was under
@@ -545,8 +546,8 @@ class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age_group = Column(String, nullable=True)
     # Age of the person
     age = Column(Integer, nullable=True)
-    # Gender of the person
-    gender = Column(String, nullable=True)
+    # Sex of the person
+    sex = Column(String, nullable=True)
     # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # ID of the person's supervising officer at time of release

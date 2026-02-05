@@ -1,4 +1,4 @@
-transition_date,year,month,person_id,age_group,age,gender,race,facility,full_name,time_period,state_id,state_code
+transition_date,year,month,person_id,age_group,age,sex,race,facility,full_name,time_period,state_id,state_code
 2022-01-01,2022,1,1,20-25,22,MALE,WHITE,ABC,"TEST, PERSON",months_0_6,0001,US_XX
 2022-02-01,2022,2,1,20-25,23,MALE,WHITE,DEF,"TEST, PERSON",months_0_6,0001,US_XX
 2022-02-01,2022,2,2,60+,61,MALE,WHITE,DEF,"TEST, PERSON2",months_0_6,0002,US_XX
