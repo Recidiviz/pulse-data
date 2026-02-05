@@ -299,3 +299,33 @@ class WorkflowsConfigurationsResponseSchema(CamelCaseSchema):
     enabled_configs = fields.Dict(
         fields.Str(), fields.Nested(WorkflowsFullConfigSchema())
     )
+
+
+class WorkflowsOptimizeRouteWaypointSchema(CamelOrSnakeCaseSchema):
+    """Schema for a waypoint in the optimize route request."""
+
+    # pseudonymized_id is a pass-through identifier used by the FE to reorder
+    # its client list based on the optimized route — the BE includes it in the
+    # response so the FE can match by ID without tracking positional indices.
+    pseudonymized_id = fields.Str(required=True)
+    place_id = fields.Str(required=True)
+    formatted_address = fields.Str(required=False, allow_none=True)
+
+
+class WorkflowsOptimizeRouteSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/<state>/optimize_route endpoint.
+    Camel-cased keys are expected since the request is coming from the dashboards app.
+
+    origin: The starting address as a string
+    destination: Optional ending address as a string. If provided, all waypoints
+                 become intermediate stops. If not provided, the last waypoint
+                 becomes the destination.
+    waypoints: List of waypoints with pseudonymized IDs and place IDs
+    """
+
+    origin = fields.Str(required=True)
+    destination = fields.Str(required=False, allow_none=True)
+    waypoints = fields.List(
+        fields.Nested(WorkflowsOptimizeRouteWaypointSchema()), required=True
+    )

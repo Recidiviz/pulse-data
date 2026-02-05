@@ -2143,3 +2143,243 @@ class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
         request_origin="https://preview.hacked.com/web.app",
         expected_status=HTTPStatus.FORBIDDEN,
     )
+
+
+class TestOptimizeRoute(WorkflowsBlueprintTestCase):
+    """Tests for the optimize_route endpoint."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
+        os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
+
+        self.valid_waypoints = [
+            {
+                "pseudonymizedId": "person_1",
+                "placeId": "place_aaa",
+                "formattedAddress": "123 Main St",
+            },
+            {
+                "pseudonymizedId": "person_2",
+                "placeId": "place_bbb",
+                "formattedAddress": "456 Oak Ave",
+            },
+            {
+                "pseudonymizedId": "person_3",
+                "placeId": "place_ccc",
+                "formattedAddress": "789 Elm Blvd",
+            },
+        ]
+
+    def tearDown(self) -> None:
+        if self.old_auth_claim_namespace is not None:
+            os.environ["AUTH0_CLAIM_NAMESPACE"] = self.old_auth_claim_namespace
+        super().tearDown()
+
+    def _set_auth_for_tx(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tx",
+            "test_user@texas.gov",
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_success_no_destination(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        """Successful optimization without a destination — last waypoint becomes destination."""
+        self._set_auth_for_tx()
+        mock_get_secret.return_value = "fake-api-key"
+
+        # Google returns reordered indices: [1, 0] means person_2 first, then person_1
+        # person_3 is the destination (not in intermediates)
+        google_response = {"routes": [{"optimizedIntermediateWaypointIndex": [1, 0]}]}
+
+        with responses.RequestsMock() as rsps:
+            rsps.add(
+                responses.POST,
+                "https://routes.googleapis.com/directions/v2:computeRoutes",
+                json=google_response,
+                status=200,
+            )
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/optimize_route",
+                headers={"Origin": "http://localhost:3000"},
+                json={
+                    "origin": "100 Start St",
+                    "waypoints": self.valid_waypoints,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        result = response.get_json()
+        # Indices [1, 0] reorder the first two waypoints; last waypoint appended as destination
+        self.assertEqual(result["optimizedOrder"], ["person_2", "person_1", "person_3"])
+        self.assertTrue(result["isChanged"])
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_success_with_destination(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        """Successful optimization with an explicit destination address."""
+        self._set_auth_for_tx()
+        mock_get_secret.return_value = "fake-api-key"
+
+        # All 3 waypoints are intermediates when a destination is provided.
+        # Google returns reordered indices: [2, 0, 1]
+        google_response = {
+            "routes": [{"optimizedIntermediateWaypointIndex": [2, 0, 1]}]
+        }
+
+        with responses.RequestsMock() as rsps:
+            rsps.add(
+                responses.POST,
+                "https://routes.googleapis.com/directions/v2:computeRoutes",
+                json=google_response,
+                status=200,
+            )
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/optimize_route",
+                headers={"Origin": "http://localhost:3000"},
+                json={
+                    "origin": "100 Start St",
+                    "destination": "999 End St",
+                    "waypoints": self.valid_waypoints,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        result = response.get_json()
+        self.assertEqual(result["optimizedOrder"], ["person_3", "person_1", "person_2"])
+        self.assertTrue(result["isChanged"])
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_order_unchanged(self, mock_get_secret: MagicMock) -> None:
+        """When Google returns the same order, isChanged should be False."""
+        self._set_auth_for_tx()
+        mock_get_secret.return_value = "fake-api-key"
+
+        # Same order as original: [0, 1] for intermediates, person_3 as destination
+        google_response = {"routes": [{"optimizedIntermediateWaypointIndex": [0, 1]}]}
+
+        with responses.RequestsMock() as rsps:
+            rsps.add(
+                responses.POST,
+                "https://routes.googleapis.com/directions/v2:computeRoutes",
+                json=google_response,
+                status=200,
+            )
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/optimize_route",
+                headers={"Origin": "http://localhost:3000"},
+                json={
+                    "origin": "100 Start St",
+                    "waypoints": self.valid_waypoints,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        result = response.get_json()
+        self.assertEqual(result["optimizedOrder"], ["person_1", "person_2", "person_3"])
+        self.assertFalse(result["isChanged"])
+
+    def test_optimize_route_unsupported_state(self) -> None:
+        """Non-TX states should be rejected."""
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn",
+            "test_user@tennessee.gov",
+        )
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_TN/optimize_route",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "origin": "100 Start St",
+                "waypoints": self.valid_waypoints,
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    def test_optimize_route_too_few_waypoints(self) -> None:
+        """Fewer than 2 waypoints should return a 400."""
+        self._set_auth_for_tx()
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_TX/optimize_route",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "origin": "100 Start St",
+                "waypoints": [self.valid_waypoints[0]],
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_missing_api_key(self, mock_get_secret: MagicMock) -> None:
+        """Missing Google API key should return 500."""
+        self._set_auth_for_tx()
+        mock_get_secret.return_value = None
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_TX/optimize_route",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "origin": "100 Start St",
+                "waypoints": self.valid_waypoints,
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_google_api_failure(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        """Google API error should return 503."""
+        self._set_auth_for_tx()
+        mock_get_secret.return_value = "fake-api-key"
+
+        with responses.RequestsMock() as rsps:
+            rsps.add(
+                responses.POST,
+                "https://routes.googleapis.com/directions/v2:computeRoutes",
+                json={"error": "something went wrong"},
+                status=500,
+            )
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/optimize_route",
+                headers={"Origin": "http://localhost:3000"},
+                json={
+                    "origin": "100 Start St",
+                    "waypoints": self.valid_waypoints,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_optimize_route_no_routes_returned(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        """Empty routes response from Google should return 500."""
+        self._set_auth_for_tx()
+        mock_get_secret.return_value = "fake-api-key"
+
+        with responses.RequestsMock() as rsps:
+            rsps.add(
+                responses.POST,
+                "https://routes.googleapis.com/directions/v2:computeRoutes",
+                json={"routes": []},
+                status=200,
+            )
+            response = self.test_client.post(
+                "/workflows/external_request/US_TX/optimize_route",
+                headers={"Origin": "http://localhost:3000"},
+                json={
+                    "origin": "100 Start St",
+                    "waypoints": self.valid_waypoints,
+                },
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)

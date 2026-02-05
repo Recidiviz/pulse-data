@@ -26,6 +26,12 @@ import werkzeug.wrappers
 from flask import Response, current_app, g, jsonify, make_response, request
 from flask_smorest import Blueprint
 from flask_wtf.csrf import generate_csrf
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 from twilio.rest import Client as TwilioClient
 
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
@@ -43,6 +49,7 @@ from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsConfigurationsResponseSchema,
     WorkflowsEmailUserSchema,
     WorkflowsEnqueueSmsRequestSchema,
+    WorkflowsOptimizeRouteSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
@@ -812,6 +819,170 @@ def create_workflows_api_blueprint() -> Blueprint:
             return jsonify_response(
                 f"Error while trying to send email. Error: {e}",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+    def build_routes_api_request(
+        origin: str,
+        intermediate_place_ids: List[str],
+        destination_place_id: Optional[str] = None,
+        destination_address: Optional[str] = None,
+    ) -> dict:
+        """
+        Builds a type-safe request payload for the Google Routes API computeRoutes endpoint.
+
+        Args:
+            origin: The starting address as a string
+            intermediate_place_ids: List of Google Maps Place IDs for waypoints to optimize
+            destination_place_id: Google Maps Place ID for the destination (mutually exclusive with destination_address)
+            destination_address: Address string for the destination (mutually exclusive with destination_place_id)
+
+        Returns:
+            Dictionary formatted for the Google Routes API with waypoint optimization enabled
+        """
+        # destination_address: used when the user provides a custom ending address (typed in the UI).
+        # destination_place_id: used when no custom ending address is provided and the last
+        # waypoint's place ID serves as the destination.
+        if destination_address:
+            destination = {"address": destination_address}
+        elif destination_place_id:
+            destination = {"placeId": destination_place_id}
+        else:
+            raise ValueError(
+                "Either destination_place_id or destination_address must be provided"
+            )
+
+        return {
+            "origin": {"address": origin},
+            "destination": destination,
+            "intermediates": [{"placeId": pid} for pid in intermediate_place_ids],
+            "travelMode": "DRIVE",
+            "optimizeWaypointOrder": True,
+        }
+
+    @retry(
+        retry=retry_if_exception_type(requests.RequestException),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=8),
+        reraise=True,
+    )
+    def _call_google_routes_api(
+        request_body: dict,
+        api_key: str,
+    ) -> requests.Response:
+        response = requests.post(
+            "https://routes.googleapis.com/directions/v2:computeRoutes",
+            json=request_body,
+            headers={
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": api_key,
+                "X-Goog-FieldMask": "routes.optimizedIntermediateWaypointIndex",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        return response
+
+    @workflows_api.post("/external_request/<state>/optimize_route")
+    @requires_api_schema(WorkflowsOptimizeRouteSchema)
+    def optimize_route(state: str) -> Response:
+        """
+        Optimizes the order of waypoints for a route using Google Routes API.
+        Currently only supported for Texas (US_TX).
+
+        If a destination is provided, it will be used as the ending point and all
+        waypoints will be treated as intermediate stops. Otherwise, the last
+        waypoint will be treated as the destination.
+        """
+        if state.upper() != StateCode.US_TX.value:
+            return jsonify_response(
+                f"Unsupported state for route optimization: {state}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        origin = g.api_data["origin"]
+        waypoints = g.api_data["waypoints"]
+        # Optional ending address - if provided, all waypoints become intermediates
+        destination = g.api_data.get("destination")
+
+        if len(waypoints) < 2:
+            return jsonify_response(
+                "At least 2 waypoints required for optimization",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        google_api_key = get_secret("google_routes_api_key")
+        if not google_api_key:
+            logging.error("Google Routes API key not found in secrets")
+            return jsonify_response(
+                "Route optimization service unavailable",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        # If a destination address is provided, all waypoints become intermediates.
+        # Otherwise, the last waypoint becomes the destination.
+        if destination:
+            intermediate_place_ids = [wp["place_id"] for wp in waypoints]
+            dest_kwargs = {"destination_address": destination}
+        else:
+            intermediate_place_ids = [wp["place_id"] for wp in waypoints[:-1]]
+            dest_kwargs = {"destination_place_id": waypoints[-1]["place_id"]}
+
+        google_request = build_routes_api_request(
+            origin=origin,
+            intermediate_place_ids=intermediate_place_ids,
+            **dest_kwargs,
+        )
+
+        try:
+            response = _call_google_routes_api(google_request, google_api_key)
+            result = response.json()
+
+            if "routes" not in result or len(result["routes"]) == 0:
+                return jsonify_response(
+                    "No route found",
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+
+            optimized_indices = result["routes"][0].get(
+                "optimizedIntermediateWaypointIndex", []
+            )
+
+            original_order = [wp["pseudonymized_id"] for wp in waypoints]
+
+            if optimized_indices:
+                optimized_order = [
+                    waypoints[i]["pseudonymized_id"] for i in optimized_indices
+                ]
+                # If no destination was provided, the last waypoint was used as
+                # destination (not in intermediates), so add it at the end
+                if not destination:
+                    optimized_order.append(waypoints[-1]["pseudonymized_id"])
+            else:
+                # No optimization returned, use original order
+                optimized_order = original_order
+
+            # Google returns optimizedIntermediateWaypointIndex even when the
+            # order hasn't changed, so we compare against original_order explicitly.
+            is_changed = optimized_order != original_order
+
+            logging.info(
+                "Route optimized for %d waypoints. Order changed: %s",
+                len(waypoints),
+                is_changed,
+            )
+
+            return jsonify({"optimizedOrder": optimized_order, "isChanged": is_changed})
+
+        except requests.RequestException as e:
+            logging.error("Error calling Google Routes API: %s", e)
+            return jsonify_response(
+                "Route optimization service unavailable",
+                HTTPStatus.SERVICE_UNAVAILABLE,
+            )
+        except Exception as e:
+            logging.error("Unexpected error during route optimization: %s", e)
+            return jsonify_response(
+                "Route optimization failed", HTTPStatus.INTERNAL_SERVER_ERROR
             )
 
     @workflows_api.get("/<state>/opportunities")
