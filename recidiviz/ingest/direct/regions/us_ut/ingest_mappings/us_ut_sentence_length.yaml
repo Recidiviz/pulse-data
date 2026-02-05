@@ -8,7 +8,7 @@ input_columns:
   updt_dt: DATETIME
   max_end_dt: DATETIME
   early_trmn_dt: DATETIME
-  parole_sprvsn_strt_dt: DATETIME
+  projected_parole_release_date: DATETIME
   sequence_num: INTEGER
 unused_columns: []
 output:
@@ -24,6 +24,6 @@ output:
             - StateSentenceLength:
                 projected_completion_date_min_external: early_trmn_dt
                 projected_completion_date_max_external: max_end_dt
-                projected_parole_release_date_external: parole_sprvsn_strt_dt
+                projected_parole_release_date_external: projected_parole_release_date
                 length_update_datetime: updt_dt
                 sequence_num: sequence_num
