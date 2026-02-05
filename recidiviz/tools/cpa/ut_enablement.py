@@ -38,7 +38,7 @@ import sys
 import requests
 from google.cloud.secretmanager_v1 import SecretManagerServiceClient
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, Engine
 from sqlalchemy.orm import Session
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -47,16 +47,18 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 GCP_PROJECT_ID = "recidiviz-rnd-planner"
-DATABASE_CONNECTION_NAME = "recidiviz-rnd-planner:us-central1:recidiviz-prod"
+DATABASE_CONNECTION_STRING_SECRET_NAME = (
+    "RECIDIVIZ_POSTGRES_PROD_CONNECTION_STRING"  # nosec B105
+)
 DATABASE_PASSWORD_SECRET_NAME = "RECIDIVIZ_POSTGRES_PASSWORD_PROD"  # nosec B105
+DATABASE_USERNAME_SECRET_NAME = "RECIDIVIZ_POSTGRES_USERNAME"  # nosec B105
 DEFAULT_DATABASE_NAME = "recidiviz"
-DEFAULT_DATABASE_USER = "postgres"
 PROXY_PORT = 5441
 PROXY_HOST = "127.0.0.1"
 
 BQ_PROJECT = "recidiviz-123"
 CLIENT_BQ_TABLE = "recidiviz-123.reentry.client_materialized"
-ASSESSMENT_CONFIG_ID = "e6112fb0-2043-46c1-b91f-1791f1ffcc9d"
+ASSESSMENT_CONFIG_CODE = "ccci"
 
 # UT Release List Google Sheet
 RELEASE_SHEET_ID = "1KhTh_VOVG4u6g6L2kMguD4-3te2CEB-xBr0fQ6Wh6V0"
@@ -108,6 +110,36 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
     return parser
+
+
+def get_secret(secret_name: str) -> str:
+    """Fetches a secret value from Secret Manager."""
+    client = SecretManagerServiceClient()
+    full_name = f"projects/{GCP_PROJECT_ID}/secrets/{secret_name}/versions/latest"
+    response = client.access_secret_version(name=full_name)
+    return response.payload.data.decode("UTF-8")
+
+
+def create_db_engine(db_username: str, db_password: str) -> Engine:
+    """Creates a SQLAlchemy engine for the database."""
+    url = URL.create(
+        drivername="postgresql",
+        username=db_username,
+        password=db_password,
+        host=PROXY_HOST,
+        port=PROXY_PORT,
+        database=DEFAULT_DATABASE_NAME,
+    )
+    return create_engine(url)
+
+
+def run_query(query: str, engine: Engine) -> None:
+    """Runs the given query using the provided engine."""
+    with Session(bind=engine) as session:
+        result = session.execute(text(query))
+        rows = result.fetchall()
+        print(f"Inserted {len(rows)} row(s).")
+        session.commit()
 
 
 def fetch_eligible_pseudo_ids_from_bq() -> list[str]:
@@ -212,19 +244,31 @@ def collect_pseudo_ids(sheet_gid: str) -> list[str]:
     return all_pseudo_ids
 
 
-def get_db_password() -> str:
-    """Fetches the database password from Secret Manager."""
-    client = SecretManagerServiceClient()
-    secret_name = f"projects/{GCP_PROJECT_ID}/secrets/{DATABASE_PASSWORD_SECRET_NAME}/versions/latest"
-    response = client.access_secret_version(name=secret_name)
-    return response.payload.data.decode("UTF-8")
+def fetch_assessment_config_id(engine: Engine) -> str:
+    """Fetches the assessment config ID for the latest version of 'ccci'."""
+    query = text(
+        """
+        SELECT id FROM assessmentconfig
+        WHERE code = :code
+        ORDER BY version DESC
+        LIMIT 1
+    """
+    )
+    with Session(bind=engine) as session:
+        result = session.execute(query, {"code": ASSESSMENT_CONFIG_CODE})
+        row = result.fetchone()
+        if not row:
+            raise ValueError(
+                f"No assessment config found with code '{ASSESSMENT_CONFIG_CODE}'"
+            )
+        return str(row[0])
 
 
-def build_query(all_pseudo_ids: list[str]) -> str:
+def build_query(pseudo_ids: list[str], assessment_config_id: str) -> str:
     """Builds the INSERT query for the given pseudo IDs."""
-    values = ",\n    ".join(f"('{pid}')" for pid in all_pseudo_ids)
+    values = ",\n    ".join(f"('{pid}')" for pid in pseudo_ids)
     return f"""
-INSERT INTO "public"."intake" (
+INSERT INTO intake (
   id,
   created_at,
   updated_at,
@@ -246,14 +290,14 @@ SELECT
   TRUE,
   'conversation',
   v.pseudo_id,
-  '{ASSESSMENT_CONFIG_ID}'
+  '{assessment_config_id}'
 FROM (
   VALUES
     {values}
 ) AS v(pseudo_id)
 WHERE NOT EXISTS (
   SELECT 1
-  FROM "public"."intake" i
+  FROM intake i
   WHERE i.client_pseudo_id = v.pseudo_id
     AND i.intake_type = 'conversation'
 )
@@ -261,26 +305,7 @@ RETURNING *;
 """
 
 
-def run_query(query: str, db_password: str) -> None:
-    """Connects to the database through the proxy and runs the given query."""
-    url = URL.create(
-        drivername="postgresql",
-        username=DEFAULT_DATABASE_USER,
-        password=db_password,
-        host=PROXY_HOST,
-        port=PROXY_PORT,
-        database=DEFAULT_DATABASE_NAME,
-    )
-    engine = create_engine(url)
-
-    with Session(bind=engine) as session:
-        result = session.execute(text(query))
-        rows = result.fetchall()
-        print(f"Inserted {len(rows)} row(s).")
-        session.commit()
-
-
-if __name__ == "__main__":
+def main() -> None:
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
 
@@ -291,11 +316,25 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print(f"\nTotal: {len(pseudo_ids)} pseudo IDs collected.")
-    built_query = build_query(pseudo_ids)
 
-    if args.dry_run:
-        print("[DRY RUN] Query that would be executed:")
-        print(built_query)
-    else:
-        with proxy.connection_for_instance(connection_string=DATABASE_CONNECTION_NAME):
-            run_query(query=built_query, db_password=get_db_password())
+    connection_string = get_secret(DATABASE_CONNECTION_STRING_SECRET_NAME)
+    with proxy.connection_for_instance(connection_string=connection_string):
+        db_username = get_secret(DATABASE_USERNAME_SECRET_NAME)
+        db_password = get_secret(DATABASE_PASSWORD_SECRET_NAME)
+        engine = create_db_engine(db_username, db_password)
+
+        print("Fetching assessment config ID...")
+        assessment_config_id = fetch_assessment_config_id(engine)
+        print(f"Using assessment config ID: {assessment_config_id}")
+
+        query = build_query(pseudo_ids, assessment_config_id)
+
+        if args.dry_run:
+            print("[DRY RUN] Query that would be executed:")
+            print(query)
+        else:
+            run_query(query=query, engine=engine)
+
+
+if __name__ == "__main__":
+    main()
