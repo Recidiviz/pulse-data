@@ -225,7 +225,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                         "Must be one of: admission_reason, age_group, "
                         "facility, gender, sex, judicial_district, legal_status, "
                         "length_of_stay, prior_length_of_incarceration, "
-                        "race, supervising_officer, supervision_district, "
+                        "race, ethnicity, supervising_officer, supervision_district, "
                         "district, supervision_level, "
                         "supervision_start_date, supervision_type, "
                         "time_period, year_month, start_date, end_date, "

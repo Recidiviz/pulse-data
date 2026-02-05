@@ -268,7 +268,7 @@ class MigrationsTestBase(TestCase):
             - set(migration_indices)
             - self.expected_missing_indices()
         )
-        print("***", schema_indices, migration_indices, self.expected_missing_indices())
+
         if indices_not_in_migrations:
             raise ValueError(
                 f"Found indices defined in schema.py but not in migrations. If you are "
@@ -550,6 +550,7 @@ class TestPathwaysMigrations(MigrationsTestBase):
             "prison_population_by_dimension_pk",
             "prison_population_by_dimension_pkey",
             "prison_population_by_dimension_race",
+            "prison_population_by_dimension_ethnicity",
             "prison_population_by_dimension_offense_type",
             "prison_population_by_dimension_sentence_length_max",
             "prison_population_by_dimension_sentence_length_min",
@@ -600,6 +601,7 @@ class TestPublicPathwaysMigrations(MigrationsTestBase):
             "prison_population_by_dimension_pk",
             "prison_population_by_dimension_pkey",
             "prison_population_by_dimension_race",
+            "prison_population_by_dimension_ethnicity",
             "prison_population_over_time_pk",
             "prison_population_over_time_pkey",
             "prison_population_over_time_time_series",

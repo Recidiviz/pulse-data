@@ -114,7 +114,7 @@ class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age_group = Column(String, nullable=True)
     # Gender of the person
     gender = Column(String, nullable=True)
-    # `prioritized_race_or_ethnicity` of the person
+    # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # District the transition occurred in
     judicial_district = Column(String, nullable=False)
@@ -140,6 +140,7 @@ class PrisonPopulationOverTime(PathwaysBase):
             "sex",
             "admission_reason",
             "race",
+            "ethnicity",
             "sentence_length_min",
             "sentence_length_max",
             "charge_county_code",
@@ -157,6 +158,7 @@ class PrisonPopulationOverTime(PathwaysBase):
                 "facility",
                 "admission_reason",
                 "race",
+                "ethnicity",
                 "sentence_length_min",
                 "sentence_length_max",
                 "charge_county_code",
@@ -188,8 +190,10 @@ class PrisonPopulationOverTime(PathwaysBase):
     sex = Column(String, primary_key=True, nullable=True)
     # Admission reason
     admission_reason = Column(String, primary_key=True, nullable=True)
-    # Race of the person
+    # prioritized_race of the person
     race = Column(String, primary_key=True, nullable=True)
+    # ethnicity of the person
+    ethnicity = Column(String, primary_key=True, nullable=True)
     # Min sentence length
     sentence_length_min = Column(String, nullable=True)
     # Max sentence length
@@ -218,6 +222,7 @@ class PrisonPopulationByDimension(PathwaysBase):
             "facility",
             "age_group",
             "race",
+            "ethnicity",
             "sentence_length_min",
             "sentence_length_max",
             "charge_county_code",
@@ -233,6 +238,7 @@ class PrisonPopulationByDimension(PathwaysBase):
                 "sex",
                 "admission_reason",
                 "race",
+                "ethnicity",
                 "sentence_length_min",
                 "sentence_length_max",
                 "charge_county_code",
@@ -256,8 +262,10 @@ class PrisonPopulationByDimension(PathwaysBase):
     sex = Column(String, primary_key=True, nullable=False)
     # Admission reason
     admission_reason = Column(String, primary_key=True, nullable=False)
-    # Race of the person
+    # prioritized_race of the person
     race = Column(String, primary_key=True, nullable=False)
+    # Ethnicity of the person
+    ethnicity = Column(String, primary_key=True, nullable=False)
     # Binned length of incarceration in months
     length_of_stay = Column(String, nullable=True)
     # Min sentence length
@@ -318,7 +326,7 @@ class PrisonPopulationPersonLevel(PathwaysBase):
     admission_reason = Column(String)
     # Age group of the person(see recidiviz.calculator.query.bq_utils.add_age_groups)
     age_group = Column(String)
-    # `prioritized_race_or_ethnicity` of the person
+    # `prioritized_race` of the person
     race = Column(String)
 
 
@@ -345,7 +353,7 @@ class PrisonToSupervisionTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age = Column(Integer, nullable=True)
     # Gender of the person
     gender = Column(String, nullable=True)
-    # `prioritized_race_or_ethnicity` of the person
+    # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # Facility the transition occurred from
     facility = Column(String, nullable=True)
@@ -404,7 +412,7 @@ class SupervisionPopulationOverTime(PathwaysBase):
     supervision_district = Column(String, primary_key=True, nullable=True)
     # Supervision level of the person
     supervision_level = Column(String, primary_key=True, nullable=True)
-    # Race of the person
+    # prioritized_race of the person
     race = Column(String, primary_key=True, nullable=True)
 
 
@@ -440,7 +448,7 @@ class SupervisionPopulationByDimension(PathwaysBase):
     supervision_district = Column(String, primary_key=True, nullable=True)
     # Supervision level of the person
     supervision_level = Column(String, primary_key=True, nullable=True)
-    # Race of the person
+    # prioritized_race of the person
     race = Column(String, primary_key=True, nullable=True)
 
 
@@ -494,7 +502,7 @@ class SupervisionToLibertyTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age = Column(Integer, nullable=True)
     # Gender of the person
     gender = Column(String, nullable=True)
-    # `prioritized_race_or_ethnicity` of the person
+    # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # Type of supervision the person was under
     supervision_type = Column(String, nullable=True)
@@ -539,7 +547,7 @@ class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     age = Column(Integer, nullable=True)
     # Gender of the person
     gender = Column(String, nullable=True)
-    # `prioritized_race_or_ethnicity` of the person
+    # `prioritized_race` of the person
     race = Column(String, nullable=True)
     # ID of the person's supervising officer at time of release
     supervising_officer = Column(String, nullable=True)

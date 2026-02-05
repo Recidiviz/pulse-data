@@ -84,6 +84,7 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
             "gender",
             "sex",
             "race",
+            "ethnicity",
             "sentence_length_min",
             "sentence_length_max",
             "charge_county_code",
@@ -100,6 +101,7 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
                 "sex",
                 "facility",
                 "race",
+                "ethnicity",
                 "sentence_length_min",
                 "sentence_length_max",
                 "charge_county_code",
@@ -129,8 +131,10 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
     gender = Column(String, primary_key=True, nullable=True)
     # Sex of the person
     sex = Column(String, primary_key=True, nullable=True)
-    # Race of the person
+    # prioritized_race of the person
     race = Column(String, primary_key=True, nullable=True)
+    # Ethnicity of the person
+    ethnicity = Column(String, primary_key=True, nullable=True)
     # Min sentence length
     sentence_length_min = Column(String, primary_key=True, nullable=True)
     # Max sentence length
@@ -158,6 +162,7 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
             "gender",
             "sex",
             "race",
+            "ethnicity",
             "sentence_length_min",
             "sentence_length_max",
             "charge_county_code",
@@ -172,6 +177,7 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
                 "gender",
                 "sex",
                 "race",
+                "ethnicity",
                 "sentence_length_min",
                 "sentence_length_max",
                 "charge_county_code",
@@ -193,8 +199,10 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
     gender = Column(String, primary_key=True, nullable=False)
     # Sex of the person
     sex = Column(String, primary_key=True, nullable=False)
-    # Race of the person
+    # prioritized_race of the person
     race = Column(String, primary_key=True, nullable=False)
+    # Ethnicity of the person
+    ethnicity = Column(String, primary_key=True, nullable=False)
     # Min sentence length
     sentence_length_min = Column(String, primary_key=True, nullable=True)
     # Max sentence length

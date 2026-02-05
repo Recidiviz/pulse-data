@@ -56,6 +56,7 @@ PrisonPopulationOverTime:
     gender: FILTER
     sex: FILTER
     race: FILTER
+    ethnicity: FILTER
     time_period: FILTER
 
 PrisonPopulationByDimensionCount:
@@ -71,6 +72,7 @@ PrisonPopulationByDimensionCount:
     sex: ALL
     length_of_stay: ALL
     race: ALL
+    ethnicity: ALL
 
 PrisonPopulationPersonLevel:
   database_entity: PrisonPopulationPersonLevel

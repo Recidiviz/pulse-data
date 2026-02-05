@@ -492,8 +492,8 @@ class TestSupervisionPopulationByDimensionCount(
                 {"supervisionDistrict": "OTHER", "count": 1},
             ],
             Dimension.RACE: [
-                {"race": "HISPANIC", "count": 1},
-                {"race": "WHITE", "count": 1},
+                {"race": "BLACK", "count": 1},
+                {"race": "WHITE", "count": 2},
             ],
         }
 
