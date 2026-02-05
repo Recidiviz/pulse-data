@@ -29,12 +29,12 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,

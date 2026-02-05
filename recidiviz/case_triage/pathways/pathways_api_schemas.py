@@ -19,11 +19,11 @@ import attr
 import marshmallow.fields
 from marshmallow import Schema, fields, validate
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
+from recidiviz.case_triage.pathways.metrics.metric_query_builders import ALL_METRICS
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
     DimensionOperation,
 )
-from recidiviz.case_triage.pathways.metrics.metric_query_builders import ALL_METRICS
 
 FETCH_METRIC_SCHEMAS_BY_NAME = {}
 

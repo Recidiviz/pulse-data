@@ -21,8 +21,8 @@ from typing import Any, Dict, Generic, List, Tuple, Type, TypeVar, Union
 import attr
 from sqlalchemy.orm import Query
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
     DimensionMapping,
     DimensionMappingCollection,
     DimensionOperation,

@@ -18,8 +18,8 @@
 import enum
 from typing import Dict, List
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.dimension_transformer import (
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.dimension_transformer import (
     register_dimension_transformer,
 )
 

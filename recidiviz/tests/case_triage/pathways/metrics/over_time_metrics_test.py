@@ -21,8 +21,6 @@ from typing import Any, Dict, List
 from unittest.case import TestCase
 from unittest.mock import patch
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
@@ -30,6 +28,8 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     FetchMetricParams,
     MetricQueryBuilder,
 )
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType

@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for Pathways API schemas"""
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.tests.case_triage.api_schemas_test_utils import (
     SchemaTestCase,
     invalid_schema_test,

@@ -20,15 +20,15 @@ from typing import List, Mapping, Union
 import attr
 from redis import Redis
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
-    DimensionOperation,
-)
-from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
+    DimensionOperation,
+)
+from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.util import (
     get_pathways_metric_redis,

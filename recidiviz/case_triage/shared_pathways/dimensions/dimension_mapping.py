@@ -21,8 +21,8 @@ from typing import List, Literal, Mapping, Union, overload
 import attr
 from sqlalchemy import Column
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.exceptions import MetricMappingError
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 
 
 class DimensionOperation(enum.IntFlag):

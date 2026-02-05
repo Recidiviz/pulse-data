@@ -18,7 +18,7 @@
 
 from typing import Callable, Dict, List, Union
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 
 dimension_transformers: Dict[Dimension, Callable] = {}
 

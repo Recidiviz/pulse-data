@@ -21,16 +21,16 @@ from typing import Dict, List, Type, TypeVar, Union
 import yaml
 from sqlalchemy import Column
 
-from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
-    DimensionMapping,
-    DimensionOperation,
-)
 from recidiviz.case_triage.pathways.metrics.query_builders.all_metric_query_builders import (
     ALL_METRIC_QUERY_BUILDERS,
 )
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     MetricQueryBuilder,
+)
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
+    DimensionMapping,
+    DimensionOperation,
 )
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.schema_utils import get_pathways_database_entities
