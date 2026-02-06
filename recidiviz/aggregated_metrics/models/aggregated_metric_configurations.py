@@ -2317,6 +2317,7 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMet
             "is_eligible": ["true"],
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
+            "review_approval_status": "IS NULL",
             "marked_ineligible": ["false"],
         },
     ),
@@ -2346,6 +2347,7 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitC
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
+            "review_approval_status": "IS NULL",
             "viewed": ["true"],
         },
     ),
@@ -2363,6 +2365,7 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "task_type": [b.task_type_name],
             },
         ),
@@ -2383,6 +2386,7 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION = [
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
@@ -2403,6 +2407,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitC
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
+            "review_approval_status": "IS NULL",
         },
     ),
 )
@@ -2418,6 +2423,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistin
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
+            "review_approval_status": "IS NULL",
             "viewed": ["true"],
         },
     ),
@@ -2435,6 +2441,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "task_type": [b.task_type_name],
             },
         ),
@@ -2455,6 +2462,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATI
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
@@ -2819,6 +2827,7 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = DailyAvgSpanCo
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
+            "review_approval_status": "IS NULL",
             "viewed": ["true"],
         },
     ),
@@ -2836,6 +2845,7 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_SUPERVIS
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "viewed": ["true"],
                 "task_type": [b.task_type_name],
             },
@@ -2857,6 +2867,7 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_INCARCER
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "viewed": ["true"],
                 "task_type": [b.task_type_name],
             },
@@ -2937,7 +2948,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_MARKED_PERMANENTLY_INELIGIBLE = DailyAvgSpanC
 
 AVG_DAILY_POPULATION_WORKFLOWS_REVIEW_STATUS = [
     DailyAvgSpanCountMetric(
-        name=f"avg_population__clients_{review_approval_status.lower()}",
+        name=f"avg_population_{review_approval_status.lower()}",
         display_name=f"Average Population: {snake_to_title(review_approval_status)}",
         description=f"Average daily count of clients in the {snake_to_title(review_approval_status).lower()} status",
         span_selector=SpanSelector(
@@ -2951,6 +2962,7 @@ AVG_DAILY_POPULATION_WORKFLOWS_REVIEW_STATUS = [
     for review_approval_status in [
         "SNOOZE_REVIEW",
         "GRANT_REVIEW",
+        "GRANT_APPROVED",
         "REVISIONS_REQUESTED",
     ]
 ]
@@ -3055,6 +3067,7 @@ DISTINCT_POPULATION_WORKFLOWS_REVIEW_STATUS = [
     for review_approval_status in [
         "SNOOZE_REVIEW",
         "GRANT_REVIEW",
+        "GRANT_APPROVED",
         "REVISIONS_REQUESTED",
     ]
 ]
@@ -3804,6 +3817,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED = DailyAvgSpanCountMetr
             "is_surfaceable": ["true"],
             "in_progress": ["false"],
             "marked_ineligible": ["false"],
+            "review_approval_status": "IS NULL",
             "viewed": ["true"],
         },
     ),
@@ -3821,6 +3835,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_SUPERVISION = [
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "viewed": ["true"],
                 "task_type": [b.task_type_name],
             },
@@ -3842,6 +3857,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_ACTIONABLE_AND_VIEWED_METRICS_INCARCERATION =
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "review_approval_status": "IS NULL",
                 "viewed": ["true"],
                 "task_type": [b.task_type_name],
             },
