@@ -55,40 +55,43 @@ _QUERY_TEMPLATE = status_for_at_least_x_time_criteria_query(
         ("employer_name", "employer_name", "STRING"),
         ("start_date", "employment_start_date", "DATE"),
     ],
-    extra_column_for_reasons=(
-        "critical_date_has_passed",
-        _CRITERIA_NAME.lower(),
-    ),
+    extra_columns_for_reasons=[
+        ("critical_date_has_passed", _CRITERIA_NAME.lower()),
+        ("critical_date", "eligible_date"),
+    ],
 )
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=__doc__,
-        reasons_fields=[
-            ReasonsField(
-                name="employment_status",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Normalized employment status",
-            ),
-            ReasonsField(
-                name="employer_name",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Employer status",
-            ),
-            ReasonsField(
-                name="employment_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Employment start date",
-            ),
-            ReasonsField(
-                name=_CRITERIA_NAME.lower(),
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="Returns TRUE if client has been employed for 90 days",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=__doc__,
+    reasons_fields=[
+        ReasonsField(
+            name="employment_status",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Normalized employment status",
+        ),
+        ReasonsField(
+            name="employer_name",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Employer status",
+        ),
+        ReasonsField(
+            name="employment_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Employment start date",
+        ),
+        ReasonsField(
+            name=_CRITERIA_NAME.lower(),
+            type=bigquery.enums.StandardSqlTypeNames.BOOL,
+            description="Returns TRUE if client has been employed for 90 days",
+        ),
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when 90 consecutive days of employment will be reached",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

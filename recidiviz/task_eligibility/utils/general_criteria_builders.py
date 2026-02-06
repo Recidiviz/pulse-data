@@ -1553,7 +1553,7 @@ def status_for_at_least_x_time_criteria_query(
     end_date: str = "end_date",
     additional_where_clause: str = "",
     columns_for_reasons: list[tuple[str, str, str]] | None = None,
-    extra_column_for_reasons: tuple[str, str] | None = None,
+    extra_columns_for_reasons: list[tuple[str, str]] | None = None,
 ) -> str:
     """
     Returns a criteria query that identifies spans when someone has been in a certain
@@ -1581,9 +1581,10 @@ def status_for_at_least_x_time_criteria_query(
             `source_column` is the name of the column in the input data, `alias` is the
             name under which the column will appear in the reasons blob, and `data_type`
             is the column's data type. Example: [("status", "status_new", "STRING")]
-        extra_column_for_reasons: A tuple (source_column, alias) for an additional column
-            to include in the reason STRUCT. The source must be a column that exists in
-            the final CTE. Example: ("critical_date_has_passed", "meets_housing_criteria")
+        extra_columns_for_reasons: A list of tuples (source_column, alias) for additional
+            columns to include in the reason STRUCT. The source must be a column that
+            exists in the final CTE. Example: [("critical_date_has_passed", "meets_criteria"),
+            ("critical_date", "eligible_date")]
     """
     columns_for_reasons = columns_for_reasons or []
 
@@ -1620,8 +1621,7 @@ def status_for_at_least_x_time_criteria_query(
     # Build reasons v2 fields (standalone columns in final SELECT)
     reasons_v2_fields = list(aliases_for_reasons)
 
-    if extra_column_for_reasons:
-        extra_src, extra_alias = extra_column_for_reasons
+    for extra_src, extra_alias in extra_columns_for_reasons or []:
         reasons_v1_fields.append(f"{extra_src} AS {extra_alias}")
         reasons_v2_fields.append(f"{extra_src} AS {extra_alias}")
 

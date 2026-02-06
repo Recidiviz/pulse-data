@@ -17,6 +17,26 @@
 """Helper SQL fragments that import raw tables for NC
 """
 
+
+def prs_spans_cte() -> str:
+    """Returns a CTE for Post-Release Supervision (PRS) spans in NC.
+
+    PRS is represented as COMMUNITY_CONFINEMENT within SUPERVISION in compartment sessions.
+    """
+    return """
+    prs_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+        FROM `{project_id}.sessions.compartment_sessions_materialized`
+        WHERE compartment_level_1 IN ('SUPERVISION')
+            AND compartment_level_2 IN ('COMMUNITY_CONFINEMENT')
+            AND state_code = 'US_NC'
+    )"""
+
+
 FACILITY_PROGRAM_ID_VALUES = [
     # Substance abuse
     "COMPLETE RECOMMENDED SUBSTANCE ABUSE TREATMENT.",

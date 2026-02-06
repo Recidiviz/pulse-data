@@ -49,10 +49,10 @@ _QUERY_TEMPLATE = status_for_at_least_x_time_criteria_query(
         ("employer_name", "student_facility", "STRING"),
         ("start_date", "student_start_date", "DATE"),
     ],
-    extra_column_for_reasons=(
-        "critical_date_has_passed",
-        _CRITERIA_NAME.lower(),
-    ),
+    extra_columns_for_reasons=[
+        ("critical_date_has_passed", _CRITERIA_NAME.lower()),
+        ("critical_date", "eligible_date"),
+    ],
 )
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -74,6 +74,11 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCr
             name=_CRITERIA_NAME.lower(),
             type=bigquery.enums.StandardSqlTypeNames.BOOL,
             description="If the client has been a student for the past 90 days or more",
+        ),
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date when 90 consecutive days as a student will be reached",
         ),
     ],
 )
