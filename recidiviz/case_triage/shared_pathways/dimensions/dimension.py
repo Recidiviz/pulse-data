@@ -20,6 +20,8 @@ import enum
 
 
 class Dimension(enum.Enum):
+    """Dimension enumeration for Pathways metrics"""
+
     ADMISSION_REASON = "admission_reason"
     AGE_GROUP = "age_group"
     FACILITY = "facility"
@@ -48,3 +50,5 @@ class Dimension(enum.Enum):
         "avg_population_limited_supervision_level"
     )
     MONTHS_SINCE_TREATMENT = "months_since_treatment"
+    SENTENCE_LENGTH_MIN = "sentence_length_min"
+    SENTENCE_LENGTH_MAX = "sentence_length_max"

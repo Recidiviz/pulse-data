@@ -231,7 +231,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                         "time_period, year_month, start_date, end_date, "
                         "avg_daily_population, "
                         "avg_population_limited_supervision_level, "
-                        "months_since_treatment."
+                        "months_since_treatment, sentence_length_min, sentence_length_max."
                     ]
                 }
             },

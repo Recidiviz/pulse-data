@@ -58,6 +58,8 @@ PrisonPopulationOverTime:
     race: FILTER
     ethnicity: FILTER
     time_period: FILTER
+    sentence_length_min: FILTER
+    sentence_length_max: FILTER
 
 PrisonPopulationByDimensionCount:
   database_entity: PrisonPopulationByDimension
@@ -73,6 +75,8 @@ PrisonPopulationByDimensionCount:
     length_of_stay: ALL
     race: ALL
     ethnicity: ALL
+    sentence_length_min: ALL
+    sentence_length_max: ALL
 
 PrisonPopulationPersonLevel:
   database_entity: PrisonPopulationPersonLevel
