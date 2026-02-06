@@ -20,7 +20,7 @@ import unittest
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view_column import Integer, String
+from recidiviz.big_query.big_query_view_column import Integer, Json, Record, String
 
 
 class BigQueryViewColumnTest(unittest.TestCase):
@@ -131,3 +131,96 @@ class BigQueryViewColumnTest(unittest.TestCase):
         )
 
         self.assertFalse(column.matches_bq_field(schema_field))
+
+    def test_json_as_schema_field(self) -> None:
+        column = Json(
+            name="metadata",
+            description="JSON metadata",
+            mode="NULLABLE",
+        )
+        schema_field = column.as_schema_field()
+        self.assertEqual(schema_field.name, "metadata")
+        self.assertEqual(schema_field.field_type, "JSON")
+
+    def test_json_matches_bq_field(self) -> None:
+        column = Json(
+            name="metadata",
+            description="JSON metadata",
+            mode="NULLABLE",
+        )
+        schema_field = bigquery.SchemaField(
+            name="metadata",
+            field_type="JSON",
+            mode="NULLABLE",
+        )
+        self.assertTrue(column.matches_bq_field(schema_field))
+
+
+class RecordColumnTest(unittest.TestCase):
+    """Tests for Record BigQueryViewColumn"""
+
+    def setUp(self) -> None:
+        self.street_field = String(name="street", description="Street", mode="NULLABLE")
+        self.zip_field = Integer(name="zip_code", description="Zip", mode="NULLABLE")
+        self.record = Record(
+            name="address",
+            description="An address record",
+            mode="NULLABLE",
+            fields=[self.street_field, self.zip_field],
+        )
+
+    def test_as_schema_field(self) -> None:
+        schema_field = self.record.as_schema_field()
+        self.assertEqual(schema_field.field_type, "RECORD")
+        self.assertEqual(
+            schema_field.fields,
+            (self.street_field.as_schema_field(), self.zip_field.as_schema_field()),
+        )
+
+    def test_matches_bq_field(self) -> None:
+        schema_field = bigquery.SchemaField(
+            name="address",
+            field_type="RECORD",
+            mode="NULLABLE",
+            fields=[
+                bigquery.SchemaField(
+                    name="street", field_type="STRING", mode="NULLABLE"
+                ),
+                bigquery.SchemaField(
+                    name="zip_code", field_type="INTEGER", mode="NULLABLE"
+                ),
+            ],
+        )
+        self.assertTrue(self.record.matches_bq_field(schema_field))
+
+    def test_does_not_match_missing_subfield(self) -> None:
+        schema_field = bigquery.SchemaField(
+            name="address",
+            field_type="RECORD",
+            mode="NULLABLE",
+            fields=[
+                bigquery.SchemaField(
+                    name="street", field_type="STRING", mode="NULLABLE"
+                ),
+            ],
+        )
+        self.assertFalse(self.record.matches_bq_field(schema_field))
+
+    def test_does_not_match_different_subfield_type(self) -> None:
+        record = Record(
+            name="address",
+            description="An address record",
+            mode="NULLABLE",
+            fields=[self.street_field],
+        )
+        schema_field = bigquery.SchemaField(
+            name="address",
+            field_type="RECORD",
+            mode="NULLABLE",
+            fields=[
+                bigquery.SchemaField(
+                    name="street", field_type="INTEGER", mode="NULLABLE"
+                ),
+            ],
+        )
+        self.assertFalse(record.matches_bq_field(schema_field))

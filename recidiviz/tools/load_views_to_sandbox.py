@@ -142,8 +142,11 @@ from recidiviz.big_query.big_query_address_formatter import (
     StateFilteringBigQueryAddressFormatterProvider,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_schema_utils import (
+    diff_declared_schema_to_bq_schema,
+    format_schema_diffs,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_column import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
@@ -1245,24 +1248,12 @@ def check_deployed_view_schemas(
             mismatched_schemas[v.address.to_str()] = diff
 
     if mismatched_schemas:
-        error_messages = []
-
-        for address, schema_diff in mismatched_schemas.items():
-            error_messages.append(
-                f"{address}:\n"
-                + "\n".join(
-                    # TODO(#54941) include description when it is loaded
-                    f"  {indicator} {field.name} ({field.mode} {field.field_type})"
-                    for indicator, field in schema_diff
-                )
-            )
-        full_error_message = "\n".join(error_messages)
         logging.warning(
             "⚠️ Found %d views with declared schemas that don't"
             " match the deployed view schemas. If these differences are expected, update"
             "the `schema` field in the relevant view builders to match the deployed schemas:\n%s",
             len(mismatched_schemas),
-            full_error_message,
+            format_schema_diffs(mismatched_schemas),
         )
 
 

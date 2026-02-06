@@ -21,7 +21,7 @@ import logging
 import os
 import string
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Sequence, Type
 
 import attr
 import sqlalchemy
@@ -352,7 +352,7 @@ def table_has_field(table: bigquery.Table, field: str) -> bool:
 
 
 def are_bq_schemas_same(
-    schema1: List[bigquery.SchemaField], schema2: List[bigquery.SchemaField]
+    schema1: Sequence[bigquery.SchemaField], schema2: Sequence[bigquery.SchemaField]
 ) -> bool:
     """Compares two lists of BigQuery SchemaField objects to check if they are the same,
     ignoring the order of elements."""
@@ -370,6 +370,11 @@ def are_bq_schemas_same(
             or field1.description != field2.description
         ):
             return False
+
+        if field1.field_type == "RECORD":
+            subfields_match = are_bq_schemas_same(field1.fields, field2.fields)
+            if not subfields_match:
+                return False
 
     return True
 

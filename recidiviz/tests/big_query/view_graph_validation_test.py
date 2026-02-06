@@ -30,8 +30,11 @@ from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClientImpl,
 )
+from recidiviz.big_query.big_query_schema_utils import (
+    diff_declared_schema_to_bq_schema,
+    format_schema_diffs,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_column import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
@@ -429,21 +432,10 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 mismatched_schemas[v.address.to_str()] = schema_diff
 
         if mismatched_schemas:
-            error_messages = []
-
-            for address, schema_diff in mismatched_schemas.items():
-                error_messages.append(
-                    f"{address}:\n"
-                    + "\n".join(
-                        f"  {indicator} {field.name} ({field.mode} {field.field_type})"
-                        for indicator, field in schema_diff
-                    )
-                )
-            full_error_message = "\n".join(error_messages)
             raise ValueError(
                 f"Found {len(mismatched_schemas)} view(s) with declared schemas that don't"
                 f" match the deployed view schemas:\n"
-                f"{full_error_message}"
+                f"{format_schema_diffs(mismatched_schemas)}"
             )
 
     def _verify_views_all_have_state_code_column(

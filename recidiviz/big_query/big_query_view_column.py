@@ -17,7 +17,7 @@
 """Classes for defining columns used in view schemas."""
 
 import abc
-from typing import Literal, Sequence, get_args
+from typing import Literal, get_args
 
 import attrs
 from google.cloud import bigquery
@@ -38,7 +38,7 @@ class BigQueryViewColumn(abc.ABC):
     # TODO(#18306) v1 -- enforce that the documentation is meaningfully filled in for
     # column -- like raw data configs, no placeholders
     description: str = attrs.field(validator=attr_validators.is_non_empty_str)
-    field_type: bigquery.SqlTypeNames
+    field_type: bigquery.SqlTypeNames | bigquery.StandardSqlTypeNames
     mode: SqlFieldMode = attrs.field(
         validator=attrs.validators.in_(get_args(SqlFieldMode))
     )
@@ -48,7 +48,7 @@ class BigQueryViewColumn(abc.ABC):
         return bigquery.SchemaField(
             name=self.name,
             description=self.description,
-            field_type=self.field_type.value,
+            field_type=self.field_type.name,
             mode=self.mode,
         )
 
@@ -96,35 +96,74 @@ class Date(BigQueryViewColumn):
     field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.DATE
 
 
-def diff_declared_schema_to_bq_schema(
-    declared_schema: Sequence[BigQueryViewColumn],
-    deployed_schema: Sequence[bigquery.SchemaField],
-) -> list[tuple[str, bigquery.SchemaField]]:
-    """Compare a declared view schema (list of BigQueryViewColumns) against a native
-    BigQuery schema (list of bigquery.SchemaFields).
+@attrs.define(kw_only=True)
+class Float(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a FLOAT64."""
 
-    Returns:
-        A list of (indicator, field) tuples sorted alphabetically by field name.
-        The indicator is "+" for deployed fields missing from declared schema, and
-        "-" for declared fields missing from deployed schema.
-    """
-    declared_by_name = {f.name: f for f in declared_schema}
-    deployed_by_name = {f.name: f for f in deployed_schema}
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.FLOAT
 
-    field_names = sorted(set(declared_by_name.keys()) | set(deployed_by_name.keys()))
 
-    diff: list[tuple[str, bigquery.SchemaField]] = []
-    for name in field_names:
-        declared_field = declared_by_name.get(name)
-        deployed_field = deployed_by_name.get(name)
+@attrs.define(kw_only=True)
+class Bool(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a BOOL."""
 
-        if deployed_field and not declared_field:
-            diff.append(("+", deployed_field))
-        elif declared_field and not deployed_field:
-            diff.append(("-", declared_field.as_schema_field()))
-        elif declared_field and deployed_field:
-            if not declared_field.matches_bq_field(deployed_field):
-                diff.append(("-", declared_field.as_schema_field()))
-                diff.append(("+", deployed_field))
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.BOOLEAN
 
-    return diff
+
+@attrs.define(kw_only=True)
+class Timestamp(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a TIMESTAMP."""
+
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.TIMESTAMP
+
+
+@attrs.define(kw_only=True)
+class Time(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a TIME."""
+
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.TIME
+
+
+@attrs.define(kw_only=True)
+class DateTime(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a DATETIME."""
+
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.DATETIME
+
+
+@attrs.define(kw_only=True)
+class Json(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a JSON."""
+
+    field_type: bigquery.StandardSqlTypeNames = bigquery.StandardSqlTypeNames.JSON
+
+
+@attrs.define(kw_only=True)
+class Record(BigQueryViewColumn):
+    """A BigQueryViewColumn representing a RECORD (STRUCT) with subfields."""
+
+    field_type: bigquery.SqlTypeNames = bigquery.SqlTypeNames.RECORD
+    fields: list[BigQueryViewColumn] = attrs.field(
+        validator=attr_validators.is_list_of(BigQueryViewColumn)
+    )
+
+    def as_schema_field(self) -> bigquery.SchemaField:
+        return bigquery.SchemaField(
+            name=self.name,
+            description=self.description,
+            field_type=self.field_type.name,
+            mode=self.mode,
+            fields=[f.as_schema_field() for f in self.fields],
+        )
+
+    def matches_bq_field(self, schema_field: bigquery.SchemaField) -> bool:
+        if not super().matches_bq_field(schema_field):
+            return False
+        declared_by_name = {f.name: f for f in self.fields}
+        deployed_by_name = {f.name: f for f in schema_field.fields}
+        if declared_by_name.keys() != deployed_by_name.keys():
+            return False
+        return all(
+            declared_by_name[name].matches_bq_field(deployed_by_name[name])
+            for name in declared_by_name
+        )

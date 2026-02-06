@@ -30,9 +30,9 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
     BigQueryViewMaterializationResult,
 )
+from recidiviz.big_query.big_query_schema_utils import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_utils import are_bq_schemas_same
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_column import diff_declared_schema_to_bq_schema
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
