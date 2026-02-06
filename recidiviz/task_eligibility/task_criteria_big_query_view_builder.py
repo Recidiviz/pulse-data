@@ -26,6 +26,10 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     convert_cols_to_json,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.dataset_config import (
+    TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    task_eligibility_criteria_state_specific_dataset,
+)
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 
 
@@ -129,7 +133,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             )
         view_id = criteria_name.removeprefix(state_code_prefix).lower()
         super().__init__(
-            dataset_id=f"task_eligibility_criteria_{state_code.value.lower()}",
+            dataset_id=task_eligibility_criteria_state_specific_dataset(state_code),
             view_id=view_id,
             description=description,
             view_query_template=get_template_with_reasons_as_json(
@@ -212,7 +216,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             )
 
         super().__init__(
-            dataset_id="task_eligibility_criteria_general",
+            dataset_id=TASK_ELIGIBILITY_CRITERIA_GENERAL,
             view_id=criteria_name.lower(),
             description=description,
             view_query_template=get_template_with_reasons_as_json(
@@ -222,7 +226,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
-            clustering_fields=None,
+            clustering_fields=["state_code"],
             time_partitioning=None,
             schema=None,
             **query_format_kwargs,
