@@ -3641,9 +3641,6 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
                 # TODO(#40472): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1900-01-01.
                 StateCode.US_MI,
-                # TODO(#40473): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1900-01-01.
-                StateCode.US_MO,
                 # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1900-01-01.
                 StateCode.US_TN,

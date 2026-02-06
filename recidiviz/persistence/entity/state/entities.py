@@ -2927,10 +2927,6 @@ class StateStaffRolePeriod(
                 # TODO(#40472): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1900-01-01.
                 StateCode.US_MI,
-                # TODO(#40473): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 0409-02-03.
-                #  - Found dates as high as 9001-10-01.
-                StateCode.US_MO,
                 # TODO(#40474): Fix bad dates so all dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1900-01-01.
                 StateCode.US_TN,
@@ -2949,10 +2945,6 @@ class StateStaffRolePeriod(
                 # TODO(#40470): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as high as 2025-04-01.
                 StateCode.US_AR,
-                # TODO(#40473): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
-                #  - Found dates as low as 1007-09-14.
-                #  - Found dates as high as 2201-11-13.
-                StateCode.US_MO,
                 # TODO(#40474): Fix bad dates so all non-null dates fall within the bounds (1900-01-02, <current date>).
                 #  - Found dates as low as 1900-01-01.
                 StateCode.US_TN,
