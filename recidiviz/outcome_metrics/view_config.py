@@ -16,6 +16,7 @@
 # =============================================================================
 """Transitions view configuration."""
 
+from datetime import datetime
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
@@ -59,36 +60,25 @@ def get_transitions_view_builders_for_views_to_update() -> Sequence[
     """Collects and returns a list of builders for all views related to
     orgwide transitions metrics
     """
+    attribute_col_combinations = [
+        ["state_code"],
+        ["product_transition_type"],
+        ["decarceral_impact_type", "has_mandatory_due_date", "is_jii_transition"],
+    ]
+
+    current_year = datetime.now().year
+    breadth_depth_builders: list[BigQueryViewBuilder] = []
+    for year in range(2024, current_year + 1):
+        for attribute_cols in attribute_col_combinations:
+            breadth_depth_builders.extend(
+                collect_view_builders_for_breadth_depth_metrics(
+                    metric_year=year, attribute_cols=attribute_cols
+                )
+            )
+
     return [
         *ImpactTransitionsBigQueryViewCollector().collect_view_builders(),
         get_unioned_transitions_view_builder(),
         ALL_FULL_STATE_LAUNCH_DATES_VIEW_BUILDER,
-        *collect_view_builders_for_breadth_depth_metrics(
-            metric_year=2024, attribute_cols=["state_code"]
-        ),
-        *collect_view_builders_for_breadth_depth_metrics(
-            metric_year=2024, attribute_cols=["product_transition_type"]
-        ),
-        *collect_view_builders_for_breadth_depth_metrics(
-            metric_year=2024,
-            attribute_cols=[
-                "decarceral_impact_type",
-                "has_mandatory_due_date",
-                "is_jii_transition",
-            ],
-        ),
-        *collect_view_builders_for_breadth_depth_metrics(
-            metric_year=2025, attribute_cols=["state_code"]
-        ),
-        *collect_view_builders_for_breadth_depth_metrics(
-            metric_year=2025, attribute_cols=["product_transition_type"]
-        ),
-        *collect_view_builders_for_breadth_depth_metrics(
-            metric_year=2025,
-            attribute_cols=[
-                "decarceral_impact_type",
-                "has_mandatory_due_date",
-                "is_jii_transition",
-            ],
-        ),
+        *breadth_depth_builders,
     ]

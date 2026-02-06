@@ -18,6 +18,7 @@
 tables.
 """
 import itertools
+from datetime import datetime
 from functools import cache
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -258,6 +259,26 @@ def state_specific_deployed_views_without_state_code_columns(
     }
 
 
+def _get_breadth_depth_addresses_without_state_code() -> set[BigQueryAddress]:
+    """Returns addresses for breadth/depth metric views that don't have a state_code
+    column. These are views grouped by attributes other than state_code.
+    """
+    attribute_col_combinations_without_state_code = [
+        ["product_transition_type"],
+        ["decarceral_impact_type", "has_mandatory_due_date", "is_jii_transition"],
+    ]
+
+    current_year = datetime.now().year
+    addresses: set[BigQueryAddress] = set()
+    for year in range(2024, current_year + 1):
+        for attribute_cols in attribute_col_combinations_without_state_code:
+            for builder in collect_view_builders_for_breadth_depth_metrics(
+                metric_year=year, attribute_cols=attribute_cols
+            ):
+                addresses.add(builder.address)
+    return addresses
+
+
 def state_agnostic_deployed_views_without_state_code_column(
     deployed_view_builders_by_address: dict[BigQueryAddress, BigQueryViewBuilder],
 ) -> set[BigQueryAddress]:
@@ -276,40 +297,7 @@ def state_agnostic_deployed_views_without_state_code_column(
         BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER.address,
         DAG_RUNTIMES_VIEW_BUILDER.address,
         # These views calculate cross-state metrics for orgwide impact tracking
-        *[
-            builder.address
-            for builder in collect_view_builders_for_breadth_depth_metrics(
-                metric_year=2024, attribute_cols=["product_transition_type"]
-            )
-        ],
-        *[
-            builder.address
-            for builder in collect_view_builders_for_breadth_depth_metrics(
-                metric_year=2024,
-                attribute_cols=[
-                    "decarceral_impact_type",
-                    "has_mandatory_due_date",
-                    "is_jii_transition",
-                ],
-            )
-        ],
-        *[
-            builder.address
-            for builder in collect_view_builders_for_breadth_depth_metrics(
-                metric_year=2025, attribute_cols=["product_transition_type"]
-            )
-        ],
-        *[
-            builder.address
-            for builder in collect_view_builders_for_breadth_depth_metrics(
-                metric_year=2025,
-                attribute_cols=[
-                    "decarceral_impact_type",
-                    "has_mandatory_due_date",
-                    "is_jii_transition",
-                ],
-            )
-        ],
+        *_get_breadth_depth_addresses_without_state_code(),
     }
 
     return {
