@@ -69,6 +69,7 @@ class SourceTableUpdateType(enum.StrEnum):
     UPDATE_EXTERNAL_DATA_CONFIGURATION = "update_external_data_configuration"
 
     # Existing table field-level changes
+    DOCUMENTATION_ADDITION = "documentation_addition"
     DOCUMENTATION_CHANGE = "documentation_change"
     UPDATE_SCHEMA_MODE_CHANGES = "update_schema_mode_changes"
     UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
@@ -97,6 +98,7 @@ class SourceTableUpdateType(enum.StrEnum):
         if self in (
             SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
             SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
+            SourceTableUpdateType.DOCUMENTATION_ADDITION,
             SourceTableUpdateType.DOCUMENTATION_CHANGE,
             # TODO(#39040): Differentiate between NULLABLE -> REQUIRED (may crash on
             #  non-empty tables) and REQUIRED -> NULLABLE (always allowed).
@@ -121,10 +123,13 @@ class SourceTableUpdateType(enum.StrEnum):
         |update_config|, False otherwise.
         """
         if update_config == SourceTableCollectionUpdateConfig.externally_managed():
-            # We don't make any updates for ANY externally-managed tables.
+            # We don't attempt to apply any updates to externally-managed tables.
             return False
 
-        if self is SourceTableUpdateType.DOCUMENTATION_CHANGE:
+        if self in (
+            SourceTableUpdateType.DOCUMENTATION_CHANGE,
+            SourceTableUpdateType.DOCUMENTATION_ADDITION,
+        ):
             return True
 
         if update_config == SourceTableCollectionUpdateConfig.regenerable():
@@ -162,6 +167,25 @@ class SourceTableUpdateType(enum.StrEnum):
 
         raise ValueError(f"Unexpected SourceTableUpdateType: {self}")
 
+    def is_expected_discrepancy_for_config(
+        self, update_config: SourceTableCollectionUpdateConfig
+    ) -> bool:
+        """Returns True if it is expected and acceptable for a discrepancy of
+        this type to exist between the deployed table and the config, without
+        anyone needing to resolve it.
+
+        This is distinct from is_allowed_update_for_config, which answers
+        whether we can attempt to apply this update to BQ.
+        """
+        if update_config == SourceTableCollectionUpdateConfig.externally_managed():
+            # It's expected that our YAML has descriptions that don't exist
+            # in BQ for externally managed tables — we may add documentation
+            # locally even though the external system that creates this table doesn't
+            # provide it.
+            if self is SourceTableUpdateType.DOCUMENTATION_ADDITION:
+                return True
+        return False
+
     @property
     def is_single_existing_field_update_type(self) -> bool:
         """Returns True if this is an update type that pertains to modifying a single,
@@ -172,6 +196,7 @@ class SourceTableUpdateType(enum.StrEnum):
                 self.UPDATE_SCHEMA_MODE_CHANGES
                 | self.UPDATE_SCHEMA_TYPE_CHANGES
                 | self.DOCUMENTATION_CHANGE
+                | self.DOCUMENTATION_ADDITION
             ):
                 return True
 
@@ -291,7 +316,10 @@ def get_table_field_level_required_updates(
             field_changes.add(SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES)
 
         if old_schema_field.description != new_schema_field.description:
-            field_changes.add(SourceTableUpdateType.DOCUMENTATION_CHANGE)
+            if not old_schema_field.description and new_schema_field.description:
+                field_changes.add(SourceTableUpdateType.DOCUMENTATION_ADDITION)
+            else:
+                field_changes.add(SourceTableUpdateType.DOCUMENTATION_CHANGE)
 
         if not field_changes:
             if old_schema_field != new_schema_field:
@@ -348,6 +376,36 @@ class SourceTableWithRequiredUpdateTypes:
     @property
     def address(self) -> BigQueryAddress:
         return self.source_table_config.address
+
+    def without_expected_discrepancies(
+        self,
+        update_config: SourceTableCollectionUpdateConfig,
+    ) -> "SourceTableWithRequiredUpdateTypes":
+        """Returns a copy with expected discrepancies removed. These are update
+        types where it's acceptable for the deployed table and config to
+        disagree without anyone resolving the difference. Fields or table-level
+        entries with no remaining update types after filtering are removed.
+        """
+        filtered_table_level_update_types = {
+            update_type
+            for update_type in self.table_level_update_types
+            if not update_type.is_expected_discrepancy_for_config(update_config)
+        }
+        filtered_field_update_types = {}
+        for field_name, update_types in self.existing_field_update_types.items():
+            filtered = {
+                update_type
+                for update_type in update_types
+                if not update_type.is_expected_discrepancy_for_config(update_config)
+            }
+            if filtered:
+                filtered_field_update_types[field_name] = filtered
+        return SourceTableWithRequiredUpdateTypes(
+            deployed_table=self.deployed_table,
+            source_table_config=self.source_table_config,
+            table_level_update_types=filtered_table_level_update_types,
+            existing_field_update_types=filtered_field_update_types,
+        )
 
     def are_changes_safe_to_apply_to_collection(
         self, collection_update_config: SourceTableCollectionUpdateConfig
@@ -489,6 +547,16 @@ class SourceTableWithRequiredUpdateTypes:
                     changes.append(
                         f"\n    - '{deployed_field.name}' updated its DESCRIPTION to {new_field.description}"
                     )
+                elif update_type is SourceTableUpdateType.DOCUMENTATION_ADDITION:
+                    if deployed_field.description == new_field.description:
+                        raise ValueError(
+                            f"Expected description addition for field [{field_name}] in "
+                            f"table [{self.address.to_str()}] but found both with "
+                            f"description [{deployed_field.description}]."
+                        )
+                    changes.append(
+                        f"\n    - '{deployed_field.name}' added DESCRIPTION: {new_field.description}"
+                    )
                 else:
                     raise ValueError(f"Unexpected update_type [{update_type}]")
 
@@ -610,7 +678,16 @@ class SourceTableUpdateManager:
     ) -> dict[BigQueryAddress, SourceTableWithRequiredUpdateTypes]:
         """Checks for changes that should be applied to the source tables specified by
         the provided list of collections, printing a progress bar as tables complete.
+
+        Expected discrepancies (differences that are acceptable without resolution,
+        e.g. documentation additions on externally managed tables) are filtered out
+        of the results.
         """
+        address_to_update_config = {
+            st.address: c.update_config
+            for c in source_table_collections
+            for st in c.source_tables
+        }
 
         result_by_address: dict[
             BigQueryAddress, SourceTableWithRequiredUpdateTypes
@@ -643,9 +720,13 @@ class SourceTableUpdateManager:
                 result_by_address[address] = source_table_required_updates
 
         return {
-            address: source_table_required_updates
-            for address, source_table_required_updates in result_by_address.items()
-            if source_table_required_updates.has_updates_to_make
+            address: filtered_updates
+            for address, updates in result_by_address.items()
+            if (
+                filtered_updates := updates.without_expected_discrepancies(
+                    address_to_update_config[address]
+                )
+            ).has_updates_to_make
         }
 
     def _update_table_work_fn(

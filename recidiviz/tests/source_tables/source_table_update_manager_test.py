@@ -783,6 +783,145 @@ class TestSourceTableWithRequiredUpdateTypes(unittest.TestCase):
             )
         )
 
+    def test_documentation_addition(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [self._make_schema_field("id", description="New desc")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={
+                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION}
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        expected_message = (
+            "* dataset.table (DOCUMENTATION_ADDITION)\n"
+            "  Changed fields:\n"
+            "    - 'id' added DESCRIPTION: New desc"
+        )
+        self.assertEqual(expected_message, update_info.build_updates_message())
+
+        self.assertTrue(update_info.has_updates_to_make)
+        self.assertEqual(
+            update_info.all_update_types,
+            {SourceTableUpdateType.DOCUMENTATION_ADDITION},
+        )
+
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.regenerable()
+            )
+        )
+        self.assertFalse(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.externally_managed()
+            )
+        )
+        self.assertTrue(
+            update_info.are_changes_safe_to_apply_to_collection(
+                SourceTableCollectionUpdateConfig.protected()
+            )
+        )
+
+    def test_without_expected_discrepancies_externally_managed(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [
+            self._make_schema_field("id"),
+            self._make_schema_field("name", description="old"),
+        ]
+        new_schema = [
+            self._make_schema_field("id", description="New desc"),
+            self._make_schema_field("name", description="new"),
+        ]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={
+                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION},
+                "name": {SourceTableUpdateType.DOCUMENTATION_CHANGE},
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        filtered = update_info.without_expected_discrepancies(
+            SourceTableCollectionUpdateConfig.externally_managed()
+        )
+        self.assertEqual(
+            filtered.existing_field_update_types,
+            {"name": {SourceTableUpdateType.DOCUMENTATION_CHANGE}},
+        )
+        self.assertTrue(filtered.has_updates_to_make)
+
+    def test_without_expected_discrepancies_all_filtered(self) -> None:
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [self._make_schema_field("id", description="New desc")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={
+                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION},
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        filtered = update_info.without_expected_discrepancies(
+            SourceTableCollectionUpdateConfig.externally_managed()
+        )
+        self.assertFalse(filtered.has_updates_to_make)
+
+    def test_without_expected_discrepancies_managed_keeps_additions(self) -> None:
+        """For managed configs, DOCUMENTATION_ADDITION is not an expected
+        discrepancy — it should be kept because we want to apply it."""
+        address = BigQueryAddress.from_str("dataset.table")
+        deployed_schema = [self._make_schema_field("id")]
+        new_schema = [self._make_schema_field("id", description="New desc")]
+
+        update_info = SourceTableWithRequiredUpdateTypes(
+            deployed_table=self._make_table(address, deployed_schema),
+            table_level_update_types=set(),
+            existing_field_update_types={
+                "id": {SourceTableUpdateType.DOCUMENTATION_ADDITION},
+            },
+            source_table_config=SourceTableConfig(
+                address=address,
+                description="",
+                schema_fields=new_schema,
+                clustering_fields=None,
+            ),
+        )
+
+        for managed_config in [
+            SourceTableCollectionUpdateConfig.regenerable(),
+            SourceTableCollectionUpdateConfig.protected(),
+        ]:
+            filtered = update_info.without_expected_discrepancies(managed_config)
+            self.assertTrue(filtered.has_updates_to_make)
+            self.assertEqual(
+                filtered.existing_field_update_types,
+                {"id": {SourceTableUpdateType.DOCUMENTATION_ADDITION}},
+            )
+
 
 class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
     """Tests the SourceTableUpdateManager using raw data tables as fixtures."""
@@ -1273,3 +1412,70 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
             self.assertEqual(
                 expected_update_message, changes[address].build_updates_message()
             )
+
+    def test_expected_discrepancies_filtered_from_results(self) -> None:
+        """Adding descriptions to an externally managed table's YAML should be
+        filtered out of get_changes_to_apply_to_source_tables results since
+        these are expected discrepancies."""
+        collection = attr.evolve(
+            self.get_source_tables()[0],
+            update_config=SourceTableCollectionUpdateConfig.externally_managed(),
+        )
+
+        # Add descriptions to fields that have none in BQ — this is a
+        # DOCUMENTATION_ADDITION, which is an expected discrepancy for
+        # externally managed tables.
+        collection.add_source_table(
+            "test_table_modified",
+            [SchemaField("id", "INTEGER", description="The primary key")],
+        )
+
+        update_manager = SourceTableUpdateManager(client=self.bq_client)
+
+        with tempfile.NamedTemporaryFile() as file:
+            changes = update_manager.get_changes_to_apply_to_source_tables(
+                source_table_collections=[collection],
+                log_file=file.name,
+            )
+
+        self.assertEqual(changes, {})
+
+    def test_expected_discrepancies_stripped_from_mixed_changes(self) -> None:
+        """When an externally managed table has both a DOCUMENTATION_ADDITION
+        (expected discrepancy) and a real change like field additions, the
+        DOCUMENTATION_ADDITION should be stripped but the real change should
+        remain in the results."""
+        collection = attr.evolve(
+            self.get_source_tables()[0],
+            update_config=SourceTableCollectionUpdateConfig.externally_managed(),
+        )
+
+        modified_table_address = BigQueryAddress(
+            dataset_id="test_dataset", table_id="test_table_modified"
+        )
+
+        # Add a description (expected discrepancy) AND a new field (real change)
+        collection.add_source_table(
+            "test_table_modified",
+            [
+                SchemaField("id", "INTEGER", description="The primary key"),
+                SchemaField("new_field", "STRING"),
+            ],
+        )
+
+        update_manager = SourceTableUpdateManager(client=self.bq_client)
+
+        with tempfile.NamedTemporaryFile() as file:
+            changes = update_manager.get_changes_to_apply_to_source_tables(
+                source_table_collections=[collection],
+                log_file=file.name,
+            )
+
+        self.assertIn(modified_table_address, changes)
+        result = changes[modified_table_address]
+        # The DOCUMENTATION_ADDITION should be stripped, leaving only the field addition
+        self.assertEqual(
+            result.table_level_update_types,
+            {SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS},
+        )
+        self.assertEqual(result.existing_field_update_types, {})
