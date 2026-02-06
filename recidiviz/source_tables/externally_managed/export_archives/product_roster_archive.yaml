@@ -90,6 +90,9 @@ schema:
   - name: routes_cpa
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_sarAccess
+    type: BOOLEAN
+    mode: NULLABLE
   - name: default_feature_variants
     type: STRING
     mode: NULLABLE
