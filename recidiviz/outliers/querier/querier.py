@@ -255,6 +255,7 @@ class OutliersQuerier:
                     target_status == TargetStatus.FAR
                     and supervision_officer_supervisor_id
                     in officer.supervisor_external_ids
+                    and officer.full_name is not None
                 ):
                     highlighted_officers.append(
                         OfficerMetricEntity(
@@ -980,6 +981,7 @@ class OutliersQuerier:
                     email=officer.email,
                 )
                 for officer in officers
+                if officer.full_name is not None
             ]
 
     def get_supervision_officer_outcomes(
@@ -1384,6 +1386,9 @@ class OutliersQuerier:
                 include_in_outcomes_subquery,
                 include_in_outcomes_subquery.c.officer_id
                 == SupervisionOfficer.external_id,
+            )
+            .filter(
+                SupervisionOfficer.full_name.is_not(None),
             )
             .group_by(
                 SupervisionOfficer.external_id,
