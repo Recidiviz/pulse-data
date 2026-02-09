@@ -45,6 +45,13 @@ def state_agnostic_placeholder_query_template(
 ) -> str:
     """Returns a query template for state-agnostic eligibility criteria spans with the
     provided |reason_query| set and the whole population set to meets_criteria = True.
+
+    Args:
+        reasons_fields (List[ReasonsField]): List of ReasonsField objects defining the
+            reason columns to include in the query output.
+
+    Returns:
+        str: A SQL query template string that produces placeholder criteria spans.
     """
     reason_query = ",\n    ".join(
         [
@@ -73,6 +80,17 @@ def state_specific_placeholder_criteria_view_builder(
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns a state specific criteria view builder to be used as a placeholder
     criteria during development.
+
+    Args:
+        criteria_name (str): Name of the criteria.
+        description (str): Description of the criteria.
+        reasons_fields (List[ReasonsField]): List of ReasonsField objects defining the
+            reason columns.
+        state_code (StateCode): The state code this criteria applies to.
+
+    Returns:
+        StateSpecificTaskCriteriaBigQueryViewBuilder: A view builder with placeholder
+        query logic.
     """
     query_template = state_agnostic_placeholder_query_template(reasons_fields)
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -90,6 +108,16 @@ def state_agnostic_placeholder_criteria_view_builder(
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state agnostic criteria view builder to be used as a placeholder
     criteria during development.
+
+    Args:
+        criteria_name (str): Name of the criteria.
+        description (str): Description of the criteria.
+        reasons_fields (List[ReasonsField]): List of ReasonsField objects defining the
+            reason columns.
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A view builder with placeholder
+        query logic.
     """
     query_template = state_agnostic_placeholder_query_template(reasons_fields)
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(

@@ -25,11 +25,17 @@ def supervision_population_eligible_levels_additional_filters(
     excluded_compartment_level_2: str = "('')",
 ) -> list[str]:
     """Helper method that returns the filters to generate the
-    population on active supervision from a specific start date
+    population on active supervision from a specific start date.
+
     Args:
-        start_date (str): Default set to "1900-01-01"
-        excluded_correctional_levels (str): Defaults set to shared list of levels not eligible for supervision level downgrades
-        excluded_compartment_level_2 (str): Defaults to all compartment level 2
+        start_date (str): Default set to "1900-01-01".
+        excluded_correctional_levels (str): Defaults set to shared list of levels not
+            eligible for supervision level downgrades.
+        excluded_compartment_level_2 (str): Defaults to "('')" (no exclusions).
+
+    Returns:
+        list[str]: A list of SQL filter condition strings to apply to the candidate
+        population query.
     """
     # TODO(#17654) align on ABSCONDED/ABSCONSION terminology
     return [
@@ -48,12 +54,22 @@ def active_supervision_population_additional_filters(
     allow_null_correctional_level: bool = False,
 ) -> list[str]:
     """Helper method that returns the filters to generate the
-    population on active supervision from a specific start date
+    population on active supervision from a specific start date.
+
     Args:
-        start_date (str): Default set to "1900-01-01"
-        included_compartment_level_2 (str): Defaults to Parole, Dual, and Probation
-        excluded_correctional_levels (str): Defaults set to shared list of levels not considered active
-        excluded_compartment_level_2 (str): Defaults set to shared list of levels not considered active
+        start_date (str): Default set to "1900-01-01".
+        excluded_correctional_levels (str): Defaults set to shared list of levels not
+            considered active.
+        included_compartment_level_2 (str): Defaults to Parole, Dual, Probation,
+            Informal Probation, and Community Confinement.
+        excluded_compartment_level_2 (str): Defaults set to shared list of levels not
+            considered active.
+        allow_null_correctional_level (bool): Whether to allow null correctional levels.
+            Defaults to False.
+
+    Returns:
+        list[str]: A list of SQL filter condition strings to apply to the candidate
+        population query.
     """
     # TODO(#17654) align on ABSCONDED/ABSCONSION terminology
     correctional_level_filter = (

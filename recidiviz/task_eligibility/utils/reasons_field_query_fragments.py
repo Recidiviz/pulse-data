@@ -44,27 +44,30 @@ def extract_reasons_from_criteria(
     index_columns: Optional[List[str]] = None,
     reason_column_prefix: Optional[str] = "",
 ) -> str:
-    """
-    Returns a query fragment string with SQL logic that extracts the reason fields
+    """Returns a query fragment string with SQL logic that extracts the reason fields
     from particular criteria within a task eligibility spans view.
 
-    criteria_reason_fields:
-        Dictionary with criteria mapped to the list of reasons fields to extract
-        from that criteria within the TES reasons json
-    tes_view_builder:
-        The task eligibility spans view builder that has the criteria specified
-    tes_table_name:
-        String with the name of the table (or CTE) with the relevant TES
-        rows, requires the table has a column that matches the |reasons_column_name| value
-    reasons_column_name:
-        String with the name of the column within the |tes_table_name| table that contains
-        the criteria reasons JSON. Defaults to "reasons_v2"
-    index_columns:
-        List of primary columns to preserve in the output and use to identify
-        unique rows. Defaults to just ["person_id"]
-    reason_column_prefix:
-        String prefix to prepend on the extracted reason columns (ie. "metadata_"),
-        defaults to None/no prefix
+    Args:
+        criteria_reason_fields (Dict[TaskCriteriaBigQueryViewBuilder, List[str]]):
+            Dictionary with criteria mapped to the list of reasons fields to extract
+            from that criteria within the TES reasons json.
+        tes_view_builder (Union[SingleTaskEligibilitySpansBigQueryViewBuilder,
+            BasicSingleTaskEligibilitySpansBigQueryViewBuilder]): The task eligibility
+            spans view builder that has the criteria specified.
+        tes_table_name (str): String with the name of the table (or CTE) with the
+            relevant TES rows, requires the table has a column that matches the
+            |reasons_column_name| value. Defaults to "eligible_and_almost_eligible".
+        reasons_column_name (str): String with the name of the column within the
+            |tes_table_name| table that contains the criteria reasons JSON. Defaults to
+            "reasons_v2".
+        index_columns (Optional[List[str]]): List of primary columns to preserve in the
+            output and use to identify unique rows. Defaults to just ["person_id"].
+        reason_column_prefix (Optional[str]): String prefix to prepend on the extracted
+            reason columns (ie. "metadata_"). Defaults to ""/no prefix.
+
+    Returns:
+        str: A SQL query fragment string that extracts and joins reason fields from the
+        specified criteria.
     """
 
     if index_columns is None:

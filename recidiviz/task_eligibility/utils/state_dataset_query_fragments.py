@@ -43,8 +43,21 @@ def task_deadline_critical_date_update_datetimes_cte(
     round_up_datetime: Optional[bool] = True,
 ) -> str:
     """Returns a CTE that selects all StateTaskDeadline rows with the provided
-    |task_type] and renames the |critical_date_column| to `critical_date` for standard
+    |task_type| and renames the |critical_date_column| to `critical_date` for standard
     processing.
+
+    Args:
+        task_type (StateTaskType): The type of task deadline to filter on.
+        critical_date_column (str): The column name to use as the critical date. Must be
+            either 'eligible_date' or 'due_date'.
+        additional_where_clause (str): Optional additional SQL WHERE clause conditions.
+            Defaults to "".
+        round_up_datetime (Optional[bool]): Whether to round up the update_datetime to
+            the next day. Defaults to True.
+
+    Returns:
+        str: A SQL CTE string named 'critical_date_update_datetimes' with columns
+        state_code, person_id, critical_date, and update_datetime.
     """
     if critical_date_column not in {"eligible_date", "due_date"}:
         raise ValueError(f"Unsupported critical date column {critical_date_column}")
@@ -328,11 +341,20 @@ WHERE cte.end_date > start_date_plus_x_months"""
 def no_supervision_violation_within_x_to_y_months_of_start(
     x_months: int, y_months: int
 ) -> str:
-    """
-    Defines a criteria span view that shows spans of time during which there
+    """Defines a criteria span view that shows spans of time during which there
     is no supervision violation within x to y months. If x_months is 6 and y_months is 8,
     then the criteria is met if there is no violation within 6 to 8 months of
     the probation/parole start date (or the latest violation).
+
+    Args:
+        x_months (int): The minimum number of months after start date (or latest
+            violation) before the criteria can be met.
+        y_months (int): The maximum number of months after start date (or latest
+            violation) during which the criteria can be met.
+
+    Returns:
+        str: A SQL query string that produces criteria spans with meets_criteria and
+        reason columns.
     """
 
     return f"""
@@ -682,20 +704,25 @@ def supervision_violations_cte(
     exclude_violation_unfounded_decisions: bool = False,
     use_response_date: bool = False,
 ) -> str:
-    """
-    Combine state_supervision_violation and state_supervision_violation_response to select violations that
+    """Combine state_supervision_violation and state_supervision_violation_response to select violations that
     we want to count for supervision violation related criteria. Violations are filtered based on any
     specified violation-level attributes and any aggregated attributes of violation responses
     (since there can be multiple responses per violation).
 
     Args:
-        exclude_violation_unfounded_decisions (bool): Only violations where the LATEST violation response
-        DOES NOT contain a VIOLATION_UNFOUNDED decision, indicating that the violation is unfounded
-        use_response_date (bool, optional): Whether to use the report date rather than the violation date when determining
-            eligibility. Defaults to False
+        violation_type (str): SQL join condition for filtering by violation type.
+            Defaults to ""/no filter.
+        where_clause_addition (str): Additional SQL WHERE clause conditions. Defaults
+            to "".
+        exclude_violation_unfounded_decisions (bool): If True, only include violations
+            where the latest violation response does not contain a VIOLATION_UNFOUNDED
+            decision. Defaults to False.
+        use_response_date (bool): Whether to use the response date rather than the
+            violation date when determining eligibility. Defaults to False.
 
     Returns:
-        str: SQL query as a string.
+        str: A SQL query string that selects supervision violations with state_code,
+        person_id, supervision_violation_id, and violation_date columns.
     """
 
     violation_type_join = f"""

@@ -34,6 +34,10 @@ def critical_date_spans_cte() -> str:
     There must be a CTE defined before this clause with the name
     |critical_date_update_datetimes| that has columns state_code (string),
     person_id (string), update_datetime (datetime), critical_date (date).
+
+    Returns:
+        str: A SQL CTE string named 'critical_date_spans' with columns state_code,
+        person_id, critical_date, start_datetime, and end_datetime.
     """
     return f"""critical_date_spans AS (
         SELECT
@@ -66,32 +70,32 @@ def critical_date_has_passed_spans_cte(
 ) -> str:
     """Returns a CTE that indicates the span of time where a particular critical date
     was set and comes on or before the current date. The
-    |meets_criteria_leading_window_days| modifier can move up the start_date by a
+    |meets_criteria_leading_window_time| modifier can move up the start_date by a
     constant value to account, for example, for time before the critical date where some
-     criteria is met. The output spans are not collapsed so there can be two
+    criteria is met. The output spans are not collapsed so there can be two
     adjacent spans with the same `critical_date_has_passed` value.
 
     There must be a CTE defined before this clause with the name |critical_date_spans|
     that has columns state_code (string), person_id (string), start_datetime (datetime),
     end_datetime (datetime), critical_date (date).
 
-    Params:
-    ------
-    meets_criteria_leading_window_time : int
-        Modifier to move the start_date by a constant value to account, for example, for time before the critical date
-        where some criteria is met. Defaults to 0.
+    Args:
+        meets_criteria_leading_window_time (int): Modifier to move the start_date by a
+            constant value to account, for example, for time before the critical date
+            where some criteria is met. Defaults to 0.
+        attributes (Optional[List[str]]): List of column names that will be passed
+            through to the output CTE.
+        date_part (str): Supports any of the BigQuery date_part values: "DAY", "WEEK",
+            "MONTH", "QUARTER", "YEAR". Defaults to "DAY".
+        table_name (str): The name of the table that the critical date spans are stored
+            in. Defaults to "critical_date_spans".
+        cte_suffix (str): Suffix to append to the CTE names to avoid name collisions.
+            Defaults to "".
 
-    attributes : Optional[List[str]]
-        List of column names that will be passed through to the output CTE
-
-    date_part (str, optional): Supports any of the BigQuery date_part values:
-        "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
-
-    table_name (str, optional): The name of the table that the critical date spans are
-        stored in. Defaults to "critical_date_spans".
-
-    cte_suffix (str, optional): Suffix to append to the CTE names to avoid name
-        collisions. Defaults to "".
+    Returns:
+        str: A SQL CTE string named 'critical_date_has_passed_spans{cte_suffix}' with
+        columns state_code, person_id, start_date, end_date, critical_date_has_passed,
+        critical_date, and any specified attributes.
     """
 
     if attributes:
@@ -180,6 +184,11 @@ def critical_date_exists_spans_cte() -> str:
     There must be a CTE defined before this clause with the name
     |critical_date_update_datetimes| that has columns state_code (string),
     person_id (string), update_datetime (datetime), critical_date (date).
+
+    Returns:
+        str: A SQL CTE string named 'critical_date_exists_spans' with columns
+        state_code, person_id, start_date, end_date, critical_date_exists, and
+        critical_date.
     """
     return f"""
     {critical_date_spans_cte()},

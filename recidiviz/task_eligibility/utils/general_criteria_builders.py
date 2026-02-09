@@ -180,6 +180,10 @@ def latest_drug_test_is_negative(
         description (str): Criteria query description
         meets_criteria_default (bool): Determines whether people who don't have a drug screen are considered eligible
             or not
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when a client's
+            latest drug screen is negative.
     """
 
     criteria_query = """
@@ -262,6 +266,20 @@ def get_ineligible_offense_type_criteria(
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state-agnostic criteria view builder indicating the spans of time when a person is
     serving a sentence of a particular type.
+
+    Args:
+        criteria_name (str): The name of the criterion.
+        compartment_level_1 (Union[str, List[str]]): The compartment level(s) to filter on
+            (e.g., "SUPERVISION", "INCARCERATION", or a list of both).
+        description (str): A brief description of the criterion.
+        where_clause (str, optional): Additional WHERE clause filters for selecting sentences.
+            Defaults to "".
+        additional_json_fields (Optional[List[str]], optional): Additional fields to include
+            in the reasons JSON. Defaults to None.
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone is
+            serving a sentence of a particular ineligible offense type.
     """
     additional_json_fields_str = ""
     if additional_json_fields:
@@ -301,7 +319,14 @@ def get_minimum_age_criteria(
     minimum_age: int,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state agnostic criteria view builder indicating the spans of time when a person is
-    |minimum_age| years or older
+    |minimum_age| years or older.
+
+    Args:
+        minimum_age (int): The minimum age in years required to meet the criterion.
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone is
+            at least the specified age.
     """
     criteria_name = f"AGE_{minimum_age}_YEARS_OR_OLDER"
 
@@ -726,6 +751,11 @@ def num_events_within_time_interval_spans(
         event_list_field (str, optional): If provided, includes an event_list array
             containing the values of this field from the events_cte for each event
             in the span. The events_cte must have a column with this name.
+
+    Returns:
+        str: A SQL CTE fragment that creates spans with event counts. The resulting
+            `event_count_spans` CTE contains: index columns, start_date, end_date,
+            event_count, event_dates array, and optionally event_list array.
     """
     if index_columns is None:
         index_columns = ["person_id", "state_code"]
@@ -1387,6 +1417,10 @@ def no_absconsion_within_time_interval_criteria_builder(
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR".
         compartment_level_1_filter (str): The compartment level 1 filter to apply to the
             absconsion sessions. Defaults to "".
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
+            has not absconded within the specified time interval.
     """
     if compartment_level_1_filter != "":
         raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
@@ -1453,6 +1487,10 @@ def employed_for_at_least_x_time_criteria_builder(
             valid. Defaults to 6.
         date_part (str, optional): Supports any of the BigQuery date_part values:
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
+            has been employed for at least the specified amount of time.
     """
     query_template = status_for_at_least_x_time_criteria_query(
         table_name="`{project_id}.normalized_state.state_employment_period`",
@@ -1508,10 +1546,14 @@ def housed_for_at_least_x_time_criteria_builder(
         description (str): Criteria query description
         housing_status_values (List[str], optional): List of housing statuses to include in the criteria.
             Example: ["PERMANENT_RESIDENCE", "TEMPORARY_OR_SUPPORTIVE_HOUSING"].
-        date_interval (int, optional): Number of <date_part> when the employment will be counted as
+        date_interval (int, optional): Number of <date_part> when the housing status will be counted as
             valid. Defaults to 6.
         date_part (str, optional): Supports any of the BigQuery date_part values:
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
+            has been housed for at least the specified amount of time.
     """
     query_template = status_for_at_least_x_time_criteria_query(
         table_name="`{project_id}.normalized_state.state_person_housing_status_period`",
@@ -1585,6 +1627,10 @@ def status_for_at_least_x_time_criteria_query(
             columns to include in the reason STRUCT. The source must be a column that
             exists in the final CTE. Example: [("critical_date_has_passed", "meets_criteria"),
             ("critical_date", "eligible_date")]
+
+    Returns:
+        str: A SQL query template that identifies spans when someone has been in a
+            certain status for at least the specified amount of time.
     """
     columns_for_reasons = columns_for_reasons or []
 
@@ -1687,7 +1733,16 @@ def get_reason_json_fields_query_template_for_criteria(
         | StateAgnosticTaskCriteriaBigQueryViewBuilder
     ),
 ) -> str:
-    """Returns a query template that extracts all json fields from a criteria builder"""
+    """Returns a query template that extracts all json fields from a criteria builder.
+
+    Args:
+        criteria_builder: A state-specific or state-agnostic criteria view builder
+            containing reasons_fields to extract.
+
+    Returns:
+        str: A comma-separated string of JSON_EXTRACT_SCALAR expressions for each
+            field in the criteria builder's reasons_fields.
+    """
     return ",\n".join(
         [
             f"JSON_EXTRACT_SCALAR(reason_v2, '$.{field.name}') AS {field.name}"
@@ -1852,6 +1907,13 @@ def not_on_specific_supervision_case_type(
     """
     Creates criteria with spans of time when a client is supervised on a specific case
     type in order to support "SUPERVISION_CASE_TYPE_IS_NOT_XX" style criteria.
+
+    Args:
+        case_type (StateSupervisionCaseType): The supervision case type to exclude.
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
+            does NOT have the specified supervision case type.
     """
 
     vb_description = f"""Defines a criteria span view that shows spans of time during which clients does not have
@@ -2025,6 +2087,17 @@ def denial_reasons_criteria_builder(
 def supervision_case_type_is_criteria_builder(
     case_types: List[str], criteria_name: str, description: str
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria view builder for spans when someone has a specific supervision case type.
+
+    Args:
+        case_types (List[str]): List of case types to include in the criteria.
+        criteria_name (str): The name of the criterion.
+        description (str): A brief description of the criterion.
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
+            has one of the specified supervision case types.
+    """
     query = f"""
     SELECT
         ctsl.state_code,
@@ -2076,6 +2149,10 @@ def no_session_starts_with_reason_within_time_interval_criteria_builder(
         start_reasons (list[str]): List of compartment level start reasons to filter on.
         compartment_level_1_filter (str): The compartment level 1 filter to apply to the
             session start sessions. Defaults to "".
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
+            has not started a session with the specified start reason within the time interval.
     """
     raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
 

@@ -27,7 +27,18 @@ def state_agnostic_candidate_population_query(
     *, additional_filters: List[str], compartment_level_1: List[str]
 ) -> str:
     """Returns a query with the candidate population as tracked by `compartment_sub_sessions`
-    with any additional filter conditions applied to the query WHERE clause."""
+    with any additional filter conditions applied to the query WHERE clause.
+
+    Args:
+        additional_filters (List[str]): List of SQL filter conditions to apply to the
+            WHERE clause.
+        compartment_level_1 (List[str]): List of compartment level 1 values to filter
+            on. Supported values are 'INCARCERATION', 'SUPERVISION', and
+            'SUPERVISION_OUT_OF_STATE'.
+
+    Returns:
+        str: A SQL query template string that produces candidate population spans.
+    """
 
     for compartment in compartment_level_1:
         if compartment not in {
@@ -68,7 +79,20 @@ def state_agnostic_candidate_population_view_builder(
     """Returns a state agnostic candidate population view builder representing the
     supervised population with additional filter conditions applied. The |additional_filters|
     argument should be a list of query fragments that can be appended to the supervision
-    query to reduce the population by certain characteristics such as legal status."""
+    query to reduce the population by certain characteristics such as legal status.
+
+    Args:
+        population_name (str): Name of the candidate population.
+        description (str): Description of the candidate population.
+        additional_filters (List[str]): List of SQL filter conditions to apply to the
+            WHERE clause.
+        compartment_level_1 (List[str]): List of compartment level 1 values to filter
+            on.
+
+    Returns:
+        StateAgnosticTaskCandidatePopulationBigQueryViewBuilder: A view builder
+        configured with the provided filters.
+    """
     query_template = state_agnostic_candidate_population_query(
         additional_filters=additional_filters, compartment_level_1=compartment_level_1
     )
