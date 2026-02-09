@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     fines_fees_eligible,
     ineligible_offenses_expired,
+    negative_arrest_check_in_past_year,
     no_arrests_in_past_year,
     no_dui_offense_in_past_5_years,
     no_high_sanctions_in_past_year,
@@ -62,6 +63,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _REQUIRED_CRITERIA = [
     on_eligible_level_for_sufficient_time,
+    negative_arrest_check_in_past_year,
     no_arrests_in_past_year,
     no_high_sanctions_in_past_year,
     fines_fees_eligible,

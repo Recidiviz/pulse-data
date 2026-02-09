@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -164,6 +164,71 @@ supervision_sanctions_cte = """
         decisions. */
         AND COALESCE(vrde.decision, 'NO_DECISION') NOT IN ('CONTINUANCE', 'DELAYED_ACTION', 'VIOLATION_UNFOUNDED')
 """
+
+
+def negative_arrest_check_within_time_interval(
+    *,
+    date_interval: int,
+    date_part: str,
+) -> str:
+    """Identify spans of time during which individuals in TN have had a NEGATIVE
+    arrest check within a specified time interval (e.g., within the past 2 years).
+
+    Args:
+        date_interval (int): Number of <date_part> when a negative arrest check will
+        remain valid/relevant.
+        date_part (str): Supports any of the BigQuery `date_part` values: "DAY", "WEEK",
+            "MONTH", "QUARTER", or "YEAR".
+    Returns:
+        str: SQL query as a string.
+    """
+
+    return f"""
+    WITH eligibility_spans AS (
+        /* Identify negative arrest checks and the spans of eligibility in which they
+        result. */
+        SELECT
+            pei.state_code,
+            pei.person_id,
+            -- use date of relevant contact note as date of the negative arrest check
+            CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE) AS negative_arrest_check_date,
+            CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE) AS start_date,
+            DATE_ADD(CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE), INTERVAL {date_interval} {date_part}) AS end_date,
+            TRUE AS meets_criteria,
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ContactNoteType_latest` contact
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            ON contact.OffenderID = pei.external_id
+            AND pei.id_type = 'US_TN_DOC'
+        WHERE contact.ContactNoteType = 'ARRN'
+    ),
+    /* Sub-sessionize in case there are overlapping spans (i.e., if someone has multiple
+    still-relevant ARRNs at once). */
+    {create_sub_sessions_with_attributes("eligibility_spans")},
+    eligibility_spans_aggregated AS (
+        /* Aggregate across sub-sessions to get attributes for each span of time for
+        each person. */
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            LOGICAL_OR(meets_criteria) AS meets_criteria,
+            MAX(negative_arrest_check_date) AS latest_negative_arrest_check_date,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1, 2, 3, 4
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(
+            latest_negative_arrest_check_date AS latest_negative_arrest_check_date
+        )) AS reason,
+        latest_negative_arrest_check_date,
+    FROM eligibility_spans_aggregated
+    """
 
 
 def no_positive_arrest_check_within_time_interval(

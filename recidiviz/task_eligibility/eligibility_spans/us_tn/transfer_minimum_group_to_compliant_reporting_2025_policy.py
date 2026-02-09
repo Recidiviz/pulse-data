@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     assessed_not_high_on_strong_r_domains,
     most_recent_fee_code_is_feep_in_last_90_days,
+    negative_arrest_check_in_past_6_months,
     no_arrests_in_past_6_months,
     no_ineligible_cr_offense_2025_policy,
     no_supervision_sanction_within_3_months,
@@ -94,6 +95,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_in_day_reporting_center.VIEW_BUILDER,
         no_supervision_sanction_within_3_months.VIEW_BUILDER,
         no_arrests_in_past_6_months.VIEW_BUILDER,
+        negative_arrest_check_in_past_6_months.VIEW_BUILDER,
         no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
         no_supervision_violation_report_within_6_months.VIEW_BUILDER,
         latest_drug_test_is_negative_or_missing.VIEW_BUILDER,
@@ -103,7 +105,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     # Clients are almost eligible if they are:
     # (30 days from time requirement OR time requirement is met)
     # AND
-    # (missing at least one of [time requirement OR fines & fees OR needs])
+    # (missing at least one of [time requirement OR fines & fees OR needs OR negative arrest check])
     # The inclusion of TimeDependentCriteriaCondition in the second group is meant to catch cases where a person is
     # ONLY missing the time requirement
     almost_eligible_condition=PickNCompositeCriteriaCondition(
@@ -133,6 +135,17 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                     NotEligibleCriteriaCondition(
                         criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
                         description="No FEEP code in last 90 days and no permanent exemption",
+                    ),
+                    # We include this as an almost-eligible condition because clients on
+                    # Low are only required to have arrest checks once per year, so it's
+                    # possible they won't have had a negative arrest check in the past
+                    # 6 months. We do already screen out clients who have had a positive
+                    # arrest check in the past 6 months, but this criterion is intended
+                    # to allow us to flag individuals who haven't had a negative arrest
+                    # check recently and would need one in order to be fully eligible.
+                    NotEligibleCriteriaCondition(
+                        criteria=negative_arrest_check_in_past_6_months.VIEW_BUILDER,
+                        description="No ARRN in last six months",
                     ),
                     TimeDependentCriteriaCondition(
                         criteria=on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
