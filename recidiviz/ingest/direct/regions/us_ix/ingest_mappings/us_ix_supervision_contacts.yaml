@@ -89,8 +89,11 @@ output:
                   - "GENERAL DISAPPROVAL"
                   - "EMERGENCY,INITIAL"
                   - "GENERAL,INITIAL"
+                  - "EMERGENCY,GENERAL,INITIAL,LSI_R_REVIEW"
                   - "EMERGENCY,GENERAL"
                   - "EMERGENCY,GENERAL,INITIAL"
+                  - "LSI_R_REVIEW"
+                  - "INITIAL,LSI_R_REVIEW"
           status:
             $enum_mapping:
               $raw_text: contact_result
