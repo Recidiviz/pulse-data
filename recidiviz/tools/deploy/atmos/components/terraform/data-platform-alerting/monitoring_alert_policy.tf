@@ -2,6 +2,10 @@ variable "project_id" {
   type = string
 }
 
+locals {
+  sftp_state_alpha_codes = yamldecode(file("${path.module}/../../../terraform/config/sftp_state_alpha_codes.yaml"))
+}
+
 resource "google_monitoring_alert_policy" "vpc_net_route_changes_cis" {
   alert_strategy {
     auto_close = "604800s"
@@ -1557,5 +1561,51 @@ resource "google_monitoring_alert_policy" "uptime_check_url_down_marketing_websi
     google_monitoring_notification_channel.alerts.id,
     data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
   ]
+  project               = var.project_id
+}
+
+resource "google_monitoring_alert_policy" "sftp_ingest_ready_file_stale" {
+  for_each = var.project_id == "recidiviz-123" ? toset(local.sftp_state_alpha_codes) : []
+
+  alert_strategy {
+    auto_close           = "604800s"
+    notification_prompts = ["OPENED", "CLOSED"]
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_threshold {
+      aggregations {
+        alignment_period   = "3600s"
+        per_series_aligner = "ALIGN_MAX"
+      }
+
+      comparison              = "COMPARISON_GT"
+      duration                = "0s"
+      evaluation_missing_data = "EVALUATION_MISSING_DATA_INACTIVE"
+      filter                  = <<-EOT
+        resource.type = "k8s_cluster" AND metric.type = "custom.googleapis.com/opencensus/sftp.ingest_ready_files_hours_stale" AND metric.labels.region = "${each.key}"
+      EOT
+      threshold_value         = "0"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "[${each.key}] SFTP ingest ready file upload is stale"
+  }
+
+  display_name = "[${each.key}] SFTP Ingest Ready File Upload Stale"
+
+  documentation {
+    content   = "SFTP files have not been uploaded to the ingest bucket for ${each.key} within the expected time frame.\n\nIf there are no task failures in the SFTP DAG, please check the logs for task `check_if_ingest_ready_files_have_stabilized` to ensure that we have downloaded all expected files for the state."
+    mime_type = "text/markdown"
+  }
+
+  enabled               = "true"
+  notification_channels = [google_monitoring_notification_channel.ie_on_call_general_alerts.id]
   project               = var.project_id
 }
