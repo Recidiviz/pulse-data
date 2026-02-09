@@ -194,13 +194,15 @@ products:
   - name: Sentencing
     description:
       Sentencing is a product offering that powers tools to assist in the
-      creation of PSIs (Pre-Sentencing Investigations)
+      creation of PSIs (Pre-Sentencing Investigations) and SAR (Sentencing Assessment Reports).
     exports:
       - SENTENCING
     states:
       - state_code: US_IX
         environment: production
       - state_code: US_ND
+        environment: production
+      - state_code: US_MO
         environment: production
   - name: Vertex Search Case Notes
     description:
