@@ -357,6 +357,7 @@ SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS: Dict[
     StateCustodialAuthority.INTERNAL_UNKNOWN: [
         "08",  # Other States’ Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
+        "10",  # TODO(#58965)
     ],
     # mappings based on supervision county
     StateCustodialAuthority.OTHER_COUNTRY: ["FOREIG"],
@@ -443,6 +444,7 @@ SUPERVISION_PERIOD_SUPERVISION_TYPE_TO_STR_MAPPINGS: Dict[
     StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: [
         "08",  # Other States’ Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
+        "10",  # TODO(#58965)
     ],
 }
 
@@ -468,6 +470,7 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
         "08",  # Other States' Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
+        "10",  # TODO(#58965)
     ],
     StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
         "06",  # Paroled/Reparoled by other state and transferred to PA
