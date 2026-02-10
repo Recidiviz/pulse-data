@@ -41,9 +41,6 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
     def test_supports_filename(self) -> None:
         """Test that the staff file is supported for any state"""
         delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
-        self.assertTrue(delegate.supports_file("us_ix_supervision_tasks_record.json"))
-
-        delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
         self.assertFalse(delegate.supports_file("not_tasks_record.json"))
 
     def test_transform_row(self) -> None:
@@ -114,7 +111,7 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
                     delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
-                    await delegate.run_etl("us_ix_supervision_tasks_record.json")
+                    await delegate.run_etl("us_ix_supervision_tasks_record_v2.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

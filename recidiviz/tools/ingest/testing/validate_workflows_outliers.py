@@ -46,7 +46,6 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -83,11 +82,7 @@ from recidiviz.tools.utils.compare_tables_helper import (
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
-PRIMARY_KEY_OVERRIDES = {
-    BigQueryAddress(
-        dataset_id=WORKFLOWS_VIEWS_DATASET, table_id="us_ix_supervision_tasks_record"
-    ): "person_external_id",
-}
+PRIMARY_KEY_OVERRIDES: dict[BigQueryAddress, str] = {}
 
 ValidationAddress = NamedTuple(
     "ValidationAddress",
