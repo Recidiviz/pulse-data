@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_rna_task_deadline` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OPUS: STRING
+  sentence_seq: INTEGER
+  update_datetime: DATETIME
+  sen_length_days: INTEGER
+  CDBGDTSP: DATETIME
+  CDSSTMDT: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OPUS
+          id_type: $literal("US_NC_OPUS")
+    task_deadlines:
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+          due_date: CDSSTMDT
+          update_datetime: update_datetime
+          task_metadata:
+            $normalized_values_json_dict:
+              sentence_id:
+                $concat:
+                  $values:
+                    - OPUS
+                    - sentence_seq
+              sen_length_days: sen_length_days
+              sen_start_date: CDBGDTSP
+              sen_end_date: CDSSTMDT

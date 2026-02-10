@@ -1191,6 +1191,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nc_ingest_view_results.person",
     "us_nc_ingest_view_results.program_assignment",
     "us_nc_ingest_view_results.rna_task_deadline",
+    "us_nc_ingest_view_results.sen_end_date_task_deadline",
     "us_nc_ingest_view_results.staff",
     "us_nc_ingest_view_results.supervision_period",
     "us_nc_normalized_state.state_assessment",

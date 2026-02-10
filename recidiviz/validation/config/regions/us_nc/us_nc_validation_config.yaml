@@ -9,10 +9,10 @@ exclusions:
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
   - validation_name: sessions_missing_closest_sentence_imposed_group
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: We don't have sentencing information in NC. TODO(#56006) if we do ingest sentences!
+    exclusion_reason: We don't have sentencing information in NC.
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: We don't have sentencing information in NC. TODO(#56006) if we do ingest sentences!
+    exclusion_reason: We don't have sentencing information in NC.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
