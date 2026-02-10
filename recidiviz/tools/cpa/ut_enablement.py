@@ -36,28 +36,25 @@ import logging
 import sys
 
 import requests
-from google.cloud.secretmanager_v1 import SecretManagerServiceClient
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import URL, Engine
+from sqlalchemy import text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.cpa.utils import (
+    BQ_PROJECT,
+    CLIENT_BQ_TABLE,
+    DATABASE_CONNECTION_STRING_SECRET_NAME,
+    DATABASE_PASSWORD_SECRET_NAME,
+    DATABASE_USERNAME_SECRET_NAME,
+    PROXY_PORT,
+    create_db_engine,
+    get_secret,
+)
 from recidiviz.tools.postgres.cloudsql_proxy_control import CloudSQLProxyControl
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
-GCP_PROJECT_ID = "recidiviz-rnd-planner"
-DATABASE_CONNECTION_STRING_SECRET_NAME = (
-    "RECIDIVIZ_POSTGRES_PROD_CONNECTION_STRING"  # nosec B105
-)
-DATABASE_PASSWORD_SECRET_NAME = "RECIDIVIZ_POSTGRES_PASSWORD_PROD"  # nosec B105
-DATABASE_USERNAME_SECRET_NAME = "RECIDIVIZ_POSTGRES_USERNAME"  # nosec B105
-DEFAULT_DATABASE_NAME = "recidiviz"
-PROXY_PORT = 5441
-PROXY_HOST = "127.0.0.1"
-
-BQ_PROJECT = "recidiviz-123"
-CLIENT_BQ_TABLE = "recidiviz-123.reentry.client_materialized"
 ASSESSMENT_CONFIG_CODE = "ccci"
 
 # UT Release List Google Sheet
@@ -110,27 +107,6 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
     return parser
-
-
-def get_secret(secret_name: str) -> str:
-    """Fetches a secret value from Secret Manager."""
-    client = SecretManagerServiceClient()
-    full_name = f"projects/{GCP_PROJECT_ID}/secrets/{secret_name}/versions/latest"
-    response = client.access_secret_version(name=full_name)
-    return response.payload.data.decode("UTF-8")
-
-
-def create_db_engine(db_username: str, db_password: str) -> Engine:
-    """Creates a SQLAlchemy engine for the database."""
-    url = URL.create(
-        drivername="postgresql",
-        username=db_username,
-        password=db_password,
-        host=PROXY_HOST,
-        port=PROXY_PORT,
-        database=DEFAULT_DATABASE_NAME,
-    )
-    return create_engine(url)
 
 
 def run_query(query: str, engine: Engine) -> None:
@@ -321,7 +297,7 @@ def main() -> None:
     with proxy.connection_for_instance(connection_string=connection_string):
         db_username = get_secret(DATABASE_USERNAME_SECRET_NAME)
         db_password = get_secret(DATABASE_PASSWORD_SECRET_NAME)
-        engine = create_db_engine(db_username, db_password)
+        engine = create_db_engine(db_password=db_password, db_username=db_username)
 
         print("Fetching assessment config ID...")
         assessment_config_id = fetch_assessment_config_id(engine)
