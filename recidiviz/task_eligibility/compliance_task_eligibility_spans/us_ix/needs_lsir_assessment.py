@@ -26,7 +26,7 @@ need an LSI-R assessment. Specifically:
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
-    active_supervision_population_for_tasks_without_minimum_or_xcrc,
+    active_supervision_population_for_assessment_tasks,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -70,25 +70,13 @@ does_not_have_low_lsir_and_sexual_offense = (
     )
 )
 
-# This criteria is met when the individual is missing an annual LSI-R assessment.
-# It excludes SEX OFFENDERS with LOW LSIR scores
-meets_lsir_reassessment_trigger = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-    logic_type=TaskCriteriaGroupLogicType.AND,
-    criteria_name="US_IX_MEETS_LSIR_REASSESSMENT_TRIGGER",
-    sub_criteria_list=[
-        does_not_have_low_lsir_and_sexual_offense,
-        is_missing_annual_lsir_assessment.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=["case_type"],
-)
-
 # Final combine: assessment trigger criteria that combines both initial and reassessment triggers
 meets_lsir_reassessment_or_initial_assessment_triggers = (
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         logic_type=TaskCriteriaGroupLogicType.OR,
         criteria_name="US_IX_MEETS_LSIR_REASSESSMENT_OR_INITIAL_ASSESSMENT_TRIGGERS",
         sub_criteria_list=[
-            meets_lsir_reassessment_trigger,
+            is_missing_annual_lsir_assessment.VIEW_BUILDER,
             meets_initial_lsir_assessment_trigger.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=[
@@ -105,9 +93,10 @@ meets_lsir_reassessment_or_initial_assessment_triggers = (
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="needs_lsir_assessment",
-    candidate_population_view_builder=active_supervision_population_for_tasks_without_minimum_or_xcrc.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population_for_assessment_tasks.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_lsir_reassessment_or_initial_assessment_triggers,
+        does_not_have_low_lsir_and_sexual_offense,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
     due_date_field="assessment_due_date",
