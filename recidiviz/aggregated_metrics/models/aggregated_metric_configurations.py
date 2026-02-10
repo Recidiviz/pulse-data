@@ -3172,7 +3172,7 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION = EventValueMetric(
         event_conditions_dict={},
     ),
     event_value_numeric="days_eligible",
-    event_count_metric=TASK_COMPLETIONS,
+    event_count_metric=TASK_COMPLETIONS_WHILE_ELIGIBLE,
 )
 
 TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION = EventCountMetric(
