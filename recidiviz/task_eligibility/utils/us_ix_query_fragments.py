@@ -22,6 +22,7 @@ from typing import List, Optional
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
@@ -995,6 +996,7 @@ def us_ix_annual_assessment_criteria_view_builder(
     description: str,
     assessment_type: str,
     assessment_class: str,
+    include_supervision_contact_reasons: Optional[List[str]] = None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """
     Creates a VIEW_BUILDER for annual assessment criteria in Idaho.
@@ -1008,7 +1010,30 @@ def us_ix_annual_assessment_criteria_view_builder(
         description: The description/docstring for the criteria
         assessment_type: The assessment type to filter (e.g., 'LSIR', 'STABLE')
         assessment_class: The assessment class to filter (e.g., 'RISK', 'SEX_OFFENSE')
+        include_supervision_contact_reasons: Optional list of supervision contact reasons to also
+            consider as valid assessments (e.g., ['LSI_R_REVIEW', 'INITIAL,LSI_R_REVIEW']).
+            When provided, supervision contacts with these contact_reasons and status='COMPLETED'
+            will be included via UNION ALL.
     """
+    # Build optional supervision contact query
+    supervision_contact_union = ""
+    if include_supervision_contact_reasons:
+        contact_reasons_str = list_to_query_string(
+            include_supervision_contact_reasons, quoted=True, single_quote=True
+        )
+        supervision_contact_union = f"""
+    UNION ALL
+
+    -- Include supervision contacts with the specified contact_reasons as valid assessments
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        contact_date AS assessment_date,
+    FROM `{{project_id}}.normalized_state.state_supervision_contact`
+    WHERE state_code = 'US_IX'
+        AND contact_reason_raw_text IN ({contact_reasons_str})
+        AND status = 'COMPLETED'"""
+
     query_template = f"""
 WITH supervision_sessions AS (
     SELECT
@@ -1029,6 +1054,7 @@ assessments AS (
     WHERE state_code = 'US_IX'
         AND assessment_type = '{assessment_type}'
         AND assessment_class = '{assessment_class}'
+{supervision_contact_union}
 ),
 
 critical_date_spans AS (
