@@ -4,6 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   OPUS: STRING
+  LIFEAREA: STRING
   STEP: STRING
   STARTDATE: DATE
   ENDDATE: DATE
@@ -23,7 +24,11 @@ output:
                 - OPUS
                 - STEP
                 - STARTDATE
-          program_id: STEP
+          program_id:
+            $concat:
+              $values:
+                - LIFEAREA
+                - STEP
           participation_status:
             $enum_mapping:
               $raw_text: STATUS
