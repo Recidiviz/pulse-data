@@ -8,6 +8,9 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 
+[manifest]
+build-constraints = [{ name = "setuptools", specifier = "<82" }]
+
 [[package]]
 name = "aiofiles"
 version = "25.1.0"

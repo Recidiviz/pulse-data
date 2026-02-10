@@ -262,3 +262,7 @@ force-exclude = '''
 
 [tool.uv]
 index-url = "https://pypi.org/simple"
+# Pin setuptools < 82 for Apache Beam 2.65.0 compatibility (pkg_resources removed in 82.0.0).
+# Can unpin after upgrading to apache-beam >= 2.66.0.
+build-constraint-dependencies = ["setuptools<82"]
+
