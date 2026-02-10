@@ -64,7 +64,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
 )
-from recidiviz.utils import environment
 from recidiviz.utils.string import is_meaningful_docstring
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -1586,12 +1585,6 @@ class DirectIngestRegionRawFileConfig:
 _RAW_TABLE_CONFIGS: Dict[
     str, Dict[str, "DirectIngestRegionRawFileConfig"]
 ] = defaultdict(dict)
-
-
-@environment.test_only
-def clear_raw_file_config_cache() -> None:
-    """Clears the cached raw file configs. Should only be used in tests."""
-    _RAW_TABLE_CONFIGS.clear()
 
 
 def get_region_raw_file_config(

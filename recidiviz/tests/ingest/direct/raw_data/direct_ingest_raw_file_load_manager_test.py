@@ -35,6 +35,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder imp
     RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataPruningStatus,
 )
@@ -66,18 +67,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             "recidiviz.big_query.big_query_client.bigquery.Client.load_table_from_uri"
         )
         self.load_job_mock = self.load_job_patch.start()
+        self.addCleanup(self.load_job_patch.stop)
         self.load_job_mock.side_effect = self._mock_load
 
-        # Patch get_pruning_status to return NOT_PRUNED by default (disabling automatic pruning)
-        self.pruning_patches = [
-            patch(path)
-            for path in [
-                "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.DirectIngestRawFileConfig.get_pruning_status",
-                "recidiviz.ingest.direct.views.raw_data_diff_query_builder.DirectIngestRawFileConfig.get_pruning_status",
-                "recidiviz.ingest.direct.views.raw_table_query_builder.DirectIngestRawFileConfig.get_pruning_status",
-            ]
-        ]
-        self.pruning_mocks = [p.start() for p in self.pruning_patches]
+        # Patch get_pruning_status to return NOT_PRUNED by default (disabling
+        # automatic pruning).
+        self.pruning_patch = patch.object(
+            DirectIngestRawFileConfig, "get_pruning_status"
+        )
+        self.pruning_mock = self.pruning_patch.start()
+        self.addCleanup(self.pruning_patch.stop)
         self._set_pruning_status(RawDataPruningStatus.NOT_PRUNED)
 
         super().setUp()
@@ -97,15 +96,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         self.bucket = GcsfsBucketPath.from_absolute_path("gs://fake-raw-data-import")
         self.fake_job = create_autospec(LoadJob)
 
-    def tearDown(self) -> None:
-        self.load_job_patch.stop()
-        for p in self.pruning_patches:
-            p.stop()
-        super().tearDown()
-
     def _set_pruning_status(self, status: RawDataPruningStatus) -> None:
-        for m in self.pruning_mocks:
-            m.return_value = status
+        self.pruning_mock.return_value = status
 
     def _mock_fail(self, *_: Any, **__: Any) -> None:
         raise ValueError("We hit an error!")
