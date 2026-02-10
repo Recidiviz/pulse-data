@@ -43,7 +43,7 @@ num_allowed_rows_overrides:
       transitions and key details we need despite these 0-day periods having conflicting
       PFI values.
   - validation_name: missing_client_record_rows_null_officer
-    hard_num_allowed_rows_override: 30
+    hard_num_allowed_rows_override: 50
     override_reason: |-
       This is expected - there is an option to list "none" as a supervising agent, and 
-      we typically see around 30 of those cases at a time.
+      we typically see 30-40 of those cases at a time.
