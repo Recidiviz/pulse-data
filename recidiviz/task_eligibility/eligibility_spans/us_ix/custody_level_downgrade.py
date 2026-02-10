@@ -25,16 +25,21 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_higher_than_recommended,
+    incarcerated_at_least_6_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_active_discretionary_override,
     not_already_on_lowest_eligible_custody_level,
     not_in_classification_pilot,
-    serving_a_term_or_parole_violator_sentence,
+    serving_a_termer_sentence,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -49,7 +54,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_active_discretionary_override.VIEW_BUILDER,
         not_in_classification_pilot.VIEW_BUILDER,
         not_already_on_lowest_eligible_custody_level.VIEW_BUILDER,
-        serving_a_term_or_parole_violator_sentence.VIEW_BUILDER,
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            criteria_name="US_IX_SERVING_A_TERMER_SENTENCE_OR_INCARCERATED_AT_LEAST_6_MONTHS",
+            logic_type=TaskCriteriaGroupLogicType.OR,
+            sub_criteria_list=[
+                serving_a_termer_sentence.VIEW_BUILDER,
+                incarcerated_at_least_6_months.VIEW_BUILDER,
+            ],
+        ),
     ],
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
