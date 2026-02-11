@@ -32,7 +32,6 @@ from recidiviz.task_eligibility.criteria.general import (
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
-    has_lost_restorable_good_time,
     less_than_3_udc_mrs_in_past_6_months,
     no_gt_restoration_denials_in_last_90_days,
     no_idc_mrs_in_past_6_months,
@@ -52,7 +51,6 @@ from recidiviz.utils.metadata import local_project_id_override
 US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS_WITHOUT_RESTORATION_SEQUENCING: List[
     TaskCriteriaBigQueryViewBuilder
 ] = [
-    has_lost_restorable_good_time.VIEW_BUILDER,
     not_in_ltrh_for_90_days.VIEW_BUILDER,
     under_state_prison_or_supervision_custodial_authority_without_absconsion_at_least_one_year.VIEW_BUILDER,
     no_highest_severity_incarceration_sanctions_within_1_year_of_report.VIEW_BUILDER,

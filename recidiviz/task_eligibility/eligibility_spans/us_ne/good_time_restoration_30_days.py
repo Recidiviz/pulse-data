@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.general import (
     no_highest_severity_incarceration_sanctions_within_1_year_of_report,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
+    has_lost_restorable_good_time,
     no_idc_mrs_in_past_6_months,
     wait_until_next_month_before_next_good_time_restoration,
 )
@@ -56,6 +57,7 @@ US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS: List[
 ] = [
     *US_NE_GOOD_TIME_RESTORATION_30_DAYS_CRITERIA_BUILDERS_WITHOUT_RESTORATION_SEQUENCING,
     wait_until_next_month_before_next_good_time_restoration.VIEW_BUILDER,
+    has_lost_restorable_good_time.VIEW_BUILDER,
 ]
 
 _ALMOST_ELIGIBLE_MONTHS = 3
