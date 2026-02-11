@@ -246,6 +246,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.only_drug_offense_
 from recidiviz.task_eligibility.criteria.state_specific.us_ix.has_high_severity_crime import (
     VIEW_BUILDER as US_IX_HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_ix.supervision_past_full_term_completion_date import (
+    VIEW_BUILDER as US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_me.supervision_past_half_full_term_release_date_from_probation_start import (
     VIEW_BUILDER as US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER,
 )
@@ -950,6 +953,9 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
+        ),
+        US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
+            "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#33402): Delete `consecutive_sentences_preprocessed` once all states are

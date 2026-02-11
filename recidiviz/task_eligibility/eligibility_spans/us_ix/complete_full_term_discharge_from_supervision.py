@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events.general import full_term_discharge
-from recidiviz.task_eligibility.criteria.general import (
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     supervision_past_full_term_completion_date,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
