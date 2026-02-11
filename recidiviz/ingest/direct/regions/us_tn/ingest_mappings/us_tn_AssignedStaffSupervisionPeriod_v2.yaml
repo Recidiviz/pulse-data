@@ -319,5 +319,6 @@ output:
                   - CS4 # COMMUNITY CORRECTIONS STEP 4 MINIMUM (new value as of 7/1/2025)
                   - CDT # COMMUNITY CORRECTIONS DETAINER (new value as of 7/1/2025)
                   - CDE # COMMUNITY CORRECTIONS DEPORTED (new value as of 7/1/2025)
+                  - 7S1 # PHASE 1 SEX OFFENDER
               # TODO(#27873) consider remapping to PRESENT_WITHOUT_INFO
               $map_null_to: $literal_enum(StateSupervisionLevel.EXTERNAL_UNKNOWN)
