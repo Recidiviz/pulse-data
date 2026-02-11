@@ -33,4 +33,9 @@ PREDEFINED_ROLES = [
     "supervision_regional_leadership",
     "unknown",
     "cpa_staff",
+    # This role is meant for granting JII tablet app access in situations where either
+    # the applicable primary role is unknown or there are no primary roles set up
+    # in the state (i.e. the JII app was the first tool we launched in the state).
+    # It isn't needed in states where JII app access is already tied to an existing role.
+    "facilities_jii_app_viewer",
 ]
