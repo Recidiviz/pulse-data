@@ -432,6 +432,7 @@ def us_mo_contact_compliance_builder(
     criteria_name: str,
     description: str,
     contact_category: str,
+    custom_contact_requirement_spans: Optional[str] = None,
     reasons_field_suffix: str = "",
     supplementary_contact_types: Optional[List[str]] = None,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
@@ -444,6 +445,10 @@ def us_mo_contact_compliance_builder(
         description (str): A brief description of the criterion view.
         contact_category (str): The category of contact being considered, as specified
             in `us_mo_contact_standards.csv`.
+        custom_contact_requirement_spans (str, optional): Custom query for contact-
+            requirement spans. Otherwise, we'll default to using spans from
+            `tasks_views.us_mo_contact_requirement_spans_materialized`. Must have same
+            columns as the default query.
         reasons_field_suffix (str, optional): Suffix to append to names of reasons
             fields. Can be used to make it easier to group criteria by ensuring reasons
             fields for sub-criteria have different names. Default: "" (adds no suffix).
@@ -456,6 +461,24 @@ def us_mo_contact_compliance_builder(
         StateSpecificTaskCriteriaBigQueryViewBuilder: View builder for spans of time
             when someone is due for a contact within the specified category.
     """
+
+    if custom_contact_requirement_spans is not None:
+        contact_requirement_spans = custom_contact_requirement_spans
+    else:
+        contact_requirement_spans = f"""
+        SELECT
+            state_code,
+            person_id,
+            contact_standard_period_start,
+            contact_standard_period_end,
+            contact_category,
+            contact_types_accepted,
+            frequency,
+            frequency_date_part,
+            quantity,
+        FROM `{{project_id}}.tasks_views.us_mo_contact_requirement_spans_materialized`
+        WHERE contact_category = '{contact_category}'
+        """
 
     reasons_field_name_category_of_contact = (
         f"category_of_contact{reasons_field_suffix}"
@@ -489,9 +512,7 @@ def us_mo_contact_compliance_builder(
         WHERE status = 'COMPLETED'
     ),
     contact_cadence_spans AS (
-        SELECT *
-        FROM `{{project_id}}.tasks_views.us_mo_contact_requirement_spans_materialized`
-        WHERE contact_category = '{contact_category}'
+        {contact_requirement_spans}
     ),
     /* Link contact events to the contact-requirement spans during which they occur. The
     following CTE returns a set of rows unique at the contact-event level, where a

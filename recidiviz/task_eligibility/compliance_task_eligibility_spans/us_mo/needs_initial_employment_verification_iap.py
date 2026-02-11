@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ standards.
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mo import (
-    supervision_tasks_eligible_iap_population,
+    supervision_employment_verification_eligible_iap_population,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -36,7 +36,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_initial_employment_verification_iap",
-    candidate_population_view_builder=supervision_tasks_eligible_iap_population.VIEW_BUILDER,
+    candidate_population_view_builder=supervision_employment_verification_eligible_iap_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         meets_initial_employment_verification_iap_triggers.VIEW_BUILDER,
     ],

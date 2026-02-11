@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ verification to meet contact standards.
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mo import (
-    supervision_tasks_eligible_population,
+    supervision_employment_verification_eligible_population,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -35,11 +35,12 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MO,
     task_name="needs_employment_verification",
-    # TODO(#57821): Update/refine candidate population to ensure it's correct. Do we
-    # need a different/smaller population for this task in particular, since it may not
-    # apply to people who are retired, disabled, and so on?
-    candidate_population_view_builder=supervision_tasks_eligible_population.VIEW_BUILDER,
+    candidate_population_view_builder=supervision_employment_verification_eligible_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        # TODO(#57257): Because we're filtering out clients who are unemployed via the
+        # candidate population, we're not actually updating the underlying due dates for
+        # clients in this criterion based on whether they're unemployed. Do we want to
+        # update the criterion?
         meets_employment_verification_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
