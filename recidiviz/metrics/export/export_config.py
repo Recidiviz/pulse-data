@@ -47,6 +47,9 @@ from recidiviz.calculator.query.state.views.meetings.meetings_views import (
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
 )
+from recidiviz.calculator.query.state.views.platform_data_for_cpa.all_view_builders import (
+    CPA_VIEW_BUILDERS_FOR_EXPORT,
+)
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes import (
     CASE_NOTES_VIEW_BUILDER,
 )
@@ -276,6 +279,7 @@ CASE_NOTES_VIEWS_OUTPUT_DIRECTORY_URI = (
 JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-texting-etl-data"
 REENTRY_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-reentry-etl-data"
 MEETINGS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-meetings-etl-data"
+CPA_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-cpa-etl-data"
 USER_DATA_DOWNLOADS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-user-data-downloads"
 PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-pathways-data"
 
@@ -491,6 +495,19 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             ]
         },
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
+    ),
+    # Case Planning Assistant v1 views
+    ExportViewCollectionConfig(
+        view_builders_to_export=CPA_VIEW_BUILDERS_FOR_EXPORT,
+        output_directory_uri_template=CPA_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="CPA",
+        allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+        output_project_by_data_project={
+            GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
+            GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
+        },
+        publish_success_pubsub_message=True,
     ),
 ]
 

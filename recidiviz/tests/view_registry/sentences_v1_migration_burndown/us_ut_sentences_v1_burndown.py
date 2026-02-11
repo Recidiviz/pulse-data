@@ -26,6 +26,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.jii_data import (
+    JII_CPA_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -59,6 +62,13 @@ US_UT_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     },
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "CPA": {
+        JII_CPA_DATA_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },

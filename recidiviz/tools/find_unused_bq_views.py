@@ -90,15 +90,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.platform_data_for_cpa.intermediate_views.state_code_and_person_ids_for_all_jii import (
-    STATE_CODE_AND_PERSON_IDS_FOR_ALL_JII_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.jii_data import (
-    JII_CPA_DATA_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.staff_data import (
-    STAFF_CPA_DATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
@@ -271,15 +262,6 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
-    STAFF_CPA_DATA_VIEW_BUILDER.address: (
-        "This view will be used for foundational views of CPA v1 (Nick Tallant, 2026-01-28)"
-    ),
-    STATE_CODE_AND_PERSON_IDS_FOR_ALL_JII_VIEW_BUILDER.address: (
-        "This view will be used for foundational views of CPA v1 (Nick Tallant, 2026-01-28)"
-    ),
-    JII_CPA_DATA_VIEW_BUILDER.address: (
-        "This view will be used for foundational views of CPA v1 (Nick Tallant, 2026-01-28)"
-    ),
     **{
         BigQueryAddress(
             dataset_id=STATE_BASE_VIEWS_DATASET,

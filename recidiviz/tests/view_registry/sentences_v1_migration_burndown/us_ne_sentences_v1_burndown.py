@@ -20,6 +20,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.meetings.clients import (
     MEETINGS_CLIENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.jii_data import (
+    JII_CPA_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -49,5 +52,12 @@ US_NE_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             }
         }
+    },
+    "CPA": {
+        JII_CPA_DATA_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
     },
 }

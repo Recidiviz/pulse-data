@@ -47,6 +47,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.platform_data_for_cpa.views_for_export.jii_data import (
+    JII_CPA_DATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reentry.client import (
     REENTRY_CLIENT_VIEW_BUILDER,
 )
@@ -410,6 +413,41 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
                 US_IX_SLS_Q1_VIEW_BUILDER.address,
                 US_IX_SLS_Q3_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "CPA": {
+        JII_CPA_DATA_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
+            },
+            SENTENCE_SPANS_VIEW_BUILDER.address: {
+                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
+                US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
+            },
+            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
+                US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
+            },
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
+                US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                CLIENT_RECORD_VIEW_BUILDER.address,
+                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
+                US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
+            },
+            US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
+            },
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
+                table_id=StateCharge.get_table_id(),
+            ): {
+                US_IX_SLS_Q1_VIEW_BUILDER.address,
+                US_IX_SLS_Q3_VIEW_BUILDER.address,
+                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
+                US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
+                US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
         },
     },

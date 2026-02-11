@@ -262,3 +262,18 @@ products:
     states:
       - state_code: US_NY
         environment: staging
+  - name: Case Planning Assistant
+    description: Views that back the Case Planning Assistant v1 product
+    exports:
+      - CPA
+    states:
+      - state_code: US_UT
+        environment: staging
+      - state_code: US_IX
+        environment: staging
+      - state_code: US_NE
+        environment: staging
+      - state_code: US_AZ
+        environment: staging
+      - state_code: US_ND
+        environment: staging
