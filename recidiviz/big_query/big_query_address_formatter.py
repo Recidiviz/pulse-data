@@ -102,6 +102,16 @@ class SimpleBigQueryAddressFormatterProvider(BigQueryAddressFormatterProvider):
         return BigQueryAddressFormatterSimple()
 
 
+class LimitZeroBigQueryAddressFormatterProvider(BigQueryAddressFormatterProvider):
+    """An implementation of BigQueryAddressFormatterProvider that will return a
+    formatter that selects zero rows from every parent address. Useful for testing
+    view compilation without actually reading any data.
+    """
+
+    def get_formatter(self, address: BigQueryAddress) -> BigQueryAddressFormatter:
+        return BigQueryAddressFormatterLimitZero()
+
+
 @attr.define
 class StateFilteringBigQueryAddressFormatterProvider(BigQueryAddressFormatterProvider):
     """An implementation of BigQueryAddressFormatterProvider that will return a

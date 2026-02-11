@@ -139,6 +139,8 @@ from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_address_formatter import (
+    BigQueryAddressFormatterProvider,
+    LimitZeroBigQueryAddressFormatterProvider,
     StateFilteringBigQueryAddressFormatterProvider,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -208,6 +210,7 @@ def load_all_views_to_sandbox(
     allow_slow_views: bool,
     rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
+    schemas_only: bool,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|."""
     prompt_for_confirmation(
@@ -234,6 +237,7 @@ def load_all_views_to_sandbox(
         allow_slow_views=allow_slow_views,
         rematerialize_changed_views_only=rematerialize_changed_views_only,
         failure_mode=failure_mode,
+        schemas_only=schemas_only,
     )
 
 
@@ -250,6 +254,7 @@ def _load_manually_filtered_views_to_sandbox(
     update_ancestors: bool,
     update_descendants: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
+    schemas_only: bool,
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix.
 
@@ -346,6 +351,7 @@ Are you sure you still want to continue with `manual` mode?
         allow_slow_views=allow_slow_views,
         rematerialize_changed_views_only=rematerialize_changed_views_only,
         failure_mode=failure_mode,
+        schemas_only=schemas_only,
     )
 
 
@@ -1078,6 +1084,7 @@ def load_views_changed_on_branch_to_sandbox(
     load_up_to_datasets: Optional[List[str]],
     load_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
+    schemas_only: bool,
 ) -> None:
     """Loads all views that have changed on this branch as compared to what is deployed
     to the current project (usually staging).
@@ -1107,6 +1114,7 @@ def load_views_changed_on_branch_to_sandbox(
         rematerialize_changed_views_only=rematerialize_changed_views_only,
         collected_builders=collected_builders,
         failure_mode=failure_mode,
+        schemas_only=schemas_only,
     )
 
 
@@ -1130,13 +1138,14 @@ def _is_expensive_view_to_load(vb: BigQueryViewBuilder) -> bool:
 def _warn_on_expensive_views(
     collected_builders: List[BigQueryViewBuilder],
     state_code_filter: StateCode | None,
+    schemas_only: bool,
 ) -> None:
     """Prompts the user with a warning if any of the views we plan to load are
     especially expensive / pull in a lot of data.
     """
-    if state_code_filter:
-        # If we're running with a state_code filter, we're not worried about the
-        # materialization cost these more expensive views.
+    if state_code_filter or schemas_only:
+        # If we're running with a state_code filter or schemas_only (LIMIT 0),
+        # we're not worried about the materialization cost of these views.
         return
 
     expensive_views = {
@@ -1162,11 +1171,17 @@ def load_collected_views_to_sandbox(
     allow_slow_views: bool,
     rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
+    schemas_only: bool,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
     if not collected_builders:
         logging.warning("Did not find any views to load to the sandbox. Exiting.")
         return
+
+    if schemas_only and state_code_filter:
+        raise ValueError(
+            "Cannot set both `schemas_only` and `state_code_filter` to true."
+        )
 
     input_source_table_overrides = (
         address_overrides_for_input_source_tables(
@@ -1177,7 +1192,9 @@ def load_collected_views_to_sandbox(
     )
 
     _warn_on_expensive_views(
-        collected_builders=collected_builders, state_code_filter=state_code_filter
+        collected_builders=collected_builders,
+        state_code_filter=state_code_filter,
+        schemas_only=schemas_only,
     )
 
     logging.info("Updating %s views...", len(collected_builders))
@@ -1187,18 +1204,25 @@ def load_collected_views_to_sandbox(
         missing_state_code_addresses = get_deployed_addresses_without_state_code_column(
             metadata.project_id()
         )
-        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
-            output_sandbox_dataset_prefix=sandbox_dataset_prefix,
-            input_source_table_overrides=input_source_table_overrides,
-            parent_address_formatter_provider=(
+        parent_address_formatter_provider: BigQueryAddressFormatterProvider | None
+        if schemas_only:
+            parent_address_formatter_provider = (
+                LimitZeroBigQueryAddressFormatterProvider()
+            )
+        elif state_code_filter:
+            parent_address_formatter_provider = (
                 StateFilteringBigQueryAddressFormatterProvider(
                     state_code_filter=state_code_filter,
                     missing_state_code_addresses=missing_state_code_addresses,
                     pseudocolumns_by_address=get_source_tables_to_pseudocolumns(),
                 )
-                if state_code_filter
-                else None
-            ),
+            )
+        else:
+            parent_address_formatter_provider = None
+        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
+            output_sandbox_dataset_prefix=sandbox_dataset_prefix,
+            input_source_table_overrides=input_source_table_overrides,
+            parent_address_formatter_provider=parent_address_formatter_provider,
             state_code_filter=state_code_filter,
         )
     try:
@@ -1279,7 +1303,8 @@ def parse_arguments() -> argparse.Namespace:
         required=True,
     )
 
-    parser.add_argument(
+    data_filtering_group = parser.add_mutually_exclusive_group()
+    data_filtering_group.add_argument(
         "--state_code_filter",
         dest="state_code_filter",
         help="If provided, all table references in any loaded view queries will be "
@@ -1287,7 +1312,16 @@ def parse_arguments() -> argparse.Namespace:
         "changes in state-specific views that do not match this filter will be ignored.",
         type=StateCode,
         choices=list(StateCode),
-        required=False,
+    )
+    data_filtering_group.add_argument(
+        "--schemas_only",
+        dest="schemas_only",
+        action="store_true",
+        default=False,
+        help="If true, parent table references in view queries will be wrapped with "
+        "LIMIT 0, so that tables are materialized with the correct schema without "
+        "selecting any actual data. Useful for quickly validating that views deploy "
+        "correctly and that their deployed schemas match their declared schemas",
     )
 
     parser.add_argument(
@@ -1522,6 +1556,7 @@ if __name__ == "__main__":
                 allow_slow_views=args.allow_slow_views,
                 rematerialize_changed_views_only=args.rematerialize_changed_views_only,
                 failure_mode=args.failure_mode,
+                schemas_only=args.schemas_only,
             )
         elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
@@ -1540,6 +1575,7 @@ if __name__ == "__main__":
                 update_ancestors=args.update_ancestors,
                 update_descendants=args.update_descendants,
                 failure_mode=args.failure_mode,
+                schemas_only=args.schemas_only,
             )
         elif args.chosen_mode == "auto":
             load_views_changed_on_branch_to_sandbox(
@@ -1561,6 +1597,7 @@ if __name__ == "__main__":
                 load_up_to_datasets=args.load_up_to_datasets,
                 load_changed_views_only=args.load_changed_views_only,
                 failure_mode=args.failure_mode,
+                schemas_only=args.schemas_only,
             )
         else:
             raise ValueError(f"Unexpected load to sandbox mode: [{args.chosen_mode}]")

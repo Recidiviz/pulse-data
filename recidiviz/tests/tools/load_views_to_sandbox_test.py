@@ -16,12 +16,21 @@
 # =============================================================================
 """Tests for functionality in load_views_to_sandbox.py"""
 import unittest
+from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address_formatter import (
+    LimitZeroBigQueryAddressFormatterProvider,
+)
+from recidiviz.big_query.big_query_view_update_sandbox_context import (
+    BigQueryViewUpdateSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tools.load_views_to_sandbox import (
     SandboxChangedAddresses,
     ViewChangeType,
+    load_collected_views_to_sandbox,
+    parse_arguments,
     summary_for_auto_sandbox,
 )
 
@@ -706,3 +715,116 @@ class TestSummaryForAutoSandbox(unittest.TestCase):
 ╘══════════════════════════╧════════════════════════════════╧════════════════════════════════════════════════════╛
 """.strip()
         self.assertEqual(expected_summary, summary)
+
+
+class TestLoadCollectedViewsSchemasOnly(unittest.TestCase):
+    """Tests that --schemas_only results in LimitZeroBigQueryAddressFormatterProvider."""
+
+    LOAD_VIEWS_MODULE = "recidiviz.tools.load_views_to_sandbox"
+
+    @patch(f"{LOAD_VIEWS_MODULE}.get_source_tables_to_pseudocolumns")
+    @patch(f"{LOAD_VIEWS_MODULE}.get_deployed_addresses_without_state_code_column")
+    @patch(f"{LOAD_VIEWS_MODULE}.metadata")
+    @patch(f"{LOAD_VIEWS_MODULE}.validate_builders_not_in_current_source_datasets")
+    @patch(
+        f"{LOAD_VIEWS_MODULE}.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    @patch(f"{LOAD_VIEWS_MODULE}.check_deployed_view_schemas")
+    def test_schemas_only_uses_limit_zero_provider(
+        self,
+        _mock_check_schemas: MagicMock,
+        mock_deploy: MagicMock,
+        _mock_validate: MagicMock,
+        mock_metadata: MagicMock,
+        mock_get_deployed_addrs: MagicMock,
+        mock_get_pseudocolumns: MagicMock,
+    ) -> None:
+        mock_metadata.project_id.return_value = "recidiviz-staging"
+        mock_get_deployed_addrs.return_value = set()
+        mock_get_pseudocolumns.return_value = {}
+        mock_deployment_results = MagicMock()
+        mock_deployment_results.view_results = {}
+        mock_deploy.return_value = (mock_deployment_results, None)
+
+        fake_builder = MagicMock()
+        fake_builder.address = BigQueryAddress.from_str("my_dataset.my_view")
+
+        load_collected_views_to_sandbox(
+            sandbox_dataset_prefix="test_prefix",
+            state_code_filter=None,
+            collected_builders=[fake_builder],
+            input_source_table_dataset_overrides_dict=None,
+            allow_slow_views=False,
+            rematerialize_changed_views_only=False,
+            failure_mode=MagicMock(),
+            schemas_only=True,
+        )
+
+        mock_deploy.assert_called_once()
+        call_kwargs = mock_deploy.call_args[1]
+        sandbox_context: BigQueryViewUpdateSandboxContext = call_kwargs[
+            "view_update_sandbox_context"
+        ]
+        self.assertIsInstance(
+            sandbox_context.parent_address_formatter_provider,
+            LimitZeroBigQueryAddressFormatterProvider,
+        )
+
+
+class TestParseArguments(unittest.TestCase):
+    """Tests for parse_arguments() arg parsing."""
+
+    def test_schemas_only_parses(self) -> None:
+        """Argparse accepts --schemas_only without --state_code_filter."""
+        with patch(
+            "sys.argv",
+            [
+                "load_views_to_sandbox",
+                "--sandbox_dataset_prefix",
+                "test",
+                "--schemas_only",
+                "auto",
+                "--load_changed_views_only",
+            ],
+        ):
+            args = parse_arguments()
+        self.assertTrue(args.schemas_only)
+        self.assertIsNone(args.state_code_filter)
+
+    def test_state_code_filter_parses(self) -> None:
+        """Argparse accepts --state_code_filter without --schemas_only."""
+        with patch(
+            "sys.argv",
+            [
+                "load_views_to_sandbox",
+                "--sandbox_dataset_prefix",
+                "test",
+                "--state_code_filter",
+                "US_XX",
+                "auto",
+                "--load_changed_views_only",
+            ],
+        ):
+            args = parse_arguments()
+        self.assertFalse(args.schemas_only)
+        self.assertEqual(args.state_code_filter, StateCode.US_XX)
+
+    def test_schemas_only_and_state_code_are_mutually_exclusive(
+        self,
+    ) -> None:
+        """Argparse rejects --schemas_only and --state_code_filter together."""
+        with self.assertRaises(SystemExit):
+            with patch(
+                "sys.argv",
+                [
+                    "load_views_to_sandbox",
+                    "--sandbox_dataset_prefix",
+                    "test",
+                    "--schemas_only",
+                    "--state_code_filter",
+                    "US_XX",
+                    "auto",
+                    "--load_changed_views_only",
+                ],
+            ):
+                parse_arguments()

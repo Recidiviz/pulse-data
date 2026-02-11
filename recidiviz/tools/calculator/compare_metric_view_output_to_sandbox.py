@@ -153,6 +153,7 @@ def compare_metric_view_output_to_sandbox(
             allow_slow_views=False,
             rematerialize_changed_views_only=False,
             failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
+            schemas_only=False,
         )
 
     bq_client = BigQueryClientImpl()

@@ -142,6 +142,7 @@ def _load_raw_data_latest_views_to_sandbox(
         # We're loading a view graph of depth 1 -- let's load all views in order to
         # surface all errors we could run into
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
+        schemas_only=False,
     )
 
 

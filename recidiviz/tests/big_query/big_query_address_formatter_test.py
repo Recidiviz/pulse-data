@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_address_formatter import (
     BigQueryAddressFormatterFilterByStateCode,
     BigQueryAddressFormatterLimitZero,
     BigQueryAddressFormatterSimple,
+    LimitZeroBigQueryAddressFormatterProvider,
     StateFilteringBigQueryAddressFormatterProvider,
 )
 from recidiviz.common.constants.states import StateCode
@@ -148,4 +149,21 @@ class TestBigQueryAddressFormatterProvider(unittest.TestCase):
                 BigQueryAddress.from_str("my_dataset.my_table"),
             ),
             BigQueryAddressFormatterFilterByStateCode,
+        )
+
+    def test_limit_zero_provider(self) -> None:
+        formatter_provider = LimitZeroBigQueryAddressFormatterProvider()
+
+        # All addresses should get a LimitZero formatter
+        self.assertIsInstance(
+            formatter_provider.get_formatter(
+                BigQueryAddress.from_str("my_dataset.my_table"),
+            ),
+            BigQueryAddressFormatterLimitZero,
+        )
+        self.assertIsInstance(
+            formatter_provider.get_formatter(
+                BigQueryAddress.from_str("us_xx_dataset.my_table"),
+            ),
+            BigQueryAddressFormatterLimitZero,
         )

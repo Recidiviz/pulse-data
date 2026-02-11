@@ -505,6 +505,7 @@ def load_end_to_end_sandbox(
                 # If we loading dataflow pipelines before this, we probably we want to
                 # surface all errors
                 failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_EXHAUSTIVELY,
+                schemas_only=False,
             )
 
         if export_names:
