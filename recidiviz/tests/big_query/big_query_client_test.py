@@ -524,24 +524,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.list_tables.assert_called()
         self.mock_client.query.assert_not_called()
 
-    def test_create_or_update_view_creates_view(self) -> None:
-        """create_or_update_view creates a View if it does not exist."""
-        self.mock_client.update_table.side_effect = exceptions.NotFound("!")
+    def test_create_or_update_view_runs_create_query(self) -> None:
+        """create_or_update_view issues a CREATE OR REPLACE VIEW query."""
         self.bq_client.create_or_update_view(self.mock_view)
-        self.mock_client.create_table.assert_called()
-
-    def test_create_or_update_view_updates_view(self) -> None:
-        """create_or_update_view updates a View if it already exist."""
-        self.mock_client.get_table.side_effect = None
-        self.bq_client.create_or_update_view(self.mock_view)
-        self.mock_client.update_table.assert_called()
-        self.mock_client.create_table.assert_not_called()
-
-    def test_create_or_update_view_creates_view_not_might_exist(self) -> None:
-        """create_or_update_view creates a View if `might_exist` is not set"""
-        self.bq_client.create_or_update_view(self.mock_view, might_exist=False)
-        self.mock_client.update_table.assert_not_called()
-        self.mock_client.create_table.assert_called()
+        self.mock_client.query.assert_called_once()
+        query_str = self.mock_client.query.call_args[1]["query"]
+        self.assertIn("CREATE OR REPLACE VIEW", query_str)
+        self.mock_client.get_table.assert_called()
 
     def test_export_to_cloud_storage(self) -> None:
         """export_to_cloud_storage extracts the table corresponding to the

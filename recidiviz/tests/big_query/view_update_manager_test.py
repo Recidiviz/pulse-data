@@ -144,10 +144,7 @@ class ViewManagerTest(unittest.TestCase):
             _DATASET_NAME, default_table_expiration_ms=None
         )
         self.mock_client.create_or_update_view.assert_has_calls(
-            [
-                mock.call(view_builder.build(), might_exist=True)
-                for view_builder in mock_view_builders
-            ],
+            [mock.call(view_builder.build()) for view_builder in mock_view_builders],
             any_order=True,
         )
         self.mock_client.delete_table.assert_has_calls(
@@ -231,7 +228,7 @@ class ViewManagerTest(unittest.TestCase):
 
         # Create/Update returns the table that was already there
         def mock_create_or_update(
-            view: BigQueryView, might_exist: bool  # pylint: disable=W0613
+            view: BigQueryView,  # pylint: disable=W0613
         ) -> bigquery.Table:
             return mock_get_table(view.address)
 
@@ -250,9 +247,9 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(mock_view_builders[0].build(), might_exist=True),
-                mock.call(mock_view_builders[1].build(), might_exist=True),
-                mock.call(mock_view_builders[2].build(), might_exist=True),
+                mock.call(mock_view_builders[0].build()),
+                mock.call(mock_view_builders[1].build()),
+                mock.call(mock_view_builders[2].build()),
             ],
             any_order=True,
         )
@@ -357,7 +354,7 @@ class ViewManagerTest(unittest.TestCase):
 
         # Create/Update returns the table that was already there
         def mock_create_or_update(
-            view: BigQueryView, might_exist: bool  # pylint: disable=W0613
+            view: BigQueryView,  # pylint: disable=W0613
         ) -> bigquery.Table:
             table = mock_get_table(view.address)
             if view.view_id == "my_fake_view_2":
@@ -383,9 +380,9 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(mock_view_builders[0].build(), might_exist=True),
-                mock.call(mock_view_builders[1].build(), might_exist=True),
-                mock.call(mock_view_builders[2].build(), might_exist=True),
+                mock.call(mock_view_builders[0].build()),
+                mock.call(mock_view_builders[1].build()),
+                mock.call(mock_view_builders[2].build()),
             ],
             any_order=True,
         )
@@ -476,8 +473,8 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
-                mock.call(mock_view_builders[0].build(), might_exist=True),
-                mock.call(mock_view_builders[1].build(), might_exist=True),
+                mock.call(mock_view_builders[0].build()),
+                mock.call(mock_view_builders[1].build()),
             ],
             any_order=True,
         )
@@ -592,7 +589,6 @@ class ViewManagerTest(unittest.TestCase):
             [
                 mock.call(
                     view_builder.build(sandbox_context=expected_sandbox_context),
-                    might_exist=True,
                 )
                 for view_builder in mock_view_builders
             ],
@@ -689,7 +685,7 @@ class ViewManagerTest(unittest.TestCase):
             _DATASET_NAME, default_table_expiration_ms=None
         )
         self.mock_client.create_or_update_view.assert_has_calls(
-            [mock.call(view, might_exist=True) for view in mock_views], any_order=True
+            [mock.call(view) for view in mock_views], any_order=True
         )
         # Only delete calls should be from recreating views to have changes updating
         # in schema from the dag walker
@@ -857,10 +853,7 @@ class ViewManagerTest(unittest.TestCase):
         self.assertEqual(self.mock_client.delete_table.call_count, 4)
         self.assertEqual(self.mock_client.create_dataset_if_necessary.call_count, 2)
         self.mock_client.create_or_update_view.assert_has_calls(
-            [
-                mock.call(view_builder.build(), might_exist=True)
-                for view_builder in mock_view_builders
-            ],
+            [mock.call(view_builder.build()) for view_builder in mock_view_builders],
             any_order=True,
         )
 
@@ -967,7 +960,7 @@ class ViewManagerTest(unittest.TestCase):
             raise ValueError(f"Unexpected address [{address}]")
 
         def mock_create_or_update(
-            view: BigQueryView, might_exist: bool  # pylint: disable=W0613
+            view: BigQueryView,  # pylint: disable=W0613
         ) -> bigquery.Table:
             return mock_get_table(view.address)
 
@@ -1089,7 +1082,7 @@ class ViewManagerTest(unittest.TestCase):
             raise ValueError(f"Unexpected address [{address}]")
 
         def mock_create_or_update(
-            view: BigQueryView, might_exist: bool  # pylint: disable=W0613
+            view: BigQueryView,  # pylint: disable=W0613
         ) -> bigquery.Table:
             return mock_get_table(view.address)
 

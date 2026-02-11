@@ -62,6 +62,9 @@ from google.protobuf import timestamp_pb2
 from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_create_or_replace_view_query_provider import (
+    CreateOrReplaceViewQueryProvider,
+)
 from recidiviz.big_query.big_query_job_labels import BigQueryDatasetIdJobLabel
 from recidiviz.big_query.big_query_utils import (
     are_bq_schemas_same,
@@ -369,18 +372,13 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_or_update_view(
-        self, view: BigQueryView, *, might_exist: bool = True
-    ) -> bigquery.Table:
+    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.
 
         This runs synchronously and waits for the job to complete.
 
         Args:
             view: The View to create or update.
-            might_exist: If it is possible this view already exists, so we
-            should optimistically attempt to update it.
-
         Returns:
             The Table that was just created.
         """
@@ -1242,7 +1240,21 @@ class BigQueryClientImpl(BigQueryClient):
         delete_contents: bool = False,
         not_found_ok: bool = False,
     ) -> None:
-        return self.client.delete_dataset(
+        if environment.in_test() and delete_contents:
+            # TODO(https://github.com/Recidiviz/bigquery-emulator/issues/59):
+            # Remove once delete_dataset works with CREATE VIEW in the emulator
+            try:
+                table_iter = self.list_tables(dataset_id)
+            except exceptions.NotFound:
+                if not_found_ok:
+                    return
+                raise
+            for table in table_iter:
+                self.delete_table(
+                    BigQueryAddress(dataset_id=dataset_id, table_id=table.table_id),
+                    not_found_ok=True,
+                )
+        self.client.delete_dataset(
             dataset_id, delete_contents=delete_contents, not_found_ok=not_found_ok
         )
 
@@ -1441,33 +1453,31 @@ class BigQueryClientImpl(BigQueryClient):
 
         return created_table
 
-    def create_or_update_view(
-        self, view: BigQueryView, *, might_exist: bool = True
-    ) -> bigquery.Table:
-        bq_view = bigquery.Table(view)
-        bq_view.view_query = view.view_query
-        bq_view.description = view.bq_description
-
+    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
+        """Creates or replaces a BigQuery view using a CREATE OR REPLACE VIEW DDL
+        statement. We use DDL because API calls do not support inline column
+        descriptions for views.
+        """
+        query_provider = CreateOrReplaceViewQueryProvider(
+            view=view,
+            project_id=self._project_id,
+            use_emulator_sql=environment.in_test(),
+        )
+        logging.info(
+            "Creating/updating view [%s] with CREATE OR REPLACE VIEW",
+            view.address.to_str(),
+        )
         try:
-            if might_exist:
-                try:
-                    logging.info("Optimistically updating view [%s]", str(bq_view))
-                    return self.client.update_table(
-                        bq_view, ["view_query", "description"]
-                    )
-                except exceptions.NotFound:
-                    logging.info(
-                        "Creating view [%s] as it was not found while attempting to update",
-                        str(bq_view),
-                    )
-                    return self.client.create_table(bq_view)
-            else:
-                logging.info("Creating view [%s]", str(bq_view))
-                return self.client.create_table(bq_view)
+            job = self.run_query_async(
+                query_str=query_provider.get_query(), use_query_cache=False
+            )
+            job.result()
         except exceptions.BadRequest as e:
             raise ValueError(
-                f"Cannot update view query for [{view.address.to_str()}]"
+                f"Cannot create/update view [{view.address.to_str()}]"
             ) from e
+
+        return self.get_table(view.address)
 
     def load_table_from_cloud_storage(
         self,
@@ -1728,7 +1738,21 @@ class BigQueryClientImpl(BigQueryClient):
     ) -> None:
         table_ref = self._table_ref_for_address(address)
         logging.info("Deleting table/view [%s]", address.to_str())
-        self.client.delete_table(table_ref, not_found_ok=not_found_ok)
+
+        try:
+            self.client.delete_table(table_ref, not_found_ok=not_found_ok)
+        except RuntimeError as e:
+            # TODO(https://github.com/Recidiviz/bigquery-emulator/issues/59):
+            # Remove once delete_table works with CREATE VIEW in the emulator
+            if not environment.in_test() or "use DROP VIEW" not in str(e):
+                raise
+            project_address = address.to_project_specific_address(self.project_id)
+            drop_clause = "DROP VIEW IF EXISTS" if not_found_ok else "DROP VIEW"
+            job = self.run_query_async(
+                query_str=f"{drop_clause} {project_address.format_address_for_query()}",
+                use_query_cache=False,
+            )
+            job.result()
 
     def run_query_async(
         self,

@@ -687,7 +687,7 @@ if existing_view is not None:
     bq_client.delete_table(view.address, not_found_ok=True)
 
 # Create/update the view
-updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
+updated_view = bq_client.create_or_update_view(view)
 ```
 
 **Note**: Views are currently deleted and recreated to ensure schema changes

@@ -392,6 +392,8 @@ def _create_or_update_view_and_materialize_if_necessary(
         except exceptions.NotFound:
             pass
 
+    # TODO(#59021): The below TO-DO might not be relevant now that we use
+    # CREATE OR REPLACE VIEW
     # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to
     # delete and recreate the view for changes from underlying tables to be reflected in
     # its schema.
@@ -404,7 +406,7 @@ def _create_or_update_view_and_materialize_if_necessary(
         # just proceed with the view update.
         bq_client.delete_table(view.address, not_found_ok=True)
 
-    updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
+    updated_view = bq_client.create_or_update_view(view)
 
     view_configuration_changed = (
         existing_view is None
