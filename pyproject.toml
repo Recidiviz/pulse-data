@@ -92,7 +92,9 @@ dependencies = [
     "analytics-python",
     "redis",
     "pyarrow",
-    "auth0-python",
+    # TODO(#59007): Upgrade to auth0-python>=5 - requires fixing breaking API
+    # changes (auth0.exceptions and auth0.rest module paths have changed).
+    "auth0-python<5",
     "sentry-sdk[flask]",
     "beautifulsoup4",
     # TODO(#46131): Unpin when sshtunnel issue is resolved
