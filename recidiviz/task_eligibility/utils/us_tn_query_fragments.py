@@ -741,9 +741,12 @@ def incident_based_caf_score_query_template(
             incidents.incident_class,  -- Class: A, B, or C
             incidents.infraction_type_raw_text,
             -- Flag whether incident is violent based on the infraction type
+            -- Mark *all* Class C incidents as non-violent, because new Class C incidents
+            -- will always be marked as non-violent, and there is no retroactive scoring for violent
+            -- Class C incidents.
             COALESCE(incidents.infraction_type_raw_text IN (
                 {violent_infraction_types_str}
-                ), FALSE) AS is_violent
+                ), FALSE) AND incidents.incident_class != 'C' AS is_violent
         FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized` incidents
         LEFT JOIN state_prison_spans
         ON
@@ -762,10 +765,15 @@ def incident_based_caf_score_query_template(
         QUALIFY ROW_NUMBER() OVER(
             PARTITION BY incidents.person_id, incidents.incident_date 
             ORDER BY
-                -- Prioritize violent incidents
-                CASE WHEN COALESCE(incidents.infraction_type_raw_text IN (
-                    {violent_infraction_types_str}
-                ), FALSE) THEN 1 ELSE 0 END DESC,
+                -- Prioritize Class A or B violent incidents
+                CASE WHEN 
+                    COALESCE(incidents.infraction_type_raw_text IN (
+                        {violent_infraction_types_str}
+                    ) 
+                    AND incidents.incident_class IN ('A', 'B'), FALSE) 
+                    THEN 1 
+                    ELSE 0 
+                    END DESC,
                 -- Then prioritize incident class (A, B, C)
                 incidents.incident_class, 
                 incidents.injury_level DESC, 
