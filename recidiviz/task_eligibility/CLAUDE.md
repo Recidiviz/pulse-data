@@ -48,6 +48,43 @@ Additional resources:
   `utils/state_dataset_query_fragments.py`
 - `utils/us_xx_query_fragments.py` for state-specific helpers
 
+#### Handling NULL Start and End Dates
+
+When working with date spans that may have NULL start or end dates:
+
+1. **Never replace NULLs with magic dates in SELECT statements** - Keep the
+   original NULL values in your CTEs and output. NULL end dates have semantic
+   meaning (ongoing/current).
+
+2. **Only use magic date helpers in JOIN conditions** - Use
+   `nonnull_end_date_clause()` or `nonnull_start_date_clause()` only when
+   comparing dates in WHERE/ON clauses:
+
+   ```python
+   from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+
+   # Good - use helper only in join condition
+   _QUERY_TEMPLATE = f"""
+   SELECT
+       a.person_id,
+       a.start_date,
+       a.end_date,  -- Keep original NULL
+   FROM table_a a
+   LEFT JOIN table_b b
+       ON a.person_id = b.person_id
+       AND a.start_date < {nonnull_end_date_clause("b.end_date")}  -- Use helper here
+   """
+
+   # Bad - don't persist magic dates
+   SELECT
+       person_id,
+       IFNULL(end_date, '9999-12-31') AS end_date  -- Don't do this
+   FROM my_table
+   ```
+
+3. **Use `revert_nonnull_end_date_clause()` if needed** - If you must use magic
+   dates in intermediate CTEs, revert them before the final output.
+
 ## Creating Components
 
 ### Adding a New Criteria
