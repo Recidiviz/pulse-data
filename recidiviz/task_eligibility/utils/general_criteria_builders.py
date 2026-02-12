@@ -1649,10 +1649,7 @@ def status_for_at_least_x_time_criteria_query(
         return (", ".join(items) + suffix) if items else ""
 
     def _cast_columns(src: str, alias: str, col_type: str) -> str:
-        """Builds a SQL SAFE_CAST() expression. STRING columns get a row number
-        to clearly identify ordering of statuses"""
-        if col_type == "STRING":
-            return f"CONCAT(SAFE_CAST(ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY {start_date}) AS STRING), ' - ', SAFE_CAST({src} AS STRING)) AS {alias}"
+        """Builds a SQL SAFE_CAST() expression."""
         return f"SAFE_CAST({src} AS {col_type}) AS {alias}"
 
     # CAST all the columns in additional_columns_for_reasons with its relevant type
@@ -1676,9 +1673,8 @@ def status_for_at_least_x_time_criteria_query(
             state_code, person_id,
             {start_date} AS start_date,
             {end_date} AS end_date,
-            -- Placeholder column required by create_sub_sessions_with_attributes
-            -- when additional_columns_select is empty
-            state_code AS column_placeholder,
+            -- Preserve original start_date for ordering in ARRAY_AGG after sub-sessions split spans
+            {start_date} AS original_start_date,
             {columns_to_cast_for_reasons}
         FROM {table_name}
         -- Filter out sentinel/placeholder dates to avoid date overflow when
@@ -1689,12 +1685,12 @@ def status_for_at_least_x_time_criteria_query(
     ),
     {create_sub_sessions_with_attributes('spans')},
     sub_sessions_with_attributes_deduped AS (
-        SELECT 
-            state_code, 
-            person_id, 
-            start_date, 
+        SELECT
+            state_code,
+            person_id,
+            start_date,
             end_date,
-            {_to_sql_columns([f"ARRAY_AGG({a} ORDER BY {a}) AS {a}" for a in aliases_for_reasons], ",")}
+            {_to_sql_columns([f"ARRAY_AGG({a} ORDER BY original_start_date) AS {a}" for a in aliases_for_reasons], ",")}
         FROM sub_sessions_with_attributes
         GROUP BY 1, 2, 3, 4
     ),
