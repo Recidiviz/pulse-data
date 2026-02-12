@@ -80,6 +80,13 @@ explore: us_ix_raw_data_template {
     view_label: "us_ix_dsc_DAProcedure"
   }
 
+  join: us_ix_fin_AccountOwner {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_fin_AccountOwner.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_fin_AccountOwner"
+  }
+
   join: us_ix_gsm_ParticipantOffender {
     sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_gsm_ParticipantOffender.OffenderId};;
     type: full_outer
@@ -106,6 +113,13 @@ explore: us_ix_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_ix_ind_EmploymentHistory"
+  }
+
+  join: us_ix_ind_OffenderInternalStatus {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_ind_OffenderInternalStatus.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_ind_OffenderInternalStatus"
   }
 
   join: us_ix_ind_OffenderNoteInfo {
@@ -169,6 +183,13 @@ explore: us_ix_raw_data_template {
     type: full_outer
     relationship: many_to_many
     view_label: "us_ix_prb_PBCase"
+  }
+
+  join: us_ix_scb_OffenderJcbInternalStatus {
+    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_scb_OffenderJcbInternalStatus.OffenderId};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ix_scb_OffenderJcbInternalStatus"
   }
 
   join: us_ix_scl_Charge {
