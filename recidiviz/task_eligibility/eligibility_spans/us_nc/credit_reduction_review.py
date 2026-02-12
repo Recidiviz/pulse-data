@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
     continuous_enrollment_at_facility_for_90_days,
     no_pending_violations_or_convictions_precluding_crr,
     reporting_as_directed,
+    supervision_within_30_months_of_full_term_completion_date,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
@@ -48,6 +49,15 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+_SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_NC_COMPLETED_SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_OF_FULL_TERM_COMPLETION_DATE",
+    sub_criteria_list=[
+        completed_sex_offender_treatment.VIEW_BUILDER,
+        supervision_within_30_months_of_full_term_completion_date.VIEW_BUILDER,
+    ],
+)
 
 # Extract the criteria group so we can reference it in the almost eligible condition
 _90_CONSECUTIVE_DAYS_POSITIVE_BEHAVIOR_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
@@ -78,7 +88,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # Stub criteria that always return True - can be toggled via admin panel
         no_pending_violations_or_convictions_precluding_crr.VIEW_BUILDER,
         reporting_as_directed.VIEW_BUILDER,
-        completed_sex_offender_treatment.VIEW_BUILDER,
+        # Only Non-SO clients and (SO with completed treatment or within 2.5 years of release)
+        _SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_VIEW_BUILDER,
     ],
     # TODO(#54787): Hydrate completion event
     completion_event_builder=granted_supervision_sentence_reduction.VIEW_BUILDER,
