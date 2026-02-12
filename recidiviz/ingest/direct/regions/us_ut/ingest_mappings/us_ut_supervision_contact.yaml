@@ -44,6 +44,7 @@ output:
                 StateSupervisionContactMethod.INTERNAL_UNKNOWN:
                   - "PVP"
                   - "DIAGNOSTIC"
+                  - "STG/GANG"
                   - "COMPACT RFRI"
                   - "COMPACT NOD"
                   - "ORIENTATION"
@@ -282,6 +283,7 @@ output:
                   - "TRC TREATMENT REVIEW"
                   - "VIVITROL SCREEN DENY"
                   - "CCC MENTOR"
+                  - "STG/GANG"
           status:
             $enum_mapping:
               $raw_text: cntc_rslt_desc
