@@ -50,6 +50,7 @@ output:
                         - MANDATORY PAROLE # This is actually the date their parole ended, per location history
                         - NULL_COMPLETE
                         - RETURN TO LAW ENFORCEMENT
+                        - MANDATORY PAROLE TO TTF # only 3 instances from 1993
                       StateSentenceStatus.AMENDED:
                         - SENTENCE AMENDED
                       StateSentenceStatus.EXECUTION:
