@@ -1,0 +1,249 @@
+address:
+  dataset_id: auth0_events
+  table_id: failed_login
+description: "Segment events for failed login attempts via Auth0 authentication"
+schema:
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: email
+    type: STRING
+    mode: NULLABLE
+  - name: email_verified
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    type: STRING
+    mode: NULLABLE
+  - name: family_name
+    type: STRING
+    mode: NULLABLE
+  - name: given_name
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: identities
+    type: STRING
+    mode: NULLABLE
+  - name: last_ip
+    type: STRING
+    mode: NULLABLE
+  - name: last_login
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: last_password_reset
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: locale
+    type: STRING
+    mode: NULLABLE
+  - name: logins_count
+    type: INTEGER
+    mode: NULLABLE
+  - name: name
+    type: STRING
+    mode: NULLABLE
+  - name: nickname
+    type: STRING
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: picture
+    type: STRING
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: updated_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: allowed_supervision_location_ids
+    type: STRING
+    mode: NULLABLE
+  - name: allowed_supervision_location_level
+    type: STRING
+    mode: NULLABLE
+  - name: recidiviz_tester
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: can_access_case_triage
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: can_access_leadership_dashboard
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_community_practices
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_community_projections
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_facilities_projections
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: identity_api
+    type: STRING
+    mode: NULLABLE
+  - name: oid
+    type: STRING
+    mode: NULLABLE
+  - name: tenantid
+    type: STRING
+    mode: NULLABLE
+  - name: _id
+    type: STRING
+    mode: NULLABLE
+  - name: routes_operations
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision_to_liberty
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_supervision_to_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: skip_sync_permissions
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_liberty_to_prison
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_system_prison_to_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_workflows
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: should_see_beta_charts
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: user_hash
+    type: STRING
+    mode: NULLABLE
+  - name: rt_hash
+    type: STRING
+    mode: NULLABLE
+  - name: aio
+    type: STRING
+    mode: NULLABLE
+  - name: nbf
+    type: INTEGER
+    mode: NULLABLE
+  - name: preferred_username
+    type: STRING
+    mode: NULLABLE
+  - name: rh
+    type: STRING
+    mode: NULLABLE
+  - name: tid
+    type: STRING
+    mode: NULLABLE
+  - name: uti
+    type: STRING
+    mode: NULLABLE
+  - name: ver
+    type: STRING
+    mode: NULLABLE
+  - name: role
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: external_id
+    type: STRING
+    mode: NULLABLE
+  - name: feature_variants_responsive_revamp_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: authenticationmethod
+    type: STRING
+    mode: NULLABLE
+  - name: authnmethodsreferences
+    type: STRING
+    mode: NULLABLE
+  - name: displayname
+    type: STRING
+    mode: NULLABLE
+  - name: identityprovider
+    type: STRING
+    mode: NULLABLE
+  - name: issuer
+    type: STRING
+    mode: NULLABLE
+  - name: name_id_attributes_format
+    type: STRING
+    mode: NULLABLE
+  - name: name_id_attributes_value
+    type: STRING
+    mode: NULLABLE
+  - name: objectidentifier
+    type: STRING
+    mode: NULLABLE
+  - name: session_index
+    type: STRING
+    mode: NULLABLE
+  - name: feature_variants_enable_snooze_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: pseudonymized_id
+    type: STRING
+    mode: NULLABLE
+  - name: routes_insights
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_insights_supervision_supervisors_list
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_workflows_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: feature_variants_us_me_work_release_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: feature_variants_us_me_furlough_release_active_date
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: routes_workflows_facilities
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

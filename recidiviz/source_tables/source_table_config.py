@@ -444,7 +444,10 @@ class SourceTableConfig:
             clustering_fields=table.clustering_fields,
             external_data_configuration=table.external_data_configuration,
             time_partitioning=table.time_partitioning,
-            require_partition_filter=table.require_partition_filter,
+            # In BQ, require_partition_filter defaults to False when not set.
+            require_partition_filter=table.require_partition_filter
+            if table.require_partition_filter is not None
+            else (False if table.time_partitioning is not None else None),
         )
 
 

@@ -1,0 +1,65 @@
+address:
+  dataset_id: jii_backend_production_segment_metrics
+  table_id: backend_edovo_login_failed
+description: "Segment events emitted when a user login fails via Edovo in the JII Tablet App"
+schema:
+  - name: anonymous_id
+    description: "Segment-generated anonymous identifier for the user"
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    description: "Name of the Segment client library"
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    description: "Version of the Segment client library"
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    description: "Unique identifier for this Segment event"
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    description: "Timestamp when the record was loaded into the data warehouse"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    description: "Original client-side timestamp of the event"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    description: "Timestamp when the Segment server received the event"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    description: "Timestamp when the client sent the event"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: timestamp
+    description: "Timestamp of the event, set by Segment"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: uuid_ts
+    description: "Timestamp used for deduplication by Segment"
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: encrypted_edovo_token
+    description: "Encrypted authentication token for Edovo integration"
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    description: "Name of the tracked event"
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    description: "Human-readable description of the tracked event"
+    type: STRING
+    mode: NULLABLE
+  - name: is_internal_user
+    description: "Whether the user is an internal user"
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

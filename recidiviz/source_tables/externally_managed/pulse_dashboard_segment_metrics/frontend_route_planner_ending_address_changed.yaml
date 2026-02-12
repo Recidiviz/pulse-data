@@ -1,0 +1,113 @@
+address:
+  dataset_id: pulse_dashboard_segment_metrics
+  table_id: frontend_route_planner_ending_address_changed
+description: Segment events emitted when a user changes the ending address of their route in the Route Planner product
+schema:
+  - name: anonymous_id
+    description: Segment-generated anonymous identifier for the user
+    type: STRING
+    mode: NULLABLE
+  - name: context_ip
+    description: IP address of the client
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    description: Name of the Segment client library
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    description: Version of the Segment client library
+    type: STRING
+    mode: NULLABLE
+  - name: context_locale
+    description: Locale setting of the client browser
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_path
+    description: URL path of the page where the event was triggered
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_search
+    description: Query string of the page URL
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_title
+    description: Title of the page where the event was triggered
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_url
+    description: Full URL of the page where the event was triggered
+    type: STRING
+    mode: NULLABLE
+  - name: context_timezone
+    description: Timezone of the client
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent
+    description: User-Agent string of the client browser
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_brands
+    description: Browser brand information from client hints
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_mobile
+    description: Whether the client is a mobile device
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: context_user_agent_data_platform
+    description: Platform information from client hints
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    description: Name of the tracked event
+    type: STRING
+    mode: NULLABLE
+  - name: event_text
+    description: Human-readable description of the tracked event
+    type: STRING
+    mode: NULLABLE
+  - name: had_previous_address
+    description: Whether the user had a previously set ending address
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: id
+    description: Unique identifier for this Segment event
+    type: STRING
+    mode: NULLABLE
+  - name: loaded_at
+    description: Timestamp when the record was loaded into the data warehouse
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    description: Original client-side timestamp of the event
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: received_at
+    description: Timestamp when the Segment server received the event
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: sent_at
+    description: Timestamp when the client sent the event
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: session_id
+    description: Identifier for the user session
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    description: Timestamp of the event, set by Segment
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: user_id
+    description: Authenticated user identifier
+    type: STRING
+    mode: NULLABLE
+  - name: uuid_ts
+    description: Timestamp used for deduplication by Segment
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

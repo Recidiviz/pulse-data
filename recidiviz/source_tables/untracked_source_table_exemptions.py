@@ -30,20 +30,6 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
         "gcp_billing_export_raw",
         "gcp_billing_export_resource_raw",
     },
-    # Auth0 datasets
-    "auth0_events": {
-        "failed_login",
-        "tracks",
-    },
-    "auth0_prod_action_logs": {
-        "tracks",
-    },
-    # Case planning
-    "case_planning_production": {
-        "identifies",
-        "tracks",
-        "users",
-    },
     # External data sources
     "sendgrid_email_data": {
         "raw_sendgrid_email_data",
@@ -342,23 +328,6 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     },
     "us_mi_validation_oneoffs": {
         "person_race_20210730",
-    },
-    # Segment metrics datasets
-    "jii_auth0_production_segment_metrics": {
-        "tracks",
-    },
-    "jii_backend_production_segment_metrics": {
-        "backend_edovo_login_denied",
-        "backend_edovo_login_failed",
-        "backend_edovo_login_internal_error",
-        "tracks",
-    },
-    "pulse_dashboard_segment_metrics": {
-        "hello",
-        "pages_view",
-        "tracks",
-        "tracks_view",
-        "users",
     },
     # Legacy ingest view results tables
     "us_ar_ingest_view_results": {

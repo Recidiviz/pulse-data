@@ -1,0 +1,26 @@
+address:
+  dataset_id: export_archives
+  table_id: us_ix_supervision_tasks_record_archive
+description: This table contains daily archives of the LEGACY, V1
+  us_ix_supervision_tasks_record export, which is read directly from Cloud
+  Storage. This data predates the V2 tasks pipeline.
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: tasks
+    type: JSON
+    mode: REPEATED
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-practices-etl-data-archive/*/us_ix_supervision_tasks_record.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE

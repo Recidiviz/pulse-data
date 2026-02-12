@@ -100,11 +100,21 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
             builder.segment_table_sql_source for builder in event_builders
         }
 
-        # Build set of addresses from YAMLs (excluding 'identifies' and 'pages')
+        # Build set of addresses from YAMLs (excluding Segment infrastructure tables
+        # that don't represent individual tracked events)
+        excluded_table_ids = {
+            "identifies",
+            "pages",
+            "pages_view",
+            "tracks",
+            "tracks_view",
+            "users",
+            "hello",
+        }
         yaml_addresses = {
             address
             for address in segment_event_source_table_addresses
-            if address.table_id not in ["identifies", "pages"]
+            if address.table_id not in excluded_table_ids
         }
 
         # Check for YAMLs without view builders
