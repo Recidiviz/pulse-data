@@ -456,7 +456,8 @@ def caf_v2_possible_felony_charges_cte() -> str:
         SELECT
             person_id,
             state_code,
-            imposed_date,
+            -- Use (original) sentence imposed date, rather than Alternative Sentence Imposed Date, which is ingested as imposed_date in v1 sentences
+            DATE(SAFE_CAST(JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_IMPOSED_DATE') AS DATETIME)) AS imposed_date,
             description,
             classification_type,
             -- Use list of violent felony charges only for TN felony sentences
