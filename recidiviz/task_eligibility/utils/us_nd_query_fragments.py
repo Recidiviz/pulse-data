@@ -22,6 +22,7 @@ from typing import Optional
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
@@ -363,148 +364,77 @@ def get_infractions_as_case_notes() -> str:
             end_date_column="end_date")}"""
 
 
-MINIMUM_HOUSING_REFERRAL_QUERY = f"""
-    SELECT DISTINCT
-    'US_ND' AS state_code,
-    peid.person_id,
-    SAFE_CAST(REGEXP_REPLACE(assess3.parent_assessment_id, r',', '')  AS NUMERIC) AS assess_type,
-    assess4.description as assess_type_desc,
-    CASE 
-        WHEN EVALUATION_RESULT_CODE = 'APP' THEN 'Approved'
-        WHEN EVALUATION_RESULT_CODE = 'RESCIND' THEN 'Rescinded'
-        WHEN EVALUATION_RESULT_CODE = 'REFER' THEN 'Referred'
-        WHEN EVALUATION_RESULT_CODE = 'NOTAPP' THEN 'Not Approved'
-        WHEN EVALUATION_RESULT_CODE = 'NOREF' THEN 'Not Referred'
-        WHEN EVALUATION_RESULT_CODE = 'DEFERRED' THEN 'Deferred'
-        ELSE 'Unknown'
-    END AS evaluation_result,
-    reoa.ASSESS_COMMENT_TEXT AS assess_comment_text,
-    reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
-    SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
-    SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
-    -- When there is a final reviewed facility, use that. When there is not, use the facility
-    -- included in the initial request.
-    COALESCE(reoa.REVIEW_PLACE_AGY_LOC_ID, assess1.ASSESSMENT_CODE) AS referral_facility,
-FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderAssessmentItems_latest` items
--- The elite_OffenderAssessmentItems table includes an entry with a description that is only the referral facility. 
--- To deduce that the facility listed in that description is the target of a minimum housing request, we have to trace
--- back through PARENT_ASSESSMENT_ID values to the ultimate "MINIMUM HOUSING REQUEST" parent assessment.
--- This requires stepping back through 4 parent assessments with the following descriptions, to be absolutely sure
--- this is the type of minimum housing request we want to track: 
--- "[Facility Name]" -> "Facility Referral" -> "Minimum Housing Request" -> "Minimum Housing Request". 
-JOIN (
-    SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
-    -- These are the only facilities that can be referred. This filters out other items
-    -- related to this assessment and keeps only the referral facility, where there is one.
-    WHERE ASSESSMENT_CODE IN ('MTP', 'MRCC', 'JRMU')) assess1
-    ON(items.assessment_id = assess1.assessment_id)
-JOIN (
-    SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
-    WHERE description = 'Facility Referral') assess2
-    ON(assess1.parent_assessment_id = assess2.assessment_id )
-JOIN (
-    SELECT * FROM  `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
-    WHERE description = '{'MINIMUM HOUSING REQUEST'}') assess3
-    ON(assess2.parent_assessment_id = assess3.assessment_id)
-JOIN (
-    SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` 
-    WHERE description = '{'MINIMUM HOUSING REQUEST'}') assess4
-    ON(assess3.parent_assessment_id = assess4.assessment_id)
-JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
-    ON(reoa.ASSESSMENT_TYPE_ID = assess4.ASSESSMENT_ID AND items.OFFENDER_BOOK_ID = reoa.OFFENDER_BOOK_ID)
-JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
-ON {reformat_ids('reoa.OFFENDER_BOOK_ID')} = peid.external_id
-    AND peid.id_type = 'US_ND_ELITE_BOOKING'
-"""
+def get_latest_min_referrals_ctes() -> str:
+    """Returns min_referrals and latest_min_referrals CTEs.
 
-
-def get_minimum_housing_referals_query(
-    join_with_completion_events: bool = True,
-    keep_latest_referral_only: bool = False,
-    evaluation_result: str = "Approved",
-) -> str:
+    - min_referrals: All minimum housing referrals
+    - latest_min_referrals: Latest referral per person in current incarceration session
     """
-    Returns a SQL query that retrieves minimum housing referrals data.
-
-    Args:
-        join_with_completion_events (bool): Whether to join with completion events or not.
-        keep_latest_referral_only (bool): Whether to keep only the latest referral information.
-    """
-
-    _COMPLETION_EVENTS_JOIN_QUERY = f""",
-        completion_events AS (
-            -- Completion events for both ATP and transfer to min
-            SELECT *
-            FROM `{{project_id}}.{{general_task_eligibility_completion_events_dataset}}.granted_work_release_materialized`
-
-            UNION ALL
-
-            SELECT *
-            FROM `{{project_id}}.{{us_nd_task_eligibility_completion_events_dataset}}.transfer_to_minimum_facility_materialized`
-        ),
-
-        min_referrals_filtered_with_ce AS (
-            # We join the referrals with the closest completion event date for those who were approved
-            SELECT 
-                mr.person_id,
-                mr.state_code,
-                mr.assess_type,
-                mr.assess_type_desc,
-                mr.evaluation_result,
-                mr.assess_comment_text,
-                mr.committee_comment_text,
-                mr.evaluation_date,
-                mr.start_date,
-                mr.next_review_date,
-                -- We use the next_review_date as the end date if it exists
-                IFNULL(mr.next_review_date,
-                    CASE
-                        -- If not, in cases where the evaluation was approved, we either use the 
-                        -- completion event or the evaluation date + 6 months
-                        WHEN mr.evaluation_result = '{evaluation_result}' THEN IFNULL(MIN(ce.completion_event_date), DATE_ADD(mr.start_date, INTERVAL 6 MONTH))
-                        -- For people who's evaluation was not approved, end_date = start_date + 6 months 
-                        -- after the evaluation/start date
-                        ELSE DATE_ADD(mr.start_date, INTERVAL 6 MONTH)
-                    END) AS end_date
-            FROM min_referrals_filtered mr
-            LEFT JOIN completion_events ce
-                ON mr.person_id = ce.person_id
-                    AND mr.start_date <= ce.completion_event_date
-                    AND mr.evaluation_result = '{evaluation_result}'
-                    AND mr.state_code = ce.state_code
-            GROUP BY 1,2,3,4,5,6,7,8,9,10
-        )"""
-
-    return f"""WITH min_referrals AS (
-    {MINIMUM_HOUSING_REFERRAL_QUERY}
-),
-
-min_referrals_filtered AS (
-    SELECT 
-        mr.person_id,
-        mr.state_code,
-        mr.assess_type,
-        mr.assess_type_desc,
-        mr.evaluation_result,
-        mr.assess_comment_text,
-        mr.committee_comment_text,
-        mr.evaluation_date AS start_date,
-        mr.evaluation_date,
-        mr.next_review_date,
-        mr.referral_facility,
-    FROM min_referrals mr
-    {"QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1" if keep_latest_referral_only else ''}
-)
-{_COMPLETION_EVENTS_JOIN_QUERY if join_with_completion_events else ''}"""
+    return f"""
+    min_referrals AS (
+        SELECT DISTINCT
+            'US_ND' AS state_code,
+            peid.person_id,
+            SAFE_CAST(REGEXP_REPLACE(assess3.parent_assessment_id, r',', '')  AS NUMERIC) AS assess_type,
+            assess4.description as assess_type_desc,
+            CASE
+                WHEN EVALUATION_RESULT_CODE = 'APP' THEN 'Approved'
+                WHEN EVALUATION_RESULT_CODE = 'RESCIND' THEN 'Rescinded'
+                WHEN EVALUATION_RESULT_CODE = 'REFER' THEN 'Referred'
+                WHEN EVALUATION_RESULT_CODE = 'NOTAPP' THEN 'Not Approved'
+                WHEN EVALUATION_RESULT_CODE = 'NOREF' THEN 'Not Referred'
+                WHEN EVALUATION_RESULT_CODE = 'DEFERRED' THEN 'Deferred'
+                ELSE 'Unknown'
+            END AS evaluation_result,
+            reoa.ASSESS_COMMENT_TEXT AS assess_comment_text,
+            reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
+            SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
+            SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
+            COALESCE(reoa.REVIEW_PLACE_AGY_LOC_ID, assess1.ASSESSMENT_CODE) AS referral_facility,
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderAssessmentItems_latest` items
+        JOIN (
+            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            WHERE ASSESSMENT_CODE IN ('MTP', 'MRCC', 'JRMU')) assess1
+            ON(items.assessment_id = assess1.assessment_id)
+        JOIN (
+            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            WHERE description = 'Facility Referral') assess2
+            ON(assess1.parent_assessment_id = assess2.assessment_id )
+        JOIN (
+            SELECT * FROM  `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            WHERE description = 'MINIMUM HOUSING REQUEST') assess3
+            ON(assess2.parent_assessment_id = assess3.assessment_id)
+        JOIN (
+            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            WHERE description = 'MINIMUM HOUSING REQUEST') assess4
+            ON(assess3.parent_assessment_id = assess4.assessment_id)
+        JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
+            ON(reoa.ASSESSMENT_TYPE_ID = assess4.ASSESSMENT_ID AND items.OFFENDER_BOOK_ID = reoa.OFFENDER_BOOK_ID)
+        JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
+            ON {reformat_ids('reoa.OFFENDER_BOOK_ID')} = peid.external_id
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    ),
+    latest_min_referrals AS (
+        SELECT mr.*, mr.evaluation_date AS start_date
+        FROM min_referrals mr
+        INNER JOIN `{{project_id}}.sessions.incarceration_super_sessions_materialized` iss
+            ON mr.state_code = iss.state_code
+            AND mr.person_id = iss.person_id
+            AND mr.evaluation_date BETWEEN iss.start_date AND IFNULL(DATE_SUB(iss.end_date_exclusive, INTERVAL 1 DAY), "9999-12-31")
+        WHERE CURRENT_DATE("US/Pacific") BETWEEN iss.start_date AND IFNULL(iss.end_date, '9999-12-31')
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY mr.state_code, mr.person_id ORDER BY mr.evaluation_date DESC) = 1
+    )"""
 
 
-def get_recent_denials_query() -> str:
-    """
-    Returns a SQL query that retrieves minimum housing referrals data.
+def get_latest_marked_ineligible_query() -> str:
+    """Returns a SQL query that retrieves the latest Workflows marked ineligibles for minimum housing.
+
+    Returns people who have been snoozed/denied in Workflows for the usNdTransferToMinFacility
+    opportunity and whose snooze period is currently active.
     """
     return """
     WITH recent_denials AS (
-      SELECT 
+      SELECT
           sn.state_code,
           sn.person_id,
           SAFE_CAST(sn.start_date AS DATE) AS marked_ineligible_date,
@@ -521,24 +451,35 @@ def get_recent_denials_query() -> str:
 )"""
 
 
-def get_recent_referrals_query(evaluation_result: str) -> str:
+def get_latest_referral_per_client_by_eval_results_query(
+    evaluation_results: list[str] | str,
+) -> str:
+    """Returns a SQL query that retrieves minimum housing referrals data for clients with specific evaluation results.
+
+    Filters to people whose latest referral matches the given evaluation_results and excludes
+    people who have been marked ineligible via a Workflows denial (snooze).
+
+    Note: Expects 'latest_min_referrals' CTE to already exist (created by get_latest_min_referrals_ctes).
+
+    Args:
+        evaluation_results: Single evaluation result or list of results to filter on
+            (e.g., 'Approved', 'Unknown', 'Referred').
     """
-    Returns a SQL query that retrieves minimum housing referrals data based on the given evaluation_result.
-    Raises a ValueError if evaluation_result is not provided.
-    """
-    if not evaluation_result:
-        raise ValueError("evaluation_result must be provided.")
+    if isinstance(evaluation_results, str):
+        evaluation_results = [evaluation_results]
 
     return f"""
-    recent_referrals AS (
-        SELECT *
-        FROM min_referrals_filtered
-        WHERE evaluation_result = '{evaluation_result}'
+    recent_denials AS (
+        SELECT DISTINCT sn.state_code, sn.person_id
+        FROM `{{project_id}}.workflows_views.clients_snooze_spans_materialized` sn
+        WHERE sn.state_code = 'US_ND'
+            AND sn.opportunity_type = 'usNdTransferToMinFacility'
+            AND CURRENT_DATE('US/Eastern') BETWEEN SAFE_CAST(sn.start_date AS DATE) AND SAFE_CAST(sn.end_date_scheduled AS DATE)
     )
 
-    SELECT 
+    SELECT
         rr.state_code,
-        elite_nos.elite_no,
+        display_person_external_ids.display_person_external_id AS elite_no,
         CONCAT(
             JSON_EXTRACT_SCALAR(rr.person_name, '$.given_names'), ' ',
             JSON_EXTRACT_SCALAR(rr.person_name, '$.surname')
@@ -548,39 +489,45 @@ def get_recent_referrals_query(evaluation_result: str) -> str:
         rr.release_date,
         DATE_DIFF(CURRENT_DATE("US/Pacific"), sp.birthdate, YEAR) AS age_in_years,
         rr.custody_level,
-        sr.officer_name,
-        r_ref.start_date AS referral_date, 
+        CONCAT(sr.given_names, ' ', sr.surname) AS officer_name,
+        r_ref.start_date AS referral_date,
         r_ref.referral_facility
     FROM `{{project_id}}.{{task_eligibility_dataset}}.transfer_to_minimum_facility_form_materialized` tes
-    INNER JOIN recent_referrals r_ref
-        USING(person_id, state_code)
+    INNER JOIN latest_min_referrals r_ref
+        ON tes.person_id = r_ref.person_id
+        AND tes.state_code = r_ref.state_code
+        AND r_ref.evaluation_result IN ({list_to_query_string(evaluation_results, quoted=True, single_quote=True)})
     LEFT JOIN `{{project_id}}.workflows_views.resident_record_materialized` rr
-        USING(person_id, state_code)
+        ON tes.person_id = rr.person_id AND tes.state_code = rr.state_code
     LEFT JOIN (
-        SELECT id AS officer_external_id, CONCAT(sr.given_names, ' ', sr.surname) AS officer_name
-        FROM `{{project_id}}.workflows_views.incarceration_staff_record_materialized` sr
+        SELECT state_code, person_id, display_person_external_id
+        FROM `{{project_id}}.reference_views.product_display_person_external_ids_materialized`
+        WHERE display_person_external_id_type = "US_ND_ELITE"
+    ) display_person_external_ids
+        ON tes.state_code = display_person_external_ids.state_code AND tes.person_id = display_person_external_ids.person_id
+    LEFT JOIN (
+        SELECT * EXCEPT(state_code)
+        FROM `{{project_id}}.workflows_views.incarceration_staff_record_materialized`
         WHERE state_code = 'US_ND'
     ) sr
-        ON sr.officer_external_id = rr.officer_id
+        ON sr.id = rr.officer_id
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
-        USING(state_code, person_id)
-    LEFT JOIN (
-        SELECT person_id, external_id AS elite_no
-        FROM `{{project_id}}.us_nd_normalized_state.state_person_external_id`
-        WHERE id_type = 'US_ND_ELITE' AND state_code = 'US_ND'
-            AND is_current_display_id_for_type
-    ) elite_nos
-        USING (person_id)
+        ON tes.state_code = sp.state_code AND tes.person_id = sp.person_id
+    LEFT JOIN recent_denials rd
+        ON tes.state_code = rd.state_code AND tes.person_id = rd.person_id
     WHERE CURRENT_DATE("US/Pacific") BETWEEN tes.start_date AND IFNULL(tes.end_date, '9999-12-31')
+        AND (tes.is_eligible OR tes.is_almost_eligible)
+        -- Not marked ineligible (no workflow denial)
+        AND rd.person_id IS NULL
         -- Not in a minimum security facility
         AND JSON_EXTRACT_SCALAR(
                 (SELECT item FROM UNNEST(JSON_EXTRACT_ARRAY(reasons, "$")) AS item
-                WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"), 
+                WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"),
                 "$.reason.minimum_facility") IS NULL
         -- Not in work-release already
         AND JSON_EXTRACT_SCALAR(
             (SELECT item FROM UNNEST(JSON_EXTRACT_ARRAY(reasons, "$")) AS item
-            WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "NOT_IN_WORK_RELEASE"), 
+            WHERE JSON_EXTRACT_SCALAR(item, "$.criteria_name") = "NOT_IN_WORK_RELEASE"),
             "$.reason.most_recent_work_release_start_date") IS NULL
         AND custody_level = 'MINIMUM'
     ORDER BY facility_id, officer_name, release_date DESC"""
@@ -694,36 +641,33 @@ def eligible_and_almost_eligible_minus_referrals(
     Conditionally removes individuals who have had recent referrals to minimum housing
     based on the value of the `remove_recent_referrals` parameter.
 
+    This function expects a CTE named `latest_min_referrals` to already be defined
+    with columns: state_code, person_id, evaluation_result.
+
     Args:
         remove_recent_referrals (bool): If True, removes individuals who have had
-            recent referrals to minimum housing. If False, includes all individuals
-            regardless of recent referrals.
+            recent referrals to minimum housing in their current incarceration session.
+            If False, includes all individuals regardless of recent referrals.
     """
-    INELIGIBLE_EVALUATION_RESULTS = ("NOT REFERRED", "NOT APPROVED", "RESCINDED")
+    INELIGIBLE_EVALUATION_RESULTS = [
+        "Not Approved",
+        "Rescinded",
+        "Not Referred",
+        "Deferred",
+    ]
 
     return f"""
-    SELECT 
-        eae.* EXCEPT (reasons),
-        TO_JSON(ARRAY_CONCAT(
-            JSON_QUERY_ARRAY(eae.reasons),
-            [TO_JSON(STRUCT(
-                "US_ND_NO_RECENT_REFERRALS_TO_MINIMUM_HOUSING" AS criteria_name,
-                nrr.reason AS reason
-            ))]
-        )) AS reasons,
+    SELECT
+        eae.*,
         CASE
-            WHEN nrr.meets_criteria IS FALSE AND UPPER(JSON_EXTRACT_SCALAR(nrr.reason, '$.evaluation_result')) IN {INELIGIBLE_EVALUATION_RESULTS} THEN 'MARKED_INELIGIBLE'
-            WHEN nrr.meets_criteria IS FALSE AND UPPER(JSON_EXTRACT_SCALAR(nrr.reason, '$.evaluation_result')) NOT IN {INELIGIBLE_EVALUATION_RESULTS} THEN 'REFERRAL_SUBMITTED'
+            WHEN lmr.evaluation_result IN ({list_to_query_string(INELIGIBLE_EVALUATION_RESULTS, quoted=True, single_quote=True)}) THEN 'MARKED_INELIGIBLE'
+            WHEN lmr.evaluation_result IS NOT NULL THEN 'REFERRAL_SUBMITTED'
             ELSE NULL
         END AS metadata_tab_name,
     FROM eligible_and_almost_eligible eae
-    LEFT JOIN (
-        SELECT * 
-        FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_recent_referrals_to_minimum_housing_materialized`
-        WHERE CURRENT_DATE("US/Pacific") BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
-    ) nrr
-    USING (person_id, state_code)
-    {'WHERE IFNULL(nrr.meets_criteria, True)' if remove_recent_referrals else ''}
+    LEFT JOIN latest_min_referrals lmr
+        USING (person_id, state_code)
+    {'WHERE lmr.person_id IS NULL' if remove_recent_referrals else ''}
     """
 
 
