@@ -1,0 +1,16 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_ix
+  table_id: _GroupToPerson
+description: Group to person mapping for JII texting synced from JII backend database
+schema:
+  - name: A
+    description: Group identifier in the many-to-many relationship
+    type: STRING
+    mode: NULLABLE
+  - name: B
+    description: Person identifier in the many-to-many relationship
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning: null
+require_partition_filter: false

@@ -40,9 +40,7 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     },
     # Case planning
     "case_planning_production": {
-        "frontend_cpa_client_intake_chat_history_viewed",
         "identifies",
-        "pages",
         "tracks",
         "users",
     },
@@ -347,36 +345,20 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     },
     # Segment metrics datasets
     "jii_auth0_production_segment_metrics": {
-        "auth0_login_succeeded",
         "tracks",
     },
     "jii_backend_production_segment_metrics": {
         "backend_edovo_login_denied",
         "backend_edovo_login_failed",
         "backend_edovo_login_internal_error",
-        "backend_edovo_login_succeeded",
         "tracks",
     },
     "pulse_dashboard_segment_metrics": {
         "hello",
-        "pages",
         "pages_view",
         "tracks",
         "tracks_view",
         "users",
-    },
-    # JII texting dashboards
-    "jii_texting_dashboards_db_us_ix": {
-        "Contact",
-        "Person",
-        "WorkflowExecution",
-        "_GroupToPerson",
-    },
-    "jii_texting_dashboards_db_us_tx": {
-        "Contact",
-        "Person",
-        "WorkflowExecution",
-        "_GroupToPerson",
     },
     # Legacy ingest view results tables
     "us_ar_ingest_view_results": {

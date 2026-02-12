@@ -1,47 +1,58 @@
 address:
   dataset_id: jii_texting_dashboards_db_us_tx
-  table_id: ContactReminderMessageAttempt
-description:
-  This table contains contact reminder message attempt data for JII Texting in
-  Texas
+  table_id: MessageAttempt
+description: Individual text message delivery attempts synced from JII backend database
 schema:
   - name: id
+    description: Unique identifier for the message attempt
     type: STRING
     mode: NULLABLE
   - name: twilioMessageSid
+    description: Twilio message SID for tracking delivery
     type: STRING
     mode: NULLABLE
   - name: body
+    description: Text content of the message
     type: STRING
     mode: NULLABLE
   - name: phoneNumber
+    description: Recipient phone number
     type: STRING
     mode: NULLABLE
   - name: status
+    description: Delivery status of the message
     type: STRING
     mode: NULLABLE
   - name: createdTimestamp
+    description: Timestamp when the attempt was created
     type: TIMESTAMP
     mode: NULLABLE
   - name: lastUpdatedTimestamp
+    description: Timestamp of the last status update
     type: TIMESTAMP
     mode: NULLABLE
   - name: twilioSentTimestamp
+    description: Timestamp when Twilio sent the message
     type: TIMESTAMP
     mode: NULLABLE
   - name: requestedSendTimestamp
+    description: Timestamp when the message was requested to be sent
     type: TIMESTAMP
     mode: NULLABLE
   - name: error
+    description: Error message if delivery failed
     type: STRING
     mode: NULLABLE
   - name: errorCode
+    description: Twilio error code if delivery failed
     type: INTEGER
     mode: NULLABLE
   - name: messageSeriesId
+    description: Foreign key to the parent message series
     type: STRING
     mode: NULLABLE
   - name: workflowExecutionId
+    description: Foreign key to the workflow execution
     type: STRING
     mode: NULLABLE
 clustering_fields: null

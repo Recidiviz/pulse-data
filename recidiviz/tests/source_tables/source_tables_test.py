@@ -93,6 +93,15 @@ COMMON_VESTIGES = [
     # GCS-backed reference tables not currently referenced in the view graph
     "gcs_backed_tables.county_resident_adult_populations",
     "gcs_backed_tables.county_resident_populations",
+    # JII postgres export tables not currently referenced in the view graph
+    "jii_texting_dashboards_db_us_ix.Contact",
+    "jii_texting_dashboards_db_us_ix.Person",
+    "jii_texting_dashboards_db_us_ix.WorkflowExecution",
+    "jii_texting_dashboards_db_us_ix._GroupToPerson",
+    "jii_texting_dashboards_db_us_tx.Contact",
+    "jii_texting_dashboards_db_us_tx.Person",
+    "jii_texting_dashboards_db_us_tx.WorkflowExecution",
+    "jii_texting_dashboards_db_us_tx._GroupToPerson",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

@@ -1,0 +1,52 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_tx
+  table_id: Contact
+description: Scheduled contacts for JII texting synced from JII backend database
+schema:
+  - name: datetime
+    description: Scheduled date and time of the contact
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: address
+    description: Physical address for the contact location
+    type: STRING
+    mode: NULLABLE
+  - name: reminderType
+    description: Type of reminder sent (e.g., WITHIN_ONE_DAY)
+    type: STRING
+    mode: NULLABLE
+  - name: personStableExternalId
+    description: Stable external identifier for the person being contacted
+    type: STRING
+    mode: NULLABLE
+  - name: contactingOfficerId
+    description: External ID of the probation/parole officer making contact
+    type: STRING
+    mode: NULLABLE
+  - name: contactingPoName
+    description: Name of the probation/parole officer making contact
+    type: STRING
+    mode: NULLABLE
+  - name: externalId
+    description: Unique external identifier for this contact record
+    type: STRING
+    mode: NULLABLE
+  - name: locationType
+    description: Type of location for the contact (e.g., home, office)
+    type: STRING
+    mode: NULLABLE
+  - name: method
+    description: Method of contact (e.g., IN_PERSON, VIRTUAL)
+    type: STRING
+    mode: NULLABLE
+  - name: updateDatetime
+    description: Timestamp of the last update to this record
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: contactingPoPhoneNumber
+    description: Phone number of the probation/parole officer
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning: null
+require_partition_filter: false

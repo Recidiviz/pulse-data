@@ -1,18 +1,22 @@
 address:
   dataset_id: jii_texting_dashboards_db_us_ix
   table_id: MessageSeries
-description: This table contains message series data for JII Texting in Idaho
+description: Groups of related messages sent to a person synced from JII backend database
 schema:
   - name: id
+    description: Unique identifier for the message series
     type: STRING
     mode: NULLABLE
   - name: messageType
+    description: Type of message in the series
     type: STRING
     mode: NULLABLE
   - name: personExternalId
+    description: External identifier for the recipient person
     type: STRING
     mode: NULLABLE
   - name: groupId
+    description: Group identifier for batch messaging
     type: STRING
     mode: NULLABLE
 clustering_fields: null

@@ -1,0 +1,72 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_ix
+  table_id: Person
+description: Person records for JII texting synced from JII backend database
+schema:
+  - name: pseudonymizedId
+    description: Pseudonymized identifier for privacy protection
+    type: STRING
+    mode: NULLABLE
+  - name: personId
+    description: Internal person identifier
+    type: STRING
+    mode: NULLABLE
+  - name: stateCode
+    description: State code (e.g., US_IX, US_TX)
+    type: STRING
+    mode: NULLABLE
+  - name: givenName
+    description: Person's first name
+    type: STRING
+    mode: NULLABLE
+  - name: middleName
+    description: Person's middle name
+    type: STRING
+    mode: NULLABLE
+  - name: surname
+    description: Person's last name
+    type: STRING
+    mode: NULLABLE
+  - name: nameSuffix
+    description: Name suffix (e.g., Jr., Sr., III)
+    type: STRING
+    mode: NULLABLE
+  - name: phoneNumber
+    description: Person's phone number
+    type: STRING
+    mode: NULLABLE
+  - name: officerId
+    description: Assigned officer's external ID
+    type: STRING
+    mode: NULLABLE
+  - name: poName
+    description: Assigned probation/parole officer's name
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    description: Supervision district
+    type: STRING
+    mode: NULLABLE
+  - name: lastOptOutDate
+    description: Date when person last opted out of text communications
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: stableExternalId
+    description: Stable external identifier across systems
+    type: STRING
+    mode: NULLABLE
+  - name: receivedWelcomeText
+    description: Whether the person has received the welcome text message
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: poPhoneNumber
+    description: Assigned officer's phone number
+    type: STRING
+    mode: NULLABLE
+  - name: preferredLanguage
+    description: Person's preferred language for communications
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning: null
+require_partition_filter: false

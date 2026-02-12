@@ -1,20 +1,22 @@
 address:
   dataset_id: jii_texting_dashboards_db_us_tx
   table_id: ContactReminderMessageSeries
-description:
-  This table contains contact reminder message series data for JII Texting in
-  Texas
+description: Contact reminder message series synced from JII backend database
 schema:
   - name: id
+    description: Unique identifier for the message series
     type: STRING
     mode: NULLABLE
   - name: reminderType
+    description: Type of reminder (e.g., WITHIN_ONE_DAY)
     type: STRING
     mode: NULLABLE
   - name: personExternalId
+    description: External identifier for the recipient person
     type: STRING
     mode: NULLABLE
   - name: contactId
+    description: Foreign key to the associated contact
     type: STRING
     mode: NULLABLE
 clustering_fields: null

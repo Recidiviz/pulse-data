@@ -1,0 +1,20 @@
+address:
+  dataset_id: jii_texting_dashboards_db_us_ix
+  table_id: WorkflowExecution
+description: Workflow execution records for JII texting synced from JII backend database
+schema:
+  - name: id
+    description: Unique identifier for the workflow execution
+    type: STRING
+    mode: NULLABLE
+  - name: stateCode
+    description: State code (e.g., US_IX, US_TX)
+    type: STRING
+    mode: NULLABLE
+  - name: workflowExecutionTime
+    description: Timestamp when the workflow was executed
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning: null
+require_partition_filter: false

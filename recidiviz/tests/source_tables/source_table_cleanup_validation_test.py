@@ -23,6 +23,9 @@ from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
+)
 from recidiviz.source_tables.source_table_cleanup_validation import (
     validate_clean_source_table_datasets,
 )
@@ -32,6 +35,9 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableConfig,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.untracked_source_table_exemptions import (
+    ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG,
+)
 
 
 def _make_source_table_config(dataset_id: str, table_id: str) -> SourceTableConfig:
@@ -239,3 +245,40 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
         self.assertIn("bad_dataset", error_msg)
         self.assertIn("surprise", error_msg)
         self.assertNotIn("good_dataset", error_msg)
+
+
+class TestExemptionListNoOverlapWithConfigs(unittest.TestCase):
+    """Tests that tables in the no-config exemption list don't also have YAML configs."""
+
+    def test_no_overlap_between_exemptions_and_yaml_configs(self) -> None:
+        """Tables with YAML configs should be removed from
+        ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG.
+        """
+        source_table_repository = build_source_table_repository_for_collected_schemata(
+            project_id=None
+        )
+        configured_source_table_addresses: set[BigQueryAddress] = set(
+            source_table_repository.source_tables
+        )
+
+        exempted_table_addresses: set[BigQueryAddress] = set()
+        for dataset_id, exempted_tables in sorted(
+            ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG.items()
+        ):
+            exempted_table_addresses.update(
+                {
+                    BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+                    for table_id in exempted_tables
+                }
+            )
+
+        overlapping = configured_source_table_addresses & exempted_table_addresses
+
+        self.assertEqual(
+            overlapping,
+            set(),
+            "The following tables have YAML configs but are still listed in "
+            "ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG in "
+            "untracked_source_table_exemptions.py. Please remove them from "
+            f"the exemption list:{BigQueryAddress.addresses_to_str(overlapping, indent_level=2)}",
+        )
