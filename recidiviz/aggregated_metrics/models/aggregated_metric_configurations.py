@@ -830,11 +830,11 @@ AVG_NUM_SUPERVISION_OFFICERS_INSIGHTS_CASELOAD_CATEGORY_METRICS = [
     DailyAvgSpanCountMetric(
         name=f"avg_num_supervision_officers_insights_{category_type.value.lower()}_category_type_{category.lower()}",
         display_name=f"Average Daily Count of Supervision Officers: {snake_to_title(category_type.value)} Insights category type, {snake_to_title(category)} category",
-        description=f"""Average daily count of officers with the {snake_to_title(category)} category
-        in the {snake_to_title(category_type.value)} Insights category type. When the unit of
-        analysis is OFFICER, this counts the fraction of an officer that spent that time period
-        with the given category for that category type, which is equivalent to the proportion of time
-        in the analysis period they spent with that type.""",
+        description=f"Average daily count of officers with the {snake_to_title(category)} category"
+        f" in the {snake_to_title(category_type.value)} Insights category type. When the unit of"
+        " analysis is OFFICER, this counts the fraction of an officer that spent that time period"
+        " with the given category for that category type, which is equivalent to the proportion of time"
+        " in the analysis period they spent with that type.",
         span_selector=SpanSelector(
             span_type=SpanType.INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION,
             span_conditions_dict={
