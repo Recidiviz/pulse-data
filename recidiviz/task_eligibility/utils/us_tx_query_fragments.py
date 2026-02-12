@@ -382,7 +382,8 @@ def contact_compliance_builder_type_agnostic(
             AND ci.contact_date >= p.contact_period_start
             AND ci.contact_date < p.period_end
             AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
-        WHERE period_end IS NOT NULL
+        -- Filter out zero-day spans that occur when contact dates coincide with period boundaries
+        WHERE period_end IS NOT NULL AND period_start < {nonnull_end_date_clause('period_end')}
     ),
     -- CTE that counts the contacts by type up to a certain date
     contact_count AS (
