@@ -150,3 +150,84 @@ def mr_reports_within_time_interval(
             StateCode.US_NE
         ),
     )
+
+
+def good_time_restoration_denial_fragment() -> str:
+    """Shared query fragment for joining good time restoration request reviews (from the
+    GTR_Approval table) to the requests themselves (from the GoodTimeRestoration table).
+    """
+
+    return """
+    -- all reviews that were denials
+    denials AS (
+    SELECT
+        app.pkApprovalId,
+        app.approvalLevel AS reviewer,
+        DATE(app.dateReviewed) AS dateReviewed,
+    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GTR_Approval_latest` app
+    LEFT JOIN `{project_id}.us_ne_raw_data_up_to_date_views.CodeValue_latest` cv
+    ON cv.codeType = 'goodTimeRestoration_recommendForRestoration' AND app.recommendForRestorationCode = cv.codeId
+    WHERE cv.codeValue = 'Denied'
+    ),
+    -- associates all good time restoration requests with denials
+    requests_with_denials AS (
+    SELECT
+        req.pkgoodTimeRestorationId,
+        req.inmateNumber,
+        ARRAY(
+        SELECT AS STRUCT
+            denials.reviewer,
+            denials.dateReviewed
+        FROM UNNEST([d1, d2, d3, d4, d5]) AS denials
+        WHERE denials.pkApprovalId IS NOT NULL
+        ORDER BY denials.dateReviewed DESC
+        ) AS denials,
+    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GoodTimeRestoration_latest` req
+    LEFT JOIN denials AS d1 ON d1.pkApprovalId = req.fkUCCApprovalId
+    LEFT JOIN denials AS d2 ON d2.pkApprovalId = req.fkICCApprovalId
+    LEFT JOIN denials AS d3 ON d3.pkApprovalId = req.fkWardenApprovalId
+    LEFT JOIN denials AS d4 ON d4.pkApprovalId = req.fkDDApprovalId
+    LEFT JOIN denials AS d5 ON d5.pkApprovalId = req.fkRecordsId
+    )"""
+
+
+def latest_good_time_restoration_or_denial_date_fragment() -> str:
+    """Query fragment that pulls the latest good time restoration date or restoration
+    request denial date.
+
+    n.b. this value is used on the frontend to RESET the pending or snooze status if that
+    was created before this date.
+    """
+
+    return f"""
+    WITH {good_time_restoration_denial_fragment()},
+    most_recent_denial AS (
+        SELECT 
+            pei.person_id,
+            MAX(denials[SAFE_OFFSET(0)].dateReviewed) as most_recent_denial
+        FROM requests_with_denials req
+        LEFT JOIN `{{project_id}}.us_ne_normalized_state.state_person_external_id` pei
+        ON 
+            pei.external_id = req.inmateNumber 
+            AND pei.id_type = 'US_NE_ID_NBR'
+        WHERE ARRAY_LENGTH(denials) > 0
+        GROUP BY 1
+    ),
+    most_recent_restoration AS (
+        SELECT
+            person_id,
+            MAX(credit_date) as most_recent_restoration,
+        FROM `{{project_id}}.analyst_data.us_ne_earned_credit_activity_preprocessed_materialized`
+        WHERE 
+            state_code = 'US_NE'
+            AND credit_function = 'REINSTATE'
+            AND credit_date IS NOT NULL
+        GROUP BY 1
+    )
+    SELECT 
+        person_id,
+        GREATEST(COALESCE(most_recent_denial, most_recent_restoration), COALESCE(most_recent_restoration, most_recent_denial)) as latest_good_time_restoration_or_denial_date
+    FROM most_recent_denial d
+    FULL OUTER JOIN most_recent_restoration r
+    USING(person_id)
+    """
