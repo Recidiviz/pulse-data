@@ -536,6 +536,107 @@ _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES = [
     "TOF",  # THREATENING OFFENDER
 ]
 
+_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP = {
+    "CAF": [0, 1, 3, 4],
+    "DCAF": [10, 11, 13, 15],
+    "RCAF": [10, 11, 12, 13],
+}
+
+
+def _build_offense_severity_lookup_cte() -> str:
+    """
+    Builds a lookup CTE from _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP that maps
+    (assessment_type, raw_score) to a 1-indexed offense_severity_row_number.
+    """
+    rows = []
+    for (
+        assessment_type,
+        scores,
+    ) in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP.items():
+        for idx, raw_score in enumerate(scores):
+            rows.append(
+                f"SELECT '{assessment_type}' AS assessment_type, {raw_score} AS raw_score, {idx + 1} AS offense_severity_row_number"
+            )
+    return (
+        "offense_severity_lookup AS (\n        "
+        + "\n        UNION ALL ".join(rows)
+        + "\n    )"
+    )
+
+
+def latest_caf_score_cte() -> str:
+    """
+    Returns CTEs that retrieve each person's latest CAF (Classification Assessment Form)
+    offense severity (2026 policy) from assessment_score_sessions_materialized.
+
+    This returns two CTEs:
+    - offense_severity_lookup: Maps (assessment_type, raw_score) to offense_severity_row_number
+    - CAF_scores: Assessment spans with offense_severity_row_number joined from the lookup
+
+    The offense_severity_row_number is a 1-indexed position representing the severity level,
+    allowing downstream code to use a consistent index regardless of assessment type.
+
+    Returns:
+        str: SQL CTEs as a string (without the WITH keyword)
+    """
+    return f"""
+    {_build_offense_severity_lookup_cte()}
+    ,
+    CAF_scores AS (
+        SELECT
+            state_code,
+            person_id,
+            assessment_date AS start_date,
+            -- Use the next assessment date as the end date, rather than score_end_date_exclusive, to account for
+            -- all CAF types and to skip placeholder Maximum scores
+            LEAD(assessment_date) OVER (PARTITION BY person_id ORDER BY assessment_date) AS end_date_exclusive,
+            offense_severity_lookup.offense_severity_row_number,
+            asmt.assessment_type,
+        FROM
+            `{{project_id}}.sessions.assessment_score_sessions_materialized` asmt
+        LEFT JOIN offense_severity_lookup
+            ON asmt.assessment_type = offense_severity_lookup.assessment_type
+            AND CASE
+                WHEN asmt.assessment_type = 'CAF' THEN CAST(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION3') AS INT64)
+                WHEN asmt.assessment_type IN ('DCAF', 'RCAF') THEN CAST(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION2') AS INT64)
+            END = offense_severity_lookup.raw_score
+        WHERE
+            asmt.assessment_type IN ('CAF', 'DCAF', 'RCAF')
+            AND state_code = 'US_TN'
+            -- Ignore "dummy" 0 scores, used for placement to Max custody
+            AND (
+                CAST(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.CAFSCORE') AS INT64) != 0
+                OR asmt.assessment_level != 'MAXIMUM'
+            )
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date ORDER BY assessment_score DESC) = 1
+    )
+    """
+
+
+def offense_severity_to_q2_score(assessment_type: str) -> str:
+    """
+    Returns a SQL CASE expression that maps offense_severity_row_number to the
+    appropriate q2_score for the given assessment type.
+
+    Args:
+        assessment_type: One of 'CAF', 'DCAF', or 'RCAF' (classification assessment types)
+
+    Returns:
+        str: SQL CASE expression mapping offense_severity_row_number to q2_score
+    """
+    if assessment_type not in _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP:
+        raise ValueError(
+            f"Unknown assessment_type: {assessment_type}. "
+            f"Must be one of {list(_US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP.keys())}"
+        )
+
+    scores = _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP[assessment_type]
+    when_clauses = [
+        f"WHEN offense_severity_row_number = {idx + 1} THEN {score}"
+        for idx, score in enumerate(scores)
+    ]
+    return f"CASE {' '.join(when_clauses)} END"
+
 
 def incident_based_caf_score_query_template(
     score_definitions: dict,
