@@ -97,10 +97,12 @@ output:
               $mappings:
                 StateSupervisionLevel.MINIMUM:
                   - "Low"
+                  - "LOW"
                   - "SO: Low" # Sex Offense: Low
                   - "DV: Low" # Domestic Violence: Low
                 StateSupervisionLevel.MEDIUM:
                   - "Moderate"
+                  - "MOD"
                   - "Low/Moderate"
                   - "DV: Moderate/Low Mod" # Domestic Violence: Moderate/Low Mod
                   - "SO: Moderate" # Sex Offense: Moderate
@@ -109,7 +111,8 @@ output:
                   - "High"
                   - "SO: High Initial 6 Months" # Sex Offense: high initial 6 months
                   - "SO: High" # Sex Offense: High
-                  - Very High
+                  - "Very High"
+                  - "HIGH"
                 StateSupervisionLevel.LIMITED:
                   - "Conditional"
           conditions: specialConditions
