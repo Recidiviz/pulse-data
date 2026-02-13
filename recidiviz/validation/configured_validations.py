@@ -252,6 +252,9 @@ from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_s
 from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
     SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions.mismatched_supervision_staff_attribute_sessions_locations import (
+    MISMATCHED_SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_LOCATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions.person_caseload_location_sessions import (
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
 )
@@ -1097,6 +1100,32 @@ def get_all_validations() -> List[DataValidationCheck]:
             region_configs=region_configs,
             hard_max_allowed_error=0.05,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        SamenessDataValidationCheck(
+            view_builder=MISMATCHED_SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_LOCATION_VIEW_BUILDER,
+            validation_name_suffix="district",
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "supervision_district_id",
+                "supervision_district_id_inferred",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+            soft_max_allowed_error=0.3,
+            hard_max_allowed_error=0.5,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=MISMATCHED_SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_LOCATION_VIEW_BUILDER,
+            validation_name_suffix="office",
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "supervision_office_id",
+                "supervision_office_id_inferred",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+            soft_max_allowed_error=0.3,
+            hard_max_allowed_error=0.5,
         ),
         ExistenceDataValidationCheck(
             view_builder=SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VALIDATION_VIEW_BUILDER,
