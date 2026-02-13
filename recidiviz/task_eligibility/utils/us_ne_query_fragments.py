@@ -72,8 +72,9 @@ def mr_reports_within_time_interval(
             SELECT
                 state_code,
                 incident.person_id,
-                incident.incarceration_incident_id,
-                -- incident -> outcome is 1 -> many so we agg here in case there are multiple reports
+                SPLIT(incident.external_id, '-')[OFFSET(3)] AS report_number,
+                -- incident -> outcome is 1 -> many and incident -> report is 1 so we agg 
+                -- here in case there are multiple reports
                 MAX(report_date) as report_date
             FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` incident
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome` outcome
@@ -89,7 +90,7 @@ def mr_reports_within_time_interval(
             SELECT
                 state_code,
                 person_id,
-                incarceration_incident_id,
+                report_number,
                 report_date as start_date,
                 DATE_ADD(report_date, INTERVAL {date_interval} {date_part}) as end_date,
                 DATE_ADD(report_date, INTERVAL {date_interval} {date_part}) AS eligible_date,
