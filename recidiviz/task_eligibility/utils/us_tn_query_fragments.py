@@ -987,7 +987,8 @@ def incident_based_caf_score_query_template(
                     )
                     ORDER BY incident_date
                 )
-            ) AS incidents_list
+            ) AS incidents_list,
+            MAX(incident_date) AS latest_incident_date
         FROM incident_details_unnested
         GROUP BY 1, 2, 3, 4, 5
     )
@@ -1000,7 +1001,8 @@ def incident_based_caf_score_query_template(
         -- Sum up the individual score components to get the total score
         {aggregate_score_clause} AS total_score,
         -- Get incident details from the aggregated CTE (empty array if no incidents)
-        IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list
+        IFNULL(incident_details_aggregated.incidents_list, TO_JSON([])) AS incidents_list,
+        incident_details_aggregated.latest_incident_date
     FROM calculated_scores_separate incident_counts
     LEFT JOIN incident_details_aggregated
         ON incident_counts.person_id = incident_details_aggregated.person_id
