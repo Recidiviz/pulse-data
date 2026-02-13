@@ -12,6 +12,7 @@ input_columns:
   SUPERVISION: STRING
   CDPPSLOC_translated: STRING
   within_sentence_seq: INTEGER
+  SEXOFNDR: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -39,6 +40,13 @@ output:
                   - "PRB: POST RELEASE PROBATION"
           start_date: period_start_date
           termination_date: end_date
+          case_type_entries:
+            - $conditional:
+                - $if:
+                    $equal: [$literal("SEX OFFENDER"), SEXOFNDR]
+                  $then:
+                    StateSupervisionCaseTypeEntry:
+                      case_type: $literal_enum(StateSupervisionCaseType.SEX_OFFENSE)
           supervision_site: CDPPSLOC_translated
           supervising_officer_staff_external_id: CDOFICER
           supervising_officer_staff_external_id_type:
