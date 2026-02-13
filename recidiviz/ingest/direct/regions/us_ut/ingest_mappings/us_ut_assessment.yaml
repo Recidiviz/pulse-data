@@ -85,6 +85,7 @@ output:
                   - "LS/RNR RISK-NEED-RESPONSIVITY"
                   - "CONVERTED LS/RNR RISK-NEED-RES"
                 StateAssessmentType.INTERNAL_UNKNOWN:
+                  - "CAMS FINAL SESSION"
                   - "MIO ASSESSMENT"
                   - "CAMS FIRST SESSION"
                   - "CAMS STABILIZATION PLAN"
