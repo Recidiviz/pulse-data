@@ -34,18 +34,11 @@ import logging
 import os
 import re
 import sys
-from collections import defaultdict
-from inspect import getmembers, isfunction
-from typing import Dict, FrozenSet, List, Optional, Tuple
+from typing import Dict, FrozenSet, List, Tuple
 
 import attr
-from werkzeug.routing import Rule
 
 from recidiviz.admin_panel.models import validation_pb2
-from recidiviz.tools.docs.endpoint_documentation_generator import (
-    EndpointDocumentationGenerator,
-    app_rules,
-)
 from recidiviz.tools.validation.git_validation_utils import (
     get_commits_with_pattern,
     get_modified_files,
@@ -66,74 +59,6 @@ class RequiredModificationSets:
             if_modified_files=files,
             then_modified_files=files,
         )
-
-
-def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
-    """Given a rule, look for the actual file within the codebase that has the method definition
-    for the endpoint defined. This is done by crawling through all of our customized modules imported
-    and finding the exact function that matches."""
-    endpoint_parts = rule.endpoint.split(".")
-    endpoint_module_name = endpoint_parts[0]
-    function_name = endpoint_parts[1] if len(endpoint_parts) > 1 else None
-    recidiviz_modules = [
-        module
-        for module in sys.modules
-        if "recidiviz" in module and "tools" not in module and "tests" not in module
-    ]
-    file_for_endpoint: Optional[str] = None
-    for module_name in recidiviz_modules:
-        module = sys.modules[module_name]
-        if module.__file__ is None:
-            raise ValueError(f"No file associated with {module}.")
-
-        if endpoint_module_name in module_name or not file_for_endpoint:
-            for func, _ in getmembers(module, isfunction):
-                if func == function_name:
-                    top_level_idx = module.__file__.find("recidiviz/")
-                    file_for_endpoint = module.__file__[top_level_idx:]
-                    break
-    return file_for_endpoint
-
-
-# TODO(#47719) Remove dead code
-def _get_modified_endpoints() -> List[RequiredModificationSets]:
-    """Returns the dynamic set of documentation for the App Engine endpoints and the corresponding
-    source code modifications."""
-
-    doc_generator = EndpointDocumentationGenerator()
-    endpoint_files_to_markdown_paths: Dict[str, List[str]] = defaultdict(list)
-    for rule in app_rules():
-        file_for_endpoint = _get_file_for_endpoint_rule(rule)
-        if file_for_endpoint:
-            endpoint_files_to_markdown_paths[file_for_endpoint].append(
-                doc_generator.generate_markdown_path_for_endpoint(
-                    ENDPOINT_DOCS_DIRECTORY, rule.rule
-                )
-            )
-
-    required_modification_sets = []
-    for (
-        endpoint_file,
-        markdown_paths,
-    ) in endpoint_files_to_markdown_paths.items():
-        common_path = os.path.commonpath(markdown_paths)
-        paths_to_modify = (
-            # If an endpoint python file has methods that produce two endpoints with different url_prefixes,
-            # the common_path will end up being the docs directory (docs/endpoints). So in this case,
-            # we will add the next immediate top-level directories to the set that should be modified,
-            # since that directory is the url_prefix that will be affixed to the endpoint.
-            # (e.g. docs/endpoints/export, docs/endpoints/view_update)
-            {"/".join(top_level_dir.split("/")[:3]) for top_level_dir in markdown_paths}
-            if common_path == ENDPOINT_DOCS_DIRECTORY
-            else {common_path}
-        )
-        required_modification_sets.append(
-            RequiredModificationSets(
-                if_modified_files=frozenset({endpoint_file}),
-                then_modified_files=frozenset(paths_to_modify),
-            )
-        )
-    return required_modification_sets
 
 
 # Sets of prefixes to check. For each set, if the changes modify a file matching
@@ -249,8 +174,7 @@ def _match_filenames(
 def check_assertions(
     modified_files: FrozenSet[str], sets_to_skip: FrozenSet[str]
 ) -> List[Tuple[FrozenSet[str], FrozenSet[str], str]]:
-    """Checks that all of the the modified files against the global set of modification assertions, and returns any
-    failed assertions.
+    """Checks all of the modified files against the global set of modification assertions, and returns any failed assertions.
 
     If any of the modified files are part of a set of files that must be modified together and the other files in that
     set are not themselves modified, that constitutes a failure. However, if that set is provided as one of the sets
