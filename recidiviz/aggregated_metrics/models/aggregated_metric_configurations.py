@@ -3149,6 +3149,19 @@ TASK_COMPLETIONS_WHILE_ELIGIBLE = EventCountMetric(
     event_segmentation_columns=["task_type"],
 )
 
+TASK_COMPLETIONS_WHILE_ELIGIBLE_OVER_7_DAYS = EventCountMetric(
+    name="task_completions_while_eligible_over_7_days",
+    display_name="Task Completions While Eligible Over 7 Days",
+    description="Number of task completions occurring when the person has been eligible for >7 days",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "eligible_for_over_7_days": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
 DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION = EventValueMetric(
     name="days_eligible_at_first_tool_action",
     display_name="Days Eligible At First Workflows Tool Action",
