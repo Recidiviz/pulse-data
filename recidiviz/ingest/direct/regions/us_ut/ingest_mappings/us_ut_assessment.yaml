@@ -85,6 +85,8 @@ output:
                   - "LS/RNR RISK-NEED-RESPONSIVITY"
                   - "CONVERTED LS/RNR RISK-NEED-RES"
                 StateAssessmentType.INTERNAL_UNKNOWN:
+                  # TODO(#59861): See if there's a more appropriate mapping for CAMS INTERIM SESSION(S)
+                  - "CAMS INTERIM SESSION(S)"
                   - "CAMS FINAL SESSION"
                   - "MIO ASSESSMENT"
                   - "CAMS FIRST SESSION"
@@ -214,6 +216,12 @@ output:
                       StateAssessmentLevel.INTENSE:
                         - "INTENSIVE"
                       StateAssessmentLevel.INTERNAL_UNKNOWN:
+                        # TODO(#59861): The following two eval_desc values appear a total of 5 times in ofndr_tst_eval
+                        # between 2026-02-12 and 2026-02-15. Should investigate if these are erroneous and
+                        # need a raw data migration or if they're intended values and should be mapped to
+                        # something other than INTERNAL_UNKNOWN.
+                        - "3 = ABOVE AVERAGE (70-84%)"
+                        - "2 = ABOVE AVERAGE (47-69%)"
                         - "REFERRAL NOT RECOMMENDED"
                         - ". . ."
                         - "LEVEL I - GOP"
