@@ -339,8 +339,28 @@ output:
                   - "11540" # Security level VI (no longer used)
           housing_unit_type:
             $conditional:
-              # If the housing unit is part of the START unit, map to OTHER_SOLITARY_CONFINEMENT
+              # If offender designation is not missing, then prioritize mapping housing unit type using designation
               - $if:
+                  $not_null: offender_designation_code_id
+                $then:
+                  $enum_mapping:
+                    $raw_text: offender_designation_code_id
+                    $mappings:
+                      StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
+                        - "11672" # Adminstrative Segregation
+                        - "11670" # Graded in Segregation
+                      StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                        - "11389" # Temporary Segregation
+                      StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY:
+                        - "11668" # Protection
+                      StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT:
+                        - "11669" # Observation (Suicide Watch)
+                      StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
+                        - "11671" # Detention
+                      StateIncarcerationPeriodHousingUnitType.HOSPITAL:
+                        - "11390" # Hospital
+              # Else if the housing unit is part of the START unit, map to OTHER_SOLITARY_CONFINEMENT
+              - $else_if:
                   $or:
                     - $and:
                         - $equal:
@@ -360,16 +380,6 @@ output:
                             $options:
                               - $literal("02") # Unit 2
                               - $literal("03") # Unit 3
-                    - $and:
-                        - $equal:
-                            - location_code
-                            - $literal("ICF")
-                        - $equal:
-                            - reporting_station_name
-                            - $literal("04") # Unit 4
-                        - $equal:
-                            - wing_name
-                            - $literal("A") # Wing A
                 $then:
                   $enum_mapping:
                     $raw_text:
@@ -403,26 +413,6 @@ output:
                           - $literal("022")
                           - $literal("023")
                 $then: $literal_enum(StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT)
-              # If offender designation is not missing, then use that to map housing unit type
-              - $else_if:
-                  $not_null: offender_designation_code_id
-                $then:
-                  $enum_mapping:
-                    $raw_text: offender_designation_code_id
-                    $mappings:
-                      StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
-                        - "11672" # Adminstrative Segregation
-                        - "11670" # Graded in Segregation
-                      StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
-                        - "11389" # Temporary Segregation
-                      StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY:
-                        - "11668" # Protection
-                      StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT:
-                        - "11669" # Observation (Suicide Watch)
-                      StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
-                        - "11671" # Detention
-                      StateIncarcerationPeriodHousingUnitType.HOSPITAL:
-                        - "11390" # Hospital
               # Otherwise map based on cell type
               - $else:
                   $enum_mapping:
