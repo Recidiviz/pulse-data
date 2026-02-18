@@ -24,12 +24,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     incarceration_intake_assessment_completed,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    custody_level_is_not_max,
-    has_initial_classification_in_state_prison_custody,
-)
-from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder,
+from recidiviz.task_eligibility.criteria.general import custody_level_is_not_max
+from recidiviz.task_eligibility.eligibility_spans.us_tn.initial_classification_review_2026_policy import (
+    US_TN_INITIAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -37,19 +34,13 @@ from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY = (
-    StateAgnosticInvertedTaskCriteriaBigQueryViewBuilder(
-        sub_criteria=has_initial_classification_in_state_prison_custody.VIEW_BUILDER,
-    )
-)
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="INITIAL_CLASSIFICATION_REVIEW",
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        NOT_HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY,
+        *US_TN_INITIAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS,
         custody_level_is_not_max.VIEW_BUILDER,
     ],
     completion_event_builder=incarceration_intake_assessment_completed.VIEW_BUILDER,
