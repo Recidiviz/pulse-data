@@ -31,3 +31,9 @@ components:
           - container.googleapis.com # GKE
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
+
+    # Provisions the load balancer and WAF for public pathways
+    public-pathways-lb-waf:
+      vars:
+        managed_ssl_certificate_domains:
+          - "pathways-staging.recidiviz.org"

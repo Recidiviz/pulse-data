@@ -25,6 +25,14 @@ spec:
         - "**/README.md"
       targets:
         - components/terraform/vendor/{{.Component}}
+    - component: "lb-http"
+      source: "github.com/terraform-google-modules/terraform-google-lb-http.git//modules/serverless_negs?ref={{.Version}}"
+      version: "v12.1.4"
+      included_paths:
+        - "**/*.tf"
+        - "**/README.md"
+      targets:
+        - components/terraform/vendor/{{.Component}}
     - component: "cloud-sql-instance"
       source: "github.com/terraform-google-modules/terraform-google-sql-db.git?ref={{.Version}}"
       version: "v25.2.2"

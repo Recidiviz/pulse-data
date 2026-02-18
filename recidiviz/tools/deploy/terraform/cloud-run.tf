@@ -433,12 +433,12 @@ resource "google_cloud_run_service" "public-pathways" {
 
         env {
           name  = "APP_URL"
-          value = var.project_id == "recidiviz-123" ? "https://public-pathways-app.recidiviz.org" : "https://public-pathways-app-staging.recidiviz.org"
+          value = var.project_id == "recidiviz-123" ? "https://pathways-app.recidiviz.org" : "https://pathways-app-staging.recidiviz.org"
         }
 
         env {
           name  = "DASHBOARD_URL"
-          value = "https://public-pathways-dashboard.recidiviz.org"
+          value = var.project_id == "recidiviz-123" ? "https://pathways.recidiviz.org" : "https://pathways-staging.recidiviz.org"
         }
 
         resources {
