@@ -67,6 +67,12 @@ def mr_reports_within_time_interval(
     max_number_of_mrs_exclusive: int,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Builds a filter for MR reports within a specified time interval"""
+
+    if max_number_of_mrs_exclusive <= 0:
+        raise ValueError(
+            "Must specify positive integer for max_number_of_mrs_exclusive"
+        )
+
     query_template = f"""
         WITH filtered_mrs AS (
             SELECT
@@ -111,7 +117,10 @@ def mr_reports_within_time_interval(
                 end_date,
                 COUNT(*) AS report_count,
                 ARRAY_AGG(report_date ORDER BY report_date DESC) AS report_dates,
-                MAX(eligible_date) AS latest_eligible_date
+                -- we want the latest eligibility date of the MR that makes this span 
+                -- ineligible -- if there are fewer MRs than |max_number_of_mrs_exclusive|
+                -- then we this will be NULL.
+                ARRAY_AGG(eligible_date ORDER BY eligible_date DESC)[SAFE_OFFSET({max_number_of_mrs_exclusive - 1})] AS latest_eligible_date
             FROM sub_sessions_with_attributes
             GROUP BY 1, 2, 3, 4
         )
