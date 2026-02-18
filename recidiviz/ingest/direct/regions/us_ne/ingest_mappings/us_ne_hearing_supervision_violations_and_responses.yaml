@@ -102,8 +102,10 @@ output:
                         - Narcotics - (A/metha)mphetamine
                         - Narcotics - (A/metha)mphetamine Cannabinoids
                         - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine
-                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine Opiates
-                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine PCP
+                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine
+                          Opiates
+                        - Narcotics - (A/metha)mphetamine Cannabinoids Cocaine
+                          PCP
                         - Narcotics - (A/metha)mphetamine Cannabinoids Opiates
                         - Narcotics - (A/metha)mphetamine Cocaine
                         - Narcotics - (A/metha)mphetamine Cocaine Opiates
@@ -120,6 +122,7 @@ output:
                         - Narcotics - Cocaine PCP
                         - Narcotics - Opiates
                         - Narcotics - PCP
+                        - Narcotics - PCP Opiates
                         - Intoxicants
 
           supervision_violation_responses:
