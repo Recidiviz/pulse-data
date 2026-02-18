@@ -1,0 +1,18 @@
+address:
+  dataset_id: us_nd_validation_oneoffs
+  table_id: incarceration_population_person_level
+description: |-
+  External validation data we have received exactly once and do not plan to get regular 
+  updates to. Table contains every individual included in ND's state prison population 
+  count as of the listed date.
+schema:
+  - name: ROOT_OFFENDER_ID
+    type: STRING
+    mode: NULLABLE
+  - name: date_of_stay
+    type: DATE
+    mode: NULLABLE
+  - name: facility
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
