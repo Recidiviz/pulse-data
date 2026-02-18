@@ -30,11 +30,13 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_nc import (
 from recidiviz.task_eligibility.criteria.general import (
     continuous_employment_for_90_days,
     continuous_student_for_90_days,
+    supervision_case_type_is_not_sex_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
     completed_sex_offender_treatment,
     completion_of_facility_program_during_prs,
     continuous_enrollment_at_facility_for_90_days,
+    has_no_sex_offender_treatment_assigned,
     no_pending_violations_or_convictions_precluding_crr,
     reporting_as_directed,
     supervision_within_30_months_of_full_term_completion_date,
@@ -50,13 +52,33 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_NO_SO_TREATMENT_AND_WITHIN_30_MONTHS = (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="US_NC_NO_SO_TREATMENT_AND_WITHIN_30_MONTHS",
+        sub_criteria_list=[
+            has_no_sex_offender_treatment_assigned.VIEW_BUILDER,
+            supervision_within_30_months_of_full_term_completion_date.VIEW_BUILDER,
+        ],
+    )
+)
+
 _SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_NC_COMPLETED_SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_OF_FULL_TERM_COMPLETION_DATE",
     sub_criteria_list=[
+        supervision_case_type_is_not_sex_offense.VIEW_BUILDER,
         completed_sex_offender_treatment.VIEW_BUILDER,
-        supervision_within_30_months_of_full_term_completion_date.VIEW_BUILDER,
+        _NO_SO_TREATMENT_AND_WITHIN_30_MONTHS,
     ],
+    allowed_duplicate_reasons_keys=[
+        "sex_offender_program_ids",
+        "participation_statuses",
+    ],
+    reasons_aggregate_function_override={
+        "sex_offender_program_ids": "ANY_VALUE",
+        "participation_statuses": "ANY_VALUE",
+    },
 )
 
 # Extract the criteria group so we can reference it in the almost eligible condition
