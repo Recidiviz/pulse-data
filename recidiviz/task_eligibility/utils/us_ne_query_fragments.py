@@ -19,7 +19,9 @@ Helper SQL queries for Nebraska
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -63,15 +65,43 @@ def mr_reports_within_time_interval(
     description: str,
     date_interval: int,
     date_part: str,
-    mr_type: str,
+    mr_type_filter: str | None,
+    severity_filter: str | None,
     max_number_of_mrs_exclusive: int,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
-    """Builds a filter for MR reports within a specified time interval"""
+    """For each MR, creates a span of length |date_interval| |date_part| starting at the
+    report date. A person fails this criterion at any point where [max_number_of_mrs_exclusive]
+    or more MR spans overlap. If an MR span overlaps with a period where the person is
+    out of custody (e.g., incarcerated out of state, federal custody, or absconded), the
+    span is reset to start after that out of custody period ends.
+
+      Args:
+        criteria_name(str): The name of the criteria query
+        description(str): Description of the criteria query
+        date_interval(str): The length of time after each MR report during which it remains
+            counted. Combined with date_part (e.g., 12 MONTH, 90 DAY).
+        date_part(str): The BigQuery date part unit for date_interval. Supports standard
+            BigQuery date parts: "DAY", "WEEK", "MONTH", "QUARTER", "YEAR".
+        mr_type_filter(str | None): If provided, filters to only MRs where the UDCorIDC field in
+            incident_metadata equals this value. If None, all MR types are included.
+        severity_filter(str | None): If provided, filters to only MRs with this incident_severity
+            value. If None, all severity levels are included.
+        max_number_of_mrs_exclusive(int): The exclusive upper bound on the number of active
+            MR spans for the criterion to be met. For example, a value of 2 means
+            meets_criteria is True when fewer than 2 MRs are active (i.e., 0 or 1).
+            Must be a positive integer.
+    """
 
     if max_number_of_mrs_exclusive <= 0:
         raise ValueError(
             "Must specify positive integer for max_number_of_mrs_exclusive"
         )
+
+    filter_statements = ""
+    if mr_type_filter:
+        filter_statements += f"AND JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.UDCorIDC') = '{mr_type_filter}'\n"
+    if severity_filter:
+        filter_statements += f"AND incident.incident_severity = '{severity_filter}'\n"
 
     query_template = f"""
         WITH filtered_mrs AS (
@@ -87,11 +117,12 @@ def mr_reports_within_time_interval(
             USING (state_code, incarceration_incident_id)
             WHERE 
                 incident.state_code = 'US_NE'
-                AND JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.UDCorIDC') = '{mr_type}'
                 AND outcome.report_date IS NOT NULL
                 AND incident.incident_type NOT IN ('DISMISSED', 'NOT_GUILTY')
+                {filter_statements}
             GROUP BY 1,2,3
-        ),
+        )
+        ,
         filtered_mr_spans AS (
             SELECT
                 state_code,
@@ -99,15 +130,136 @@ def mr_reports_within_time_interval(
                 report_number,
                 report_date as start_date,
                 DATE_ADD(report_date, INTERVAL {date_interval} {date_part}) as end_date,
-                DATE_ADD(report_date, INTERVAL {date_interval} {date_part}) AS eligible_date,
                 report_date
             FROM filtered_mrs
-        ),
-        -- Create sub-sessions to handle overlapping 6-month periods
-        {create_sub_sessions_with_attributes(
-            table_name="filtered_mr_spans",
-            end_date_field_name="end_date",
-        )},
+        )
+        ,
+        -- create indicators for when they are incarcerated but not in NCDS custody
+        -- where their behavior cannot be accounted for
+        super_sessions_with_ooc_indicator AS (
+            SELECT 
+                state_code,
+                person_id,
+                start_date,
+                end_date_exclusive,
+                (
+                    compartment_level_1 = "INCARCERATION"
+                    AND (
+                        custodial_authority IN ('OTHER_STATE', 'FEDERAL')
+                        OR compartment_level_2 IN ('ABSCONSION')
+                    )
+                ) AS is_ooc 
+            FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
+            WHERE state_code = "US_NE"
+        )
+        ,
+        -- create supersessions of out of custody
+        ooc_super_sessions AS (
+            {aggregate_adjacent_spans(
+                table_name='super_sessions_with_ooc_indicator',
+                attribute='is_ooc',
+                end_date_field_name='end_date_exclusive'
+            )}
+        )
+        ,
+        -- identify mr spans that overlap w/ an absconsion or being in another jurisdiction 
+        filtered_mr_spans_overlapping_w_ooc AS (
+            SELECT 
+                mr.state_code,
+                mr.person_id,
+                mr.report_number,
+                mr.report_date,
+                mr.start_date,
+                mr.end_date,
+                ooc.person_id IS NOT NULL as has_overlapping_ooc,
+                ooc.start_date as incar_super_start_date,
+                ooc.end_date_exclusive as incar_super_end_date_exclusive,
+                ooc.session_id,
+                ooc.date_gap_id
+            FROM filtered_mr_spans mr   
+            -- join on ooc super sessions
+            LEFT JOIN (
+                SELECT * FROM ooc_super_sessions WHERE is_ooc
+            ) ooc
+            ON  
+                mr.state_code = ooc.state_code
+                AND mr.person_id = ooc.person_id
+                -- filter to overlapping spans
+                AND mr.start_date < {nonnull_end_date_exclusive_clause('ooc.end_date_exclusive')}
+                AND mr.end_date > ooc.start_date
+            -- if there is more than 1 ooc super session in our window, take the most
+            -- recent
+            QUALIFY ROW_NUMBER() OVER (
+                PARTITION BY     
+                    mr.state_code,
+                    mr.person_id,
+                    mr.report_number
+                ORDER BY ooc.start_date DESC
+            ) = 1
+        )
+        ,
+        -- adjust mr spans to reset upon reentry into qualifying incarceration super session
+        adjusted_mr_starts_for_ooc AS (
+            SELECT 
+                mr.state_code,
+                mr.person_id,
+                mr.report_number,
+                mr.report_date,
+                mr.start_date,
+                -- if we can't find a future date, then this is null which means they are still ooc and will kick 
+                -- back in when they are back in custody
+                MIN(super.start_date) as clock_reset_date,
+                DATE_ADD(MIN(super.start_date), INTERVAL {date_interval} {date_part}) as end_date,
+            FROM filtered_mr_spans_overlapping_w_ooc mr
+            LEFT JOIN ooc_super_sessions super
+            ON 
+                mr.state_code = super.state_code
+                AND mr.person_id = super.person_id
+                -- get all future sessions
+                AND super.session_id > mr.session_id
+            WHERE 
+                -- filter to 
+                -- 1. cases we identified in previous CTE as overlapping ooc
+                mr.has_overlapping_ooc IS TRUE
+                -- 2. future super sessions that are back in custody
+                AND super.is_ooc IS FALSE
+                -- 3. future super sessions that are either active or lasted the duration 
+                --    of the intended MR span
+                AND 
+                -- the future super session lasts as long as this sessions (always returns true for active super sessions)
+                DATE_ADD(super.start_date, INTERVAL {date_interval} {date_part}) <= {nonnull_end_date_exclusive_clause("super.end_date_exclusive")}
+            GROUP BY 1,2,3,4,5
+        )
+        ,
+        all_mr_spans AS (
+            SELECT 
+                state_code,
+                person_id,
+                report_number,
+                report_date,
+                clock_reset_date,
+                start_date,
+                end_date,
+                end_date as eligible_date
+            FROM adjusted_mr_starts_for_ooc
+            
+            UNION ALL 
+
+            SELECT 
+                state_code,
+                person_id,
+                report_number,
+                report_date,
+                NULL AS clock_reset_date,
+                start_date,
+                end_date, 
+                end_date as eligible_date
+            FROM filtered_mr_spans_overlapping_w_ooc
+            WHERE not has_overlapping_ooc
+        )
+        ,
+        -- Create sub-sessions to handle overlapping periods
+        {create_sub_sessions_with_attributes(table_name="all_mr_spans")},
         -- Count reports per person per time period
         report_counts AS (
             SELECT
@@ -117,6 +269,7 @@ def mr_reports_within_time_interval(
                 end_date,
                 COUNT(*) AS report_count,
                 ARRAY_AGG(report_date ORDER BY report_date DESC) AS report_dates,
+                ARRAY_AGG(clock_reset_date ORDER BY report_date DESC) AS clock_reset_dates,
                 -- we want the latest eligibility date of the MR that makes this span 
                 -- ineligible -- if there are fewer MRs than |max_number_of_mrs_exclusive|
                 -- then we this will be NULL.
@@ -132,9 +285,11 @@ def mr_reports_within_time_interval(
             report_count < {max_number_of_mrs_exclusive} AS meets_criteria,
             report_dates,
             latest_eligible_date,
+            clock_reset_dates,
             TO_JSON(STRUCT(
                 report_dates AS report_dates,
-                latest_eligible_date AS latest_eligible_date
+                latest_eligible_date AS latest_eligible_date,
+                clock_reset_dates AS clock_reset_dates
             )) AS reason,
         FROM report_counts"""
 
@@ -152,6 +307,11 @@ def mr_reports_within_time_interval(
                 name="latest_eligible_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the individual is eligible",
+            ),
+            ReasonsField(
+                name="clock_reset_dates",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="If the JII was out of custody this MR's initial ineligibility period, the date when the clock reset for each applicable MR",
             ),
         ],
         state_code=StateCode.US_NE,

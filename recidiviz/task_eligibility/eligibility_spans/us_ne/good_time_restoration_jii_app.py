@@ -24,11 +24,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import good_time_reinstated
-from recidiviz.task_eligibility.criteria.general import (
-    no_highest_severity_incarceration_sanctions_within_1_year_of_report,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
     less_than_3_udc_mrs_in_past_6_months,
+    no_class_1_mrs_in_last_year,
     no_idc_mrs_in_past_6_months,
     no_ongoing_clinical_treatment_program_refusal,
     not_in_ltrh_for_90_days,
@@ -60,7 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             TimeDependentCriteriaCondition(
-                criteria=no_highest_severity_incarceration_sanctions_within_1_year_of_report.VIEW_BUILDER,
+                criteria=no_class_1_mrs_in_last_year.VIEW_BUILDER,
                 reasons_date_field="latest_eligible_date",
                 interval_length=_ALMOST_ELIGIBLE_MONTHS,
                 interval_date_part=BigQueryDateInterval.MONTH,

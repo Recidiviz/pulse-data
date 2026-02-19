@@ -27,11 +27,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import good_time_reinstated
-from recidiviz.task_eligibility.criteria.general import (
-    no_highest_severity_incarceration_sanctions_within_1_year_of_report,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
     has_lost_restorable_good_time,
+    no_class_1_mrs_in_last_year,
     no_idc_mrs_in_past_6_months,
     wait_until_next_month_before_next_good_time_restoration,
 )
@@ -79,11 +77,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             #
             # --- eligible or almost eligible for: no class 1 MRs in the last year -----
             EligibleCriteriaCondition(
-                criteria=no_highest_severity_incarceration_sanctions_within_1_year_of_report.VIEW_BUILDER,
+                criteria=no_class_1_mrs_in_last_year.VIEW_BUILDER,
                 description="No Class 1 MRs in the last year.",
             ),
             TimeDependentCriteriaCondition(
-                criteria=no_highest_severity_incarceration_sanctions_within_1_year_of_report.VIEW_BUILDER,
+                criteria=no_class_1_mrs_in_last_year.VIEW_BUILDER,
                 # Select the most recent incident date
                 reasons_date_field="latest_eligible_date",
                 interval_length=_ALMOST_ELIGIBLE_MONTHS,
