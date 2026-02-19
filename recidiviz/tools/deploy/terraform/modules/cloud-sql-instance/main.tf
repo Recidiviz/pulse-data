@@ -37,6 +37,13 @@ variable "database_version" {
   default = "POSTGRES_13"
 }
 
+# Cloud SQL edition
+# See also https://cloud.google.com/sql/docs/postgres/editions-intro
+variable "edition" {
+  type    = string
+  default = "ENTERPRISE"
+}
+
 # If true, a readonly user will be created from the configured `readonly` secrets
 variable "has_readonly_user" {
   type = bool
@@ -127,6 +134,7 @@ resource "google_sql_database_instance" "data" {
   deletion_protection = false
 
   settings {
+    edition           = var.edition
     disk_autoresize   = true
     tier              = var.tier
     availability_type = "REGIONAL"
