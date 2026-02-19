@@ -49,6 +49,8 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
 )
 
+# Community Reentry Centers (CRCs) - work release facilities where residents
+# can transition back into the community
 IX_CRC_FACILITIES = [
     "Nampa Community Reentry Center",
     "East Boise Community Reentry Center",
@@ -57,6 +59,24 @@ IX_CRC_FACILITIES = [
     "Twin Falls Community Reentry Center",
     "Treasure Valley Community Reentry Center",
 ]
+
+# CRC-like bed facilities - institutional facilities that have CRC-like beds
+# for residents who are medically ineligible for CRC work release
+
+# Available to male and female medically ineligible residents (SICI)
+IX_CRC_LIKE_BED_FACILITIES_MALE_AND_FEMALE = [
+    "SOUTH IDAHO CORRECTIONAL INSTITUTION",
+]
+
+# Available only to male medically ineligible residents (ICIO)
+IX_CRC_LIKE_BED_FACILITIES_MALE_ONLY = [
+    "IDAHO CORRECTIONAL INSTITUTION-OROFINO",
+]
+
+# Combined list of all CRC-like bed facilities
+IX_CRC_LIKE_BED_FACILITIES = (
+    IX_CRC_LIKE_BED_FACILITIES_MALE_AND_FEMALE + IX_CRC_LIKE_BED_FACILITIES_MALE_ONLY
+)
 
 DETAINER_TYPE_LST_CRC = ["59"]
 HOLD_TYPE_LST_CRC = ["84", "112", "85", "61", "87", "86", "62", "88", "67", "83", "113"]
