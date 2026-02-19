@@ -153,6 +153,7 @@ class CloudSqlToBQConfig:
         if schema_type in (
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
+            SchemaType.PERSISTENCE,
             SchemaType.PUBLIC_PATHWAYS,
             SchemaType.STATE,
             SchemaType.WORKFLOWS,

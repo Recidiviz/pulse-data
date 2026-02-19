@@ -639,3 +639,11 @@ class MigrationsTestTest(TestCase):
                 f"Found schema types with missing migrations test coverage: "
                 f"{missing_coverage}."
             )
+
+
+class TestPersistenceMigrations(MigrationsTestBase):
+    __test__ = True
+
+    @classmethod
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.PERSISTENCE

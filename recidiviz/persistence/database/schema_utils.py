@@ -46,6 +46,10 @@ from recidiviz.persistence.database.schema.justice_counts import (
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
+from recidiviz.persistence.database.schema.persistence import (
+    schema as persistence_schema,
+)
+from recidiviz.persistence.database.schema.persistence.schema import PersistenceBase
 from recidiviz.persistence.database.schema.public_pathways import (
     schema as public_pathways_schema,
 )
@@ -57,6 +61,7 @@ _SCHEMA_MODULES: List[ModuleType] = [
     case_triage_schema,
     justice_counts_schema,
     pathways_schema,
+    persistence_schema,
     public_pathways_schema,
     state_schema,
     operations_schema,
@@ -175,6 +180,8 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
             return CaseTriageBase
         case SchemaType.PATHWAYS:
             return PathwaysBase
+        case SchemaType.PERSISTENCE:
+            return PersistenceBase
         case SchemaType.PUBLIC_PATHWAYS:
             return PublicPathwaysBase
         case SchemaType.WORKFLOWS:

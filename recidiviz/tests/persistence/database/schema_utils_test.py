@@ -165,6 +165,7 @@ class TestSchemaUtils(unittest.TestCase):
             "supervision_to_liberty_transitions",
             "supervision_to_prison_transitions",
         ]
+        persistence_table_names = ["us_tn_caf_edits"]
         public_pathways_table_names = [
             "metric_metadata",
             "prison_population_over_time",
@@ -248,6 +249,7 @@ class TestSchemaUtils(unittest.TestCase):
             + justice_counts_table_names
             + operations_table_names
             + pathways_table_names
+            + persistence_table_names
             + public_pathways_table_names
             + state_table_names
             + workflows_table_names

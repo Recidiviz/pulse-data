@@ -40,6 +40,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.persistence.schema import PersistenceBase
 from recidiviz.persistence.database.schema.public_pathways.schema import (
     PublicPathwaysBase,
 )
@@ -199,6 +200,7 @@ DECLARATIVE_BASES = [
     FakeBase,
     CaseTriageBase,
     PathwaysBase,
+    PersistenceBase,
     PublicPathwaysBase,
     WorkflowsBase,
     InsightsBase,

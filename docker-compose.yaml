@@ -158,6 +158,27 @@ services:
     environment:
       - IS_DEV=true
 
+  persistence_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: persistence_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5440:5432"
+    volumes:
+      - persistence_db_data:/var/lib/postgresql/data
+      - persistence_db_socket:/var/run/postgresql/
+
+  persistence_migrations:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+    depends_on:
+      - persistence_db
+    command: uv run python -m recidiviz.tools.migrations.run_migrations_docker --database PERSISTENCE
+    environment:
+      - IS_DEV=true
+
 volumes:
   case_triage_db_data:
   case_triage_db_socket:
@@ -173,3 +194,5 @@ volumes:
   insights_db_socket:
   public_pathways_db_data:
   public_pathways_db_socket:
+  persistence_db_data:
+  persistence_db_socket:

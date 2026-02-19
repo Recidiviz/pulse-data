@@ -63,6 +63,7 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.OPERATIONS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.JUSTICE_COUNTS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),
+            SQLAlchemyDatabaseKey(SchemaType.PERSISTENCE, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
             SQLAlchemyDatabaseKey(SchemaType.PUBLIC_PATHWAYS, db_name="us_xx"),

@@ -143,6 +143,31 @@ module "workflows_database" {
   }
 }
 
+module "persistence_database" {
+  source = "./modules/cloud-sql-instance"
+
+  project_id       = var.project_id
+  instance_key     = "persistence"
+  base_secret_name = "persistence"
+  region           = var.us_central_region
+  zone             = var.zone
+  secondary_zone   = "us-central1-b"
+  database_version = "POSTGRESQL_18"
+
+  tier = coalesce(
+    var.default_sql_tier,
+    var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
+  ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
+  has_readonly_user = true
+
+  insights_config = {
+    query_insights_enabled  = true
+    query_string_length     = 1024
+    record_application_tags = false
+    record_client_address   = false
+  }
+}
+
 module "public_pathways_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -183,6 +208,7 @@ locals {
       module.pathways_database.connection_name,
       module.workflows_database.connection_name,
       module.insights_database.connection_name,
+      module.persistence_database.connection_name,
       # v2 modules
       module.operations_database_v2.connection_name,
       # TODO(Recidiviz/justice-counts#1019): Remove this when the admin panel no longer needs to access the JC database
