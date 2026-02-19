@@ -1706,6 +1706,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_oz_ingest_view_results.hunger_games_periods",
     "us_oz_ingest_view_results.internDS_initialtable",
     "us_oz_ingest_view_results.internDS_table",
+    "us_oz_ingest_view_results.kds_periods",
     "us_oz_ingest_view_results.kds_person",
     "us_oz_ingest_view_results.lds_person",
     "us_oz_ingest_view_results.lotr_periods",
