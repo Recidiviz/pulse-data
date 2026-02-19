@@ -19,6 +19,10 @@ along with the product type associated with each page."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.dataset_config import (
+    CASE_PLANNING_PRODUCTION_DATASET,
+    PULSE_DASHBOARD_SEGMENT_DATASET,
+)
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
     SEGMENT_DATASETS,
@@ -29,13 +33,20 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_ID = "all_segment_pages"
 
+_UTM_COLS = ["utm_source", "utm_medium", "utm_campaign", "utm_term"]
 
-def _get_pages_query_template(dataset: str) -> str:
-    # Pages events are relevant to all product types
+_NULL_UTM_COLS_SNIPPET = ", ".join(
+    f"CAST(NULL AS STRING) AS {col}" for col in _UTM_COLS
+)
+
+_DATASETS_WITH_UTM_COLS = [PULSE_DASHBOARD_SEGMENT_DATASET]
+
+
+def _get_pages_query_template(dataset: str, additional_cols: list[str]) -> str:
     return build_segment_event_view_query_template(
         segment_table_sql_source=BigQueryAddress(dataset_id=dataset, table_id="pages"),
         segment_table_jii_pseudonymized_id_columns=[],
-        additional_attribute_cols=[],
+        additional_attribute_cols=additional_cols,
         relevant_product_types=list(ProductType),
     )
 
@@ -44,8 +55,13 @@ def _get_pages_query_template(dataset: str) -> str:
 # Segment event infra once views are no longer configured by event X product builders
 ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id="segment_events",
+    # Only pulse_dashboard_segment_metrics.pages has UTM parameter columns,
+    # not case_planning_production.pages
     view_query_template="\nUNION ALL\n".join(
-        _get_pages_query_template(dataset) for dataset in SEGMENT_DATASETS
+        _get_pages_query_template(dataset, _UTM_COLS)
+        if dataset in _DATASETS_WITH_UTM_COLS
+        else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(CASE_PLANNING_PRODUCTION_DATASET, [])})"
+        for dataset in SEGMENT_DATASETS
     ),
     view_id=_VIEW_ID,
     description=__doc__,

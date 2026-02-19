@@ -186,6 +186,18 @@ schema:
   - name: name
     type: STRING
     mode: NULLABLE
+  - name: utm_source
+    type: STRING
+    mode: NULLABLE
+  - name: utm_medium
+    type: STRING
+    mode: NULLABLE
+  - name: utm_campaign
+    type: STRING
+    mode: NULLABLE
+  - name: utm_term
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
