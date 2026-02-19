@@ -422,7 +422,7 @@ def get_latest_min_referrals_ctes() -> str:
             AND mr.person_id = iss.person_id
             AND mr.evaluation_date BETWEEN iss.start_date AND IFNULL(DATE_SUB(iss.end_date_exclusive, INTERVAL 1 DAY), "9999-12-31")
         WHERE CURRENT_DATE("US/Pacific") BETWEEN iss.start_date AND IFNULL(iss.end_date, '9999-12-31')
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY mr.state_code, mr.person_id ORDER BY mr.evaluation_date DESC) = 1
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY mr.state_code, mr.person_id ORDER BY mr.evaluation_date DESC, CASE WHEN mr.evaluation_result = 'Approved' THEN 0 ELSE 1 END) = 1
     )"""
 
 
