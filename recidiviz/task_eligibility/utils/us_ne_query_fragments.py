@@ -393,11 +393,18 @@ def latest_good_time_restoration_or_denial_date_fragment() -> str:
             AND credit_function = 'REINSTATE'
             AND credit_date IS NOT NULL
         GROUP BY 1
+    ),
+    most_recent_restoration_or_denial AS (
+        SELECT 
+            person_id,
+            GREATEST(COALESCE(most_recent_denial, most_recent_restoration), COALESCE(most_recent_restoration, most_recent_denial)) as latest_good_time_restoration_or_denial_date
+        FROM most_recent_denial d
+        FULL OUTER JOIN most_recent_restoration r
+        USING(person_id)
     )
     SELECT 
         person_id,
-        GREATEST(COALESCE(most_recent_denial, most_recent_restoration), COALESCE(most_recent_restoration, most_recent_denial)) as latest_good_time_restoration_or_denial_date
-    FROM most_recent_denial d
-    FULL OUTER JOIN most_recent_restoration r
-    USING(person_id)
+        latest_good_time_restoration_or_denial_date,
+        DATE_ADD(DATE_TRUNC(latest_good_time_restoration_or_denial_date, MONTH), INTERVAL 1 MONTH) AS next_month_after_latest_good_time_restoration_or_denial_date
+    FROM most_recent_restoration_or_denial
     """
