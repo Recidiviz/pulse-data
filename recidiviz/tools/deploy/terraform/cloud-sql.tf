@@ -152,7 +152,7 @@ module "persistence_database" {
   region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
-  database_version = "POSTGRESQL_18"
+  database_version = "POSTGRES_18"
 
   tier = coalesce(
     var.default_sql_tier,
