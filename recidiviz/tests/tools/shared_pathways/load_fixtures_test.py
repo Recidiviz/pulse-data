@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the load fixtures script."""
+import os
 from datetime import date
 from unittest import TestCase
 
 import pytest
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
@@ -28,10 +30,14 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PrisonToSupervisionTransitions,
     SupervisionPopulationOverTime,
 )
+from recidiviz.persistence.database.schema.public_pathways import (
+    schema as public_pathways_schema,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
     get_pathways_database_entities,
+    get_public_pathways_database_entities,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -39,12 +45,12 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tools.pathways.load_fixtures import (
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
+from recidiviz.tools.shared_pathways.load_fixtures import (
     import_pathways_from_gcs,
     reset_pathways_fixtures,
 )
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.tools.utils.fixture_helpers import create_dbs
 
 
@@ -89,13 +95,48 @@ class TestLoadFixtures(TestCase):
 
     def test_reset_pathways_fixtures(self) -> None:
         # First order of business, this shouldn't crash.
-        reset_pathways_fixtures(self.engine, get_pathways_database_entities(), "US_XX")
+        fixture_dir = os.path.join(
+            os.path.dirname(__file__),
+            "../../../..",
+            "recidiviz/tests/case_triage/pathways/fixtures",
+        )
+        reset_pathways_fixtures(
+            self.engine,
+            get_pathways_database_entities(),
+            "US_XX",
+            pathways_schema,
+            fixture_dir,
+        )
 
         # Make sure values are actually written to the tables we know about.
         with SessionFactory.using_database(
             self.db_key, autocommit=False
         ) as read_session:
             for fixture_class in get_all_table_classes_in_schema(SchemaType.PATHWAYS):
+                self.assertTrue(len(read_session.query(fixture_class).all()) > 0)
+
+    def test_reset_public_pathways_fixtures(self) -> None:
+        # First order of business, this shouldn't crash.
+        fixture_dir = os.path.join(
+            os.path.dirname(__file__),
+            "../../../..",
+            "recidiviz/tests/public_pathways/fixtures",
+        )
+        reset_pathways_fixtures(
+            self.engine,
+            get_public_pathways_database_entities(),
+            "US_XX",
+            public_pathways_schema,
+            fixture_dir,
+        )
+
+        # Make sure values are actually written to the tables we know about.
+        with SessionFactory.using_database(
+            self.db_key, autocommit=False
+        ) as read_session:
+            for fixture_class in get_all_table_classes_in_schema(
+                SchemaType.PUBLIC_PATHWAYS
+            ):
                 self.assertTrue(len(read_session.query(fixture_class).all()) > 0)
 
     def test_create_dbs(self) -> None:
@@ -117,6 +158,33 @@ class TestLoadFixtures(TestCase):
 
             # Should no-op
             create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
+        except Exception as e:
+            self.fail(f"Encountered error while running test: {e}")
+        finally:
+            # Teardown key
+            SQLAlchemyEngineManager.teardown_engine_for_database_key(
+                database_key=tn_key
+            )
+
+    def test_create_public_dbs(self) -> None:
+        tn_key = SQLAlchemyDatabaseKey(SchemaType.PUBLIC_PATHWAYS, "us_ny")
+        tn_engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+            database_key=tn_key,
+            db_url=self.postgres_launch_result.url("us_ny"),
+        )
+
+        try:
+            # Ensure DB does not exist
+            with pytest.raises(Exception):
+                tn_engine.connect()
+
+            create_dbs(["US_NY"], SchemaType.PUBLIC_PATHWAYS, engine=self.engine)
+
+            # Should no longer throw
+            tn_engine.connect()
+
+            # Should no-op
+            create_dbs(["US_TN"], SchemaType.PUBLIC_PATHWAYS, engine=self.engine)
         except Exception as e:
             self.fail(f"Encountered error while running test: {e}")
         finally:
@@ -152,6 +220,8 @@ class TestLoadFixtures(TestCase):
             bucket,
             "US_XX",
             fake_gcs,
+            schema=pathways_schema,
+            schema_type=SchemaType.PATHWAYS,
         )
 
         with SessionFactory.using_database(

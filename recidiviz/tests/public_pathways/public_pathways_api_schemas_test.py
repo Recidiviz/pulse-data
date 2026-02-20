@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for Pathways API schemas"""
-from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_PATHWAYS_METRICS,
-)
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.pathways_api_schemas import (
     build_fetch_metric_schemas_by_name,
+)
+from recidiviz.public_pathways.metrics.metric_query_builders import (
+    ALL_PUBLIC_PATHWAYS_METRICS,
 )
 from recidiviz.tests.case_triage.api_schemas_test_utils import (
     SchemaTestCase,
@@ -31,8 +31,8 @@ from recidiviz.tests.case_triage.api_schemas_test_utils import (
 
 class FetchMetricsParamsSchemaTest(SchemaTestCase):
     camel_case = False
-    schema = build_fetch_metric_schemas_by_name(ALL_PATHWAYS_METRICS)[
-        "LibertyToPrisonTransitionsCount"
+    schema = build_fetch_metric_schemas_by_name(ALL_PUBLIC_PATHWAYS_METRICS)[
+        "PrisonPopulationByDimensionCount"
     ]
 
     test_invalid_group = invalid_schema_test({"group": "asdf"}, ["group"])

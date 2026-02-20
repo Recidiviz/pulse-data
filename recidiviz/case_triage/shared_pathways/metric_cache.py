@@ -20,22 +20,26 @@ from typing import List, Mapping, Union
 import attr
 from redis import Redis
 
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
-    FetchMetricParams,
-    MetricQueryBuilder,
-)
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
     DimensionOperation,
 )
 from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
+    FetchMetricParams,
+    MetricQueryBuilder,
+)
 from recidiviz.case_triage.util import (
     get_pathways_metric_redis,
     get_public_pathways_metric_redis,
 )
 from recidiviz.cloud_memorystore import utils as cloud_memorystore_utils
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
+from recidiviz.persistence.database.schema.public_pathways import (
+    schema as public_pathways_schema,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
@@ -50,11 +54,18 @@ def _get_redis_for_schema(schema_type: SchemaType) -> Redis:
 
 @attr.s(auto_attribs=True)
 class PathwaysMetricCache:
-    """Contains functionality for fetching metrics from cache"""
+    """Contains functionality for fetching metrics from cache.
+
+    This class can be used for both Pathways and Public Pathways by passing
+    the appropriate schema_type to the build() method.
+    """
 
     state_code: StateCode
+    schema_type: SchemaType
     metric_fetcher: PathwaysMetricFetcher
-    redis: Redis
+    redis: Redis = attr.Factory(
+        lambda self: _get_redis_for_schema(self.schema_type), takes_self=True
+    )
 
     def fetch(
         self, mapper: MetricQueryBuilder, params: FetchMetricParams
@@ -110,12 +121,21 @@ class PathwaysMetricCache:
 
     @classmethod
     def build(
-        cls, state_code: StateCode, schema_type: SchemaType = SchemaType.PATHWAYS
+        cls,
+        state_code: StateCode,
+        enabled_states: list[str],
+        metadata_model: type[pathways_schema.MetricMetadata]
+        | type[public_pathways_schema.MetricMetadata],
+        schema_type: SchemaType,
     ) -> "PathwaysMetricCache":
         return PathwaysMetricCache(
             state_code=state_code,
+            schema_type=schema_type,
             metric_fetcher=PathwaysMetricFetcher(
-                state_code=state_code, schema_type=schema_type
+                state_code=state_code,
+                enabled_states=enabled_states,
+                metric_metadata=metadata_model,
+                schema_type=schema_type,
             ),
             redis=_get_redis_for_schema(schema_type),
         )

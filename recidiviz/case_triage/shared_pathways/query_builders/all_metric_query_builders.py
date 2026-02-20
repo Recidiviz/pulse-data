@@ -15,16 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Exports available query builder classes """
-from recidiviz.case_triage.pathways.metrics.query_builders.count_by_dimension_metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.query_builders.count_by_dimension_metric_query_builder import (
     CountByDimensionMetricQueryBuilder,
 )
-from recidiviz.case_triage.pathways.metrics.query_builders.over_time_metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.query_builders.over_time_metric_query_builder import (
     OverTimeMetricQueryBuilder,
 )
-from recidiviz.case_triage.pathways.metrics.query_builders.person_level_metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.query_builders.person_level_metric_query_builder import (
     PersonLevelMetricQueryBuilder,
 )
-from recidiviz.case_triage.pathways.metrics.query_builders.population_projection_metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.query_builders.population_projection_metric_query_builder import (
     PopulationProjectionMetricQueryBuilder,
 )
 

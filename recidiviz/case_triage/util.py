@@ -144,7 +144,14 @@ def get_public_pathways_metric_redis() -> Redis:
             f"Unable to create Public Pathways metric cache with host: {host} port: {port}"
         )
 
-    return Redis(host=host, port=int(port), **get_redis_connection_options())
+    # Use db=1 to avoid collisions with Pathways (db=0) when both share a
+    # single Redis instance in local development.
+    return Redis(
+        host=host,
+        port=int(port),
+        db=1 if in_development() else 0,
+        **get_redis_connection_options(),
+    )
 
 
 def to_json_serializable(value: Any) -> str:

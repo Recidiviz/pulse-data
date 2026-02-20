@@ -22,14 +22,17 @@ from sqlalchemy import Column, Integer, distinct, func, select, text
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.ddl import DDLElement
 
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricConfigOptionsType,
     MetricQueryBuilder,
 )
-from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.public_pathways.schema import (
+    PublicPathwaysBase,
+)
 
 PATHWAYS_DEMO_CURRENT_DATE = "2021-12-15"
 
@@ -147,7 +150,7 @@ class OverTimeMetricQueryBuilder(MetricQueryBuilder):
 
     @classmethod
     def adapt_config_options(
-        cls, model: PathwaysBase, options: MetricConfigOptionsType
+        cls, model: PathwaysBase | PublicPathwaysBase, options: MetricConfigOptionsType
     ) -> Dict[str, DDLElement]:
         adapted_options = {}
         if cls.has_valid_option(options, "date_column", instance=str):

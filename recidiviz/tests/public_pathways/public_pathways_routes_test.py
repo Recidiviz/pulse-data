@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 import os
 from datetime import date
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Dict, Optional
 from unittest import mock
 from unittest.case import TestCase
 from unittest.mock import MagicMock, patch
@@ -32,29 +32,28 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
-from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
-from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
-from recidiviz.persistence.database.schema.pathways.schema import (
-    LibertyToPrisonTransitions,
+from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata,
-    PrisonToSupervisionTransitions,
-    SupervisionPopulationOverTime,
+    PublicPrisonPopulationByDimension,
+    PublicPrisonPopulationOverTime,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.pathways import fixtures
-from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
+from recidiviz.public_pathways.public_pathways_routes import (
+    create_public_pathways_api_blueprint,
+)
+from recidiviz.tests.case_triage.shared_pathways.fixture_helpers import (
     load_metrics_fixture,
 )
+from recidiviz.tests.public_pathways import fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
-from recidiviz.utils.types import assert_type
 
 
-class PathwaysBlueprintTestCase(TestCase):
-    """Base class for pathways flask tests"""
+class PublicPathwaysBlueprintTestCase(TestCase):
+    """Base class for Public Pathways flask tests"""
 
     mock_authorization_handler: MagicMock
     test_app: Flask
@@ -64,7 +63,7 @@ class PathwaysBlueprintTestCase(TestCase):
         self.mock_authorization_handler = MagicMock()
 
         self.redis_patcher = mock.patch(
-            "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
+            "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
             return_value=FakeRedis(),
         )
         self.redis_patcher.start()
@@ -79,7 +78,7 @@ class PathwaysBlueprintTestCase(TestCase):
         self.test_app = Flask(__name__)
         register_error_handlers(self.test_app)
         self.test_app.register_blueprint(
-            create_pathways_api_blueprint(), url_prefix="/pathways"
+            create_public_pathways_api_blueprint(), url_prefix="/public_pathways"
         )
         self.test_client = self.test_app.test_client()
 
@@ -106,8 +105,8 @@ class PathwaysBlueprintTestCase(TestCase):
 
 
 @pytest.mark.uses_db
-class TestPathwaysMetrics(PathwaysBlueprintTestCase):
-    """Implements tests for the pathways routes."""
+class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
+    """Implements tests for the Public Pathways routes."""
 
     # Stores the location of the postgres DB for this test run
     postgres_launch_result: OnDiskPostgresLaunchResult
@@ -122,35 +121,38 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         super().setUp()
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="recidiviz", allowed_states=["US_TN"]
+            state_code="recidiviz", allowed_states=["US_NY"]
         )
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
 
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
+        self.database_key = SQLAlchemyDatabaseKey(
+            SchemaType.PUBLIC_PATHWAYS, db_name="us_ny"
+        )
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result, self.database_key
         )
 
         self.count_by_dimension_metric_path = (
-            "/pathways/US_TN/LibertyToPrisonTransitionsCount"
-        )
-        self.person_level_metric_path = (
-            "/pathways/US_TN/PrisonToSupervisionTransitionsPersonLevel"
+            "/public_pathways/US_NY/PrisonPopulationByDimensionCount"
         )
 
-        self.over_time_metric_path = "/pathways/US_TN/SupervisionPopulationOverTime"
+        self.over_time_metric_path = "/public_pathways/US_NY/PrisonPopulationOverTime"
+
+        self.person_level_metric_path = (
+            "/public_pathways/US_NY/PrisonPopulationPersonLevel"
+        )
 
         with SessionFactory.using_database(self.database_key) as session:
-            for metric in load_metrics_fixture(LibertyToPrisonTransitions, fixtures):
-                session.add(LibertyToPrisonTransitions(**metric))
             for metric in load_metrics_fixture(
-                PrisonToSupervisionTransitions, fixtures
+                PublicPrisonPopulationByDimension, fixtures
             ):
-                session.add(PrisonToSupervisionTransitions(**metric))
-            for metric in load_metrics_fixture(SupervisionPopulationOverTime, fixtures):
-                session.add(SupervisionPopulationOverTime(**metric))
+                session.add(PublicPrisonPopulationByDimension(**metric))
+            for metric in load_metrics_fixture(
+                PublicPrisonPopulationOverTime, fixtures
+            ):
+                session.add(PublicPrisonPopulationOverTime(**metric))
             for metadata in load_metrics_fixture(MetricMetadata, fixtures):
                 session.add(MetricMetadata(**metadata))
 
@@ -177,7 +179,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         )
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
             query_string={"group": Dimension.AGE_GROUP.value},
         )
         self.assertEqual(
@@ -187,19 +189,20 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
     def test_metrics_invalid_params(self) -> None:
         # Requesting fake metric
         response = self.test_client.get(
-            "/pathways/US_TN/FakeMetric", headers={"Origin": "http://localhost:3000"}
+            "/public_pathways/US_NY/FakeMetric",
+            headers={"Origin": "http://localhost:3050"},
         )
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.get_json(),
             (response.get_json() or {})
-            | {"description": "FakeMetric is not enabled for US_TN"},
+            | {"description": "FakeMetric is not enabled for US_NY"},
         )
 
         # Requesting real metric without group
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
         )
         self.assertEqual(
             HTTPStatus.BAD_REQUEST, response.status_code, response.get_json()
@@ -213,7 +216,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         # Requesting real metric with fake grouping column
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
             query_string={"group": "fake"},
         )
         self.assertEqual(
@@ -240,25 +243,10 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             },
         )
 
-        # Requesting person-level metric with group
-        response = self.test_client.get(
-            self.person_level_metric_path,
-            headers={"Origin": "http://localhost:3000"},
-            query_string={"group": Dimension.AGE_GROUP.value},
-        )
-        self.assertEqual(
-            HTTPStatus.BAD_REQUEST, response.status_code, response.get_json()
-        )
-        self.assertEqual(
-            response.get_json(),
-            (response.get_json() or {})
-            | {"description": {"group": ["Unknown field."]}},
-        )
-
     def test_metrics_base(self) -> None:
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
             query_string={"group": Dimension.AGE_GROUP.value},
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
@@ -266,19 +254,27 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             response.get_json(),
             {
                 "data": [
-                    {"count": 3, "ageGroup": "20-25"},
-                    {"count": 1, "ageGroup": "30-34"},
-                    {"count": 4, "ageGroup": "60+"},
+                    {"count": 2, "ageGroup": "25-29"},
+                    {"count": 6, "ageGroup": "60+"},
                 ],
                 "metadata": {
-                    "lastUpdated": "2022-08-01",
+                    "dynamicFilterOptions": '{"gender_id_name_map": '
+                    '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
+                    '{"value": "2", "label": "Facility 2"}]',
+                    "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]',
+                    "lastUpdated": "2022-08-02",
                 },
             },
         )
 
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
             query_string={
                 "group": Dimension.RACE.value,
                 f"filters[{Dimension.RACE.value}]": "BLACK",
@@ -288,151 +284,34 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             {
                 "data": [
-                    {"count": 2, "race": "BLACK"},
+                    {"count": 4, "race": "BLACK"},
                 ],
                 "metadata": {
-                    "lastUpdated": "2022-08-01",
+                    "dynamicFilterOptions": '{"gender_id_name_map": '
+                    '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
+                    '{"value": "2", "label": "Facility 2"}]',
+                    "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]',
+                    "lastUpdated": "2022-08-02",
                 },
             },
             response.get_json(),
         )
 
     def test_person_level_metrics(self) -> None:
-        self.maxDiff = None
         response = self.test_client.get(
             self.person_level_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
         )
-
-        # assert_type needs to take a Dict and not a Dict[X, Y], otherwise you get the error
-        # "Subscripted generics cannot be used with class and instance checks". Because of this,
-        # response_json needs to be Dict[Any, Any]
-        response_json: Dict[Any, Any] = assert_type(response.get_json(), Dict)
-
-        self.assertEqual(HTTPStatus.OK, response.status_code, response_json)
-        self.assertEqual(list(response_json.keys()), ["data", "metadata"])
-        # Person-level metrics data are not returned in any particular order, so assert unordered.
-        self.assertCountEqual(
-            response_json["data"],
-            [
-                {
-                    "age": "22, 23",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "facility": "ABC, DEF",
-                    "fullName": "TEST, PERSON",
-                    "stateId": "0001",
-                },
-                {
-                    "age": "62",
-                    "sex": "FEMALE",
-                    "race": "BLACK",
-                    "facility": "ABC",
-                    "fullName": "FAKE, USER",
-                    "stateId": "0003",
-                },
-                {
-                    "age": "64",
-                    "sex": "MALE",
-                    "race": "ASIAN",
-                    "facility": "ABC",
-                    "fullName": "EXAMPLE, INDIVIDUAL",
-                    "stateId": "0005",
-                },
-                {
-                    "age": "63",
-                    "sex": "MALE",
-                    "race": "BLACK",
-                    "facility": "DEF",
-                    "fullName": "FAKE2, USER2",
-                    "stateId": "0004",
-                },
-                {
-                    "age": "61, 61",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "facility": "ABC, DEF",
-                    "fullName": "TEST, PERSON2",
-                    "stateId": "0002",
-                },
-                {
-                    "age": "65",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "facility": "GHI",
-                    "fullName": "EXAMPLE, TIME",
-                    "stateId": "0006",
-                },
-                {
-                    "age": "39, 40",
-                    "facility": "DEF, GHI",
-                    "fullName": "EXAMPLE, TIME",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "stateId": "0007",
-                },
-            ],
-        )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
-            response_json["metadata"],
-            {
-                "lastUpdated": "2022-08-05",
-            },
-        )
-
-        response = self.test_client.get(
-            self.person_level_metric_path,
-            headers={"Origin": "http://localhost:3000"},
-            query_string={
-                f"filters[{Dimension.FACILITY.value}]": "DEF",
-            },
-        )
-        response_json = assert_type(response.get_json(), Dict)
-        self.assertEqual(HTTPStatus.OK, response.status_code, response_json)
-        self.assertEqual(list(response_json.keys()), ["data", "metadata"])
-        # Person-level metrics data are not returned in any particular order, so assert unordered.
-        self.assertCountEqual(
-            response_json["data"],
-            [
-                {
-                    "age": "23",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "facility": "DEF",
-                    "fullName": "TEST, PERSON",
-                    "stateId": "0001",
-                },
-                {
-                    "age": "63",
-                    "sex": "MALE",
-                    "race": "BLACK",
-                    "facility": "DEF",
-                    "fullName": "FAKE2, USER2",
-                    "stateId": "0004",
-                },
-                {
-                    "age": "61",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "facility": "DEF",
-                    "fullName": "TEST, PERSON2",
-                    "stateId": "0002",
-                },
-                {
-                    "age": "40",
-                    "facility": "DEF",
-                    "fullName": "EXAMPLE, TIME",
-                    "sex": "MALE",
-                    "race": "WHITE",
-                    "stateId": "0007",
-                },
-            ],
-        )
-        self.assertEqual(
-            response_json["metadata"],
-            {
-                "lastUpdated": "2022-08-05",
-            },
+            response.get_json(),
+            (response.get_json() or {})
+            | {"description": "PrisonPopulationPersonLevel is not enabled for US_NY"},
         )
 
     @patch(
@@ -442,7 +321,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
     def test_over_time_metrics(self, _mock_current_date: MagicMock) -> None:
         response = self.test_client.get(
             self.over_time_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
             query_string={
                 f"filters[{Dimension.TIME_PERIOD.value}]": "months_0_6",
             },
@@ -452,30 +331,53 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             response.get_json(),
             {
                 "data": [
-                    {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+                    {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
+                    {"avg90day": 1, "count": 2, "month": 12, "year": 2021},
+                    {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
+                    {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
                     {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
                 ],
                 "metadata": {
-                    "lastUpdated": "2022-08-07",
+                    "dynamicFilterOptions": '{"gender_id_name_map": '
+                    '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
+                    '{"value": "2", "label": "Facility 2"}]',
+                    "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]',
+                    "lastUpdated": "2022-08-03",
                 },
             },
         )
 
         response = self.test_client.get(
             self.over_time_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             response.get_json(),
             {
                 "data": [
-                    {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
-                    {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+                    {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
+                    {"avg90day": 1, "count": 2, "month": 12, "year": 2021},
+                    {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
+                    {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
                     {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
                 ],
                 "metadata": {
-                    "lastUpdated": "2022-08-07",
+                    "dynamicFilterOptions": '{"gender_id_name_map": '
+                    '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
+                    '{"value": "2", "label": "Facility 2"}]',
+                    "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]',
+                    "lastUpdated": "2022-08-03",
                 },
             },
         )
@@ -485,69 +387,31 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         # Filters across attributes are combined using AND
         response = self.test_client.get(
             self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": "http://localhost:3050"},
             query_string=f"group={Dimension.RACE.value}"
             f"&filters[{Dimension.RACE.value}]=BLACK"
             f"&filters[{Dimension.RACE.value}]=WHITE"
-            f"&filters[{Dimension.SEX.value}]=MALE",
+            f"&filters[{Dimension.GENDER.value}]=MALE",
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
         self.assertEqual(
             {
                 "data": [
-                    {"count": 1, "race": "BLACK"},
-                    {"count": 4, "race": "WHITE"},
-                ],
-                "metadata": {
-                    "lastUpdated": "2022-08-01",
-                },
-            },
-            response.get_json(),
-        )
-
-    def test_metrics_time_period(self) -> None:
-        response = self.test_client.get(
-            self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
-            query_string={
-                "group": Dimension.RACE.value,
-                "time_period": TimePeriod.MONTHS_0_6.value,
-            },
-        )
-        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
-        self.assertEqual(
-            {
-                "data": [
-                    {"count": 2, "race": "ASIAN"},
                     {"count": 2, "race": "BLACK"},
-                    {"count": 3, "race": "WHITE"},
+                    {"count": 2, "race": "WHITE"},
                 ],
                 "metadata": {
-                    "lastUpdated": "2022-08-01",
-                },
-            },
-            response.get_json(),
-        )
-
-        response = self.test_client.get(
-            self.count_by_dimension_metric_path,
-            headers={"Origin": "http://localhost:3000"},
-            query_string={
-                "group": Dimension.RACE.value,
-                "filters[time_period]": TimePeriod.MONTHS_25_60.value,
-            },
-        )
-        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
-        self.assertEqual(
-            {
-                "data": [
-                    {"count": 2, "race": "ASIAN"},
-                    {"count": 2, "race": "BLACK"},
-                    {"count": 4, "race": "WHITE"},
-                ],
-                "metadata": {
-                    "lastUpdated": "2022-08-01",
+                    "dynamicFilterOptions": '{"gender_id_name_map": '
+                    '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
+                    '{"value": "2", "label": "Facility 2"}]',
+                    "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
+                    '{"value": "FEMALE", "label": "Female"}, '
+                    '{"value": "NON_BINARY", "label": "Non-binary"}]',
+                    "lastUpdated": "2022-08-02",
                 },
             },
             response.get_json(),
@@ -560,10 +424,10 @@ def make_cors_test(
     expected_headers: Optional[Dict[str, str]] = None,
     expected_status: int = 200,
 ) -> Callable:
-    def inner(self: PathwaysBlueprintTestCase) -> None:
+    def inner(self: PublicPathwaysBlueprintTestCase) -> None:
         response = self.test_client.open(
             method=request_method,
-            path="/pathways/US_TN/LibertyToPrisonTransitionsCount",
+            path="/public_pathways/US_NY/PrisonPopulationByDimensionCount",
             headers={"Origin": request_origin},
         )
 
@@ -575,13 +439,13 @@ def make_cors_test(
     return inner
 
 
-class TestPathwaysCORS(PathwaysBlueprintTestCase):
+class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
     """Tests various CORS scenarios"""
 
     test_localhost_is_allowed = make_cors_test(
-        request_origin="http://localhost:3000",
+        request_origin="http://localhost:3050",
         expected_headers={
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": "http://localhost:3050",
             "Access-Control-Allow-Headers": "authorization, sentry-trace",
             "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
@@ -589,36 +453,28 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
     )
 
     test_staging_is_allowed = make_cors_test(
-        request_origin="https://dashboard-staging.recidiviz.org",
+        request_origin="https://pathways-staging.recidiviz.org",
         expected_headers={
-            "Access-Control-Allow-Origin": "https://dashboard-staging.recidiviz.org",
+            "Access-Control-Allow-Origin": "https://pathways-staging.recidiviz.org",
             "Access-Control-Allow-Headers": "authorization, sentry-trace",
             "Vary": "Origin",
         },
     )
 
     test_prod_is_allowed = make_cors_test(
-        request_origin="https://dashboard.recidiviz.org",
+        request_origin="https://pathways.recidiviz.org",
         expected_headers={
-            "Access-Control-Allow-Origin": "https://dashboard.recidiviz.org",
+            "Access-Control-Allow-Origin": "https://pathways.recidiviz.org",
             "Access-Control-Allow-Headers": "authorization, sentry-trace",
             "Vary": "Origin",
         },
     )
 
-    test_preview_apps_are_allowed = make_cors_test(
-        request_origin="https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
-        expected_headers={
-            "Access-Control-Allow-Origin": "https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace",
-            "Vary": "Origin",
-        },
-    )
     test_cors_headers_sent_on_all_responses = make_cors_test(
-        request_origin="https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
+        request_origin="http://localhost:3050",
         request_method="GET",
         expected_headers={
-            "Access-Control-Allow-Origin": "https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
+            "Access-Control-Allow-Origin": "http://localhost:3050",
             "Access-Control-Allow-Headers": "authorization, sentry-trace",
             "Vary": "Origin",
         },
@@ -641,18 +497,20 @@ class TestPathwaysCORS(PathwaysBlueprintTestCase):
     )
 
 
-class TestAuthorizationIntegration(PathwaysBlueprintTestCase):
+class TestAuthorizationIntegration(PublicPathwaysBlueprintTestCase):
     """Tests that routes require authorization"""
 
     def test_all_non_options_request_require_authorization(self) -> None:
         self.test_client.get(
-            "/pathways/US_TN/LibertyToPrisonTransitionsCount",
+            "/public_pathways/US_NY/LibertyToPrisonTransitionsCount",
             query_string={"group": Dimension.RACE.value},
         )
 
         self.mock_authorization_handler.assert_called()
 
     def test_options_routes(self) -> None:
-        self.test_client.options("/pathways/US_TN/LibertyToPrisonTransitionsCount")
+        self.test_client.options(
+            "/public_pathways/US_NY/LibertyToPrisonTransitionsCount"
+        )
 
         self.mock_authorization_handler.assert_not_called()

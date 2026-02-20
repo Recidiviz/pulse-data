@@ -28,8 +28,14 @@ from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
     DimensionOperation,
 )
 from recidiviz.persistence.database.schema.pathways.schema import (
-    MetricMetadata,
-    PathwaysBase,
+    MetricMetadata as PathwaysMetricMetadata,
+)
+from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.public_pathways.schema import (
+    MetricMetadata as PublicPathwaysMetricMetadata,
+)
+from recidiviz.persistence.database.schema.public_pathways.schema import (
+    PublicPathwaysBase,
 )
 
 
@@ -59,7 +65,7 @@ class MetricQueryBuilder(Generic[ParamsType]):
     """Builds Postgres queries for Pathways metrics"""
 
     name: str
-    model: PathwaysBase
+    model: PathwaysBase | PublicPathwaysBase
     dimension_mappings: List[DimensionMapping]
 
     def __attrs_post_init__(self) -> None:
@@ -86,9 +92,13 @@ class MetricQueryBuilder(Generic[ParamsType]):
     def build_query(self, params: ParamsType) -> Query:
         ...
 
-    def build_metadata_query(self) -> Query:
-        return Query(MetricMetadata).filter(
-            MetricMetadata.metric == self.model.__name__
+    def build_metadata_query(
+        self,
+        metadata_model: type[PathwaysMetricMetadata]
+        | type[PublicPathwaysMetricMetadata],
+    ) -> Query:
+        return Query(metadata_model).filter(
+            metadata_model.metric == self.model.__name__
         )
 
     @classmethod
@@ -101,7 +111,9 @@ class MetricQueryBuilder(Generic[ParamsType]):
 
     @classmethod
     def adapt_config_options(
-        cls, _model: PathwaysBase, _options: Dict[str, Union[str, List[str]]]
+        cls,
+        _model: PathwaysBase | PublicPathwaysBase,
+        _options: Dict[str, Union[str, List[str]]],
     ) -> Dict:
         return {}
 

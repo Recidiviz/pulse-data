@@ -19,7 +19,7 @@
 import attr
 from sqlalchemy.orm import Query
 
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )

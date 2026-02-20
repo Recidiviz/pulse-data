@@ -21,16 +21,17 @@ from typing import Any, Dict, List, Union
 from unittest import TestCase
 
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_METRICS_BY_NAME,
-)
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
-    FetchMetricParams,
-    MetricQueryBuilder,
+    ALL_PATHWAYS_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
+    FetchMetricParams,
+    MetricQueryBuilder,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
@@ -50,7 +51,10 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
 
     def test_metrics_base(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         )
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
@@ -69,7 +73,7 @@ class TestPrisonPopulationPersonLevel(PathwaysPersonLevelMetricTestBase, TestCas
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonPopulationPersonLevel"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonPopulationPersonLevel"]
 
     @property
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
@@ -110,7 +114,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonToSupervisionTransitionsPersonLevel"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonToSupervisionTransitionsPersonLevel"]
 
     @property
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
@@ -179,7 +183,10 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             FetchMetricParams(
@@ -230,7 +237,10 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
     def test_filter_timePeriod(self) -> None:
         """Tests that person id 6 is not included in the response"""
         results = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             FetchMetricParams(

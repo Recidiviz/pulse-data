@@ -20,13 +20,7 @@ from typing import Any, Dict, List, Union
 from unittest.case import TestCase
 
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_METRICS_BY_NAME,
-)
-from recidiviz.case_triage.pathways.metrics.query_builders.count_by_dimension_metric_query_builder import (
-    CountByDimensionMetricParams,
-)
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
-    MetricQueryBuilder,
+    ALL_PATHWAYS_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
@@ -34,7 +28,14 @@ from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
 )
 from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.shared_pathways.query_builders.count_by_dimension_metric_query_builder import (
+    CountByDimensionMetricParams,
+)
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
+    MetricQueryBuilder,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
@@ -55,7 +56,10 @@ class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
     def test_metrics_base(self) -> None:
         results = {}
         metric_fetcher = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            metric_metadata=MetricMetadata,
+            schema_type=SchemaType.PATHWAYS,
         )
         for dimension_mapping in self.query_builder.dimension_mappings:
             if DimensionOperation.GROUP in dimension_mapping.operations:
@@ -84,7 +88,7 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"]
 
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
@@ -127,7 +131,10 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -143,7 +150,10 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is dropped from the counts"""
         results = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -171,7 +181,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonToSupervisionTransitionsCount"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonToSupervisionTransitionsCount"]
 
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
@@ -204,7 +214,10 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -223,7 +236,10 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is filtered out of the 6 month count"""
         results = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -247,7 +263,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionToPrisonTransitionsCount"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionToPrisonTransitionsCount"]
 
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
@@ -304,7 +320,10 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -326,7 +345,10 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
     def test_filter_time_period(self) -> None:
         """Tests that person 1 and 5 are not included, as the transition occurred more than 12 months ago"""
         results = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -358,7 +380,7 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionToLibertyTransitionsCount"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionToLibertyTransitionsCount"]
 
     @property
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
@@ -418,7 +440,10 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -441,7 +466,10 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
     def test_filter_time_period(self) -> None:
         """Asserts that person id 5 is not included in the counts"""
         results = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -470,7 +498,7 @@ class TestSupervisionPopulationByDimensionCount(
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionPopulationByDimensionCount"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionPopulationByDimensionCount"]
 
     @property
     def all_expected_counts(
@@ -503,7 +531,10 @@ class TestSupervisionPopulationByDimensionCount(
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
@@ -531,7 +562,7 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonPopulationByDimensionCount"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonPopulationByDimensionCount"]
 
     @property
     def all_expected_counts(
@@ -573,3 +604,27 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
             "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
             "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}]',
         }
+
+    def test_metrics_filter(self) -> None:
+        results = PathwaysMetricFetcher(
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            metric_metadata=MetricMetadata,
+            schema_type=SchemaType.PATHWAYS,
+        ).fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.GENDER,
+                filters={
+                    Dimension.RACE: ["WHITE"],
+                },
+            ),
+        )
+
+        self.test.assertEqual(
+            [
+                {"gender": "FEMALE", "count": 1},
+                {"gender": "MALE", "count": 1},
+            ],
+            results["data"],
+        )

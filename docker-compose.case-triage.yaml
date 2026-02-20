@@ -11,15 +11,13 @@ services:
       - "~/.config:/home/recidiviz/.config" # use user's credentials to access GCP APIs
       - case_triage_db_socket:/cloudsql/case_triage
       - pathways_db_socket:/cloudsql/pathways
-      - persistence_db_socket: /cloudsql/persistence
-      - public_pathways_db_socket:/cloudsql/public_pathways
+      - persistence_db_socket:/cloudsql/persistence
       - insights_db_socket:/cloudsql/insights
       - workflows_db_socket:/cloudsql/workflows
     depends_on:
       - case_triage_db
       - pathways_db
       - persistence_db
-      - public_pathways_db
       - insights_db
       - workflows_db
 
@@ -41,4 +39,3 @@ services:
       - "redis:rate_limit_cache"
       - "redis:sessions_cache"
       - "redis:pathways_metric_cache"
-      - "redis:public_pathways_metric_cache"

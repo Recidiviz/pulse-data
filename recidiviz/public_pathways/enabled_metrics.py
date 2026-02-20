@@ -14,27 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-""" Contains the configuration for which Pathways metrics are enabled """
+""" Contains the configuration for which Public Pathways metrics are enabled """
 
 from typing import Dict, List
 
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states_for_cloud_sql,
-)
-from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_PATHWAYS_METRICS,
+from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enabled_states import (
+    get_public_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
     MetricQueryBuilder,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.public_pathways.metrics.metric_query_builders import (
+    ALL_PUBLIC_PATHWAYS_METRICS,
+)
 
-ALL_PATHWAYS_METRICS_BY_STATE_CODE: Dict[StateCode, List[MetricQueryBuilder]] = {
-    StateCode(state_code): ALL_PATHWAYS_METRICS
-    for state_code in get_pathways_enabled_states_for_cloud_sql()
+ALL_PUBLIC_PATHWAYS_METRICS_BY_STATE_CODE: Dict[StateCode, List[MetricQueryBuilder]] = {
+    StateCode(state_code): ALL_PUBLIC_PATHWAYS_METRICS
+    for state_code in get_public_pathways_enabled_states_for_cloud_sql()
 }
 
-ALL_PATHWAYS_METRICS_BY_STATE_CODE_BY_NAME = {
+ALL_PUBLIC_PATHWAYS_METRICS_BY_STATE_CODE_BY_NAME = {
     state_code: {metric.name: metric for metric in metrics}
-    for state_code, metrics in ALL_PATHWAYS_METRICS_BY_STATE_CODE.items()
+    for state_code, metrics in ALL_PUBLIC_PATHWAYS_METRICS_BY_STATE_CODE.items()
 }

@@ -23,14 +23,14 @@ from flask import Flask
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states_for_cloud_sql,
 )
-from recidiviz.calculator.query.state.views.dashboard.public_pathways.public_pathways_enabled_states import (
-    get_public_pathways_enabled_states_for_cloud_sql,
-)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
     get_workflows_enabled_states,
+)
+from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enabled_states import (
+    get_public_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,

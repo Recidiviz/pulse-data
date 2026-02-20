@@ -43,7 +43,7 @@ from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enab
     get_public_pathways_enabled_states_for_cloud_sql,
 )
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_METRICS_BY_NAME,
+    ALL_PATHWAYS_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
@@ -70,6 +70,9 @@ from recidiviz.persistence.database.schema.public_pathways.schema import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.public_pathways.metrics.metric_query_builders import (
+    ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
@@ -386,10 +389,13 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
             )
             mock_redis.assert_called()
             mock_metric_cache.assert_called_with(
-                state_code=StateCode.US_XX, metric_fetcher=ANY, redis=ANY
+                state_code=StateCode.US_XX,
+                metric_fetcher=ANY,
+                redis=ANY,
+                schema_type=SchemaType.PATHWAYS,
             )
             mock_metric_cache.return_value.reset_cache.assert_called_with(
-                ALL_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"]
+                ALL_PATHWAYS_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"]
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -659,8 +665,18 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
         autospec=True,
     )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.PathwaysMetricCache",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
     def test_import_public_pathways_successful(
         self,
+        mock_redis: MagicMock,
+        mock_metric_cache: MagicMock,
         mock_import_csv: MagicMock,
     ) -> None:
         with self.app.test_request_context():
@@ -678,6 +694,16 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
                 ),
                 columns=self.columns,
             )
+            mock_redis.assert_called()
+            mock_metric_cache.assert_called_with(
+                state_code=StateCode.US_XX,
+                metric_fetcher=ANY,
+                redis=ANY,
+                schema_type=SchemaType.PUBLIC_PATHWAYS,
+            )
+            mock_metric_cache.return_value.reset_cache.assert_called_with(
+                ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME["PrisonPopulationOverTime"]
+            )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
@@ -685,8 +711,13 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
         autospec=True,
     )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
     def test_import_public_pathways_metadata(
         self,
+        mock_redis: MagicMock,
         mock_import_csv: MagicMock,
     ) -> None:
         filename = f"{self.pathways_view}.csv"
@@ -709,6 +740,7 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
                 f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
             )
             mock_import_csv.assert_called()
+            mock_redis.assert_called()
             with SessionFactory.using_database(self.database_key) as session:
                 result = session.query(self.metadata_class).one()
                 self.assertEqual(result.metric, self.metric)
@@ -727,8 +759,13 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
         autospec=True,
     )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
     def test_import_public_pathways_missing_metadata(
         self,
+        mock_redis: MagicMock,
         mock_import_csv: MagicMock,
     ) -> None:
         filename = f"{self.pathways_view}.csv"
@@ -744,6 +781,7 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
                 f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
             )
             mock_import_csv.assert_called()
+            mock_redis.assert_called()
             with SessionFactory.using_database(self.database_key) as session:
                 destination_table_rows = session.query(self.metadata_class).all()
                 self.assertFalse(destination_table_rows)

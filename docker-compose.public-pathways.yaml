@@ -1,0 +1,30 @@
+# Defines services needed to run the Public Pathways app (on top of shared services already in docker-compose.yaml)
+# Run via `docker-compose -f docker-compose.yaml -f docker-compose.public-pathways.yaml up`
+
+version: "3"
+
+services:
+  public_pathways_backend:
+    image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/home/recidiviz/.config" # use user's credentials to access GCP APIs
+      - public_pathways_db_socket:/cloudsql/public_pathways
+    depends_on:
+      - public_pathways_db
+    ports:
+      - "5001:5001"
+    # Running with threads and no debugger seems to improve latency on first request
+    command: uv run flask run -h 0.0.0.0 -p 5001 --with-threads --no-debugger
+    environment:
+      - FLASK_APP=/app/recidiviz/public_pathways/server.py
+      - FLASK_ENV=development
+      # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
+      # They can safely be excluded from the stat reloader for a performance boost
+      - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
+      - IS_DEV=true
+      - AUTH0_CLAIM_NAMESPACE=https://dashboard.recidiviz.org
+    links:
+      - "redis:rate_limit_cache"
+      - "redis:public_pathways_metric_cache"

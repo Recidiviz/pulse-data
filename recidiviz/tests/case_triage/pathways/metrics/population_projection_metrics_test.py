@@ -20,14 +20,15 @@ from typing import Any, Dict, List, Union
 from unittest import TestCase
 
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_METRICS_BY_NAME,
+    ALL_PATHWAYS_METRICS_BY_NAME,
 )
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
+from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )
-from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
@@ -47,7 +48,10 @@ class PathwaysPopulationProjectionMetricTestBase(PathwaysMetricTestBase):
 
     def test_metrics_base(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         )
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
@@ -68,7 +72,7 @@ class TestPrisonPopulationProjectionMetric(
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonPopulationProjection"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonPopulationProjection"]
 
     @property
     def all_expected_rows(
@@ -153,7 +157,7 @@ class TestSupervisionPopulationProjectionMetric(
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionPopulationProjection"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionPopulationProjection"]
 
     @property
     def all_expected_rows(

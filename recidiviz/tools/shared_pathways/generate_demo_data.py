@@ -17,7 +17,7 @@
 """A script for generating demo data to be used in the new pathways backend.
 
 This can be run with the following command:
-    python -m recidiviz.tools.pathways.generate_demo_data \
+    python -m recidiviz.tools.shared_pathways.generate_demo_data \
         --state_codes [US_XX US_YY etc.] \
         --views [VIEW NAMES] (optional)\
         --gcs_bucket [GCS_BUCKET_PATH] \

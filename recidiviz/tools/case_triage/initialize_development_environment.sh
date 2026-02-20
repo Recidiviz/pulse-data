@@ -12,6 +12,9 @@ function write_to_file {
 DASHBOARD_AUTH0_CONFIGURATION=$(get_secret recidiviz-staging dashboard_auth0)
 write_to_file "$DASHBOARD_AUTH0_CONFIGURATION" recidiviz/local/gsm/dashboard_auth0
 
+PUBLIC_PATHWAYS_AUTH0_CONFIGURATION=$(get_secret recidiviz-staging public_pathways_auth0)
+write_to_file "$PUBLIC_PATHWAYS_AUTH0_CONFIGURATION" recidiviz/local/gsm/public_pathways_auth0
+
 # References hostname specified in `services.case_triage_backend.links` from `docker-compose.case-triage.yml`
 write_to_file 'pathways_metric_cache' recidiviz/local/gsm/pathways_metric_redis_host
 write_to_file '6379' recidiviz/local/gsm/pathways_metric_redis_port

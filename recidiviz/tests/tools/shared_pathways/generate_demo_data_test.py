@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tools.pathways.generate_demo_data import (
+from recidiviz.tools.shared_pathways.generate_demo_data import (
     LAST_UPDATED_BEGIN_DATE,
     generate_row,
     generate_rows,
@@ -36,7 +36,7 @@ class TestGenerateDemoData(TestCase):
 
     def setUp(self) -> None:
         self.gcs_factory_patcher = mock.patch(
-            "recidiviz.tools.pathways.generate_demo_data.GcsfsFactory.build"
+            "recidiviz.tools.shared_pathways.generate_demo_data.GcsfsFactory.build"
         )
         self.fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = self.fake_gcs
@@ -119,7 +119,7 @@ class TestGenerateDemoData(TestCase):
             },
         )
 
-    @patch("recidiviz.tools.pathways.generate_demo_data.random.randint")
+    @patch("recidiviz.tools.shared_pathways.generate_demo_data.random.randint")
     def test_generate_rows(self, mock_randint: MagicMock) -> None:
         first_month_day = 2
         second_month_day = 3
@@ -172,7 +172,7 @@ class TestGenerateDemoData(TestCase):
             ],
         )
 
-    @patch("recidiviz.tools.pathways.generate_demo_data.generate_demo_data")
+    @patch("recidiviz.tools.shared_pathways.generate_demo_data.generate_demo_data")
     def test_upload_to_gcs(
         self,
         mock_generate_demo_data: MagicMock,

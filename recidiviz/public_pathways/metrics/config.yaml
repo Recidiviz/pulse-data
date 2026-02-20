@@ -1,0 +1,53 @@
+# Defines metrics that are exposed in the Public Pathways API
+# /public_pathways/<state_code>/<metric_name>
+#
+#  Example entry:
+#  MyMetric: # Routes to /public_pathways/<state_code>/MyMetric
+#    # Database entity as defined in recidiviz.persistence.database.schema.public_pathways.schema
+#    # This will be queried by the `query_builder_class`
+#    database_entity: MetricRecord
+#    query_builder_class: OverTimeMetricQueryBuilder
+#    query_builder_options: # Dictionary of kwargs to be passed to the query builder.
+#   dimension_mappings: # Dictionary of dimension values as keys.
+#     # Values can either be a string, which specifies which `DimensionOperation` to enable
+#     # or a dictionary containing:
+#     # - column: str # name of the column to filter
+#     # - operations: str # `DimensionOperation`
+#     # - column_label: str # optional label for the column in the API response
+#     # Enables filtering functionality of Dimension.SEX i.e. /public_pathways/US_XX/MyMetric?filters[sex]=MALE
+#     sex: FILTER
+#     # Enables both filtering and grouping functionality for Dimension.TIME_PERIOD
+#     time_period: ALL
+#
+
+PrisonPopulationOverTime:
+  database_entity: PublicPrisonPopulationOverTime
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+    date_column: date_in_population
+  dimension_mappings:
+    age_group: FILTER
+    facility: FILTER
+    gender: FILTER
+    sex: FILTER
+    race: FILTER
+    ethnicity: FILTER
+    time_period: FILTER
+    sentence_length_min: FILTER
+    sentence_length_max: FILTER
+
+PrisonPopulationByDimensionCount:
+  database_entity: PublicPrisonPopulationByDimension
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+  dimension_mappings:
+    age_group: ALL
+    facility: ALL
+    gender: ALL
+    sex: ALL
+    race: ALL
+    ethnicity: ALL
+    sentence_length_min: ALL
+    sentence_length_max: ALL

@@ -53,11 +53,11 @@ from recidiviz.calculator.query.state.views.public_pathways.public_pathways_enab
 from recidiviz.calculator.query.state.views.public_pathways.public_pathways_views import (
     PUBLIC_PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
-from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
+from recidiviz.case_triage.shared_pathways.utils import get_metrics_for_entity
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     import_gcs_csv_to_cloud_sql,
     import_gcs_file_to_cloud_sql,
@@ -225,7 +225,7 @@ def _import_public_pathways(state_code: str, filename: str) -> Tuple[str, HTTPSt
         bucket_path=_public_pathways_data_bucket(),
         enabled_states_getter=get_public_pathways_enabled_states_for_cloud_sql,
         schema_type=SchemaType.PUBLIC_PATHWAYS,
-        reset_cache=False,
+        reset_cache=True,
     )
 
 
@@ -520,10 +520,12 @@ def _import_pathways_helper(
         dynamic_filter_options=object_metadata.get("dynamic_filter_options", None),
     )
 
-    # TODO(#57285) Remove the schema_type conditional once we have PublicPathwaysMetricCache
-    if reset_cache and schema_type == SchemaType.PATHWAYS:
+    if reset_cache:
         metric_cache = PathwaysMetricCache.build(
-            StateCode(state_code), schema_type=SchemaType.PATHWAYS
+            StateCode(state_code),
+            schema_type=schema_type,
+            enabled_states=enabled_states_getter(),
+            metadata_model=schema_module.MetricMetadata,
         )
         for metric in get_metrics_for_entity(db_entity):
             metric_cache.reset_cache(metric)

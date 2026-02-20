@@ -734,6 +734,7 @@ def main() -> int:
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
+                "recidiviz.public_pathways",
                 "recidiviz.reporting",
                 "recidiviz.segment.product_type",
                 "recidiviz.task_eligibility",

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains all available Pathways metrics."""
+"""Contains all available Public Pathways metrics."""
 import os
 
 from recidiviz.case_triage.shared_pathways.metric_query_builder_config_parser import (
@@ -24,6 +24,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 
 config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
 
-config_parser = MetricQueryBuilderConfigParser(config_path, SchemaType.PATHWAYS)
-ALL_PATHWAYS_METRICS_BY_NAME = config_parser.parse()
-ALL_PATHWAYS_METRICS = list(ALL_PATHWAYS_METRICS_BY_NAME.values())
+config_parser = MetricQueryBuilderConfigParser(config_path, SchemaType.PUBLIC_PATHWAYS)
+ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME = config_parser.parse()
+ALL_PUBLIC_PATHWAYS_METRICS = list(ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME.values())

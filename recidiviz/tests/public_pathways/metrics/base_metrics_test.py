@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,46 +14,62 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This class implements test helpers for Pathways metrics."""
+"""This class implements test helpers for Public Pathways metrics."""
 import abc
+import csv
+import os
+from typing import Dict, List, Optional
 from unittest import TestCase
 
 import pytest
 from sqlalchemy.engine import Engine
 
-from recidiviz.case_triage.pathways.enabled_metrics import (
-    ALL_PATHWAYS_METRICS_BY_STATE_CODE_BY_NAME,
+from recidiviz.case_triage.shared_pathways.metric_fetcher import (
+    MetricNotEnabledError,
+    PathwaysMetricFetcher,
 )
-from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_PATHWAYS_METRICS_BY_NAME,
-)
-from recidiviz.case_triage.shared_pathways.exceptions import MetricNotEnabledError
-from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )
 from recidiviz.case_triage.shared_pathways.utils import get_metrics_for_entity
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.pathways.schema import (
-    LibertyToPrisonTransitions,
+from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata,
-    PathwaysBase,
+    PublicPathwaysBase,
+    PublicPrisonPopulationOverTime,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.pathways import fixtures
-from recidiviz.tests.case_triage.shared_pathways.fixture_helpers import (
-    load_metrics_fixture,
+from recidiviz.public_pathways.enabled_metrics import (
+    ALL_PUBLIC_PATHWAYS_METRICS_BY_STATE_CODE_BY_NAME,
 )
+from recidiviz.public_pathways.metrics.metric_query_builders import (
+    ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME,
+)
+from recidiviz.tests.public_pathways import fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 
 
+def load_metrics_fixture(
+    model: PublicPathwaysBase, filename: Optional[str] = None
+) -> List[Dict]:
+    filename = f"{model.__tablename__}.csv" if filename is None else filename
+    fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
+    results = []
+    with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
+        reader = csv.DictReader(fixture_file)
+        for row in reader:
+            results.append(row)
+
+    return results
+
+
 @pytest.mark.uses_db
-class PathwaysMetricTestBase:
-    """Base class for testing Pathways metrics."""
+class PublicPathwaysMetricTestBase:
+    """Base class for testing Public Pathways metrics."""
 
     # Stores the location of the postgres DB for this test run
     postgres_launch_result: OnDiskPostgresLaunchResult
@@ -64,7 +80,7 @@ class PathwaysMetricTestBase:
         ...
 
     @property
-    def schema(self) -> PathwaysBase:
+    def schema(self) -> PublicPathwaysBase:
         return self.query_builder.model
 
     @property
@@ -79,15 +95,17 @@ class PathwaysMetricTestBase:
         )
 
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
+        self.database_key = SQLAlchemyDatabaseKey(
+            SchemaType.PUBLIC_PATHWAYS, db_name="us_ny"
+        )
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result, self.database_key
         )
 
         with SessionFactory.using_database(self.database_key) as session:
-            for metric in load_metrics_fixture(self.schema, fixtures):
+            for metric in load_metrics_fixture(self.schema):
                 session.add(self.schema(**metric))
-            for metric_metadata in load_metrics_fixture(MetricMetadata, fixtures):
+            for metric_metadata in load_metrics_fixture(MetricMetadata):
                 session.add(MetricMetadata(**metric_metadata))
 
     def tearDown(self) -> None:
@@ -102,25 +120,24 @@ class PathwaysMetricTestBase:
         )
 
 
-class TestMetricHelpers(TestCase):
+class TestPublicPathwaysMetricHelpers(TestCase):
     """Tests for the metric helpers"""
 
     def test_get_metrics_by_entity(self) -> None:
         self.assertEqual(
             [
-                ALL_PATHWAYS_METRICS_BY_NAME["LibertyToPrisonTransitionsOverTime"],
-                ALL_PATHWAYS_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"],
+                ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME["PrisonPopulationOverTime"],
             ],
-            get_metrics_for_entity(LibertyToPrisonTransitions),
+            get_metrics_for_entity(PublicPrisonPopulationOverTime),
         )
 
 
 @pytest.mark.uses_db
-class TestPathwaysMetricFetcher(TestCase):
-    """Tests for the PathwaysMetricFetcher with Pathways config"""
+class TestPublicPathwaysMetricFetcher(TestCase):
+    """Tests for the Public PathwaysMetricFetcher"""
 
     # Stores the location of the postgres DB for this test run
-    postgres_launch_result: str | None
+    postgres_launch_result: Optional[str]
     engine: Engine
 
     @classmethod
@@ -130,7 +147,9 @@ class TestPathwaysMetricFetcher(TestCase):
         )
 
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
+        self.database_key = SQLAlchemyDatabaseKey(
+            SchemaType.PUBLIC_PATHWAYS, db_name="us_ny"
+        )
         self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result,
             self.database_key,
@@ -150,16 +169,16 @@ class TestPathwaysMetricFetcher(TestCase):
 
     def test_enabled_metric_without_table(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(
-            state_code=StateCode.US_TN,
-            enabled_states=["US_TN"],
+            state_code=StateCode.US_NY,
+            enabled_states=["US_NY"],
             metric_metadata=MetricMetadata,
-            schema_type=SchemaType.PATHWAYS,
+            schema_type=SchemaType.PUBLIC_PATHWAYS,
         )
 
         with self.assertRaises(MetricNotEnabledError):
             metric_fetcher.fetch(
-                ALL_PATHWAYS_METRICS_BY_STATE_CODE_BY_NAME[StateCode.US_TN][
-                    "LibertyToPrisonTransitionsOverTime"
+                ALL_PUBLIC_PATHWAYS_METRICS_BY_STATE_CODE_BY_NAME[StateCode.US_NY][
+                    "PrisonPopulationOverTime"
                 ],
                 FetchMetricParams(),
             )

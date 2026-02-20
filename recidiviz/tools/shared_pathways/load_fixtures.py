@@ -21,13 +21,21 @@ This script should be run only after `docker-compose up` has been run.
 This will delete everything from the tables, re-add them from the fixture files or a GCS bucket, and
 update the local cache.
 
-Usage against default development database (docker-compose v2):
-docker exec pulse-data-case_triage_backend-1 uv run python -m recidiviz.tools.pathways.load_fixtures \
+Usage against default development database (docker-compose v2)
+
+PATHWAYS:
+docker exec pulse-data-case_triage_backend-1 uv run python -m recidiviz.tools.shared_pathways.load_fixtures \
     --data_type GCS \
     --state_codes US_TN US_ID \
     --tables liberty_to_prison_transitions supervision_to_prison_transitions \
     --database PATHWAYS \
     --gcs_bucket recidiviz-staging-dashboard-event-level-data
+
+PUBLIC_PATHWAYS:
+docker exec pulse-data-public_pathways_backend-1 uv run python -m recidiviz.tools.shared_pathways.load_fixtures \
+    --data_type FIXTURE \
+    --state_codes US_NY \
+    --database PUBLIC_PATHWAYS
 
 Note that when running with FIXTURE data and the --tables parameter, metric_metadata will need to be
 explicitly specified if you'd like to load it, whereas with GCS it is updated automatically for each
@@ -42,7 +50,8 @@ import argparse
 import logging
 import os
 import sys
-from typing import List, Tuple
+from types import ModuleType
+from typing import List, Optional, Tuple
 
 from sqlalchemy.engine import Engine
 
@@ -52,20 +61,22 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
-from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
+from recidiviz.calculator.query.state.views.public_pathways.public_pathways_views import (
+    PUBLIC_PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
+)
 from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
+from recidiviz.case_triage.shared_pathways.utils import get_metrics_for_entity
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
-from recidiviz.persistence.database.schema.pathways.schema import (
-    MetricMetadata,
-    PathwaysBase,
+from recidiviz.persistence.database.schema.public_pathways import (
+    schema as public_pathways_schema,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -79,9 +90,15 @@ from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
 from recidiviz.utils.environment import in_development
 
 
-def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
+def get_table_columns(table: SQLAlchemyModelType, schema_type: SchemaType) -> List[str]:
     view_builder_columns = None
-    for pathways_view_builder in PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS:
+    view_builders = (
+        PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS
+        if schema_type == SchemaType.PATHWAYS
+        else PUBLIC_PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS
+    )
+
+    for pathways_view_builder in view_builders:
         if pathways_view_builder.view_id == table.__tablename__:
             view_builder_columns = pathways_view_builder.delegate.columns
     if not view_builder_columns:
@@ -95,22 +112,25 @@ def import_pathways_from_gcs(
     gcs_bucket: str,
     state: str,
     gcsfs: GCSFileSystem,
+    schema: ModuleType,
+    schema_type: SchemaType,
 ) -> None:
     """Imports data from a given GCS bucket into the specified tables using the provided SQLALchemy Engine"""
+    metadata_model = schema.MetricMetadata
     connection = engine.raw_connection()
-    PathwaysBase.metadata.create_all(engine, tables=[MetricMetadata.__table__])
+    metadata_model.metadata.create_all(engine, tables=[metadata_model.__table__])
 
     for table in tables:
-        if table == MetricMetadata:
+        if table == metadata_model:
             # We'll import into MetricMetadata for each metric we import
             continue
         table_name = table.__tablename__
 
         # Recreate table
         logging.info("dropping table %s.%s", state, table_name)
-        PathwaysBase.metadata.drop_all(engine, tables=[table.__table__])
+        metadata_model.metadata.drop_all(engine, tables=[table.__table__])
         logging.info("creating table %s.%s", state, table_name)
-        PathwaysBase.metadata.create_all(engine, tables=[table.__table__])
+        metadata_model.metadata.create_all(engine, tables=[table.__table__])
 
         # Import CSV from GCS
         gcs_path = f"gs://{gcs_bucket}/{state}/{table_name}.csv"
@@ -119,22 +139,22 @@ def import_pathways_from_gcs(
         with gcsfs.open(gcsfs_path) as fp:
             cursor = connection.cursor()
             cursor.copy_expert(
-                f"COPY {table_name} ({','.join(get_table_columns(table))}) FROM STDIN CSV",
+                f"COPY {table_name} ({','.join(get_table_columns(table, schema_type))}) FROM STDIN CSV",
                 fp,
             )
             cursor.close()
             connection.commit()
         object_metadata = gcsfs.get_metadata(gcsfs_path) or {}
         last_updated = object_metadata.get("last_updated", None)
-        facility_id_name_map = object_metadata.get("facility_id_name_map", None)
+        dynamic_filter_options = object_metadata.get("dynamic_filter_options", None)
         # facility_id_name_map is nullable, so we will add it whether or not it exists
         if last_updated:
             cursor = connection.cursor()
             cursor.execute(
-                f"""INSERT INTO {MetricMetadata.__tablename__} (metric, last_updated, facility_id_name_map)
+                f"""INSERT INTO {metadata_model.__tablename__} (metric, last_updated, dynamic_filter_options)
                 VALUES(%s, %s, %s)
-                ON CONFLICT (metric) DO UPDATE SET last_updated=EXCLUDED.last_updated, facility_id_name_map=EXCLUDED.facility_id_name_map""",
-                (table.__name__, last_updated, facility_id_name_map),
+                ON CONFLICT (metric) DO UPDATE SET last_updated=EXCLUDED.last_updated, dynamic_filter_options=EXCLUDED.dynamic_filter_options""",
+                (table.__name__, last_updated, dynamic_filter_options),
             )
             cursor.close()
             connection.commit()
@@ -143,24 +163,26 @@ def import_pathways_from_gcs(
 
 
 def reset_pathways_fixtures(
-    engine: Engine, tables: List[SQLAlchemyModelType], state: str
+    engine: Engine,
+    tables: List[SQLAlchemyModelType],
+    state: str,
+    schema: ModuleType,
+    fixture_dir: str,
 ) -> None:
     """Deletes all ETL data and re-imports data from our fixture files"""
+    metadata = schema.MetricMetadata.metadata
+
     # Reset_fixtures doesn't handle schema changes, so drop and recreate the tables
     for table in tables:
         logging.info("dropping table %s.%s", state, table.__tablename__)
-        PathwaysBase.metadata.drop_all(engine, tables=[table.__table__])
+        metadata.drop_all(engine, tables=[table.__table__])
         logging.info("creating table %s.%s", state, table.__tablename__)
-        PathwaysBase.metadata.create_all(engine, tables=[table.__table__])
+        metadata.create_all(engine, tables=[table.__table__])
 
     reset_fixtures(
         engine=engine,
         tables=tables,
-        fixture_directory=os.path.join(
-            os.path.dirname(__file__),
-            "../../..",
-            "recidiviz/tests/case_triage/pathways/fixtures",
-        ),
+        fixture_directory=fixture_dir,
         csv_headers=True,
     )
 
@@ -168,35 +190,67 @@ def reset_pathways_fixtures(
 def main(
     data_type: str,
     state_codes: List[str],
-    tables: List[SQLAlchemyModelType],
+    tables: Optional[List[str]],
     gcs_bucket: str,
-    database: SchemaType,
+    schema_type: SchemaType,
 ) -> None:
     """Creates and initializes databases, then resets the fixtures or imports data from GCS"""
-    create_dbs(state_codes, SchemaType.PATHWAYS)
+    create_dbs(state_codes, schema_type)
+
+    if tables is None:
+        tables = [table.name for table in get_all_table_classes_in_schema(schema_type)]
+    if schema_type == SchemaType.PATHWAYS:
+        schema_file: ModuleType = pathways_schema
+        fixture_dir = os.path.join(
+            os.path.dirname(__file__),
+            "../../..",
+            "recidiviz/tests/case_triage/pathways/fixtures",
+        )
+    else:
+        schema_file = public_pathways_schema
+        fixture_dir = os.path.join(
+            os.path.dirname(__file__),
+            "../../..",
+            "recidiviz/tests/public_pathways/fixtures",
+        )
+
+    table_classes = [
+        get_database_entity_by_table_name(schema_file, table) for table in tables
+    ]
 
     for state in state_codes:
         database_key = PathwaysDatabaseManager(
-            state_codes, database
+            state_codes, schema_type
         ).database_key_for_state(state)
         pathways_engine = SQLAlchemyEngineManager.get_engine_for_database(database_key)
         if pathways_engine is None:
             pathways_engine = SQLAlchemyEngineManager.init_engine(database_key)
 
         if data_type == "FIXTURE":
-            reset_pathways_fixtures(pathways_engine, tables, state)
+            reset_pathways_fixtures(
+                pathways_engine, table_classes, state, schema_file, fixture_dir
+            )
         elif data_type == "GCS":
             import_pathways_from_gcs(
-                pathways_engine, tables, gcs_bucket, state, GcsfsFactory.build()
+                pathways_engine,
+                table_classes,
+                gcs_bucket,
+                state,
+                GcsfsFactory.build(),
+                schema_file,
+                schema_type,
             )
 
     # Reset cache after all fixtures have been added because PathwaysMetricCache will initialize
     # a DB engine, and we can't import the metrics if the engine has already been initialized.
     for state in state_codes:
         metric_cache = PathwaysMetricCache.build(
-            StateCode(state), schema_type=SchemaType.PATHWAYS
+            StateCode(state),
+            schema_type=schema_type,
+            metadata_model=schema_file.MetricMetadata,
+            enabled_states=state_codes,
         )
-        for table in tables:
+        for table in table_classes:
             for metric in get_metrics_for_entity(table):
                 logging.info("resetting cache for %s %s", state, metric.name)
                 metric_cache.reset_cache(metric)
@@ -228,12 +282,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="Space-separated tables to load data into. If unset, loads data into all tables.",
         type=str,
         nargs="*",
-        choices=[
-            table.name for table in get_all_table_classes_in_schema(SchemaType.PATHWAYS)
-        ],
-        default=[
-            table.name for table in get_all_table_classes_in_schema(SchemaType.PATHWAYS)
-        ],
     )
 
     parser.add_argument(
@@ -263,14 +311,11 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
     args, _ = parse_arguments(sys.argv)
-    table_classes = [
-        get_database_entity_by_table_name(pathways_schema, table)
-        for table in args.tables
-    ]
+
     main(
         args.data_type,
         args.state_codes,
-        table_classes,
+        args.tables,
         args.gcs_bucket,
-        SchemaType[args.database],
+        schema_type=SchemaType[args.database],
     )

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,16 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements tests for Pathways metric cache."""
+"""Implements tests for Public Pathways metric cache."""
 import json
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from fakeredis import FakeRedis
 
-from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_PATHWAYS_METRICS_BY_NAME,
-)
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.dimension_mapping import (
     DimensionMapping,
@@ -37,41 +34,41 @@ from recidiviz.case_triage.shared_pathways.query_builders.count_by_dimension_met
     CountByDimensionMetricParams,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.pathways.schema import (
-    MetricMetadata as PathwaysMetricMetadata,
-)
+from recidiviz.persistence.database.schema.public_pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.public_pathways.metrics.metric_query_builders import (
+    ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME,
+)
 
 
-class PathwaysMetricCacheTest(TestCase):
-    """Tests for pathways metric cache"""
+class PublicPathwaysMetricCacheTest(TestCase):
+    """Tests for public pathways metric cache"""
 
     def setUp(self) -> None:
         self.redis = FakeRedis()
-        self.query_builder = ALL_PATHWAYS_METRICS_BY_NAME[
-            "LibertyToPrisonTransitionsCount"
+        self.query_builder = ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME[
+            "PrisonPopulationOverTime"
         ]
 
         self.metric_cache = PathwaysMetricCache(
             state_code=StateCode.US_XX,
-            schema_type=SchemaType.PATHWAYS,
+            schema_type=SchemaType.PUBLIC_PATHWAYS,
             metric_fetcher=PathwaysMetricFetcher(
                 state_code=StateCode.US_XX,
                 enabled_states=["US_XX"],
-                schema_type=SchemaType.PATHWAYS,
-                metric_metadata=PathwaysMetricMetadata,
+                metric_metadata=MetricMetadata,
+                schema_type=SchemaType.PUBLIC_PATHWAYS,
             ),
             redis=self.redis,
         )
 
     def test_cache_key_for(self) -> None:
         self.assertEqual(
-            "US_XX LibertyToPrisonTransitionsCount filters=[('time_period', ['months_0_6', 'months_7_12'])] group='gender'",
+            "US_XX PrisonPopulationOverTime filters=[('time_period', ['months_0_6', 'months_7_12'])]",
             self.metric_cache.cache_key_for(
                 self.query_builder,
                 self.query_builder.build_params(
                     {
-                        "group": Dimension.GENDER,
                         "filters": {
                             Dimension.TIME_PERIOD: TimePeriod.period_range(
                                 TimePeriod.MONTHS_7_12.value
@@ -129,13 +126,10 @@ class PathwaysMetricCacheTest(TestCase):
             # Value is grabbed from cache
             mock_metric_fetcher.fetch.assert_not_called()
             self.assertEqual(cached_value, result)
-            self.assertEqual(
-                1, len(self.redis.keys("US_XX LibertyToPrisonTransitionsCount*"))
-            )
+            self.assertEqual(1, len(self.redis.keys("US_XX PrisonPopulationOverTime*")))
 
     def test_fetch_with_initialized_cache(self) -> None:
         """When the cache is initialized we don't make a database call"""
-        mock_metric_fetcher = MagicMock()
         with patch.object(self.metric_cache, "metric_fetcher") as mock_metric_fetcher:
             self.assertEqual(0, len(self.redis.keys()))
 
@@ -150,7 +144,6 @@ class PathwaysMetricCacheTest(TestCase):
             mock_metric_fetcher.fetch.assert_not_called()
 
     def test_initialize_cache(self) -> None:
-        mock_metric_fetcher = MagicMock()
         with patch.object(self.metric_cache, "metric_fetcher") as mock_metric_fetcher:
             mock_metric_fetcher.fetch.return_value = {}
 

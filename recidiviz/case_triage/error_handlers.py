@@ -22,7 +22,7 @@ from jwt import MissingRequiredClaimError
 from marshmallow import ValidationError
 from werkzeug.exceptions import HTTPException
 
-from recidiviz.case_triage.pathways.exceptions import (
+from recidiviz.case_triage.shared_pathways.exceptions import (
     MetricMappingError,
     MetricNotEnabledError,
 )

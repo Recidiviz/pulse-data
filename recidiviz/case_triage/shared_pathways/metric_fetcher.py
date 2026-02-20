@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Interface for fetching metrics from Pathways CloudSQL """
+"""Interface for fetching metrics from Pathways CloudSQL."""
 from functools import cached_property
 from typing import List, Mapping, Union
 
@@ -24,48 +24,39 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states_for_cloud_sql,
-)
-from recidiviz.calculator.query.state.views.dashboard.public_pathways.public_pathways_enabled_states import (
-    get_public_pathways_enabled_states_for_cloud_sql,
-)
-from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
-    FetchMetricParams,
-    MetricQueryBuilder,
-)
+from recidiviz.case_triage.shared_pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.shared_pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
+)
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
+    FetchMetricParams,
+    MetricQueryBuilder,
 )
 from recidiviz.case_triage.util import to_json_serializable
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
+from recidiviz.persistence.database.schema.pathways.schema import (
+    MetricMetadata as PathwaysMetricMetadata,
+)
+from recidiviz.persistence.database.schema.public_pathways.schema import (
+    MetricMetadata as PublicPathwaysMetricMetadata,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
-def _get_enabled_states_for_schema(schema_type: SchemaType) -> list[str]:
-    """Returns the enabled states for the given schema type."""
-    if schema_type == SchemaType.PATHWAYS:
-        return get_pathways_enabled_states_for_cloud_sql()
-    if schema_type == SchemaType.PUBLIC_PATHWAYS:
-        return get_public_pathways_enabled_states_for_cloud_sql()
-    raise ValueError(f"Unsupported schema type: {schema_type}")
-
-
+# TODO(#59098) Create child classes for public/pathways config to reduce param complexity
 @attr.s(auto_attribs=True)
 class PathwaysMetricFetcher:
-    """Interface for fetching metrics from Cloud SQL"""
+    """Fetches metrics from Cloud SQL."""
 
     state_code: StateCode
-    schema_type: SchemaType = SchemaType.PATHWAYS
-    database_manager: PathwaysDatabaseManager = attr.ib()
+    enabled_states: list[str]
+    schema_type: SchemaType
+    metric_metadata: type[PathwaysMetricMetadata] | type[PublicPathwaysMetricMetadata]
 
-    @database_manager.default
-    def _default_database_manager(self) -> PathwaysDatabaseManager:
-        return PathwaysDatabaseManager(
-            _get_enabled_states_for_schema(self.schema_type), self.schema_type
-        )
+    @cached_property
+    def database_manager(self) -> PathwaysDatabaseManager:
+        return PathwaysDatabaseManager(self.enabled_states, self.schema_type)
 
     @cached_property
     def database_session(self) -> sessionmaker:
@@ -76,7 +67,7 @@ class PathwaysMetricFetcher:
     ) -> Mapping[
         str, Union[List[Mapping[str, Union[str, int]]], Mapping[str, Union[str, int]]]
     ]:
-        """Fetches metric data / metadata from Postgres"""
+        """Fetches metric data / metadata from Postgres."""
         with self.database_session() as session:
             data_query = mapper.build_query(params).with_session(session)
             try:
@@ -99,7 +90,9 @@ class PathwaysMetricFetcher:
                 raise e
 
             try:
-                metadata_query = mapper.build_metadata_query().with_session(session)
+                metadata_query = mapper.build_metadata_query(
+                    metadata_model=self.metric_metadata
+                ).with_session(session)
                 metadata = metadata_query.one().to_json()
                 # We don't need to return the value of metric
                 metadata.pop("metric", None)

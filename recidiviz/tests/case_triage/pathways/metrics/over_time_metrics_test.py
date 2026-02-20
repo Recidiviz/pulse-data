@@ -22,16 +22,17 @@ from unittest.case import TestCase
 from unittest.mock import patch
 
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
-    ALL_METRICS_BY_NAME,
-)
-from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
-    FetchMetricParams,
-    MetricQueryBuilder,
+    ALL_PATHWAYS_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.shared_pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.shared_pathways.metric_fetcher import PathwaysMetricFetcher
+from recidiviz.case_triage.shared_pathways.query_builders.metric_query_builder import (
+    FetchMetricParams,
+    MetricQueryBuilder,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
@@ -55,7 +56,7 @@ class OverTimeMetricTestBase(PathwaysMetricTestBase):
     def setUp(self) -> None:
         super().setUp()
         self.current_date_patcher = patch(
-            "recidiviz.case_triage.pathways.metrics.query_builders.over_time_metric_query_builder.func.current_date",
+            "recidiviz.case_triage.shared_pathways.query_builders.over_time_metric_query_builder.func.current_date",
             return_value=date(2022, 3, 3),
         )
         self.current_date_patcher.start()
@@ -66,7 +67,10 @@ class OverTimeMetricTestBase(PathwaysMetricTestBase):
 
     def test_metrics_base(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         )
         results = metric_fetcher.fetch(
             self.query_builder,
@@ -89,7 +93,7 @@ class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionPopulationOverTime"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionPopulationOverTime"]
 
     @property
     def all_expected_counts(
@@ -108,7 +112,10 @@ class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
         """When filtering for a time period that doesn't exist in the data,
         the earliest date is selected from the list of time periods in range"""
         results = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         ).fetch(
             self.query_builder,
             FetchMetricParams(
@@ -135,7 +142,7 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonPopulationOverTime"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonPopulationOverTime"]
 
     @property
     def all_expected_counts(
@@ -159,7 +166,10 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
 
     def test_demo(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         )
         results = metric_fetcher.fetch(
             self.query_builder,
@@ -188,7 +198,7 @@ class TestLibertyToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["LibertyToPrisonTransitionsOverTime"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["LibertyToPrisonTransitionsOverTime"]
 
     @property
     def all_expected_counts(
@@ -214,7 +224,7 @@ class TestPrisonToSupervisionTransitionsOverTime(OverTimeMetricTestBase, TestCas
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["PrisonToSupervisionTransitionsOverTime"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["PrisonToSupervisionTransitionsOverTime"]
 
     @property
     def all_expected_counts(
@@ -240,7 +250,7 @@ class TestSupervisionToLibertyTransitionsOverTime(OverTimeMetricTestBase, TestCa
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionToLibertyTransitionsOverTime"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionToLibertyTransitionsOverTime"]
 
     @property
     def all_expected_counts(
@@ -266,7 +276,7 @@ class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCas
 
     @property
     def query_builder(self) -> MetricQueryBuilder:
-        return ALL_METRICS_BY_NAME["SupervisionToPrisonTransitionsOverTime"]
+        return ALL_PATHWAYS_METRICS_BY_NAME["SupervisionToPrisonTransitionsOverTime"]
 
     @property
     def all_expected_counts(
@@ -327,7 +337,10 @@ class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCas
             )
 
         metric_fetcher = PathwaysMetricFetcher(
-            StateCode.US_TN, schema_type=SchemaType.PATHWAYS
+            state_code=StateCode.US_TN,
+            enabled_states=["US_TN"],
+            schema_type=SchemaType.PATHWAYS,
+            metric_metadata=MetricMetadata,
         )
         results = metric_fetcher.fetch(
             self.query_builder,
