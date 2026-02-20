@@ -66,6 +66,8 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStatePersonExternalId,
     NormalizedStatePersonStaffRelationshipPeriod,
+    NormalizedStateStaff,
+    NormalizedStateStaffExternalId,
 )
 from recidiviz.pipelines.ingest.state.validator import Error, validate_root_entity
 from recidiviz.utils.types import assert_type
@@ -2314,6 +2316,325 @@ class TestNormalizedPersonExternalIdChecks(unittest.TestCase):
                     "[US_XX_ID_TYPE] that are designated as is_current_display_id_for_type=True. "
                     "If a person has any ids of a given id_type, exactly one must be set as the "
                     "display id."
+                ),
+            ],
+            sorted(errors),
+        )
+
+
+class TestNormalizedStaffExternalIdChecks(unittest.TestCase):
+    """Test that root entity checks specific to NormalizedStateStaffExternalId are
+    valid.
+    """
+
+    def setUp(self) -> None:
+        self.allowed_multiple_ids_patcher = patch(
+            "recidiviz.pipelines.ingest.state.validator.staff_external_id_types_with_allowed_multiples_per_person"
+        )
+        self.allowed_multiple_ids_patcher.start().return_value = [
+            "US_XX_ID_TYPE",
+            "US_XX_ID_TYPE_2",
+        ]
+
+    def tearDown(self) -> None:
+        self.allowed_multiple_ids_patcher.stop()
+
+    def _make_normalized_external_id(
+        self,
+        *,
+        index: int,
+        external_id: str,
+        is_current_display_id_for_type: bool | None,
+        is_stable_id_for_type: bool | None,
+        id_type: str = "US_XX_ID_TYPE",
+    ) -> NormalizedStateStaffExternalId:
+        return NormalizedStateStaffExternalId(
+            staff_external_id_id=index,
+            state_code=StateCode.US_XX.value,
+            external_id=external_id,
+            id_type=id_type,
+            is_current_display_id_for_type=is_current_display_id_for_type,
+            is_stable_id_for_type=is_stable_id_for_type,
+            id_active_from_datetime=None,
+            id_active_to_datetime=None,
+        )
+
+    def make_staff_member(
+        self,
+        *,
+        external_ids: list[NormalizedStateStaffExternalId],
+    ) -> NormalizedStateStaff:
+        """Helper to create a NormalizedStateStaff with given external IDs."""
+        staff = NormalizedStateStaff(
+            state_code=StateCode.US_XX.value,
+            staff_id=1,
+            external_ids=external_ids,
+        )
+        for sei in staff.external_ids:
+            sei.staff = staff
+        return staff
+
+    def test_valid_exactly_one_display_id_and_stable_id(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
+                ),
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(errors, [])
+
+    def test_error_multiple_ids_of_type_with_multiples_disallowed(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    id_type="US_XX_NO_MULTIPLES_ALLOWED",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    id_type="US_XX_NO_MULTIPLES_ALLOWED",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(
+            [
+                "Duplicate external id types for [NormalizedStateStaff] with id [1]: "
+                "US_XX_NO_MULTIPLES_ALLOWED"
+            ],
+            errors,
+        )
+
+    # TODO(#59913): Uncomment once normalization is complete.
+    # def test_error_no_display_id_set(self) -> None:
+    #     staff = self.make_staff_member(
+    #         external_ids=[
+    #             self._make_normalized_external_id(
+    #                 index=1,
+    #                 external_id="ID1",
+    #                 is_current_display_id_for_type=False,
+    #                 is_stable_id_for_type=True,
+    #             ),
+    #             self._make_normalized_external_id(
+    #                 index=2,
+    #                 external_id="ID2",
+    #                 is_current_display_id_for_type=False,
+    #                 is_stable_id_for_type=False,
+    #             ),
+    #         ]
+    #     )
+    #     errors: list[str] = list(validate_root_entity(staff))
+    #     self.assertEqual(len(errors), 1)
+    #     self.assertRegex(
+    #         errors[0],
+    #         r"Found no NormalizedStateStaffExternalId.*with type \[US_XX_ID_TYPE\].*"
+    #         r"exactly one must be set",
+    #     )
+
+    # TODO(#59913): Uncomment once normalization is complete.
+    # def test_error_no_stable_id_set(self) -> None:
+    #     staff = self.make_staff_member(
+    #         external_ids=[
+    #             self._make_normalized_external_id(
+    #                 index=1,
+    #                 external_id="ID1",
+    #                 is_current_display_id_for_type=False,
+    #                 is_stable_id_for_type=False,
+    #             ),
+    #             self._make_normalized_external_id(
+    #                 index=2,
+    #                 external_id="ID2",
+    #                 is_current_display_id_for_type=True,
+    #                 is_stable_id_for_type=False,
+    #             ),
+    #         ]
+    #     )
+    #     errors: list[str] = list(validate_root_entity(staff))
+    #     self.assertEqual(len(errors), 1)
+    #     self.assertRegex(
+    #         errors[0],
+    #         r"Found no NormalizedStateStaffExternalId.*with type \[US_XX_ID_TYPE\].*"
+    #         r"exactly one must be set",
+    #     )
+
+    def test_error_multiple_display_ids_set(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
+                ),
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found multiple \(2\) NormalizedStateStaffExternalId.*with type "
+            r"\[US_XX_ID_TYPE\].*exactly one must be set",
+        )
+
+    def test_error_multiple_stable_ids_set(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="ID3",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found multiple \(2\) NormalizedStateStaffExternalId.*with type "
+            r"\[US_XX_ID_TYPE\].*exactly one must be set",
+        )
+
+    def test_valid_multiple_types_with_one_display_and_stable_each(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ABC123",
+                    id_type="US_XX_ID_TYPE_2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+            ]
+        )
+
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(errors, [])
+
+    def test_multiple_errors_for_multiple_types(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                # Type US_XX_ID_TYPE has two display IDs
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    id_type="US_XX_ID_TYPE",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
+                ),
+                # Type US_XX_ID_TYPE_2 has two stable IDs
+                self._make_normalized_external_id(
+                    index=3,
+                    external_id="ABC123",
+                    id_type="US_XX_ID_TYPE_2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=4,
+                    external_id="DEF456",
+                    id_type="US_XX_ID_TYPE_2",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+            ]
+        )
+
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(
+            [
+                (
+                    "Found multiple (2) NormalizedStateStaffExternalId on staff member "
+                    "[NormalizedStateStaff(staff_id=1, "
+                    "external_ids=[NormalizedStateStaffExternalId(external_id='ID1', "
+                    "id_type='US_XX_ID_TYPE', "
+                    "staff_external_id_id=1),NormalizedStateStaffExternalId(external_id='ID2', "
+                    "id_type='US_XX_ID_TYPE', "
+                    "staff_external_id_id=2),NormalizedStateStaffExternalId(external_id='ABC123', "
+                    "id_type='US_XX_ID_TYPE_2', "
+                    "staff_external_id_id=3),NormalizedStateStaffExternalId(external_id='DEF456', "
+                    "id_type='US_XX_ID_TYPE_2', staff_external_id_id=4)])] with type "
+                    "[US_XX_ID_TYPE] that are designated as "
+                    "is_current_display_id_for_type=True. If a staff "
+                    "member has any ids of a given id_type, exactly one must be set as "
+                    "the display id."
+                ),
+                (
+                    "Found multiple (2) NormalizedStateStaffExternalId on staff member "
+                    "[NormalizedStateStaff(staff_id=1, "
+                    "external_ids=[NormalizedStateStaffExternalId(external_id='ID1', "
+                    "id_type='US_XX_ID_TYPE', "
+                    "staff_external_id_id=1),NormalizedStateStaffExternalId(external_id='ID2', "
+                    "id_type='US_XX_ID_TYPE', "
+                    "staff_external_id_id=2),NormalizedStateStaffExternalId(external_id='ABC123', "
+                    "id_type='US_XX_ID_TYPE_2', "
+                    "staff_external_id_id=3),NormalizedStateStaffExternalId(external_id='DEF456', "
+                    "id_type='US_XX_ID_TYPE_2', staff_external_id_id=4)])] with type "
+                    "[US_XX_ID_TYPE_2] that are designated as "
+                    "is_stable_id_for_type=True. If a staff member has "
+                    "any ids of a given id_type, exactly one must be set as the stable "
+                    "id."
                 ),
             ],
             sorted(errors),

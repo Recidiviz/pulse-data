@@ -568,6 +568,67 @@ def _normalized_person_external_id_checks(
             )
 
 
+def _normalized_staff_external_id_checks(
+    staff: normalized_entities.NormalizedStateStaff,
+) -> Iterable[Error]:
+    """This function checks that:
+    - For each group of NormalizedStateStaffExternalId with the same id_type,
+    exactly one has is_current_display_id_for_type=True.
+    - For each group of NormalizedStateStaffExternalId with the same id_type,
+    exactly one has is_stable_id_for_type=True.
+    """
+    ids_by_type: dict[
+        str, list[normalized_entities.NormalizedStateStaffExternalId]
+    ] = defaultdict(list)
+    for sei in staff.external_ids:
+        ids_by_type[sei.id_type].append(sei)
+
+    for id_type, external_ids_of_type in ids_by_type.items():
+        display_external_ids = [
+            sei for sei in external_ids_of_type if sei.is_current_display_id_for_type
+        ]
+        # TODO(#59913): Uncomment once normalization is complete.
+        # if len(display_external_ids) == 0:
+        #     yield (
+        #         f"Found no NormalizedStateStaffExternalId on staff member "
+        #         f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
+        #         f"designated as is_current_display_id_for_type=True. If a staff "
+        #         f"member has any ids of a given id_type, exactly one must be set as "
+        #         f"the display id."
+        #     )
+        if len(display_external_ids) > 1:
+            yield (
+                f"Found multiple ({len(display_external_ids)}) "
+                f"NormalizedStateStaffExternalId on staff member "
+                f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_current_display_id_for_type=True. If a staff "
+                f"member has any ids of a given id_type, exactly one must be set as "
+                f"the display id."
+            )
+
+        stable_external_ids = [
+            sei for sei in external_ids_of_type if sei.is_stable_id_for_type
+        ]
+        # TODO(#59913): Uncomment once normalization is complete.
+        # if len(stable_external_ids) == 0:
+        #     yield (
+        #         f"Found no NormalizedStateStaffExternalId on staff member "
+        #         f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
+        #         f"designated as is_stable_id_for_type=True. If a staff member has "
+        #         f"any ids of a given id_type, exactly one must be set as the stable "
+        #         f"id."
+        #     )
+        if len(stable_external_ids) > 1:
+            yield (
+                f"Found multiple ({len(stable_external_ids)}) "
+                f"NormalizedStateStaffExternalId on staff member "
+                f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_stable_id_for_type=True. If a staff member has "
+                f"any ids of a given id_type, exactly one must be set as the stable "
+                f"id."
+            )
+
+
 def validate_root_entity(
     root_entity: RootEntityT | NormalizedRootEntityT,
 ) -> List[Error]:
@@ -615,6 +676,8 @@ def validate_root_entity(
         error_messages.extend(_get_state_person_specific_errors(root_entity))
     if isinstance(root_entity, normalized_entities.NormalizedStatePerson):
         error_messages.extend(_get_normalized_state_person_specific_errors(root_entity))
+    if isinstance(root_entity, normalized_entities.NormalizedStateStaff):
+        error_messages.extend(_get_normalized_state_staff_specific_errors(root_entity))
 
     return error_messages
 
@@ -699,6 +762,15 @@ def _get_normalized_state_person_specific_errors(
         _normalized_person_staff_relationship_period_checks(root_entity)
     )
     error_messages.extend(_sentencing_entities_checks(root_entity))
+    return error_messages
+
+
+def _get_normalized_state_staff_specific_errors(
+    root_entity: normalized_entities.NormalizedStateStaff,
+) -> List[str]:
+    assert_type(root_entity, normalized_entities.NormalizedStateStaff)
+    error_messages: list[str] = []
+    error_messages.extend(_normalized_staff_external_id_checks(root_entity))
     return error_messages
 
 
