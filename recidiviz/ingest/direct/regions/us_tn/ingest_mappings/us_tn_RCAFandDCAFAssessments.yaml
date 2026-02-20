@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_VantagePointAssessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderID: STRING
+  AssessmentDate: STRING
+  ClassificationDate: DATE
+  ClassificationDecisionDate: DATE
+  OverallScore: STRING
+  OverrideReason: STRING
+  ClassificationDecision: STRING
+  ScoredCustodyLevel: STRING
+  ClassificationType: STRING
+  ClassificationFormType: STRING
+  Question1: STRING
+  Question2: STRING
+  Question3: STRING
+  Question4: STRING
+  Question5: STRING
+  Question6: STRING
+  Question7: STRING
+  TrusteeFlag: STRING
+  Trustee_Question1: STRING
+  Trustee_Question2: STRING
+  Trustee_Question3: STRING
+  Trustee_Question4: STRING
+  Trustee_Question5: STRING
+  Trustee_Question6: STRING
+  Trustee_Question7: STRING
+  Trustee_Question8: STRING
+  Trustee_Question9: STRING
+  Trustee_Question10: STRING
+  Trustee_Question11: STRING
+  Trustee_Question12: STRING
+  Trustee_Question13: STRING
+  DateOfApprovalAndEntry_CAF: STRING
+  DateOfApprovalAndEntry_Trustee: STRING
+  CounselorRecommendedOverride: STRING
+  CounselorRecommendedCustodyLevel: STRING
+  FinalOverrideCode: STRING
+  FinalCustodyLevel: STRING
+  TrusteeEligible: STRING
+  TrusteeApprovedOrDenied: STRING
+  DateOfFinalApprovalAndEntry: STRING
+  LastClassificationDate: STRING
+  firstFormEdit: STRING
+  CAFDate: DATE
+  CAF_ID: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - CAF_ID
+          assessment_type:
+            $enum_mapping:
+              $raw_text: ClassificationType
+              $mappings:
+                StateAssessmentType.RCAF:
+                  - RCAF
+                StateAssessmentType.DCAF:
+                  - DCAF
+          assessment_date: AssessmentDate
+          assessment_score: OverallScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text: ScoredCustodyLevel
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "MIN"
+                  - "LOW"
+                StateAssessmentLevel.MEDIUM:
+                  - "MED"
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - "CLS"
+                  - "CLOSE"
+                StateAssessmentLevel.MAXIMUM:
+                  - "MAX"
+                  - "MAXIMUM"
+          assessment_metadata:
+            $normalized_values_json_dict:
+              QUESTION1: Question1
+              QUESTION2: Question2
+              QUESTION3: Question3
+              QUESTION4: Question4
+              QUESTION5: Question5
+              QUESTION6: Question6
+              QUESTION7: Question7
+              TrusteeFlag: TrusteeFlag
+              Trustee_Question1: Trustee_Question1
+              Trustee_Question2: Trustee_Question2
+              Trustee_Question3: Trustee_Question3
+              Trustee_Question4: Trustee_Question4
+              Trustee_Question5: Trustee_Question5
+              Trustee_Question6: Trustee_Question6
+              Trustee_Question7: Trustee_Question7
+              Trustee_Question8: Trustee_Question8
+              Trustee_Question9: Trustee_Question9
+              Trustee_Question10: Trustee_Question10
+              Trustee_Question11: Trustee_Question11
+              Trustee_Question12: Trustee_Question12
+              Trustee_Question13: Trustee_Question13
+              DateOfApprovalAndEntry_CAF: DateOfApprovalAndEntry_CAF
+              DateOfApprovalAndEntry_Trustee: DateOfApprovalAndEntry_Trustee
+              CounselorRecommendedOverride: CounselorRecommendedOverride
+              CounselorRecommendedCustodyLevel: CounselorRecommendedCustodyLevel
+              FinalOverrideCode: FinalOverrideCode
+              FinalCustodyLevel: FinalCustodyLevel
+              TrusteeEligible: TrusteeEligible
+              TrusteeApprovedOrDenied: TrusteeApprovedOrDenied
+              DateOfFinalApprovalAndEntry: DateOfFinalApprovalAndEntry
+              OverallScore: OverallScore
+              CLASSIFICATIONDATE: ClassificationDate
+              CLASSIFICATIONDECISIONDATE: ClassificationDecisionDate
+              OVERRIDEREASON: OverrideReason
+              CLASSIFICATIONDECISION: ClassificationDecision
+              ClassificationFormType: ClassificationFormType
+              LastClassificationDate: LastClassificationDate
+              firstFormEdit: firstFormEdit
+              CAFDate: CAFDate
