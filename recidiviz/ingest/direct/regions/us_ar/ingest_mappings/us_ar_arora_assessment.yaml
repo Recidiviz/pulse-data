@@ -22,6 +22,7 @@ output:
               $values:
                 - OFFENDERID
                 - RCDATETIME
+                - $literal("ARORA")
           assessment_date: RCDATETIME
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type:

@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_oras_assessment` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  RISKASSESSMENTDATE: DATE
+  RISKASSESSMENTTIME: STRING
+  RISKASSESSMENTTYPE: STRING
+  RISKASMTSTAFF: STRING
+  RISKASMTTOTALSCORE: INTEGER
+  RISKASMTCATEGORY: STRING
+  RISKASMTSTATUS: STRING
+  RISKLEVELSCORE1: STRING
+  RISKLEVELMAXSCORE1: STRING
+  RISKLEVELOFNEED1: STRING
+  RISKLEVELSCORE2: STRING
+  RISKLEVELMAXSCORE2: STRING
+  RISKLEVELOFNEED2: STRING
+  RISKLEVELSCORE3: STRING
+  RISKLEVELMAXSCORE3: STRING
+  RISKLEVELOFNEED3: STRING
+  RISKLEVELSCORE5: STRING
+  RISKLEVELMAXSCORE5: STRING
+  RISKLEVELOFNEED5: STRING
+  RISKLEVELSCORE7: STRING
+  RISKLEVELMAXSCORE7: STRING
+  RISKLEVELOFNEED7: STRING
+unused_columns:
+  - RISKASMTSTATUS
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - RISKASSESSMENTDATE
+                - RISKASSESSMENTTIME
+                - $literal("ORAS")
+          assessment_date: RISKASSESSMENTDATE
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: RISKASSESSMENTTYPE
+              $mappings:
+                StateAssessmentType.ORAS_PRISON_INTAKE: 3h
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: 2k
+                StateAssessmentType.ORAS_REENTRY: 4f
+                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY: 8b
+          conducting_staff_external_id: RISKASMTSTAFF
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: RISKASMTSTAFF
+                $then: $literal("US_AR_PARTYID")
+          assessment_score: RISKASMTTOTALSCORE
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RISKASMTCATEGORY
+              $mappings:
+                StateAssessmentLevel.LOW: "1"
+                StateAssessmentLevel.LOW_MODERATE: "5"
+                StateAssessmentLevel.MODERATE: "2"
+                StateAssessmentLevel.HIGH: "3"
+                StateAssessmentLevel.VERY_HIGH: "4"
+                StateAssessmentLevel.EXTERNAL_UNKNOWN: "9" # Unassigned
+          assessment_metadata:
+            $normalized_values_json_dict:
+              criminal_history_score: RISKLEVELSCORE1
+              criminal_history_max_score: RISKLEVELMAXSCORE1
+              criminal_history_level: RISKLEVELOFNEED1
+              school_employment_score: RISKLEVELSCORE2
+              school_employment_max_score: RISKLEVELMAXSCORE2
+              school_employment_level: RISKLEVELOFNEED2
+              family_social_score: RISKLEVELSCORE3
+              family_social_max_score: RISKLEVELMAXSCORE3
+              family_social_level: RISKLEVELOFNEED3
+              substance_mental_health_score: RISKLEVELSCORE5
+              substance_mental_health_max_score: RISKLEVELMAXSCORE5
+              substance_mental_health_level: RISKLEVELOFNEED5
+              lifestyle_score: RISKLEVELSCORE7
+              lifestyle_max_score: RISKLEVELMAXSCORE7
+              lifestyle_level: RISKLEVELOFNEED7

@@ -53,6 +53,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ar_ingest_view_results.incarceration_period",
     "us_ar_ingest_view_results.incarceration_sentence_length",
     "us_ar_ingest_view_results.incarceration_sentence_status",
+    "us_ar_ingest_view_results.oras_assessment",
     "us_ar_ingest_view_results.person",
     "us_ar_ingest_view_results.program_assignment",
     "us_ar_ingest_view_results.sentence",
