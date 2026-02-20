@@ -99,6 +99,10 @@ def build_segment_event_view_query_template(
         # If JII ID columns are specified, only include events with non-null ID's
         person_id_join_type = "INNER"
 
+    # If the event has a user_id, inner join to filter out unidentified users;
+    # otherwise, left join so events without a user_id are not dropped.
+    user_id_join_type = "INNER" if has_user_id else "LEFT"
+
     if segment_table_sql_source.table_id == "pages":
         product_type_clause = _get_product_type_case_when_statement_pages()
     else:
@@ -129,10 +133,10 @@ def build_segment_event_view_query_template(
 
     template = f"""
 SELECT
-    state_code,
-    user_id,
+    COALESCE(person.state_code, rdu.state_code) AS state_code,
+    events.user_id,
     LOWER(rdu.email) AS email_address,
-    DATETIME(timestamp, "US/Eastern") AS event_ts,
+    DATETIME(events.timestamp, "US/Eastern") AS event_ts,
     {session_id_select}
     context_page_path,
     context_page_url,
@@ -162,20 +166,27 @@ FROM (
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
 ) events
--- inner join to filter out recidiviz users and others unidentified (if any)
-INNER JOIN
+-- join to filter out recidiviz users and others unidentified (if any)
+{user_id_join_type} JOIN 
     `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
-USING(user_id)
+ON
+    -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
+    -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
+    -- because they may match between both states. Instead, use the timestamp of the event to
+    -- determine whether it is a US_ID event or a US_IX event.
+    events.user_id = rdu.user_id
+    AND (
+        rdu.state_code != "US_ID"
+        OR events.timestamp < "{FIRST_IX_EXPORT_DATE}"
+    )
 {person_id_join_type} JOIN
-    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized`
-USING
-    (state_code, pseudonymized_id)
--- We get the state_code above from `reidentified_dashboard_users`, which could have have an
--- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
--- because they may match between both states. Instead, use the timestamp of the event to
--- determine whether it is a US_ID event or a US_IX event.
-WHERE
-    state_code != "US_ID"
-    OR timestamp < "{FIRST_IX_EXPORT_DATE}"
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
+ON
+    events.pseudonymized_id = person.pseudonymized_id
+    -- This condition ensures that we only keep events where the state_code of the person_id
+    -- matches the state_code of the user_id.
+    -- TODO(#60453): Investigate cases where rdu state_code doesn't match person state_code
+    {"AND rdu.state_code = person.state_code" if has_user_id else ""}
+
 """
     return template
