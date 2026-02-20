@@ -734,6 +734,7 @@ def num_events_within_time_interval_spans(
     date_part: Optional[str] = None,
     index_columns: Optional[List[str]] = None,
     event_list_field: Optional[str] = None,
+    truncate_to_month: bool = False,
 ) -> str:
     """
     Creates a CTE with spans of time for the number of events within a given time interval.
@@ -751,6 +752,9 @@ def num_events_within_time_interval_spans(
         event_list_field (str, optional): If provided, includes an event_list array
             containing the values of this field from the events_cte for each event
             in the span. The events_cte must have a column with this name.
+        truncate_to_month (bool): If True, truncates the computed end date to
+            the first of the month. An event on June 13 with a 6-month interval
+            would have an end_date of Dec 1 instead of Dec 13.
 
     Returns:
         str: A SQL CTE fragment that creates spans with event counts. The resulting
@@ -765,6 +769,8 @@ def num_events_within_time_interval_spans(
 
     if date_interval:
         end_date_clause = f"DATE_ADD(event_date, INTERVAL {date_interval} {date_part})"
+        if truncate_to_month:
+            end_date_clause = f"DATE_TRUNC({end_date_clause}, MONTH)"
     else:
         end_date_clause = "CAST(NULL AS DATE)"
 

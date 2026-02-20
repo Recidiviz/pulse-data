@@ -770,6 +770,7 @@ def incident_based_caf_score_query_template(
                 date_part="MONTH",
                 index_columns=["person_id", "state_code", "custodial_authority_session_id"],
                 event_list_field="incarceration_incident_id",
+                truncate_to_month=True,
             )}
             SELECT
                 person_id,
