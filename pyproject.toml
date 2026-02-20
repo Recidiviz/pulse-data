@@ -8,7 +8,8 @@ dependencies = [
     # TODO(#30733): Remove the <2.0.0 pin
     "numpy<2.0.0",
     "us",
-    "dateparser",
+    # TODO(#60465): Un-pin when airflow environment is upgraded to a compatible version
+    "dateparser==1.2.0",
     "pandas",
     "more-itertools",
     # TODO(#43270): Un-pin opentelemetry-* packages once resolved
@@ -177,7 +178,8 @@ dev = [
     "tabula-py",
     "types-beautifulsoup4",
     "types-cachetools",
-    "types-dateparser",
+    # TODO(#60465): Un-pin when airflow environment is upgraded to a compatible version
+    "types-dateparser==1.2.2.20250809",
     "types-freezegun",
     "types-grpcio",
     "types-html5lib",
@@ -267,4 +269,3 @@ index-url = "https://pypi.org/simple"
 # Pin setuptools < 82 for Apache Beam 2.65.0 compatibility (pkg_resources removed in 82.0.0).
 # Can unpin after upgrading to apache-beam >= 2.66.0.
 build-constraint-dependencies = ["setuptools<82"]
-

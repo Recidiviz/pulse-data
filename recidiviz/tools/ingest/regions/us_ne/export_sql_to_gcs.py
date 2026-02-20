@@ -161,7 +161,10 @@ class UsNeSqlServerConnectionManager:
             cursor.execute(query)
 
             # Get column descriptions for the caller
-            columns = [desc[0] for desc in cursor.description]
+            description = cursor.description
+            if not description:
+                raise ValueError("Column descriptions were not defined.")
+            columns = [desc[0] for desc in description]
             yield columns
 
             # Fetch and yield batches of rows
