@@ -638,6 +638,67 @@ def offense_severity_to_q2_score(assessment_type: str) -> str:
     return f"CASE {' '.join(when_clauses)} END"
 
 
+def classification_v2_incidents() -> str:
+    """
+    Returns a SQL CTE that retrieves TN incarceration incidents with relevant metadata.
+
+    Incidents are prioritized to later keep only the most severe incident per person per date.
+
+    Returns:
+        str: SQL CTE string
+    """
+    violent_infraction_types_str = list_to_query_string(
+        _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES,
+        quoted=True,
+        single_quote=True,
+    )
+    return f"""(
+        SELECT
+            person_id,
+            state_code,
+            incarceration_incident_id,
+            incident_date,
+            incident_class,  -- Class: A, B, or C
+            infraction_type_raw_text,
+            -- Flag whether incident is violent based on the infraction type
+            -- Mark *all* Class C incidents as non-violent, because new Class C incidents
+            -- will always be marked as non-violent, and there is no retroactive scoring for violent
+            -- Class C incidents.
+            COALESCE(infraction_type_raw_text IN (
+                {violent_infraction_types_str}
+                ), FALSE) AND incident_class != 'C' AS is_violent,
+            -- Rank incidents by severity within each (person, date), for deduplication.
+            -- Lower rank = more severe.
+            ROW_NUMBER() OVER (
+                PARTITION BY person_id, incident_date
+                ORDER BY
+                    -- Prioritize Class A or B violent incidents
+                    CASE WHEN
+                        COALESCE(infraction_type_raw_text IN (
+                            {violent_infraction_types_str}
+                        ), FALSE) AND incident_class IN ('A', 'B')
+                        THEN 1 ELSE 0
+                        END DESC,
+                    -- Then prioritize incident class (A, B, C)
+                    incident_class,
+                    injury_level DESC,
+                    assault_score DESC,
+                    -- Then order by infraction type, just to make it more deterministic
+                    infraction_type_raw_text,
+                    -- Then order by incident ID, which is arbitrary but ensures determinism
+                    incarceration_incident_id
+            ) AS severity_rank
+        FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized`
+        WHERE state_code = "US_TN"
+            -- Only include guilty dispositions
+            AND disposition = 'GU'
+            -- Exclude verbal warnings
+            AND incident_details NOT LIKE "%VERBAL WARNING%"
+            AND incident_class IS NOT NULL
+            AND incident_date IS NOT NULL
+    )"""
+
+
 def incident_based_caf_score_query_template(
     score_definitions: dict,
     incident_filter_condition: str,
@@ -810,13 +871,6 @@ def incident_based_caf_score_query_template(
         ]
     )
 
-    # Build list of violent infraction types
-    violent_infraction_types_str = list_to_query_string(
-        _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES,
-        quoted=True,
-        single_quote=True,
-    )
-
     return f"""
     -- Get all state prison spans to link incidents to specific stays
     WITH state_prison_spans AS (
@@ -832,73 +886,29 @@ def incident_based_caf_score_query_template(
             AND custodial_authority = 'STATE_PRISON'
     )
     ,
-    -- Get all incidents with relevant metadata, joined to their state prison span
-    incidents AS (
-        SELECT
-            incidents.person_id,
-            incidents.state_code,
-            state_prison_spans.custodial_authority_session_id,
-            incidents.incarceration_incident_id,
-            incidents.incident_date,
-            incidents.incident_class,  -- Class: A, B, or C
-            incidents.infraction_type_raw_text,
-            -- Flag whether incident is violent based on the infraction type
-            -- Mark *all* Class C incidents as non-violent, because new Class C incidents
-            -- will always be marked as non-violent, and there is no retroactive scoring for violent
-            -- Class C incidents.
-            COALESCE(incidents.infraction_type_raw_text IN (
-                {violent_infraction_types_str}
-                ), FALSE) AND incidents.incident_class != 'C' AS is_violent
-        FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized` incidents
-        LEFT JOIN state_prison_spans
-        ON
-            incidents.person_id = state_prison_spans.person_id
-            AND incidents.state_code = state_prison_spans.state_code
-            AND incidents.incident_date >= state_prison_spans.start_date
-            AND incidents.incident_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
-        WHERE incidents.state_code = "US_TN"
-            -- Only include guilty dispositions
-            AND incidents.disposition = 'GU'
-            -- Exclude verbal warnings
-            AND incidents.incident_details NOT LIKE "%VERBAL WARNING%"
-            AND incidents.incident_class IS NOT NULL
-            AND incidents.incident_date IS NOT NULL
-        -- Keep only the most severe incident per person per date
-        QUALIFY ROW_NUMBER() OVER(
-            PARTITION BY incidents.person_id, incidents.incident_date 
-            ORDER BY
-                -- Prioritize Class A or B violent incidents
-                CASE WHEN 
-                    COALESCE(incidents.infraction_type_raw_text IN (
-                        {violent_infraction_types_str}
-                    ) 
-                    AND incidents.incident_class IN ('A', 'B'), FALSE) 
-                    THEN 1 
-                    ELSE 0 
-                    END DESC,
-                -- Then prioritize incident class (A, B, C)
-                incidents.incident_class, 
-                incidents.injury_level DESC, 
-                incidents.assault_score DESC,
-                -- Then order by infraction type, just to make it more deterministic
-                incidents.infraction_type_raw_text,
-                -- Then order by incident ID, which is arbitrary but ensures determinism
-                incidents.incarceration_incident_id
-        ) = 1
-    )
+    -- Get all incidents with relevant metadata
+    all_incidents AS {classification_v2_incidents()}
     ,
-    -- Filter to only the incidents matching the provided filter condition (e.g., violent or non-violent)
+    -- Deduplicate to one incident per (person, date), filter to the provided condition,
+    -- and join to their state prison span
     relevant_incidents AS (
         SELECT
-            person_id,
-            state_code,
-            custodial_authority_session_id,
-            incarceration_incident_id,
-            incident_date AS event_date,
-            infraction_type_raw_text,
-            incident_class,
-        FROM incidents
+            all_incidents.person_id,
+            all_incidents.state_code,
+            state_prison_spans.custodial_authority_session_id,
+            all_incidents.incarceration_incident_id,
+            all_incidents.incident_date AS event_date,
+            all_incidents.infraction_type_raw_text,
+            all_incidents.incident_class,
+        FROM all_incidents
+        LEFT JOIN state_prison_spans
+        ON
+            all_incidents.person_id = state_prison_spans.person_id
+            AND all_incidents.state_code = state_prison_spans.state_code
+            AND all_incidents.incident_date >= state_prison_spans.start_date
+            AND all_incidents.incident_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
         WHERE {incident_filter_condition}
+            AND severity_rank = 1
     )
     ,
     -- Count incidents within each time window (e.g., 0-6 months, 6-12 months, etc.)
