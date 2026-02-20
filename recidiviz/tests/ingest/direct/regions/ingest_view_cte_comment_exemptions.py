@@ -290,7 +290,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "supervision_level_sessions_padded",
             "ungrouped_supervision_level_sessions",
         ],
-        "CAFScoreAssessment": ["CAF_base", "latest_Classification"],
         "OffenderName": ["filtered_out_nicknames", "normalized_rows"],
         "SentencesChargesAndCourtCases_v4": [
             "all_latest_sentences_joined",
