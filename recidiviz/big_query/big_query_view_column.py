@@ -22,8 +22,12 @@ from typing import Literal, get_args
 import attrs
 from google.cloud import bigquery
 
+from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.common import attr_validators
 from recidiviz.utils.string import is_meaningful_docstring
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
+
+COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT = "<no description provided>"
 
 SqlFieldMode = Literal["NULLABLE", "REQUIRED", "REPEATED"]
 
@@ -43,11 +47,23 @@ class BigQueryViewColumn(abc.ABC):
         validator=attrs.validators.in_(get_args(SqlFieldMode))
     )
 
+    @property
+    def bq_description(self) -> str:
+        """The BigQuery-compatible description for this column, truncated to
+        fit within BigQuery's 1024-char column description limit, or the empty string for
+        undocumented columns.
+        """
+        if self.description == COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT:
+            return ""
+        return truncate_string_if_necessary(
+            self.description, max_length=BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+        )
+
     def as_schema_field(self) -> bigquery.SchemaField:
         """Returns a BigQueryColumn as a bigquery.SchemaField."""
         return bigquery.SchemaField(
             name=self.name,
-            description=self.description,
+            description=self.bq_description,
             field_type=self.field_type.name,
             mode=self.mode,
         )
@@ -150,7 +166,7 @@ class Record(BigQueryViewColumn):
     def as_schema_field(self) -> bigquery.SchemaField:
         return bigquery.SchemaField(
             name=self.name,
-            description=self.description,
+            description=self.bq_description,
             field_type=self.field_type.name,
             mode=self.mode,
             fields=[f.as_schema_field() for f in self.fields],

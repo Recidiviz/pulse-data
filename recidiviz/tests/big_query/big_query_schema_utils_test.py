@@ -23,6 +23,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_schema_utils import (
     diff_declared_schema_to_bq_schema,
     format_schema_diffs,
+    truncate_column_description_for_big_query,
 )
 from recidiviz.big_query.big_query_view_column import Date, Integer, Record, String
 
@@ -263,3 +264,20 @@ dataset.view:
   + col2 (REQUIRED DATE)
 """.strip()
         self.assertEqual(expected, result)
+
+
+class TruncateColumnDescriptionForBigQueryTest(unittest.TestCase):
+    """Tests for truncate_column_description_for_big_query"""
+
+    def test_short_description_unchanged(self) -> None:
+        self.assertEqual("short", truncate_column_description_for_big_query("short"))
+
+    def test_exactly_1024_chars_unchanged(self) -> None:
+        desc = "x" * 1024
+        self.assertEqual(desc, truncate_column_description_for_big_query(desc))
+
+    def test_over_1024_chars_truncated(self) -> None:
+        desc = "x" * 2000
+        result = truncate_column_description_for_big_query(desc)
+        self.assertEqual(1024, len(result))
+        self.assertTrue(result.endswith(" ... (truncated)"))

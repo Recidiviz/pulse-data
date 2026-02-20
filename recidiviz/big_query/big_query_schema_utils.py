@@ -21,6 +21,18 @@ from typing import Sequence
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Record
+from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
+
+
+def truncate_column_description_for_big_query(description: str) -> str:
+    """Truncates |description| to fit within BigQuery's column description
+    character limit (1024 chars). Returns the original string if it is already
+    within the limit.
+    """
+    return truncate_string_if_necessary(
+        description, max_length=BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+    )
 
 
 def diff_declared_schema_to_bq_schema(

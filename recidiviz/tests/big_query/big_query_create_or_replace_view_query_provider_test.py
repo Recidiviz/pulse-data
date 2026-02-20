@@ -148,6 +148,30 @@ AS
 SELECT 1 AS col1, 2 AS col2""",
         )
 
+    def test_uses_truncated_column_description(self) -> None:
+        long_desc = "x" * 1025
+        view = BigQueryView(
+            dataset_id="my_dataset",
+            view_id="my_view",
+            description="test view",
+            bq_description="test view",
+            view_query_template="SELECT 1 AS col1",
+            schema=[
+                String(
+                    name="col1",
+                    description=long_desc,
+                    mode="NULLABLE",
+                ),
+            ],
+        )
+
+        provider = CreateOrReplaceViewQueryProvider(view=view, project_id=PROJECT_ID)
+        query = provider.get_query()
+
+        # Description should be truncated, not the full 1025 chars
+        self.assertNotIn(long_desc, query)
+        self.assertIn("x" * 1007 + " ... (truncated)", query)
+
     def test_emulator_sql_without_schema(self) -> None:
         view = BigQueryView(
             dataset_id="my_dataset",

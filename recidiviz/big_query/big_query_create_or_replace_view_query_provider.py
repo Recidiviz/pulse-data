@@ -72,12 +72,12 @@ class CreateOrReplaceViewQueryProvider(BigQueryQueryProvider):
 
         parts = [f"CREATE OR REPLACE VIEW {formatted_address}"]
 
-        if self._view.schema and not self._use_emulator_sql:
+        if self._view.bq_schema and not self._use_emulator_sql:
             column_defs = []
-            for column in self._view.schema:
-                escaped_desc = _escape_description(column.description)
+            for field in self._view.bq_schema:
+                escaped_desc = _escape_description(field.description)
                 column_defs.append(
-                    f"  {column.name} OPTIONS(description='''{escaped_desc}''')"
+                    f"  {field.name} OPTIONS(description='''{escaped_desc}''')"
                 )
             parts.append("(\n" + ",\n".join(column_defs) + "\n)")
 

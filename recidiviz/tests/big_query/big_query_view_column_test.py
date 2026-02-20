@@ -132,6 +132,25 @@ class BigQueryViewColumnTest(unittest.TestCase):
 
         self.assertFalse(column.matches_bq_field(schema_field))
 
+    def test_bq_description_truncates(self) -> None:
+        """bq_description truncates descriptions longer than BQ limit."""
+        column_short = String(name="c", description="full", mode="NULLABLE")
+        self.assertEqual("full", column_short.bq_description)
+
+        long_desc = "x" * 1025
+        column_long = String(name="c", description=long_desc, mode="NULLABLE")
+        self.assertEqual(1024, len(column_long.bq_description))
+
+    def test_as_schema_field_uses_truncated_description(self) -> None:
+        """as_schema_field() uses the truncated bq_description."""
+        column = String(
+            name="test_column",
+            description="A test column",
+            mode="REQUIRED",
+        )
+        schema_field = column.as_schema_field()
+        self.assertEqual(schema_field.description, "A test column")
+
     def test_json_as_schema_field(self) -> None:
         column = Json(
             name="metadata",
@@ -224,3 +243,21 @@ class RecordColumnTest(unittest.TestCase):
             ],
         )
         self.assertFalse(record.matches_bq_field(schema_field))
+
+    def test_as_schema_field_truncates_description(self) -> None:
+        """Record and its subfields should truncate long descriptions."""
+        long_desc = "x" * 1025
+        street = String(
+            name="street",
+            description=long_desc,
+            mode="NULLABLE",
+        )
+        record = Record(
+            name="address",
+            description=long_desc,
+            mode="NULLABLE",
+            fields=[street],
+        )
+        schema_field = record.as_schema_field()
+        self.assertEqual(1024, len(schema_field.description))
+        self.assertEqual(1024, len(schema_field.fields[0].description))
