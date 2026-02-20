@@ -43,7 +43,7 @@ from recidiviz.validation.configured_validations import (
     get_validation_global_config,
     get_validation_region_configs,
 )
-from recidiviz.validation.validation_github_ticket_manager import (
+from recidiviz.validation.validation_alerting_manager import (
     ValidationGithubTicketRegionManager,
 )
 from recidiviz.validation.validation_models import (
@@ -338,7 +338,7 @@ def _handle_tickets_for_validations(
     """
 
     logging.info("Filing GitHub tickets for failed validations")
-    env = get_environment_for_project(project=metadata.project_id()).value
+    env = get_environment_for_project(project=metadata.project_id())
     github_client = github_helperbot_client().get_repo(RECIDIVIZ_DATA_REPO)
 
     for region, validations in groupby(

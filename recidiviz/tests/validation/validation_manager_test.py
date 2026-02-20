@@ -49,6 +49,10 @@ from recidiviz.validation.configured_validations import (
     get_validation_global_config,
     get_validation_region_configs,
 )
+from recidiviz.validation.validation_alerting_config import (
+    ValidationAlertingConfig,
+    ValidationAlertingStateConfig,
+)
 from recidiviz.validation.validation_config import (
     ValidationMaxAllowedErrorOverride,
     ValidationNumAllowedRowsOverride,
@@ -195,6 +199,10 @@ class TestExecuteValidationRequest(TestCase):
 
     otl_mock: OTLMock
 
+    _TEST_GITHUB_ASSIGNEE = "test-github-user"
+    _TEST_SLACK_ASSIGNEE = "U_TEST_SLACK_ID"
+    _TEST_SLACK_CHANNEL = "C_TEST_CHANNEL"
+
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
@@ -215,6 +223,22 @@ class TestExecuteValidationRequest(TestCase):
         )
         self.trace_patcher.start().return_value = "trace-id"
 
+        self.alerting_config_patcher = patch(
+            "recidiviz.validation.validation_alerting_manager._load_alerting_config",
+            return_value=ValidationAlertingConfig(
+                default_slack_channel_id=self._TEST_SLACK_CHANNEL,
+                state_config={
+                    StateCode.US_XX: ValidationAlertingStateConfig(
+                        state_code=StateCode.US_XX,
+                        default_github_assignees=[self._TEST_GITHUB_ASSIGNEE],
+                        slack_channel_id=self._TEST_SLACK_CHANNEL,
+                        default_slack_assignees=[self._TEST_SLACK_ASSIGNEE],
+                    ),
+                },
+            ),
+        )
+        self.alerting_config_patcher.start()
+
         self.otl_mock = OTLMock()
         self.otl_mock.set_up()
         self._TEST_VALIDATIONS = get_test_validations()
@@ -224,6 +248,7 @@ class TestExecuteValidationRequest(TestCase):
         self.environment_patcher.stop()
         self.environment_for_project_patcher.stop()
         self.trace_patcher.stop()
+        self.alerting_config_patcher.stop()
         self.otl_mock.tear_down()
 
     @patch("recidiviz.validation.validation_manager.github_helperbot_client")
@@ -386,11 +411,13 @@ class TestExecuteValidationRequest(TestCase):
                 title="[staging][US_XX] `test_2`",
                 body=mock.ANY,
                 labels=expected_labels,
+                assignees=[self._TEST_GITHUB_ASSIGNEE],
             ),
             call(
                 title="[staging][US_XX] `test_4`",
                 body=mock.ANY,
                 labels=expected_labels,
+                assignees=[self._TEST_GITHUB_ASSIGNEE],
             ),
         ]
         self.assertCountEqual(
@@ -495,11 +522,13 @@ class TestExecuteValidationRequest(TestCase):
                 title="[staging][US_XX] `test_2`",
                 body=mock.ANY,
                 labels=expected_labels,
+                assignees=[self._TEST_GITHUB_ASSIGNEE],
             ),
             call(
                 title="[staging][US_XX] `test_4`",
                 body=mock.ANY,
                 labels=expected_labels,
+                assignees=[self._TEST_GITHUB_ASSIGNEE],
             ),
         ]
         self.assertCountEqual(

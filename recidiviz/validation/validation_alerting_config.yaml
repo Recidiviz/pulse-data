@@ -1,0 +1,120 @@
+# Configuration for validation GitHub ticket manager.
+# Defines Slack channels and team mappings for each state.
+
+# Lookup map: human-readable channel name -> Slack channel ID
+slack_channels:
+  zbrenda-validation-test: "C09VDD8G89E"
+  us-arkansas: "C03JV24TBDF"
+  us-arizona: "C063A244KC7"
+  us-california: "C040V5N83UG"
+  us-colorado: "C03N9QEUWHM"
+  us-iowa: "C06UA5G5F37"
+  us-idaho: "C0209TJ3QLX"
+  us-massachusetts: "C07AEG54CHX"
+  us-maine: "C026VAHKPMK"
+  us-michigan: "C01SN10E5QV"
+  us-missouri-internal: "C02UDHE0DQR"
+  us-north-carolina: "C085XCNQ0TC"
+  us-north-dakota: "C01SQ00C890"
+  us-nebraska: "C07EQLGLZ2T"
+  us-new-york: "C08KQ0KAB5J"
+  us-oregon: "C03NQCDSUQ2"
+  us-pennsylvania-internal: "C02UDH1FUQH"
+  us-tennessee: "G01P6S547T4"
+  us-texas: "C06URBJ9EGH"
+  us-utah: "C06UF4U5QF6"
+
+# Lookup map: GitHub username -> Slack user ID
+slack_people:
+  brendali121: "U03JTSZETK4"
+  n-damiani: "U042YRU8C56"
+  elisegonzal: "U04A99TE4RW"
+  not-a-doctor-stromberg: "U03V1BHSKQW"
+  lydiamasri2: "U036XAJAL79"
+  santymendoza: "U067TSCJD5X"
+
+# Default Slack channel for states without a configured channel
+default_slack_channel: zbrenda-validation-test
+
+# Per-state configuration: slack_channel is a name from slack_channels above,
+# default_assignees are GitHub usernames from slack_people above.
+state_config:
+  US_OZ:
+    slack_channel: zbrenda-validation-test
+    default_assignees:
+      - brendali121
+  US_AR:
+    slack_channel: us-arkansas
+    default_assignees:
+      - n-damiani
+  US_AZ:
+    slack_channel: us-arizona
+    default_assignees:
+      - elisegonzal
+  US_CA:
+    slack_channel: us-california
+    default_assignees:
+      - not-a-doctor-stromberg
+  US_CO:
+    slack_channel: us-colorado
+    default_assignees:
+      - lydiamasri2
+  US_IA:
+    slack_channel: us-iowa
+    default_assignees:
+      - brendali121
+  US_ID:
+    slack_channel: us-idaho
+    default_assignees:
+      - santymendoza
+  US_MA:
+    slack_channel: us-massachusetts
+    default_assignees:
+      - n-damiani
+  US_ME:
+    slack_channel: us-maine
+    default_assignees:
+      - not-a-doctor-stromberg
+  US_MI:
+    slack_channel: us-michigan
+    default_assignees:
+      - brendali121
+  US_MO:
+    slack_channel: us-missouri-internal
+    default_assignees:
+      - n-damiani
+  US_NC:
+    slack_channel: us-north-carolina
+    default_assignees:
+      - not-a-doctor-stromberg
+  US_ND:
+    slack_channel: us-north-dakota
+    default_assignees:
+      - elisegonzal
+  US_NE:
+    slack_channel: us-nebraska
+    default_assignees:
+      - lydiamasri2
+  US_NY:
+    slack_channel: us-new-york
+    default_assignees:
+      - n-damiani
+  US_OR:
+    slack_channel: us-oregon
+    default_assignees: []
+  US_PA:
+    slack_channel: us-pennsylvania-internal
+    default_assignees:
+      - brendali121
+  US_TN:
+    slack_channel: us-tennessee
+    default_assignees:
+      - lydiamasri2
+  US_TX:
+    slack_channel: us-texas
+    default_assignees:
+      - santymendoza
+  US_UT:
+    slack_channel: us-utah
+    default_assignees:
+      - elisegonzal
