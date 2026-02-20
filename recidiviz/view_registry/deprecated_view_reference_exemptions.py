@@ -234,6 +234,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az.no_violent_convict
 from recidiviz.task_eligibility.criteria.state_specific.us_az.no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction import (
     VIEW_BUILDER as US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_expanded_ineligible_offense_for_admin_supervision import (
+    VIEW_BUILDER as US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_flat_sentence import (
     VIEW_BUILDER as US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER,
 )
@@ -571,6 +574,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
+        US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
         US_AZ_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -681,6 +688,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
+        US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
         US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -770,6 +781,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "sentence_sessions view"
         ),
         US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),

@@ -1004,6 +1004,8 @@ HOMICIDE_AND_MURDER_STATUTES = [
     "13-1103",  # NEGLIGENT HOMICIDE
     "13-1104",  # MURDER 2ND DEGREE
     "13-1105",  # MURDER 1ST DEGREE
+    "13-452",  # MURDER
+    "13-453",  # MURDER
 ]
 
 _ADDL_INELIGIBLE_VIOLENT_STATUTES = [
@@ -1018,4 +1020,55 @@ _ADDL_INELIGIBLE_VIOLENT_STATUTES = [
     "13-3107",  # UNLAWFUL DISCHARGE OF FIREARMS
     "13-3623",  # CHILD/ADULT ABUSE
     "28-661",  # ACCIDENTS INVOLVING DEATH OR PERSONAL INJURY
+]
+
+EXPANDED_INELIGIBLE_OFFENSES_ADM_SUP = [
+    # All Domestic Violence statutes listed in policy, regardless of additional
+    # circumstances required.
+    "13-705",
+    "13-1102",
+    "13-1103",
+    "13-1104",
+    "13-1105",
+    "13-1201",
+    "13-1202",
+    "13-1203",
+    "13-1204",
+    "13-1302",
+    "13-1303",
+    "13-1304",
+    "13-1406",
+    "13-1425",
+    "13-1502",
+    "13-1503",
+    "13-1504",
+    "13-1602",
+    "13-2810",
+    "13-2904",
+    "13-2910",
+    "13-2915",
+    "13-2916",
+    "13-2921",
+    "13-2921.01",
+    "13-2923",
+    "13-3019",
+    "13-3601.02",
+    # Other statutes flagged by AZ leadership as potentially unsuitable.
+    "13-3623",  # CHILD/ADULT ABUSE
+    "13-1304",  # KIDNAPPING
+    "13-491",  # KIDNAPPING, NEW CODE
+    "13-1204",  # AGGRAVATED ASSAULT
+    "13-2921",  # AGGRAVATED HARRASSMENT
+    "13-1602",  # CRIMINAL DAMAGE
+    "13-1504",  # CRIMINAL TRESPASS 1ST DEG
+    "13-2904",  # DISORDERLY CONDUCT
+    "13-1201",  # ENDANGERMENT
+    "13-3801",  # ENDANGERMENT
+    "13-1103",  # MANSLAUGHTER
+    "13-457",  # MANSLAUGHTER
+    "13-456",  # MANSLAUGHTER
+    "13-455",  # MANSLAUGHTER
+    "13-611",  # RAPE
+    "13-614",  # RAPE
+    "13-1202",  # THREAT-INTIMIDATE
 ]

@@ -223,6 +223,15 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.general.no_supervision_violation_within_15_months import (
+    VIEW_BUILDER as NO_SUPERVISION_VIOLATION_WITHIN_15_MONTHS,
+)
+from recidiviz.task_eligibility.criteria.general.on_supervision_at_least_15_months import (
+    VIEW_BUILDER as ON_SUPERVISION_AT_LEAST_15_MONTHS,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_az.not_serving_ineligible_offense_for_admin_supervision import (
+    VIEW_BUILDER as US_AZ_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi.expected_number_of_add_in_person_security_classification_committee_reviews_greater_than_observed import (
     VIEW_BUILDER as US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED,
 )
@@ -438,6 +447,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
+    ),
+    US_AZ_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION.address: (
+        "Temporarily unused to facilitate AZ administrative supervision policy reevaluation. (#60452) (Elise Gonzalez 2/20/2026)"
+    ),
+    ON_SUPERVISION_AT_LEAST_15_MONTHS.address: (
+        "Temporarily unused to facilitate AZ administrative supervision policy reevaluation. (#60452) (Elise Gonzalez 2/20/2026)"
+    ),
+    NO_SUPERVISION_VIOLATION_WITHIN_15_MONTHS.address: (
+        "Temporarily unused to facilitate AZ administrative supervision policy reevaluation. (#60452) (Elise Gonzalez 2/20/2026)"
     ),
     US_MI_EXPECTED_NUMBER_OF_WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
