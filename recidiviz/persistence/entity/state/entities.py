@@ -2766,8 +2766,6 @@ class StateStaffExternalId(
     external id is a unique identifier for an individual, unique within
     the scope of the source data system. We include information denoting
     the source of the id to make this into a globally unique identifier.
-    A staff member may have multiple StateStaffExternalId, but cannot
-    have multiple with the same id_type.
     """
 
     # Attributes
@@ -2780,8 +2778,31 @@ class StateStaffExternalId(
         default=None, validator=attr_validators.is_opt_int
     )
 
+    is_current_display_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    is_stable_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    id_active_from_datetime: datetime.datetime | None = attr.ib(
+        default=None,
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    )
+    id_active_to_datetime: datetime.datetime | None = attr.ib(
+        default=None,
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    )
+
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        self.assert_datetime_less_than_or_equal(
+            self.id_active_from_datetime,
+            self.id_active_to_datetime,
+            before_description="id active from datetime",
+            after_description="id active to datetime",
+        )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:

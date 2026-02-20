@@ -106,10 +106,14 @@
     model: "@{model_name}"
     type: looker_grid
     fields: [state_staff_external_id.external_id,
+      state_staff_external_id.id_active_from_datetime_date,
+      state_staff_external_id.id_active_to_datetime_date,
       state_staff_external_id.id_type,
+      state_staff_external_id.is_current_display_id_for_type,
+      state_staff_external_id.is_stable_id_for_type,
       state_staff_external_id.staff_external_id_id,
       state_staff_external_id.state_code]
-    sorts: []
+    sorts: [state_staff_external_id.id_active_from_datetime_date desc, state_staff_external_id.id_active_to_datetime_date desc]
     listen: 
       Staff Id: state_staff.staff_id
       State Code: state_staff.state_code

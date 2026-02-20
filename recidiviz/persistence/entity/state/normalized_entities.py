@@ -3601,10 +3601,35 @@ class NormalizedStateStaffExternalId(NormalizedStateEntity, ExternalIdEntity):
     # Primary key
     staff_external_id_id: int = attr.ib(validator=attr_validators.is_int)
 
+    # TODO(#60442): Once hydrated, ensure is_current_display_id_for_type is non-null
+    is_current_display_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    # TODO(#60442): Once hydrated, ensure is_stable_id_for_type is non-null
+    is_stable_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    id_active_from_datetime: datetime | None = attr.ib(
+        default=None,
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    )
+    id_active_to_datetime: datetime | None = attr.ib(
+        default=None,
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    )
+
     # Cross-entity relationships
     staff: Optional["NormalizedStateStaff"] = attr.ib(
         default=None, validator=IsNormalizedStaffBackedgeValidator()
     )
+
+    def __attrs_post_init__(self) -> None:
+        self.assert_datetime_less_than_or_equal(
+            self.id_active_from_datetime,
+            self.id_active_to_datetime,
+            before_description="id active from datetime",
+            after_description="id active to datetime",
+        )
 
     @classmethod
     def global_unique_constraints(cls) -> list[UniqueConstraint]:

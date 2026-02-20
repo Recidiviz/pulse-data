@@ -2106,6 +2106,10 @@ class StateStaffExternalId(StateBase, _ReferencesStateStaffSharedColumns):
     external_id = Column(String(255), nullable=False, index=True)
     state_code = Column(String(255), nullable=False, index=True)
     id_type = Column(String(255), nullable=False)
+    is_current_display_id_for_type = Column(Boolean, nullable=True)
+    is_stable_id_for_type = Column(Boolean, nullable=True)
+    id_active_from_datetime = Column(DateTime, nullable=True)
+    id_active_to_datetime = Column(DateTime, nullable=True)
 
 
 class StateStaffRolePeriod(StateBase, _ReferencesStateStaffSharedColumns):
