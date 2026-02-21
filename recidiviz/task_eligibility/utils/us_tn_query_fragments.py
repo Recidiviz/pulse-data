@@ -597,15 +597,15 @@ def latest_caf_score_cte() -> str:
         LEFT JOIN offense_severity_lookup
             ON asmt.assessment_type = offense_severity_lookup.assessment_type
             AND CASE
-                WHEN asmt.assessment_type = 'CAF' THEN CAST(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION3') AS INT64)
-                WHEN asmt.assessment_type IN ('DCAF', 'RCAF') THEN CAST(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION2') AS INT64)
+                WHEN asmt.assessment_type = 'CAF' THEN CAST(NULLIF(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION3'), '') AS INT64)
+                WHEN asmt.assessment_type IN ('DCAF', 'RCAF') THEN CAST(NULLIF(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.QUESTION2'), '') AS INT64)
             END = offense_severity_lookup.raw_score
         WHERE
             asmt.assessment_type IN ('CAF', 'DCAF', 'RCAF')
             AND state_code = 'US_TN'
             -- Ignore "dummy" 0 scores, used for placement to Max custody
             AND (
-                CAST(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.CAFSCORE') AS INT64) != 0
+                CAST(NULLIF(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.CAFSCORE'), '') AS INT64) != 0
                 OR asmt.assessment_level != 'MAXIMUM'
             )
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date ORDER BY assessment_score DESC) = 1
