@@ -62,6 +62,18 @@ class AutomaticRawDataPruningExemptionReason(Enum):
     NEEDS_FULL_REIMPORT = "This file needs a full reimport before it can be included in automatic raw data pruning."
 
 
+RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW: dict[StateCode, dict[str, set[str]]] = {
+    StateCode.US_TN: {
+        "CAFScoreAssessment": {
+            # TODO(#60479): Remove front_end_classification_scores from this dict once it
+            #  is populated in prod. Right now it's expected that it's empty because there
+            #  are no user-submitted scores yet.
+            "front_end_classification_scores"
+        },
+    },
+}
+
+
 FILES_EXEMPT_FROM_MANUAL_RAW_DATA_PRUNING_BY_STATE: dict[
     StateCode, dict[str, ManualRawDataPruningExemptionReason]
 ] = {

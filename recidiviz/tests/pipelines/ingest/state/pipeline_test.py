@@ -19,6 +19,7 @@ import json
 import re
 from types import ModuleType
 from typing import Optional
+from unittest import mock
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.ingest.state import pipeline
@@ -143,6 +144,32 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
                     }
                 ),
             )
+
+    @mock.patch.dict(
+        "recidiviz.pipelines.ingest.state.process_all_ingest_views.RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW",
+        {StateCode.US_DD: {"ingestMultipleRootExternalIds": {"table3"}}},
+    )
+    def test_missing_raw_data_upper_bound_dates_with_exemption(self) -> None:
+        """When a missing table is in RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW,
+        the pipeline should run successfully with the empty table treated as
+        having the max existing upper bound datetime."""
+        self.setup_region_raw_data_bq_tables(
+            test_name=INTEGRATION_RAW_DATA_INPUTS_FIXTURES_NAME
+        )
+        self.run_test_ingest_pipeline(
+            test_name="integration_simple",
+            raw_data_upper_bound_dates_json_override=json.dumps(
+                {
+                    # table3 intentionally omitted but exempted
+                    "table1": "2022-07-04T00:00:00.000000",
+                    "table2": "2022-07-04T00:00:00.000000",
+                    "table4": "2022-07-04T00:00:00.000000",
+                    "table5": "2023-07-05T00:00:00.000000",
+                    "table6": None,
+                    "table7": "2023-07-04T00:00:00.000000",
+                }
+            ),
+        )
 
     def test_state_ingest_pipeline_overwrites_all_tables_each_time(self) -> None:
         self.setup_region_raw_data_bq_tables(

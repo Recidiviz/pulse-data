@@ -23,6 +23,7 @@ from apache_beam.pvalue import PBegin, PDone
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.gating import RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -121,10 +122,31 @@ class ProcessAllIngestViews(beam.PTransform):
                 ingest_view_query_builder.raw_data_table_dependency_file_tags
                 - raw_files_with_data
             ):
-                raise ValueError(
-                    f"Found dependency table(s) of ingest view [{ingest_view_name}] with no "
-                    f"data: {dependencies_missing_data}"
-                )
+                allowed_empty = RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW.get(
+                    state_code, {}
+                ).get(ingest_view_name, set())
+                if still_missing := dependencies_missing_data - allowed_empty:
+                    raise ValueError(
+                        f"Found dependency table(s) of ingest view [{ingest_view_name}] with no "
+                        f"data: {still_missing}"
+                    )
+                # For exempted empty tables, pppulate raw_data_upper_bound_dates using
+                # the max upper bound of this view's other (populated) dependencies so
+                # the pipeline can still execute. The table is empty, so the exact
+                # datetime we bound the data by doesn't matter.
+                populated_upper_bounds = [
+                    raw_data_upper_bound_dates[ft]
+                    for ft in ingest_view_query_builder.raw_data_table_dependency_file_tags
+                    if raw_data_upper_bound_dates.get(ft)
+                ]
+                if not populated_upper_bounds:
+                    raise ValueError(
+                        f"At least one raw data dependency of view [{ingest_view_name}] "
+                        f"must be hydrated."
+                    )
+                fill_upper_bound = max(populated_upper_bounds)
+                for file_tag in dependencies_missing_data:
+                    raw_data_upper_bound_dates[file_tag] = fill_upper_bound
 
         if set(ingest_views_to_run) != set(all_launchable_views):
             _ = (
