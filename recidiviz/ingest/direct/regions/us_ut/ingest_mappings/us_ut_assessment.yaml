@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_employment_period` to
+# This file associates the columns outputted from the query in `view_assessment` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
@@ -51,188 +51,28 @@ output:
               $mappings:
                 StateAssessmentClass.RISK:
                   - "RISK/NEED"
-                StateAssessmentClass.SEX_OFFENSE:
-                  - "SEX OFFENDER"
-                  - "SOTP" # Sex Offender Treatment Plan
-                  - "SOTP STATIC / STABLE"
-                StateAssessmentClass.EDUCATION:
-                  - "ACADEMIC"
-                StateAssessmentClass.MENTAL_HEALTH:
-                  - "MENTAL HEALTH"
-                StateAssessmentClass.SUBSTANCE_ABUSE:
-                  - "SUBSTANCE ABUSE"
-                StateAssessmentClass.INTERNAL_UNKNOWN:
-                  - "CLASSIFICATIONS -BEH"
-                  - "CLASSIFICATIONS -SEC"
-                  - "SCREENING"
-                  - "TRANSITION"
-                  - "THERAPEUTIC"
-                  - "QUESTIONNAIRE"
-                  - "BOPP GUIDELINES"
-                  - "CPORT NOT FINAL"
           assessment_type:
-            # Note: Some assessments that do not appear in the ingest view have been filtered out.
-            # These mappings below don't represent the full set of assessments that appear in the raw data.
+            # These mappings don't represent the full set of assessments that appear in the raw data.
             $enum_mapping:
               $raw_text: tst_title
               $mappings:
-                # Note: If you update what maps to LSIR, also update the list in the
-                # $conditinal on assessment_level below so we can infer correct scores
-                # for new mappings as well
-                StateAssessmentType.LSIR:
-                  - "LSI-R:SV SCREENING VERSION"
                 StateAssessmentType.LS_RNR:
                   - "LS/RNR RISK-NEED-RESPONSIVITY"
                   - "CONVERTED LS/RNR RISK-NEED-RES"
-                StateAssessmentType.INTERNAL_UNKNOWN:
-                  # TODO(#59861): See if there's a more appropriate mapping for CAMS INTERIM SESSION(S)
-                  - "CAMS INTERIM SESSION(S)"
-                  - "CAMS FINAL SESSION"
-                  - "MIO ASSESSMENT"
-                  - "CAMS FIRST SESSION"
-                  - "CAMS STABILIZATION PLAN"
-                  - "TREATMENT PLAN"
-                  - "INITIAL SCREENING"
-                  - "TREATMENT DISCHARGE"
-                  - "TREATMENT DISCHARGE - DSM IV"
-                  - "LSI-R LVL OF SERVICE INVENTORY"
-                  - "WRNA INSTITUTION"
-                  - "WRNA PRE-RELEASE"
-                  - "WRNA PROBATION / PAROLE"
-                  - "MNSOST-R SEX OFFENDER ASSESSME"
-                  - "AP&P CLINICAL TREATMENT PLAN"
-                  - "BEHAVIORAL ASSESSMENT"
-                  - "SOTP STATIC / STABLE / CPORT"
-                  - "MALE CUSTODY ASSESSMENT"
-                  - "FEMALE CUSTODY ASSESSMENT"
-                  - "MALE CUSTODY RE-ASSESSMENT"
-                  - "FEMALE CUSTODY RE-ASSESSMENT"
-                  - "DOC CLINICAL SA/MH ASSESSMENT"
-                  - "AP&P TX DISCHARGE/TRANSFER"
-                  - "SOTP TREATMENT PLAN"
-                  - "SOTP STATIC / STABLE (INITIAL)"
-                  # These appear to be equivalent to the identically named assessments without *
-                  # but these ones are used after 2019-01-03 while the older ones were phased out
-                  - "MALE CUSTODY ASSESSMENT *"
-                  - "FEMALE CUSTODY ASSESSMENT *"
-                  - "MALE CUSTODY RE-ASSESSMENT *"
-                  - "FEMALE CUSTODY RE-ASSESSMENT *"
-                  - "VASOR"
-                  - "SOTIPS"
-                  - "ADVERSE CHILDHOOD EXPERIENCES"
-                  - "SOTP (TA) TREATABILITY ASSESS"
-                  - "PRE OH SOTP RISK ASSESS SCORES"
-                  - "CLINICAL ASSESSMENT - DSM-IV"
-                  - "CASAS ASSESSMENT MATH LEVEL"
-                  - "CASAS ASSESSMENT READING LEVEL"
-                  - "POST OH SOTP RISK ASSES SCORES"
-                  - "POST OH SOTP RISK ASSESS SCORE"
-                  - "CASAS ASSESSMENT ESL READING"
-                  - "CASAS ASSESSMENT ESL LISTENING"
-                  - "CLINICAL ASSESSMENT"
-                  - "ASAM CRITERIA"
-                  - "ASAM ASSESSMENT"
-                  - "R&R SU / MH ASSESSMENT"
-                  - "CMHS - MEN"
-                  - "CMHS - WOMEN"
-                  - "CPORT"
-                  - "CASIC"
-                  - "SOTP STATIC / STABLE"
-                  - "CPORT NOT FINAL"
           assessment_date: tst_dt
           assessment_score: tot_score
           assessment_level:
-            # Infer the level for LSIR assessments where eval_desc is null
-            $conditional:
-              - $if:
-                  $and:
-                    - $is_null: eval_desc
-                    - $equal:
-                        - tst_title
-                        - $literal("LSI-R:SV SCREENING VERSION")
-                $then:
-                  $enum_mapping:
-                    $raw_text: tot_score
-                    $mappings:
-                      StateAssessmentLevel.MINIMUM:
-                        - "0"
-                        - "1"
-                        - "2"
-                      StateAssessmentLevel.MODERATE:
-                        - "3"
-                        - "4"
-                        - "5"
-                      StateAssessmentLevel.MAXIMUM:
-                        - "6"
-                        - "8"
-                        - "7"
-              - $else:
-                  $enum_mapping:
-                    $raw_text: eval_desc
-                    $mappings:
-                      StateAssessmentLevel.MINIMUM:
-                        - "MINIMUM (LOW)"
-                        - "MINIMUM (LEVEL 4)"
-                        - "BEGINNING LITERACY: (K - 1ST)"
-                        - "BEGINNING LITERACY (K - 1ST)"
-                        - "LOW BEGINNING (ESL)"
-                      StateAssessmentLevel.LOW:
-                        - "LOW"
-                        - "LOW RISK"
-                        - "BEGINNING LITERACY (ESL)"
-                        - "BEGINNING BASIC (2ND - 3RD)"
-                        - "BEGINNING BASIC: (2ND - 3RD)"
-                        - "LOW INTERMEDIATE (4TH - 5TH)"
-                        - "LOW INTERMEDIATE: (4TH - 5TH)"
-                        - "HIGH BEGINNING (ESL)"
-                        - "LOW INTERMEDIATE (ESL)"
-                      StateAssessmentLevel.MODERATE:
-                        - "MEDIUM"
-                        - "MODERATE"
-                        - "MODERATE LOW"
-                        - "MEDIUM (MOD)"
-                        - "MIDDLE INTERMEDIATE (6TH - 7TH)"
-                        - "HIGH INTERMEDIATE: (6TH - 8TH)"
-                        - "HIGH INTERMEDIATE (7TH - 8TH)"
-                        - "HIGH INTERMEDIATE (ESL)"
-                        - "MODERATE RISK"
-                        - "MODERATE HIGH"
-                        - "MEDIUM (LEVEL 3)"
-                      StateAssessmentLevel.HIGH:
-                        - "HIGH"
-                        - "HIGH RISK"
-                        - "LOW ADULT SECONDARY: (9TH - 10TH)"
-                        - "ADULT SECONDARY (9TH - 12TH)"
-                        - "HIGH ADULT SECONDARY: (11TH - 12TH)"
-                        - "HIGH (LEVEL 2)"
-                        - "`HIGH"
-                      StateAssessmentLevel.VERY_HIGH:
-                        - "ADVANCED (ESL)"
-                      StateAssessmentLevel.MAXIMUM:
-                        - "MAXIMUM"
-                        - "MAXIMUM (LEVEL 1)"
-                        - "MAXIMUM (HIGH)"
-                        - "EXTREME"
-                      StateAssessmentLevel.INTENSE:
-                        - "INTENSIVE"
-                      StateAssessmentLevel.INTERNAL_UNKNOWN:
-                        # TODO(#59861): The following two eval_desc values appear a total of 5 times in ofndr_tst_eval
-                        # between 2026-02-12 and 2026-02-15. Should investigate if these are erroneous and
-                        # need a raw data migration or if they're intended values and should be mapped to
-                        # something other than INTERNAL_UNKNOWN.
-                        - "3 = ABOVE AVERAGE (70-84%)"
-                        - "2 = ABOVE AVERAGE (47-69%)"
-                        - "REFERRAL NOT RECOMMENDED"
-                        - ". . ."
-                        - "LEVEL I - GOP"
-                        - "LEVEL II - IOP"
-                        - "LEVEL II - IOP (SPANISH)"
-                        - "NOT ACCEPTED TO SOTP TRACKING LIST"
-                        - "LEVEL II - IOP (OTHER)"
-                        - "LEVEL III - RSUT"
-                        - "REFERRAL RECOMMENDED"
-                        - "ACE SCORE"
-                        - "FULLMER"
+            $enum_mapping:
+              $raw_text: eval_desc
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - "LOW"
+                StateAssessmentLevel.MODERATE:
+                  - "MODERATE"
+                StateAssessmentLevel.HIGH:
+                  - "HIGH"
+                StateAssessmentLevel.INTENSE:
+                  - "INTENSIVE"
           # These are only populated for LS/RNR assessments.
           assessment_metadata:
             $normalized_values_json_dict:
