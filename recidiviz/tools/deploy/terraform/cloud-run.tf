@@ -511,6 +511,59 @@ resource "google_cloud_run_service_iam_member" "public-pathways-public-access" {
   member   = "allUsers"
 }
 
+# Setting up load balancer for public pathways backend
+resource "google_compute_region_network_endpoint_group" "public_pathways_serverless_neg" {
+  provider              = google-beta
+  name                  = "public-pathways-neg"
+  network_endpoint_type = "SERVERLESS"
+  region                = var.us_central_region
+  cloud_run {
+    service = google_cloud_run_service.public-pathways.name
+  }
+}
+
+module "public_pathways_load_balancer" {
+  source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
+  version = "~> 12.0.0"
+  name    = "public-pathways-lb"
+  project = var.project_id
+
+  ssl                             = true
+  ssl_policy                      = google_compute_ssl_policy.restricted-ssl-policy.name
+  managed_ssl_certificate_domains = local.is_production ? ["pathways-app.recidiviz.org"] : ["pathways-app-staging.recidiviz.org"]
+  https_redirect                  = true
+
+  backends = {
+    default = {
+      description = null
+      groups = [
+        {
+          group = google_compute_region_network_endpoint_group.public_pathways_serverless_neg.id
+        }
+      ]
+      enable_cdn      = false
+      security_policy = google_compute_security_policy.recidiviz-waf-policy.id
+      custom_request_headers = [
+        "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
+        "TLS_VERSION: {tls_version}",
+        "TLS_CIPHER_SUITE: {tls_cipher_suite}",
+        "CLIENT_ENCRYPTED: {client_encrypted}"
+      ]
+      custom_response_headers = null
+
+      iap_config = {
+        enable               = false
+        oauth2_client_id     = ""
+        oauth2_client_secret = ""
+      }
+      log_config = {
+        enable      = true
+        sample_rate = 1.0
+      }
+    }
+  }
+}
+
 # Setting up load balancer
 # Drawn from https://github.com/terraform-google-modules/terraform-google-lb-http/blob/master/examples/cloudrun/main.tf
 resource "google_compute_region_network_endpoint_group" "serverless_neg" {
