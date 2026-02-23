@@ -45,7 +45,7 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="impact_reports",
         table_id="usage__justice_involved_state_period_event_aggregated_metrics__months_rolling_last_558_days",
-    ): (60 * 20),
+    ): (60 * 25),
     # TODO(#29291) Need to investigate views to improve performance
     BigQueryAddress(
         dataset_id="impact_reports",
@@ -65,7 +65,7 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     BigQueryAddress(
         dataset_id="aggregated_metrics",
         table_id="justice_involved_workflows_provisioned_user_metrics_person_assignment_sessions",
-    ): (60 * 15),
+    ): (60 * 20),
 }
 
 
