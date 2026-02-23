@@ -33,9 +33,22 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_start_date_stable_counts
     hard_max_allowed_error_override: .38
     override_reason: This is standard variation for this entity month to month.
+  - validation_name: open_sessions_without_active_sentences
+    hard_max_allowed_error_override: 0.05
+    override_reason:
+      We only have setence status snapshot for NDCS sentences but we have
+      sessions for IC + additional cases so we expect this to be higher.
 num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 12
     override_reason:
       Currently only 6 instances as of 02/14/25. These are data entry errors
       from Nebraska and have been brought to their attention.
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 245
+    override_reason: |-
+      The vast majority of these are from very old date where the person had multiple 
+      NDCS IDs (should only have 1 per cycle of incarceration but lots of data errors).
+      It also looks like if there is a same day period with the next period beginning on 
+      the same day it counts as overlapping, which is not an issue.
+      This error has remained at 238 for months as of 02/23/26.
