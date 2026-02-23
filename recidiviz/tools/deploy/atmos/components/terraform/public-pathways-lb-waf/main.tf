@@ -55,6 +55,10 @@ module "load_balancer" {
       protocol        = "HTTPS"
       security_policy = google_compute_security_policy.public-pathways-waf-policy.id
 
+      custom_request_headers = [
+        "Host: ${google_compute_global_network_endpoint.public-pathways-endpoint.fqdn}"
+      ]
+
       log_config = {
         enable      = true
         sample_rate = 1.0
