@@ -198,7 +198,7 @@ locals {
   pathways_enabled_states        = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
   outliers_enabled_states        = yamldecode(file("${path.module}/config/outliers_enabled_states.yaml"))
   workflows_enabled_states       = yamldecode(file("${path.module}/config/workflows_enabled_states.yaml"))
-  public_pathways_enabled_states = yamldecode(file("${path.module}/config/public_pathways_enabled_states.yaml"))
+  public_pathways_enabled_states = concat(yamldecode(file("${path.module}/config/public_pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
 
   joined_connection_string = join(
     ",",
