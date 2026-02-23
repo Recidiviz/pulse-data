@@ -1651,6 +1651,26 @@ JII_INCOMING_TEXT_MESSAGES_OPT_OUT_DISTINCT_CLIENTS = EventDistinctUnitCountMetr
     ),
 )
 
+JII_INCOMING_TEXT_MESSAGES_SWITCH_LANGUAGE_SPANISH = EventCountMetric(
+    name="jii_incoming_text_messages_switch_language_spanish",
+    display_name="JII Incoming Text Messages: Set Language Preference To Spanish",
+    description="Count of incoming text messages from JII clients that indicate a switch in language preference to Spanish",
+    event_selector=EventSelector(
+        event_type=EventType.JII_INCOMING_TEXT_MESSAGE,
+        event_conditions_dict={"language_preference": ["SPANISH"]},
+    ),
+)
+
+JII_INCOMING_TEXT_MESSAGES_SWITCH_LANGUAGE_ENGLISH = EventCountMetric(
+    name="jii_incoming_text_messages_switch_language_english",
+    display_name="JII Incoming Text Messages: Set Language Preference To English",
+    description="Count of incoming text messages from JII clients that indicate a switch in language preference to English",
+    event_selector=EventSelector(
+        event_type=EventType.JII_INCOMING_TEXT_MESSAGE,
+        event_conditions_dict={"language_preference": ["ENGLISH"]},
+    ),
+)
+
 LATE_OPPORTUNITY_METRICS_INCARCERATION = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
