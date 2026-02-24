@@ -63,7 +63,7 @@ state_config:
     slack_channel: us-iowa
     default_assignees:
       - brendali121
-  US_ID:
+  US_IX:
     slack_channel: us-idaho
     default_assignees:
       - santymendoza
