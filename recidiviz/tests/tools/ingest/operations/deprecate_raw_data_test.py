@@ -18,9 +18,14 @@
 import unittest
 from datetime import date
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.deprecate_raw_data import (
     MoveFilesToDeprecatedController,
+)
+from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directories_controller import (
+    IngestFilesOperationType,
+    OperateOnRawStorageDirectoriesController,
 )
 
 
@@ -79,4 +84,32 @@ class MoveFilesToDeprecatedControllerTest(unittest.TestCase):
         self.assertEqual("us_mi/", start_path.relative_path)
         self.assertEqual(
             f"us_mi/deprecated/deprecated_on_{self.today}/", end_path.relative_path
+        )
+
+    def test_controller_handles_missing_file_tag_config(self) -> None:
+        controller = OperateOnRawStorageDirectoriesController.create_controller(
+            region_code="us_oz",
+            operation_type=IngestFilesOperationType.MOVE,
+            source_region_storage_dir_path=GcsfsDirectoryPath.from_absolute_path(
+                "gs://test-bucket/us_oz/"
+            ),
+            destination_region_storage_dir_path=GcsfsDirectoryPath.from_absolute_path(
+                "gs://test-bucket/us_oz/deprecated/"
+            ),
+            dry_run=True,
+            skip_confirmation=True,
+            file_tags=["fake_file_tag"],
+        )
+
+        if not controller.file_tag_filters:
+            raise AssertionError("Expected file_tag_filters to be set")
+
+        self.assertEqual(2, len(controller.file_tag_filters))
+        self.assertIn(
+            "*_fake_file_tag-[0-9]*[.]*",
+            controller.file_tag_filters,
+        )
+        self.assertIn(
+            "*_fake_file_tag[.]*",
+            controller.file_tag_filters,
         )

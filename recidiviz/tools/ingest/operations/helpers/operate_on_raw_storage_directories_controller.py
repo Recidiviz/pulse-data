@@ -39,6 +39,10 @@ from recidiviz.tools.gsutil_shell_helpers import (
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.log_helpers import make_log_output_path
+from recidiviz.utils.string import StrictStringFormatter
+
+FILE_TAG_REGEX_TEMPLATE = "*_{file_tag}[.]*"
+CHUNKED_FILE_TAG_REGEX_TEMPLATE = "*_{file_tag}-[0-9]*[.]*"
 
 
 class IngestFilesOperationType(Enum):
@@ -135,12 +139,22 @@ class OperateOnRawStorageDirectoriesController:
             region_raw_file_config = get_region_raw_file_config(region_code)
             file_tag_filters: List[str] = []
             for file_tag in file_tags:
-                raw_file_config = region_raw_file_config.raw_file_configs[file_tag]
-                if raw_file_config.is_chunked_file:
-                    file_tag_filters.append(f"*_{file_tag}-[0-9]*[.]*")
+                raw_file_config = region_raw_file_config.raw_file_configs.get(file_tag)
+
+                # If there is no config for this file tag, added chunked file pattern to be safe
+                if raw_file_config is None or raw_file_config.is_chunked_file:
+                    file_tag_filters.append(
+                        StrictStringFormatter().format(
+                            CHUNKED_FILE_TAG_REGEX_TEMPLATE, file_tag=file_tag
+                        )
+                    )
                 # Add normal file_tag syntax for all files
                 # in case a chunked file used to be non-chunked
-                file_tag_filters.append(f"*_{file_tag}[.]*")
+                file_tag_filters.append(
+                    StrictStringFormatter().format(
+                        FILE_TAG_REGEX_TEMPLATE, file_tag=file_tag
+                    )
+                )
 
             return file_tag_filters
 
