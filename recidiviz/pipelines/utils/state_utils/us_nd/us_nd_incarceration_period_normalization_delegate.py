@@ -139,6 +139,7 @@ class UsNdIncarcerationNormalizationDelegate(
             return deep_entity_update(
                 incarceration_period,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             )
 

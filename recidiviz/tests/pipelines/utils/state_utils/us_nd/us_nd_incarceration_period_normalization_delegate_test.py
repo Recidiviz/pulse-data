@@ -990,6 +990,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             ip_2,
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
