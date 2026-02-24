@@ -52,3 +52,5 @@ class Dimension(enum.Enum):
     MONTHS_SINCE_TREATMENT = "months_since_treatment"
     SENTENCE_LENGTH_MIN = "sentence_length_min"
     SENTENCE_LENGTH_MAX = "sentence_length_max"
+    CHARGE_COUNTY_CODE = "charge_county_code"
+    OFFENSE_TYPE = "offense_type"

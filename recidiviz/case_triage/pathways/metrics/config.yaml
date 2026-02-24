@@ -60,6 +60,8 @@ PrisonPopulationOverTime:
     time_period: FILTER
     sentence_length_min: FILTER
     sentence_length_max: FILTER
+    charge_county_code: FILTER
+    offense_type: FILTER
 
 PrisonPopulationByDimensionCount:
   database_entity: PrisonPopulationByDimension
@@ -77,6 +79,8 @@ PrisonPopulationByDimensionCount:
     ethnicity: ALL
     sentence_length_min: ALL
     sentence_length_max: ALL
+    charge_county_code: ALL
+    offense_type: ALL
 
 PrisonPopulationPersonLevel:
   database_entity: PrisonPopulationPersonLevel

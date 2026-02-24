@@ -118,6 +118,15 @@ class TestPrisonPopulationByDimensionCount(
                 {"ethnicity": "HISPANIC", "count": 2},
                 {"ethnicity": "NOT_HISPANIC", "count": 6},
             ],
+            Dimension.CHARGE_COUNTY_CODE: [
+                {"chargeCountyCode": "COUNTY_1", "count": 4},
+                {"chargeCountyCode": "COUNTY_2", "count": 4},
+            ],
+            Dimension.OFFENSE_TYPE: [
+                {"offenseType": "DRUG OFFENSES", "count": 2},
+                {"offenseType": "PROPERTY AND OTHER OFFENSES", "count": 2},
+                {"offenseType": "VIOLENT FELONY", "count": 4},
+            ],
         }
 
     @property

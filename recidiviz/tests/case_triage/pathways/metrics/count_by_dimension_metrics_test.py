@@ -595,6 +595,15 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
                 {"race": "WHITE", "count": 2},
             ],
             Dimension.LENGTH_OF_STAY: [{"count": 4, "lengthOfStay": "months_0_3"}],
+            Dimension.CHARGE_COUNTY_CODE: [
+                {"chargeCountyCode": "COUNTY_1", "count": 2},
+                {"chargeCountyCode": "COUNTY_2", "count": 2},
+            ],
+            Dimension.OFFENSE_TYPE: [
+                {"offenseType": "DRUG OFFENSES", "count": 2},
+                {"offenseType": "PROPERTY AND OTHER OFFENSES", "count": 1},
+                {"offenseType": "VIOLENT FELONY", "count": 1},
+            ],
         }
 
     @property
