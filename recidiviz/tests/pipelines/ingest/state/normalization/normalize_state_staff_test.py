@@ -99,6 +99,8 @@ class TestNormalizeStateStaff(unittest.TestCase):
                     state_code=StateCode.US_XX.value,
                     external_id="123",
                     id_type="US_XX_STAFF",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
                 )
             ],
             supervisor_periods=[

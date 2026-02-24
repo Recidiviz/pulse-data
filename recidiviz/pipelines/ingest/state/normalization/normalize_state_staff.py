@@ -19,6 +19,7 @@ NormalizedStateStaff.
 """
 from typing import Any, Mapping, Sequence
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateStaff,
@@ -40,7 +41,11 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff
 from recidiviz.pipelines.ingest.state.normalization.normalize_root_entity_helpers import (
     build_normalized_root_entity,
 )
+from recidiviz.pipelines.ingest.state.normalization.normalize_staff_external_ids import (
+    get_normalized_staff_external_ids,
+)
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_normalization_delegate,
     get_state_specific_staff_role_period_normalization_delegate,
 )
 from recidiviz.utils.types import assert_type
@@ -86,6 +91,16 @@ def build_normalized_state_staff(
     expected_output_entities: set[type[Entity]],
 ) -> NormalizedStateStaff:
     """Normalizes the given StateStaff root entity into a NormalizedStateStaff."""
+    staff_id = assert_type(staff.staff_id, int)
+    state_code = StateCode(staff.state_code)
+
+    normalized_staff_external_ids = get_normalized_staff_external_ids(
+        state_code=state_code,
+        staff_id=staff_id,
+        external_ids=staff.external_ids,
+        delegate=get_state_specific_normalization_delegate(state_code.value),
+    )
+
     staff_role_period_normalization_manager = StaffRolePeriodNormalizationManager(
         staff.role_periods,
         get_state_specific_staff_role_period_normalization_delegate(
@@ -100,6 +115,7 @@ def build_normalized_state_staff(
     )
 
     staff_subtree_kwargs: Mapping[str, Sequence[NormalizedStateEntity]] = {
+        "external_ids": normalized_staff_external_ids,
         "role_periods": role_periods,
         "supervisor_periods": supervisor_periods,
     }
