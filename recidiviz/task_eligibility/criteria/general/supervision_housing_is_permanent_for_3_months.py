@@ -18,27 +18,47 @@
 someone is either in permanent housing for at least 3 months
 """
 
+from google.cloud import bigquery
+
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    housed_for_at_least_x_time_criteria_builder,
+    status_for_at_least_x_time_criteria_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "SUPERVISION_HOUSING_IS_PERMANENT_FOR_3_MONTHS"
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    housed_for_at_least_x_time_criteria_builder(
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=status_for_at_least_x_time_criteria_query(
+        table_name="`{project_id}.normalized_state.state_person_housing_status_period`",
+        additional_where_clause="AND housing_status_type IN ('PERMANENT_RESIDENCE')",
         date_interval=3,
         date_part="MONTH",
-        housing_status_values=[
-            "PERMANENT_RESIDENCE",
+        start_date="housing_status_start_date",
+        end_date="DATE_ADD(housing_status_end_date, INTERVAL 1 DAY)",
+        columns_for_reasons=[
+            ("housing_status_type", "housing_status_type", "STRING"),
+            ("housing_status_start_date", "housing_status_start_date", "DATE"),
         ],
-        criteria_name=_CRITERIA_NAME,
-        description=__doc__,
-    )
+    ),
+    description=__doc__,
+    reasons_fields=[
+        ReasonsField(
+            name="housing_status_type",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Housing status type",
+        ),
+        ReasonsField(
+            name="housing_status_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Housing status start date",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

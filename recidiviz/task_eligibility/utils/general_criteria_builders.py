@@ -62,6 +62,31 @@ VALID_BIGQUERY_TYPES = frozenset(
     t.name for t in bigquery.enums.StandardSqlTypeNames if t.name not in _EXCLUDED_TYPES
 )
 
+### Employment
+
+# Employment status values commonly used for employment criteria
+EMPLOYED_STATUS_VALUES = [
+    "EMPLOYED_UNKNOWN_AMOUNT",
+    "EMPLOYED_FULL_TIME",
+    "EMPLOYED_PART_TIME",
+    "STUDENT",
+    "ALTERNATE_INCOME_SOURCE",
+]
+
+# Reasons fields for employment-based criteria
+EMPLOYMENT_REASONS_FIELDS = [
+    ReasonsField(
+        name="employment_status",
+        type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+        description="employment_status",
+    ),
+    ReasonsField(
+        name="employment_start_date",
+        type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+        description="Employment start date",
+    ),
+]
+
 
 def at_least_X_time_since_drug_screen(
     criteria_name: str,
@@ -1468,126 +1493,6 @@ def no_absconsion_within_time_interval_criteria_builder(
                 name="most_recent_absconded_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Start date of most recent absconsion",
-            ),
-        ],
-    )
-
-
-def employed_for_at_least_x_time_criteria_builder(
-    criteria_name: str,
-    description: str,
-    employment_status_values: List[str],
-    date_interval: int = 6,
-    date_part: str = "MONTH",
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
-    """
-    Returns a criteria query builder that has spans of time when someone has been employed
-    for at least a given amount of time.
-
-    Args:
-        criteria_name (str): Criteria query name
-        description (str): Criteria query description
-        employment_status_values (List[str], optional): List of employment statuses to include in the criteria.
-            Example: ["EMPLOYED_UNKNOWN_AMOUNT", "EMPLOYED_FULL_TIME", "EMPLOYED_PART_TIME"].
-        date_interval (int, optional): Number of <date_part> when the employment will be counted as
-            valid. Defaults to 6.
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
-
-    Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
-            has been employed for at least the specified amount of time.
-    """
-    query_template = status_for_at_least_x_time_criteria_query(
-        table_name="`{project_id}.normalized_state.state_employment_period`",
-        # TODO(#38963): Remove the end_date < '3000-01-01' once we are enforcing that
-        #  employment period end dates are reasonable and all exemptions have been
-        #  resolved. This filter was added to avoid date overflow when adding time to
-        #  dates close to the max date 9999-12-31.
-        additional_where_clause=f"""
-            AND employment_status IN ({list_to_query_string(employment_status_values, quoted=True, single_quote=True)})
-            # If end_date is more than 3000-01-01, drop period. Don't drop NULL end_dates
-            AND (end_date IS NULL OR end_date < '3000-01-01')""",
-        date_interval=date_interval,
-        date_part=date_part,
-        end_date="DATE_ADD(end_date, INTERVAL 1 DAY)",
-        columns_for_reasons=[
-            ("employment_status", "employment_status", "STRING"),
-            ("start_date", "employment_start_date", "DATE"),
-        ],
-    )
-
-    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=criteria_name,
-        criteria_spans_query_template=query_template,
-        description=description,
-        reasons_fields=[
-            ReasonsField(
-                name="employment_status",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="employment_status",
-            ),
-            ReasonsField(
-                name="employment_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Employment start date",
-            ),
-        ],
-    )
-
-
-def housed_for_at_least_x_time_criteria_builder(
-    criteria_name: str,
-    description: str,
-    housing_status_values: List[str],
-    date_interval: int = 6,
-    date_part: str = "MONTH",
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
-    """
-    Returns a criteria query builder that has spans of time when someone has been housed
-    for at least a given amount of time.
-
-    Args:
-        criteria_name (str): Criteria query name
-        description (str): Criteria query description
-        housing_status_values (List[str], optional): List of housing statuses to include in the criteria.
-            Example: ["PERMANENT_RESIDENCE", "TEMPORARY_OR_SUPPORTIVE_HOUSING"].
-        date_interval (int, optional): Number of <date_part> when the housing status will be counted as
-            valid. Defaults to 6.
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "MONTH".
-
-    Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
-            has been housed for at least the specified amount of time.
-    """
-    query_template = status_for_at_least_x_time_criteria_query(
-        table_name="`{project_id}.normalized_state.state_person_housing_status_period`",
-        additional_where_clause=f"""AND housing_status_type IN ({list_to_query_string(housing_status_values, quoted=True, single_quote=True)})""",
-        date_interval=date_interval,
-        date_part=date_part,
-        start_date="housing_status_start_date",
-        end_date="DATE_ADD(housing_status_end_date, INTERVAL 1 DAY)",
-        columns_for_reasons=[
-            ("housing_status_type", "housing_status_type", "STRING"),
-            ("housing_status_start_date", "housing_status_start_date", "DATE"),
-        ],
-    )
-
-    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=criteria_name,
-        criteria_spans_query_template=query_template,
-        description=description,
-        reasons_fields=[
-            ReasonsField(
-                name="housing_status_type",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Housing status type",
-            ),
-            ReasonsField(
-                name="housing_status_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Housing status start date",
             ),
         ],
     )
