@@ -16,13 +16,13 @@
 // =============================================================================
 /* Apps Script for sending email reminders to supervisors. */
 
-const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_PA", "US_TN"];
+const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_PA"];
 
 // =============================================================================
 
 // comma-separated list of state codes as strings
 const supervisorStatesForQuery = SUPERVISOR_INCLUDED_STATES.map(
-  (s) => `"${s}"`
+  (s) => `"${s}"`,
 ).join();
 
 // Note: If the order of the columns in the query changes, we must
@@ -51,6 +51,6 @@ function sendSupervisorEmailReminders_() {
     SUPERVISORS,
     SUPERVISOR_QUERY,
     EMAIL_SETTINGS,
-    SUPERVISOR_INCLUDED_STATES
+    SUPERVISOR_INCLUDED_STATES,
   );
 }

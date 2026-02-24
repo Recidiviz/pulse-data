@@ -67,7 +67,8 @@ const EMAIL_SETTINGS = {
   EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
   FEEDBACK_EMAIL: "feedback@recidiviz.org",
 
-  RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
+  RECIDIVIZ_LINK:
+    "https://dashboard.recidiviz.org/?utm_medium=email&utm_campaign=monthly_email",
   RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
 };
 
@@ -92,6 +93,8 @@ function stateSpecificOpportunities(stateCode) {
     case "US_IA":
       return {
         EARLY_DISCHARGE: "Early Discharge",
+        TRANSFER_TO_LIMITED_SUPERVISION_FROM_MINIMUM:
+          "a Supervision Level Downgrade",
       };
     case "US_IX":
       return {
@@ -122,8 +125,8 @@ function stateSpecificOpportunities(stateCode) {
     case "US_NE":
       return {
         OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION:
-          "Override to Conditional Low Risk",
-        OVERRIDE_TO_LOW_SUPERVISION: "Override to Low",
+          "an Override to Conditional Low Risk",
+        OVERRIDE_TO_LOW_SUPERVISION: "an Override to Low",
       };
     case "US_PA":
       return {
@@ -135,7 +138,7 @@ function stateSpecificOpportunities(stateCode) {
       return {
         TRANSFER_TO_LIMITED_SUPERVISION: "Compliant Reporting",
         FULL_TERM_DISCHARGE: "Expiration",
-        SUPERVISION_LEVEL_DOWNGRADE: "Supervision Level Downgrade",
+        SUPERVISION_LEVEL_DOWNGRADE: "a Supervision Level Downgrade",
         TRANSFER_TO_NO_CONTACT_PAROLE: "Suspension of Direct Supervision",
       };
     case "US_TX":
@@ -401,8 +404,7 @@ function stateSpecificText(
       return {
         supervisionToolName: "the Recidiviz early termination tool",
         timeZone: "America/Chicago",
-        supervisionOpportunitiesText: `There ${clients.is} ${totalOpportunities} ${clients.pluralNoun} under your supervision eligible for early termination.`,
-        supervisionOpportunitySpecificText,
+        supervisionOpportunitiesText: `There may be up to ${totalOpportunities} ${clients.pluralNoun} under your supervision who are eligible or almost eligible for early termination.`,
       };
     case "US_NE":
       return {
@@ -567,6 +569,8 @@ function buildLoginReminderBody(info, userType, settings) {
           additionalContent = `There ${eligible.is} ${eligibleOpportunities} total ${eligible.pluralNoun} eligible for opportunities and ${almostEligibleOpportunities} total ${almost.is} almost eligible for opportunities.<br><br>`;
         }
       }
+    } else if (supervisionOpportunitiesText && totalOpportunities > 0) {
+      bulletPoints = `<li>${supervisionOpportunitiesText}</li>`;
     }
   } else if (userType === FACILITIES_LINESTAFF) {
     introText = generateIntroText(
