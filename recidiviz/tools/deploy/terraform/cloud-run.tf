@@ -441,6 +441,11 @@ resource "google_cloud_run_service" "public-pathways" {
           value = var.project_id == "recidiviz-123" ? "https://pathways.recidiviz.org" : "https://pathways-staging.recidiviz.org"
         }
 
+        env {
+          name  = "AUTH0_CLAIM_NAMESPACE"
+          value = "https://dashboard.recidiviz.org"
+        }
+
         resources {
           limits = {
             cpu    = "1000m"
