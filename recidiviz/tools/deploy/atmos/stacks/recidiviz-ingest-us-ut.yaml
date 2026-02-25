@@ -32,3 +32,12 @@ components:
         group_name: "s-{{ .settings.context.project_id }}-owner"
         group_role: roles/owner
         auto_create_network: true
+        activate_apis:
+          - bigquerydatatransfer.googleapis.com
+
+    # Scheduled BQ queries that materialize CPA data from the reentry planner
+    # into the cpa_exports dataset for UT
+    us-ut-bq-scheduled-query-cpa-exports:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        schedule: "every day 06:00" # 6am UTC / midnight MT
