@@ -29,6 +29,7 @@ from recidiviz.utils import secrets
 _JC_SENDGRID_API_KEY = "justice_counts_sendgrid_api_key"
 _SENDGRID_ENFORCED_TLS_AND_CERT_API_KEY = "sendgrid_enforced_tls_and_cert_api_key"
 _SENDGRID_ENFORCED_TLS_API_KEY = "sendgrid_enforced_tls_api_key"
+_SENDGRID_UT_APP_NOTIFICATIONS_API_KEY = "sendgrid_ut_app_notifications"
 
 _STATE_CODES_WITH_ENFORCED_TLS_ONLY: List[StateCode] = [
     StateCode.US_ID,
@@ -50,6 +51,10 @@ class SendGridClientWrapper:
         elif key_type == "enforced_tls_only":
             api_key = self._get_sendgrid_api_key(
                 secret_id=_SENDGRID_ENFORCED_TLS_API_KEY
+            )
+        elif key_type == "ut_app_notifications":
+            api_key = self._get_sendgrid_api_key(
+                secret_id=_SENDGRID_UT_APP_NOTIFICATIONS_API_KEY
             )
         else:
             api_key = self._get_sendgrid_api_key(

@@ -99,6 +99,39 @@ resource "google_cloud_run_v2_job" "utah_data_transfer_sync" {
   }
 }
 
+resource "google_cloud_run_v2_job" "cpa_ut_app_enablement" {
+  name     = "cpa-ut-app-enablement"
+  location = var.us_central_region
+  provider = google-beta
+
+  template {
+    template {
+      containers {
+        image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
+        command = ["uv"]
+        args    = ["run", "python", "-m", "recidiviz.tools.cpa.ut_app_enablement", "--dry-run", "False"]
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "512Mi"
+          }
+        }
+      }
+      max_retries = 0
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      launch_stage,
+    ]
+  }
+}
+
 locals {
   jii_jobs = {
     "id-lsu-jii-initial-texts" = {
