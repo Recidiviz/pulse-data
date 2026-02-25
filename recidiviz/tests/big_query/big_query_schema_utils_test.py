@@ -19,13 +19,28 @@
 import unittest
 
 from google.cloud import bigquery
+from parameterized import parameterized
 
 from recidiviz.big_query.big_query_schema_utils import (
     diff_declared_schema_to_bq_schema,
     format_schema_diffs,
+    schema_field_to_view_column,
     truncate_column_description_for_big_query,
 )
-from recidiviz.big_query.big_query_view_column import Date, Integer, Record, String
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    BigQueryViewColumn,
+    Bool,
+    Date,
+    DateTime,
+    Float,
+    Integer,
+    Json,
+    Record,
+    String,
+    Time,
+    Timestamp,
+)
 
 
 class DiffDeclaredSchemaToBqSchemaTest(unittest.TestCase):
@@ -281,3 +296,63 @@ class TruncateColumnDescriptionForBigQueryTest(unittest.TestCase):
         result = truncate_column_description_for_big_query(desc)
         self.assertEqual(1024, len(result))
         self.assertTrue(result.endswith(" ... (truncated)"))
+
+
+class SchemaFieldToViewColumnTest(unittest.TestCase):
+    """Tests for schema_field_to_view_column"""
+
+    @parameterized.expand(
+        [
+            ("STRING", String, bigquery.SqlTypeNames.STRING),
+            ("INTEGER", Integer, bigquery.SqlTypeNames.INTEGER),
+            ("DATE", Date, bigquery.SqlTypeNames.DATE),
+            ("FLOAT", Float, bigquery.SqlTypeNames.FLOAT),
+            ("BOOLEAN", Bool, bigquery.SqlTypeNames.BOOLEAN),
+            ("DATETIME", DateTime, bigquery.SqlTypeNames.DATETIME),
+            ("TIMESTAMP", Timestamp, bigquery.SqlTypeNames.TIMESTAMP),
+            ("TIME", Time, bigquery.SqlTypeNames.TIME),
+            ("JSON", Json, bigquery.StandardSqlTypeNames.JSON),
+            # Aliases
+            ("INT64", Integer, bigquery.SqlTypeNames.INTEGER),
+            ("FLOAT64", Float, bigquery.SqlTypeNames.FLOAT),
+            ("BOOL", Bool, bigquery.SqlTypeNames.BOOLEAN),
+            ("NUMERIC", Float, bigquery.SqlTypeNames.FLOAT),
+        ]
+    )
+    def test_type_mapping(
+        self,
+        bq_type: str,
+        expected_class: type[BigQueryViewColumn],
+        expected_field_type: bigquery.SqlTypeNames | bigquery.StandardSqlTypeNames,
+    ) -> None:
+        col = schema_field_to_view_column(
+            bigquery.SchemaField("x", bq_type, mode="NULLABLE", description="desc")
+        )
+        self.assertIsInstance(col, expected_class)
+        self.assertEqual(col.field_type, expected_field_type)
+
+    def test_mode_preserved(self) -> None:
+        col = schema_field_to_view_column(
+            bigquery.SchemaField("x", "STRING", mode="REQUIRED", description="desc")
+        )
+        self.assertEqual(col.mode, "REQUIRED")
+
+    def test_empty_description_uses_placeholder(self) -> None:
+        col = schema_field_to_view_column(
+            bigquery.SchemaField("col", "STRING", mode="NULLABLE")
+        )
+        self.assertEqual(col.description, COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT)
+
+    def test_description_preserved(self) -> None:
+        col = schema_field_to_view_column(
+            bigquery.SchemaField(
+                "col", "STRING", mode="NULLABLE", description="my description"
+            )
+        )
+        self.assertEqual(col.description, "my description")
+
+    def test_unsupported_type_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            schema_field_to_view_column(
+                bigquery.SchemaField("x", "RECORD", description="d")
+            )

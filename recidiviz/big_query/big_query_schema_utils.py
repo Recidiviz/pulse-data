@@ -16,13 +16,61 @@
 # =============================================================================
 """Utilities for comparing declared view schemas against deployed BigQuery schemas."""
 
-from typing import Sequence
+from typing import Sequence, cast
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Record
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    BigQueryViewColumn,
+    Bool,
+    ConcreteBigQueryColumnType,
+    Date,
+    DateTime,
+    Float,
+    Integer,
+    Json,
+    Record,
+    SqlFieldMode,
+    String,
+    Time,
+    Timestamp,
+)
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
+
+_FIELD_TYPE_TO_COLUMN_CLASS: dict[str, ConcreteBigQueryColumnType] = {
+    "STRING": String,
+    "INTEGER": Integer,
+    "INT64": Integer,
+    "DATE": Date,
+    "FLOAT": Float,
+    "FLOAT64": Float,
+    "BOOLEAN": Bool,
+    "BOOL": Bool,
+    "DATETIME": DateTime,
+    "TIMESTAMP": Timestamp,
+    "TIME": Time,
+    "JSON": Json,
+    "NUMERIC": Float,
+}
+
+
+def schema_field_to_view_column(field: bigquery.SchemaField) -> BigQueryViewColumn:
+    """Converts a bigquery.SchemaField to a BigQueryViewColumn instance."""
+    column_cls = _FIELD_TYPE_TO_COLUMN_CLASS.get(field.field_type)
+    if column_cls is None:
+        raise ValueError(
+            f"Unsupported BigQuery field type {field.field_type!r} "
+            f"for field {field.name!r}"
+        )
+    description = field.description or COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT
+    mode = cast(SqlFieldMode, field.mode)
+    return column_cls(
+        name=field.name,
+        description=description,
+        mode=mode,
+    )
 
 
 def truncate_column_description_for_big_query(description: str) -> str:

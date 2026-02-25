@@ -183,3 +183,16 @@ class Record(BigQueryViewColumn):
             declared_by_name[name].matches_bq_field(deployed_by_name[name])
             for name in declared_by_name
         )
+
+
+ConcreteBigQueryColumnType = (
+    type[String]
+    | type[Integer]
+    | type[Date]
+    | type[Float]
+    | type[Bool]
+    | type[DateTime]
+    | type[Timestamp]
+    | type[Time]
+    | type[Json]
+)
