@@ -185,13 +185,6 @@ explore: us_ix_raw_data_template {
     view_label: "us_ix_prb_PBCase"
   }
 
-  join: us_ix_scb_OffenderJcbInternalStatus {
-    sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_scb_OffenderJcbInternalStatus.OffenderId};;
-    type: full_outer
-    relationship: many_to_many
-    view_label: "us_ix_scb_OffenderJcbInternalStatus"
-  }
-
   join: us_ix_scl_Charge {
     sql_on: ${us_ix_ind_Offender.OffenderId} = ${us_ix_scl_Charge.OffenderId};;
     type: full_outer

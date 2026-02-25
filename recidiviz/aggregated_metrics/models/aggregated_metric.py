@@ -931,6 +931,48 @@ class EventValueMetric(PeriodEventAggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
+class SumEventValueMetric(PeriodEventAggregatedMetric):
+    """
+    Class that stores information about a metric that takes the sum of values over events
+    for a specified set of event rows occurring during the analysis period.
+
+    Example metric: Sum of earned credits across all earned credit events.
+    """
+
+    # Name of the field in event_attributes JSON containing the numeric attribute of the event.
+    event_value_numeric: str
+
+    def referenced_observation_attributes(self) -> list[str]:
+        return super().referenced_observation_attributes() + [self.event_value_numeric]
+
+    def generate_aggregation_query_fragment(
+        self,
+        *,
+        observations_by_assignments_cte_name: str,
+        event_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        event_value_numeric_clause = observation_attribute_value_clause(
+            observation_type=self.observation_selector.observation_type,
+            attribute=self.event_value_numeric,
+            read_attributes_from_json=False,
+        )
+        return f"""
+            SUM(IF(
+                {observation_conditions},
+                CAST({event_value_numeric_clause} AS FLOAT64),
+                NULL
+            )) AS {self.name}
+        """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}) AS {self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
 class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
     """
     Class that stores information about a metric that counts the distinct

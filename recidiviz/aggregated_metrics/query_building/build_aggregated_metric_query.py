@@ -42,6 +42,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventDistinctUnitCountMetric,
     EventValueMetric,
     SpanDistinctUnitCountMetric,
+    SumEventValueMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
@@ -158,6 +159,7 @@ def metric_output_column_clause(metric: AggregatedMetric) -> str:
             EventDistinctUnitCountMetric,
             DailyAvgSpanCountMetric,
             SumSpanDaysMetric,
+            SumEventValueMetric,
             SpanDistinctUnitCountMetric,
             AssignmentEventCountMetric,
             AssignmentEventBinaryMetric,

@@ -32,6 +32,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventDistinctUnitCountMetric,
     EventValueMetric,
     SpanDistinctUnitCountMetric,
+    SumEventValueMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
@@ -4282,5 +4283,123 @@ DISTINCT_ACTIVE_WORKFLOWS_PRIMARY_USERS_ALL_TOOLS = EventDistinctUnitCountMetric
     event_selector=EventSelector(
         event_type=EventType.ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT,
         event_conditions_dict={},
+    ),
+)
+
+EARNED_CREDIT_EVENTS = EventCountMetric(
+    name="earned_credit_events",
+    display_name="Earned Credit Events",
+    description="Number of earned credit events, including credit revocations and zero-credit events",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={},
+    ),
+    event_segmentation_columns=["credit_observation_number"],
+)
+
+POSITIVE_EARNED_CREDIT_EVENTS = EventCountMetric(
+    name="positive_earned_credit_events",
+    display_name="Positive Earned Credit Events",
+    description="Number of earned credit events, excluding credit revocations and zero-credit events",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={"credits_earned_is_positive": ["true"]},
+    ),
+    event_segmentation_columns=["credit_observation_number"],
+)
+
+SUM_EARNED_CREDITS = SumEventValueMetric(
+    name="sum_earned_credits",
+    display_name="Sum of Earned Credits",
+    description="Sum of earned credits from all earned credit events, minus any credits revoked",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={},
+    ),
+    event_value_numeric="credits_earned",
+)
+
+SUM_EARNED_CREDITS_FOR_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SumEventValueMetric(
+    name="sum_earned_credits_for_registered_jii_tablet_app_provisioned_users",
+    display_name="Sum of Earned Credits for Registered JII Tablet App Provisioned Users",
+    description="Sum of earned credits from all earned credit events for registered JII Tablet App provisioned users, minus any credits revoked",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={
+            "is_registered_jii_app_user": ["true"],
+        },
+    ),
+    event_value_numeric="credits_earned",
+)
+
+DISTINCT_POPULATION_WITH_EARNED_CREDITS = EventDistinctUnitCountMetric(
+    name="distinct_population_with_earned_credits",
+    display_name="Distinct Population: With Earned Credits",
+    description="Total distinct count of people with any earned credit events during the period, including credit revocations and zero-credit events",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS_WITH_EARNED_CREDITS = EventDistinctUnitCountMetric(
+    name="distinct_registered_jii_tablet_app_provisioned_users_with_earned_credits",
+    display_name="Distinct Registered JII Tablet App Provisioned Users with Earned Credits",
+    description="Total distinct count of registered JII Tablet App provisioned users with any earned credit events during the period, including credit revocations and zero-credit events",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={
+            "is_registered_jii_app_user": ["true"],
+        },
+    ),
+)
+
+DISTINCT_POPULATION_WITH_POSITIVE_EARNED_CREDITS = EventDistinctUnitCountMetric(
+    name="distinct_population_with_positive_earned_credits",
+    display_name="Distinct Population: With Positive Earned Credits",
+    description="Total distinct count of people who had a credit event with positive credits earned during the period",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={
+            "credits_earned_is_positive": ["true"],
+        },
+    ),
+)
+
+DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS_WITH_POSITIVE_EARNED_CREDITS = EventDistinctUnitCountMetric(
+    name="distinct_registered_jii_tablet_app_provisioned_users_with_positive_earned_credits",
+    display_name="Distinct Registered JII Tablet App Provisioned Users with Positive Earned Credits",
+    description="Total distinct count of registered JII Tablet App provisioned users who had a credit event with positive credits earned during the period",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={
+            "is_registered_jii_app_user": ["true"],
+            "credits_earned_is_positive": ["true"],
+        },
+    ),
+)
+
+DISTINCT_POPULATION_MAXED_OUT_CREDITS = EventDistinctUnitCountMetric(
+    name="distinct_population_maxed_out_credits",
+    display_name="Distinct Population: Maxed Out Credits",
+    description="Total distinct count of people who maxed out their earned credits at any point during the period",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={
+            "is_maxed_out": ["true"],
+        },
+    ),
+)
+
+DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS_MAXED_OUT_CREDITS = EventDistinctUnitCountMetric(
+    name="distinct_registered_jii_tablet_app_provisioned_users_maxed_out_credits",
+    display_name="Distinct Registered JII Tablet App Provisioned Users Maxed Out Credits",
+    description="Total distinct count of registered JII Tablet App provisioned users who maxed out their earned credits at any point during the period",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={
+            "is_registered_jii_app_user": ["true"],
+            "is_maxed_out": ["true"],
+        },
     ),
 )
