@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Queries CPA survey results from the recidiviz-prod Cloud SQL database
+Queries CPA intake artifacts from the recidiviz-prod Cloud SQL database
 and augments with client data from BigQuery. Writes results to a Google Sheet.
 
-python -m recidiviz.tools.cpa.query_survey_results
+python -m recidiviz.tools.cpa.query_intake_artifacts
 """
 import json
 import logging
@@ -57,14 +57,15 @@ SURVEY_RESULTS_QUERY = f"""
 SELECT
   plan.client_id,
   plan.client_pseudo_id,
-  assessment.assessment_type,
   plan.created_at,
   plan.updated_at,
   plan.edited_manually,
   {"plangeneration.markdown_result," if INCLUDE_MARKDOWN_RESULT else ""}
   assessment.scores,
+  assessmentconfig.code,
+  assessmentconfig.version,
+  assessmentconfig.display_name,
   planasset.file_blob AS intake_conversation_summary,
-  client_address.state,
   intake_survey.difficulty_rating,
   intake_survey.questions_confusing,
   intake_survey.preferred_method,
@@ -90,9 +91,9 @@ LEFT JOIN
 ON
   intake.client_pseudo_id = plan.client_pseudo_id
 LEFT JOIN
-  client_address
+  assessmentconfig
 ON
-  client_address.intake_id = intake.id
+  intake.assessment_config_id = assessmentconfig.id
 LEFT JOIN
   intake_survey
 ON
@@ -117,14 +118,14 @@ def fetch_client_data_from_bq(
 ) -> dict[str, dict[str, str]]:
     """Fetches client data from BigQuery for the given pseudo IDs.
 
-    Returns a dict mapping pseudo_id -> {"location": ..., "state_code": ...}.
+    Returns a dict mapping pseudo_id -> {"state_code": ...}.
     """
     if not pseudo_ids:
         return {}
 
     in_clause = ", ".join(f"'{pid}'" for pid in pseudo_ids)
     bq_query = f"""
-        SELECT pseudonymized_id, location, state_code
+        SELECT pseudonymized_id, state_code
         FROM `{CLIENT_BQ_TABLE}`
         WHERE pseudonymized_id IN ({in_clause})
     """
@@ -134,7 +135,6 @@ def fetch_client_data_from_bq(
         query_job = bq_client.run_query_async(query_str=bq_query, use_query_cache=True)
         return {
             row["pseudonymized_id"]: {
-                "location": row["location"],
                 "state_code": row["state_code"],
             }
             for row in query_job
@@ -198,7 +198,7 @@ def write_results_to_new_tab(sheets_service: Resource, results: list[dict]) -> N
 
 
 def main() -> None:
-    """Fetch CPA survey results from Postgres and augment with location and state data from BQ."""
+    """Fetch CPA survey results from Postgres and augment with state data from BQ."""
     logging.basicConfig(level=logging.INFO)
 
     # Fetch survey results from PostgreSQL
@@ -222,7 +222,6 @@ def main() -> None:
     # Enrich survey results with client data
     for result in survey_results:
         client_data = client_data_map.get(result["client_pseudo_id"], {})
-        result["location"] = client_data.get("location")
         result["state_code"] = client_data.get("state_code")
 
     # Write results to a new tab in the output sheet
