@@ -172,6 +172,8 @@ Available skills:
   clear commit messages
 - [Create PR](./.claude/skills/create-pr/SKILL.md) - Create a GitHub PR for the
   current branch
+- [Review PR Comments](./.claude/skills/review-pr-comments/SKILL.md) - Go
+  through PR review comments one by one and address them
 - [Create Recidiviz Data GitHub Tasks](./.claude/skills/create_recidiviz_data_github_tasks/SKILL.md)
 - [Maintain Skill Files](./.claude/skills/maintain_skill_files/SKILL.md)
 - [Maintain CLAUDE.md Documentation](./.claude/skills/maintain_claude_md/SKILL.md)
