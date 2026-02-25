@@ -158,7 +158,13 @@ def post_issues_to_slack(
             headers={"Authorization": "Bearer " + slack_token},
             timeout=60,
         )
-        logging.info("Response from Slack API call: %s", response)
+        response_json = response.json()
+        if response_json.get("ok"):
+            logging.info("Response from Slack API call: %s", response)
+        else:
+            logging.error(
+                "Slack API call failed: %s", response_json.get("error", response_json)
+            )
     except Exception as e:
         logging.exception("Error when calling Slack API: %s", str(e))
 
