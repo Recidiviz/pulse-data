@@ -55,7 +55,7 @@ from recidiviz.tools.postgres.cloudsql_proxy_control import CloudSQLProxyControl
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
-ASSESSMENT_CONFIG_CODE = "ccci"
+ASSESSMENT_CONFIG_CODE = "CCCI"
 
 # UT Release List Google Sheet
 RELEASE_SHEET_ID = "1KhTh_VOVG4u6g6L2kMguD4-3te2CEB-xBr0fQ6Wh6V0"
@@ -106,6 +106,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="The gid of the release list sheet tab (from URL gid=XXXXX).",
     )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
+    parser.add_argument(
+        "--assessment-config-code",
+        type=str,
+        default=ASSESSMENT_CONFIG_CODE,
+        help="Assessment config code to use (default: %(default)s).",
+    )
     return parser
 
 
@@ -220,8 +226,8 @@ def collect_pseudo_ids(sheet_gid: str) -> list[str]:
     return all_pseudo_ids
 
 
-def fetch_assessment_config_id(engine: Engine) -> str:
-    """Fetches the assessment config ID for the latest version of 'ccci'."""
+def fetch_assessment_config_id(engine: Engine, assessment_config_code: str) -> str:
+    """Fetches the assessment config ID for the latest version of the given code."""
     query = text(
         """
         SELECT id FROM assessmentconfig
@@ -231,11 +237,11 @@ def fetch_assessment_config_id(engine: Engine) -> str:
     """
     )
     with Session(bind=engine) as session:
-        result = session.execute(query, {"code": ASSESSMENT_CONFIG_CODE})
+        result = session.execute(query, {"code": assessment_config_code})
         row = result.fetchone()
         if not row:
             raise ValueError(
-                f"No assessment config found with code '{ASSESSMENT_CONFIG_CODE}'"
+                f"No assessment config found with code '{assessment_config_code}'"
             )
         return str(row[0])
 
@@ -282,6 +288,7 @@ RETURNING *;
 
 
 def main() -> None:
+    """Run UT CCC intake enablement."""
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
 
@@ -299,8 +306,10 @@ def main() -> None:
         db_password = get_secret(DATABASE_PASSWORD_SECRET_NAME)
         engine = create_db_engine(db_password=db_password, db_username=db_username)
 
-        print("Fetching assessment config ID...")
-        assessment_config_id = fetch_assessment_config_id(engine)
+        print(f"Fetching assessment config ID for '{args.assessment_config_code}'...")
+        assessment_config_id = fetch_assessment_config_id(
+            engine, args.assessment_config_code
+        )
         print(f"Using assessment config ID: {assessment_config_id}")
 
         query = build_query(pseudo_ids, assessment_config_id)
