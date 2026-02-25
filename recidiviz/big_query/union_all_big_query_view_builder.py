@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     BigQueryViewBuilderType,
 )
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -54,6 +55,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             Callable[[BigQueryAddress], str] | None
         ) = None,
         materialized_address_override: BigQueryAddress | None = None,
+        schema: Sequence[BigQueryViewColumn] | None = None,
     ):
         """
         Args:
@@ -77,6 +79,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 from view builders when needed).
             materialized_address_override: If set, this view will be materialized to
                 this address rather than the default materialization address.
+            schema: The schema for this view.
         """
         if not parents:
             raise ValueError(
@@ -132,6 +135,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             materialized_address_override=materialized_address_override,
             should_materialize=True,
         )
+        self.schema = schema
         self.projects_to_deploy = None
 
     @staticmethod
@@ -235,6 +239,6 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             clustering_fields=self.clustering_fields,
             time_partitioning=None,
             sandbox_context=sandbox_context,
-            schema=None,
+            schema=self.schema,
             **query_format_args,
         )

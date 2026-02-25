@@ -20,6 +20,7 @@ import unittest
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -399,3 +400,32 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             ),
             view.address,
         )
+
+    def test_schema(self) -> None:
+        parent_schema = [
+            String(name="state_code", mode="REQUIRED", description="State code"),
+        ]
+        explicit_schema = [
+            String(name="name", mode="REQUIRED", description="A name column"),
+            String(name="state_code", mode="REQUIRED", description="State code"),
+        ]
+        parents = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="ds",
+                view_id="parent_1",
+                description="desc",
+                view_query_template="SELECT * FROM `{project_id}.ds.t`",
+                should_materialize=True,
+                schema=parent_schema,
+            ),
+        ]
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="union_ds",
+            view_id="union_view",
+            description="Union view",
+            parents=parents,
+            clustering_fields=["state_code"],
+            schema=explicit_schema,
+        )
+        assert builder.schema is not None
+        self.assertEqual(builder.schema, explicit_schema)
