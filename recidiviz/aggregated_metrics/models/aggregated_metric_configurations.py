@@ -2344,6 +2344,24 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitCountMet
     ),
 )
 
+DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED = SpanDistinctUnitCountMetric(
+    name="workflows_distinct_people_eligible_and_actionable_and_launched",
+    display_name="Distinct Population: Eligible And Actionable For Fully Launched Task Types",
+    description="Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for fully launched task types only",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "review_approval_status": "IS NULL",
+            "task_type_is_fully_launched": ["true"],
+            "marked_ineligible": ["false"],
+        },
+    ),
+)
+
+
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_VISIBLE_IN_TOOL = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_almost_eligible_and_visible_in_tool",
     display_name="Distinct Population: Almost Eligible And Visible In Tool",
@@ -2374,11 +2392,12 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitC
     ),
 )
 
-DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
+
+DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED_METRICS_SUPERVISION = [
     SpanDistinctUnitCountMetric(
-        name=f"workflows_distinct_people_eligible_and_actionable_{b.task_type_name.lower()}",
-        display_name=f"Distinct Population: Eligible And Actionable, {b.task_title}",
-        description=f"Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}",
+        name=f"workflows_distinct_people_eligible_and_actionable_and_launched_{b.task_type_name.lower()}",
+        display_name=f"Distinct Population: Eligible And Actionable For Fully Launched {b.task_title}",
+        description=f"Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}, which is fully launched",
         span_selector=SpanSelector(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
             span_conditions_dict={
@@ -2387,6 +2406,7 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
                 "review_approval_status": "IS NULL",
+                "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -2395,11 +2415,12 @@ DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
-DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION = [
+
+DISTINCT_POPULATION_WORKFLOWS_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED_METRICS_INCARCERATION = [
     SpanDistinctUnitCountMetric(
-        name=f"workflows_distinct_people_eligible_and_actionable_{b.task_type_name.lower()}",
-        display_name=f"Distinct Population: Eligible And Actionable, {b.task_title}",
-        description=f"Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}",
+        name=f"workflows_distinct_people_eligible_and_actionable_and_launched_{b.task_type_name.lower()}",
+        display_name=f"Distinct Population: Eligible And Actionable For Fully Launched {b.task_title}",
+        description=f"Total distinct count of clients eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}, which is fully launched",
         span_selector=SpanSelector(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
             span_conditions_dict={
@@ -2433,6 +2454,23 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE = SpanDistinctUnitC
     ),
 )
 
+DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED = SpanDistinctUnitCountMetric(
+    name="workflows_distinct_people_almost_eligible_and_actionable_and_launched",
+    display_name="Distinct Population: Almost Eligible And Actionable For Fully Launched Task Types",
+    description="Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for fully launched task types only",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+            "is_surfaceable": ["true"],
+            "in_progress": ["false"],
+            "marked_ineligible": ["false"],
+            "task_type_is_fully_launched": ["true"],
+            "review_approval_status": "IS NULL",
+        },
+    ),
+)
+
 DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistinctUnitCountMetric(
     name="workflows_distinct_people_almost_eligible_actionable_and_viewed",
     display_name="Distinct Population: Almost Eligible, Actionable, And Viewed",
@@ -2450,11 +2488,11 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_ACTIONABLE_AND_VIEWED = SpanDistin
     ),
 )
 
-DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION = [
+DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED_METRICS_SUPERVISION = [
     SpanDistinctUnitCountMetric(
-        name=f"workflows_distinct_people_almost_eligible_and_actionable_{b.task_type_name.lower()}",
-        display_name=f"Distinct Population: Almost Eligible And Actionable, {b.task_title}",
-        description=f"Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}",
+        name=f"workflows_distinct_people_almost_eligible_and_actionable_and_launched_{b.task_type_name.lower()}",
+        display_name=f"Distinct Population: Almost Eligible And Actionable For Fully Launched {b.task_title}",
+        description=f"Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}, which is fully launched",
         span_selector=SpanSelector(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
             span_conditions_dict={
@@ -2463,6 +2501,7 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
                 "review_approval_status": "IS NULL",
+                "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
@@ -2471,11 +2510,11 @@ DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_SUPERVISION
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
-DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_METRICS_INCARCERATION = [
+DISTINCT_POPULATION_WORKFLOWS_ALMOST_ELIGIBLE_AND_ACTIONABLE_AND_LAUNCHED_METRICS_INCARCERATION = [
     SpanDistinctUnitCountMetric(
-        name=f"workflows_distinct_people_almost_eligible_and_actionable_{b.task_type_name.lower()}",
-        display_name=f"Distinct Population: Almost Eligible And Actionable, {b.task_title}",
-        description=f"Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}",
+        name=f"workflows_distinct_people_almost_eligible_and_actionable_and_launched_{b.task_type_name.lower()}",
+        display_name=f"Distinct Population: Almost Eligible And Actionable For Fully Launched {b.task_title}",
+        description=f"Total distinct count of clients almost eligible and actionable (visible, not marked ineligible, not marked in progress) for task of type: {b.task_title.lower()}, which is fully launched",
         span_selector=SpanSelector(
             span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
             span_conditions_dict={
@@ -4001,6 +4040,28 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_METRICS_SUPERVISION = [
                 "is_surfaceable": ["true"],
                 "in_progress": ["false"],
                 "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_UNVIEWED_30_DAYS_AND_LAUNCHED_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_daily_population_task_eligible_and_unviewed_30_days_and_launched_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible And Unviewed >30 Days For Fully Launched {b.task_title}",
+        description=f"Average daily count of clients eligible and unviewed for >30 days for task of type: {b.task_title.lower()}, which is fully launched",
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible_past_30_days": ["true"],
+                "viewed": ["false"],
+                "is_surfaceable": ["true"],
+                "in_progress": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type_is_fully_launched": ["true"],
                 "task_type": [b.task_type_name],
             },
         ),
