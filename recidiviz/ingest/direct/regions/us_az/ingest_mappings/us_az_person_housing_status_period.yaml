@@ -35,6 +35,9 @@ output:
                   - "homeless"
                 StatePersonHousingStatusType.FACILITY:
                   - "facility"
+                  - "jail"
+                StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING:
+                  - "halfway_house"
                 StatePersonHousingStatusType.PERMANENT_RESIDENCE:
                   - "permanent_residence"
                 StatePersonHousingStatusType.EXTERNAL_UNKNOWN:
@@ -66,5 +69,7 @@ output:
                       StatePersonAddressType.PHYSICAL_OTHER:
                         - "facility"
                         - "homeless"
+                        - "jail"
+                        - "halfway_house"
                       StatePersonAddressType.EXTERNAL_UNKNOWN:
                         - "external_unknown"
