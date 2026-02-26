@@ -16,7 +16,7 @@
 # =============================================================================
 """
 Defines a criteria view that shows spans of time when supervision clients are overdue
-for a face-to-face contact.
+for a face-to-face contact and should be surfaced to the PO's supervisors.
 """
 
 from recidiviz.common.constants.states import StateCode
