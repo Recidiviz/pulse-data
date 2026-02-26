@@ -67,7 +67,10 @@ class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        # First, validate source table datasets contain expected tables
+        # First, clean up unused datasets
+        _delete_empty_or_temp_datasets(dry_run=args.dry_run)
+
+        # Then, validate source table datasets contain expected tables
         bq_client = BigQueryClientImpl()
         project_id = metadata.project_id()
         source_table_repository = build_source_table_repository_for_collected_schemata(
@@ -77,9 +80,6 @@ class DatasetCleanupAndValidationEntrypoint(EntrypointInterface):
             bq_client=bq_client,
             source_table_repository=source_table_repository,
         )
-
-        # Then, clean up unused datasets
-        _delete_empty_or_temp_datasets(dry_run=args.dry_run)
 
 
 class DatasetClassification(enum.Enum):
