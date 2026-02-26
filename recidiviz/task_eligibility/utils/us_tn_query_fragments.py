@@ -524,7 +524,6 @@ _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES = [
     "ASW",  # ASSAULT STAFF - WEAPON
     "AVO",  # ASSAULT VISITOR/GUEST - WITHOUT WEAPON
     "AVW",  # ASSAULT VISITOR/GUEST - WEAPON
-    "FIG",  # FIGHTING
     "DEG",  # DEATH-STAFF-HOMICIDE (ON DUTY)
     "DEH",  # DEATH-OFN-HOMICIDE
     "DVH",  # DEATH-VISITOR-HOMICIDE
@@ -532,8 +531,6 @@ _US_TN_CLASSIFICATION_V2_VIOLENT_INFRACTION_TYPES = [
     "HOS",  # HOSTAGE SITUATION
     "RAP",  # RAPE
     "SXB",  # SEXUAL BATTERY
-    "TEM",  # THREATENING EMPLOYEE
-    "TOF",  # THREATENING OFFENDER
 ]
 
 _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_SCORE_MAP = {
@@ -661,22 +658,22 @@ def classification_v2_incidents() -> str:
             incident_class,  -- Class: A, B, or C
             infraction_type_raw_text,
             -- Flag whether incident is violent based on the infraction type
-            -- Mark *all* Class C incidents as non-violent, because new Class C incidents
+            -- Mark *all* Class B/C incidents as non-violent, because new Class B/C incidents
             -- will always be marked as non-violent, and there is no retroactive scoring for violent
-            -- Class C incidents.
+            -- Class B/C incidents.
             COALESCE(infraction_type_raw_text IN (
                 {violent_infraction_types_str}
-                ), FALSE) AND incident_class != 'C' AS is_violent,
+                ), FALSE) AND incident_class = 'A' AS is_violent,
             -- Rank incidents by severity within each (person, date), for deduplication.
             -- Lower rank = more severe.
             ROW_NUMBER() OVER (
                 PARTITION BY person_id, incident_date
                 ORDER BY
-                    -- Prioritize Class A or B violent incidents
+                    -- Prioritize Class A violent incidents
                     CASE WHEN
                         COALESCE(infraction_type_raw_text IN (
                             {violent_infraction_types_str}
-                        ), FALSE) AND incident_class IN ('A', 'B')
+                        ), FALSE) AND incident_class = 'A'
                         THEN 1 ELSE 0
                         END DESC,
                     -- Then prioritize incident class (A, B, C)
