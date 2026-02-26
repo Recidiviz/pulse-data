@@ -17,6 +17,7 @@
 """Tests for StateSpecificNormalizationDelegate"""
 import unittest
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
@@ -47,6 +48,46 @@ from recidiviz.utils.types import assert_subclass_list
 
 class TestStateSpecificNormalizationDelegate(unittest.TestCase):
     """Tests for StateSpecificNormalizationDelegate"""
+
+    def test_select_display_id_for_person_raises_if_fewer_than_2_ids(self) -> None:
+        delegate = StateSpecificNormalizationDelegate()
+        with self.assertRaisesRegex(ValueError, "fewer than 2 ids"):
+            delegate.select_display_id_for_person_external_ids_of_type(
+                state_code=StateCode.US_XX,
+                person_id=123,
+                id_type="US_XX_SOME_ID",
+                person_external_ids_of_type=[],
+            )
+
+    def test_select_stable_id_for_person_raises_if_fewer_than_2_ids(self) -> None:
+        delegate = StateSpecificNormalizationDelegate()
+        with self.assertRaisesRegex(ValueError, "fewer than 2 ids"):
+            delegate.select_stable_id_for_person_external_ids_of_type(
+                state_code=StateCode.US_XX,
+                person_id=123,
+                id_type="US_XX_SOME_ID",
+                person_external_ids_of_type=[],
+            )
+
+    def test_select_display_id_for_staff_raises_if_fewer_than_2_ids(self) -> None:
+        delegate = StateSpecificNormalizationDelegate()
+        with self.assertRaisesRegex(ValueError, "fewer than 2 ids"):
+            delegate.select_display_id_for_staff_external_ids_of_type(
+                state_code=StateCode.US_XX,
+                staff_id=123,
+                id_type="US_XX_SOME_ID",
+                staff_external_ids_of_type=[],
+            )
+
+    def test_select_stable_id_for_staff_raises_if_fewer_than_2_ids(self) -> None:
+        delegate = StateSpecificNormalizationDelegate()
+        with self.assertRaisesRegex(ValueError, "fewer than 2 ids"):
+            delegate.select_stable_id_for_staff_external_ids_of_type(
+                state_code=StateCode.US_XX,
+                staff_id=123,
+                id_type="US_XX_SOME_ID",
+                staff_external_ids_of_type=[],
+            )
 
     def test_extra_entities_generated_via_normalization(self) -> None:
         """Checks that the extra_entities_generated_via_normalization() function does

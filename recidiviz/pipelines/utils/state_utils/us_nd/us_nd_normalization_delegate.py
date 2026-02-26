@@ -16,15 +16,21 @@
 # =============================================================================
 """Contains US_ND implementation of the StateSpecificNormalizationDelegate."""
 from recidiviz.common.constants.state.external_id_types import (
+    US_ND_DOCSTARS_OFFICER,
     US_ND_ELITE,
     US_ND_ELITE_BOOKING,
     US_ND_SID,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StatePersonExternalId
+from recidiviz.persistence.entity.state.entities import (
+    StatePersonExternalId,
+    StateStaffExternalId,
+)
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
     select_alphabetically_highest_person_external_id,
+    select_alphabetically_highest_staff_external_id,
     select_alphabetically_lowest_person_external_id,
+    select_alphabetically_lowest_staff_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
@@ -68,4 +74,40 @@ class UsNdNormalizationDelegate(StateSpecificNormalizationDelegate):
             f"Unexpected id type {id_type} with multiple ids per person and no "
             f"is_stable_id_for_type set at ingest time: "
             f"{person_external_ids_of_type}"
+        )
+
+    def select_display_id_for_staff_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        staff_id: int,
+        id_type: str,
+        staff_external_ids_of_type: list[StateStaffExternalId],
+    ) -> StateStaffExternalId:
+        if id_type == US_ND_DOCSTARS_OFFICER:
+            return select_alphabetically_highest_staff_external_id(
+                staff_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per staff member "
+            f"and no is_current_display_id_for_type set at ingest time: "
+            f"{staff_external_ids_of_type}"
+        )
+
+    def select_stable_id_for_staff_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        staff_id: int,
+        id_type: str,
+        staff_external_ids_of_type: list[StateStaffExternalId],
+    ) -> StateStaffExternalId:
+        if id_type == US_ND_DOCSTARS_OFFICER:
+            return select_alphabetically_lowest_staff_external_id(
+                staff_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per staff member "
+            f"and no is_stable_id_for_type set at ingest time: "
+            f"{staff_external_ids_of_type}"
         )

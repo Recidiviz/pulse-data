@@ -15,6 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_IX implementation of the StateSpecificNormalizationDelegate."""
+from recidiviz.common.constants.state.external_id_types import (
+    US_IX_CIS_EMPL_CD,
+    US_IX_EMPLOYEE,
+    US_IX_STAFF_ID,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StateStaffExternalId
+from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+    select_alphabetically_highest_staff_external_id,
+    select_alphabetically_lowest_staff_external_id,
+)
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
@@ -22,3 +33,39 @@ from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization
 
 class UsIxNormalizationDelegate(StateSpecificNormalizationDelegate):
     """US_IX implementation of the StateSpecificNormalizationDelegate."""
+
+    def select_display_id_for_staff_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        staff_id: int,
+        id_type: str,
+        staff_external_ids_of_type: list[StateStaffExternalId],
+    ) -> StateStaffExternalId:
+        if id_type in (US_IX_CIS_EMPL_CD, US_IX_EMPLOYEE, US_IX_STAFF_ID):
+            return select_alphabetically_highest_staff_external_id(
+                staff_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per staff member "
+            f"and no is_current_display_id_for_type set at ingest time: "
+            f"{staff_external_ids_of_type}"
+        )
+
+    def select_stable_id_for_staff_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        staff_id: int,
+        id_type: str,
+        staff_external_ids_of_type: list[StateStaffExternalId],
+    ) -> StateStaffExternalId:
+        if id_type in (US_IX_CIS_EMPL_CD, US_IX_EMPLOYEE, US_IX_STAFF_ID):
+            return select_alphabetically_lowest_staff_external_id(
+                staff_external_ids_of_type
+            )
+
+        raise ValueError(
+            f"Unexpected id type {id_type} with multiple ids per staff member "
+            f"and no is_stable_id_for_type set at ingest time: "
+            f"{staff_external_ids_of_type}"
+        )

@@ -16,12 +16,22 @@
 # =============================================================================
 """Helpers for normalizing external id entities."""
 import datetime
+from typing import TypeVar
 
 from more_itertools import one
 
-from recidiviz.persistence.entity.state.entities import StatePersonExternalId
+from recidiviz.persistence.entity.state.entities import (
+    StatePersonExternalId,
+    StateStaffExternalId,
+)
+
+# TODO(#61265): Remove and use ExternalIdEntityT defined in base_entity.py
+_ExternalIdT = TypeVar("_ExternalIdT", StatePersonExternalId, StateStaffExternalId)
 
 
+# TODO(#61265): Create generic select_most_recently_active_external_id
+
+# TODO(#61265): Move return statement to generic select_most_recently_active_external_id and remove
 def select_most_recently_active_person_external_id(
     external_ids: list[StatePersonExternalId],
     enforce_nonnull_id_active_from: bool = True,
@@ -37,6 +47,9 @@ def select_most_recently_active_person_external_id(
     )[-1]
 
 
+# TODO(#61265): Create generic select_least_recently_active_external_id
+
+# TODO(#61265): Move return statement to generic select_least_recently_active_external_id and remove
 def select_least_recently_active_person_external_id(
     external_ids: list[StatePersonExternalId],
     enforce_nonnull_id_active_from: bool = True,
@@ -103,6 +116,9 @@ def _sort_external_ids_of_type_by_id_active_dates(
     return list(sorted(external_ids, key=sort_key))
 
 
+# TODO(#61265): Create generic select_alphabetically_lowest_external_id
+
+# TODO(#61265): Move if and return statements to generic select_alphabetically_lowest_external_id and remove
 def select_alphabetically_lowest_person_external_id(
     external_ids: list[StatePersonExternalId],
 ) -> StatePersonExternalId:
@@ -121,9 +137,12 @@ def select_alphabetically_lowest_person_external_id(
             "empty external_ids list"
         )
 
-    return _sort_external_ids_of_type_alphabetically(external_ids)[0]
+    return _sort_external_ids_alphabetically(external_ids)[0]
 
 
+# TODO(#61265): Create generic select_alphabetically_highest_external_id
+
+# TODO(#61265): Move if and return statements to generic select_alphabetically_highest_external_id and remove
 def select_alphabetically_highest_person_external_id(
     external_ids: list[StatePersonExternalId],
 ) -> StatePersonExternalId:
@@ -142,13 +161,58 @@ def select_alphabetically_highest_person_external_id(
             "empty external_ids list"
         )
 
-    return _sort_external_ids_of_type_alphabetically(external_ids)[-1]
+    return _sort_external_ids_alphabetically(external_ids)[-1]
 
 
-def _sort_external_ids_of_type_alphabetically(
-    external_ids: list[StatePersonExternalId],
-) -> list[StatePersonExternalId]:
-    """Given a list of StatePersonExternalId, sorts the list alphabetically by
+# TODO(#61265): Move if and return statements to generic select_alphabetically_lowest_external_id and remove
+def select_alphabetically_lowest_staff_external_id(
+    external_ids: list[StateStaffExternalId],
+) -> StateStaffExternalId:
+    """Given a list of StateStaffExternalId, returns the StateStaffExternalId with
+    the external_id that is alphabetically lowest.
+
+    NOTE: If you are attempting to sort external_ids that can all be parsed as integers,
+    this is not likely the function you want to use (i.e. because "10" will sort before
+    "9")
+
+    Throws if given an empty list.
+    """
+    if not external_ids:
+        raise ValueError(
+            "Cannot call select_alphabetically_lowest_staff_external_id() with an "
+            "empty external_ids list"
+        )
+
+    return _sort_external_ids_alphabetically(external_ids)[0]
+
+
+# TODO(#61265): Move if and return statements to generic select_alphabetically_highest_external_id and remove
+def select_alphabetically_highest_staff_external_id(
+    external_ids: list[StateStaffExternalId],
+) -> StateStaffExternalId:
+    """Given a list of StateStaffExternalId, returns the StateStaffExternalId with
+    the external_id that is alphabetically highest.
+
+    NOTE: If you are attempting to sort external_ids that can all be parsed as integers,
+    this is not likely the function you want to use (i.e. because "10" will sort before
+    "9")
+
+    Throws if given an empty list.
+    """
+    if not external_ids:
+        raise ValueError(
+            "Cannot call select_alphabetically_highest_staff_external_id() with an "
+            "empty external_ids list"
+        )
+
+    return _sort_external_ids_alphabetically(external_ids)[-1]
+
+
+# TODO(#61265): Modify to use ExternalIdEntityT defined in base_entity.py
+def _sort_external_ids_alphabetically(
+    external_ids: list[_ExternalIdT],
+) -> list[_ExternalIdT]:
+    """Given a list of ExternalIdEntity, sorts the list alphabetically by
     external_id from lowest to highest.
 
     Throws if given an empty list.
@@ -156,7 +220,7 @@ def _sort_external_ids_of_type_alphabetically(
     if not external_ids:
         raise ValueError("Found no external_ids.")
 
-    id_types = {pei.id_type for pei in external_ids}
+    id_types = {ei.id_type for ei in external_ids}
     if len(id_types) > 1:
         raise ValueError(
             f"Found multiple id_types in the provided external_ids list: "
@@ -164,18 +228,19 @@ def _sort_external_ids_of_type_alphabetically(
         )
 
     found_external_ids = set()
-    for pei in external_ids:
-        if pei.external_id in found_external_ids:
+    for ei in external_ids:
+        if ei.external_id in found_external_ids:
             raise ValueError(
-                f"Found multiple external ids with external_id [{pei.external_id}] "
+                f"Found multiple external ids with external_id [{ei.external_id}] "
                 f"and id_type [{list(id_types)[0]}]. These objects should be merged at "
                 f"this point."
             )
-        found_external_ids.add(pei.external_id)
+        found_external_ids.add(ei.external_id)
 
-    return list(sorted(external_ids, key=lambda pei: pei.external_id))
+    return list(sorted(external_ids, key=lambda e: e.external_id))
 
 
+# TODO(#61265): Move if and return statements to generic select_single_external_id_with_is_current_display_id
 def select_single_external_id_with_is_current_display_id(
     external_ids: list[StatePersonExternalId],
 ) -> StatePersonExternalId:
@@ -196,7 +261,53 @@ def select_single_external_id_with_is_current_display_id(
             "an empty external_ids list"
         )
 
-    id_types = {pei.id_type for pei in external_ids}
+    return _select_single_external_id_with_is_current_display_id(external_ids)
+
+
+# TODO(#61265): Remove (caller should use generic version)
+def select_single_staff_external_id_with_is_current_display_id(
+    external_ids: list[StateStaffExternalId],
+) -> StateStaffExternalId:
+    """Given a list of StateStaffExternalId all with the same id_type, returns the
+    single StateStaffExternalId that has is_current_display_id_for_type=True.
+
+    Throws if:
+    * Given an empty list
+    * Not all external ids have the same id_type
+    * There are multiple external ids with the same external_id value.
+    * Any is_current_display_id_for_type value is None
+    * More than one external id has is_current_display_id_for_type=True
+    * No external id has is_current_display_id_for_type=True
+    """
+    if not external_ids:
+        raise ValueError(
+            "Cannot call select_single_staff_external_id_with_is_current_display_id() "
+            "with an empty external_ids list"
+        )
+
+    return _select_single_external_id_with_is_current_display_id(external_ids)
+
+
+# TODO(#61265): Modify to use ExternalIdEntityT defined in base_entity.py
+def _root_entity_readable_name(external_ids: list[_ExternalIdT]) -> str:
+    """Returns a human-readable name for the root entity type ('person' or 'staff member')."""
+    if isinstance(external_ids[0], StatePersonExternalId):
+        return "person"
+    if isinstance(external_ids[0], StateStaffExternalId):
+        return "staff member"
+    raise ValueError(f"Unexpected external_id type: {type(external_ids[0])}")
+
+
+# TODO(#61265): MAke public and modify to use ExternalIdEntityT defined in base_entity.py
+def _select_single_external_id_with_is_current_display_id(
+    external_ids: list[_ExternalIdT],
+) -> _ExternalIdT:
+    """Given a list of ExternalIdEntity all with the same id_type, returns the single
+    one with is_current_display_id_for_type=True.
+    """
+    readable_name = _root_entity_readable_name(external_ids)
+
+    id_types = {ei.id_type for ei in external_ids}
     if len(id_types) > 1:
         raise ValueError(
             f"Found multiple id_types in the provided external_ids list: "
@@ -205,34 +316,34 @@ def select_single_external_id_with_is_current_display_id(
     id_type = one(id_types)
 
     found_external_ids = set()
-    for pei in external_ids:
-        if pei.external_id in found_external_ids:
+    for ei in external_ids:
+        if ei.external_id in found_external_ids:
             raise ValueError(
-                f"Found multiple external ids with external_id [{pei.external_id}] "
+                f"Found multiple external ids with external_id [{ei.external_id}] "
                 f"and id_type [{list(id_types)[0]}]. These objects should be merged at "
                 f"this point."
             )
-        found_external_ids.add(pei.external_id)
+        found_external_ids.add(ei.external_id)
 
     all_have_is_display_id_flags_set = all(
-        pei.is_current_display_id_for_type is not None for pei in external_ids
+        ei.is_current_display_id_for_type is not None for ei in external_ids
     )
 
     if not all_have_is_display_id_flags_set:
         raise ValueError(
-            f"Found person who has at least one StatePersonExternalId with a null "
-            f"is_current_display_id_for_type value. If you are going to rely on "
+            f"Found {readable_name} who has at least one {type(external_ids[0]).__name__} with "
+            f"a null is_current_display_id_for_type value. If you are going to rely on "
             f"directly hydrated is_current_display_id_for_type values, you must hydrate "
             f"it for ALL external ids of this type ({id_type}). External ids: "
             f"{external_ids}"
         )
 
-    display_ids = [pei for pei in external_ids if pei.is_current_display_id_for_type]
+    display_ids = [ei for ei in external_ids if ei.is_current_display_id_for_type]
     if len(display_ids) > 1:
         raise ValueError(
             f"Found more than one external_id with is_current_display_id_for_type=True. "
             f"Either update ingest logic to ensure there is only one "
-            f"is_current_display_id_for_type=True value per merged person OR implement "
+            f"is_current_display_id_for_type=True value per merged {readable_name} OR implement "
             f"custom logic to select the external id that is the display id. External "
             f"ids: {external_ids}"
         )
@@ -241,13 +352,14 @@ def select_single_external_id_with_is_current_display_id(
         raise ValueError(
             "Did not find any external_id with is_current_display_id_for_type=True. "
             "Either update ingest logic to ensure there is exactly one "
-            "is_current_display_id_for_type=True value per merged person OR implement "
+            f"is_current_display_id_for_type=True value per merged {readable_name} OR implement "
             f"custom logic to select the external id that is the display id. External "
             f"ids: {external_ids}"
         )
     return one(display_ids)
 
 
+# TODO(#61265): Move if and return statements to generic select_single_external_id_with_is_stable_id
 def select_single_external_id_with_is_stable_id(
     external_ids: list[StatePersonExternalId],
 ) -> StatePersonExternalId:
@@ -269,7 +381,43 @@ def select_single_external_id_with_is_stable_id(
             "an empty external_ids list"
         )
 
-    id_types = {pei.id_type for pei in external_ids}
+    return _select_single_external_id_with_is_stable_id(external_ids)
+
+
+# TODO(#61265): Remove (caller should use generic version)
+def select_single_staff_external_id_with_is_stable_id(
+    external_ids: list[StateStaffExternalId],
+) -> StateStaffExternalId:
+    """Given a list of StateStaffExternalId all with the same id_type, returns the
+    single StateStaffExternalId that has is_stable_id_for_type=True.
+
+    Throws if:
+    * Given an empty list
+    * Not all external ids have the same id_type
+    * There are multiple external ids with the same external_id value.
+    * Any is_stable_id_for_type value is None
+    * More than one external id has is_stable_id_for_type=True
+    * No external id has is_stable_id_for_type=True
+    """
+    if not external_ids:
+        raise ValueError(
+            "Cannot call select_single_staff_external_id_with_is_stable_id() with "
+            "an empty external_ids list"
+        )
+
+    return _select_single_external_id_with_is_stable_id(external_ids)
+
+
+# TODO(#61265): Make public and modify to use ExternalIdEntityT defined in base_entity.py
+def _select_single_external_id_with_is_stable_id(
+    external_ids: list[_ExternalIdT],
+) -> _ExternalIdT:
+    """Given a list of ExternalIdEntity all with the same id_type, returns the single
+    one with is_stable_id_for_type=True.
+    """
+    readable_name = _root_entity_readable_name(external_ids)
+
+    id_types = {ei.id_type for ei in external_ids}
     if len(id_types) > 1:
         raise ValueError(
             f"Found multiple id_types in the provided external_ids list: "
@@ -278,34 +426,34 @@ def select_single_external_id_with_is_stable_id(
     id_type = one(id_types)
 
     found_external_ids = set()
-    for pei in external_ids:
-        if pei.external_id in found_external_ids:
+    for ei in external_ids:
+        if ei.external_id in found_external_ids:
             raise ValueError(
-                f"Found multiple external ids with external_id [{pei.external_id}] "
+                f"Found multiple external ids with external_id [{ei.external_id}] "
                 f"and id_type [{list(id_types)[0]}]. These objects should be merged at "
                 f"this point."
             )
-        found_external_ids.add(pei.external_id)
+        found_external_ids.add(ei.external_id)
 
     all_have_is_stable_id_flags_set = all(
-        pei.is_stable_id_for_type is not None for pei in external_ids
+        ei.is_stable_id_for_type is not None for ei in external_ids
     )
 
     if not all_have_is_stable_id_flags_set:
         raise ValueError(
-            f"Found person who has at least one StatePersonExternalId with a null "
-            f"is_stable_id_for_type value. If you are going to rely on "
+            f"Found {readable_name} who has at least one {type(external_ids[0]).__name__} with "
+            f"a null is_stable_id_for_type value. If you are going to rely on "
             f"directly hydrated is_stable_id_for_type values, you must hydrate "
             f"it for ALL external ids of this type ({id_type}). External ids: "
             f"{external_ids}"
         )
 
-    stable_ids = [pei for pei in external_ids if pei.is_stable_id_for_type]
+    stable_ids = [ei for ei in external_ids if ei.is_stable_id_for_type]
     if len(stable_ids) > 1:
         raise ValueError(
             f"Found more than one external_id with is_stable_id_for_type=True. "
             f"Either update ingest logic to ensure there is only one "
-            f"is_stable_id_for_type=True value per merged person OR implement "
+            f"is_stable_id_for_type=True value per merged {readable_name} OR implement "
             f"custom logic to select the external id that is the stable id. External "
             f"ids: {external_ids}"
         )
@@ -314,7 +462,7 @@ def select_single_external_id_with_is_stable_id(
         raise ValueError(
             "Did not find any external_id with is_stable_id_for_type=True. "
             "Either update ingest logic to ensure there is exactly one "
-            "is_stable_id_for_type=True value per merged person OR implement "
+            f"is_stable_id_for_type=True value per merged {readable_name} OR implement "
             f"custom logic to select the external id that is the stable id. External "
             f"ids: {external_ids}"
         )

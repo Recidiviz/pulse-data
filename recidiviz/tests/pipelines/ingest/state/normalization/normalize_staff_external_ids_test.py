@@ -17,11 +17,18 @@
 """Tests for normalize_staff_external_ids.py"""
 
 import unittest
+from unittest.mock import patch
+
+import mock
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateStaffExternalId
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateStaffExternalId,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+    select_alphabetically_highest_staff_external_id,
+    select_alphabetically_lowest_staff_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_staff_external_ids import (
     get_normalized_staff_external_ids,
@@ -35,7 +42,32 @@ class DefaultDelegate(StateSpecificNormalizationDelegate):
     pass
 
 
-# TODO(#60442): Add a PickAlphabeticallyHighestAndLowestDelegate (or equivalent) once delegate methods are implemented
+class PickAlphabeticallyHighestAndLowestDelegate(StateSpecificNormalizationDelegate):
+    """Delegate implementation that picks the lowest alphabetical id as the stable id
+    and the highest alphabetical id as the display id.
+    """
+
+    def select_display_id_for_staff_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        staff_id: int,
+        id_type: str,
+        staff_external_ids_of_type: list[StateStaffExternalId],
+    ) -> StateStaffExternalId:
+        return select_alphabetically_highest_staff_external_id(
+            staff_external_ids_of_type
+        )
+
+    def select_stable_id_for_staff_external_ids_of_type(
+        self,
+        state_code: StateCode,
+        staff_id: int,
+        id_type: str,
+        staff_external_ids_of_type: list[StateStaffExternalId],
+    ) -> StateStaffExternalId:
+        return select_alphabetically_lowest_staff_external_id(
+            staff_external_ids_of_type
+        )
 
 
 class TestNormalizeStaffExternalIds(unittest.TestCase):
@@ -65,9 +97,8 @@ class TestNormalizeStaffExternalIds(unittest.TestCase):
         *,
         external_id: str,
         id_type: str = "US_XX_ID_TYPE",
-        # TODO(#60442): Change types of variables below to bool once fields are made non-nullable
-        is_current_display_id_for_type: bool | None,
-        is_stable_id_for_type: bool | None,
+        is_current_display_id_for_type: bool,
+        is_stable_id_for_type: bool,
     ) -> NormalizedStateStaffExternalId:
         return NormalizedStateStaffExternalId(
             staff_external_id_id=1,
@@ -80,14 +111,13 @@ class TestNormalizeStaffExternalIds(unittest.TestCase):
             id_active_to_datetime=None,
         )
 
-    def test_single_id_sets_display_and_stable_true(self) -> None:
+    def test_single_id_sets_is_current_display_true(self) -> None:
         sei = self._make_unnormalized_external_id(external_id="ID1")
         result = get_normalized_staff_external_ids(
             state_code=StateCode.US_XX,
             staff_id=12345,
             external_ids=[sei],
-            # TODO(#60442): Replace with a real delegate once implemented
-            delegate=DefaultDelegate(),
+            delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
 
         expected_result = [
@@ -99,49 +129,215 @@ class TestNormalizeStaffExternalIds(unittest.TestCase):
         ]
         self.assertEqual(expected_result, result)
 
-    def test_multiple_id_types_single_id_each(self) -> None:
+    def test_multiple_ids_delegate_selects_display_and_stable(self) -> None:
+        ids = [
+            self._make_unnormalized_external_id(external_id="ID1"),
+            self._make_unnormalized_external_id(external_id="ID3"),
+            self._make_unnormalized_external_id(external_id="ID2"),
+        ]
+        result = get_normalized_staff_external_ids(
+            state_code=StateCode.US_XX,
+            staff_id=12345,
+            external_ids=ids,
+            delegate=PickAlphabeticallyHighestAndLowestDelegate(),
+        )
+        expected_result = [
+            self._make_normalized_external_id(
+                external_id="ID1",
+                is_current_display_id_for_type=False,
+                # Lowest alphabetical id is the stable id
+                is_stable_id_for_type=True,
+            ),
+            self._make_normalized_external_id(
+                external_id="ID2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=False,
+            ),
+            # This ID selected
+            self._make_normalized_external_id(
+                external_id="ID3",
+                # Highest alphabetical id is the stable id
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
+            ),
+        ]
+        self.assertEqual(expected_result, result)
+
+    def test_multiple_id_types_delegates_each(self) -> None:
         ids = [
             self._make_unnormalized_external_id(
                 external_id="A", id_type="US_XX_ID_TYPE"
             ),
             self._make_unnormalized_external_id(
-                external_id="B", id_type="US_XX_ID_TYPE_2"
+                external_id="B", id_type="US_XX_ID_TYPE"
+            ),
+            self._make_unnormalized_external_id(
+                external_id="X", id_type="US_XX_ID_TYPE_2"
+            ),
+            self._make_unnormalized_external_id(
+                external_id="Y", id_type="US_XX_ID_TYPE_2"
             ),
         ]
         result = get_normalized_staff_external_ids(
             state_code=StateCode.US_XX,
             staff_id=12345,
             external_ids=ids,
-            # TODO(#60442): Replace with a real delegate once implemented
-            delegate=DefaultDelegate(),
+            delegate=PickAlphabeticallyHighestAndLowestDelegate(),
         )
         expected_result = [
             self._make_normalized_external_id(
                 external_id="A",
                 id_type="US_XX_ID_TYPE",
-                is_current_display_id_for_type=True,
+                is_current_display_id_for_type=False,
                 is_stable_id_for_type=True,
             ),
             self._make_normalized_external_id(
                 external_id="B",
+                id_type="US_XX_ID_TYPE",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
+            ),
+            self._make_normalized_external_id(
+                external_id="X",
+                id_type="US_XX_ID_TYPE_2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
+            ),
+            self._make_normalized_external_id(
+                external_id="Y",
                 id_type="US_XX_ID_TYPE_2",
                 is_current_display_id_for_type=True,
-                is_stable_id_for_type=True,
+                is_stable_id_for_type=False,
             ),
         ]
         self.assertEqual(expected_result, result)
 
-    # TODO(#60442): Add test_multiple_ids_delegate_selects_display_and_stable once
-    #   delegate methods are implemented.
+    @patch(
+        "recidiviz.pipelines.ingest.state.normalization."
+        "state_specific_normalization_delegate."
+        "staff_external_id_types_with_allowed_multiples_per_person"
+    )
+    def test_raises_if_some_ids_have_display_flag_and_others_do_not(
+        self, mock_allowed_types_with_multiples: mock.MagicMock
+    ) -> None:
+        class _DefaultDisplayIdNormalizationDelegate(
+            StateSpecificNormalizationDelegate
+        ):
+            # Only override is for stable_id normalization
+            def select_stable_id_for_staff_external_ids_of_type(
+                self,
+                state_code: StateCode,
+                staff_id: int,
+                id_type: str,
+                staff_external_ids_of_type: list[StateStaffExternalId],
+            ) -> StateStaffExternalId:
+                return select_alphabetically_lowest_staff_external_id(
+                    staff_external_ids_of_type
+                )
 
-    # TODO(#60442): Add test_multiple_id_types_delegates_each once delegate methods
-    #   are implemented.
+        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
+        ids = [
+            self._make_unnormalized_external_id(
+                external_id="ID1", is_current_display_id_for_type=True
+            ),
+            self._make_unnormalized_external_id(
+                external_id="ID2", is_current_display_id_for_type=None
+            ),
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            r"If you are going to rely on directly hydrated "
+            r"is_current_display_id_for_type values, you must hydrate it for ALL "
+            r"external ids of this type \(US_XX_ID_TYPE\).",
+        ):
+            get_normalized_staff_external_ids(
+                state_code=StateCode.US_XX,
+                staff_id=12345,
+                external_ids=ids,
+                delegate=_DefaultDisplayIdNormalizationDelegate(),
+            )
 
-    # TODO(#60442): Add test_raises_if_some_ids_have_display_flag_and_others_do_not
-    #   once delegate methods are implemented.
+    @patch(
+        "recidiviz.pipelines.ingest.state.normalization."
+        "state_specific_normalization_delegate."
+        "staff_external_id_types_with_allowed_multiples_per_person"
+    )
+    def test_raises_if_some_ids_have_stable_flag_and_others_do_not(
+        self, mock_allowed_types_with_multiples: mock.MagicMock
+    ) -> None:
+        class _DefaultStableIdNormalizationDelegate(StateSpecificNormalizationDelegate):
+            # Only override is for display_id normalization
+            def select_display_id_for_staff_external_ids_of_type(
+                self,
+                state_code: StateCode,
+                staff_id: int,
+                id_type: str,
+                staff_external_ids_of_type: list[StateStaffExternalId],
+            ) -> StateStaffExternalId:
+                return select_alphabetically_highest_staff_external_id(
+                    staff_external_ids_of_type
+                )
 
-    # TODO(#60442): Add test_raises_if_some_ids_have_stable_flag_and_others_do_not
-    #   once delegate methods are implemented.
+        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
+        ids = [
+            self._make_unnormalized_external_id(
+                external_id="ID1", is_stable_id_for_type=True
+            ),
+            self._make_unnormalized_external_id(
+                external_id="ID2", is_stable_id_for_type=None
+            ),
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            r"If you are going to rely on directly hydrated "
+            r"is_stable_id_for_type values, you must hydrate it for ALL "
+            r"external ids of this type \(US_XX_ID_TYPE\).",
+        ):
+            get_normalized_staff_external_ids(
+                state_code=StateCode.US_XX,
+                staff_id=12345,
+                external_ids=ids,
+                delegate=_DefaultStableIdNormalizationDelegate(),
+            )
 
-    # TODO(#60442): Add test_all_ids_have_flags_preserved_default_delegate once
-    #   delegate methods are implemented.
+    @patch(
+        "recidiviz.pipelines.ingest.state.normalization."
+        "state_specific_normalization_delegate."
+        "staff_external_id_types_with_allowed_multiples_per_person"
+    )
+    def test_all_ids_have_flags_preserved_default_delegate(
+        self, mock_allowed_types_with_multiples: mock.MagicMock
+    ) -> None:
+        mock_allowed_types_with_multiples.return_value = {"US_XX_ID_TYPE"}
+
+        ids = [
+            self._make_unnormalized_external_id(
+                external_id="ID1",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
+            ),
+            self._make_unnormalized_external_id(
+                external_id="ID2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
+            ),
+        ]
+        result = get_normalized_staff_external_ids(
+            state_code=StateCode.US_XX,
+            staff_id=12345,
+            external_ids=ids,
+            delegate=DefaultDelegate(),
+        )
+        expected_result = [
+            self._make_normalized_external_id(
+                external_id="ID1",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=False,
+            ),
+            self._make_normalized_external_id(
+                external_id="ID2",
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=True,
+            ),
+        ]
+        self.assertEqual(expected_result, result)

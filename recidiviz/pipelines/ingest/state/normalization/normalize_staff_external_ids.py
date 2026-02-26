@@ -66,12 +66,11 @@ def get_normalized_staff_external_ids(
 
 def _convert_staff_external_ids_of_type(
     *,
-    # TODO(#60442): Remove pylint exclusions when no longer needed
-    state_code: StateCode,  # pylint: disable=unused-argument
-    staff_id: int,  # pylint: disable=unused-argument
-    id_type: str,  # pylint: disable=unused-argument
+    state_code: StateCode,
+    staff_id: int,
+    id_type: str,
     external_ids_of_type: list[StateStaffExternalId],
-    delegate: StateSpecificNormalizationDelegate,  # pylint: disable=unused-argument
+    delegate: StateSpecificNormalizationDelegate,
 ) -> list[NormalizedStateStaffExternalId]:
     """Converts the provided StateStaffExternalId into NormalizedStateStaffExternalId.
     Assumes all |external_ids_of_type| have the same id_type.
@@ -85,34 +84,46 @@ def _convert_staff_external_ids_of_type(
         sei = one(external_ids_of_type)
         sei.is_current_display_id_for_type = True
         sei.is_stable_id_for_type = True
-        return [_convert_staff_external_id(sei)]
+        return [_convert_staff_external_id_strict(sei)]
 
-    # TODO(#60442): Use delegate.select_display_id_for_staff_external_ids_of_type to get display_id_of_type when implemented
-
-    # TODO(#60442): Use delegate.select_stable_id_for_staff_external_ids_of_type to get stable_id_of_type when implemented
+    display_id_of_type = delegate.select_display_id_for_staff_external_ids_of_type(
+        state_code=state_code,
+        staff_id=staff_id,
+        id_type=id_type,
+        staff_external_ids_of_type=external_ids_of_type,
+    )
+    stable_id_of_type = delegate.select_stable_id_for_staff_external_ids_of_type(
+        state_code=state_code,
+        staff_id=staff_id,
+        id_type=id_type,
+        staff_external_ids_of_type=external_ids_of_type,
+    )
 
     for sei in external_ids_of_type:
-        # TODO(#60442): Adjust when display_id_of_type and stable_id_of_type are available
-        sei.is_current_display_id_for_type = None
-        sei.is_stable_id_for_type = None
+        sei.is_current_display_id_for_type = sei is display_id_of_type
+        sei.is_stable_id_for_type = sei is stable_id_of_type
 
     return [
-        _convert_staff_external_id(sei)
+        _convert_staff_external_id_strict(sei)
         for sei in sorted(external_ids_of_type, key=lambda s: s.external_id)
     ]
 
 
-def _convert_staff_external_id(
+def _convert_staff_external_id_strict(
     sei: StateStaffExternalId,
 ) -> NormalizedStateStaffExternalId:
-    """Converts a StateStaffExternalId to a NormalizedStateStaffExternalId."""
+    """Converts a StateStaffExternalId to a NormalizedStateStaffExternalId, asserting
+    that is_current_display_id_for_type and is_stable_id_for_type are non-None bools.
+    """
     return NormalizedStateStaffExternalId(
         staff_external_id_id=assert_type(sei.staff_external_id_id, int),
         state_code=sei.state_code,
         external_id=sei.external_id,
         id_type=sei.id_type,
-        is_current_display_id_for_type=sei.is_current_display_id_for_type,
-        is_stable_id_for_type=sei.is_stable_id_for_type,
+        is_current_display_id_for_type=assert_type(
+            sei.is_current_display_id_for_type, bool
+        ),
+        is_stable_id_for_type=assert_type(sei.is_stable_id_for_type, bool),
         id_active_from_datetime=sei.id_active_from_datetime,
         id_active_to_datetime=sei.id_active_to_datetime,
     )
