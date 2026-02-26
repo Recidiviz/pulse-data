@@ -8,8 +8,8 @@ input_columns:
   RESI_STATE: STRING
   RESI_ZIP: STRING
   RESI_COUNTY: STRING
-  start_date: DATETIME
-  end_date: DATETIME
+  start_date: DATE
+  end_date: DATE
 unused_columns: []
 output:
   StatePerson:
