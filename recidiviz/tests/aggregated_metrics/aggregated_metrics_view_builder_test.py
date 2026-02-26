@@ -38,18 +38,10 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
-    MY_ANY_INCARCERATION_365,
-    MY_AVG_DAILY_POPULATION,
-    MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
-    MY_AVG_LSIR_SCORE,
     MY_CONTACTS_COMPLETED_METRIC,
-    MY_DAYS_AT_LIBERTY_365,
-    MY_DAYS_SUPERVISED_365,
-    MY_DAYS_TO_FIRST_INCARCERATION_100,
     MY_DRUG_SCREENS_METRIC,
-    MY_EMPLOYER_CHANGES_365,
     MY_LOGINS_BY_PRIMARY_WORKFLOWS,
-    MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
+    MY_TASK_COMPLETIONS,
 )
 from recidiviz.utils.types import assert_type
 
@@ -62,11 +54,6 @@ class TestAggregatedMetricViewDescription(unittest.TestCase):
             population_type=MetricPopulationType.SUPERVISION,
             unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodEventAggregatedMetric,
-            metrics=[
-                MY_DRUG_SCREENS_METRIC,
-                MY_CONTACTS_COMPLETED_METRIC,
-                MY_LOGINS_BY_PRIMARY_WORKFLOWS,
-            ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
         )
 
@@ -77,13 +64,6 @@ event observations across an entire analysis period, disaggregated by officer_or
 Contains metrics only for: Monthly metric periods for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
-
-# Metrics
-| Name                               | Column                           | Description                                           | Event observation type   |
-|------------------------------------|----------------------------------|-------------------------------------------------------|--------------------------|
-| My Drug Screens                    | my_drug_screens                  | Number of my drug screens                             | DRUG_SCREEN              |
-| Contacts: Completed                | my_contacts_completed            | Number of completed contacts                          | SUPERVISION_CONTACT      |
-| My Logins, Primary Workflows Users | my_logins_primary_workflows_user | Number of logins performed by primary Workflows users | WORKFLOWS_USER_LOGIN     |
 """
         self.assertEqual(expected_docstring, docstring)
 
@@ -92,11 +72,6 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
             population_type=MetricPopulationType.INCARCERATION,
             unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
             metric_class=PeriodSpanAggregatedMetric,
-            metrics=[
-                MY_AVG_DAILY_POPULATION,
-                MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
-                MY_AVG_LSIR_SCORE,
-            ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
         )
 
@@ -107,13 +82,6 @@ span observations across an entire analysis period, disaggregated by facility.
 Contains metrics only for: Monthly metric periods for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
-
-# Metrics
-| Name                                         | Column                                  | Description                                                | Span observation type    |
-|----------------------------------------------|-----------------------------------------|------------------------------------------------------------|--------------------------|
-| My Average Population                        | my_avg_daily_population                 | My Average daily count of clients in the population        | COMPARTMENT_SESSION      |
-| My Average Population: General Incarceration | my_avg_population_general_incarceration | My Average daily count of clients in general incarceration | COMPARTMENT_SESSION      |
-| My Average LSI-R Score                       | my_avg_lsir_score                       | My Average daily LSI-R score of the population             | ASSESSMENT_SCORE_SESSION |
 """
         self.assertEqual(expected_docstring, docstring)
 
@@ -122,11 +90,6 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
             population_type=MetricPopulationType.SUPERVISION,
             unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentEventAggregatedMetric,
-            metrics=[
-                MY_ANY_INCARCERATION_365,
-                MY_DAYS_TO_FIRST_INCARCERATION_100,
-                MY_EMPLOYER_CHANGES_365,
-            ],
             time_period=MetricTimePeriodConfig.year_periods_rolling_monthly(
                 lookback_months=12
             ),
@@ -140,13 +103,6 @@ during an analysis period, disaggregated by officer_or_previous_if_transitional.
 Contains metrics only for: Year-long metric periods, ending (exclusive) on the first of every month, for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
-
-# Metrics
-| Name                                                          | Column                             | Description                                                                                                                                                                                     | Event observation type   |
-|---------------------------------------------------------------|------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
-| My Any Incarceration Start Within 1 Year of Assignment        | my_any_incarceration_365           | My number of client assignments followed by an incarceration start within 1 year                                                                                                                | INCARCERATION_START      |
-| My Days To First Incarceration Within 1 Year After Assignment | my_days_to_first_incarceration_100 | My sum of the number of days prior to first incarceration within 1 year following assignment, for all assignments during the analysis period. Only counts incarcerations following supervision. | INCARCERATION_START      |
-| My Employer Changes Within 1 Year Of Assignment               | my_employer_changes_365            | My number of times client starts employment with a new employer within 1 year of assignment                                                                                                     | EMPLOYMENT_PERIOD_START  |
 """
         self.assertEqual(expected_docstring, docstring)
 
@@ -155,11 +111,6 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
             population_type=MetricPopulationType.SUPERVISION,
             unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentSpanAggregatedMetric,
-            metrics=[
-                MY_DAYS_SUPERVISED_365,
-                MY_DAYS_AT_LIBERTY_365,
-                MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
-            ],
             time_period=MetricTimePeriodConfig.year_periods_rolling_monthly(
                 lookback_months=12
             ),
@@ -173,13 +124,6 @@ during an analysis period, disaggregated by officer_or_previous_if_transitional.
 Contains metrics only for: Year-long metric periods, ending (exclusive) on the first of every month, for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
-
-# Metrics
-| Name                                                          | Column                            | Description                                                                                                                      | Span observation type   |
-|---------------------------------------------------------------|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------|
-| My Days Supervised Within 1 Year Of Assignment                | my_days_supervised_365            | My sum of the number of supervised days within 1 year following assignment, for all assignments during the analysis period       | COMPARTMENT_SESSION     |
-| My Days At Liberty Within 1 Year Of Assignment                | my_days_at_liberty_365            | My sum of the number of days spent at liberty within 1 year following assignment, for all assignments during the analysis period | COMPARTMENT_SESSION     |
-| My Maximum Days Stable Employment Within 1 Year of Assignment | my_max_days_stable_employment_365 | My number of days in the longest stretch of continuous stable employment (same employer and job) within 1 year of assignment     | EMPLOYMENT_PERIOD       |
 """
         self.assertEqual(expected_docstring, docstring)
 
@@ -212,7 +156,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
             assert_type(builder.materialized_address, BigQueryAddress).to_str(),
         )
 
-        self.assertTrue(MY_DRUG_SCREENS_METRIC.name in builder.description)
+        self.assertFalse(MY_DRUG_SCREENS_METRIC.name in builder.description)
         self.assertFalse(MY_DRUG_SCREENS_METRIC.name in builder.bq_description)
 
         self.assertEqual(
@@ -227,6 +171,53 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
                 "my_logins_primary_workflows_user",
             ],
             builder.output_columns,
+        )
+
+        col_info = [
+            (c.name, c.field_type, c.mode, c.description) for c in builder.schema
+        ]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
+                ("officer_id", "STRING", "REQUIRED", "Primary key: officer_id"),
+                (
+                    "start_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period start date (inclusive)",
+                ),
+                (
+                    "end_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period end date (exclusive)",
+                ),
+                (
+                    "period",
+                    "STRING",
+                    "REQUIRED",
+                    "A string descriptor for the analysis period length. One of: 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'.",
+                ),
+                (
+                    "my_contacts_completed",
+                    "INTEGER",
+                    "NULLABLE",
+                    "Contacts: Completed: Number of completed contacts (Observation Type: SUPERVISION_CONTACT)",
+                ),
+                (
+                    "my_drug_screens",
+                    "INTEGER",
+                    "NULLABLE",
+                    "My Drug Screens: Number of my drug screens (Observation Type: DRUG_SCREEN)",
+                ),
+                (
+                    "my_logins_primary_workflows_user",
+                    "INTEGER",
+                    "NULLABLE",
+                    "My Logins, Primary Workflows Users: Number of logins performed by primary Workflows users (Observation Type: WORKFLOWS_USER_LOGIN)",
+                ),
+            ],
         )
 
     def test_builder__period_event_with_collection_tag(self) -> None:
@@ -254,7 +245,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
             assert_type(builder.materialized_address, BigQueryAddress).to_str(),
         )
 
-        self.assertTrue(MY_DRUG_SCREENS_METRIC.name in builder.description)
+        self.assertFalse(MY_DRUG_SCREENS_METRIC.name in builder.description)
         self.assertFalse(MY_DRUG_SCREENS_METRIC.name in builder.bq_description)
 
         self.assertEqual(
@@ -269,6 +260,53 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
                 "my_logins_primary_workflows_user",
             ],
             builder.output_columns,
+        )
+
+        col_info = [
+            (c.name, c.field_type, c.mode, c.description) for c in builder.schema
+        ]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
+                ("officer_id", "STRING", "REQUIRED", "Primary key: officer_id"),
+                (
+                    "start_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period start date (inclusive)",
+                ),
+                (
+                    "end_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period end date (exclusive)",
+                ),
+                (
+                    "period",
+                    "STRING",
+                    "REQUIRED",
+                    "A string descriptor for the analysis period length. One of: 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'.",
+                ),
+                (
+                    "my_contacts_completed",
+                    "INTEGER",
+                    "NULLABLE",
+                    "Contacts: Completed: Number of completed contacts (Observation Type: SUPERVISION_CONTACT)",
+                ),
+                (
+                    "my_drug_screens",
+                    "INTEGER",
+                    "NULLABLE",
+                    "My Drug Screens: Number of my drug screens (Observation Type: DRUG_SCREEN)",
+                ),
+                (
+                    "my_logins_primary_workflows_user",
+                    "INTEGER",
+                    "NULLABLE",
+                    "My Logins, Primary Workflows Users: Number of logins performed by primary Workflows users (Observation Type: WORKFLOWS_USER_LOGIN)",
+                ),
+            ],
         )
 
     def test_builder__period_event_with_disaggregation_attribute(self) -> None:
@@ -294,4 +332,103 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
                 "my_logins_primary_workflows_user",
             ],
             builder.output_columns,
+        )
+
+        col_info = [
+            (c.name, c.field_type, c.mode, c.description) for c in builder.schema
+        ]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
+                (
+                    "email_address",
+                    "STRING",
+                    "REQUIRED",
+                    "Primary key: email_address",
+                ),
+                (
+                    "start_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period start date (inclusive)",
+                ),
+                (
+                    "end_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period end date (exclusive)",
+                ),
+                (
+                    "period",
+                    "STRING",
+                    "REQUIRED",
+                    "A string descriptor for the analysis period length. One of: 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'.",
+                ),
+                (
+                    "task_type",
+                    "STRING",
+                    "NULLABLE",
+                    "Disaggregation attribute: task_type",
+                ),
+                (
+                    "my_logins_primary_workflows_user",
+                    "INTEGER",
+                    "NULLABLE",
+                    "My Logins, Primary Workflows Users: Number of logins performed by primary Workflows users (Observation Type: WORKFLOWS_USER_LOGIN)",
+                ),
+            ],
+        )
+
+    def test_builder__primary_key_type_override(self) -> None:
+        """Ensure that primary key columns with type overrides are correctly represented in the schema."""
+        builder = AggregatedMetricsBigQueryViewBuilder(
+            dataset_id="my_aggregated_metrics",
+            population_type=MetricPopulationType.INCARCERATION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+            metric_class=PeriodEventAggregatedMetric,
+            metrics=[MY_TASK_COMPLETIONS],
+            time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            collection_tag=None,
+            disaggregate_by_observation_attributes=None,
+        )
+
+        col_info = [
+            (c.name, c.field_type, c.mode, c.description) for c in builder.schema
+        ]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
+                (
+                    "facility_counselor_id",
+                    "INTEGER",
+                    "REQUIRED",
+                    "Primary key: facility_counselor_id",
+                ),
+                (
+                    "start_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period start date (inclusive)",
+                ),
+                (
+                    "end_date",
+                    "DATE",
+                    "REQUIRED",
+                    "Analysis period end date (exclusive)",
+                ),
+                (
+                    "period",
+                    "STRING",
+                    "REQUIRED",
+                    "A string descriptor for the analysis period length. One of: 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'.",
+                ),
+                (
+                    "my_task_completions",
+                    "INTEGER",
+                    "NULLABLE",
+                    "My Task Completions: My count of task completions (Observation Type: TASK_COMPLETED)",
+                ),
+            ],
         )

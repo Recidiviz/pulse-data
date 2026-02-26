@@ -56,14 +56,24 @@ _FIELD_TYPE_TO_COLUMN_CLASS: dict[str, ConcreteBigQueryColumnType] = {
 }
 
 
+def bq_field_type_to_column_class(
+    field_type: str | bigquery.SqlTypeNames,
+) -> ConcreteBigQueryColumnType:
+    """Returns the BigQueryViewColumn subclass for the given BigQuery field type."""
+    field_type_str = (
+        field_type.value
+        if isinstance(field_type, bigquery.SqlTypeNames)
+        else field_type
+    )
+    column_cls = _FIELD_TYPE_TO_COLUMN_CLASS.get(field_type_str)
+    if column_cls is None:
+        raise ValueError(f"Unsupported BigQuery field type {field_type!r}")
+    return column_cls
+
+
 def schema_field_to_view_column(field: bigquery.SchemaField) -> BigQueryViewColumn:
     """Converts a bigquery.SchemaField to a BigQueryViewColumn instance."""
-    column_cls = _FIELD_TYPE_TO_COLUMN_CLASS.get(field.field_type)
-    if column_cls is None:
-        raise ValueError(
-            f"Unsupported BigQuery field type {field.field_type!r} "
-            f"for field {field.name!r}"
-        )
+    column_cls = bq_field_type_to_column_class(field.field_type)
     description = field.description or COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT
     mode = cast(SqlFieldMode, field.mode)
     return column_cls(

@@ -19,9 +19,6 @@ configurations and the specified |population_type|, |unit_of_analysis_type| and
 |time_period|.
 """
 
-from more_itertools import one
-from tabulate import tabulate
-
 from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
 )
@@ -44,43 +41,15 @@ from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils i
 )
 from recidiviz.aggregated_metrics.query_building.build_aggregated_metric_query import (
     build_aggregated_metric_query_template,
+    metric_output_column_bq_field_type,
 )
+from recidiviz.big_query.big_query_schema_utils import bq_field_type_to_column_class
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Date, String
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.utils.types import assert_type
-
-
-def _metrics_description_table(metrics: list[AggregatedMetric]) -> str:
-    """Returns a formatted table with the name, output column name, and description of
-    each metric in the provided list.
-    """
-    table_data = []
-
-    observation_type_category: str = one(
-        {metric.observation_type.observation_type_category() for metric in metrics}
-    )
-    for metric in metrics:
-        table_data.append(
-            (
-                metric.display_name,
-                metric.name,
-                metric.description,
-                metric.observation_type.value,
-            )
-        )
-
-    return tabulate(
-        [row for row in table_data if row is not None],
-        headers=[
-            "Name",
-            "Column",
-            "Description",
-            f"{observation_type_category.capitalize()} observation type",
-        ],
-        tablefmt="github",
-    )
 
 
 def aggregated_metric_view_description(
@@ -88,7 +57,6 @@ def aggregated_metric_view_description(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     metric_class: AggregatedMetricClassType,
     time_period: MetricTimePeriodConfig | None,
-    metrics: list[AggregatedMetric] | None,
 ) -> str:
     """Builds a docstring for an aggregated metrics view with the given parameters."""
 
@@ -105,45 +73,111 @@ Contains metrics only for: {time_period.description}.
         time_period_clause = ""
 
     if issubclass(metric_class, PeriodEventAggregatedMetric):
-        base_description = f"""
+        return f"""
 Metrics for the {population_type.population_name_short} population calculated using
 event observations across an entire analysis period, disaggregated by {unit_of_analysis_type.short_name}.
 {time_period_clause}
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
-    elif issubclass(metric_class, PeriodSpanAggregatedMetric):
-        base_description = f"""
+    if issubclass(metric_class, PeriodSpanAggregatedMetric):
+        return f"""
 Metrics for the {population_type.population_name_short} population calculated using
 span observations across an entire analysis period, disaggregated by {unit_of_analysis_type.short_name}.
 {time_period_clause}
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
-    elif issubclass(metric_class, AssignmentEventAggregatedMetric):
-        base_description = f"""
+    if issubclass(metric_class, AssignmentEventAggregatedMetric):
+        return f"""
 Metrics for the {population_type.population_name_short} population calculated using
 events over some window following assignment, for all assignments
 during an analysis period, disaggregated by {unit_of_analysis_type.short_name}.
 {time_period_clause}
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
-    elif issubclass(metric_class, AssignmentSpanAggregatedMetric):
-        base_description = f"""
+    if issubclass(metric_class, AssignmentSpanAggregatedMetric):
+        return f"""
 Metrics for the {population_type.population_name_short} population calculated using
 spans over some window following assignment, for all assignments
 during an analysis period, disaggregated by {unit_of_analysis_type.short_name}.
 {time_period_clause}
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
-    else:
-        raise ValueError(f"Unexpected metric class type: [{metric_class}]")
+    raise ValueError(f"Unexpected metric class type: [{metric_class}]")
 
-    if not metrics:
-        return base_description
 
-    return f"""{base_description}
-# Metrics
-{_metrics_description_table(metrics)}
-"""
+def aggregated_metric_view_schema(
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+    metrics: list[AggregatedMetric],
+    disaggregate_by_observation_attributes: list[str] | None,
+) -> list[BigQueryViewColumn]:
+    """Returns the BigQuery schema for an aggregated metrics view.
+
+    Column layout matches the output_columns property order:
+    1. Primary key columns from the unit of analysis (REQUIRED)
+    2. start_date (DATE REQUIRED)
+    3. end_date (DATE REQUIRED)
+    4. period (STRING REQUIRED)
+    5. Disaggregation attributes (STRING NULLABLE)
+    6. Metric columns sorted by name (INTEGER or FLOAT NULLABLE)
+    """
+    unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
+
+    columns: list[BigQueryViewColumn] = []
+
+    for pk_col in unit_of_analysis.primary_key_columns:
+        pk_type = unit_of_analysis.primary_key_column_type(pk_col)
+        pk_column_cls = bq_field_type_to_column_class(pk_type)
+        columns.append(
+            pk_column_cls(
+                name=pk_col,
+                description=f"Primary key: {pk_col}",
+                mode="REQUIRED",
+            )
+        )
+
+    columns.append(
+        Date(
+            name="start_date",
+            description="Analysis period start date (inclusive)",
+            mode="REQUIRED",
+        )
+    )
+    columns.append(
+        Date(
+            name="end_date",
+            description="Analysis period end date (exclusive)",
+            mode="REQUIRED",
+        )
+    )
+    columns.append(
+        String(
+            name="period",
+            description="A string descriptor for the analysis period length. One of: 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'.",
+            mode="REQUIRED",
+        )
+    )
+
+    for attr in disaggregate_by_observation_attributes or []:
+        columns.append(
+            String(
+                name=attr,
+                description=f"Disaggregation attribute: {attr}",
+                mode="NULLABLE",
+            )
+        )
+
+    for metric in sorted(metrics, key=lambda m: m.name):
+        field_type = metric_output_column_bq_field_type(metric)
+        metric_column_cls = bq_field_type_to_column_class(field_type)
+        columns.append(
+            metric_column_cls(
+                name=metric.name,
+                description=f"{metric.display_name}: {metric.description} (Observation Type: {metric.observation_type.value})",
+                mode="NULLABLE",
+            )
+        )
+
+    return columns
 
 
 class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
@@ -232,7 +266,6 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             unit_of_analysis_type=self.unit_of_analysis_type,
             time_period=self.time_period,
             metric_class=self.metric_class,
-            metrics=self.metrics,
         )
 
     @property
@@ -242,8 +275,6 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             unit_of_analysis_type=self.unit_of_analysis_type,
             time_period=self.time_period,
             metric_class=self.metric_class,
-            # Don't list metrics to keep the description short
-            metrics=None,
         )
 
     @property
@@ -257,6 +288,14 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         """
         return self.unit_of_analysis.primary_key_columns
 
+    @property
+    def schema(self) -> list[BigQueryViewColumn]:
+        return aggregated_metric_view_schema(
+            unit_of_analysis_type=self.unit_of_analysis_type,
+            metrics=self.metrics,
+            disaggregate_by_observation_attributes=self.disaggregate_by_observation_attributes,
+        )
+
     def _build(
         self, *, sandbox_context: BigQueryViewSandboxContext | None
     ) -> BigQueryView:
@@ -269,4 +308,5 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
             sandbox_context=sandbox_context,
+            schema=self.schema,
         )

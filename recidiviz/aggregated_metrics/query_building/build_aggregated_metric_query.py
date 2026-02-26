@@ -18,6 +18,7 @@
 from collections import defaultdict
 from typing import Callable, Optional
 
+from google.cloud import bigquery
 from more_itertools import one
 
 from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import (
@@ -145,6 +146,53 @@ def _build_single_observation_type_cte_queries(
         cte_name = f"{observation_type.name.lower()}_metrics"
         cte_queries_by_name[cte_name] = single_observation_metrics
     return cte_queries_by_name
+
+
+def metric_output_column_bq_field_type(
+    metric: AggregatedMetric,
+) -> bigquery.SqlTypeNames:
+    """Returns the BigQuery field type for the output column of this metric.
+
+    Note: the groupings here differ from metric_output_column_clause(), which
+    groups by NULL-handling behavior (IFNULL vs pass-through). This function
+    groups by the actual data type produced by the underlying SQL aggregation.
+    """
+    if isinstance(
+        metric,
+        (
+            EventCountMetric,
+            EventDistinctUnitCountMetric,
+            SpanDistinctUnitCountMetric,
+            AssignmentEventCountMetric,
+            AssignmentEventBinaryMetric,
+            AssignmentCountMetric,
+            AssignmentDaysToFirstEventMetric,
+            AssignmentSpanDaysMetric,
+            AssignmentSpanMaxDaysMetric,
+        ),
+    ):
+        return bigquery.SqlTypeNames.INTEGER
+
+    if isinstance(
+        metric,
+        (
+            DailyAvgSpanCountMetric,
+            DailyAvgSpanValueMetric,
+            DailyAvgTimeSinceSpanStartMetric,
+            EventValueMetric,
+            AssignmentSpanValueAtStartMetric,
+        ),
+    ):
+        return bigquery.SqlTypeNames.FLOAT
+
+    # SumSpanDaysMetric produces FLOAT64 when weighted (CAST(weight AS FLOAT64) *
+    # DATE_DIFF(...)) and INT64 otherwise (plain DATE_DIFF(..., DAY)).
+    if isinstance(metric, SumSpanDaysMetric):
+        if metric.weight_col:
+            return bigquery.SqlTypeNames.FLOAT
+        return bigquery.SqlTypeNames.INTEGER
+
+    raise ValueError(f"Unexpected metric type [{type(metric)}]")
 
 
 def metric_output_column_clause(metric: AggregatedMetric) -> str:

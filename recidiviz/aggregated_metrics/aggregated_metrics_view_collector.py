@@ -24,6 +24,7 @@ from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
 from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
     AggregatedMetricsBigQueryViewBuilder,
     aggregated_metric_view_description,
+    aggregated_metric_view_schema,
 )
 from recidiviz.aggregated_metrics.all_aggregated_metrics_view_builder import (
     generate_all_aggregated_metrics_view_builder,
@@ -118,6 +119,22 @@ def _build_time_periods_unioned_view_builder(
             f"[{view_address.to_str()}]"
         )
 
+    if not all(p.metrics == parents[0].metrics for p in parents):
+        raise ValueError(
+            f"Expected all parents for [{view_address.to_str()}] to have the same "
+            f"metrics, but found differences."
+        )
+
+    if not all(
+        p.disaggregate_by_observation_attributes
+        == parents[0].disaggregate_by_observation_attributes
+        for p in parents
+    ):
+        raise ValueError(
+            f"Expected all parents for [{view_address.to_str()}] to have the same "
+            f"disaggregate_by_observation_attributes, but found differences."
+        )
+
     unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
 
     def _parent_view_to_select_statement(
@@ -130,16 +147,9 @@ def _build_time_periods_unioned_view_builder(
         population_type=population_type,
         unit_of_analysis_type=unit_of_analysis_type,
         metric_class=metric_class,
-        metrics=parents[0].metrics,
         time_period=None,
     )
-    bq_description = aggregated_metric_view_description(
-        population_type=population_type,
-        unit_of_analysis_type=unit_of_analysis_type,
-        metric_class=metric_class,
-        metrics=None,
-        time_period=None,
-    )
+    bq_description = description
 
     return UnionAllBigQueryViewBuilder(
         dataset_id=view_address.dataset_id,
@@ -149,6 +159,13 @@ def _build_time_periods_unioned_view_builder(
         parents=parents,
         parent_view_to_select_statement=_parent_view_to_select_statement,
         clustering_fields=unit_of_analysis.primary_key_columns,
+        schema=aggregated_metric_view_schema(
+            unit_of_analysis_type=unit_of_analysis_type,
+            metrics=parents[0].metrics,
+            disaggregate_by_observation_attributes=parents[
+                0
+            ].disaggregate_by_observation_attributes,
+        ),
     )
 
 

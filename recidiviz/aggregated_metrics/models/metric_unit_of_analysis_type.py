@@ -19,6 +19,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 import attr
+from google.cloud import bigquery
 
 from recidiviz.segment.product_type import ProductType
 
@@ -78,8 +79,20 @@ class MetricUnitOfAnalysis:
     # List of columns present in the assignment table that serve as the primary keys of the table
     primary_key_columns: List[str]
 
+    # By default, primary key columns are assumed to be STRING, but here we can specify
+    # different column types for primary keys as needed.
+    primary_key_column_type_overrides: Dict[str, bigquery.SqlTypeNames] = attr.Factory(
+        dict
+    )
+
     # List of columns that provide information about the unit of analysis which does not change over time
     static_attribute_columns: List[str]
+
+    def primary_key_column_type(self, column: str) -> bigquery.SqlTypeNames:
+        """Returns the BigQuery type for the given primary key column."""
+        return self.primary_key_column_type_overrides.get(
+            column, bigquery.SqlTypeNames.STRING
+        )
 
     @property
     def index_columns(self) -> List[str]:
@@ -123,6 +136,9 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
                     primary_key_columns=["state_code", "facility_counselor_id"],
+                    primary_key_column_type_overrides={
+                        "facility_counselor_id": bigquery.SqlTypeNames.INTEGER,
+                    },
                     static_attribute_columns=[
                         "facility_counselor_name",
                         "facility_counselor_email_address",
@@ -160,6 +176,9 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
                     primary_key_columns=["state_code", "unit_supervisor"],
+                    primary_key_column_type_overrides={
+                        "unit_supervisor": bigquery.SqlTypeNames.INTEGER,
+                    },
                     static_attribute_columns=[
                         "unit_supervisor_name",
                         "unit_supervisor_email_address",
