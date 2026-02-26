@@ -42,65 +42,26 @@ to commit directly to the main repository.
 
 ##### Option 1: Local Python installation
 
-If you can install `python3.9` locally, do so. For local Python development, you
-will also need to install the `libpq` PostgreSQL client library and `openssl`.
+For local python development, you will install [`uv`](https://docs.astral.sh/uv/) to
+set up the correct python version (3.11), and then the `xz`, `libpq` and `openssl`
+dependencies.
 
-On a Mac with [Homebrew](https://brew.sh/), you can install `python3.9` by first
-installing `pyenv` with:
-
-```bash
-brew install pyenv
-brew install xz
-mkdir ~/.pyenv
-```
-
-Then, add the following to your `~/.zshrc` (or equivalent):
-
-```
-export PATH="$HOME/.local/bin:$PATH"
-if command -v pyenv 1>/dev/null 2>&1; then
-eval "$(pyenv init -)"
-fi
-```
-
-Then run:
-
-```
-pyenv install 3.9.12
-pyenv global 3.9.12
-```
-
-Verify that you have the correct version of python across contexts by opening a
-new terminal window and running:
-
-```
-python -V
-```
-
-Once python is installed, you can install `libpq` and `openssl` with:
+On a Mac with [Homebrew](https://brew.sh/):
 
 ```bash
-$ brew install postgresql@13 openssl
-```
-
-and add the following to your `~/.zshrc` (or equivalent):
-
-```
+brew install uv
+# or curl -LsSf https://astral.sh/uv/install.sh | sh
+brew install xz postgresql@13 openssl
+# Add postgres to your $PATH
 export PATH="/opt/homebrew/opt/postgresql@13/bin:$PATH"
 ```
 
-On Ubuntu 18.04,`openssl` is installed by default, you can install `python3.9`
-and `libpq` with:
+On Ubuntu 18.04:
 
 ```bash
-$ apt update -y && apt install -y python3.9-dev python3-pip libpq-dev
-```
-
-Install [`uv`](https://docs.astral.sh/uv/) for dependency management:
-
-```bash
-$ pip install uv
-# or: curl -LsSf https://astral.sh/uv/install.sh | sh
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+# openssl is installed by default
+$ apt update -y && apt install -y libpq-dev
 ```
 
 [Fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone
@@ -116,12 +77,6 @@ dependencies, run the `initial_setup` script:
 
 ```bash
 $ ./initial_setup.sh
-```
-
-On a Linux machine, you can also run:
-
-```bash
-$ uv sync --all-extras
 ```
 
 To activate your virtual environment, run:
@@ -176,7 +131,7 @@ $ pytest --ignore=recidiviz/tests/path/to/tests
 
 ##### Option 2: Docker container
 
-If you can't install `python3.9` locally, you can use Docker instead.
+If you can't install `python3.11` locally, you can use Docker instead.
 
 See [below](#docker) for installation instructions. Once Docker is installed,
 [fork this repository](https://github.com/Recidiviz/pulse-data/fork), clone

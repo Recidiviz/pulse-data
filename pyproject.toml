@@ -2,7 +2,7 @@
 name = "recidiviz"
 version = "0.1.0"
 description = "Recidiviz data platform for criminal justice reform"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <3.12"
 dependencies = [
     "annotated-types",
     # TODO(#30733): Remove the <2.0.0 pin

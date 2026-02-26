@@ -4,7 +4,7 @@ echo "${HELPER_SCRIPTS}"
 # Make helpers available to all users
 sudo chmod 777 "${HELPER_SCRIPTS}"
 
-# Ensure pyenv installs to the runner's home, not root
+# Ensure uv installs to the runner's home, not root
 sudo -i -u runner HELPER_SCRIPTS="${HELPER_SCRIPTS}" bash <<'EOF'
 set -e
 source "${HELPER_SCRIPTS}/etc-environment.sh"
@@ -12,7 +12,7 @@ source "${HELPER_SCRIPTS}/etc-environment.sh"
 # Install compilation dependencies
 sudo apt-get update
 sudo apt-get install -y \
-  libreadline-dev `# Needed for postgresql and python` \
+  libreadline-dev `# Needed for postgresql` \
   libbz2-dev `# Needed for python bz2 extension` \
   gdal-bin `# Needed for fiona pypi`  \
   libgdal-dev `# Needed for fiona pypi` \
@@ -20,36 +20,15 @@ sudo apt-get install -y \
   build-essential `# Needed for general c compilation` \
   pkg-config `# Needed for mysqlclient in Airflow pypi`
 
-# Install pyenv and plugins
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-git clone https://github.com/pyenv/pyenv.git "$PYENV_ROOT"
-git clone https://github.com/pyenv/pyenv-doctor.git "$PYENV_ROOT/plugins/pyenv-doctor"
-git clone https://github.com/pyenv/pyenv-update.git "$PYENV_ROOT/plugins/pyenv-update"
-git clone https://github.com/pyenv/pyenv-virtualenv.git "$PYENV_ROOT/plugins/pyenv-virtualenv"
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export UV_BIN="$HOME/.local/bin"
+prepend_etc_environment_path "$UV_BIN"
+export PATH="$UV_BIN:$PATH"
 
-# Set up shell init (for Github Runner)
-prepend_etc_environment_path "${PYENV_ROOT}/bin:${PYENV_ROOT}/shims"
-
-export PATH="${PYENV_ROOT}/bin:${PYENV_ROOT}/shims:${PATH}"
-
-# Install data platform Python version
-pyenv install 3.11.6
-# Install Airflow Python version
-pyenv install 3.11.8
-
-# Install latest uv and pip for Airflow Python version
-pyenv local 3.11.8
-pip install --upgrade pip
-pip install uv
-
-# Install latest uv and pip for data platform Python version
-pyenv local 3.11.6
-pip install --upgrade pip
-pip install uv
-
-# Set global default Python version
-pyenv global 3.11.6
+# Install required Python versions
+uv python install 3.11.6
+uv python install 3.11.8
 
 # Install Postgres
 echo "Installing PostgreSQL 13..."

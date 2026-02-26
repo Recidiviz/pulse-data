@@ -122,8 +122,6 @@ target/
 # R
 .Rhistory
 
-# pyenv
-.python-version
 
 # celery beat schedule file
 celerybeat-schedule

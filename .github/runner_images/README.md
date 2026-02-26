@@ -51,7 +51,7 @@ packer build -var "subnet_id=${SUBNET_ID}" templates/python311-postgres13.pkr.hc
 ```
 ### Key Components
 
-- **`scripts/build/provision.sh`**: A provisioning script that installs dependencies, such as Python (via `pyenv`) and PostgreSQL 13, to prepare the base image.
+- **`scripts/build/provision.sh`**: A provisioning script that installs dependencies, such as Python (via `uv`) and PostgreSQL 13, to prepare the base image.
   
 - **`templates/python311-postgres13.pkr.hcl`**: A Packer configuration file that defines the steps necessary to build the custom AMI, including loading user data and running provisioning scripts.
 
@@ -61,7 +61,7 @@ packer build -var "subnet_id=${SUBNET_ID}" templates/python311-postgres13.pkr.hc
 
 ### 1. `scripts/build/provision.sh`
 This bash script performs the following tasks:
-- Configures `pyenv` for seamless Python version management with the runner.
+- Installs Python versions via `uv` for Python version management.
 - Installs and sets Python 3.11 as the default runtime environment.
 - Installs PostgreSQL 13.
 - Copies files installed by PostgreSQL into a dedicated directory for easy inclusion in the AMI.
