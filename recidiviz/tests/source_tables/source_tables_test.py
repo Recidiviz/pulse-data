@@ -101,6 +101,7 @@ COMMON_VESTIGES = [
     "jii_auth0_production_segment_metrics.tracks",
     "jii_backend_production_segment_metrics.backend_edovo_login_denied",
     "jii_backend_production_segment_metrics.backend_edovo_login_failed",
+    "jii_backend_production_segment_metrics.backend_edovo_login_internal_error",
     "jii_backend_production_segment_metrics.tracks",
     "pulse_dashboard_segment_metrics.hello",
     "pulse_dashboard_segment_metrics.pages_view",
