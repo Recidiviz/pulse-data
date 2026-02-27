@@ -1152,6 +1152,41 @@
     width: 24
     height: 6
 
+  - name: MONTHLYATTENDANCE
+    title: MONTHLYATTENDANCE
+    explore: us_ar_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_ar_MONTHLYATTENDANCE.primary_key,
+      us_ar_MONTHLYATTENDANCE.OFFENDERID,
+      us_ar_MONTHLYATTENDANCE.PROGRAMASSIGNEDDATE,
+      us_ar_MONTHLYATTENDANCE.PROGRAMASSIGNEDTIME,
+      us_ar_MONTHLYATTENDANCE.ATTENDANCEYEAR,
+      us_ar_MONTHLYATTENDANCE.ATTENDANCEMONTH,
+      us_ar_MONTHLYATTENDANCE.TOTALHOURSPRESENT,
+      us_ar_MONTHLYATTENDANCE.TOTALHOURSUNABLETOATTEND,
+      us_ar_MONTHLYATTENDANCE.TOTALHOURSEXCUSEDABSENCE,
+      us_ar_MONTHLYATTENDANCE.TOTALHOURSUNEXCUSEDABSENCE,
+      us_ar_MONTHLYATTENDANCE.HOURSUNABLETOATTENDSUPV,
+      us_ar_MONTHLYATTENDANCE.HOURSUNABLETOATTENDSECURITY,
+      us_ar_MONTHLYATTENDANCE.HOURSUNABLETOATTENDMEDICAL,
+      us_ar_MONTHLYATTENDANCE.DAILYATTNSEQNBR,
+      us_ar_MONTHLYATTENDANCE.DATELASTUPDATE,
+      us_ar_MONTHLYATTENDANCE.TIMELASTUPDATE,
+      us_ar_MONTHLYATTENDANCE.STAFFLASTUPDATE,
+      us_ar_MONTHLYATTENDANCE.file_id,
+      us_ar_MONTHLYATTENDANCE.is_deleted]
+    sorts: [us_ar_MONTHLYATTENDANCE.OFFENDERID, us_ar_MONTHLYATTENDANCE.PROGRAMASSIGNEDDATE, us_ar_MONTHLYATTENDANCE.PROGRAMASSIGNEDTIME, us_ar_MONTHLYATTENDANCE.ATTENDANCEYEAR, us_ar_MONTHLYATTENDANCE.ATTENDANCEMONTH]
+    note_display: hover
+    note_text: "Monthly educational program attendance."
+    listen: 
+      View Type: us_ar_OFFENDERPROFILE.view_type
+      US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
+    row: 126
+    col: 0
+    width: 24
+    height: 6
+
   - name: OFFENDERNAMEALIAS
     title: OFFENDERNAMEALIAS
     explore: us_ar_raw_data
@@ -1183,7 +1218,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -1218,7 +1253,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -1252,7 +1287,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1293,7 +1328,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1347,7 +1382,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 150
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1376,7 +1411,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1415,7 +1450,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1458,7 +1493,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1568,7 +1603,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 174
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1772,7 +1807,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 180
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1869,7 +1904,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 186
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1969,7 +2004,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 192
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -2079,7 +2114,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 198
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -2114,7 +2149,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 204
+    row: 210
     col: 0
     width: 24
     height: 6
@@ -2156,7 +2191,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 210
+    row: 216
     col: 0
     width: 24
     height: 6
@@ -2189,7 +2224,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 216
+    row: 222
     col: 0
     width: 24
     height: 6
@@ -2228,7 +2263,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 222
+    row: 228
     col: 0
     width: 24
     height: 6
@@ -2261,7 +2296,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 228
+    row: 234
     col: 0
     width: 24
     height: 6
@@ -2292,7 +2327,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 234
+    row: 240
     col: 0
     width: 24
     height: 6
@@ -2338,7 +2373,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 240
+    row: 246
     col: 0
     width: 24
     height: 6
@@ -2378,7 +2413,7 @@
     listen: 
       View Type: us_ar_OFFENDERPROFILE.view_type
       US_AR_OFFENDERID: us_ar_OFFENDERPROFILE.OFFENDERID
-    row: 246
+    row: 252
     col: 0
     width: 24
     height: 6

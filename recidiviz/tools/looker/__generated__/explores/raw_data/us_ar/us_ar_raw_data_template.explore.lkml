@@ -150,6 +150,13 @@ explore: us_ar_raw_data_template {
     view_label: "us_ar_JOBPROGRAMASGMT"
   }
 
+  join: us_ar_MONTHLYATTENDANCE {
+    sql_on: ${us_ar_MONTHLYATTENDANCE.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_ar_MONTHLYATTENDANCE"
+  }
+
   join: us_ar_OFFENDERNAMEALIAS {
     sql_on: ${us_ar_OFFENDERNAMEALIAS.OFFENDERID} = ${us_ar_OFFENDERPROFILE.OFFENDERID};;
     type: full_outer
