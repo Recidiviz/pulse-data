@@ -1659,6 +1659,10 @@ def generate_full_graph_normalized_state_staff() -> normalized_entities.Normaliz
                 state_code="US_XX",
                 external_id="123",
                 id_type="US_XX_STAFF",
+                is_current_display_id_for_type=True,
+                is_stable_id_for_type=True,
+                id_active_from_datetime=datetime.datetime(2020, 1, 1),
+                id_active_to_datetime=None,
             )
         ],
         role_periods=[

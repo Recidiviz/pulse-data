@@ -587,15 +587,14 @@ def _normalized_staff_external_id_checks(
         display_external_ids = [
             sei for sei in external_ids_of_type if sei.is_current_display_id_for_type
         ]
-        # TODO(#59913): Uncomment once normalization is complete.
-        # if len(display_external_ids) == 0:
-        #     yield (
-        #         f"Found no NormalizedStateStaffExternalId on staff member "
-        #         f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
-        #         f"designated as is_current_display_id_for_type=True. If a staff "
-        #         f"member has any ids of a given id_type, exactly one must be set as "
-        #         f"the display id."
-        #     )
+        if len(display_external_ids) == 0:
+            yield (
+                f"Found no NormalizedStateStaffExternalId on staff member "
+                f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_current_display_id_for_type=True. If a staff "
+                f"member has any ids of a given id_type, exactly one must be set as "
+                f"as the display id."
+            )
         if len(display_external_ids) > 1:
             yield (
                 f"Found multiple ({len(display_external_ids)}) "
@@ -609,15 +608,14 @@ def _normalized_staff_external_id_checks(
         stable_external_ids = [
             sei for sei in external_ids_of_type if sei.is_stable_id_for_type
         ]
-        # TODO(#59913): Uncomment once normalization is complete.
-        # if len(stable_external_ids) == 0:
-        #     yield (
-        #         f"Found no NormalizedStateStaffExternalId on staff member "
-        #         f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
-        #         f"designated as is_stable_id_for_type=True. If a staff member has "
-        #         f"any ids of a given id_type, exactly one must be set as the stable "
-        #         f"id."
-        #     )
+        if len(stable_external_ids) == 0:
+            yield (
+                f"Found no NormalizedStateStaffExternalId on staff member "
+                f"[{staff.limited_pii_repr()}] with type [{id_type}] that are "
+                f"designated as is_stable_id_for_type=True. If a staff member has "
+                f"any ids of a given id_type, exactly one must be set as the stable "
+                f"id."
+            )
         if len(stable_external_ids) > 1:
             yield (
                 f"Found multiple ({len(stable_external_ids)}) "

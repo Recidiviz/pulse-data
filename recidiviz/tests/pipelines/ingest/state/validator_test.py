@@ -2344,8 +2344,8 @@ class TestNormalizedStaffExternalIdChecks(unittest.TestCase):
         *,
         index: int,
         external_id: str,
-        is_current_display_id_for_type: bool | None,
-        is_stable_id_for_type: bool | None,
+        is_current_display_id_for_type: bool,
+        is_stable_id_for_type: bool,
         id_type: str = "US_XX_ID_TYPE",
     ) -> NormalizedStateStaffExternalId:
         return NormalizedStateStaffExternalId(
@@ -2428,57 +2428,55 @@ class TestNormalizedStaffExternalIdChecks(unittest.TestCase):
             errors,
         )
 
-    # TODO(#59913): Uncomment once normalization is complete.
-    # def test_error_no_display_id_set(self) -> None:
-    #     staff = self.make_staff_member(
-    #         external_ids=[
-    #             self._make_normalized_external_id(
-    #                 index=1,
-    #                 external_id="ID1",
-    #                 is_current_display_id_for_type=False,
-    #                 is_stable_id_for_type=True,
-    #             ),
-    #             self._make_normalized_external_id(
-    #                 index=2,
-    #                 external_id="ID2",
-    #                 is_current_display_id_for_type=False,
-    #                 is_stable_id_for_type=False,
-    #             ),
-    #         ]
-    #     )
-    #     errors: list[str] = list(validate_root_entity(staff))
-    #     self.assertEqual(len(errors), 1)
-    #     self.assertRegex(
-    #         errors[0],
-    #         r"Found no NormalizedStateStaffExternalId.*with type \[US_XX_ID_TYPE\].*"
-    #         r"exactly one must be set",
-    #     )
+    def test_error_no_display_id_set(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found no NormalizedStateStaffExternalId.*with type \[US_XX_ID_TYPE\].*"
+            r"exactly one must be set",
+        )
 
-    # TODO(#59913): Uncomment once normalization is complete.
-    # def test_error_no_stable_id_set(self) -> None:
-    #     staff = self.make_staff_member(
-    #         external_ids=[
-    #             self._make_normalized_external_id(
-    #                 index=1,
-    #                 external_id="ID1",
-    #                 is_current_display_id_for_type=False,
-    #                 is_stable_id_for_type=False,
-    #             ),
-    #             self._make_normalized_external_id(
-    #                 index=2,
-    #                 external_id="ID2",
-    #                 is_current_display_id_for_type=True,
-    #                 is_stable_id_for_type=False,
-    #             ),
-    #         ]
-    #     )
-    #     errors: list[str] = list(validate_root_entity(staff))
-    #     self.assertEqual(len(errors), 1)
-    #     self.assertRegex(
-    #         errors[0],
-    #         r"Found no NormalizedStateStaffExternalId.*with type \[US_XX_ID_TYPE\].*"
-    #         r"exactly one must be set",
-    #     )
+    def test_error_no_stable_id_set(self) -> None:
+        staff = self.make_staff_member(
+            external_ids=[
+                self._make_normalized_external_id(
+                    index=1,
+                    external_id="ID1",
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
+                ),
+                self._make_normalized_external_id(
+                    index=2,
+                    external_id="ID2",
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
+                ),
+            ]
+        )
+        errors: list[str] = list(validate_root_entity(staff))
+        self.assertEqual(len(errors), 1)
+        self.assertRegex(
+            errors[0],
+            r"Found no NormalizedStateStaffExternalId.*with type \[US_XX_ID_TYPE\].*"
+            r"exactly one must be set",
+        )
 
     def test_error_multiple_display_ids_set(self) -> None:
         staff = self.make_staff_member(

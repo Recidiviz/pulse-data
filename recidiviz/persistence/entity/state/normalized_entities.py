@@ -3601,14 +3601,8 @@ class NormalizedStateStaffExternalId(NormalizedStateEntity, ExternalIdEntity):
     # Primary key
     staff_external_id_id: int = attr.ib(validator=attr_validators.is_int)
 
-    # TODO(#60442): Once hydrated, ensure is_current_display_id_for_type is non-null
-    is_current_display_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-    # TODO(#60442): Once hydrated, ensure is_stable_id_for_type is non-null
-    is_stable_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
+    is_current_display_id_for_type: bool = attr.ib(validator=attr_validators.is_bool)
+    is_stable_id_for_type: bool = attr.ib(validator=attr_validators.is_bool)
     id_active_from_datetime: datetime | None = attr.ib(
         default=None,
         validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
