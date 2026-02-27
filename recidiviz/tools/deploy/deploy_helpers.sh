@@ -219,15 +219,17 @@ function check_python_version {
   # Fetch the required Python version from pyproject.toml
   PYTHON_SCRIPT=$(cat << EOM
 import tomllib
+from packaging.specifiers import SpecifierSet
 with open("pyproject.toml", "rb") as f:
-  config = tomllib.load(f)
-  requires_python = config['project']['requires-python']
-  # Extract version from ">=3.11" format
-  version = requires_python.replace('>=', '').replace('==', '')
-  print(version)
+    spec = SpecifierSet(tomllib.load(f)["project"]["requires-python"])
+# Extract the minimum version from the specifier (the >= bound)
+for s in spec:
+    if s.operator in (">=", "=="):
+        print(s.version)
+        break
 EOM
 )
-  MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python) || exit_on_fail
+  MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | uv run python) || exit_on_fail
   PYTHON_MAJOR_MINOR_VERSION=${PYTHON_VERSION:0:${#MIN_REQUIRED_PYTHON_VERSION}}  || exit_on_fail
 
   if [[ "${MIN_REQUIRED_PYTHON_VERSION}" != "${PYTHON_MAJOR_MINOR_VERSION}" ]]; then
