@@ -357,3 +357,36 @@ def parse_clinical_participation(
         return StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN
 
     return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN
+
+
+def parse_nonclinical_participation(
+    raw_text: str,
+) -> Optional[StateProgramAssignmentParticipationStatus]:
+    """
+    Determine facility nonclinical program participation status
+    """
+    accept_refuse, outcome, complete_date = raw_text.split("@@")
+
+    if accept_refuse == "Refused":
+        return StateProgramAssignmentParticipationStatus.REFUSED
+
+    if outcome in ("Satisfactory Completion",):
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL
+
+    if outcome in (
+        "Terminated from Program",
+        "Withdrawn from Program",
+    ):
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL
+
+    if (
+        accept_refuse != "Refused"
+        and (outcome is None or outcome == "In Progress")
+        and complete_date is None
+    ):
+        return StateProgramAssignmentParticipationStatus.IN_PROGRESS
+
+    if accept_refuse != "Refused" and outcome is None and complete_date is not None:
+        return StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN
+
+    return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN
