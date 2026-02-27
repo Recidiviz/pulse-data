@@ -68,9 +68,6 @@ schema:
   - name: original_timestamp
     type: TIMESTAMP
     mode: NULLABLE
-  - name: plan_id
-    type: STRING
-    mode: NULLABLE
   - name: received_at
     type: TIMESTAMP
     mode: NULLABLE
