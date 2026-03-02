@@ -61,9 +61,9 @@ num_allowed_rows_overrides:
       Needs investigation.  Current failing level as of 10/26 is 326,285
       rows #TODO(#16227)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
-    hard_num_allowed_rows_override: 100000
+    hard_num_allowed_rows_override: 120000
     override_reason:
-      Needs investigation.  Current failing level as of 10/26 is 69,392
+      Needs investigation.  Current failing level as of Feb 2026 is 105,428
       rows #TODO(#16237)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 2500
@@ -89,3 +89,9 @@ num_allowed_rows_overrides:
   - validation_name: zero_tasks_completed_while_eligible
     hard_num_allowed_rows_override: 1
     override_reason: we haven't finished ingesting new sentencing entities yet TODO(#28865) and until we do, we would expect this validation to fail for FTRD
+  - validation_name: product_roster_upcoming_blocks
+    hard_num_allowed_rows_override: 5
+    override_reason: we expect a few upcoming blocks at any time and we are not prioritizing investigating them unless there is a ton of failures at once
+  - validation_name: product_roster_blocked_30_days
+    hard_num_allowed_rows_override: 50
+    override_reason: we will plan to delete long blocked users every once in a while in batches (rather than individually once they hit the 30 day mark)

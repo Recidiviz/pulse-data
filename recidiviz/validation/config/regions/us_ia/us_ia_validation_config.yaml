@@ -34,3 +34,9 @@ num_allowed_rows_overrides:
   - validation_name: in_custody_sps_have_associated_ip
     hard_num_allowed_rows_override: 2000
     override_reason: Current failing level as of 1/27/25 is 1475 rows in staging.  To investigate when we flesh out incarceration periods more. TODO(#37755)
+  - validation_name: product_roster_upcoming_blocks
+    hard_num_allowed_rows_override: 10
+    override_reason: we expect a few upcoming blocks at any time and we are not prioritizing investigating them unless there is a ton of failures at once
+  - validation_name: product_roster_blocked_30_days
+    hard_num_allowed_rows_override: 50
+    override_reason: we will plan to delete long blocked users every once in a while in batches (rather than individually once they hit the 30 day mark)

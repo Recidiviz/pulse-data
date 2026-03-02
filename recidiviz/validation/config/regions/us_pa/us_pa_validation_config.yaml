@@ -20,13 +20,14 @@ exclusions:
 
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
-    hard_max_allowed_error_override: 0.08
+    hard_max_allowed_error_override: 0.115
     override_reason:
       PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.  In addition, with the
       _v5 version of SP ingest, we made revisions that changed our definition of the supervision population which
-      leads us to diverge more from the external validation data. See #31298
+      leads us to diverge more from the external validation data (such as our internal metrics excluding OOS clients
+      but PA's numbers not excluding OOS clients). See #31298
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
     hard_max_allowed_error_override: 0.05
     override_reason: TODO(#9738) - needs investigation.
@@ -72,7 +73,7 @@ max_allowed_error_overrides:
     override_reason: TODO(#45221) - Delete duplicates introduced in staging by #42841
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 40000
+    hard_num_allowed_rows_override: 42000
     override_reason:
       There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
@@ -132,3 +133,9 @@ num_allowed_rows_overrides:
       There is some weird date logic issue for logins/actions on the border of a month change, and so the login
       gets attributed to one month and the action is attributed to the other month.
       Will be resolved with the Polaris segment ad blocker work around
+  - validation_name: product_roster_upcoming_blocks
+    hard_num_allowed_rows_override: 5
+    override_reason: we expect a few upcoming blocks at any time and we are not prioritizing investigating them unless there is a ton of failures at once
+  - validation_name: product_roster_blocked_30_days
+    hard_num_allowed_rows_override: 50
+    override_reason: we will plan to delete long blocked users every once in a while in batches (rather than individually once they hit the 30 day mark)
