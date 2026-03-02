@@ -31,6 +31,16 @@ resource "google_project_iam_member" "google_storage_sa_pubsub_editor" {
   member  = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
 }
 
+# Autokey KMS key handle for bucket encryption
+resource "google_kms_key_handle" "raw_files_autokey" {
+  provider = google-beta
+
+  project                = var.project_id
+  name                   = "${var.project_id}-raw-files"
+  location               = var.region
+  resource_type_selector = "storage.googleapis.com/Bucket"
+}
+
 module "gcs_bucket" {
   source = "../vendor/cloud-storage-bucket"
 
@@ -45,6 +55,9 @@ module "gcs_bucket" {
     "raw-files" = true
   }
   storage_class = "STANDARD"
+  encryption_key_names = {
+    "raw-files" = google_kms_key_handle.raw_files_autokey.kms_key
+  }
   lifecycle_rules = [{
     action = {
       type = "Delete"
