@@ -145,12 +145,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
         "COMS_Case_Managers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Modifiers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Specialties": ["End_Date", "Entered_Date", "Start_Date"],
-        "COMS_Security_Classification": [
-            "Actual_Placement_Level_Assessment_Result_Entered_Date",
-            "Confinement_Level_Assessment_Result_Entered_Date",
-            "Management_Level_Assessment_Result_Entered_Date",
-            "True_Security_Level_Assessment_Result_Entered_Date",
-        ],
     },
     StateCode.US_ND: {
         "docstars_offensestable": ["LAST_UPDATE"],
@@ -1483,6 +1477,12 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
     },
     StateCode.US_MI: {
         "COMS_dm_Staff_Specialized_Types": ["Entered_Date"],
+        "COMS_Security_Classification": [
+            "Actual_Placement_Level_Assessment_Result_Entered_Date",
+            "Confinement_Level_Assessment_Result_Entered_Date",
+            "Management_Level_Assessment_Result_Entered_Date",
+            "True_Security_Level_Assessment_Result_Entered_Date",
+        ],
     },
     StateCode.US_TX: {
         "Assessment": ["ASSESSMENT_DATE"],

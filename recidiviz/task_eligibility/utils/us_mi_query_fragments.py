@@ -302,14 +302,12 @@ stg_information AS (
 ),
 assessment_information AS (
     SELECT 
-        pei.person_id,
-        Management_Level_Assessment_Result,
-        Confinement_Level_Assessment_Result,
-        Actual_Placement_Level_Assessment_Result,
-    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Classification_latest`
-    INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
-        ON Offender_Number = pei.external_id 
-            AND id_type = 'US_MI_DOC'
+        person_id,
+        JSON_EXTRACT_SCALAR(assessment_metadata, "$.Management_Level_Assessment_Result") AS Management_Level_Assessment_Result,
+        JSON_EXTRACT_SCALAR(assessment_metadata, "$.Confinement_Level_Assessment_Result") AS Confinement_Level_Assessment_Result,
+        JSON_EXTRACT_SCALAR(assessment_metadata, "$.Actual_Placement_Level_Assessment_Result") AS Actual_Placement_Level_Assessment_Result
+    FROM `{{project_id}}.us_mi_normalized_state.state_assessment`
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY assessment_date DESC, sequence_num DESC) = 1
 ),
 case_notes_cte AS (
     SELECT
