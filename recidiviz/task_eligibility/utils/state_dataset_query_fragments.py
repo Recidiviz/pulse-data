@@ -648,7 +648,7 @@ SELECT
         DATE_ADD(start_date, INTERVAL {y_months-x_months} MONTH),
         {nonnull_end_date_clause('end_date')}
     ) AS end_date,
-    TO_JSON(programs) AS reason,
+    TO_JSON(STRUCT(programs AS programs)) AS reason,
     programs,
 FROM deduped_sub_sessions_with_attributes
     """
