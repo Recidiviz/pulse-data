@@ -30,6 +30,9 @@ from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
 )
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactReason,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -204,3 +207,48 @@ def parse_role_subtype(
         return StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP
 
     return StateStaffRoleSubtype.INTERNAL_UNKNOWN if raw_text else None
+
+
+INITIAL_CONTACT_REASONS = {"New Arrival"}
+
+EMERGENCY_CONTACT_REASONS = {"Rapid Response"}
+
+GENERAL_CONTACT_REASONS = {
+    "EM Verification",
+    "Employment Verification",
+    "Residence Validation",
+    "Investigative",
+    "Random",
+    "Regular Visit",
+    "Unscheduled",
+    "Annual",
+    "Unscheduled Home Optional",
+    "Unscheduled Field Optional",
+    "Unscheduled Office Optional",
+    "Unscheduled Field/Home Optional",
+    "Unscheduled Home/Office Optional",
+    "Unscheduled - Weekend Only",
+    "Face to Face - RRC",
+    "Plain View",
+}
+
+
+def parse_contact_reason(
+    raw_text: str,
+) -> StateSupervisionContactReason:
+    """Parses contact reason from aggregated (comma-separated) visit reasons.
+
+    Priority order: INITIAL_CONTACT > EMERGENCY_CONTACT > GENERAL_CONTACT > INTERNAL_UNKNOWN
+    """
+    reasons = {r.strip() for r in raw_text.split(",")}
+
+    if reasons & INITIAL_CONTACT_REASONS:
+        return StateSupervisionContactReason.INITIAL_CONTACT
+
+    if reasons & EMERGENCY_CONTACT_REASONS:
+        return StateSupervisionContactReason.EMERGENCY_CONTACT
+
+    if reasons & GENERAL_CONTACT_REASONS:
+        return StateSupervisionContactReason.GENERAL_CONTACT
+
+    return StateSupervisionContactReason.INTERNAL_UNKNOWN

@@ -3,33 +3,29 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  SID_Number: STRING
-  Contact_ID: STRING
-  Contact_Date: STRING
-  Verified_Employment: STRING
-  Face_to_Face_Flag: STRING
-  Unsuccessful_Contact_Flag: STRING
-  Reason_Description: STRING
+  VSTH_SID_NO: STRING
+  VSTH_ID: STRING
+  VSTH_VISIT_DATE: STRING
+  VSTH_CNTCT_STATUS: STRING
+  VSTH_CNTCT_UNSCFL: STRING
+  VSTH_VIRTUAL_FLAG: STRING
+  VSTH_PLN_VIEW_FLAG: STRING
+  aggregated_reasons: STRING
   Location_Description: STRING
   Type_Description: STRING
-  COLLATERAL_CONTACT: STRING
-  VIRTUAL_FLAG: STRING
-  PLAIN_VIEW_FLAG: STRING
-unused_columns: []
+  Collateral_Description: STRING
+unused_columns:
+  - VSTH_CNTCT_STATUS
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: SID_Number
+          external_id: VSTH_SID_NO
           id_type: $literal("US_TX_SID")
     supervision_contacts:
       - StateSupervisionContact:
-          external_id: Contact_ID
-          verified_employment:
-            $equal:
-              - Verified_Employment
-              - Contact_Date
-          contact_date: Contact_Date
+          external_id: VSTH_ID
+          contact_date: VSTH_VISIT_DATE
           contact_method:
             $enum_mapping:
               $raw_text: Type_Description
@@ -74,7 +70,7 @@ output:
                   - "Other"
           contact_type:
             $enum_mapping:
-              $raw_text: COLLATERAL_CONTACT
+              $raw_text: Collateral_Description
               $mappings:
                 StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT:
                   - "Both Offender and Collateral"
@@ -87,43 +83,11 @@ output:
                   - "Division Staff"
           contact_reason:
             $enum_mapping:
-              $raw_text: Reason_Description
-              $mappings:
-                StateSupervisionContactReason.INITIAL_CONTACT:
-                  - "New Arrival"
-                StateSupervisionContactReason.EMERGENCY_CONTACT:
-                  - "Alert Notification - Equipment"
-                  - "Rapid Response"
-                StateSupervisionContactReason.GENERAL_CONTACT:
-                  - "EM Verification" #Electric monitoring
-                  - "Employment Verification"
-                  - "Residence Validation"
-                  - "Investigative"
-                  - "Random"
-                  - "Regular Visit"
-                  - "Unscheduled"
-                  - "Annual"
-                  - "Unscheduled Home Optional"
-                  - "Unscheduled Field Optional"
-                  - "Unscheduled Office Optional"
-                  - "Unscheduled Field/Home Optional"
-                  - "Unscheduled Home/Office Optional"
-                  - "Unscheduled - Weekend Only"
-                  - "Face to Face - RRC"
-                StateSupervisionContactReason.INTERNAL_UNKNOWN:
-                  - "Inmate Request"
-                  - "Other"
-                  - "PPI"
-                  - "Surveillance"
-                  - "Transfer Investigation"
-                  - "Public Inquiry"
-                  - "Management Oversight"
-                  - "Child Safety Zone Check"
-                  - "Intervention"
-                  - "Plain View"
+              $raw_text: aggregated_reasons
+              $custom_parser: us_tx_custom_enum_parsers.parse_contact_reason
           status:
             $enum_mapping:
-              $raw_text: Unsuccessful_Contact_Flag
+              $raw_text: VSTH_CNTCT_UNSCFL
               $mappings:
                 StateSupervisionContactStatus.COMPLETED:
                   - "0"
@@ -131,6 +95,5 @@ output:
                   - "1"
           supervision_contact_metadata:
             $normalized_values_json_dict:
-              VIRTUAL_FLAG: VIRTUAL_FLAG
-              FACE_TO_FACE_FLAG: Face_to_Face_Flag
-              PLAIN_VIEW_FLAG: PLAIN_VIEW_FLAG
+              VIRTUAL_FLAG: VSTH_VIRTUAL_FLAG
+              PLAIN_VIEW_FLAG: VSTH_PLN_VIEW_FLAG
