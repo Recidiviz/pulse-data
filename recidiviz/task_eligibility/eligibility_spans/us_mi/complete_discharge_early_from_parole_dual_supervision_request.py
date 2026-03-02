@@ -42,6 +42,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     parole_dual_supervision_past_early_discharge_date,
     supervision_is_not_ic_in,
     supervision_level_is_not_modified,
+    supervision_or_supervision_out_of_state_following_sai,
     supervision_or_supervision_out_of_state_level_is_not_sai,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -49,11 +50,20 @@ from recidiviz.task_eligibility.criteria_condition import (
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+NOT_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_FOLLOWING_SAI = (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+        sub_criteria=supervision_or_supervision_out_of_state_following_sai.VIEW_BUILDER,
+    )
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
@@ -72,6 +82,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_pending_detainer.VIEW_BUILDER,
         supervision_is_not_ic_in.VIEW_BUILDER,
         supervision_or_supervision_out_of_state_level_is_not_sai.VIEW_BUILDER,
+        NOT_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_FOLLOWING_SAI,
         supervision_or_supervision_out_of_state_level_is_not_high.VIEW_BUILDER,
         custodial_authority_is_supervision_authority_or_other_state.VIEW_BUILDER,
         supervision_level_is_not_modified.VIEW_BUILDER,

@@ -41,6 +41,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     supervision_level_is_not_modified,
     supervision_or_supervision_out_of_state_level_is_not_sai,
 )
+from recidiviz.task_eligibility.eligibility_spans.us_mi.complete_discharge_early_from_parole_dual_supervision_request import (
+    NOT_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_FOLLOWING_SAI,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -59,6 +62,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_required_to_register_under_sora.VIEW_BUILDER,
         not_on_electronic_monitoring.VIEW_BUILDER,
         supervision_or_supervision_out_of_state_level_is_not_sai.VIEW_BUILDER,
+        NOT_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_FOLLOWING_SAI,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
