@@ -4,11 +4,30 @@ input_columns:
   PERSON_ID: STRING
   SC_EPISODE_ID: STRING
   UPDT_DTM: STRING
+  # TIS dates (mapped to entity fields, minimal gating)
   SentenceExpirationDate: STRING
   CommunitySupervisionBeginDate: STRING
   EarnedReleaseCreditDate: STRING
   TransitionToAbsoluteDischargeDate: STRING
   AbsoluteDischargeDate: STRING
+  # TIS dates V2 (full gating matching ACIS display)
+  # TODO(#58547): Migrate entity fields to use these fully-gated versions.
+  CommunitySupervisionBeginDateV2: STRING
+  EarnedReleaseCreditDateV2: STRING
+  TransitionToAbsoluteDischargeDateV2: STRING
+  AbsoluteDischargeDateV2: STRING
+  # Additional TIS dates (for metadata JSON, full gating)
+  CommunitySupervisionEndDate: STRING
+  TransitionProgramReleaseDate: STRING
+  DrugTransitionProgramReleaseDate: STRING
+  # DPR dates (for metadata JSON)
+  DPRCommunitySupervisionBeginDate: STRING
+  DPRCommunitySupervisionEndDate: STRING
+  DPREarnedReleaseCreditDate: STRING
+  DPRTransitionToAbsoluteDischargeDate: STRING
+  DPRAbsoluteDischargeDate: STRING
+  DPRTransitionProgramReleaseDate: STRING
+  DPRDrugTransitionProgramReleaseDate: STRING
   OFFENSE_CHANGE_ID: STRING
 unused_columns: [OFFENSE_CHANGE_ID]
 output:
@@ -47,11 +66,11 @@ output:
                 projected_full_term_release_date_max_external: SentenceExpirationDate
                 sentence_group_length_metadata:
                   $normalized_values_json_dict:
-                    # Store the name of the date that is hydrating each field as metadata
-                    # so that we can disambiguate the different release dates downstream.
-                    # If a row does not have either of the toggled dates hydrated, it will
-                    # not have a value in the field.
-                    parole_eligibility_date_external:
+                    # Entity field sources: Store the name of the date that is hydrating each
+                    # mapped entity field as metadata so that we can disambiguate the different
+                    # release dates downstream. If a row does not have either of the toggled
+                    # dates hydrated, it will not have a value in the field.
+                    entity_field_sources__parole_eligibility_date_external:
                       $conditional:
                         - $if:
                             $not_null: CommunitySupervisionBeginDate
@@ -59,7 +78,7 @@ output:
                         - $else_if:
                             $not_null: TransitionToAbsoluteDischargeDate
                           $then: $literal("Transition to Absolute Discharge Date")
-                    projected_full_term_release_date_min_external:
+                    entity_field_sources__projected_full_term_release_date_min_external:
                       $conditional:
                         - $if:
                             $not_null: EarnedReleaseCreditDate
@@ -67,3 +86,20 @@ output:
                         - $else_if:
                             $not_null: AbsoluteDischargeDate
                           $then: $literal("Absolute Discharge Date")
+                    # State-specific TIS dates (full gating matching ACIS display)
+                    state_specific_dates__sed: SentenceExpirationDate
+                    state_specific_dates__csbd: CommunitySupervisionBeginDateV2
+                    state_specific_dates__csed: CommunitySupervisionEndDate
+                    state_specific_dates__ercd: EarnedReleaseCreditDateV2
+                    state_specific_dates__tpr: TransitionProgramReleaseDate
+                    state_specific_dates__dtp: DrugTransitionProgramReleaseDate
+                    state_specific_dates__tr_to_add: TransitionToAbsoluteDischargeDateV2
+                    state_specific_dates__add: AbsoluteDischargeDateV2
+                    # State-specific DPR dates (for DPR-eligible people)
+                    state_specific_dates__dpr_csbd: DPRCommunitySupervisionBeginDate
+                    state_specific_dates__dpr_csed: DPRCommunitySupervisionEndDate
+                    state_specific_dates__dpr_ercd: DPREarnedReleaseCreditDate
+                    state_specific_dates__dpr_tpr: DPRTransitionProgramReleaseDate
+                    state_specific_dates__dpr_dtp: DPRDrugTransitionProgramReleaseDate
+                    state_specific_dates__dpr_tr_to_add: DPRTransitionToAbsoluteDischargeDate
+                    state_specific_dates__dpr_add: DPRAbsoluteDischargeDate
