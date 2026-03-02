@@ -18,8 +18,7 @@
 """Tests for validation/checks/existence_check.py."""
 
 from unittest import TestCase
-
-from mock import patch
+from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks.existence_check import (
@@ -53,8 +52,20 @@ class TestExistenceValidationChecker(TestCase):
         self.client_patcher.stop()
         self.metadata_patcher.stop()
 
+    def _mock_query_job_with_row_count(self, num_rows: int) -> MagicMock:
+        """Helper method to create a mock QueryJob with a RowIterator that has total_rows."""
+        mock_row_iterator = MagicMock()
+        mock_row_iterator.total_rows = num_rows
+
+        mock_query_job = MagicMock()
+        mock_query_job.result.return_value = mock_row_iterator
+
+        return mock_query_job
+
     def test_existence_check_no_failures(self) -> None:
-        self.mock_client.run_query_async.return_value = []
+        self.mock_client.run_query_async.return_value = (
+            self._mock_query_job_with_row_count(0)
+        )
 
         job = DataValidationJob(
             region_code="US_VA",
@@ -82,10 +93,9 @@ class TestExistenceValidationChecker(TestCase):
         )
 
     def test_existence_check_failures(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            "some result row",
-            "some other result row",
-        ]
+        self.mock_client.run_query_async.return_value = (
+            self._mock_query_job_with_row_count(2)
+        )
 
         job = DataValidationJob(
             region_code="US_VA",
@@ -113,10 +123,9 @@ class TestExistenceValidationChecker(TestCase):
         )
 
     def test_existence_check_failures_below_threshold(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            "some result row",
-            "some other result row",
-        ]
+        self.mock_client.run_query_async.return_value = (
+            self._mock_query_job_with_row_count(2)
+        )
 
         job = DataValidationJob(
             region_code="US_VA",
@@ -146,10 +155,9 @@ class TestExistenceValidationChecker(TestCase):
         )
 
     def test_existence_check_failures_between_soft_and_hard_threshold(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            "some result row",
-            "some other result row",
-        ]
+        self.mock_client.run_query_async.return_value = (
+            self._mock_query_job_with_row_count(2)
+        )
 
         job = DataValidationJob(
             region_code="US_VA",

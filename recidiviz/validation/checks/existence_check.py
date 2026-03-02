@@ -21,7 +21,6 @@ in a given validation result set."""
 from typing import List, Optional
 
 import attr
-import more_itertools
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -185,11 +184,12 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
             use_query_cache=True,
             query_parameters=[],
         )
+        row_iterator = query_job.result()
 
         return DataValidationJobResult(
             validation_job=validation_job,
             result_details=ExistenceValidationResultDetails(
-                num_invalid_rows=more_itertools.ilen(query_job),
+                num_invalid_rows=row_iterator.total_rows,
                 dev_mode=validation_job.validation.dev_mode,
                 hard_num_allowed_rows=validation_job.validation.hard_num_allowed_rows,
                 soft_num_allowed_rows=validation_job.validation.soft_num_allowed_rows,
