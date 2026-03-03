@@ -777,15 +777,12 @@ def num_events_within_time_interval_spans(
         event_list_field (str, optional): If provided, includes an event_list array
             containing the values of this field from the events_cte for each event
             in the span. The events_cte must have a column with this name.
-        truncate_to_month (bool): If True, truncates the computed end date to
-            the first of the month. An event on June 13 with a 6-month interval
-            would have an end_date of Dec 1 instead of Dec 13.
-
-    Returns:
-        str: A SQL CTE fragment that creates spans with event counts. The resulting
-            `event_count_spans` CTE contains: index columns, start_date, end_date,
-            event_count, event_dates array, and optionally event_list array.
+        truncate_to_month (bool): If True, truncates the computed window to start and end on
+            the first of the month, if intervals are specified. For example, an event on June 13:
+                - a 3-month interval with no start interval: June 13 to Sep 1
+                - a 6-month interval with a 3 month interval start: Sep 1 to Dec 1
     """
+
     if index_columns is None:
         index_columns = ["person_id", "state_code"]
     index_col_str = list_to_query_string(index_columns)
@@ -803,6 +800,9 @@ def num_events_within_time_interval_spans(
         start_date_clause = (
             f"DATE_ADD(event_date, INTERVAL {date_interval_start} {date_part})"
         )
+        if truncate_to_month:
+            start_date_clause = f"DATE_TRUNC({start_date_clause}, MONTH)"
+
     else:
         start_date_clause = "event_date"
 
