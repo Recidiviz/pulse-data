@@ -262,19 +262,19 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
 fi
 
 if [[ -n ${PROMOTE} ]]; then
-    echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
-    deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
-    echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."
-else
-    echo "Skipping Looker deploy step for debug or no promote release build."
-fi
-
-if [[ -n ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."
     verify_hash "$COMMIT_HASH"
     post_deploy_triggers "$PROJECT_ID"
 else
     echo "Deploy succeeded - skipping post deploy triggers for no promote build."
+fi
+
+if [[ -n ${PROMOTE} ]]; then
+    echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
+    deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
+    echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."
+else
+    echo "Skipping Looker deploy step for debug or no promote release build."
 fi
 
 if [[ -z ${DEBUG_BUILD_NAME} ]]; then
