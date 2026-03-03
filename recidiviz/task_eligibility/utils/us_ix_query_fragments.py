@@ -863,7 +863,6 @@ def us_ix_active_supervision_population_view_builder(
     case_types: List[str],
     supervision_levels: List[str],
     additional_where_clause: Optional[str] = None,
-    additional_cte: Optional[str] = None,
 ) -> StateSpecificTaskCandidatePopulationBigQueryViewBuilder:
     """
     Creates a VIEW_BUILDER for Idaho active supervision population with specified filters.
@@ -878,39 +877,12 @@ def us_ix_active_supervision_population_view_builder(
         supervision_levels: List of supervision levels to include (e.g., ['MINIMUM', 'MEDIUM', 'HIGH'])
         additional_where_clause: Optional additional WHERE clause to apply to compartment_sub_sessions.
             Should start with 'AND'. Example: "AND css.sex = 'MALE'"
-        additional_cte: Optional additional CTE to intersect with the population. Should be a CTE
-            name that selects (state_code, person_id, start_date, end_date). When provided, the
-            population will only include spans where all criteria overlap. Example:
-            "able_to_work AS (SELECT state_code, person_id, start_date, end_date FROM ...)"
     """
     case_types_str = "('" + "', '".join(case_types) + "')"
     supervision_levels_str = "('" + "', '".join(supervision_levels) + "')"
 
     # Build additional where clause if specified
     where_clause_addition = additional_where_clause or ""
-
-    # Build additional CTE and union if specified
-    additional_cte_definition = ""
-    additional_union = ""
-    # Base count is 2 (active_supervision_population + supervision_case_and_level)
-    required_count = 2
-    if additional_cte:
-        # Extract the CTE name from the definition (assumes format "cte_name AS (...)")
-        cte_name = additional_cte.split(" AS ")[0].strip()
-        additional_cte_definition = f"""{additional_cte},"""
-        additional_union = f"""UNION ALL
-
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        SAFE_CAST(NULL AS STRING) AS compartment_level_1,
-        SAFE_CAST(NULL AS STRING) AS compartment_level_2,
-        SAFE_CAST(NULL AS STRING) AS case_type,
-        SAFE_CAST(NULL AS STRING) AS supervision_level
-    FROM {cte_name}"""
-        required_count = 3
 
     query_template = f"""WITH active_supervision_population AS (
     -- Active supervision population on PROBATION, PAROLE, or DUAL supervision
@@ -949,8 +921,6 @@ supervision_case_and_level AS (
             AND ctsl.supervision_level IN {supervision_levels_str}
 ),
 
-{additional_cte_definition}
-
 combine AS (
     SELECT *
     FROM active_supervision_population
@@ -959,8 +929,6 @@ combine AS (
 
     SELECT *
     FROM supervision_case_and_level
-    
-    {additional_union}
 ),
 
 {create_sub_sessions_with_attributes(table_name="combine")}
@@ -973,8 +941,8 @@ SELECT
 FROM sub_sessions_with_attributes
 WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
--- We only want spans where all criteria are met
-HAVING COUNT(*) >= {required_count}
+-- We only want spans where both criteria are met
+HAVING COUNT(*) >= 2
 """
 
     return StateSpecificTaskCandidatePopulationBigQueryViewBuilder(

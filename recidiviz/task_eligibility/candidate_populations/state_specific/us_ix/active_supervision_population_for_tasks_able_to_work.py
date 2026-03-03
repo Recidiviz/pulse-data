@@ -24,32 +24,38 @@ following conditions:
 - Not marked as unable to work (meets is_able_to_work criteria)
 """
 
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    us_ix_active_supervision_population_view_builder,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
+    active_supervision_population_for_tasks,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import is_able_to_work
+from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
+    StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# CTE that returns spans where someone is able to work (meets_criteria = TRUE)
-_ABLE_TO_WORK_CTE = """able_to_work AS (
-    -- Get spans where someone is able to work by joining with the is_able_to_work criteria.
-    -- The is_able_to_work criteria has meets_criteria_default=True, so we only need to
-    -- include spans where meets_criteria = TRUE.
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-    FROM `{project_id}.task_eligibility_criteria_us_ix.is_able_to_work_materialized`
-    WHERE meets_criteria = TRUE
-)"""
+_POPULATION_NAME = "US_IX_ACTIVE_SUPERVISION_POPULATION_FOR_TASKS_ABLE_TO_WORK"
 
-VIEW_BUILDER = us_ix_active_supervision_population_view_builder(
-    population_name="US_IX_ACTIVE_SUPERVISION_POPULATION_FOR_TASKS_ABLE_TO_WORK",
-    description=__doc__,
-    case_types=["GENERAL", "SEX_OFFENSE", "XCRC", "MENTAL_HEALTH_COURT"],
-    supervision_levels=["MINIMUM", "MEDIUM", "HIGH", "XCRC"],
-    additional_cte=_ABLE_TO_WORK_CTE,
+_CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.AND,
+    criteria_name=_POPULATION_NAME,
+    sub_criteria_list=[
+        active_supervision_population_for_tasks.VIEW_BUILDER.as_criteria(
+            criteria_name="US_IX_IN_ACTIVE_SUPERVISION_POPULATION_FOR_TASKS",
+        ),
+        is_able_to_work.VIEW_BUILDER,
+    ],
+)
+
+VIEW_BUILDER: StateSpecificTaskCandidatePopulationBigQueryViewBuilder = (
+    StateSpecificTaskCandidatePopulationBigQueryViewBuilder.from_criteria_group(
+        criteria_group=_CRITERIA_GROUP,
+        population_name=_POPULATION_NAME,
+    )
 )
 
 if __name__ == "__main__":
