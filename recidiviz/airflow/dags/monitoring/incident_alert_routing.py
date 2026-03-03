@@ -28,6 +28,9 @@ from recidiviz.airflow.dags.calculation.constants import (
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
+from recidiviz.airflow.dags.monitoring.airflow_github_alerting_service import (
+    AirflowGitHubService,
+)
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_raw_data_import_dag_id,
     get_sftp_dag_id,
@@ -35,9 +38,6 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
 from recidiviz.airflow.dags.monitoring.job_run import JobRunType
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
     RecidivizAlertingService,
-)
-from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
-    RecidivizGitHubService,
 )
 from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_END_TASK_NAME,
@@ -157,7 +157,7 @@ def get_alerting_services_for_incident(
                 RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
-                RecidivizGitHubService.raw_data_service_for_state_code(
+                AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
             ]
@@ -170,7 +170,7 @@ def get_alerting_services_for_incident(
                 RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
-                RecidivizGitHubService.raw_data_service_for_state_code(
+                AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
             ]
@@ -181,7 +181,7 @@ def get_alerting_services_for_incident(
             RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
-            RecidivizGitHubService.dataflow_service_for_state_code(
+            AirflowGitHubService.dataflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
         ]
@@ -194,7 +194,7 @@ def get_alerting_services_for_incident(
             RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
-            RecidivizGitHubService.dataflow_service_for_state_code(
+            AirflowGitHubService.dataflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
         ]

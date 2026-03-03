@@ -28,24 +28,25 @@ from github.Repository import Repository
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
-from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
-    RecidivizGitHubService,
+from recidiviz.airflow.dags.monitoring.airflow_github_alerting_service import (
+    AirflowGitHubService,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.github import HELPERBOT_USER_NAME
 
 TEST_DAG = "test_dag"
 
 
 @pytest.fixture(name="github_mocks")
 def fixture_github_mocks() -> Generator[Mock, None, None]:
-    """Fixture that sets up GitHub and environment mocks for recidiviz_github_alerting_service tests."""
+    """Fixture that sets up GitHub and environment mocks for airflow_github_alerting_service tests."""
     github_client_patch = patch(
-        "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook.get_conn",
+        "recidiviz.airflow.dags.monitoring.recidiviz_github_mixin.GithubHook.get_conn",
     )
 
     env_mock = patch(
-        "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.get_environment_for_project",
+        "recidiviz.airflow.dags.monitoring.airflow_github_alerting_service.get_environment_for_project",
         return_value=GCPEnvironment.STAGING,
     )
 
@@ -70,7 +71,7 @@ def _create_issue(title: str, state: str = "open", issue_id: int = 12345) -> Moc
     return m
 
 
-def _create_comment(body: str, login: str = "helperbot-recidiviz") -> Mock:
+def _create_comment(body: str, login: str = HELPERBOT_USER_NAME) -> Mock:
     """Helper function to create a mock comment."""
     m = Mock()
     m.body = body
@@ -84,7 +85,7 @@ class TestRecidivizGitHubService:
     def test_default_labels(
         self, github_mocks: Mock  # pylint: disable=unused-argument
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-test", state_code=StateCode.US_XX
         )
 
@@ -98,7 +99,7 @@ class TestRecidivizGitHubService:
     def test_search_past_incident_match_on_github_formatted(
         self, github_mocks: Mock
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-test", state_code=StateCode.US_XX
         )
 
@@ -140,7 +141,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -163,7 +164,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -176,7 +177,7 @@ class TestRecidivizGitHubService:
         assert result.title == service._get_issue_title_from_incident(mock_incident)
 
     def test_new_incident(self, github_mocks: Mock) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-testing", state_code=StateCode.US_XX
         )
 
@@ -215,7 +216,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -244,7 +245,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -263,7 +264,7 @@ class TestRecidivizGitHubService:
     def test_existing_incident_ongoing_no_update_needed_description(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-123", state_code=StateCode.US_XX
         )
 
@@ -309,7 +310,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -327,7 +328,7 @@ class TestRecidivizGitHubService:
     def test_existing_incident_ongoing_no_update_needed_comment(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-staging", state_code=StateCode.US_XX
         )
 
@@ -380,7 +381,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -398,7 +399,7 @@ class TestRecidivizGitHubService:
     def test_existing_incident_ongoing_update_and_reopen(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-test", state_code=StateCode.US_XX
         )
 
@@ -454,7 +455,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -474,7 +475,7 @@ class TestRecidivizGitHubService:
     def test_existing_incident_ongoing_update(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-staging", state_code=StateCode.US_XX
         )
 
@@ -533,7 +534,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -553,7 +554,7 @@ class TestRecidivizGitHubService:
     def test_existing_issue_resolved_and_open(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-staging", state_code=StateCode.US_XX
         )
 
@@ -602,7 +603,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -617,13 +618,13 @@ class TestRecidivizGitHubService:
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].message
-            == "Closed issue [#54321] for incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] as a job run completed successfully on [2024-01-04T00:00:00+00:00]"
+            == "Ensuring issue for incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] is closed as the incident is resolved as a job run completed successfully on [2024-01-04T00:00:00+00:00]."
         )
 
     def test_existing_issue_resolved_and_already_closed(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-staging", state_code=StateCode.US_XX
         )
 
@@ -673,7 +674,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -684,12 +685,15 @@ class TestRecidivizGitHubService:
         incident_issue.edit.assert_not_called()
 
         assert len(caplog.records) == 1
-        assert caplog.records[0].message == "Issue doesn't exist or is already closed"
+        assert (
+            caplog.records[0].message
+            == "Ensuring issue for incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] is closed as the incident is resolved as a job run completed successfully on [2024-01-04T00:00:00+00:00]."
+        )
 
     def test_existing_issue_resolved_and_never_opened(
         self, github_mocks: Mock, caplog: LogCaptureFixture
     ) -> None:
-        service = RecidivizGitHubService.raw_data_service_for_state_code(
+        service = AirflowGitHubService.raw_data_service_for_state_code(
             project_id="recidiviz-staging", state_code=StateCode.US_XX
         )
 
@@ -732,7 +736,7 @@ class TestRecidivizGitHubService:
                 "Region: US_XX",
                 "Staging",
             ],
-            creator="helperbot-recidiviz",
+            creator=HELPERBOT_USER_NAME,
             state="all",
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
@@ -740,4 +744,7 @@ class TestRecidivizGitHubService:
         github_mocks.create_issue.assert_not_called()
 
         assert len(caplog.records) == 1
-        assert caplog.records[0].message == "Issue doesn't exist or is already closed"
+        assert (
+            caplog.records[0].message
+            == "Ensuring issue for incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] is closed as the incident is resolved as a job run completed successfully on [2024-01-04T00:00:00+00:00]."
+        )

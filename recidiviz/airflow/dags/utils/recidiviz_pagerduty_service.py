@@ -16,6 +16,8 @@
 # =============================================================================
 """Information about PagerDuty services."""
 
+import datetime
+
 import attr
 from airflow.providers.sendgrid.utils.emailer import send_email
 
@@ -27,10 +29,11 @@ from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.types import assert_type
 
 
 @attr.define
-class RecidivizPagerDutyService(RecidivizAlertingService):
+class RecidivizPagerDutyService(RecidivizAlertingService[AirflowAlertingIncident]):
     """Structure holding information about a service managed by the Recidiviz repo.
     For the full list of services, see
     https://recidiviz.pagerduty.com/service-directory.
@@ -128,14 +131,14 @@ class RecidivizPagerDutyService(RecidivizAlertingService):
 
         detail_msg = (
             incident.error_message or ""
-            if incident.next_success_date is None
-            else f"Incident resolved {incident.next_success_date.isoformat()}"
+            if not incident.is_resolved
+            else f"Incident resolved {assert_type(incident.next_success_date, datetime.datetime).isoformat()}"
         )
 
         return f"Failed run of [{incident.job_id}] on the following dates: [ {failure_date_strs} ]. {detail_msg}"
 
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
-        event_type = "Failure:" if incident.next_success_date is None else "Success:"
+        event_type = "Failure:" if not incident.is_resolved else "Success:"
         send_email(
             to=self.service_integration_email,
             subject=f"{event_type} {incident.unique_incident_id}",

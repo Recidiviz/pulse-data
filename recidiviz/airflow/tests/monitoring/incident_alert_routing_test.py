@@ -23,6 +23,9 @@ from unittest.mock import patch
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
+from recidiviz.airflow.dags.monitoring.airflow_github_alerting_service import (
+    AirflowGitHubService,
+)
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_calculation_dag_id,
     get_raw_data_import_dag_id,
@@ -32,9 +35,6 @@ from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
 )
 from recidiviz.airflow.dags.monitoring.job_run import JobRunType
-from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
-    RecidivizGitHubService,
-)
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
 )
@@ -50,11 +50,11 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
     def setUp(self) -> None:
         self.github_hook_patcher = patch(
-            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook",
+            "recidiviz.airflow.dags.monitoring.recidiviz_github_mixin.GithubHook",
         )
         self.github_hook_patcher.start()
         self.env_for_project_patch = patch(
-            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.get_environment_for_project",
+            "recidiviz.airflow.dags.monitoring.airflow_github_alerting_service.get_environment_for_project",
             return_value=GCPEnvironment.STAGING,
         )
         self.env_for_project_patch.start()
@@ -170,7 +170,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 RecidivizPagerDutyService.airflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_ND
                 ),
-                RecidivizGitHubService.dataflow_service_for_state_code(
+                AirflowGitHubService.dataflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_ND
                 ),
             ],
@@ -210,7 +210,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 RecidivizPagerDutyService.airflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_ND
                 ),
-                RecidivizGitHubService.dataflow_service_for_state_code(
+                AirflowGitHubService.dataflow_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_ND
                 ),
             ],
@@ -311,7 +311,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
-                RecidivizGitHubService.raw_data_service_for_state_code(
+                AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
             ],
@@ -344,7 +344,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
-                RecidivizGitHubService.raw_data_service_for_state_code(
+                AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
             ],

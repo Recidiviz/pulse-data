@@ -53,11 +53,11 @@ class TestDagIntegrity(AirflowIntegrationTest):
 
     def setUp(self) -> None:
         self.github_client_patch = patch(
-            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook.get_conn",
+            "recidiviz.airflow.dags.monitoring.recidiviz_github_mixin.GithubHook.get_conn",
         )
         self.github_client_patch.start()
         self.env_for_project_patch = patch(
-            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.get_environment_for_project",
+            "recidiviz.airflow.dags.monitoring.airflow_github_alerting_service.get_environment_for_project",
             return_value=GCPEnvironment.STAGING,
         )
         self.env_for_project_patch.start()

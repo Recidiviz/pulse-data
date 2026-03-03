@@ -23,11 +23,12 @@ import attr
 import pandas as pd
 from pandas.api.typing import NaTType
 
+from recidiviz.airflow.dags.monitoring.alerting_incident import AlertingIncident
 from recidiviz.common import attr_validators
 
 
 @attr.s(auto_attribs=True)
-class AirflowAlertingIncident:
+class AirflowAlertingIncident(AlertingIncident):
     """Representation of something distinct that went wrong during a series of
     consecutive DAG runs.
 
@@ -81,6 +82,10 @@ class AirflowAlertingIncident:
         conf_string = f"{self.dag_run_config} " if self.dag_run_config != "{}" else ""
         start_date = self.incident_start_date.strftime("%Y-%m-%d %H:%M %Z")
         return f"{self.incident_type}: {conf_string}{self.dag_id}.{self.job_id}, started: {start_date}"
+
+    @property
+    def is_resolved(self) -> bool:
+        return self.next_success_date is not None
 
     @classmethod
     def build(

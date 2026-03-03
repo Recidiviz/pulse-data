@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,22 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Interface for sending an AlertingIncident to an alerting backend"""
+"""Base class for alerting incidents."""
 import abc
-from typing import Generic, TypeVar
 
-from recidiviz.airflow.dags.monitoring.alerting_incident import AlertingIncident
-
-IncidentT = TypeVar("IncidentT", bound=AlertingIncident)
+import attr
 
 
-class RecidivizAlertingService(Generic[IncidentT]):
+@attr.define
+class AlertingIncident(abc.ABC):
+    """Base class for incidents that can be sent to alerting services."""
 
-    name: str
-
+    @property
     @abc.abstractmethod
-    def handle_incident(self, incident: IncidentT) -> None:
-        """Update the alerting backend with updated information about this incident.
-        This incident may be a new incident that the service has never seen before,
-        or one that is now resolved and may need to be cleaned up in some capacity.
-        """
+    def unique_incident_id(self) -> str:
+        """A unique identifier for this incident used for grouping/deduplication."""
+
+    @property
+    @abc.abstractmethod
+    def is_resolved(self) -> bool:
+        """Whether this incident has been resolved."""

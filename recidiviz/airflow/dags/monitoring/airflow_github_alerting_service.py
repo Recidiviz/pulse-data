@@ -19,8 +19,8 @@ import datetime
 import logging
 
 import attr
-from airflow.providers.github.hooks.github import GithubHook
 from github.Issue import Issue
+from more_itertools import one
 
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
@@ -28,12 +28,13 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
     RecidivizAlertingService,
 )
+from recidiviz.airflow.dags.monitoring.recidiviz_github_mixin import (
+    RecidivizGithubMixin,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.github import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
-    HELPERBOT_USER_NAME,
-    RECIDIVIZ_DATA_REPO,
     format_region_specific_ticket_title,
 )
 from recidiviz.utils.string import StrictStringFormatter
@@ -45,17 +46,15 @@ DATAFLOW_DEFAULT_LABELS = ["Dataflow Pipeline Failure", "Team: State Pod"]
 
 
 @attr.define
-class RecidivizGitHubService(RecidivizAlertingService):
+class AirflowGitHubService(
+    RecidivizAlertingService[AirflowAlertingIncident], RecidivizGithubMixin
+):
     """An alerting service that creates and updates issues in GitHub."""
 
     name: str
     state_code: StateCode
     project_id: str
     issue_labels: list[str]
-
-    def __attrs_post_init__(self) -> None:
-        self._hook = GithubHook()
-        self._repo = self._hook.get_conn().get_repo(RECIDIVIZ_DATA_REPO)
 
     @property
     def environment(self) -> str:
@@ -64,10 +63,10 @@ class RecidivizGitHubService(RecidivizAlertingService):
     @classmethod
     def raw_data_service_for_state_code(
         cls, *, project_id: str, state_code: StateCode
-    ) -> "RecidivizGitHubService":
+    ) -> "AirflowGitHubService":
         label_for_environment = get_environment_for_project(project_id).value.title()
         label_for_state_code = f"Region: {state_code.value}"
-        return RecidivizGitHubService(
+        return AirflowGitHubService(
             name=f"Raw Data {state_code.value} Github Service",
             state_code=state_code,
             project_id=project_id,
@@ -81,10 +80,10 @@ class RecidivizGitHubService(RecidivizAlertingService):
     @classmethod
     def dataflow_service_for_state_code(
         cls, *, project_id: str, state_code: StateCode
-    ) -> "RecidivizGitHubService":
+    ) -> "AirflowGitHubService":
         label_for_environment = get_environment_for_project(project_id).value.title()
         label_for_state_code = f"Region: {state_code.value}"
-        return RecidivizGitHubService(
+        return AirflowGitHubService(
             name=f"Dataflow {state_code.value} Github Service",
             state_code=state_code,
             project_id=project_id,
@@ -98,42 +97,30 @@ class RecidivizGitHubService(RecidivizAlertingService):
     def _search_past_issues_for_incident(
         self, incident: AirflowAlertingIncident
     ) -> Issue | None:
-        matching_issues = self._repo.get_issues(
-            sort="created",
-            direction="desc",
+        matching_issues = self.get_helperbot_issues_for_title(
+            title=self._get_issue_title_from_incident(incident),
             labels=self.issue_labels,
-            # TODO(PyGithub/PyGithub#3084): remove mypy exemption once issue is fixed
-            creator=HELPERBOT_USER_NAME,  # type: ignore
-            state="all",
             # if an incident has been open for longer than our lookback period, we will
             # think it's a "new" incident since we use incident_start_date in the
             # incident id, so we should be safe to filter down issues to when this
             # incident started.
             since=incident.incident_start_date,
         )
-
-        for issue in matching_issues:
-            if issue.title == self._get_issue_title_from_incident(incident):
-                return issue
-
-        return None
+        return one(matching_issues) if matching_issues else None
 
     def _ensure_issue_closed_for_resolved_incident(
         self, issue: Issue | None, incident: AirflowAlertingIncident
     ) -> None:
-        if issue and issue.state == "open":
-            issue.create_comment(
-                f"Successful job completion found on [`{assert_type(incident.next_success_date, datetime.datetime).isoformat()}`]; closing issue."
+        logging.info(
+            "Ensuring issue for incident [%s] is closed as the incident is resolved as a job run completed successfully on [%s].",
+            incident.unique_incident_id,
+            assert_type(incident.next_success_date, datetime.datetime).isoformat(),
+        )
+        if issue:
+            self.close_issue(
+                issue,
+                comment_body=f"Successful job completion found on [`{assert_type(incident.next_success_date, datetime.datetime).isoformat()}`]; closing issue.",
             )
-            issue.edit(state="closed", state_reason="completed")
-            logging.info(
-                "Closed issue [#%s] for incident [%s] as a job run completed successfully on [%s]",
-                issue.number,
-                incident.unique_incident_id,
-                assert_type(incident.next_success_date, datetime.datetime).isoformat(),
-            )
-        else:
-            logging.info("Issue doesn't exist or is already closed")
 
     @staticmethod
     def _format_incident_issue_description_header(
@@ -198,7 +185,7 @@ class RecidivizGitHubService(RecidivizAlertingService):
             max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
         )
 
-        issue = self._repo.create_issue(
+        issue = self.create_new_issue(
             title=self._get_issue_title_from_incident(incident),
             body=body,
             labels=self.issue_labels,
@@ -227,12 +214,9 @@ class RecidivizGitHubService(RecidivizAlertingService):
             incident
         )
 
-        comments = [
-            comment
-            for comment in issue.get_comments()
-            if comment.user.login == HELPERBOT_USER_NAME
-            and comment.body.startswith(most_recent_comment_header)
-        ]
+        comments = self.get_helperbot_comments(
+            issue, comment_prefix=most_recent_comment_header
+        )
 
         incident_not_updated_since_last_comment = len(comments) != 0
 
@@ -269,10 +253,9 @@ class RecidivizGitHubService(RecidivizAlertingService):
             issue.create_comment(body=body)
 
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
-
         existing_issue = self._search_past_issues_for_incident(incident)
 
-        if incident.next_success_date is not None:
+        if incident.is_resolved:
             self._ensure_issue_closed_for_resolved_incident(existing_issue, incident)
         elif not existing_issue:
             self._open_new_issue(incident)
