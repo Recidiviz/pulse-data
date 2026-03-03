@@ -59,6 +59,10 @@ schema:
     description: "Whether the user is a Recidiviz employee"
     type: BOOLEAN
     mode: NULLABLE
+  - name: state_code
+    description: "State code"
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
