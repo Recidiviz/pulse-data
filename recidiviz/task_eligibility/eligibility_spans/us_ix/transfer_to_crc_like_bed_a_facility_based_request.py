@@ -64,7 +64,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # Must be a resident of SICI, or ICIO, or expected to be released in a relevant district
         in_sici_or_icio_or_relevant_release_notes.VIEW_BUILDER,
     ],
-    # TODO(#54358): Hydrate completion event
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[

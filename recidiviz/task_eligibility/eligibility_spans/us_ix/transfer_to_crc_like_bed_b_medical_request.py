@@ -56,7 +56,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # Not denied for CRC work release unless only reason is MEDICAL
         marked_medically_ineligible_for_crc_work_release.VIEW_BUILDER,
     ],
-    # TODO(#54358): Hydrate completion event
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
 )
 

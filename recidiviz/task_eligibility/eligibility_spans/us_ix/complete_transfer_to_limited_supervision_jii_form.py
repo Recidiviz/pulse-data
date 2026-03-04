@@ -31,7 +31,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     lsir_level_low_for_90_days,
     no_active_nco,
     no_recent_marked_ineligible_unless_ffr,
-    not_marked_submitted_for_limited_supervision,
     supervision_level_raw_text_is_not_so_or_soto,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
@@ -64,7 +63,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_sexual_offense_on_supervision.VIEW_BUILDER,
         not_serving_a_life_sentence_on_supervision.VIEW_BUILDER,
         no_recent_marked_ineligible_unless_ffr.VIEW_BUILDER,
-        not_marked_submitted_for_limited_supervision.VIEW_BUILDER,
         supervision_level_is_not_diversion.VIEW_BUILDER,
     ],
     completion_event_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.completion_event_builder,
