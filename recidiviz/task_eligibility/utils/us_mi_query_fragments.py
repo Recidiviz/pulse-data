@@ -78,10 +78,15 @@ def generate_sccp_form_opportunity_record_view_builder(
     Returns:
         SimpleBigQueryViewBuilder
     """
+    # TODO(#61681): migrate the frontend to expect the reasons_v2 criteria names
+    # HOUSING_UNIT_TYPE_IS_NOT_DISCIPLINARY_SOLITARY_CONFINEMENT: 'START_start_date' -> 'disciplinary_solitary_start_date'
+    # US_MI_IN_SOLITARY_CONFINEMENT_AT_LEAST_ONE_YEAR: 'eligible_date' -> 'one_year_in_solitary_date'
+    # US_MI_IN_SOLITARY_CONFINEMENT_AT_LEAST_SIX_MONTHS: 'eligible_date' -> 'six_months_in_solitary_date'
     filtered_tes_query = select_relevant_task_eligibility_spans_for_record(
         tes_view_builder=tes_view_builder,
         spans_subset_type=spans_subset_type,
         include_eligible_date=False,
+        use_legacy_reasons_column=True,
         include_reasons_v2=False,
     )
 

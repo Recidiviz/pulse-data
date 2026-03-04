@@ -59,6 +59,11 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Client's custody level",
             ),
+            ReasonsField(
+                name="upcoming_eligibility_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when client becomes eligible",
+            ),
         ],
     )
 )
