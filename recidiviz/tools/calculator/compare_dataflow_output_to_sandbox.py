@@ -104,6 +104,7 @@ from recidiviz.pipelines.dataflow_config import (
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -419,7 +420,8 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
@@ -432,3 +434,7 @@ if __name__ == "__main__":
             known_args.additional_columns_to_compare,
             known_args.allow_overwrite,
         )
+
+
+if __name__ == "__main__":
+    main()

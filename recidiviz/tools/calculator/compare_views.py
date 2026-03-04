@@ -48,6 +48,7 @@ from typing import List, Tuple
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.tools.utils.compare_tables_helper import compare_table_or_view
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.params import str_to_list
 
@@ -120,6 +121,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
+@requires_google_adc
 def main() -> None:
     """Executes the main flow of the script."""
     known_args, _ = parse_arguments(sys.argv)

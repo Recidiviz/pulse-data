@@ -84,7 +84,10 @@ from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     get_sandbox_pipeline_username,
     run_sandbox_dataflow_pipeline,
 )
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -296,6 +299,7 @@ def run_sandbox_ingest_pipeline(
     run_sandbox_dataflow_pipeline(params, skip_build)
 
 
+@requires_google_adc
 def main() -> None:
     """Creates sandbox datasets (as appropriate) and launches a sandbox ingest
     pipline as specified by the script args.

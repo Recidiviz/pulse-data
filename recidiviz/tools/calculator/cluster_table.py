@@ -45,7 +45,10 @@ from typing import List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -164,7 +167,8 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()
@@ -176,3 +180,7 @@ if __name__ == "__main__":
     with local_project_id_override(args.project_id):
         client = BigQueryClientImpl()
         cluster_table(client, args.dataset_id, args.table_id, args.fields)
+
+
+if __name__ == "__main__":
+    main()

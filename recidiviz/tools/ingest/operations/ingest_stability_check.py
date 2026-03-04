@@ -90,6 +90,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
 )
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils import metadata
 from recidiviz.utils.context import on_exit
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -339,7 +340,7 @@ class CheckCategory(enum.Enum):
     INGEST_VIEW = "ingest_view"
 
 
-def main(
+def _run_stability_checks(
     state_code: StateCode,
     categories: Set[CheckCategory],
     ingest_instance: DirectIngestInstance,
@@ -448,14 +449,19 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     args = parse_arguments()
     with metadata.local_project_id_override(GCP_PROJECT_STAGING):
         sys.exit(
-            main(
+            _run_stability_checks(
                 StateCode(args.state_code),
                 {CheckCategory(category) for category in args.category},
                 ingest_instance=DirectIngestInstance(args.ingest_instance),
                 sandbox_raw_dataset_prefix=args.sandbox_raw_dataset_prefix,
             )
         )
+
+
+if __name__ == "__main__":
+    main()

@@ -34,6 +34,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import non_optional
@@ -289,7 +290,8 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     args = parse_arguments()
 
     ValidationDatasetValidator(
@@ -298,3 +300,7 @@ if __name__ == "__main__":
         args.ingest_instance,
         args.sandbox_prefix,
     ).run_validation()
+
+
+if __name__ == "__main__":
+    main()

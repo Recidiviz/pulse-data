@@ -55,6 +55,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -206,7 +207,8 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments()
 
@@ -217,3 +219,7 @@ if __name__ == "__main__":
             recreate=args.recreate,
             state_code_filter=args.state_code,
         )
+
+
+if __name__ == "__main__":
+    main()

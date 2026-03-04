@@ -70,7 +70,10 @@ from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     get_sandbox_pipeline_username,
     run_sandbox_dataflow_pipeline,
 )
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 PIPELINE_PARAMETER_TYPES: Dict[str, Type[PipelineParameters]] = {
@@ -129,6 +132,7 @@ def parse_pipeline_parameters(
     )
 
 
+@requires_google_adc
 def main() -> None:
     known_args, remaining_args = parse_run_arguments()
     params = parse_pipeline_parameters(known_args, remaining_args)

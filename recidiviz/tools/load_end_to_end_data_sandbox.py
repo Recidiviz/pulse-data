@@ -112,6 +112,7 @@ from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
 from recidiviz.tools.utils.script_helpers import (
     prompt_for_confirmation,
     prompt_for_step,
+    requires_google_adc,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -697,7 +698,8 @@ def parse_arguments() -> argparse.Namespace:
     return parsed_args
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments()
     load_end_to_end_sandbox(
@@ -713,3 +715,7 @@ if __name__ == "__main__":
         changed_addresses_to_include=args.changed_addresses_to_include,
         changed_addresses_to_ignore=args.changed_addresses_to_ignore,
     )
+
+
+if __name__ == "__main__":
+    main()

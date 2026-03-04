@@ -48,6 +48,7 @@ from recidiviz.tools.utils.compare_tables_helper import (
     CompareTablesResult,
     compare_table_or_view,
 )
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -245,6 +246,7 @@ def _parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+@requires_google_adc
 def main() -> None:
     """Main entry point for the comparison script."""
     args = _parse_arguments()

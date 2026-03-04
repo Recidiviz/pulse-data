@@ -59,6 +59,7 @@ from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator im
 from recidiviz.tools.ingest.operations.helpers.raw_table_file_counts_diff_query_generator import (
     RawTableFileCountsDiffQueryGenerator,
 )
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.log_helpers import make_log_output_path
 
@@ -242,6 +243,7 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
+@requires_google_adc
 def main() -> None:
     """Runs the table comparisons and logs results."""
     args = _parse_args()

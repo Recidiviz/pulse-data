@@ -55,7 +55,10 @@ from recidiviz.persistence.entity.operations.entities import (
 )
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -307,6 +310,7 @@ def upload_raw_state_files_to_ingest_bucket_with_date(
         )
 
 
+@requires_google_adc
 def main() -> None:
     """Executes the main flow of the script."""
     parser = argparse.ArgumentParser(

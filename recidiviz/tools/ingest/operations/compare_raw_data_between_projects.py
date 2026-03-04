@@ -46,6 +46,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import IS_DELETED_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -216,6 +217,7 @@ def output_failed_tables(
         )
 
 
+@requires_google_adc
 def main() -> None:
     """Runs the comparison and logs final results."""
     parser = argparse.ArgumentParser(

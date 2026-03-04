@@ -182,7 +182,10 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
 from recidiviz.tools.utils.arg_parsers import str_to_address_list
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
@@ -1538,7 +1541,9 @@ def _parse_input_source_table_dataset_overrides(
     return input_source_table_dataset_overrides_dict
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
+    """Main entry point for the load_views_to_sandbox script."""
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments()
 
@@ -1601,3 +1606,7 @@ if __name__ == "__main__":
             )
         else:
             raise ValueError(f"Unexpected load to sandbox mode: [{args.chosen_mode}]")
+
+
+if __name__ == "__main__":
+    main()

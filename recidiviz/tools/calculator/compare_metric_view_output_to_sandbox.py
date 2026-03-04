@@ -85,6 +85,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_all_views_to_sandbox
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
@@ -456,7 +457,8 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
@@ -478,3 +480,7 @@ if __name__ == "__main__":
             known_args.allow_schema_changes,
             known_args.dataset_id_filters,
         )
+
+
+if __name__ == "__main__":
+    main()

@@ -40,6 +40,7 @@ from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directorie
     IngestFilesOperationType,
     OperateOnRawStorageDirectoriesController,
 )
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.params import str_to_bool
 
@@ -99,6 +100,7 @@ def copy_raw_state_files(
     ).run()
 
 
+@requires_google_adc
 def main() -> None:
     """Executes the main flow of the script."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")

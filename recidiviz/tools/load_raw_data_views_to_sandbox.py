@@ -56,6 +56,7 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewCollector,
 )
 from recidiviz.tools.load_views_to_sandbox import load_collected_views_to_sandbox
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -205,7 +206,8 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments()
 
@@ -217,3 +219,7 @@ if __name__ == "__main__":
             exclude_undocumented_views_and_columns=args.exclude_undocumented_views_and_columns,
             latest_only=args.latest_only,
         )
+
+
+if __name__ == "__main__":
+    main()

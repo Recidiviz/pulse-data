@@ -82,7 +82,10 @@ from recidiviz.source_tables.source_table_config import (
     StateSpecificSourceTableLabel,
 )
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -387,7 +390,8 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     known_args = parse_arguments()
     with local_project_id_override(known_args.project_id):
@@ -403,3 +407,7 @@ if __name__ == "__main__":
             allow_incomplete_chunked_files=known_args.allow_incomplete_chunked_files,
             skip_raw_data_pruning=known_args.skip_raw_data_pruning,
         )
+
+
+if __name__ == "__main__":
+    main()

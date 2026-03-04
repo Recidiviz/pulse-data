@@ -42,6 +42,7 @@ from recidiviz.tools.ingest.operations.move_raw_state_files_from_storage import 
     OperateOnRawStorageFilesController,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -143,6 +144,7 @@ def confirm_dates_with_user(
     return confirmed_dates
 
 
+@requires_google_adc
 def main() -> None:
     """Main function to copy raw state data files from production to staging."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")

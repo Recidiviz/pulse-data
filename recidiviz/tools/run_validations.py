@@ -33,9 +33,9 @@ uv run python -m recidiviz.tools.run_validations \
 import argparse
 import logging
 import re
-from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.validation_manager import execute_validation
@@ -71,29 +71,21 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(
-    sandbox_dataset_prefix: Optional[str],
-    state_code: StateCode,
-    validation_name_filter: Optional[str],
-) -> None:
+@requires_google_adc
+def main() -> None:
+    logging.getLogger().setLevel(logging.INFO)
+    args = create_parser().parse_args()
     validation_regex = (
-        re.compile(validation_name_filter) if validation_name_filter else None
+        re.compile(args.validation_name_filter) if args.validation_name_filter else None
     )
-    execute_validation(
-        region_code=state_code.value,
-        validation_name_filter=validation_regex,
-        sandbox_dataset_prefix=sandbox_dataset_prefix,
-        file_tickets_on_failure=False,
-    )
+    with local_project_id_override(args.project_id):
+        execute_validation(
+            region_code=args.state_code.value,
+            validation_name_filter=validation_regex,
+            sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+            file_tickets_on_failure=False,
+        )
 
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-
-    args = create_parser().parse_args()
-    with local_project_id_override(args.project_id):
-        main(
-            args.sandbox_dataset_prefix,
-            args.state_code,
-            args.validation_name_filter,
-        )
+    main()

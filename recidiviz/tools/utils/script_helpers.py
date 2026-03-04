@@ -16,6 +16,7 @@
 # =============================================================================
 """General helpers for python scripts."""
 import enum
+import functools
 import logging
 import os
 import pwd
@@ -24,7 +25,11 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional, ParamSpec, TypeVar
+
+import google.auth
+import google.auth.exceptions
+import google.auth.transport.requests
 
 
 class RunCommandUnsuccessful(RuntimeError):
@@ -340,3 +345,57 @@ def retry_on_exceptions_with_backoff(
                 raise
             time.sleep(backoff_secs)
             backoff_secs = min(backoff_secs * 2, max_backoff_secs)
+
+
+def _refresh_google_adc_credentials() -> None:
+    """Attempts to load and refresh Google ADC credentials."""
+    creds, _ = google.auth.default()
+    auth_req = google.auth.transport.requests.Request()
+    creds.refresh(auth_req)
+
+
+def verify_google_adc_credentials() -> None:
+    """Verifies that Google Application Default Credentials (ADC) are valid and
+    not expired.
+    """
+    try:
+        _refresh_google_adc_credentials()
+    except google.auth.exceptions.DefaultCredentialsError:
+        logging.error(
+            "No Google Application Default Credentials found. "
+            "Please run:\n\n  gcloud auth login --update-adc\n"
+        )
+        sys.exit(1)
+    except google.auth.exceptions.RefreshError:
+        logging.error(
+            "Google Application Default Credentials are expired or invalid. "
+            "Please run:\n\n  gcloud auth login --update-adc\n"
+        )
+        sys.exit(1)
+    except Exception as e:
+        logging.warning("Unable to verify Google ADC credentials: %s. Retrying...", e)
+        retry_on_exceptions_with_backoff(
+            lambda_fn=_refresh_google_adc_credentials,
+            errors_to_retry=(type(e),),
+            max_tries=3,
+            min_backoff_secs=1.0,
+            max_backoff_secs=5.0,
+        )
+
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def requires_google_adc(func: Callable[P, T]) -> Callable[P, T]:
+    """Decorator that verifies Google ADC credentials before calling the
+    wrapped function. Use on script ``main()`` functions to fail fast when
+    credentials are missing or expired.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        verify_google_adc_credentials()
+        return func(*args, **kwargs)
+
+    return wrapper

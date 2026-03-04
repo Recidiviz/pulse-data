@@ -35,6 +35,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 
 
@@ -104,7 +105,9 @@ def get_latest_date_folders(
     return results
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
+    """Main entry point to parse arguments and call the date gathering function."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -134,3 +137,7 @@ if __name__ == "__main__":
     )
     # When run as a script, also print the results for visibility
     logging.info("Results: %s", result)
+
+
+if __name__ == "__main__":
+    main()

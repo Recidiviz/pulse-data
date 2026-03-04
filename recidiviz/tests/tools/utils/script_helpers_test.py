@@ -22,12 +22,15 @@ from unittest import TestCase, mock
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from google.auth.exceptions import DefaultCredentialsError, RefreshError
 from parameterized import param, parameterized
 
 from recidiviz.tools.utils.script_helpers import (
     interactive_loop_until_tasks_succeed,
     interactive_prompt_retry_on_exception,
     prompt_for_confirmation,
+    requires_google_adc,
+    verify_google_adc_credentials,
 )
 
 
@@ -486,3 +489,87 @@ class TestInteractiveLoopUntilTasksSucceed:
             ("root", logging.WARNING, "Timeout!    {'four': 4}"),
             ("root", logging.INFO, "All tasks complete"),
         ]
+
+
+class TestVerifyGoogleAdcCredentials(TestCase):
+    """Tests for verify_google_adc_credentials and @requires_google_adc."""
+
+    @patch("recidiviz.tools.utils.script_helpers.google.auth.default")
+    def test_valid_credentials_no_error(self, mock_auth_default: MagicMock) -> None:
+        mock_creds = MagicMock()
+        mock_auth_default.return_value = (mock_creds, "project-id")
+
+        verify_google_adc_credentials()
+
+        mock_auth_default.assert_called_once()
+        mock_creds.refresh.assert_called_once()
+
+    @patch("sys.exit")
+    @patch("recidiviz.tools.utils.script_helpers.google.auth.default")
+    def test_no_credentials_exits(
+        self, mock_auth_default: MagicMock, mock_exit: MagicMock
+    ) -> None:
+
+        mock_auth_default.side_effect = DefaultCredentialsError()
+
+        verify_google_adc_credentials()
+
+        mock_exit.assert_called_once_with(1)
+
+    @patch("sys.exit")
+    @patch("recidiviz.tools.utils.script_helpers.google.auth.default")
+    def test_expired_credentials_exits(
+        self, mock_auth_default: MagicMock, mock_exit: MagicMock
+    ) -> None:
+
+        mock_creds = MagicMock()
+        mock_creds.refresh.side_effect = RefreshError()
+        mock_auth_default.return_value = (mock_creds, "project-id")
+
+        verify_google_adc_credentials()
+
+        mock_exit.assert_called_once_with(1)
+
+    @patch("recidiviz.tools.utils.script_helpers.time.sleep")
+    @patch("recidiviz.tools.utils.script_helpers.google.auth.default")
+    def test_unexpected_error_retries_and_succeeds(
+        self, mock_auth_default: MagicMock, _mock_sleep: MagicMock
+    ) -> None:
+        mock_creds = MagicMock()
+        mock_auth_default.side_effect = [
+            OSError("network timeout"),
+            (mock_creds, "project-id"),
+        ]
+
+        with self.assertLogs(level="WARNING") as log:
+            verify_google_adc_credentials()
+
+        self.assertTrue(
+            any("Unable to verify Google ADC credentials" in m for m in log.output)
+        )
+        self.assertEqual(mock_auth_default.call_count, 2)
+
+    @patch("recidiviz.tools.utils.script_helpers.time.sleep")
+    @patch("recidiviz.tools.utils.script_helpers.google.auth.default")
+    def test_unexpected_error_raises_after_retries_exhausted(
+        self, mock_auth_default: MagicMock, _mock_sleep: MagicMock
+    ) -> None:
+        mock_auth_default.side_effect = OSError("network timeout")
+
+        with self.assertRaises(OSError):
+            verify_google_adc_credentials()
+
+    @patch("recidiviz.tools.utils.script_helpers.google.auth.default")
+    def test_requires_google_adc_preserves_signature(
+        self, mock_auth_default: MagicMock
+    ) -> None:
+        mock_creds = MagicMock()
+        mock_auth_default.return_value = (mock_creds, "project-id")
+
+        @requires_google_adc
+        def my_func(x: int, y: str = "default") -> str:
+            return f"{x}{y}"
+
+        result = my_func(1, y="hello")
+        self.assertEqual(result, "1hello")
+        self.assertEqual(my_func.__name__, "my_func")

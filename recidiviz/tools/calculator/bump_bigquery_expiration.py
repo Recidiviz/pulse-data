@@ -37,6 +37,7 @@ from recidiviz.tools.utils.bigquery_helpers import (
     dataset_prefix_to_filter_regex,
     run_operation_for_tables_in_datasets,
 )
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -65,7 +66,8 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()
@@ -84,3 +86,7 @@ if __name__ == "__main__":
             ),
             dataset_filter=dataset_prefix_to_filter_regex(args.dataset_prefix),
         )
+
+
+if __name__ == "__main__":
+    main()

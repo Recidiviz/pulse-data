@@ -36,6 +36,7 @@ from typing import List, Tuple
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -103,7 +104,8 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
@@ -111,3 +113,7 @@ if __name__ == "__main__":
         copy_table_data_from_dataset(
             known_args.source_dataset_id, known_args.destination_dataset_id
         )
+
+
+if __name__ == "__main__":
+    main()

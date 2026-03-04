@@ -57,6 +57,7 @@ from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_d
     MoveIngestBucketRawFilesToDeprecatedController,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
+from recidiviz.tools.utils.script_helpers import requires_google_adc
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -121,7 +122,7 @@ def _parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(
+def _deprecate_ingest_bucket_raw_files(
     *,
     project_id: str,
     state_code: StateCode,
@@ -179,13 +180,14 @@ def main(
         )
 
 
-if __name__ == "__main__":
+@requires_google_adc
+def main() -> None:
     logging.getLogger().setLevel(logging.INFO)
     args = _parse_arguments()
 
     with local_project_id_override(args.project_id):
         with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
-            main(
+            _deprecate_ingest_bucket_raw_files(
                 project_id=args.project_id,
                 state_code=args.state_code,
                 ingest_instance=args.ingest_instance,
@@ -198,3 +200,7 @@ if __name__ == "__main__":
                 file_tag_filters=args.file_tag_filters,
                 dry_run=args.dry_run,
             )
+
+
+if __name__ == "__main__":
+    main()

@@ -82,7 +82,10 @@ from recidiviz.tools.ingest.operations.helpers.operate_on_raw_storage_directorie
     IngestFilesOperationType,
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    requires_google_adc,
+)
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.log_helpers import make_log_output_path
@@ -345,6 +348,7 @@ class OperateOnRawStorageFilesController:
             )
 
 
+@requires_google_adc
 def main() -> None:
     """Runs the move_state_files_to_storage script."""
     parser = argparse.ArgumentParser(
