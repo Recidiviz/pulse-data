@@ -62,8 +62,19 @@ custom:
           - datetime_start_inclusive: "2023-08-22T00:00:00Z"
             datetime_end_exclusive: "2025-08-28T00:00:00Z"
             reason:
-              "This table was modified on 2025-08-28 to also include prison case manager assignments
-              (previously, it only included supervision officer assignments)."
+              "This table was modified on 2025-08-28 to also include prison case
+              manager assignments (previously, it only included supervision
+              officer assignments)."
+
+  US_MO:
+    file_tags:
+      LBAKRDTA_TAK034:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2023-01-10T00:00:00Z"
+            datetime_end_exclusive: "2026-03-03T00:00:00Z"
+            reason:
+              "This file switched from incremental to full historical so this
+              jump is expected."
 
   US_TN:
     file_tags:
@@ -72,11 +83,12 @@ custom:
           - datetime_start_inclusive: "2022-03-22T00:00:00Z"
             datetime_end_exclusive: "2025-04-01T00:00:00Z"
             reason:
-              "This table was modified on 2024-03-30 to seperate 'classes' from 'programs'
-              so the table went from 48 records to 10. This is expected so we want to
-              add a data-bounded exclusion from the first case of a file being
-              received --> today, which will exclude those dates from validation & from
-              being used to calculate the median historical row count"
+              "This table was modified on 2024-03-30 to seperate 'classes' from
+              'programs' so the table went from 48 records to 10. This is
+              expected so we want to add a data-bounded exclusion from the first
+              case of a file being received --> today, which will exclude those
+              dates from validation & from being used to calculate the median
+              historical row count"
 
   US_IA:
     file_tags:
@@ -84,7 +96,8 @@ custom:
         date_range_exclusions:
           - datetime_start_inclusive: "2024-09-17T00:00:00Z"
             datetime_end_exclusive: "2025-10-21T00:00:00Z"
-            reason: "This table was modified on 2025-10-21 to be full historical instead of a 14 day diff"
+            reason: "This table was modified on 2025-10-21 to be full historical
+              instead of a 14 day diff"
 
   US_UT:
     file_tags:
