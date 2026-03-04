@@ -80,6 +80,7 @@ output:
                   - "LOW"
                 StateAssessmentLevel.MEDIUM:
                   - "MED"
+                  - "MEDIUM"
                 StateAssessmentLevel.MEDIUM_HIGH:
                   - "CLS"
                   - "CLOSE"
