@@ -152,6 +152,7 @@ output:
                   - ESC
                   - ESCP
                   - ABSC
+                  - ABSCONDED
                   - ESCP_CJ
                 StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
                   - ESCP_ERR
