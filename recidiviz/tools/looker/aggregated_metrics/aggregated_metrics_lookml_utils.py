@@ -38,6 +38,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventDistinctUnitCountMetric,
     EventValueMetric,
     SpanDistinctUnitCountMetric,
+    SumEventValueMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
@@ -70,6 +71,7 @@ def _generate_lookml_measure_fragment(
             AssignmentEventCountMetric,
             AssignmentSpanDaysMetric,
             EventCountMetric,
+            SumEventValueMetric,
             SumSpanDaysMetric,
         ),
     ):
@@ -108,8 +110,7 @@ def _generate_lookml_measure_fragment_normalized(
     """
     Returns the appropriate formula for aggregated a metric over multiple time periods
     and converting to a normalized rate. If `allow_custom_denominator` is true, permit
-    injection of user-selected metric as denominator for DailyAvgSpanCount and EventCount metrics
-    if measure_type is normalized.
+    injection of user-selected metric as denominator for DailyAvgSpanCount and EventCount metrics if measure_type is normalized.
     """
 
     custom_denominator = (
