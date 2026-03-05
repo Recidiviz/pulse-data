@@ -362,14 +362,7 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
             },
         },
-        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_IX),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                HAS_HIGH_SEVERITY_CRIME_VIEW_BUILDER.address,
-            },
-        },
+        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.address: {},
     },
     "VITALS": {
         VITALS_SUMMARIES_VIEW_BUILDER.address: {
