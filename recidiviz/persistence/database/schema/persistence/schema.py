@@ -16,7 +16,7 @@
 #  =============================================================================
 #
 """Define the ORM schema for data persisted for eventual reingestion."""
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import ARRAY, Column, DateTime, Integer, String
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -46,10 +46,12 @@ class UsTnCafFormEdits(PersistenceBase):
     AssessmentDate = Column(DateTime, primary_key=True, nullable=False)
 
     # Required columns
-    LastClassificationDate = Column(DateTime, nullable=False)
     LastModifiedBy = Column(String, nullable=False)
+    LastModifiedDate = Column(DateTime, nullable=False)
+    UpdatedFields = Column(ARRAY(String), nullable=False)
 
     # Nullable columns
+    LastClassificationDate = Column(DateTime, nullable=True)
     Question1 = Column(Integer, nullable=True)
     Question1_notes = Column(String, nullable=True)
     Question2 = Column(Integer, nullable=True)
