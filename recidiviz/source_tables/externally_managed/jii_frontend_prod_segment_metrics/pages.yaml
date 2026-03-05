@@ -1,0 +1,102 @@
+address:
+  dataset_id: jii_frontend_prod_segment_metrics
+  table_id: pages
+description: "Segment data on pageviews in the JII tablet app"
+schema:
+  - name: anonymous_id
+    type: STRING
+    mode: NULLABLE
+  - name: context_ip
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_name
+    type: STRING
+    mode: NULLABLE
+  - name: context_library_version
+    type: STRING
+    mode: NULLABLE
+  - name: context_locale
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_path
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_referrer
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_search
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_title
+    type: STRING
+    mode: NULLABLE
+  - name: context_page_url
+    type: STRING
+    mode: NULLABLE
+  - name: context_timezone
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_brands
+    type: STRING
+    mode: NULLABLE
+  - name: context_user_agent_data_mobile
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: context_user_agent_data_platform
+    type: STRING
+    mode: NULLABLE
+  - name: id
+    type: STRING
+    mode: NULLABLE
+  - name: is_recidiviz_user
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: loaded_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: original_timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: path
+    type: STRING
+    mode: NULLABLE
+  - name: received_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: referrer
+    type: STRING
+    mode: NULLABLE
+  - name: search
+    type: STRING
+    mode: NULLABLE
+  - name: sent_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: session_id
+    type: STRING
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: timestamp
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: title
+    type: STRING
+    mode: NULLABLE
+  - name: url
+    type: STRING
+    mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
+  - name: uuid_ts
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

@@ -2863,6 +2863,16 @@ LOGINS_JII_TABLET_APP_USER = EventCountMetric(
     ),
 )
 
+PAGE_VIEWS_JII_TABLET_APP_USER = EventCountMetric(
+    name="page_views_jii_tablet_app_user",
+    display_name="Page Views, JII Tablet App Users",
+    description="Number of page views by users of the JII tablet app",
+    event_selector=EventSelector(
+        event_type=EventType.JII_TABLET_APP_USER_PAGE_VIEW,
+        event_conditions_dict={},
+    ),
+)
+
 # Outcome metrics
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",

@@ -50,6 +50,7 @@ class EventType(Enum):
     INTERCOM_CSAT_RESPONSE = "INTERCOM_CSAT_RESPONSE"
     JII_INCOMING_TEXT_MESSAGE = "JII_INCOMING_TEXT_MESSAGE"
     JII_TABLET_APP_USER_LOGIN = "JII_TABLET_APP_USER_LOGIN"
+    JII_TABLET_APP_USER_PAGE_VIEW = "JII_TABLET_APP_USER_PAGE_VIEW"
     JII_OUTGOING_TEXT_MESSAGE = "JII_OUTGOING_TEXT_MESSAGE"
     PAROLE_HEARING = "PAROLE_HEARING"
     PENDING_CUSTODY_START = "PENDING_CUSTODY_START"
@@ -176,7 +177,10 @@ class EventType(Enum):
             EventType.INTERCOM_CSAT_RESPONSE,
         ]:
             return MetricUnitOfObservationType.GLOBAL_PROVISIONED_USER
-        if self in [EventType.JII_TABLET_APP_USER_LOGIN]:
+        if self in [
+            EventType.JII_TABLET_APP_USER_LOGIN,
+            EventType.JII_TABLET_APP_USER_PAGE_VIEW,
+        ]:
             return MetricUnitOfObservationType.JII_TABLET_APP_PROVISIONED_USER
 
         raise ValueError(
