@@ -61,6 +61,7 @@ output:
               $values:
                 - OffenderID
                 - CAF_ID
+                - $literal("2026-POLICY")
           assessment_type:
             $enum_mapping:
               $raw_text: ClassificationType
