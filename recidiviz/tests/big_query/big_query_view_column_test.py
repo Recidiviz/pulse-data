@@ -244,6 +244,23 @@ class RecordColumnTest(unittest.TestCase):
         )
         self.assertFalse(record.matches_bq_field(schema_field))
 
+    def test_does_not_match_different_subfield_order(self) -> None:
+        """Records with same subfields in different order should not match."""
+        schema_field = bigquery.SchemaField(
+            name="address",
+            field_type="RECORD",
+            mode="NULLABLE",
+            fields=[
+                bigquery.SchemaField(
+                    name="zip_code", field_type="INTEGER", mode="NULLABLE"
+                ),
+                bigquery.SchemaField(
+                    name="street", field_type="STRING", mode="NULLABLE"
+                ),
+            ],
+        )
+        self.assertFalse(self.record.matches_bq_field(schema_field))
+
     def test_as_schema_field_truncates_description(self) -> None:
         """Record and its subfields should truncate long descriptions."""
         long_desc = "x" * 1025

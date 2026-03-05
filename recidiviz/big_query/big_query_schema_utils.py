@@ -98,31 +98,28 @@ def diff_declared_schema_to_bq_schema(
     deployed_schema: Sequence[bigquery.SchemaField],
 ) -> list[tuple[str, bigquery.SchemaField]]:
     """Compare a declared view schema (list of BigQueryViewColumns) against a native
-    BigQuery schema (list of bigquery.SchemaFields).
+    BigQuery schema (list of bigquery.SchemaFields). Fields must appear in the same
+    order in both schemas.
 
     Returns:
-        A list of (indicator, field) tuples sorted alphabetically by field name.
-        The indicator is "+" for deployed fields missing from declared schema, and
-        "-" for declared fields missing from deployed schema.
+        A list of (indicator, field) tuples in positional order.
+        The indicator is "+" for deployed fields not matching declared schema, and
+        "-" for declared fields not matching deployed schema.
     """
-    declared_by_name = {f.name: f for f in declared_schema}
-    deployed_by_name = {f.name: f for f in deployed_schema}
-
-    field_names = sorted(set(declared_by_name.keys()) | set(deployed_by_name.keys()))
-
     diff: list[tuple[str, bigquery.SchemaField]] = []
-    for name in field_names:
-        declared_field = declared_by_name.get(name)
-        deployed_field = deployed_by_name.get(name)
+    for i in range(max(len(declared_schema), len(deployed_schema))):
+        declared_field = declared_schema[i] if i < len(declared_schema) else None
+        deployed_field = deployed_schema[i] if i < len(deployed_schema) else None
 
-        if deployed_field and not declared_field:
+        if deployed_field is not None and declared_field is None:
             diff.append(("+", deployed_field))
-        elif declared_field and not deployed_field:
+        elif declared_field is not None and deployed_field is None:
             diff.append(("-", declared_field.as_schema_field()))
-        elif declared_field and deployed_field:
+        elif declared_field is not None and deployed_field is not None:
             if (
                 isinstance(declared_field, Record)
                 and deployed_field.field_type == bigquery.SqlTypeNames.RECORD
+                and declared_field.name == deployed_field.name
             ):
                 # Record subfield diff entries have names of the form
                 # `top_level_field.subfield_name`

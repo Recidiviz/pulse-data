@@ -17,7 +17,10 @@
 """Tests for big_query_utils.py"""
 import unittest
 
+from google.cloud import bigquery
+
 from recidiviz.big_query.big_query_utils import (
+    are_bq_schemas_same,
     format_description_for_big_query,
     is_big_query_valid_delimiter,
     is_big_query_valid_encoding,
@@ -135,3 +138,52 @@ class BigQueryUtilsTest(unittest.TestCase):
                 assert description.endswith("(truncated)")
             else:
                 assert description == "?" * length
+
+
+class AreBqSchemasSameTest(unittest.TestCase):
+    """Tests for are_bq_schemas_same."""
+
+    def test_same_schemas(self) -> None:
+        schema = [
+            bigquery.SchemaField("col1", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("col2", "INTEGER", mode="NULLABLE"),
+        ]
+        self.assertTrue(are_bq_schemas_same(schema, list(schema)))
+
+    def test_different_field_order(self) -> None:
+        """Fields in different order should not be considered the same."""
+        schema1 = [
+            bigquery.SchemaField("col1", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("col2", "INTEGER", mode="NULLABLE"),
+        ]
+        schema2 = [
+            bigquery.SchemaField("col2", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("col1", "STRING", mode="NULLABLE"),
+        ]
+        self.assertFalse(are_bq_schemas_same(schema1, schema2))
+
+    def test_different_record_subfield_order(self) -> None:
+        """Record subfields in different order should not be considered the same."""
+        schema1 = [
+            bigquery.SchemaField(
+                "record",
+                "RECORD",
+                mode="NULLABLE",
+                fields=[
+                    bigquery.SchemaField("a", "STRING", mode="NULLABLE"),
+                    bigquery.SchemaField("b", "INTEGER", mode="NULLABLE"),
+                ],
+            ),
+        ]
+        schema2 = [
+            bigquery.SchemaField(
+                "record",
+                "RECORD",
+                mode="NULLABLE",
+                fields=[
+                    bigquery.SchemaField("b", "INTEGER", mode="NULLABLE"),
+                    bigquery.SchemaField("a", "STRING", mode="NULLABLE"),
+                ],
+            ),
+        ]
+        self.assertFalse(are_bq_schemas_same(schema1, schema2))

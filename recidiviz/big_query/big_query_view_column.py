@@ -175,13 +175,11 @@ class Record(BigQueryViewColumn):
     def matches_bq_field(self, schema_field: bigquery.SchemaField) -> bool:
         if not super().matches_bq_field(schema_field):
             return False
-        declared_by_name = {f.name: f for f in self.fields}
-        deployed_by_name = {f.name: f for f in schema_field.fields}
-        if declared_by_name.keys() != deployed_by_name.keys():
+        if len(self.fields) != len(schema_field.fields):
             return False
         return all(
-            declared_by_name[name].matches_bq_field(deployed_by_name[name])
-            for name in declared_by_name
+            declared.matches_bq_field(deployed)
+            for declared, deployed in zip(self.fields, schema_field.fields)
         )
 
 

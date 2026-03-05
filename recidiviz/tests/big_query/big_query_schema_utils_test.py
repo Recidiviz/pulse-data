@@ -115,6 +115,29 @@ class DiffDeclaredSchemaToBqSchemaTest(unittest.TestCase):
             ],
         )
 
+    def test_different_field_order(self) -> None:
+        """Fields in different order should produce a diff."""
+        declared_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            Integer(name="col2", description="Column 2", mode="NULLABLE"),
+        ]
+
+        deployed_schema = [
+            bigquery.SchemaField(name="col2", field_type="INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField(name="col1", field_type="STRING", mode="NULLABLE"),
+        ]
+
+        diff = diff_declared_schema_to_bq_schema(declared_schema, deployed_schema)
+        self.assertEqual(
+            [
+                ("-", declared_schema[0].as_schema_field()),
+                ("+", deployed_schema[0]),
+                ("-", declared_schema[1].as_schema_field()),
+                ("+", deployed_schema[1]),
+            ],
+            diff,
+        )
+
     def test_record_matching_subfields(self) -> None:
         declared_schema = [
             Record(

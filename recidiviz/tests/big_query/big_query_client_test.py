@@ -910,14 +910,13 @@ class BigQueryClientImplTest(unittest.TestCase):
             use_query_cache=False,
             overwrite=False,
             output_schema=[
-                # Put these out of order to test that the order doesn't matter
                 bigquery.SchemaField(
-                    name="fake_column_2",
+                    name="fake_column",
                     field_type="STRING",
                     mode="REQUIRED",
                 ),
                 bigquery.SchemaField(
-                    name="fake_column",
+                    name="fake_column_2",
                     field_type="STRING",
                     mode="REQUIRED",
                 ),

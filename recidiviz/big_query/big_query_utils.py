@@ -354,15 +354,12 @@ def table_has_field(table: bigquery.Table, field: str) -> bool:
 def are_bq_schemas_same(
     schema1: Sequence[bigquery.SchemaField], schema2: Sequence[bigquery.SchemaField]
 ) -> bool:
-    """Compares two lists of BigQuery SchemaField objects to check if they are the same,
-    ignoring the order of elements."""
+    """Compares two lists of BigQuery SchemaField objects to check if they are the same.
+    Fields must appear in the same order in both schemas."""
     if len(schema1) != len(schema2):
         return False
 
-    schema1_sorted = sorted(schema1, key=lambda field: field.name)
-    schema2_sorted = sorted(schema2, key=lambda field: field.name)
-
-    for field1, field2 in zip(schema1_sorted, schema2_sorted):
+    for field1, field2 in zip(schema1, schema2):
         if (
             field1.name != field2.name
             or field1.field_type != field2.field_type
@@ -372,8 +369,7 @@ def are_bq_schemas_same(
             return False
 
         if field1.field_type == "RECORD":
-            subfields_match = are_bq_schemas_same(field1.fields, field2.fields)
-            if not subfields_match:
+            if not are_bq_schemas_same(field1.fields, field2.fields):
                 return False
 
     return True
