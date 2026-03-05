@@ -358,16 +358,15 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
         )
         return f"""
             SUM(
-            (
-                DATE_DIFF(
-                    LEAST({period_end_date_col}, {span_end_date_col}),
-                    GREATEST({period_start_date_col}, {span_start_date_col}),
-                    DAY)
-                ) * (IF({observation_conditions}, 1, 0))
+              DATE_DIFF(
+                LEAST({period_end_date_col}, {span_end_date_col}),
+                GREATEST({period_start_date_col}, {span_start_date_col}),
+                DAY
+              ) * IF({observation_conditions}, 1, 0)
             ) / DATE_DIFF(
-                    {period_end_date_col},
-                    {period_start_date_col},
-                    DAY
+              {period_end_date_col},
+              {period_start_date_col},
+              DAY
             ) AS {self.name}
         """
 
