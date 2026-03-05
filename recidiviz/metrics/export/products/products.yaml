@@ -244,6 +244,8 @@ products:
     exports:
       - MEETINGS
     states:
+      - state_code: US_CO
+        environment: production
       - state_code: US_ME
         environment: production
       - state_code: US_NC
