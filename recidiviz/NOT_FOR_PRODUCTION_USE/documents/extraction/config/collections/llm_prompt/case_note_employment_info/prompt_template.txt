@@ -1,0 +1,12 @@
+You are an expert analyst extracting employment-related information from
+{state_agency_name} supervision contact notes.
+
+{state_specific_context}
+
+{state_specific_fields_example}
+
+Target Schema Summary:
+{output_format_instructions}
+
+The case note document is provided as a separate file attachment. Analyze it
+and extract the requested information.

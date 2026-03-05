@@ -1,0 +1,67 @@
+# Configuration for US_IX case notes document collection
+#
+# This collection stores case notes from supervision officers about their
+# interactions with people on supervision.
+
+collection_description: >
+  Case notes from US_IX supervision officers documenting interactions with
+  people on supervision, including office visits, home visits, phone calls, and
+  other contacts.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+# Additional columns (beyond root entity columns) that form the primary key
+# for uniquely identifying a document. The document_id and upload_datetime
+# are always included automatically.
+primary_key_columns:
+  - name: note_id
+    type: STRING
+    description: The unique identifier for the case note in the source system
+      (OffenderNoteId)
+
+# Additional metadata columns that are stored with each document but don't
+# uniquely identify it. Useful for filtering and analysis.
+additional_metadata_columns:
+  - name: note_type
+    type: STRING
+    description: The type of note (e.g., Supervision Notes, Facility Notes)
+  - name: contact_modes
+    type: STRING
+    description: Comma-separated list of contact modes (e.g., Office Visit, Phone Call)
+
+# Query that generates the list of documents to store. Must output columns for:
+# - root entity (person_external_id, person_external_id_type)
+# - primary key columns (note_id)
+# - additional metadata columns (note_type, contact_modes)
+# - document_text: the actual document content
+# - document_update_datetime: when the document was created/updated in the source system
+document_generation_query: |
+  SELECT
+    OffenderId AS person_external_id,
+    'US_IX_DOC' AS person_external_id_type,
+    OffenderNoteId AS note_id,
+    NoteTypeDesc AS note_type,
+    contact_modes,
+    COALESCE(Details, '') AS document_text,
+    CAST(NoteDate AS TIMESTAMP) AS document_update_datetime
+  FROM (
+    SELECT
+      noteInfo.OffenderId,
+      notes.OffenderNoteId,
+      noteInfo.NoteDate,
+      refNoteType.NoteTypeDesc,
+      notes.Details,
+      STRING_AGG(contactMode.ContactModeDesc, ', ' ORDER BY contactMode.ContactModeDesc) AS contact_modes
+    FROM `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNote_latest` notes
+    LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNoteInfo_latest` noteInfo
+      USING(OffenderNoteInfoId)
+    LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNoteInfo_ContactMode_latest` noteInfoContactMode
+      USING(OffenderNoteInfoId)
+    LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_ContactMode_latest` contactMode
+      USING(ContactModeId)
+    LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ref_NoteType_latest` refNoteType
+      USING(NoteTypeId)
+    WHERE notes.Details IS NOT NULL
+      AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(noteInfo.NoteDate, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    GROUP BY 1, 2, 3, 4, 5
+  )

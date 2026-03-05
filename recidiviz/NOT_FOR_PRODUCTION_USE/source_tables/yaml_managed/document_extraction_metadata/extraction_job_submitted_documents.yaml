@@ -1,0 +1,41 @@
+address:
+  dataset_id: document_extraction_metadata
+  table_id: extraction_job_submitted_documents
+
+description: |
+  Maps extraction jobs to the documents submitted for processing. One row per
+  document per job. Used to track which documents were included in each job
+  and to identify documents awaiting results.
+
+schema:
+  - name: job_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the extraction job
+
+  - name: document_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the document submitted
+
+  - name: submitted_datetime
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When the document was submitted for extraction
+
+  - name: job_index
+    type: INTEGER
+    mode: REQUIRED
+    description: Position of the document in the submission order (0-indexed). Used for positional correlation with batch results.
+
+  - name: gcs_uri
+    type: STRING
+    mode: REQUIRED
+    description: GCS URI of the document (e.g., gs://bucket/path/to/file.pdf)
+
+  - name: mime_type
+    type: STRING
+    mode: REQUIRED
+    description: MIME type of the document (e.g., text/plain, application/pdf)
+
+clustering_fields: null

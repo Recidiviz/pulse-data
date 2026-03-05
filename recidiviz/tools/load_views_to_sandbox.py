@@ -1175,8 +1175,17 @@ def load_collected_views_to_sandbox(
     rematerialize_changed_views_only: bool,
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     schemas_only: bool,
+    input_source_table_overrides: BigQueryAddressOverrides | None = None,
 ) -> None:
-    """Loads the provided list of builders to a sandbox dataset."""
+    """Loads the provided list of builders to a sandbox dataset.
+
+    Args:
+        input_source_table_overrides: Pre-built address overrides for source
+            tables. If provided, takes precedence over
+            input_source_table_dataset_overrides_dict. Use this for source
+            tables not in the standard source table repo (e.g.,
+            NOT_FOR_PRODUCTION_USE datasets).
+    """
     if not collected_builders:
         logging.warning("Did not find any views to load to the sandbox. Exiting.")
         return
@@ -1186,13 +1195,14 @@ def load_collected_views_to_sandbox(
             "Cannot set both `schemas_only` and `state_code_filter` to true."
         )
 
-    input_source_table_overrides = (
-        address_overrides_for_input_source_tables(
-            input_source_table_dataset_overrides_dict
+    if input_source_table_overrides is None:
+        input_source_table_overrides = (
+            address_overrides_for_input_source_tables(
+                input_source_table_dataset_overrides_dict
+            )
+            if input_source_table_dataset_overrides_dict
+            else BigQueryAddressOverrides.empty()
         )
-        if input_source_table_dataset_overrides_dict
-        else BigQueryAddressOverrides.empty()
-    )
 
     _warn_on_expensive_views(
         collected_builders=collected_builders,

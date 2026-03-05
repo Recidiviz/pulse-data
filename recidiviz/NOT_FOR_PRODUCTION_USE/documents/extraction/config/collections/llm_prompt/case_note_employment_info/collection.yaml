@@ -1,0 +1,30 @@
+# Extractor Collection: CASE_NOTE_EMPLOYMENT_INFO
+#
+# Example collection config demonstrating the extraction schema format.
+# Real extraction schemas live in the mayukas/document-extraction-configs branch.
+
+name: CASE_NOTE_EMPLOYMENT_INFO
+confidence_threshold: 0.8
+
+description: >
+  Extract information about a person's employment status from case notes.
+
+output_schema:
+  full_batch_description: >
+    Employment information extracted from a case note.
+
+  result_level_description: >
+    Employment information for a single case note.
+
+  inferred_fields:
+    - name: employment_status
+      type: ENUM
+      description: The person's employment status.
+      values: [employed, unemployed, other]
+      required: true
+
+    - name: employment_status_summary
+      type: STRING
+      description: >
+        A brief human-readable summary of the person's employment status.
+      required: true

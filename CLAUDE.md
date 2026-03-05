@@ -104,6 +104,7 @@ and make sure they confirm before running the query.
   - **`calculator/`** - Stores query logic for many (but not all) of our BQ
     views
   - **`case_triage/`** - Case triage and pathways functionality
+  - **`documents/`** - Document storage and LLM-based extraction
   - **`ingest/`** - Data ingestion configuration for different states/sources
   - **`persistence/`** - Database schemas, entities, and data access
   - **`pipelines/`** - Apache Beam data processing pipelines
@@ -150,6 +151,13 @@ tooling, and libraries:
 
 - [BigQuery Documentation](./recidiviz/big_query/CLAUDE.md)
 
+## Document Extraction & Storage
+
+For detailed information about the document storage and LLM-based extraction
+system:
+
+- [Document Extraction Documentation](./recidiviz/NOT_FOR_PRODUCTION_USE/documents/CLAUDE.md)
+
 ## Task Eligibility Spans
 
 For detailed information about how to work with task eligibility spans
@@ -172,8 +180,6 @@ Available skills:
   clear commit messages
 - [Create PR](./.claude/skills/create-pr/SKILL.md) - Create a GitHub PR for the
   current branch
-- [Review PR Comments](./.claude/skills/review-pr-comments/SKILL.md) - Go
-  through PR review comments one by one and address them
 - [Create Recidiviz Data GitHub Tasks](./.claude/skills/create_recidiviz_data_github_tasks/SKILL.md)
 - [Maintain Skill Files](./.claude/skills/maintain_skill_files/SKILL.md)
 - [Maintain CLAUDE.md Documentation](./.claude/skills/maintain_claude_md/SKILL.md)

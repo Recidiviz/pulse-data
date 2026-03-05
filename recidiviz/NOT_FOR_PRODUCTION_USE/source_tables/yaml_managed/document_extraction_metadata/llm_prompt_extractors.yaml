@@ -1,0 +1,65 @@
+address:
+  dataset_id: document_extraction_metadata
+  table_id: llm_prompt_extractors
+
+description: |
+  Tracks versions of LLM prompt extractor configurations. A new row is written
+  whenever an extractor's prompt, model, or other configuration changes.
+
+schema:
+  - name: extractor_id
+    type: STRING
+    mode: REQUIRED
+    description: Human-readable ID (e.g., US_MI_CASE_NOTE_EMPLOYMENT_INFO)
+
+  - name: extractor_version_id
+    type: STRING
+    mode: REQUIRED
+    description: Version ID that changes when prompt/model changes
+
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+    description: State code for this extractor
+
+  - name: collection_name
+    type: STRING
+    mode: REQUIRED
+    description: The extractor collection this belongs to
+
+  - name: description
+    type: STRING
+    mode: REQUIRED
+    description: Description of this extractor
+
+  - name: input_document_collection_name
+    type: STRING
+    mode: REQUIRED
+    description: Document collection this extractor processes
+
+  - name: llm_provider
+    type: STRING
+    mode: REQUIRED
+    description: LLM provider (e.g., vertex_ai, openai, azure, bedrock)
+
+  - name: model
+    type: STRING
+    mode: REQUIRED
+    description: LLM model identifier (e.g., gemini-2.5-flash)
+
+  - name: instructions_prompt
+    type: STRING
+    mode: REQUIRED
+    description: The fully-rendered instruction prompt with expected output schema baked in
+
+  - name: instructions_prompt_hash
+    type: STRING
+    mode: REQUIRED
+    description: SHA256 hash of the instructions prompt (first 16 chars)
+
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When this version was recorded
+
+clustering_fields: null

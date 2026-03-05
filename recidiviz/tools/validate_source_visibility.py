@@ -147,7 +147,8 @@ def get_invalid_dependencies_for_entrypoint(
 
 # Define a constant list of disallowed module prefixes
 DISALLOWED_MODULE_PREFIXES = [
-    "recidiviz.research",  # Add other disallowed prefixes here if needed
+    "recidiviz.research",
+    "recidiviz.NOT_FOR_PRODUCTION_USE",
 ]
 
 

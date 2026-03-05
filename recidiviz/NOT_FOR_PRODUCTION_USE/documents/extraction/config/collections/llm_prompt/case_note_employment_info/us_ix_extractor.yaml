@@ -1,0 +1,19 @@
+# US_IX-specific Employment Extractor
+#
+# Example extractor config. Real configs live in the
+# mayukas/document-extraction-configs branch.
+
+collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+description: >
+  Employment information extractor for US_IX case notes.
+
+input_document_collection_name: US_IX_SUPERVISION_CASE_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Idaho Department of Correction"
+  state_specific_context: ""
+  state_specific_fields_example: ""

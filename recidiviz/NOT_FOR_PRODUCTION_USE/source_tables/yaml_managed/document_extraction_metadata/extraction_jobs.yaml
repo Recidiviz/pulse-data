@@ -1,0 +1,40 @@
+address:
+  dataset_id: document_extraction_metadata
+  table_id: extraction_jobs
+
+description: |
+  Tracks submitted extraction jobs. A row is written when an extraction job
+  is submitted, before results are processed.
+
+schema:
+  - name: job_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID uniquely identifying this job
+
+  - name: start_datetime
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When the job was submitted
+
+  - name: extractor_id
+    type: STRING
+    mode: REQUIRED
+    description: ID of the extractor used
+
+  - name: extractor_version_id
+    type: STRING
+    mode: REQUIRED
+    description: Version of the extractor at submission time
+
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+    description: State code for the documents being processed
+
+  - name: num_documents_submitted
+    type: INTEGER
+    mode: REQUIRED
+    description: Number of documents submitted for extraction
+
+clustering_fields: null

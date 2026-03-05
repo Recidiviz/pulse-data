@@ -1,0 +1,35 @@
+address:
+  dataset_id: document_extraction_metadata
+  table_id: extractor_collections
+
+description: |
+  Tracks versions of extractor collection definitions. A new row is written
+  whenever an extractor collection's description or output schema changes.
+
+schema:
+  - name: name
+    type: STRING
+    mode: REQUIRED
+    description: Unique name of the extractor collection (e.g., CASE_NOTE_EMPLOYMENT_INFO)
+
+  - name: description
+    type: STRING
+    mode: REQUIRED
+    description: Description of what extractors in this collection do
+
+  - name: output_schema_json
+    type: STRING
+    mode: REQUIRED
+    description: JSON Schema defining the output structure for all extractors in this collection
+
+  - name: schema_hash
+    type: STRING
+    mode: REQUIRED
+    description: Hash of the output schema for versioning
+
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When this version was recorded
+
+clustering_fields: null
