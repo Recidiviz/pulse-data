@@ -62,7 +62,7 @@ RELEASE_SHEET_ID = "1KhTh_VOVG4u6g6L2kMguD4-3te2CEB-xBr0fQ6Wh6V0"
 EXCLUDED_SECTIONS = {"DISCHARGE", "DETAINER"}
 
 ELIGIBLE_CLIENTS_QUERY = """
-SELECT DISTINCT client.pseudonymized_id AS client_pseudonymized_id
+SELECT DISTINCT client.pseudonymized_id AS client_pseudonymized_id, supervision_site as supervision_site, client.full_name as full_name, client.external_id as external_id
 FROM
   `recidiviz-123.normalized_state.state_supervision_period` supervision_period
 LEFT JOIN
@@ -131,10 +131,14 @@ def fetch_eligible_pseudo_ids_from_bq() -> list[str]:
         query_job = bq_client.run_query_async(
             query_str=ELIGIBLE_CLIENTS_QUERY, use_query_cache=True
         )
+        for row in query_job:
+            print(
+                f"name: {row['full_name']}, ccc: {row['supervision_site']}, psuedo_id: {row['client_pseudonymized_id']}, DOC ID: {row['external_id']}"
+            )
         return [row["client_pseudonymized_id"] for row in query_job]
 
 
-def read_offender_numbers_from_sheet(sheet_gid: str) -> list[str]:
+def read_offender_numbers_from_sheet(sheet_gid: str) -> dict:
     """Reads qualifying OFFENDER # values from the release list Google Sheet.
 
     Uses the CSV export URL to fetch data without OAuth (requires sheet to be
@@ -153,7 +157,7 @@ def read_offender_numbers_from_sheet(sheet_gid: str) -> list[str]:
 
     reader = csv.DictReader(io.StringIO(response.text))
 
-    offender_numbers = []
+    offender_numbers = {}
     in_excluded_section = False
 
     for row in reader:
@@ -180,23 +184,26 @@ def read_offender_numbers_from_sheet(sheet_gid: str) -> list[str]:
         release_to = row.get("RELEASE TO", "").strip().upper()
         if release_to.startswith("REG") or release_to.startswith("NUR"):
             continue
-
-        offender_numbers.append(offender_num)
+        offender_numbers[offender_num] = release_to
 
     return offender_numbers
 
 
-def lookup_pseudo_ids_from_bq(offender_numbers: list[str]) -> list[str]:
+def lookup_pseudo_ids_from_bq(offender_numbers: dict) -> list[str]:
     """Looks up pseudonymized_id values in BigQuery for the given offender numbers."""
-    in_clause = ", ".join(f"'{num}'" for num in offender_numbers)
+    in_clause = ", ".join(f"'{num}'" for num in offender_numbers.keys())
     bq_query = (
-        f"SELECT pseudonymized_id FROM `{CLIENT_BQ_TABLE}` "
+        f"SELECT pseudonymized_id, external_id, full_name FROM `{CLIENT_BQ_TABLE}` "
         f"WHERE state_code = 'US_UT' AND external_id IN ({in_clause})"
     )
 
     with local_project_id_override(BQ_PROJECT):
         bq_client = BigQueryClientImpl()
         query_job = bq_client.run_query_async(query_str=bq_query, use_query_cache=True)
+        for row in query_job:
+            print(
+                f"name: {row['full_name']}, ccc: {offender_numbers[row['external_id']]}, psuedo_id: {row['pseudonymized_id']}, DOC ID: {row['external_id']}"
+            )
         return [row["pseudonymized_id"] for row in query_job]
 
 
