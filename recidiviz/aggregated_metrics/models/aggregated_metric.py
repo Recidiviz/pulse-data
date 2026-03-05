@@ -360,7 +360,7 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
             SUM(
             (
                 DATE_DIFF(
-                    LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                    LEAST({period_end_date_col}, {span_end_date_col}),
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
                 ) * (IF({observation_conditions}, 1, 0))
@@ -417,7 +417,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
             SAFE_DIVIDE(
                 SUM(
                     DATE_DIFF(
-                        LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                        LEAST({period_end_date_col}, {span_end_date_col}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF(
@@ -428,7 +428,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
                 ),
                 SUM(
                     DATE_DIFF(
-                        LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                        LEAST({period_end_date_col}, {span_end_date_col}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF({observation_conditions}, 1, 0)
@@ -474,7 +474,7 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
             SAFE_DIVIDE(
                 SUM(
                     DATE_DIFF(
-                        LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                        LEAST({period_end_date_col}, {span_end_date_col}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF(
@@ -482,7 +482,7 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
                         (
                             # Average of LoS on last day (inclusive) of period/span and LoS on first day of period/span
                             (DATE_DIFF(
-                                DATE_SUB(LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}), INTERVAL 1 DAY),
+                                DATE_SUB(LEAST({period_end_date_col}, {span_end_date_col}), INTERVAL 1 DAY),
                                 {original_span_start_date}, DAY
                             ) + DATE_DIFF(
                                 GREATEST({period_start_date_col}, {span_start_date_col}),
@@ -494,7 +494,7 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
                 ),
                 SUM(
                     DATE_DIFF(
-                        LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                        LEAST({period_end_date_col}, {span_end_date_col}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF({observation_conditions}, 1, 0)
@@ -557,7 +557,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
             SUM(
             (
                 {weight_snippet}DATE_DIFF(
-                    LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                    LEAST({period_end_date_col}, {span_end_date_col}),
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
                 ) * (IF({observation_conditions}, 1, 0))

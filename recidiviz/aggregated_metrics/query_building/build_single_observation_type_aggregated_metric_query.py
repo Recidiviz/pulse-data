@@ -64,6 +64,11 @@ from recidiviz.utils.types import assert_type
 OBSERVATIONS_CTE_NAME = "observations"
 OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME = "observations_by_assignments"
 
+# Precomputed column names for PeriodSpanAggregatedMetric, added to
+# observations_by_assignments CTE to avoid repeating inline expressions.
+SPAN_START_DATE_NONNULL_COL = "span_start_date_nonnull"
+SPAN_END_DATE_EXCLUSIVE_NONNULL_COL = "span_end_date_exclusive_nonnull"
+
 
 def _get_referenced_attributes(
     # All of these have selectors that reference the same observation_type
@@ -138,22 +143,13 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
         )
 
     if isinstance(metric, PeriodSpanAggregatedMetric):
-        span_start_date_col_clause = f"""GREATEST(
-            {OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME},
-            {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}
-        )"""
-
-        span_end_date_col_clause = f"""LEAST(
-            {nonnull_end_date_clause(f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}")},
-            {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME}
-        )"""
         return metric.generate_aggregation_query_fragment(
             observations_by_assignments_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
             period_start_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN,
             period_end_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN,
             original_span_start_date=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
-            span_start_date_col=span_start_date_col_clause,
-            span_end_date_col=span_end_date_col_clause,
+            span_start_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SPAN_START_DATE_NONNULL_COL}",
+            span_end_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SPAN_END_DATE_EXCLUSIVE_NONNULL_COL}",
         )
     if isinstance(metric, AssignmentEventAggregatedMetric):
         return metric.generate_aggregation_query_fragment(
@@ -292,6 +288,19 @@ def build_observations_by_assignments_query_template(
         for col in observation_cols_dedup
         if col not in assignments_columns
     ]
+
+    if issubclass(metric_class, PeriodSpanAggregatedMetric):
+        column_strs.append(
+            f"GREATEST({OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}, "
+            f"{AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}) "
+            f"AS {SPAN_START_DATE_NONNULL_COL}"
+        )
+        column_strs.append(
+            f"LEAST("
+            f"{nonnull_end_date_clause(f'{OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}')}, "
+            f"{AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME}) "
+            f"AS {SPAN_END_DATE_EXCLUSIVE_NONNULL_COL}"
+        )
 
     for metric in single_observation_type_metrics:
         if isinstance(metric, AssignmentDaysToFirstEventMetric):

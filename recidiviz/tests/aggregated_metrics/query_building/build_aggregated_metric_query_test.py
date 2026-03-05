@@ -730,7 +730,9 @@ assessment_score_session_metrics AS (
             observations.start_date,
             observations.end_date,
             observations.assessment_score,
-            observations.assessment_type
+            observations.assessment_type,
+            GREATEST(observations.start_date, assignment_start_date) AS span_start_date_nonnull,
+            LEAST(IFNULL(observations.end_date, "9999-12-31"), assignment_end_date_exclusive_nonnull) AS span_end_date_exclusive_nonnull
         FROM 
             person_assignments_by_time_period
         JOIN 
@@ -751,37 +753,25 @@ assessment_score_session_metrics AS (
         metric_period_end_date_exclusive,
         period,
         SAFE_DIVIDE(
-                SUM(
-                    DATE_DIFF(
-                        LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
-            IFNULL(observations_by_assignments.end_date, "9999-12-31"),
-            assignment_end_date_exclusive_nonnull
-        ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
-                        GREATEST(metric_period_start_date, GREATEST(
-            observations_by_assignments.start_date,
-            assignment_start_date
-        )),
-                        DAY
-                    ) * IF(
-                        (assessment_type IN ("LSIR")),
-                        CAST(assessment_score AS FLOAT64),
-                        0
-                    )
-                ),
-                SUM(
-                    DATE_DIFF(
-                        LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
-            IFNULL(observations_by_assignments.end_date, "9999-12-31"),
-            assignment_end_date_exclusive_nonnull
-        ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
-                        GREATEST(metric_period_start_date, GREATEST(
-            observations_by_assignments.start_date,
-            assignment_start_date
-        )),
-                        DAY
-                    ) * IF((assessment_type IN ("LSIR")), 1, 0)
+            SUM(
+                DATE_DIFF(
+                    LEAST(metric_period_end_date_exclusive, observations_by_assignments.span_end_date_exclusive_nonnull),
+                    GREATEST(metric_period_start_date, observations_by_assignments.span_start_date_nonnull),
+                    DAY
+                ) * IF(
+                    (assessment_type IN ("LSIR")),
+                    CAST(assessment_score AS FLOAT64),
+                    0
                 )
-            ) AS my_avg_lsir_score
+            ),
+            SUM(
+                DATE_DIFF(
+                    LEAST(metric_period_end_date_exclusive, observations_by_assignments.span_end_date_exclusive_nonnull),
+                    GREATEST(metric_period_start_date, observations_by_assignments.span_start_date_nonnull),
+                    DAY
+                ) * IF((assessment_type IN ("LSIR")), 1, 0)
+            )
+        ) AS my_avg_lsir_score
     FROM observations_by_assignments
     GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
 ),
@@ -811,7 +801,9 @@ compartment_session_metrics AS (
             person_assignments_by_time_period.intersection_start_date,
             person_assignments_by_time_period.intersection_end_date_exclusive_nonnull,
             observations.start_date,
-            observations.end_date
+            observations.end_date,
+            GREATEST(observations.start_date, assignment_start_date) AS span_start_date_nonnull,
+            LEAST(IFNULL(observations.end_date, "9999-12-31"), assignment_end_date_exclusive_nonnull) AS span_end_date_exclusive_nonnull
         FROM 
             person_assignments_by_time_period
         JOIN 
@@ -832,23 +824,17 @@ compartment_session_metrics AS (
         metric_period_end_date_exclusive,
         period,
         SUM(
-            (
-                DATE_DIFF(
-                    LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
-            IFNULL(observations_by_assignments.end_date, "9999-12-31"),
-            assignment_end_date_exclusive_nonnull
-        ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
-                    GREATEST(metric_period_start_date, GREATEST(
-            observations_by_assignments.start_date,
-            assignment_start_date
-        )),
-                    DAY)
-                ) * (IF((TRUE), 1, 0))
-            ) / DATE_DIFF(
-                    metric_period_end_date_exclusive,
-                    metric_period_start_date,
-                    DAY
-            ) AS my_avg_daily_population
+        (
+            DATE_DIFF(
+                LEAST(metric_period_end_date_exclusive, observations_by_assignments.span_end_date_exclusive_nonnull),
+                GREATEST(metric_period_start_date, observations_by_assignments.span_start_date_nonnull),
+                DAY)
+            ) * (IF((TRUE), 1, 0))
+        ) / DATE_DIFF(
+                metric_period_end_date_exclusive,
+                metric_period_start_date,
+                DAY
+        ) AS my_avg_daily_population
     FROM observations_by_assignments
     GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
 ),
