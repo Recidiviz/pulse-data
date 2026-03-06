@@ -353,11 +353,11 @@ SUPERVISION_PERIOD_CUSTODIAL_AUTHORITY_TO_STR_MAPPINGS: Dict[
         "R3",  # RSAT Reparole
         "06",  # Paroled/Reparoled by other state and transferred to PA
         "07",  # Sentenced to Probation by other state and transferred to PA
+        "10",  # Tracks people returning to probation post-revocation and special probation cases that are in SDTP
     ],
     StateCustodialAuthority.INTERNAL_UNKNOWN: [
         "08",  # Other States’ Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
-        "10",  # TODO(#58965)
     ],
     # mappings based on supervision county
     StateCustodialAuthority.OTHER_COUNTRY: ["FOREIG"],
@@ -440,11 +440,11 @@ SUPERVISION_PERIOD_SUPERVISION_TYPE_TO_STR_MAPPINGS: Dict[
         "4A",  # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
         "4B",  # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
         "07",  # Sentenced to Probation by other state and transferred to PA
+        "10",  # Tracks people returning to probation post-revocation and special probation cases that are in SDTP
     ],
     StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: [
         "08",  # Other States’ Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
-        "10",  # TODO(#58965)
     ],
 }
 
@@ -459,6 +459,7 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
         "C3",  # CCC Reparole
         "R2",  # RSAT Parole
         "R3",  # RSAT Reparole
+        "10",  # Tracks people returning to probation post-revocation and special probation cases that are in SDTP
     ],
     StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: [
         "04",  # Sentenced to Probation by County Judge and Supervised by PBPP
@@ -470,7 +471,6 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN: [
         "08",  # Other States' Deferred Sentence
         "09",  # Emergency Release - used for COVID releases
-        "10",  # TODO(#58965)
     ],
     StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
         "06",  # Paroled/Reparoled by other state and transferred to PA
