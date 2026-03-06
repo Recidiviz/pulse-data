@@ -962,9 +962,12 @@ class BigQueryClient:
     ) -> None:
         """Set the table expiration to `expiration` for the table at the given address.
 
+        The expiration must be a timezone-aware datetime to avoid ambiguity
+        between local time and UTC.
+
         Args:
             address: The address of the table to update.
-            expiration: The datetime when the table should expire.
+            expiration: The timezone-aware datetime when the table should expire.
         """
 
     @abc.abstractmethod
@@ -2470,6 +2473,11 @@ class BigQueryClientImpl(BigQueryClient):
     def set_table_expiration(
         self, address: BigQueryAddress, expiration: datetime.datetime
     ) -> None:
+        if expiration.tzinfo is None:
+            raise ValueError(
+                f"expiration must be a timezone-aware datetime, but got "
+                f"naive datetime: {expiration.isoformat()}"
+            )
         table = self.get_table(address)
         table.expires = expiration
         self.client.update_table(table, fields=["expires"])

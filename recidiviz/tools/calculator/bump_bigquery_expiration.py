@@ -73,16 +73,23 @@ def main() -> None:
     args = create_parser().parse_args()
 
     with local_project_id_override(args.project_id):
-        expiration = datetime.datetime.now() + datetime.timedelta(days=args.days)
+        expiration_utc = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) + datetime.timedelta(days=args.days)
+        expiration_local = expiration_utc.astimezone()
+        prompt = (
+            f"Extend the expiration to {expiration_utc.strftime('%Y-%m-%d %H:%M %Z')} "
+            f"({expiration_local.strftime('%Y-%m-%d %H:%M')} local time)"
+        )
         run_operation_for_tables_in_datasets(
             client=BigQueryClientImpl(),
-            prompt=f"Extend the expiration to {expiration.isoformat()}",
+            prompt=prompt,
             operation=lambda client, address: client.set_table_expiration(
                 BigQueryAddress(
                     dataset_id=address.dataset_id,
                     table_id=address.table_id,
                 ),
-                expiration,
+                expiration_utc,
             ),
             dataset_filter=dataset_prefix_to_filter_regex(args.dataset_prefix),
         )
