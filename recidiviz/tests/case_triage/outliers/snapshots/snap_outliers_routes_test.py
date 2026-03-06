@@ -990,3 +990,24 @@ snapshots[
         ],
     },
 ]
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes vitals_contacts_drilldown_for_supervisor"
+] = [
+    {
+        "stateCode": "US_XX",
+        "personId": 11,
+        "officerId": "1",
+        "contactType": "needs_scheduled_home_contact",
+        "contactDueDate": "Sat, 28 Feb 2026 00:00:00 GMT",
+        "contactCompletedDate": "2026-03-11",
+    },
+    {
+        "stateCode": "US_XX",
+        "personId": 2,
+        "officerId": "1",
+        "contactType": "needs_type_agnostic_contact",
+        "contactDueDate": "Mon, 12 Jan 2026 00:00:00 GMT",
+        "contactCompletedDate": "None",
+    },
+]

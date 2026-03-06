@@ -242,6 +242,7 @@ class TestSchemaUtils(unittest.TestCase):
             "configurations",
             "user_metadata",
             "action_strategy_surfaced_events",
+            "supervision_contacts_drilldown_due_date_based",
         ]
 
         expected_table_class_names = (

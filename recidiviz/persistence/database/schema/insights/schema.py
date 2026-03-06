@@ -413,3 +413,16 @@ class ActionStrategySurfacedEvents(InsightsBase):
         ),
         {"info": {RUN_MIGRATIONS: True}},
     )
+
+
+class SupervisionContactsdDilldown(InsightsBase):
+    """Table containing data about contact due dates, the officer(s) assigned to the person at the time of the contact due date, and the date of the contact completion"""
+
+    __tablename__ = "supervision_contacts_drilldown_due_date_based"
+
+    state_code = Column(String, primary_key=True)
+    person_id = Column(BigInteger, primary_key=True)
+    officer_id = Column(String, primary_key=True)
+    contact_type = Column(String, primary_key=True)
+    contact_due_date = Column(Date, primary_key=True)
+    contact_completed_date = Column(String)

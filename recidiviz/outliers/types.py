@@ -562,6 +562,23 @@ class SupervisionOfficerVitalsEntity:
 
 
 @attr.s(auto_attribs=True, frozen=True, order=True)
+class SupervisionContactsDrilldownEntity:
+    """
+    Represents a contact for an officer, it's due date, and completion date
+    """
+
+    state_code: str
+    person_id: int
+    officer_id: str
+    contact_type: str
+    contact_due_date: date
+    contact_completed_date: str
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s(auto_attribs=True, frozen=True, order=True)
 class VitalsMetric:
     """Contains the vitals metrics for a metric_id for one or more officers."""
 

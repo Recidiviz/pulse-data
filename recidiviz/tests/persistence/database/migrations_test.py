@@ -524,6 +524,7 @@ class TestInsightsMigrations(MigrationsTestBase):
             "metric_benchmarks_pkey",
             "supervision_officer_outlier_status_pkey",
             "supervision_officers_pkey",
+            "supervision_contacts_drilldown_due_date_based_pkey",
         }
 
 

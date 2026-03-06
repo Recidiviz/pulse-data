@@ -44,6 +44,7 @@ from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     PersonName,
     RosterChangeRequestSchema,
+    SupervisionContactsDrilldownEntity,
     SupervisionOfficerEntity,
     VitalsMetric,
 )
@@ -1174,6 +1175,43 @@ def create_outliers_api_blueprint() -> Blueprint:
             convert_nested_dictionary_keys(
                 roster_ticket_service_response.to_json(), snake_to_camel
             )
+        )
+
+    @api.get(
+        "/<state>/supervisor/<supervisor_pseudonymized_id>/vitals/contacts_drilldown"
+    )
+    def vitals_contacts_drilldown_for_supervisor(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+        user_context: UserContext = g.user_context
+        querier = OutliersQuerier(state_code, user_context.feature_variants)
+
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        if (
+            supervisor_pseudonymized_id != user_pseudonymized_id
+            and user_external_id != "RECIDIVIZ"
+            and not user_context.can_access_all_supervisors
+        ):
+            # Return an unauthorized error if the requesting user is requesting information about someone else
+            # and the requesting user is not a Recidiviz user
+            return jsonify_response(
+                f"Non-recidiviz user with pseudonymized_id {user_pseudonymized_id} is requesting vitals for a user they do not have access to: {supervisor_pseudonymized_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        contacts_drilldown: List[
+            SupervisionContactsDrilldownEntity
+        ] = querier.get_supervision_contacts_drilldown_from_officer_pseudonymized_id(
+            supervisor_pseudonymized_id,
+        )
+        return jsonify(
+            [
+                convert_nested_dictionary_keys(contact.to_json(), snake_to_camel)
+                for contact in contacts_drilldown
+            ]
         )
 
     return api

@@ -52,6 +52,7 @@ from recidiviz.outliers.types import (
     OutliersVitalsMetricConfig,
     PersonName,
     RosterChangeRequestResponseSchema,
+    SupervisionContactsDrilldownEntity,
     SupervisionOfficerEntity,
     SupervisionOfficerOutcomes,
     SupervisionOfficerSupervisorEntity,
@@ -5734,3 +5735,78 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
                 self.assertEqual(response.status_code, expected_status)
                 self.snapshot.assert_match(response.json, name=test_message)  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_contacts_drilldown_from_officer_pseudonymized_id",
+    )
+    def test_get_contacts_drilldown_for_supervisor(
+        self, mock_get_contacts_drilldown: MagicMock, mock_enabled_states: MagicMock
+    ) -> None:
+        # Mock the officer retrieval
+        pseudo_id = "officerhash1"
+        external_id = "1"
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_xx",
+            external_id=external_id,
+            pseudonymized_id=pseudo_id,
+            allowed_states=["US_XX"],
+        )
+
+        mock_enabled_states.return_value = ["US_XX"]
+
+        mock_contacts_drilldown = [
+            SupervisionContactsDrilldownEntity(
+                state_code="US_XX",
+                person_id=11,
+                officer_id="1",
+                contact_type="needs_scheduled_home_contact",
+                contact_due_date=date(2026, 2, 28),
+                contact_completed_date="2026-03-11",
+            ),
+            SupervisionContactsDrilldownEntity(
+                state_code="US_XX",
+                person_id=2,
+                officer_id="1",
+                contact_type="needs_type_agnostic_contact",
+                contact_due_date=date(2026, 1, 12),
+                contact_completed_date="None",
+            ),
+        ]
+
+        mock_get_contacts_drilldown.return_value = mock_contacts_drilldown
+
+        response = self.test_client.get(
+            f"outliers/us_xx/supervisor/{pseudo_id}/vitals/contacts_drilldown",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="vitals_contacts_drilldown_for_supervisor")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_contacts_drilldown_for_supervisor_unauthorized(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        # Mock the officer retrieval
+        pseudo_id = "officerhash1"
+        external_id = "1"
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_xx",
+            external_id=external_id,
+            pseudonymized_id=pseudo_id,
+            allowed_states=["US_XX"],
+        )
+
+        mock_enabled_states.return_value = ["US_XX"]
+
+        response = self.test_client.get(
+            "outliers/us_xx/supervisor/unauthorized_pseudo_id/vitals/contacts_drilldown",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
