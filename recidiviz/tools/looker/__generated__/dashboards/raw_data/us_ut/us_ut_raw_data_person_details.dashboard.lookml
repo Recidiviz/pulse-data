@@ -267,6 +267,9 @@
       us_ut_ofndr_dob.updt_usr_id,
       us_ut_ofndr_dob.updt_dt__raw,
       us_ut_ofndr_dob.temp_name_id,
+      us_ut_ofndr_dob.LUB,
+      us_ut_ofndr_dob.LUDT,
+      us_ut_ofndr_dob.LUP,
       us_ut_ofndr_dob.file_id,
       us_ut_ofndr_dob.is_deleted]
     sorts: [us_ut_ofndr_dob.updt_dt__raw]
@@ -322,6 +325,9 @@
       us_ut_ofndr_lgl_stat.prev_lgl_stat_cd,
       us_ut_ofndr_lgl_stat.updt_usr_id,
       us_ut_ofndr_lgl_stat.updt_dt__raw,
+      us_ut_ofndr_lgl_stat.LUB,
+      us_ut_ofndr_lgl_stat.LUDT,
+      us_ut_ofndr_lgl_stat.LUP,
       us_ut_ofndr_lgl_stat.file_id,
       us_ut_ofndr_lgl_stat.is_deleted]
     sorts: [us_ut_ofndr_lgl_stat.stat_beg_dt__raw]
@@ -349,6 +355,9 @@
       us_ut_ofndr_loc_hist.end_dt__raw,
       us_ut_ofndr_loc_hist.updt_usr_id,
       us_ut_ofndr_loc_hist.updt_dt__raw,
+      us_ut_ofndr_loc_hist.LUB,
+      us_ut_ofndr_loc_hist.LUDT,
+      us_ut_ofndr_loc_hist.LUP,
       us_ut_ofndr_loc_hist.file_id,
       us_ut_ofndr_loc_hist.is_deleted]
     sorts: [us_ut_ofndr_loc_hist.assgn_dt__raw]
