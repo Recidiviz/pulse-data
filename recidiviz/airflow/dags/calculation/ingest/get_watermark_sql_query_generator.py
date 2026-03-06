@@ -28,7 +28,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.ingest.direct.raw_data.watermark_utils import WATERMARKS_QUERY_TEMPLATE
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils.string import StrictStringFormatter
 
 
 class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
@@ -61,13 +63,8 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
 
     @staticmethod
     def sql_query(region_code: str, ingest_instance: str) -> str:
-        return f"""
-            SELECT {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}
-            FROM direct_ingest_dataflow_raw_table_upper_bounds
-            WHERE job_id IN (
-                SELECT MAX(job_id) 
-                FROM direct_ingest_dataflow_job
-                WHERE region_code = '{region_code.upper()}' AND ingest_instance = '{ingest_instance.upper()}'
-                AND is_invalidated = FALSE
-            );
-        """
+        return StrictStringFormatter().format(
+            WATERMARKS_QUERY_TEMPLATE,
+            region_code=region_code.upper(),
+            ingest_instance=ingest_instance.upper(),
+        )

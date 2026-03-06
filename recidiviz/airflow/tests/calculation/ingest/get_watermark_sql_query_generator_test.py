@@ -38,15 +38,16 @@ class TestGetWatermarkSqlQueryGenerator(unittest.TestCase):
 
     def test_generates_sql_correctly(self) -> None:
         expected_query = """
-            SELECT raw_data_file_tag, watermark_datetime
-            FROM direct_ingest_dataflow_raw_table_upper_bounds
-            WHERE job_id IN (
-                SELECT MAX(job_id) 
-                FROM direct_ingest_dataflow_job
-                WHERE region_code = 'US_XX' AND ingest_instance = 'PRIMARY'
-                AND is_invalidated = FALSE
-            );
-        """
+SELECT raw_data_file_tag, watermark_datetime, job_id
+FROM direct_ingest_dataflow_raw_table_upper_bounds
+WHERE job_id IN (
+    SELECT MAX(job_id)
+    FROM direct_ingest_dataflow_job
+    WHERE region_code = 'US_XX'
+    AND ingest_instance = 'PRIMARY'
+    AND is_invalidated = FALSE
+)
+"""
         self.assertEqual(
             GetWatermarkSqlQueryGenerator.sql_query(
                 region_code="US_XX", ingest_instance="PRIMARY"

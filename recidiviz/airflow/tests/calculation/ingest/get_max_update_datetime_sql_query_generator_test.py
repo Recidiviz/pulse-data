@@ -40,9 +40,9 @@ class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
         expected_query = """
 SELECT file_tag, MAX(update_datetime) AS max_update_datetime
 FROM direct_ingest_raw_big_query_file_metadata
-WHERE raw_data_instance = 'PRIMARY' 
+WHERE raw_data_instance = 'PRIMARY'
 AND is_invalidated IS FALSE
-AND file_processed_time IS NOT NULL 
+AND file_processed_time IS NOT NULL
 AND region_code = 'US_XX'
 GROUP BY file_tag;
 """

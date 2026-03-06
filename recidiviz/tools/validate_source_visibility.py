@@ -299,6 +299,7 @@ def main() -> int:
         "recidiviz.ingest.direct.dataset_config",
         "recidiviz.ingest.direct.direct_ingest_regions",
         "recidiviz.ingest.direct.ingest_mappings",
+        "recidiviz.ingest.direct.raw_data.watermark_utils",
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",

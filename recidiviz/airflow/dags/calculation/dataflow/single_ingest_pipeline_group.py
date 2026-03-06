@@ -61,6 +61,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
+from recidiviz.ingest.direct.raw_data.watermark_utils import (
+    get_problematic_watermark_tags,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
@@ -127,36 +130,32 @@ def check_for_valid_watermarks(
     """Checks that the data currently in our raw data tables is just as new or newer
     than the data was the last time we ran this ingest pipeline.
     """
-    missing_file_tags = {
-        raw_file_tag: watermark_for_file
-        for raw_file_tag, watermark_for_file in watermarks.items()
-        if raw_file_tag not in max_update_datetimes
-    }
 
-    if missing_file_tags:
+    missing_tags, stale_tags = get_problematic_watermark_tags(
+        watermarks, max_update_datetimes
+    )
+
+    if missing_tags:
+        watermark_datetimes_by_missing_tag = {
+            missing_tag: watermarks[missing_tag] for missing_tag in missing_tags
+        }
         raise ValueError(
             f"Found critical raw data tables that either do not exist or are empty: "
-            f"{sorted(missing_file_tags.keys())}.\nWe cannot run the ingest pipeline "
+            f"{missing_tags}.\nWe cannot run the ingest pipeline "
             f"until data has been added to this table that has an update_datetime "
             f"greater than or equal to the high watermark for each of these files: "
-            f"{missing_file_tags}.YOU SHOULD GENERALLY NOT CLEAR ROWS FROM THE "
+            f"{watermark_datetimes_by_missing_tag}. YOU SHOULD GENERALLY NOT CLEAR ROWS FROM THE "
             f"direct_ingest_dataflow_raw_table_upper_bounds TABLE TO RESOLVE THIS "
             f"ERROR UNLESS THE TABLES IN QUESTION ARE NOW DEFINITELY UNUSED."
         )
 
-    stale_file_tag_errors = []
-
-    for raw_file_tag, watermark_for_file in watermarks.items():
-        if watermark_for_file > max_update_datetimes[raw_file_tag]:
-            error_str = (
-                f"  * [{raw_file_tag}] Current max update_datetime: "
-                f"{max_update_datetimes[raw_file_tag]}. Last ingest pipeline run "
-                f"update_datetime: {watermark_for_file}."
-            )
-            stale_file_tag_errors.append(error_str)
-
-    if stale_file_tag_errors:
-        errors = "\n".join(stale_file_tag_errors)
+    if stale_tags:
+        errors = "\n".join(
+            f"  * [{tag}] Current max update_datetime: "
+            f"{max_update_datetimes[tag]}. Last ingest pipeline run "
+            f"update_datetime: {watermarks[tag]}."
+            for tag in stale_tags
+        )
         raise ValueError(
             f"Found critical raw data tables with older data than the last time the "
             f"ingest pipeline was run:\n{errors}\nYOU SHOULD "
