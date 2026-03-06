@@ -153,4 +153,5 @@ output:
                   - "20328"
                   - "20331"
                   - "20335"
+                  - "20336"
         - $else: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)
