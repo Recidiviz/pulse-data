@@ -19,8 +19,6 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
-from pytablewriter import MarkdownTableWriter
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import (
@@ -38,6 +36,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.tools.docs.utils import markdown_table
 from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RawDataReferenceReasonsYamlLoader,
 )
@@ -175,7 +174,7 @@ class DirectIngestDocumentationGenerator:
             if not raw_file_config.table_relationships:
                 return ""
             section_contents = "\n\n### Related Tables\n\n"
-            section_contents += MarkdownTableWriter(
+            section_contents += markdown_table(
                 headers=["Related table", "Cardinality", "Join logic"],
                 value_matrix=[
                     [
@@ -188,10 +187,7 @@ class DirectIngestDocumentationGenerator:
                         key=lambda x: x.foreign_table,
                     )
                 ],
-                # Margin values other than 0 have nondeterministic spacing. Do not
-                # change.
-                margin=0,
-            ).dumps()
+            )
 
             return section_contents
 
@@ -203,7 +199,7 @@ class DirectIngestDocumentationGenerator:
             section_contents = (
                 "\n\n### Table-Wide Import-Blocking Validation Exemptions\n\n"
             )
-            section_contents += MarkdownTableWriter(
+            section_contents += markdown_table(
                 headers=["Validation Type", "Exemption Reason"],
                 value_matrix=[
                     [
@@ -212,10 +208,7 @@ class DirectIngestDocumentationGenerator:
                     ]
                     for exemption in raw_file_config.import_blocking_validation_exemptions
                 ],
-                # Margin values other than 0 have nondeterministic spacing. Do not
-                # change.
-                margin=0,
-            ).dumps()
+            )
 
             return section_contents
 
@@ -260,13 +253,10 @@ class DirectIngestDocumentationGenerator:
         if has_exemptions:
             headers.append("Import-Blocking Validation Exemptions")
 
-        writer = MarkdownTableWriter(
+        documentation += markdown_table(
             headers=headers,
             value_matrix=table_matrix,
-            # Margin values other than 0 have nondeterministic spacing. Do not change.
-            margin=0,
         )
-        documentation += writer.dumps()
 
         documentation += _get_table_relationship_info(raw_file_config)
 
@@ -294,18 +284,14 @@ class DirectIngestDocumentationGenerator:
             ]
             for file_tag in sorted(config_paths_by_file_tag)
         ]
-        writer = MarkdownTableWriter(
+        return markdown_table(
             headers=[
                 "**Table**",
                 "**Referencing Ingest Views**",
                 "**Referencing Downstream Views**",
             ],
             value_matrix=table_matrix,
-            # Margin values other than 0 have nondeterministic spacing. Do not change.
-            margin=0,
         )
-
-        return writer.dumps()
 
     @staticmethod
     def get_referencing_views(

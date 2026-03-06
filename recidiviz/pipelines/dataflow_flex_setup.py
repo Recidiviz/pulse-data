@@ -72,7 +72,6 @@ REQUIRED_PACKAGES = [
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
     "psycopg2-binary",
-    "pytablewriter",
     "SQLAlchemy==1.4.54",
     "thefuzz",
     "us",

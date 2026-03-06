@@ -113,7 +113,6 @@ dependencies = [
     "pysftp",
     "PyGithub",
     "xlsxwriter",
-    "pytablewriter",
     "twilio",
     "urllib3",
     "xlrd",

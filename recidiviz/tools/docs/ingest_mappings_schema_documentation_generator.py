@@ -28,7 +28,6 @@ from typing import Any, Dict, List
 
 import ruamel.yaml
 from more_itertools import one
-from pytablewriter import MarkdownTableWriter
 
 from recidiviz.common.file_system import get_all_files_recursive, is_valid_code_path
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
@@ -36,7 +35,11 @@ from recidiviz.tools.docs.summary_file_generator import (
     SUMMARY_PATH,
     update_summary_file,
 )
-from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
+from recidiviz.tools.docs.utils import (
+    DOCS_ROOT_PATH,
+    markdown_table,
+    persist_file_contents,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 ALL_SCHEMAS_PATH = os.path.dirname(yaml_schema.__file__)
@@ -545,12 +548,11 @@ class SingleSchemaFileDocsGenerator:
                 )
             )
 
-        writer = MarkdownTableWriter(
+        return markdown_table(
             headers=["Property pattern", "Type", "Description"],
             value_matrix=table_rows,
             margin=1,
         )
-        return writer.dumps()
 
     def _get_properties_table_markdown(
         self, json_with_properties: Dict[str, Any]
@@ -568,12 +570,11 @@ class SingleSchemaFileDocsGenerator:
                 )
             )
 
-        writer = MarkdownTableWriter(
+        return markdown_table(
             headers=["Property", "Type", "Required", "Description"],
             value_matrix=table_rows,
             margin=1,
         )
-        return writer.dumps()
 
     def _get_examples_markdown(self, examples_key: str) -> str:
         """Formats the schema "examples" as Markdown code blocks. If |interpret_as_json|
