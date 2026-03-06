@@ -47,7 +47,7 @@ from recidiviz.task_eligibility.criteria_condition import (
 )
 from recidiviz.task_eligibility.eligibility_spans.us_nd.transfer_to_minimum_facility_form import (
     HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT,
-    INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
+    INCARCERATION_NOT_WITHIN_2_MONTHS_OF_FTCD,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -69,7 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarcerated_at_least_90_days.VIEW_BUILDER,
         incarcerated_at_least_30_days_in_same_facility.VIEW_BUILDER,
         no_detainers_or_warrants.VIEW_BUILDER,
-        INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
+        INCARCERATION_NOT_WITHIN_2_MONTHS_OF_FTCD,
         no_escape_in_current_incarceration.VIEW_BUILDER,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
         has_facility_restrictions.VIEW_BUILDER,

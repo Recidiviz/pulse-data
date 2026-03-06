@@ -1429,6 +1429,69 @@ def is_past_completion_date_criteria_builder(
     )
 
 
+# TODO(#48612): Use is_past_completion_date_criteria_builder once discrepancy is fixed
+def incarceration_within_ftcd_criteria_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    meets_criteria_leading_window_time: int,
+    date_part: str = "MONTH",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria view builder that shows spans of time during which someone
+    is incarcerated within a given time window of their full term completion date.
+
+    Unlike |is_past_completion_date_criteria_builder|, which sources projected
+    completion dates from |sentence_sessions|, this builder uses
+    |incarceration_projected_completion_date_spans|. That view produces more
+    accurate projected dates for ND because it incorporates ND-specific
+    incarceration date logic that sentence_sessions does not yet capture.
+
+    Args:
+        criteria_name: Criteria query name.
+        description: Criteria query description.
+        meets_criteria_leading_window_time: Time window before the critical date
+            during which the criteria is met.
+        date_part: BigQuery date_part value (e.g. "MONTH", "YEAR"). Defaults to
+            "MONTH".
+    """
+    criteria_query = f"""
+WITH critical_date_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date AS start_datetime,
+        end_date_exclusive AS end_datetime,
+        projected_completion_date_max AS critical_date
+    FROM `{{project_id}}.sessions.incarceration_projected_completion_date_spans_materialized`
+),
+{critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=meets_criteria_leading_window_time,
+                                    date_part=date_part)}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(critical_date AS full_term_completion_date)) AS reason,
+    critical_date AS full_term_completion_date,
+FROM critical_date_has_passed_spans
+WHERE start_date != {nonnull_end_date_clause('end_date')}
+"""
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=criteria_query,
+        description=description,
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="full_term_completion_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when the critical date has passed",
+            ),
+        ],
+    )
+
+
 def no_absconsion_within_time_interval_criteria_builder(
     criteria_name: str,
     description: str,

@@ -195,8 +195,8 @@ from recidiviz.task_eligibility.criteria.general.incarceration_past_half_full_te
 from recidiviz.task_eligibility.criteria.general.incarceration_within_1_year_of_full_term_completion_date import (
     VIEW_BUILDER as INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.general.incarceration_within_3_months_of_full_term_completion_date import (
-    VIEW_BUILDER as INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
+from recidiviz.task_eligibility.criteria.general.incarceration_within_2_months_of_full_term_completion_date import (
+    VIEW_BUILDER as INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
 from recidiviz.task_eligibility.criteria.general.incarceration_within_42_months_of_full_term_completion_date import (
     VIEW_BUILDER as INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
@@ -933,7 +933,7 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        INCARCERATION_WITHIN_3_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
+        INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
