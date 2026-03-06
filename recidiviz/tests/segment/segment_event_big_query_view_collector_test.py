@@ -17,21 +17,21 @@
 """Tests for segment_event_big_query_view_collector.py"""
 import unittest
 
-from more_itertools import one
-
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.segment.segment_event_big_query_view_builder import (
     SegmentEventBigQueryViewBuilder,
 )
 from recidiviz.segment.segment_event_big_query_view_collector import (
     SegmentEventBigQueryViewCollector,
 )
-from recidiviz.segment.segment_event_utils import SEGMENT_DATASETS
+from recidiviz.segment.segment_event_utils import (
+    SEGMENT_FRONTEND_TRACKING_DATASETS,
+    get_segment_frontend_event_source_table_addresses,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_addresses,
 )
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    collect_externally_managed_source_table_collections,
+from recidiviz.source_tables.untracked_source_table_exemptions import (
+    get_allowed_tables_in_source_table_datasets_with_no_config,
 )
 
 
@@ -64,32 +64,23 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
         collector = SegmentEventBigQueryViewCollector()
 
         for builder in collector.collect_view_builders():
-            if builder.segment_table_sql_source.dataset_id not in SEGMENT_DATASETS:
+            if (
+                builder.segment_table_sql_source.dataset_id
+                not in SEGMENT_FRONTEND_TRACKING_DATASETS
+            ):
                 raise ValueError(
                     f"Invalid segment_event_source_table `{builder.segment_table_sql_source.to_str()}`, "
-                    f"expected one of {SEGMENT_DATASETS}, found `{builder.segment_table_sql_source.dataset_id}`."
+                    f"expected one of {SEGMENT_FRONTEND_TRACKING_DATASETS}, found `{builder.segment_table_sql_source.dataset_id}`."
                 )
 
     def test_all_segment_source_tables_have_corresponding_view_builders(self) -> None:
         """
-        Validates that every YAML source table (except 'identifies' and 'pages') has a corresponding view builder
+        Validates that every YAML source table (except infrastructure tables) has a corresponding view builder
         """
-        # Collect source tables from all segment event datasets
-        segment_event_source_table_addresses: set[BigQueryAddress] = set()
-        for dataset_id in SEGMENT_DATASETS:
-            try:
-                collection = one(
-                    c
-                    for c in collect_externally_managed_source_table_collections(
-                        project_id=None
-                    )
-                    if c.dataset_id == dataset_id
-                )
-                for address in collection.source_tables_by_address:
-                    segment_event_source_table_addresses.add(address)
-            except ValueError:
-                # Dataset doesn't exist, skip
-                pass
+        # Get all source table addresses from YAML configs using shared helper
+        segment_event_source_table_addresses = (
+            get_segment_frontend_event_source_table_addresses()
+        )
 
         # Collect view builders
         collector = SegmentEventBigQueryViewCollector()
@@ -105,9 +96,7 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
         excluded_table_ids = {
             "identifies",
             "pages",
-            "pages_view",
             "tracks",
-            "tracks_view",
             "users",
             "hello",
         }
@@ -123,4 +112,44 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
             raise ValueError(
                 f"Found segment event source tables in YAML without corresponding view builders: "
                 f"{sorted(addr.to_str() for addr in yaml_without_view)}"
+            )
+
+    def test_all_segment_event_tables_have_deduplication_view_exemptions(
+        self,
+    ) -> None:
+        """
+        Validates that all segment event source tables (from view builders) have
+        corresponding {table_id}_view deduplication tables in the exemption list.
+        """
+        # Collect view builders to get source tables
+        collector = SegmentEventBigQueryViewCollector()
+        event_builders = collector.collect_view_builders()
+
+        # Get unique source table addresses from view builders
+        source_table_addresses = {
+            builder.segment_table_sql_source for builder in event_builders
+        }
+
+        # Get the exemption list
+        allowed_tables = get_allowed_tables_in_source_table_datasets_with_no_config()
+
+        # Check that each source table has a corresponding _view table in exemptions
+        missing_view_exemptions: list[str] = []
+        for source_address in sorted(
+            source_table_addresses, key=lambda a: (a.dataset_id, a.table_id)
+        ):
+            view_table_id = f"{source_address.table_id}_view"
+            dataset_allowed_tables = allowed_tables.get(
+                source_address.dataset_id, set()
+            )
+
+            if view_table_id not in dataset_allowed_tables:
+                missing_view_exemptions.append(
+                    f"{source_address.dataset_id}.{view_table_id}"
+                )
+
+        if missing_view_exemptions:
+            raise ValueError(
+                f"Found segment event source tables without corresponding _view exemptions: "
+                f"{missing_view_exemptions}"
             )

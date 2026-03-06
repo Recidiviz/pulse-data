@@ -20,11 +20,17 @@ was established.
 
 Any additions to this file should be reviewed by the Doppler team.
 """
+import functools
+
+from recidiviz.segment.segment_event_utils import (
+    ALL_SEGMENT_DATASETS,
+    get_all_segment_source_table_addresses,
+)
 
 # Legacy tables that existed before we had source table management, or have other
 # valid exemption reasons.
 # These are grandfathered in and won't trigger validation failures
-ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
+_BASE_ALLOWED_TABLES: dict[str, set[str]] = {
     # All billing data
     "all_billing_data": {
         "gcp_billing_export_raw",
@@ -417,3 +423,50 @@ ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG: dict[str, set[str]] = {
     # TODO(#57811): Delete this table from BigQuery and remove this exemption
     "us_or_raw_data_secondary": {"RCDVZ_CISPRDDTA_CMOFRO"},
 }
+
+
+@functools.cache
+def get_allowed_tables_in_source_table_datasets_with_no_config() -> dict[str, set[str]]:
+    """Returns the set of tables allowed in source table datasets without configs.
+
+    This includes the base allowed tables plus dynamically generated Segment deduplication
+    views that are created automatically by Segment in production environments.
+
+    Returns:
+        Dictionary mapping dataset_id to set of allowed table names.
+    """
+
+    # Start with a copy of the base allowed tables
+    allowed_tables = {
+        dataset_id: set(table_ids)
+        for dataset_id, table_ids in _BASE_ALLOWED_TABLES.items()
+    }
+
+    # Get all source table addresses from YAML configs across all Segment datasets
+    segment_source_addresses = get_all_segment_source_table_addresses()
+
+    # Add `{table_id}_view` deduplication views that are automatically created by Segment
+    for source_address in segment_source_addresses:
+        dataset_id = source_address.dataset_id
+        view_table_id = f"{source_address.table_id}_view"
+
+        if dataset_id not in allowed_tables:
+            allowed_tables[dataset_id] = set()
+        allowed_tables[dataset_id].add(view_table_id)
+
+    # Add Segment infrastructure views that exist in all Segment datasets
+    # These are created automatically by Segment and don't represent individual tracked events
+    segment_infrastructure_views = {
+        "identifies_view",
+        "users_view",
+        "pages_view",
+        "tracks_view",
+        "hello_view",
+    }
+
+    for dataset_id in ALL_SEGMENT_DATASETS:
+        if dataset_id not in allowed_tables:
+            allowed_tables[dataset_id] = set()
+        allowed_tables[dataset_id].update(segment_infrastructure_views)
+
+    return allowed_tables

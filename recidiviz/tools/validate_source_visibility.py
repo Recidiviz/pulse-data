@@ -801,6 +801,7 @@ def main() -> int:
                 "recidiviz.source_tables.externally_managed.datasets",
                 "recidiviz.source_tables.yaml_managed.datasets",
                 "recidiviz.validation.views.dataset_config",
+                "recidiviz.source_tables",
                 "recidiviz.view_registry",
                 # view code
                 "recidiviz.aggregated_metrics",

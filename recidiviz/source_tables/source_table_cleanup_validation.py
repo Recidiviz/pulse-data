@@ -22,7 +22,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.untracked_source_table_exemptions import (
-    ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG,
+    get_allowed_tables_in_source_table_datasets_with_no_config,
 )
 
 
@@ -73,8 +73,10 @@ def validate_clean_source_table_datasets(
         actual_tables = {table.table_id for table in bq_client.list_tables(dataset_id)}
 
         # Get legacy source tables for this dataset (if any)
-        legacy_tables = ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG.get(
-            dataset_id, set()
+        legacy_tables = (
+            get_allowed_tables_in_source_table_datasets_with_no_config().get(
+                dataset_id, set()
+            )
         )
 
         # Find unexpected tables (in BQ but not in configs, excluding legacy)

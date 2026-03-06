@@ -36,7 +36,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.untracked_source_table_exemptions import (
-    ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG,
+    get_allowed_tables_in_source_table_datasets_with_no_config,
 )
 
 
@@ -155,10 +155,10 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
 
     @patch(
         "recidiviz.source_tables.source_table_cleanup_validation"
-        ".ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG",
-        {"my_dataset": {"legacy_table"}},
+        ".get_allowed_tables_in_source_table_datasets_with_no_config",
+        return_value={"my_dataset": {"legacy_table"}},
     )
-    def test_legacy_tables_are_allowed(self) -> None:
+    def test_legacy_tables_are_allowed(self, _mock_get_allowed: MagicMock) -> None:
         """Legacy tables in the allowlist don't trigger unexpected table errors."""
         repo = SourceTableRepository(
             source_table_collections=[
@@ -263,7 +263,7 @@ class TestExemptionListNoOverlapWithConfigs(unittest.TestCase):
 
         exempted_table_addresses: set[BigQueryAddress] = set()
         for dataset_id, exempted_tables in sorted(
-            ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG.items()
+            get_allowed_tables_in_source_table_datasets_with_no_config().items()
         ):
             exempted_table_addresses.update(
                 {
@@ -278,7 +278,7 @@ class TestExemptionListNoOverlapWithConfigs(unittest.TestCase):
             overlapping,
             set(),
             "The following tables have YAML configs but are still listed in "
-            "ALLOWED_TABLES_IN_SOURCE_TABLE_DATASETS_WITH_NO_CONFIG in "
+            "the exemption list returned by get_allowed_tables_in_source_table_datasets_with_no_config() in "
             "untracked_source_table_exemptions.py. Please remove them from "
             f"the exemption list:{BigQueryAddress.addresses_to_str(overlapping, indent_level=2)}",
         )

@@ -16,20 +16,44 @@
 # =============================================================================
 """Util functions for processing segment events."""
 
+from more_itertools import one
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.dataset_config import (
+    AUTH0_EVENTS,
+    AUTH0_PROD_ACTION_LOGS,
     CASE_PLANNING_PRODUCTION_DATASET,
+    JII_AUTH0_PROD_SEGMENT_DATASET,
+    JII_BACKEND_PRODUCTION_SEGMENT_METRICS,
+    JII_FRONTEND_PROD_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 from recidiviz.segment.product_type import ProductType
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    collect_externally_managed_source_table_collections,
+)
 
 # The first US_IX export for workflows was on 1/11 in staging and 1/17 in prod.
 # For simplicity, use the prod date.
 FIRST_IX_EXPORT_DATE = "2023-01-17"
 
+# Datasets containing Segment event data from frontend tracking
+# These datasets contain tracking for the `pages` table
+SEGMENT_FRONTEND_TRACKING_DATASETS = [
+    PULSE_DASHBOARD_SEGMENT_DATASET,
+    CASE_PLANNING_PRODUCTION_DATASET,
+    JII_FRONTEND_PROD_SEGMENT_DATASET,
+]
+
 # Datasets containing Segment event source tables
-SEGMENT_DATASETS = [PULSE_DASHBOARD_SEGMENT_DATASET, CASE_PLANNING_PRODUCTION_DATASET]
+ALL_SEGMENT_DATASETS = [
+    *SEGMENT_FRONTEND_TRACKING_DATASETS,
+    JII_BACKEND_PRODUCTION_SEGMENT_METRICS,
+    JII_AUTH0_PROD_SEGMENT_DATASET,
+    AUTH0_PROD_ACTION_LOGS,
+    AUTH0_EVENTS,
+]
 
 
 def _get_url_filter_for_all_products() -> str:
@@ -190,3 +214,57 @@ ON
 
 """
     return template
+
+
+def get_segment_frontend_event_source_table_addresses() -> set[BigQueryAddress]:
+    """Returns the set of BigQuery source table addresses for Segment frontend tracking events.
+
+    This queries the YAML configs in externally_managed source table collections
+    to find all Segment event source tables in frontend tracking datasets.
+
+    Returns:
+        Set of BigQueryAddress instances for Segment frontend tracking source tables.
+    """
+
+    segment_event_source_table_addresses: set[BigQueryAddress] = set()
+    externally_managed_source_table_collections = (
+        collect_externally_managed_source_table_collections(project_id=None)
+    )
+    for dataset_id in SEGMENT_FRONTEND_TRACKING_DATASETS:
+        collection = one(
+            collection
+            for collection in externally_managed_source_table_collections
+            if collection.dataset_id == dataset_id
+        )
+
+        for address in collection.source_tables_by_address:
+            segment_event_source_table_addresses.add(address)
+
+    return segment_event_source_table_addresses
+
+
+def get_all_segment_source_table_addresses() -> set[BigQueryAddress]:
+    """Returns the set of BigQuery source table addresses for all Segment events.
+
+    This queries the YAML configs in externally_managed source table collections
+    to find all Segment event source tables across ALL Segment datasets.
+
+    Returns:
+        Set of BigQueryAddress instances for all Segment source tables.
+    """
+
+    all_segment_source_table_addresses: set[BigQueryAddress] = set()
+    externally_managed_source_table_collections = (
+        collect_externally_managed_source_table_collections(project_id=None)
+    )
+    for dataset_id in ALL_SEGMENT_DATASETS:
+        collection = one(
+            collection
+            for collection in externally_managed_source_table_collections
+            if collection.dataset_id == dataset_id
+        )
+
+        for address in collection.source_tables_by_address:
+            all_segment_source_table_addresses.add(address)
+
+    return all_segment_source_table_addresses

@@ -25,7 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
-    SEGMENT_DATASETS,
+    SEGMENT_FRONTEND_TRACKING_DATASETS,
     build_segment_event_view_query_template,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -61,7 +61,7 @@ ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         _get_pages_query_template(dataset, _UTM_COLS)
         if dataset in _DATASETS_WITH_UTM_COLS
         else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(CASE_PLANNING_PRODUCTION_DATASET, [])})"
-        for dataset in SEGMENT_DATASETS
+        for dataset in SEGMENT_FRONTEND_TRACKING_DATASETS
     ),
     view_id=_VIEW_ID,
     description=__doc__,
