@@ -17,6 +17,7 @@
 
 """Helpers for talking to the Github API"""
 import logging
+import time
 
 from github import Github
 from more_itertools import one
@@ -154,3 +155,72 @@ def format_region_specific_ticket_title(
     validation failures.
     """
     return f"[{environment}][{region_code.upper()}] {title}"
+
+
+def get_short_commit_sha(commit_sha: str) -> str:
+    """Get the short version of a commit SHA (first 7 characters)."""
+    return commit_sha[:7]
+
+
+def poll_for_pr_merge(
+    github_client: Github,
+    pr_branch: str,
+    base_branch: str,
+    repo: str,
+    timeout_minutes: int,
+    poll_interval_seconds: int = 30,
+) -> None:
+    """Poll for a PR to be merged, timing out after the specified minutes.
+
+    Args:
+        github_client: GitHub client to use for API calls
+        pr_branch: The head branch name of the PR to poll for
+        base_branch: The base branch name of the PR
+        repo: The repository name (e.g., "Recidiviz/looker")
+        timeout_minutes: Maximum time to wait for PR merge in minutes
+        poll_interval_seconds: Time to wait between polls in seconds (default: 30)
+
+    Raises:
+        TimeoutError: If the PR is not merged within the timeout period
+    """
+    timeout_seconds = timeout_minutes * 60
+    start_time = time.time()
+
+    logging.info(
+        "Polling for PR merge (repo: %s, branch: %s, base: %s, timeout: %d minutes)",
+        repo,
+        pr_branch,
+        base_branch,
+        timeout_minutes,
+    )
+
+    while True:
+        elapsed = time.time() - start_time
+
+        if elapsed > timeout_seconds:
+            raise TimeoutError(
+                f"Timed out after {timeout_minutes} minutes waiting for PR to be merged."
+            )
+
+        pr = get_pr_if_exists(
+            github_client=github_client,
+            head_branch_name=pr_branch,
+            base_branch_name=base_branch,
+            repo=repo,
+        )
+
+        if pr is None:
+            logging.info(
+                "PR has been merged or closed.",
+            )
+            return
+
+        remaining = timeout_seconds - elapsed
+        logging.info(
+            "PR %s still open. Waiting %d seconds before next poll. "
+            "Time remaining: %.1f minutes",
+            pr,
+            poll_interval_seconds,
+            remaining / 60,
+        )
+        time.sleep(poll_interval_seconds)
