@@ -75,14 +75,19 @@ output:
               $mappings: # guessing all the levels, not sure what they mean
                 StateIncarcerationPeriodCustodyLevel.CLOSE:
                   - CLS # Close
+                  - CLOSE
                 StateIncarcerationPeriodCustodyLevel.MAXIMUM:
                   - MAX # Maximum
+                  - MAXIMUM
                 StateIncarcerationPeriodCustodyLevel.MINIMUM:
                   - MIT # Minimum Trustee
                   - MIR # Minimum Restricted
                   - MID # Minimum Direct
+                  - LOW
+                  - MIN
                 StateIncarcerationPeriodCustodyLevel.MEDIUM:
                   - MED # Medium
+                  - MEDIUM
           custodial_authority:
             $enum_mapping:
               $raw_text:
