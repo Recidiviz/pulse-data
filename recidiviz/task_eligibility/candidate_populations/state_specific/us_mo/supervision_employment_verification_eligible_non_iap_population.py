@@ -15,11 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies when a client is a candidate for employment verification as part of
-supervision Tasks in MO under routine contact standards we support in our Tasks tool.
+supervision Tasks in MO under routine contact standards we support in our Tasks tool for
+clients who are NOT in the Initial Assessment Period (IAP).
 """
 
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mo import (
-    supervision_tasks_eligible_population,
+    supervision_tasks_eligible_non_iap_population,
 )
 from recidiviz.task_eligibility.criteria.general import not_is_unemployed
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
@@ -32,14 +33,16 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "US_MO_SUPERVISION_EMPLOYMENT_VERIFICATION_ELIGIBLE_POPULATION"
+_POPULATION_NAME = (
+    "US_MO_SUPERVISION_EMPLOYMENT_VERIFICATION_ELIGIBLE_NON_IAP_POPULATION"
+)
 
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_POPULATION_NAME,
     sub_criteria_list=[
-        supervision_tasks_eligible_population.VIEW_BUILDER.as_criteria(
-            criteria_name="US_MO_IN_SUPERVISION_TASKS_ELIGIBLE_POPULATION",
+        supervision_tasks_eligible_non_iap_population.VIEW_BUILDER.as_criteria(
+            criteria_name="US_MO_IN_SUPERVISION_TASKS_ELIGIBLE_NON_IAP_POPULATION",
         ),
         # If clients are unemployed, we don't surface them for employment verification.
         # This only filters out clients who are confirmed to be unemployed, leaving
