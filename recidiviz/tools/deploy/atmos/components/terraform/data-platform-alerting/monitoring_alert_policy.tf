@@ -122,7 +122,7 @@ resource "google_monitoring_alert_policy" "cloud_sql_high_memory_utilization" {
 
 resource "google_monitoring_alert_policy" "cloud_run_job_failure" {
   alert_strategy {
-    auto_close           = "604800s"
+    auto_close           = "259200s"
     notification_prompts = ["OPENED", "CLOSED"]
   }
 
