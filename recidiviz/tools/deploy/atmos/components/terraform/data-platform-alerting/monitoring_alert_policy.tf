@@ -3,7 +3,7 @@ variable "project_id" {
 }
 
 locals {
-  sftp_state_alpha_codes = yamldecode(file("${path.module}/../../../terraform/config/sftp_state_alpha_codes.yaml"))
+  sftp_state_alpha_codes = yamldecode(file("${path.module}/../../../../terraform/config/sftp_state_alpha_codes.yaml"))
 }
 
 resource "google_monitoring_alert_policy" "vpc_net_route_changes_cis" {
@@ -1582,7 +1582,7 @@ resource "google_monitoring_alert_policy" "sftp_ingest_ready_file_stale" {
       }
 
       comparison              = "COMPARISON_GT"
-      duration                = "0s"
+      duration                = "10800s" # 3 hours
       evaluation_missing_data = "EVALUATION_MISSING_DATA_INACTIVE"
       filter                  = <<-EOT
         resource.type = "k8s_cluster" AND metric.type = "custom.googleapis.com/opencensus/sftp.ingest_ready_files_hours_stale" AND metric.labels.region = "${each.key}"
