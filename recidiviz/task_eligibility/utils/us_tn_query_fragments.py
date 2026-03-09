@@ -579,14 +579,13 @@ def latest_caf_score_cte() -> str:
     return f"""
     {_build_offense_severity_lookup_cte()}
     ,
-    CAF_scores AS (
+    -- pull offense severity from v1 or v2 CAF and deduplicate to pull a single assessment 
+    -- from each day
+    all_CAF_scores AS (
         SELECT
             state_code,
             person_id,
-            assessment_date AS start_date,
-            -- Use the next assessment date as the end date, rather than score_end_date_exclusive, to account for
-            -- all CAF types and to skip placeholder Maximum scores
-            LEAD(assessment_date) OVER (PARTITION BY person_id ORDER BY assessment_date) AS end_date_exclusive,
+            assessment_date,
             offense_severity_lookup.offense_severity_row_number,
             asmt.assessment_type,
         FROM
@@ -606,6 +605,18 @@ def latest_caf_score_cte() -> str:
                 OR asmt.assessment_level != 'MAXIMUM'
             )
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date ORDER BY assessment_score DESC) = 1
+    )
+    ,
+    -- create offense severity score spans
+    caf_offense_severity_spans AS (
+        SELECT 
+            state_code,
+            person_id,
+            offense_severity_row_number,
+            assessment_type,
+            assessment_date as start_date,
+            LEAD(assessment_date) OVER (PARTITION BY person_id ORDER BY assessment_date) AS end_date_exclusive,
+        FROM all_CAF_scores
     )
     """
 
