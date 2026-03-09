@@ -104,27 +104,3 @@ FROM `${var.project_id}.platform_kpis.normalized_state_hydration_live_snapshot`
 EOT
   }
 }
-
-
-
-resource "google_monitoring_alert_policy" "scheduled_query_monitoring" {
-  display_name          = "BQ Scheduled Query Monitoring"
-  notification_channels = [data.google_monitoring_notification_channel.infra_pagerduty.name]
-  combiner              = "OR"
-  conditions {
-    display_name = "Log match condition: failed scheduled query"
-    condition_matched_log {
-      filter = "resource.type=\"bigquery_dts_config\" severity=\"ERROR\""
-    }
-  }
-
-  alert_strategy {
-    notification_rate_limit {
-      period = "900s"
-    }
-  }
-
-  documentation {
-    content = "A BQ scheduled query failed. See history at https://console.cloud.google.com/bigquery/transfers?project=${var.project_id}"
-  }
-}
