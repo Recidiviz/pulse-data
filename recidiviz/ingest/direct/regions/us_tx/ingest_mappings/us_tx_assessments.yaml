@@ -70,6 +70,7 @@ output:
                         - MH
                         - MODERATE-HIGH
                         - H
+                        - VERY HIGH
                       StateAssessmentLevel.INTERNAL_UNKNOWN:
                         - NO FURTHER EVALUATION NEEDED
                         - FURTHER EVALUATION NEEDED
