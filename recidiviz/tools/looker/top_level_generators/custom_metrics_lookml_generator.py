@@ -221,7 +221,9 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=JII_TABLET_APP_IMPACT_LOOKER_METRICS,
             assignment_types_dict=JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
-            json_field_filters_with_suggestions={},
+            json_field_filters_with_suggestions={
+                "is_after_full_state_launch": ["True", "False"],
+            },
         )
 
         # CPA
