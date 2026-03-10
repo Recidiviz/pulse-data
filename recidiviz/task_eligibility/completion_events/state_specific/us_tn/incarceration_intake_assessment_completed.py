@@ -37,7 +37,8 @@ _QUERY_TEMPLATE = """
     ON c.person_id = i.person_id
     AND c.state_code = i.state_code
     AND c.classification_decision_date = i.start_date  
-
+    -- filter only to v1 intake CAF
+    WHERE c.assessment_type = "CAF"
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(

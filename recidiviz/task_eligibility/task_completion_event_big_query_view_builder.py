@@ -106,8 +106,18 @@ class TaskCompletionEventType(Enum):
     # (potentially transfer to minimum facility & transfer to re-entry facility)
     TRANSFER_TO_MINIMUM_FACILITY = "TRANSFER_TO_MINIMUM_FACILITY"
     INCARCERATION_ASSESSMENT_COMPLETED = "INCARCERATION_ASSESSMENT_COMPLETED"
+    # TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
+    # transfers into a single completion event in TN.
+    INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED = (
+        "INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED"
+    )
     INCARCERATION_INTAKE_ASSESSMENT_COMPLETED = (
         "INCARCERATION_INTAKE_ASSESSMENT_COMPLETED"
+    )
+    # TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
+    # transfers into a single completion event in TN.
+    INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED = (
+        "INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED"
     )
     KUDOS_SMS_SENT = "KUDOS_SMS_SENT"
     TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION = (
@@ -148,7 +158,9 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
             TaskCompletionEventType.HEARING_OCCURRED,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.GOOD_TIME_REINSTATED,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
@@ -214,7 +226,9 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
         ]:
             return DecarceralImpactType.DOWNGRADE_CUSTODY_LEVEL
         if self in [
@@ -340,7 +354,9 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.HEARING_OCCURRED,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.KUDOS_SMS_SENT,
             TaskCompletionEventType.GOOD_TIME_REINSTATED,
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
@@ -364,7 +380,9 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.FULL_TERM_DISCHARGE,
             TaskCompletionEventType.HEARING_OCCURRED,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+            TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.REVIEW_HEARING_OCCURRED,
             TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT,

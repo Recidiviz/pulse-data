@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a view that shows when classification hearings that were scheduled have occurred, regardless
-of whether they were on time. Excludes classification hearings done during Intake
+of whether they were on time using the new 2026 pollen policy. Excludes classification hearings done during Intake
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
@@ -40,14 +40,15 @@ _QUERY_TEMPLATE = """
         AND c.classification_decision_date = i.start_date
     WHERE 
         i.person_id IS NULL  
-        -- filter only to v1 CAF
-        AND c.assessment_type = 'CAF'
-
+        -- filter only to 2026 reclassification CAF
+        AND c.assessment_type = 'RCAF'
 """
 
+# TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
+# transfers into a single completion event in TN.
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
     state_code=StateCode.US_TN,
-    completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+    completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
     description=__doc__,
     completion_event_query_template=_QUERY_TEMPLATE,
 )

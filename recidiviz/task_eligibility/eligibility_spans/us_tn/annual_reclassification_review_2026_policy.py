@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison_exclude_safekeeping,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
-    incarceration_assessment_completed,
+    incarceration_assessment_2026_policy_completed,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_compared_to_recommended,
@@ -76,7 +76,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS,
-    completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
+    completion_event_builder=incarceration_assessment_2026_policy_completed.VIEW_BUILDER,
     almost_eligible_condition=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_ALMOST_ELIGIBLE_CONDITION,
 )
 

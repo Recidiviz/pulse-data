@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison_exclude_safekeeping,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
-    incarceration_intake_assessment_completed,
+    incarceration_intake_assessment_2026_policy_completed,
 )
 from recidiviz.task_eligibility.criteria.general import (
     has_initial_classification_in_state_prison_custody,
@@ -60,7 +60,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=US_TN_INITIAL_CLASSIFICATION_REVIEW_CRITERIA_VIEW_BUILDERS,
-    completion_event_builder=incarceration_intake_assessment_completed.VIEW_BUILDER,
+    completion_event_builder=incarceration_intake_assessment_2026_policy_completed.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
