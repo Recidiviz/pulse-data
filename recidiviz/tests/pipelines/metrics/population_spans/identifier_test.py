@@ -636,6 +636,15 @@ class TestFindPopulationSpans(unittest.TestCase):
             expected_supervision_span(
                 supervision_period,
                 start_date_inclusive=date(2010, 12, 1),
+                end_date_exclusive=date(2011, 1, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2011, 1, 1),
                 end_date_exclusive=date(2011, 3, 1),
                 case_type=StateSupervisionCaseType.GENERAL,
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -853,6 +862,160 @@ class TestFindPopulationSpans(unittest.TestCase):
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id=None,
                 included_in_state_population=False,
+            ),
+        ]
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_supervision_spans_concurrent_supervision_periods_with_incarceration(
+        self,
+    ) -> None:
+        """Tests that concurrent (overlapping) supervision periods are both
+        correctly excluded from the state population during incarceration. This
+        is the scenario that occurs in US_ND where DOCSTARS creates one
+        supervision case per sentence, resulting in multiple simultaneously-open
+        supervision periods for a person serving concurrent sentences.
+        """
+        incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            external_id="ip1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2025, 6, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2025, 9, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
+        )
+        supervision_period_1 = NormalizedStateSupervisionPeriod(
+            supervision_period_id=_DEFAULT_SP_ID,
+            external_id="sp1",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2025, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_date=date(2025, 12, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry(
+                    supervision_case_type_entry_id=1,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+        # Concurrent SP overlapping with SP1 (different sentence, same person)
+        supervision_period_2 = NormalizedStateSupervisionPeriod(
+            supervision_period_id=2222,
+            external_id="sp2",
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2025, 3, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_date=date(2026, 6, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry(
+                    supervision_case_type_entry_id=2,
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=1,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period_1, supervision_period_2],
+        )
+
+        expected_spans = [
+            expected_incarceration_span(incarceration_period),
+            # SP1 before SP2 starts
+            expected_supervision_span(
+                supervision_period_1,
+                start_date_inclusive=date(2025, 1, 1),
+                end_date_exclusive=date(2025, 3, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=True,
+            ),
+            # SP1 and SP2 both active, before incarceration
+            expected_supervision_span(
+                supervision_period_1,
+                start_date_inclusive=date(2025, 3, 1),
+                end_date_exclusive=date(2025, 6, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=True,
+            ),
+            expected_supervision_span(
+                supervision_period_2,
+                start_date_inclusive=date(2025, 3, 1),
+                end_date_exclusive=date(2025, 6, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=True,
+            ),
+            # BOTH SPs excluded during incarceration
+            expected_supervision_span(
+                supervision_period_1,
+                start_date_inclusive=date(2025, 6, 1),
+                end_date_exclusive=date(2025, 9, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period_2,
+                start_date_inclusive=date(2025, 6, 1),
+                end_date_exclusive=date(2025, 9, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=False,
+            ),
+            # Both SPs active again after incarceration
+            expected_supervision_span(
+                supervision_period_1,
+                start_date_inclusive=date(2025, 9, 1),
+                end_date_exclusive=date(2025, 12, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=True,
+            ),
+            expected_supervision_span(
+                supervision_period_2,
+                start_date_inclusive=date(2025, 9, 1),
+                end_date_exclusive=date(2025, 12, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=True,
+            ),
+            # SP2 continues after SP1 ends
+            expected_supervision_span(
+                supervision_period_2,
+                start_date_inclusive=date(2025, 12, 1),
+                end_date_exclusive=date(2026, 6, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                level_2_supervision_location_external_id=None,
+                included_in_state_population=True,
             ),
         ]
         self.assertEqual(expected_spans, spans)

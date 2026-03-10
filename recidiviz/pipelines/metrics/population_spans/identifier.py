@@ -17,7 +17,7 @@
 """Identifier class for events related to incarceration."""
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Set, Tuple, Type, cast
+from typing import Dict, List, Set, Type, cast
 
 import attr
 
@@ -26,13 +26,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
-    DateRange,
-    DateRangeDiff,
+    CriticalRangesBuilder,
     NonNegativeDateRange,
     PotentiallyOpenDateRange,
     convert_critical_dates_to_time_spans,
-    merge_sorted_date_ranges,
-    tomorrow_us_eastern,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -183,18 +180,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             incarceration_delegate=self.incarceration_delegate,
         )
 
-        # We need to split the spans based on the durations that a person is incarcerated
-        # as well in order to determine if a person is to be counted towards the state's
-        # supervision population.
-        durations_incarcerated: List[NonNegativeDateRange] = merge_sorted_date_ranges(
-            [
-                ip.duration
-                for ip in ip_index.incarceration_periods_that_exclude_person_from_supervision_population
-            ]
-        )
-
-        next_relevant_ip_index = 0
-
         for supervision_period in sp_index.sorted_supervision_periods:
             if supervision_period.start_date is None:
                 raise ValueError("Unexpected supervision period without start_date")
@@ -203,77 +188,60 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     "Unexpected supervision period without a supervision_period_id."
                 )
 
-            # Find all relevant IPs that overlap with the SP
-            relevant_ip_durations = []
-            while next_relevant_ip_index < len(durations_incarcerated):
-                next_relevant_ip_duration = durations_incarcerated[
-                    next_relevant_ip_index
-                ]
-                if DateRangeDiff(
-                    next_relevant_ip_duration, supervision_period.duration
-                ).overlapping_range:
-                    relevant_ip_durations.append(next_relevant_ip_duration)
-                if (
-                    next_relevant_ip_duration.upper_bound_exclusive_date
-                    > supervision_period.duration.upper_bound_exclusive_date
-                ):
-                    # Found an IP that extends past where our SP ends, stop here.
-                    # Inspect this IP first when we get to the next SP.
-                    break
-                next_relevant_ip_index += 1
+        excluding_ips = (
+            ip_index.incarceration_periods_that_exclude_person_from_supervision_population
+        )
 
-            # Break up the SP into pieces based on relevant overlapping IPs
-            sub_supervision_period_durations: List[Tuple[DateRange, bool]] = []
-            sp_remaining_duration: Optional[DateRange] = supervision_period.duration
-            for ip_duration in relevant_ip_durations:
-                if not sp_remaining_duration:
-                    break
-                range_diff = DateRangeDiff(ip_duration, sp_remaining_duration)
-                before_part = range_diff.range_2_non_overlapping_before_part
-                if before_part:
-                    sub_supervision_period_durations.append((before_part, False))
-                overlapping_part = range_diff.overlapping_range
-                if overlapping_part:
-                    sub_supervision_period_durations.append((overlapping_part, True))
-                sp_remaining_duration = range_diff.range_2_non_overlapping_after_part
+        # Use CriticalRangesBuilder to correctly split supervision spans at
+        # incarceration period boundaries. This handles concurrent supervision
+        # periods by checking IP overlap for each critical range independently.
+        critical_ranges_builder = CriticalRangesBuilder(
+            [*sp_index.sorted_supervision_periods, *excluding_ips]
+        )
 
-            if sp_remaining_duration:
-                sub_supervision_period_durations.append((sp_remaining_duration, False))
+        for critical_range in critical_ranges_builder.get_sorted_critical_ranges():
+            overlapping_sps = (
+                critical_ranges_builder.get_objects_overlapping_with_critical_range(
+                    critical_range, NormalizedStateSupervisionPeriod
+                )
+            )
+            if not overlapping_sps:
+                continue
 
-            # Build SPs from the SP subduration
-            (
-                level_1_supervision_location,
-                level_2_supervision_location,
-            ) = self.supervision_delegate.supervision_location_from_supervision_site(
-                supervision_period.supervision_site
-            )
-            case_type, case_type_raw_text = identify_most_severe_case_type(
-                supervision_period
-            )
-            sp_in_state_population_based_on_metadata = self.supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
-                supervision_period
-            )
-            supervision_type = (
-                supervision_period.supervision_type
-                if supervision_period.supervision_type
-                else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+            overlaps_with_ip = bool(
+                critical_ranges_builder.get_objects_overlapping_with_critical_range(
+                    critical_range, NormalizedStateIncarcerationPeriod
+                )
             )
 
-            for sp_duration, overlaps_with_ip in sub_supervision_period_durations:
+            for supervision_period in overlapping_sps:
+                (
+                    level_1_supervision_location,
+                    level_2_supervision_location,
+                ) = self.supervision_delegate.supervision_location_from_supervision_site(
+                    supervision_period.supervision_site
+                )
+                case_type, case_type_raw_text = identify_most_severe_case_type(
+                    supervision_period
+                )
+                sp_in_state_population_based_on_metadata = self.supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
+                    supervision_period
+                )
+                supervision_type = (
+                    supervision_period.supervision_type
+                    if supervision_period.supervision_type
+                    else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+                )
+
                 included_in_state_population = (
                     not overlaps_with_ip and sp_in_state_population_based_on_metadata
                 ) and not is_supervision_out_of_state(
                     supervision_period.custodial_authority
                 )
-                end_date_exclusive = (
-                    sp_duration.upper_bound_exclusive_date
-                    if sp_duration.upper_bound_exclusive_date != tomorrow_us_eastern()
-                    else None
-                )
                 span = SupervisionPopulationSpan(
                     state_code=supervision_period.state_code,
-                    start_date_inclusive=sp_duration.lower_bound_inclusive_date,
-                    end_date_exclusive=end_date_exclusive,
+                    start_date_inclusive=critical_range.lower_bound_inclusive_date,
+                    end_date_exclusive=critical_range.upper_bound_exclusive_date,
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     supervision_type=supervision_type,
