@@ -5191,10 +5191,10 @@ elementary-circuits-directed-graph@^1.0.4:
   dependencies:
     strongly-connected-components "^1.0.1"
 
-elkjs@^0.11.0:
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/elkjs/-/elkjs-0.11.0.tgz#ca57b209ff66531c0f77ff32b9667aaeaad45d1b"
-  integrity sha512-u4J8h9mwEDaYMqo0RYJpqNMFDoMK7f+pu4GjcV+N8jIC7TRdORgzkfSjTJemhqONFfH6fBI3wpysgWbhgVWIXw==
+elkjs@^0.11.1:
+  version "0.11.1"
+  resolved "https://registry.yarnpkg.com/elkjs/-/elkjs-0.11.1.tgz#d27fcdbbf5a8aeeff80420d17d1666f78cfc8544"
+  integrity sha512-zxxR9k+rx5ktMwT/FwyLdPCrq7xN6e4VGGHH8hA01vVYKjTFik7nHOxBnAYtrgYUB1RpAiLvA1/U2YraWxyKKg==
 
 emittery@^0.10.2:
   version "0.10.2"
