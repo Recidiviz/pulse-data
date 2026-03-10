@@ -22,6 +22,14 @@ from typing import List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Bool,
+    Date,
+    Integer,
+    Json,
+    String,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_query_builder import (
     BasicSingleTaskEligibilitySpansBigQueryQueryBuilder,
@@ -35,6 +43,52 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
+
+
+def basic_single_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
+    """Builds the schema for a basic task eligibility span view."""
+    return [
+        String(
+            name="state_code",
+            description="The state code for the person being evaluated.",
+            mode="REQUIRED",
+        ),
+        Integer(
+            name="person_id",
+            description="The person being evaluated for task eligibility.",
+            mode="REQUIRED",
+        ),
+        Date(
+            name="start_date",
+            description="The start date of the eligibility span (inclusive).",
+            mode="REQUIRED",
+        ),
+        Date(
+            name="end_date",
+            description="The exclusive end date of the eligibility span, or null if the span is still open.",
+            mode="NULLABLE",
+        ),
+        Bool(
+            name="is_eligible",
+            description="Whether the person meets all eligibility criteria for the task during this span.",
+            mode="REQUIRED",
+        ),
+        Json(
+            name="reasons",
+            description="(LEGACY FORMAT, DO NOT USE FOR NEW PRODUCTS) JSON array of per-criteria reason objects aggregated from all component criteria.",
+            mode="NULLABLE",
+        ),
+        Json(
+            name="reasons_v2",
+            description="JSON array of per-criteria reason objects aggregated from all component criteria (v2 format).",
+            mode="REQUIRED",
+        ),
+        String(
+            name="ineligible_criteria",
+            description="Array of criteria names that the person does not meet during this span.",
+            mode="REPEATED",
+        ),
+    ]
 
 
 class BasicSingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -71,6 +125,7 @@ class BasicSingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuild
             materialized_address_override=self.materialized_table_for_task_name(
                 state_code, task_name
             ),
+            schema=basic_single_task_eligibility_span_schema(),
         )
         self.state_code = state_code
         self.task_name = task_name

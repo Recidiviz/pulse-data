@@ -17,14 +17,22 @@
 """Builds sessionized views that collapse TES spans into spans where is_eligible /
 is_almost_eligible have the same value.
 """
+import attrs
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Integer,
+    String,
+)
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+    single_task_eligibility_span_schema,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -56,6 +64,46 @@ _VIEW_DESCRIPTION_TEMPLATE = """
 Sessionized view of `{base_task_address_str}` that collapses spans
 based on the `task_name`, `is_eligible` and `is_almost_eligible` fields for each client.
 """
+
+
+def collapsed_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
+    """Returns the schema for a collapsed task eligibility spans view. Column
+    order must match the SELECT output of aggregate_adjacent_spans (which
+    outputs person_id, state_code first) wrapped by ``SELECT *`` in the query
+    template, because BQ materialization maps columns by position."""
+    single_cols = {col.name: col for col in single_task_eligibility_span_schema()}
+    return [
+        single_cols["person_id"],
+        single_cols["state_code"],
+        attrs.evolve(
+            single_cols["task_eligibility_span_id"],
+            description="An ID for this collapsed task eligibility span which is unique to a `person_id` and can be used to order across all eligibility spans for a person",
+        ),
+        Integer(
+            name="date_gap_id",
+            description="A numerical id that, for ordered spans associated with a given `person_id`, remains the same for consecutive spans with no date gap between them and is incremented by one every time there is a date gap between consecutive spans",
+            mode="NULLABLE",
+        ),
+        attrs.evolve(
+            single_cols["start_date"],
+            description="The start date of the collapsed eligibility span (inclusive).",
+        ),
+        attrs.evolve(
+            single_cols["end_date"],
+            description="The exclusive end date of the collapsed eligibility span, or null if the span is still open.",
+        ),
+        single_cols["task_name"],
+        String(
+            name="task_type",
+            description="The completion event type for this task.",
+            mode="REQUIRED",
+        ),
+        single_cols["is_eligible"],
+        attrs.evolve(
+            single_cols["is_almost_eligible"],
+            description="Whether the person is almost eligible for the task during this span, as defined by this task's specific 'almost eligibility' configuration logic",
+        ),
+    ]
 
 
 def _build_collapsed_tes_spans_view_address(
@@ -93,6 +141,7 @@ def build_collapsed_task_eligibility_spans_view_for_tes_builder(
         ),
         clustering_fields=["state_code", "person_id"],
         should_materialize=True,
+        schema=collapsed_task_eligibility_span_schema(),
         # Query format args
         completion_event_type=completion_event_type,
         tes_view_materialized_address=tes_builder.table_for_query.to_str(),

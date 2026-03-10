@@ -18,11 +18,17 @@
 These views are used as inputs to a task eligibility spans view.
 """
 
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -35,6 +41,33 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
     StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
 )
+
+
+def task_candidate_population_schema() -> Sequence[BigQueryViewColumn]:
+    """Returns the schema for a candidate population view. This is a fixed
+    schema shared by all candidate population builders."""
+    return [
+        String(
+            name="state_code",
+            mode="REQUIRED",
+            description="The state code for this candidate population span",
+        ),
+        Integer(
+            name="person_id",
+            mode="REQUIRED",
+            description="The person ID of the person who is in the candidate population between this span's dates",
+        ),
+        Date(
+            name="start_date",
+            mode="REQUIRED",
+            description="Start date of the candidate population span (inclusive)",
+        ),
+        Date(
+            name="end_date",
+            mode="NULLABLE",
+            description="End date of the candidate population span (exclusive). NULL means the span is ongoing.",
+        ),
+    ]
 
 
 def aggregate_adjacent_candidate_population_spans(query_template: str) -> str:
@@ -129,7 +162,7 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            schema=None,
+            schema=task_candidate_population_schema(),
             **query_format_kwargs,
         )
         self.state_code = state_code
@@ -225,7 +258,7 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            schema=None,
+            schema=task_candidate_population_schema(),
             **query_format_kwargs,
         )
         self.population_name = population_name

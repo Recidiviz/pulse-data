@@ -24,6 +24,12 @@ from typing import List, Optional, Sequence
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Bool,
+    Integer,
+    String,
+)
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
@@ -41,6 +47,7 @@ from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_qu
 )
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
+    basic_single_task_eligibility_span_schema,
 )
 from recidiviz.task_eligibility.criteria_condition import CriteriaCondition
 from recidiviz.task_eligibility.dataset_config import (
@@ -76,6 +83,43 @@ TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
     FROM `{{project_id}}.{completion_events_dataset_id}.{completion_events_view_id}`
     WHERE state_code = "{state_code}"
 )"""
+
+
+def single_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
+    """Returns the schema for a SingleTaskEligibilitySpans view. Column order
+    must match the final SELECT in _build_query_template because BQ
+    materialization maps columns by position, not by name."""
+    basic_cols = {col.name: col for col in basic_single_task_eligibility_span_schema()}
+    return [
+        basic_cols["state_code"],
+        basic_cols["person_id"],
+        String(
+            name="task_name",
+            description="The name of the task.",
+            mode="REQUIRED",
+        ),
+        Integer(
+            name="task_eligibility_span_id",
+            description="ID used to collapse adjacent spans with the same eligibility type.",
+            mode="REQUIRED",
+        ),
+        basic_cols["start_date"],
+        basic_cols["end_date"],
+        basic_cols["is_eligible"],
+        Bool(
+            name="is_almost_eligible",
+            description="Whether the person is almost eligible during this span.",
+            mode="REQUIRED",
+        ),
+        basic_cols["reasons"],
+        basic_cols["reasons_v2"],
+        basic_cols["ineligible_criteria"],
+        String(
+            name="end_reason",
+            description="The reason the eligibility span ended (e.g. TASK_COMPLETED, BECAME_ELIGIBLE, BECAME_INELIGIBLE).",
+            mode="NULLABLE",
+        ),
+    ]
 
 
 # TODO(#46985): Rename this object and move it to a Workflows specific module
@@ -124,6 +168,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
+            schema=single_task_eligibility_span_schema(),
         )
         self.state_code = state_code
         self.task_name = task_name

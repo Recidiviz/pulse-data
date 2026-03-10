@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
     aggregate_adjacent_candidate_population_spans,
+    task_candidate_population_schema,
 )
 
 
@@ -70,6 +71,18 @@ class TestStateSpecificTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             aggregate_adjacent_candidate_population_spans(
                 query_template="SELECT * FROM `recidiviz-456.raw_data.foo`;"
             ),
+        )
+
+        assert view.schema is not None
+        col_info = [(c.name, c.field_type, c.mode) for c in view.schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED"),
+                ("person_id", "INTEGER", "REQUIRED"),
+                ("start_date", "DATE", "REQUIRED"),
+                ("end_date", "DATE", "NULLABLE"),
+            ],
         )
 
     def test_build_with_address_overrides(self) -> None:
@@ -199,6 +212,18 @@ class TestStateAgnosticTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
             ),
         )
 
+        assert view.schema is not None
+        col_info = [(c.name, c.field_type, c.mode) for c in view.schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED"),
+                ("person_id", "INTEGER", "REQUIRED"),
+                ("start_date", "DATE", "REQUIRED"),
+                ("end_date", "DATE", "NULLABLE"),
+            ],
+        )
+
     def test_build_with_address_overrides(self) -> None:
         builder = StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             population_name="SIMPLE_POPULATION",
@@ -256,3 +281,45 @@ class TestStateAgnosticTaskCandidatePopulationBigQueryViewBuilder(unittest.TestC
                 description="Simple population description",
                 ingested_data_dataset="ingested_data",
             )
+
+
+class TestBuildCandidatePopulationSchema(unittest.TestCase):
+    """Tests for build_candidate_population_schema."""
+
+    def test_schema_columns(self) -> None:
+        schema = task_candidate_population_schema()
+        col_info = [(c.name, c.field_type, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED"),
+                ("person_id", "INTEGER", "REQUIRED"),
+                ("start_date", "DATE", "REQUIRED"),
+                ("end_date", "DATE", "NULLABLE"),
+            ],
+        )
+
+    def test_schema_present_on_state_specific_builder(self) -> None:
+        builder = StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
+            state_code=StateCode.US_XX,
+            population_name="US_XX_TEST_POP",
+            population_spans_query_template="SELECT * FROM `{project_id}.dataset.foo`;",
+            description="Test population",
+        )
+        assert builder.schema is not None
+        self.assertEqual(
+            [c.name for c in builder.schema],
+            ["state_code", "person_id", "start_date", "end_date"],
+        )
+
+    def test_schema_present_on_state_agnostic_builder(self) -> None:
+        builder = StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
+            population_name="TEST_POP",
+            population_spans_query_template="SELECT * FROM `{project_id}.dataset.foo`;",
+            description="Test population",
+        )
+        assert builder.schema is not None
+        self.assertEqual(
+            [c.name for c in builder.schema],
+            ["state_code", "person_id", "start_date", "end_date"],
+        )

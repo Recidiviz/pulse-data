@@ -31,7 +31,9 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+    _build_reason_v2_description,
     get_template_with_reasons_as_json,
+    task_criteria_schema,
 )
 
 
@@ -101,8 +103,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -184,8 +186,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -304,8 +306,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -384,8 +386,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -419,6 +421,34 @@ FROM _aggregated
                 description="Simple criteria description",
                 reasons_fields=[],
             )
+
+    def test_schema_present_on_state_agnostic_builder(self) -> None:
+        builder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+            criteria_name="SIMPLE_CRITERIA",
+            criteria_spans_query_template="SELECT * FROM `{project_id}.dataset.foo`;",
+            description="Simple criteria description",
+            reasons_fields=[
+                ReasonsField(
+                    name="fees_owed",
+                    type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
+                    description="Amount of fees owed",
+                ),
+            ],
+        )
+        assert builder.schema is not None
+        column_names = [col.name for col in builder.schema]
+        self.assertEqual(
+            column_names,
+            [
+                "state_code",
+                "person_id",
+                "start_date",
+                "end_date",
+                "meets_criteria",
+                "reason",
+                "reason_v2",
+            ],
+        )
 
     def test_get_template_with_reasons_as_json_empty(self) -> None:
         query_template = "SELECT * FROM my_table"
@@ -454,8 +484,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -515,8 +545,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -524,3 +554,45 @@ FROM _aggregated
 """
         actual_query = get_template_with_reasons_as_json(query_template, reasons_fields)
         self.assertEqual(expected_query, actual_query)
+
+
+class TestBuildCriteriaSchema(unittest.TestCase):
+    """Tests for task_criteria_schema and _build_reason_v2_description."""
+
+    def test_schema_column_names_and_types(self) -> None:
+        schema = task_criteria_schema(reasons_fields=[])
+        self.assertEqual(len(schema), 7)
+        col_info = [(c.name, c.__class__.__name__, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "String", "NULLABLE"),
+                ("person_id", "Integer", "NULLABLE"),
+                ("start_date", "Date", "REQUIRED"),
+                ("end_date", "Date", "NULLABLE"),
+                ("meets_criteria", "Bool", "NULLABLE"),
+                ("reason", "Json", "NULLABLE"),
+                ("reason_v2", "Json", "REQUIRED"),
+            ],
+        )
+
+    def test_reason_v2_description_empty(self) -> None:
+        desc = _build_reason_v2_description([])
+        self.assertIn("No fields defined", desc)
+
+    def test_reason_v2_description_with_fields(self) -> None:
+        fields = [
+            ReasonsField(
+                name="custody_level",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Client's custody level",
+            ),
+            ReasonsField(
+                name="start_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="When the level began",
+            ),
+        ]
+        desc = _build_reason_v2_description(fields)
+        self.assertIn("custody_level (STRING): Client's custody level", desc)
+        self.assertIn("start_date (DATE): When the level began", desc)

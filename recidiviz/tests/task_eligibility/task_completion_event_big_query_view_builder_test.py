@@ -18,9 +18,12 @@
 import unittest
 from typing import List
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
+    TaskCompletionEventType,
+    task_completion_event_schema,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
@@ -82,4 +85,47 @@ class TestStateAgnosticEventsHaveCorrectExclusions(unittest.TestCase):
             state_agnostic_exclusions_expected,
             state_agnostic_exclusions_actual,
             msg="Incorrect state exclusion made on state agnostic completion event",
+        )
+
+    def test_schema_present_on_state_agnostic_builder(self) -> None:
+        builder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+            completion_event_type=TaskCompletionEventType.FULL_TERM_DISCHARGE,
+            completion_event_query_template="SELECT * FROM `{project_id}.dataset.foo`;",
+            description="Test completion event",
+        )
+        assert builder.schema is not None
+        column_names = [col.name for col in builder.schema]
+        self.assertEqual(
+            column_names,
+            ["state_code", "person_id", "completion_event_date"],
+        )
+
+    def test_schema_present_on_state_specific_builder(self) -> None:
+        builder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+            state_code=StateCode.US_OZ,
+            completion_event_type=TaskCompletionEventType.EARLY_DISCHARGE,
+            completion_event_query_template="SELECT * FROM `{project_id}.dataset.foo`;",
+            description="Test completion event",
+        )
+        assert builder.schema is not None
+        column_names = [col.name for col in builder.schema]
+        self.assertEqual(
+            column_names,
+            ["state_code", "person_id", "completion_event_date"],
+        )
+
+
+class TestCompletionEventSchema(unittest.TestCase):
+    """Tests for task_completion_event_schema."""
+
+    def test_schema_column_names_and_types(self) -> None:
+        schema = task_completion_event_schema()
+        col_info = [(c.name, c.__class__.__name__, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "String", "REQUIRED"),
+                ("person_id", "Integer", "REQUIRED"),
+                ("completion_event_date", "Date", "REQUIRED"),
+            ],
         )

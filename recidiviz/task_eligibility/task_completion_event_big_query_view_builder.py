@@ -18,9 +18,15 @@
 given type. These views are used as inputs to a task eligibility spans view.
 """
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.decarceral_impact_type import DecarceralImpactType
@@ -29,6 +35,27 @@ from recidiviz.task_eligibility.dataset_config import (
     completion_event_state_specific_dataset,
 )
 from recidiviz.workflows.types import WorkflowsSystemType
+
+
+def task_completion_event_schema() -> Sequence[BigQueryViewColumn]:
+    """Returns the schema for a task completion event view."""
+    return [
+        String(
+            name="state_code",
+            mode="REQUIRED",
+            description="The state code for this completion event",
+        ),
+        Integer(
+            name="person_id",
+            mode="REQUIRED",
+            description="The person ID of the person who experienced this completion event",
+        ),
+        Date(
+            name="completion_event_date",
+            mode="REQUIRED",
+            description="The date when the completion event occurred",
+        ),
+    ]
 
 
 # TODO(#46985): Rename this object and move it to a Workflows specific module
@@ -457,7 +484,7 @@ class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            schema=None,
+            schema=task_completion_event_schema(),
             **query_format_kwargs,
         )
         self.completion_event_type = completion_event_type
@@ -511,7 +538,7 @@ class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            schema=None,
+            schema=task_completion_event_schema(),
             **query_format_kwargs,
         )
         self.completion_event_type = completion_event_type

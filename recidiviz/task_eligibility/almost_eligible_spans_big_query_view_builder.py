@@ -23,6 +23,13 @@ from typing import Dict, List, Optional, Union
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Bool,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
@@ -231,6 +238,37 @@ def _get_almost_eligible_criteria_query(condition: CriteriaCondition) -> str:
     raise NotImplementedError(f"Unexpected condition type: {type(condition)}")
 
 
+def almost_eligible_span_schema() -> list[BigQueryViewColumn]:
+    """Returns the schema for an AlmostEligibleSpans view."""
+    return [
+        String(
+            name="state_code",
+            description="The state code for the person being evaluated.",
+            mode="REQUIRED",
+        ),
+        Integer(
+            name="person_id",
+            description="The person being evaluated for almost-eligibility.",
+            mode="REQUIRED",
+        ),
+        Date(
+            name="start_date",
+            description="The start date of the almost-eligible span (inclusive).",
+            mode="REQUIRED",
+        ),
+        Date(
+            name="end_date",
+            description="The exclusive end date of the almost-eligible span, or null if the span is still open.",
+            mode="NULLABLE",
+        ),
+        Bool(
+            name="is_almost_eligible",
+            description="Whether the person is almost eligible during this span.",
+            mode="REQUIRED",
+        ),
+    ]
+
+
 class AlmostEligibleSpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """View builder that auto-generates task spans with the `is_almost_eligible` flag
     by combining basic task eligibility spans with almost eligible criteria conditions.
@@ -270,6 +308,7 @@ class AlmostEligibleSpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
+            schema=almost_eligible_span_schema(),
         )
         self.state_code = state_code
         self.task_name = task_name

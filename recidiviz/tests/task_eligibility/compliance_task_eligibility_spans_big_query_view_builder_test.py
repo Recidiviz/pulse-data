@@ -19,6 +19,7 @@ import re
 from datetime import date
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_column import Bool, Date, Integer, Json, String
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
@@ -69,6 +70,27 @@ COMPLIANCE_ELIGIBILITY_VIEW_BUILDER_NO_DUE_DATE_CRITERIA = (
 
 class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase):
     """Tests for the ComplianceTaskEligibilitySpansBigQueryViewBuilder."""
+
+    def test_schema(self) -> None:
+        """Test that the compliance builder schema includes due_date and last_task_completed_date."""
+        schema = COMPLIANCE_ELIGIBILITY_VIEW_BUILDER.schema
+        self.assertIsNotNone(schema)
+        assert schema is not None
+        self.assertEqual(
+            [(type(col), col.name, col.mode) for col in schema],
+            [
+                (String, "state_code", "REQUIRED"),
+                (Integer, "person_id", "REQUIRED"),
+                (Date, "start_date", "REQUIRED"),
+                (Date, "end_date", "NULLABLE"),
+                (Bool, "is_eligible", "REQUIRED"),
+                (Json, "reasons", "NULLABLE"),
+                (Json, "reasons_v2", "REQUIRED"),
+                (String, "ineligible_criteria", "REPEATED"),
+                (Date, "due_date", "NULLABLE"),
+                (Date, "last_task_completed_date", "NULLABLE"),
+            ],
+        )
 
     def test_materialized_table_for_task_name(self) -> None:
         """Test that materialized address generates as expected for compliance task eligibility spans"""

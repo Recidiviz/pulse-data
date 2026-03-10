@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the BasicSingleTaskEligibilitySpansBigQueryViewBuilder."""
+import unittest
 from datetime import date
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_column import Bool, Date, Integer, Json, String
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -1296,5 +1298,27 @@ class TestBasicSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTes
                     ],
                     "ineligible_criteria": [],
                 },
+            ],
+        )
+
+
+class TestBuildBasicEligibilitySpanSchema(unittest.TestCase):
+    """Tests for the schema on BASIC_ELIGIBILITY_VIEW_BUILDER."""
+
+    def test_schema(self) -> None:
+        schema = BASIC_ELIGIBILITY_VIEW_BUILDER.schema
+        self.assertIsNotNone(schema)
+        assert schema is not None
+        self.assertEqual(
+            [(type(col), col.name, col.mode) for col in schema],
+            [
+                (String, "state_code", "REQUIRED"),
+                (Integer, "person_id", "REQUIRED"),
+                (Date, "start_date", "REQUIRED"),
+                (Date, "end_date", "NULLABLE"),
+                (Bool, "is_eligible", "REQUIRED"),
+                (Json, "reasons", "NULLABLE"),
+                (Json, "reasons_v2", "REQUIRED"),
+                (String, "ineligible_criteria", "REPEATED"),
             ],
         )

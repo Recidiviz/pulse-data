@@ -18,6 +18,9 @@
 import unittest
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.union_all_big_query_view_builder import (
+    UnionAllBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_eligibility_spans import get_unioned_view_builders
 
 
@@ -298,3 +301,41 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
         self.assertCountEqual(
             expected_all_tasks_view_addresses, [b.address for b in builders]
         )
+
+    def test_unioned_criteria_views_have_schemas(self) -> None:
+        builders = get_unioned_view_builders()
+
+        criteria_view_ids = {
+            "all_state_specific_criteria",
+            "all_general_criteria",
+            "all_criteria",
+        }
+        criteria_builders = [
+            b
+            for b in builders
+            if isinstance(b, UnionAllBigQueryViewBuilder)
+            and b.view_id in criteria_view_ids
+        ]
+        self.assertTrue(len(criteria_builders) > 0)
+
+        expected_columns = [
+            ("criteria_name", "STRING", "REQUIRED"),
+            ("state_code", "STRING", "NULLABLE"),
+            ("person_id", "INTEGER", "NULLABLE"),
+            ("start_date", "DATE", "REQUIRED"),
+            ("end_date", "DATE", "NULLABLE"),
+            ("meets_criteria", "BOOLEAN", "NULLABLE"),
+            ("reason", "JSON", "NULLABLE"),
+            ("reason_v2", "JSON", "REQUIRED"),
+        ]
+
+        for builder in criteria_builders:
+            assert (
+                builder.schema is not None
+            ), f"Schema missing on {builder.dataset_id}.{builder.view_id}"
+            col_info = [(c.name, c.field_type, c.mode) for c in builder.schema]
+            self.assertEqual(
+                col_info,
+                expected_columns,
+                f"Schema mismatch on {builder.dataset_id}.{builder.view_id}",
+            )

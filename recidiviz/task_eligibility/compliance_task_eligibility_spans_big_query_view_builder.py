@@ -21,10 +21,12 @@ a compliance-oriented task (e.g., contacts, assessments).
 from typing import List, Optional, Sequence
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Date
 from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.basic_single_task_eligibility_spans_big_query_view_builder import (
     BasicSingleTaskEligibilitySpansBigQueryViewBuilder,
+    basic_single_task_eligibility_span_schema,
 )
 from recidiviz.task_eligibility.dataset_config import (
     compliance_task_eligibility_spans_state_specific_dataset,
@@ -39,6 +41,23 @@ from recidiviz.task_eligibility.utils.reasons_field_query_fragments import (
     extract_reasons_from_criteria,
 )
 from recidiviz.utils.string_formatting import fix_indent
+
+
+def compliance_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
+    """Builds the schema for a compliance task eligibility span view."""
+    return [
+        *basic_single_task_eligibility_span_schema(),
+        Date(
+            name="due_date",
+            description="The due date for the compliance task, extracted from the criteria reason fields.",
+            mode="NULLABLE",
+        ),
+        Date(
+            name="last_task_completed_date",
+            description="The date when the compliance task was last completed, extracted from the criteria reason fields.",
+            mode="NULLABLE",
+        ),
+    ]
 
 
 class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
@@ -126,6 +145,7 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             due_date_criteria_builder=due_date_criteria_builder,
             last_task_completed_date_criteria_builder=last_task_completed_date_criteria_builder,
         )
+        self.schema = compliance_task_eligibility_span_schema()
 
     @classmethod
     def _address_for_task_name(
@@ -178,7 +198,7 @@ reasons_extract AS (
         tes_view_builder=base_tes_builder,
         tes_table_name="base_tes",
         index_columns=["state_code", "person_id", "start_date"]
-    ), 
+    ),
     indent_level=4
 )}
 )

@@ -762,8 +762,8 @@ FROM (
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -946,8 +946,8 @@ FROM (
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2

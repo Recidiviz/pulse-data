@@ -18,9 +18,17 @@
 These views are used as inputs to a task eligibility spans view.
 """
 import re
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Sequence, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Bool,
+    Date,
+    Integer,
+    Json,
+    String,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     convert_cols_to_json,
@@ -31,6 +39,64 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField
+
+
+def _build_reason_v2_description(reasons_fields: List[ReasonsField]) -> str:
+    """Builds a description for the reason_v2 column from the list of
+    ReasonsField objects defined by a criteria builder."""
+    if not reasons_fields:
+        return "Structured JSON reason blob (v2 format). No fields defined for this criteria."
+    fields_desc = "; ".join(
+        f"{f.name} ({f.type.name}): {f.description}" for f in reasons_fields
+    )
+    return f"Structured JSON reason blob (v2 format). Fields: {fields_desc}"
+
+
+def task_criteria_schema(
+    reasons_fields: List[ReasonsField] | None = None,
+) -> Sequence[BigQueryViewColumn]:
+    """Returns the schema for a criteria view. When |reasons_fields| is
+    provided, the reason_v2 column description enumerates the fields."""
+    return [
+        String(
+            name="state_code",
+            # TODO(#62322): make state_code, person_id and meets_criteria REQUIRED after there are no more nulls in
+            # task_eligibility_criteria_general.at_least_2_months_since_negative_drug_test_streak_began
+            mode="NULLABLE",
+            description="The state code for this criteria span",
+        ),
+        Integer(
+            name="person_id",
+            mode="NULLABLE",
+            description="The person ID for this criteria span",
+        ),
+        Date(
+            name="start_date",
+            mode="REQUIRED",
+            description="Start date of the criteria span (inclusive)",
+        ),
+        Date(
+            name="end_date",
+            mode="NULLABLE",
+            description="End date of the criteria span (exclusive). NULL means the span is ongoing.",
+        ),
+        # Some criteria produce NULL meets_criteria values.
+        Bool(
+            name="meets_criteria",
+            mode="NULLABLE",
+            description="Whether the person meets the criteria during this span",
+        ),
+        Json(
+            name="reason",
+            mode="NULLABLE",
+            description="Legacy JSON reason blob. Prefer reason_v2 for structured access.",
+        ),
+        Json(
+            name="reason_v2",
+            mode="REQUIRED",
+            description=_build_reason_v2_description(reasons_fields or []),
+        ),
+    ]
 
 
 def get_template_with_reasons_as_json(
@@ -81,8 +147,8 @@ _aggregated AS
 SELECT 
     state_code,
     person_id,
-    start_date,
-    end_date,
+    CAST(start_date AS DATE) AS start_date,
+    CAST(end_date AS DATE) AS end_date,
     meets_criteria,
     reason,
     reason_v2
@@ -146,7 +212,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             projects_to_deploy=None,
             clustering_fields=None,
             time_partitioning=None,
-            schema=None,
+            schema=task_criteria_schema(reasons_fields),
             **query_format_kwargs,
         )
         self.state_code = state_code
@@ -228,7 +294,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             projects_to_deploy=None,
             clustering_fields=["state_code"],
             time_partitioning=None,
-            schema=None,
+            schema=task_criteria_schema(reasons_fields),
             **query_format_kwargs,
         )
         self.criteria_name = criteria_name

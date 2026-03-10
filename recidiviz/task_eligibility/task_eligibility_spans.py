@@ -21,6 +21,7 @@ from collections import defaultdict
 from typing import List, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -38,12 +39,14 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
     TaskCandidatePopulationBigQueryViewBuilder,
+    task_candidate_population_schema,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_collector import (
     TaskCandidatePopulationBigQueryViewCollector,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     TaskCompletionEventBigQueryViewBuilder,
+    task_completion_event_schema,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
@@ -54,6 +57,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
+    task_criteria_schema,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_collector import (
     TaskCriteriaBigQueryViewCollector,
@@ -307,6 +311,16 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
     def get_criteria_select_statement(vb: TaskCriteriaBigQueryViewBuilder) -> str:
         return f"SELECT '{vb.criteria_name}' AS criteria_name, state_code, person_id, start_date, end_date, meets_criteria, reason, reason_v2"
 
+    def _unioned_criteria_schema() -> list:
+        return [
+            String(
+                name="criteria_name",
+                mode="REQUIRED",
+                description="The name of the criteria",
+            ),
+            *task_criteria_schema(),
+        ]
+
     clustering_fields = ["state_code", "criteria_name"]
     subpart_unioned_view_builders = []
     for (
@@ -332,6 +346,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
                 parents=criteria_view_builders,
                 clustering_fields=clustering_fields,
                 parent_view_to_select_statement=get_criteria_select_statement,
+                schema=_unioned_criteria_schema(),
             )
         )
 
@@ -347,6 +362,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             parents=general_builders,
             clustering_fields=clustering_fields,
             parent_view_to_select_statement=get_criteria_select_statement,
+            schema=_unioned_criteria_schema(),
         )
     )
 
@@ -357,6 +373,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             description=ALL_CRITERIA_DESCRIPTION,
             parents=subpart_unioned_view_builders,
             clustering_fields=clustering_fields,
+            schema=_unioned_criteria_schema(),
         )
     ]
 
@@ -391,6 +408,15 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
     ) -> str:
         return f"SELECT '{vb.population_name}' AS population_name, state_code, person_id, start_date, end_date"
 
+    unioned_view_schema = [
+        String(
+            name="population_name",
+            mode="REQUIRED",
+            description="The name of the candidate population",
+        ),
+        *task_candidate_population_schema(),
+    ]
+
     clustering_fields = ["state_code"]
     subpart_unioned_view_builders = []
     for (
@@ -416,6 +442,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
                 parents=population_view_builders,
                 clustering_fields=clustering_fields,
                 parent_view_to_select_statement=get_population_select_statement,
+                schema=unioned_view_schema,
             )
         )
 
@@ -431,6 +458,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
             parents=general_builders,
             clustering_fields=clustering_fields,
             parent_view_to_select_statement=get_population_select_statement,
+            schema=unioned_view_schema,
         )
     )
 
@@ -441,6 +469,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
             description=ALL_POPULATIONS_DESCRIPTION,
             parents=subpart_unioned_view_builders,
             clustering_fields=clustering_fields,
+            schema=unioned_view_schema,
         )
     ]
 
@@ -476,6 +505,15 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
     ) -> str:
         return f"SELECT '{vb.completion_event_type.name}' AS completion_event_type, state_code, person_id, completion_event_date"
 
+    unioned_completion_event_schema = [
+        String(
+            name="completion_event_type",
+            mode="REQUIRED",
+            description="The type of the completion event",
+        ),
+        *task_completion_event_schema(),
+    ]
+
     clustering_fields = ["state_code", "completion_event_type"]
     subpart_unioned_view_builders = []
     for (
@@ -501,6 +539,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                 parents=completion_event_view_builders,
                 clustering_fields=clustering_fields,
                 parent_view_to_select_statement=get_completion_event_select_statement,
+                schema=unioned_completion_event_schema,
             )
         )
 
@@ -516,6 +555,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
             parents=general_builders,
             clustering_fields=clustering_fields,
             parent_view_to_select_statement=get_completion_event_select_statement,
+            schema=unioned_completion_event_schema,
         )
     )
 
@@ -529,6 +569,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
             parents=view_collector.collect_view_builders(),
             clustering_fields=clustering_fields,
             parent_view_to_select_statement=get_completion_event_select_statement,
+            schema=unioned_completion_event_schema,
         )
     ]
 

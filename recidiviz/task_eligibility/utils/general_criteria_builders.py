@@ -1207,11 +1207,11 @@ def incarceration_sanctions_or_incidents_within_time_interval_criteria_builder(
             TO_JSON(STRUCT(
                 event_dates,
                 event_dates[SAFE_ORDINAL(1)] AS latest_event_date,
-                DATE_ADD(event_dates[SAFE_ORDINAL(1)], INTERVAL {date_interval} {date_part}) AS latest_eligible_date 
+                DATE_ADD(event_dates[SAFE_ORDINAL(1)], INTERVAL {date_interval} {date_part}) AS latest_eligible_date
             )) AS reason,
             event_dates,
             event_dates[SAFE_ORDINAL(1)] AS latest_event_date,
-            DATE_ADD(event_dates[SAFE_ORDINAL(1)], INTERVAL {date_interval} {date_part}) AS latest_eligible_date 
+            DATE_ADD(event_dates[SAFE_ORDINAL(1)], INTERVAL {date_interval} {date_part}) AS latest_eligible_date
         FROM event_count_spans
     """
 
@@ -1333,7 +1333,7 @@ def is_past_completion_date_criteria_builder(
     if leave_last_sentence_span_open:
         end_date_str = f"""
                 IF(
-                    state_code NOT IN ({no_inferred_open_span_states}) 
+                    state_code NOT IN ({no_inferred_open_span_states})
                     AND start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id)
                     AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}<=CURRENT_DATE('US/Eastern'),
                     NULL,
@@ -1846,7 +1846,15 @@ def on_negative_drug_screen_streak(
             IFNULL(LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date, streak_start_record), most_recent_test_date + INTERVAL 1 YEAR) AS end_date
         FROM joined_streaks
     )
-    SELECT *, TO_JSON(STRUCT(first_negative_test_in_streak, most_recent_test_date)) AS reason
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(first_negative_test_in_streak, most_recent_test_date)) AS reason,
+        first_negative_test_in_streak,
+        most_recent_test_date,
     FROM joined_streaks_with_end_dates
     """
 

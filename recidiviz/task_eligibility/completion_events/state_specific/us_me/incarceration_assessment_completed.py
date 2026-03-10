@@ -29,8 +29,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _QUERY_TEMPLATE = """
     SELECT
-      pei.person_id,
       pei.state_code,
+      pei.person_id,
       SAFE_CAST(LEFT(MEETING_DATE, 10) AS DATE) AS completion_event_date,
     FROM
       `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_140_CLASSIFICATION_REVIEW_latest` 
