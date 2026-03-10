@@ -38,6 +38,12 @@ from recidiviz.airflow.dags.monitoring.raw_data_file_tag_import_runs_sql_query_g
 from recidiviz.airflow.dags.monitoring.sftp_ingest_ready_file_upload_times_sql_query_generator import (
     SftpIngestReadyFileUploadTimesSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.monitoring.stale_raw_data_alerts import (
+    report_stale_raw_data_to_github,
+)
+from recidiviz.airflow.dags.monitoring.stale_raw_data_sql_query_generator import (
+    StaleRawDataSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     RAW_DATA_INCIDENT_START_DATE_LOOKBACK,
     report_failed_tasks,
@@ -149,6 +155,22 @@ def create_monitoring_dag() -> None:
     )
 
     fetch_sftp_upload_times >> report_sftp_metrics
+
+    fetch_stale_raw_data = CloudSqlQueryOperator(
+        task_id="fetch_stale_raw_data_update_datetimes",
+        cloud_sql_conn_id=cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS),
+        query_generator=StaleRawDataSqlQueryGenerator(),
+    )
+
+    report_stale_raw_data = PythonOperator(
+        task_id="report_stale_raw_data_to_github",
+        python_callable=report_stale_raw_data_to_github,
+        op_kwargs={
+            "update_datetimes_by_region": "{{ task_instance.xcom_pull(task_ids='fetch_stale_raw_data_update_datetimes') }}"
+        },
+    )
+
+    fetch_stale_raw_data >> report_stale_raw_data
 
 
 monitoring_dag = create_monitoring_dag()
