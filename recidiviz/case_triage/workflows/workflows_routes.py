@@ -949,27 +949,30 @@ def create_workflows_api_blueprint() -> Blueprint:
 
             original_order = [wp["pseudonymized_id"] for wp in waypoints]
 
-            if optimized_indices:
+            # Filter out invalid indices from Google's response (e.g., -1 sentinel
+            # values). Only keep indices that are valid for the intermediates array.
+            num_intermediates = len(intermediate_place_ids)
+            valid_indices = [
+                i
+                for i in optimized_indices
+                if isinstance(i, int) and 0 <= i < num_intermediates
+            ]
+
+            if valid_indices and len(valid_indices) == num_intermediates:
                 optimized_order = [
-                    waypoints[i]["pseudonymized_id"] for i in optimized_indices
+                    waypoints[i]["pseudonymized_id"] for i in valid_indices
                 ]
                 # If no destination was provided, the last waypoint was used as
                 # destination (not in intermediates), so add it at the end
                 if not destination:
                     optimized_order.append(waypoints[-1]["pseudonymized_id"])
             else:
-                # No optimization returned, use original order
+                # No valid optimization returned, use original order
                 optimized_order = original_order
 
             # Google returns optimizedIntermediateWaypointIndex even when the
             # order hasn't changed, so we compare against original_order explicitly.
             is_changed = optimized_order != original_order
-
-            logging.info(
-                "Route optimized for %d waypoints. Order changed: %s",
-                len(waypoints),
-                is_changed,
-            )
 
             return jsonify({"optimizedOrder": optimized_order, "isChanged": is_changed})
 
