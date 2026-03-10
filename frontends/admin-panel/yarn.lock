@@ -10350,10 +10350,10 @@ react-fluid-text@^0.1.1:
   resolved "https://registry.yarnpkg.com/react-fluid-text/-/react-fluid-text-0.1.1.tgz#d10e7d1ae01c8ea5211b1b861e76defd09740ed7"
   integrity sha512-duf/asTByu9G4X1uCuNocHBuNn5zXLWd+L6EUNOt1he7FGLSmaQ/x12RGk1MuS+ZIT1IFCqVJ/7pyfg/TaevrQ==
 
-react-icons@^5.5.0:
-  version "5.5.0"
-  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-5.5.0.tgz#8aa25d3543ff84231685d3331164c00299cdfaf2"
-  integrity sha512-MEFcXdkP3dLo8uumGI5xN3lDFNsRtrjbOEKDLD7yv76v4wpnEq2Lt2qeHaQOr34I/wPN3s3+N08WkQ+CW37Xiw==
+react-icons@^5.6.0:
+  version "5.6.0"
+  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-5.6.0.tgz#27bcc4acbc836e762548d76041cf9b9fef4e3837"
+  integrity sha512-RH93p5ki6LfOiIt0UtDyNg/cee+HLVR6cHHtW3wALfo+eOHTp8RnU2kRkI6E+H19zMIs03DyxUG/GfZMOGvmiA==
 
 react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0:
   version "16.13.1"
