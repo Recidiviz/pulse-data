@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   OffenderID: STRING
-  CAFDate: STRING
+  CAFDate: DATE
   ClassificationDate: DATE
   ClassificationDecisionDate: DATE
   CAFScore: STRING

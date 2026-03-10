@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   OffenderID: STRING
-  AssessmentDate: STRING
+  AssessmentDate: DATE
   ClassificationDate: DATE
   ClassificationDecisionDate: DATE
   OverallScore: STRING
@@ -44,7 +44,7 @@ input_columns:
   TrusteeApprovedOrDenied: STRING
   DateOfFinalApprovalAndEntry: STRING
   LastClassificationDate: STRING
-  firstFormEdit: STRING
+  firstFormEdit: DATE
   CAFDate: DATE
   CAF_ID: INTEGER
 unused_columns: []
