@@ -28,6 +28,12 @@ STANDARD_DATE_FIELD_REASONABLE_LOWER_BOUND = datetime.date.fromisoformat("1900-0
 STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat("2300-01-01")
 
 
+# Upper bound for US_AR projected sentence dates. Arkansas tracks very long or
+# consecutive sentences with release dates hundreds of years in the future.
+US_AR_PROJECTED_SENTENCE_DATE_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat(
+    "2700-01-01"
+)
+
 # Upper bound for US_AZ projected sentence dates. Arizona tracks life sentences with
 # release dates hundreds of years in the future (e.g. 10 consecutive 50-year sentences).
 US_AZ_PROJECTED_SENTENCE_DATE_REASONABLE_UPPER_BOUND = datetime.date.fromisoformat(
