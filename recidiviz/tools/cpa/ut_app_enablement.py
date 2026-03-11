@@ -44,6 +44,7 @@ import logging
 import sys
 from typing import Any
 
+import google.auth
 from sendgrid.helpers.mail import (  # type: ignore[attr-defined]
     ClickTracking,
     DynamicTemplateData,
@@ -60,6 +61,7 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     in_gcp,
 )
+from recidiviz.utils.google_drive import get_credentials, get_sheets_service
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.sendgrid_client_wrapper import SendGridClientWrapper
@@ -68,26 +70,50 @@ from recidiviz.utils.string import StrictStringFormatter
 logger = logging.getLogger(__name__)
 
 NEW_SUPERVISION_STARTS_QUERY_TEMPLATE = """
+WITH agents AS (
+  SELECT
+    sei.external_id AS staff_external_id,
+    s.email,
+    s.full_name,
+  FROM `observations__global_provisioned_user_span.global_provisioned_user_session_materialized` pus
+  JOIN `us_ut_normalized_state.state_staff` s ON (LOWER(s.email) = LOWER(pus.email_address))
+  JOIN `us_ut_normalized_state.state_staff_external_id` sei USING(staff_id)
+  WHERE s.state_code = 'US_UT'
+    AND is_provisioned_case_planning_assistant = 'true'
+    AND end_date IS NULL
+),
+
+new_clients_with_officer AS (
+  SELECT DISTINCT
+    supervision_office_name_end AS supervision_office,
+    person_id,
+    supervising_officer_external_id_end AS staff_external_id
+  FROM `sessions.compartment_sessions_materialized`
+  JOIN agents ON (supervising_officer_external_id_end = staff_external_id)
+  WHERE state_code = 'US_UT'
+    AND compartment_level_1 = 'SUPERVISION'
+    AND compartment_level_2 IN ('PROBATION', 'PAROLE')
+    AND supervision_office_name_end != 'EXTERNAL_UNKNOWN'
+    AND supervision_office_name_end IN (
+      'SALT LAKE AP&P',
+      'TOOELE AP&P',
+      'CENTRAL VALLEY OFFICE'
+    )
+    AND start_date BETWEEN DATE_SUB(DATE '{as_of_date}', INTERVAL 5 DAY) AND DATE '{as_of_date}'
+)
+
 SELECT
-    cs.person_id,
+    nc.person_id,
     cm.full_name as client_full_name,
     cm.stable_person_external_id as external_id,
     cm.pseudonymized_id,
-    start_date,
-    s.full_name as supervisor_full_name,
-    s.email AS supervisor_email,
-    supervision_office_name_start
-FROM `sessions.compartment_sessions_materialized` cs
+    a.full_name AS supervisor_full_name,
+    a.email as supervisor_email,
+FROM new_clients_with_officer nc 
 LEFT JOIN `reentry.client_materialized` cm
-    ON cs.person_id = cm.person_id
-LEFT JOIN us_ut_normalized_state.state_staff_external_id sei
-    ON sei.external_id = supervising_officer_external_id_start
-LEFT JOIN us_ut_normalized_state.state_staff s
-    ON sei.staff_id = s.staff_id
-WHERE cs.state_code = 'US_UT'
-    AND sei.state_code = 'US_UT'
-    AND compartment_level_1 = 'SUPERVISION'
-    AND start_date BETWEEN DATE_SUB(DATE '{as_of_date}', INTERVAL 5 DAY) AND DATE '{as_of_date}'
+    ON nc.person_id = cm.person_id
+LEFT JOIN agents a 
+    ON nc.staff_external_id = a.staff_external_id
 """
 
 FROM_EMAIL_ADDRESS = "no-reply@recidiviz.org"
@@ -96,8 +122,13 @@ DYNAMIC_TEMPLATE_ID = "d-0abd50acea15478c9fa25da41152922c"
 SUBJECT_PREFIX = "Action Required: "
 SUBJECT_SUFFIX = " Ready for Intake Assessment"
 
+RESULTS_SPREADSHEET_ID = "1iN00PSsPb_fHLP91daTQMY9yLvuWGv7JVmXdnJWlY7A"
+SHEET_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SHEET_HEADERS = ["Client Name", "Supervisor Name", "Supervisor Email", "Status"]
+
 
 def create_parser() -> argparse.ArgumentParser:
+    """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--project-id",
@@ -123,7 +154,47 @@ def create_parser() -> argparse.ArgumentParser:
         help="If set, all emails will be sent to these addresses instead of the "
         "actual supervisor emails. Useful for testing.",
     )
+    parser.add_argument(
+        "--credentials-directory",
+        type=str,
+        default=None,
+        help="Path to directory containing credentials.json (and cached token.pickle) "
+        "for Google Sheets access. If omitted, results will not be written to the sheet.",
+    )
     return parser
+
+
+def write_results_to_sheet(
+    results: list[dict[str, str]],
+    credentials_directory: str | None = None,
+) -> None:
+    """Creates a new tab named with today's date and writes one row per email result."""
+    if credentials_directory:
+        creds = get_credentials(
+            credentials_directory, readonly=False, scopes=SHEET_SCOPES
+        )
+    else:
+        # Use Application Default Credentials (service account on Cloud Run)
+        creds, _ = google.auth.default(scopes=SHEET_SCOPES)
+    service = get_sheets_service(creds)
+    tab_name = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=RESULTS_SPREADSHEET_ID,
+        body={"requests": [{"addSheet": {"properties": {"title": tab_name}}}]},
+    ).execute()
+
+    rows = [SHEET_HEADERS] + [
+        [r["client_name"], r["supervisor_name"], r["supervisor_email"], r["status"]]
+        for r in results
+    ]
+    service.spreadsheets().values().update(
+        spreadsheetId=RESULTS_SPREADSHEET_ID,
+        range=f"'{tab_name}'!A1",
+        valueInputOption="RAW",
+        body={"values": rows},
+    ).execute()
+    logger.info("Wrote %d result row(s) to sheet tab '%s'.", len(results), tab_name)
 
 
 def fetch_new_supervision_starts(
@@ -254,6 +325,7 @@ def run(
     dry_run: bool,
     redirect_addresses: list[str] | None = None,
     as_of_date: datetime.date | None = None,
+    credentials_directory: str | None = None,
 ) -> None:
     """Main job logic."""
     rows = fetch_new_supervision_starts(as_of_date)
@@ -272,22 +344,49 @@ def run(
         already_sent = fetch_already_notified_client_names(sendgrid_client)
         logger.info("Found %d already-notified client(s).", len(already_sent))
 
+    results: list[dict[str, str]] = []
+
     for row in rows:
-        supervisor_email = row["supervisor_email"]
+        supervisor_email = row["supervisor_email"] or ""
         template_data = build_template_data(row, redirect_addresses)
-        name = template_data["client_name"]
-        logger.info("  %s -> %s", name, supervisor_email)
+        client_name = template_data["client_name"]
+        supervisor_name = template_data["supervisor_name"]
+        logger.info("  %s -> %s", client_name, supervisor_email)
 
         if dry_run:
             logger.info("    template_data: %s", template_data)
+            results.append(
+                {
+                    "client_name": client_name,
+                    "supervisor_name": supervisor_name,
+                    "supervisor_email": supervisor_email,
+                    "status": "dry_run",
+                }
+            )
             continue
 
-        if name in already_sent:
-            logger.info("Skipping %s — already notified.", name)
+        if client_name in already_sent:
+            logger.info("Skipping %s — already notified.", client_name)
+            results.append(
+                {
+                    "client_name": client_name,
+                    "supervisor_name": supervisor_name,
+                    "supervisor_email": supervisor_email,
+                    "status": "skipped_already_notified",
+                }
+            )
             continue
 
         if not supervisor_email:
-            logger.warning("Skipping %s — no supervisor email.", name)
+            logger.warning("Skipping %s — no supervisor email.", client_name)
+            results.append(
+                {
+                    "client_name": client_name,
+                    "supervisor_name": supervisor_name,
+                    "supervisor_email": supervisor_email,
+                    "status": "skipped_no_email",
+                }
+            )
             continue
 
         assert sendgrid_client is not None
@@ -295,10 +394,32 @@ def run(
             sendgrid_client, supervisor_email, template_data, redirect_addresses
         )
         if not success:
-            logger.error("Failed to send email to %s for %s", supervisor_email, name)
+            logger.error(
+                "Failed to send email to %s for %s", supervisor_email, client_name
+            )
+            results.append(
+                {
+                    "client_name": client_name,
+                    "supervisor_name": supervisor_name,
+                    "supervisor_email": supervisor_email,
+                    "status": "failed",
+                }
+            )
+        else:
+            results.append(
+                {
+                    "client_name": client_name,
+                    "supervisor_name": supervisor_name,
+                    "supervisor_email": supervisor_email,
+                    "status": "sent",
+                }
+            )
 
     if dry_run:
         logger.info("[DRY RUN] No further action taken.")
+
+    if results and (credentials_directory or in_gcp()):
+        write_results_to_sheet(results, credentials_directory)
 
 
 if __name__ == "__main__":
@@ -315,6 +436,7 @@ if __name__ == "__main__":
             dry_run=args.dry_run,
             redirect_addresses=args.redirect_addresses,
             as_of_date=args.as_of_date,
+            credentials_directory=args.credentials_directory,
         )
     else:
         if args.project_id is None:
@@ -324,4 +446,5 @@ if __name__ == "__main__":
                 dry_run=args.dry_run,
                 redirect_addresses=args.redirect_addresses,
                 as_of_date=args.as_of_date,
+                credentials_directory=args.credentials_directory,
             )
