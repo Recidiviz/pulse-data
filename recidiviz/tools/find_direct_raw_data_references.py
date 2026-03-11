@@ -29,9 +29,6 @@ from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
-from recidiviz.validation.views.state.raw_data.stale_raw_data_validation import (
-    collect_stale_raw_data_view_builders,
-)
 
 
 def find_direct_raw_data_references(
@@ -65,15 +62,7 @@ def find_direct_raw_data_references(
     raw_data_references: Dict[StateCode, Dict[str, Set[BigQueryAddress]]] = defaultdict(
         lambda: defaultdict(set)
     )
-    # Exempt views that are used for raw data validation
-    raw_data_validation_views = set(
-        builder.address for builder in collect_stale_raw_data_view_builders()
-    )
-    views = [
-        builder.build(sandbox_context=None)
-        for builder in view_builders
-        if builder.address not in raw_data_validation_views
-    ]
+    views = [builder.build(sandbox_context=None) for builder in view_builders]
     raw_datasets = get_raw_data_table_and_view_datasets()
     for view in views:
         for parent_table in view.parent_tables:

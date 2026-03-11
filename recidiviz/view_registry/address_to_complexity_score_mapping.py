@@ -29,9 +29,6 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
 )
 from recidiviz.source_tables.source_table_config import RawDataSourceTableLabel
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
-from recidiviz.validation.views.state.raw_data.stale_raw_data_validation import (
-    VIEW_ID_TEMPLATE as STALE_RAW_DATA_VALIDATION_VIEW_ID_SUFFIX,
-)
 
 AddressComplexityScoreMappingFn = Callable[[BigQueryAddress], int]
 
@@ -75,9 +72,7 @@ class ParentAddressComplexityScoreMapper:
         ANY MODIFICATIONS TO THE LOGIC, OTHERWISE WE WON'T BE ABLE TO LEGITIMATELY
         COMPARE HOW COMPLEXITY CHANGES OVER THE COURSE OF THE YEAR.
         """
-        return isinstance(
-            view_builder, DirectIngestRawDataTableLatestViewBuilder
-        ) or view_builder.view_id.endswith(STALE_RAW_DATA_VALIDATION_VIEW_ID_SUFFIX)
+        return isinstance(view_builder, DirectIngestRawDataTableLatestViewBuilder)
 
     def get_parent_complexity_map_for_view_2025(
         self, view_address: BigQueryAddress

@@ -180,9 +180,6 @@ from recidiviz.validation.views.state.product_roster_blocked_30_days import (
 from recidiviz.validation.views.state.product_roster_upcoming_blocks import (
     PRODUCT_ROSTER_UPCOMING_BLOCKS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.raw_data.configured_validations import (
-    get_all_raw_data_validations,
-)
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
 )
@@ -411,7 +408,6 @@ def get_all_validations() -> List[DataValidationCheck]:
     all_data_validations: List[DataValidationCheck] = [
         *get_all_task_eligibility_validations(),
         *get_all_dataflow_metrics_validations(),
-        *get_all_raw_data_validations(),
         *get_all_location_metadata_validations(),
         *get_all_stable_counts_validations(region_configs),
         *get_all_outliers_validations(region_configs),
