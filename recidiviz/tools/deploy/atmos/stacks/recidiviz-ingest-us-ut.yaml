@@ -41,3 +41,9 @@ components:
       vars:
         project_id: "{{ .settings.context.project_id }}"
         schedule: "every day 06:00" # 6am UTC / midnight MT
+
+    # BQ tables for tracking raw data exports to the ingest bucket for UT
+    # TODO(#61643) Move existing raw data export metadata table definitions into this component (sync_tracker and table_sync_tracker)
+    us-ut-bq-export-tables:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
