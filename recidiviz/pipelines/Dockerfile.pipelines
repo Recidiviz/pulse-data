@@ -2,6 +2,13 @@
 
 FROM gcr.io/dataflow-templates-base/python311-template-launcher-base
 
+# Patch system-level packages (e.g. openssl, libssh) to address any security
+# vulnerabilities in the base image with recently released patches.
+# NOTE: This makes builds less reproducible since the patches depend on what's available
+# at build time, but ensures we pick up security fixes without waiting for Google to
+# update the base image.
+RUN apt-get update -y && apt-get upgrade -y
+
 ARG WORKDIR=/dataflow/template
 ARG GOOGLE_CLOUD_PROJECT
 ARG RECIDIVIZ_ENV

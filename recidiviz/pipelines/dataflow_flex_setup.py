@@ -29,7 +29,9 @@ import setuptools
 # https://cloud.google.com/dataflow/docs/concepts/sdk-worker-dependencies
 REQUIRED_PACKAGES = [
     # Do not include `apache-beam` in dataflow_flex_setup.py
+    "aiohttp>=3.13.3",
     "cattrs",
+    "cryptography>=46.0.5",
     "dateparser",
     # Must stay up-to-date with latest dill and cloudpickle versions in pyproject.toml
     # these libraries are used for template serialization and
@@ -37,7 +39,7 @@ REQUIRED_PACKAGES = [
     # remote workers match.
     "dill==0.3.1.1",
     "cloudpickle==2.2.1",
-    "Flask",
+    "Flask>=3.1.3",
     "google-api-core",
     "google-api-python-client",
     "google-cloud-monitoring",
