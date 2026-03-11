@@ -40,10 +40,11 @@ PrisonPopulationOverTime:
     offense_type: FILTER
 
 PrisonPopulationByDimensionCount:
-  database_entity: PublicPrisonPopulationByDimension
+  database_entity: PublicPrisonPopulationOverTime
   query_builder_class: CountByDimensionMetricQueryBuilder
   query_builder_options:
     counting_column: person_id
+    date_column: date_in_population
   dimension_mappings:
     age_group: ALL
     facility: ALL
@@ -55,3 +56,4 @@ PrisonPopulationByDimensionCount:
     sentence_length_max: ALL
     charge_county_code: ALL
     offense_type: ALL
+    date_in_population: FILTER

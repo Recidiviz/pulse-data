@@ -127,6 +127,7 @@ class TestPublicPathwaysMetricHelpers(TestCase):
         self.assertEqual(
             [
                 ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME["PrisonPopulationOverTime"],
+                ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME["PrisonPopulationByDimensionCount"],
             ],
             get_metrics_for_entity(PublicPrisonPopulationOverTime),
         )

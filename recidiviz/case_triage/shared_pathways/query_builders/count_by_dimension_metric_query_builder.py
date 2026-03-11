@@ -52,6 +52,7 @@ class CountByDimensionMetricQueryBuilder(MetricQueryBuilder):
     dimension."""
 
     counting_function: Union[DDLElement, Column] = attr.field(default=func.count())
+    date_column: Column | None = attr.field(default=None)
 
     def build_query(self, params: CountByDimensionMetricParams) -> Query:
         grouped_columns = list(
@@ -61,9 +62,20 @@ class CountByDimensionMetricQueryBuilder(MetricQueryBuilder):
             )
         )
 
+        conditions = self.build_filter_conditions(params)
+
+        # If a date_column is configured and no explicit date filter was provided,
+        # default to the most recent date in the table.
+        if (
+            self.date_column is not None
+            and Dimension.DATE_IN_POPULATION not in params.filters
+        ):
+            max_date_subquery = Query(func.max(self.date_column)).scalar_subquery()
+            conditions.append(self.date_column == max_date_subquery)
+
         return (
             Query([*grouped_columns, self.counting_function])
-            .filter(*self.build_filter_conditions(params))
+            .filter(*conditions)
             .group_by(*grouped_columns)
             .order_by(*grouped_columns)
         )
@@ -76,11 +88,16 @@ class CountByDimensionMetricQueryBuilder(MetricQueryBuilder):
     def adapt_config_options(
         cls, model: PathwaysBase | PublicPathwaysBase, options: MetricConfigOptionsType
     ) -> Dict[str, DDLElement]:
-        adapted_options = {}
+        adapted_options: Dict[str, Column | DDLElement] = {}
 
         if cls.has_valid_option(options, "counting_column", instance=str):
             counting_column = str(options["counting_column"])
             adapted_options["counting_function"] = func.count(
                 distinct(getattr(model, counting_column))
             )
+
+        if cls.has_valid_option(options, "date_column", instance=str):
+            date_column_name = str(options["date_column"])
+            adapted_options["date_column"] = getattr(model, date_column_name)
+
         return adapted_options

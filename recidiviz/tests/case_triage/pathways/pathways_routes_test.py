@@ -235,7 +235,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                         "avg_daily_population, "
                         "avg_population_limited_supervision_level, "
                         "months_since_treatment, sentence_length_min, sentence_length_max, "
-                        "charge_county_code, offense_type."
+                        "charge_county_code, offense_type, date_in_population."
                     ]
                 }
             },

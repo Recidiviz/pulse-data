@@ -701,8 +701,13 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
                 redis=ANY,
                 schema_type=SchemaType.PUBLIC_PATHWAYS,
             )
-            mock_metric_cache.return_value.reset_cache.assert_called_with(
+            mock_metric_cache.return_value.reset_cache.assert_any_call(
                 ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME["PrisonPopulationOverTime"]
+            )
+            # the PrisonPopulationOverTime table now drives the dimension metrics so importing new
+            # over time data should reset the dimension cache
+            mock_metric_cache.return_value.reset_cache.assert_any_call(
+                ALL_PUBLIC_PATHWAYS_METRICS_BY_NAME["PrisonPopulationByDimensionCount"]
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)

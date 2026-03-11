@@ -35,7 +35,6 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
 from recidiviz.case_triage.shared_pathways.dimensions.dimension import Dimension
 from recidiviz.persistence.database.schema.public_pathways.schema import (
     MetricMetadata,
-    PublicPrisonPopulationByDimension,
     PublicPrisonPopulationOverTime,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -145,10 +144,8 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         )
 
         with SessionFactory.using_database(self.database_key) as session:
-            for metric in load_metrics_fixture(
-                PublicPrisonPopulationByDimension, fixtures
-            ):
-                session.add(PublicPrisonPopulationByDimension(**metric))
+            # PrisonPopulationByDimension and PrisonPopulationOverTime share the
+            # same table, so we only need to load the data once.
             for metric in load_metrics_fixture(
                 PublicPrisonPopulationOverTime, fixtures
             ):
@@ -238,7 +235,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                         "avg_daily_population, "
                         "avg_population_limited_supervision_level, "
                         "months_since_treatment, sentence_length_min, sentence_length_max, "
-                        "charge_county_code, offense_type."
+                        "charge_county_code, offense_type, date_in_population."
                     ]
                 }
             },
@@ -255,8 +252,8 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
             response.get_json(),
             {
                 "data": [
-                    {"count": 2, "ageGroup": "25-29"},
-                    {"count": 6, "ageGroup": "60+"},
+                    {"count": 1, "ageGroup": "25-29"},
+                    {"count": 1, "ageGroup": "60+"},
                 ],
                 "metadata": {
                     "dynamicFilterOptions": '{"gender_id_name_map": '
@@ -268,7 +265,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
                     '{"value": "NON_BINARY", "label": "Non-binary"}]',
-                    "lastUpdated": "2022-08-02",
+                    "lastUpdated": "2022-08-03",
                 },
             },
         )
@@ -285,7 +282,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         self.assertEqual(
             {
                 "data": [
-                    {"count": 4, "race": "BLACK"},
+                    {"count": 1, "race": "BLACK"},
                 ],
                 "metadata": {
                     "dynamicFilterOptions": '{"gender_id_name_map": '
@@ -297,7 +294,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
                     '{"value": "NON_BINARY", "label": "Non-binary"}]',
-                    "lastUpdated": "2022-08-02",
+                    "lastUpdated": "2022-08-03",
                 },
             },
             response.get_json(),
@@ -333,9 +330,9 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
             {
                 "data": [
                     {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
-                    {"avg90day": 1, "count": 2, "month": 12, "year": 2021},
+                    {"avg90day": 2, "count": 3, "month": 12, "year": 2021},
                     {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
-                    {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
+                    {"avg90day": 2, "count": 0, "month": 2, "year": 2022},
                     {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
                 ],
                 "metadata": {
@@ -363,9 +360,9 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
             {
                 "data": [
                     {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
-                    {"avg90day": 1, "count": 2, "month": 12, "year": 2021},
+                    {"avg90day": 2, "count": 3, "month": 12, "year": 2021},
                     {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
-                    {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
+                    {"avg90day": 2, "count": 0, "month": 2, "year": 2022},
                     {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
                 ],
                 "metadata": {
@@ -399,8 +396,8 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
         self.assertEqual(
             {
                 "data": [
-                    {"count": 2, "race": "BLACK"},
-                    {"count": 2, "race": "WHITE"},
+                    {"count": 1, "race": "BLACK"},
+                    {"count": 1, "race": "WHITE"},
                 ],
                 "metadata": {
                     "dynamicFilterOptions": '{"gender_id_name_map": '
@@ -412,7 +409,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
                     '{"value": "NON_BINARY", "label": "Non-binary"}]',
-                    "lastUpdated": "2022-08-02",
+                    "lastUpdated": "2022-08-03",
                 },
             },
             response.get_json(),

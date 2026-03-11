@@ -93,46 +93,42 @@ class TestPrisonPopulationByDimensionCount(
     def all_expected_counts(
         self,
     ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        # Filtered to max date_in_population (2022-01-01):
+        #   person 1: MALE/MALE/F1/25-29/WHITE/NOT_HISPANIC/DRUG OFFENSES/COUNTY_1
+        #   person 2: MALE/MALE/F1/60+/BLACK/NOT_HISPANIC/DRUG OFFENSES/COUNTY_1
         return {
             Dimension.AGE_GROUP: [
-                {"ageGroup": "25-29", "count": 2},
-                {"ageGroup": "60+", "count": 6},
+                {"ageGroup": "25-29", "count": 1},
+                {"ageGroup": "60+", "count": 1},
             ],
             Dimension.FACILITY: [
-                {"facility": "F1", "count": 8},
+                {"facility": "F1", "count": 2},
             ],
             Dimension.GENDER: [
-                {"gender": "FEMALE", "count": 2},
-                {"gender": "MALE", "count": 4},
-                {"gender": "NON_BINARY", "count": 2},
+                {"gender": "MALE", "count": 2},
             ],
             Dimension.SEX: [
-                {"sex": "FEMALE", "count": 2},
-                {"sex": "MALE", "count": 6},
+                {"sex": "MALE", "count": 2},
             ],
             Dimension.RACE: [
-                {"race": "BLACK", "count": 4},
-                {"race": "WHITE", "count": 4},
+                {"race": "BLACK", "count": 1},
+                {"race": "WHITE", "count": 1},
             ],
             Dimension.ETHNICITY: [
-                {"ethnicity": "HISPANIC", "count": 2},
-                {"ethnicity": "NOT_HISPANIC", "count": 6},
+                {"ethnicity": "NOT_HISPANIC", "count": 2},
             ],
             Dimension.CHARGE_COUNTY_CODE: [
-                {"chargeCountyCode": "COUNTY_1", "count": 4},
-                {"chargeCountyCode": "COUNTY_2", "count": 4},
+                {"chargeCountyCode": "COUNTY_1", "count": 2},
             ],
             Dimension.OFFENSE_TYPE: [
                 {"offenseType": "DRUG OFFENSES", "count": 2},
-                {"offenseType": "PROPERTY AND OTHER OFFENSES", "count": 2},
-                {"offenseType": "VIOLENT FELONY", "count": 4},
             ],
         }
 
     @property
     def expected_metadata(self) -> Dict[str, Any]:
         return {
-            "lastUpdated": "2022-08-02",
+            "lastUpdated": "2022-08-03",
             "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
             "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}]',
             "dynamicFilterOptions": '{"gender_id_name_map": [{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}]}',
@@ -156,8 +152,7 @@ class TestPrisonPopulationByDimensionCount(
 
         self.test.assertEqual(
             [
-                {"gender": "FEMALE", "count": 2},
-                {"gender": "MALE", "count": 2},
+                {"gender": "MALE", "count": 1},
             ],
             results["data"],
         )
