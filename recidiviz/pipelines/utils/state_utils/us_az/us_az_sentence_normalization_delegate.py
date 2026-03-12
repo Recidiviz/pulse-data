@@ -27,6 +27,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSentence,
     StateSentenceStatusSnapshot,
+    StateSupervisionPeriod,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
@@ -43,6 +44,7 @@ class UsAzSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
     def __init__(
         self,
         incarceration_periods: list[StateIncarcerationPeriod],
+        supervision_periods: list[StateSupervisionPeriod],
         sentences: list[StateSentence],
     ) -> None:
         super().__init__()
@@ -51,13 +53,19 @@ class UsAzSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
 
         # Check if person has any open incarceration periods
         # A period is "open" if release_date is None OR if release_date is in the future
-        # We only look at incarceration periods for AZ, not supervision periods
         has_open_incarceration_period = any(
             ip.release_date is None or ip.release_date > today
             for ip in incarceration_periods
         )
-
         self.is_currently_incarcerated = has_open_incarceration_period
+
+        # Check if person has any open supervision periods
+        # A period is "open" if termination_date is None OR if termination_date is in the future
+        has_open_supervision_period = any(
+            sp.termination_date is None or sp.termination_date > today
+            for sp in supervision_periods
+        )
+        self.is_currently_supervised = has_open_supervision_period
 
         # Find the sentence(s) with the most recent SERVING status start timestamp
         # This identifies which sentence(s) are associated with the person's most recent period of incarceration
@@ -97,11 +105,11 @@ class UsAzSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
         Logic:
         1. Identify the sentence(s) with the most recent SERVING status timestamp
            - This identifies the sentence associated with the person's most recent period of incarceration
-        2. If person is still incarcerated: filter out COMPLETED for that sentence
+        2. If person is still incarcerated or supervised: filter out COMPLETED for that sentence
            - Ensures at least one sentence remains open when person is actively serving
            - Only affects the most recent sentence, leaving older sentences from previous
-             periods of incarceration untouched
-        3. If person is NOT incarcerated: leave all COMPLETED statuses as-is
+             periods of incarceration or supervision untouched
+        3. If person is NOT incarcerated or supervised: leave all COMPLETED statuses as-is
            - Once released, data reverts to original projected dates
 
         In AZ, we have projected dates at the sentence group level, so as long as one sentence
@@ -128,8 +136,8 @@ class UsAzSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
         if sentence.sentence_id not in self.most_recent_serving_sentence_ids:
             return snapshot
 
-        # Filter COMPLETED if person is still incarcerated, otherwise leave as-is
-        if self.is_currently_incarcerated:
+        # Filter COMPLETED if person is still incarcerated or supervised, otherwise leave as-is
+        if self.is_currently_incarcerated or self.is_currently_supervised:
             return None  # Filter out COMPLETED status
 
         return snapshot  # Leave as-is

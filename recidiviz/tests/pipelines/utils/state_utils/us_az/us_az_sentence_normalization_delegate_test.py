@@ -24,6 +24,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSentence,
     StateSentenceStatusSnapshot,
+    StateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.us_az.us_az_sentence_normalization_delegate import (
     UsAzSentenceNormalizationDelegate,
@@ -46,6 +47,19 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
             external_id="ip1",
             admission_date=admission_date,
             release_date=release_date,
+        )
+
+    @staticmethod
+    def _build_supervision_period(
+        start_date: date,
+        termination_date: date | None,
+    ) -> StateSupervisionPeriod:
+        """Helper to create test incarceration periods."""
+        return StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="sp1",
+            start_date=start_date,
+            termination_date=termination_date,
         )
 
     @staticmethod
@@ -102,6 +116,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[],
             sentences=[sentence],
         )
 
@@ -123,12 +138,16 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
             result_serving, serving, "SERVING status should remain unchanged"
         )
 
-    def test_keeps_completed_when_person_not_incarcerated(self) -> None:
-        """Test that COMPLETED status is kept as-is when person is not incarcerated."""
+    def test_filters_most_recent_completed_when_person_supervised(self) -> None:
+        """Test that COMPLETED status is filtered for most recent sentence when person is on supervision."""
         # Person released
         incarceration_period = self._build_incarceration_period(
             admission_date=date(2020, 1, 1),
             release_date=date(2024, 6, 1),  # Released
+        )
+
+        supervision_period = self._build_supervision_period(
+            start_date=date(2024, 6, 1), termination_date=None  # Still supervised
         )
 
         # Sentence with COMPLETED status
@@ -149,6 +168,60 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
+            sentences=[sentence],
+        )
+
+        # COMPLETED status should be filtered out
+        result = delegate.update_sentence_status_snapshot(
+            sentence=sentence,
+            snapshot=completed,
+        )
+
+        self.assertIsNone(result, "COMPLETED status should be filtered out")
+
+        # SERVING status should be filtered out
+        result_serving = delegate.update_sentence_status_snapshot(
+            sentence=sentence,
+            snapshot=serving,
+        )
+
+        self.assertEqual(
+            result_serving, serving, "SERVING status should remain unchanged"
+        )
+
+    def test_keeps_completed_when_person_not_incarcerated_or_supervised(self) -> None:
+        """Test that COMPLETED status is kept as-is when person is not incarcerated or supervised."""
+        # Person released
+        incarceration_period = self._build_incarceration_period(
+            admission_date=date(2020, 1, 1),
+            release_date=date(2024, 6, 1),  # Released
+        )
+
+        supervision_period = self._build_supervision_period(
+            start_date=date(2024, 6, 1),
+            termination_date=date(2024, 8, 1),  # Released
+        )
+
+        # Sentence with COMPLETED status
+        serving = self._build_sentence_status(
+            StateSentenceStatus.SERVING,
+            "IMPOSED",
+            date(2020, 1, 1),
+        )
+        completed = self._build_sentence_status(
+            StateSentenceStatus.COMPLETED,
+            "RECIDIVIZ MARKED COMPLETED",
+            date(2024, 1, 1),  # Projected completion date
+        )
+        sentence = self._build_sentence(
+            sentence_id=1,
+            statuses=[serving, completed],
+        )
+
+        delegate = UsAzSentenceNormalizationDelegate(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
             sentences=[sentence],
         )
 
@@ -202,6 +275,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[],
             sentences=[sentence_a, sentence_b],
         )
 
@@ -256,6 +330,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate_incarcerated = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[period_still_incarcerated],
+            supervision_periods=[],
             sentences=[sentence],
         )
 
@@ -277,6 +352,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate_released = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[period_released],
+            supervision_periods=[],
             sentences=[sentence],
         )
 
@@ -316,6 +392,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[],
             sentences=[sentence],
         )
 
@@ -355,6 +432,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[],
             sentences=[sentence],
         )
 
@@ -380,6 +458,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
         # Should not error when no sentences provided
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[],
             sentences=[],
         )
 
@@ -405,6 +484,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
         # Should not error when no incarceration periods provided
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[],
+            supervision_periods=[],
             sentences=[sentence],
         )
 
@@ -459,6 +539,7 @@ class TestUsAzSentenceNormalizationDelegate(unittest.TestCase):
 
         delegate = UsAzSentenceNormalizationDelegate(
             incarceration_periods=[incarceration_period],
+            supervision_periods=[],
             sentences=[sentence_a, sentence_b],
         )
 

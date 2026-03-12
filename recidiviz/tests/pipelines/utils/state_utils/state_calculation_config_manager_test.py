@@ -92,7 +92,10 @@ class TestStateCalculationConfigManager(unittest.TestCase):
     def test_get_state_specific_sentence_normalization_delegate(self) -> None:
         for state_code in get_existing_direct_ingest_states():
             _ = get_state_specific_sentence_normalization_delegate(
-                state_code.value, incarceration_periods=[], sentences=[]
+                state_code.value,
+                incarceration_periods=[],
+                supervision_periods=[],
+                sentences=[],
             )
 
     def test_get_state_specific_incarceration_period_normalization_delegate(

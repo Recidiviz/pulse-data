@@ -26,6 +26,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSentence,
     StateStaffSupervisorPeriod,
+    StateSupervisionPeriod,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
@@ -1000,6 +1001,7 @@ def get_state_specific_supervision_period_normalization_delegate(
 def get_state_specific_sentence_normalization_delegate(  # pylint: disable=unused-argument
     state_code: str,
     incarceration_periods: list[StateIncarcerationPeriod],
+    supervision_periods: list[StateSupervisionPeriod],
     sentences: list["StateSentence"],
 ) -> StateSpecificSentenceNormalizationDelegate:
     """Returns the type of SentenceNormalizationDelegate that should be used for normalizing
@@ -1043,6 +1045,7 @@ def get_state_specific_sentence_normalization_delegate(  # pylint: disable=unuse
     if state_code == StateCode.US_AZ.value:
         return UsAzSentenceNormalizationDelegate(
             incarceration_periods=incarceration_periods,
+            supervision_periods=supervision_periods,
             sentences=sentences,
         )
     if state_code == StateCode.US_TX.value:

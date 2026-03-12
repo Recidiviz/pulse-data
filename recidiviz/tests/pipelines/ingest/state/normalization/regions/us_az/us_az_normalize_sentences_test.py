@@ -203,6 +203,7 @@ def test_sentencing_normalization() -> None:
         person,
         UsAzSentenceNormalizationDelegate(
             incarceration_periods=person.incarceration_periods,
+            supervision_periods=person.supervision_periods,
             sentences=person.sentences,
         ),
         expected_output_entities=get_all_entity_classes_in_module(normalized_entities),
