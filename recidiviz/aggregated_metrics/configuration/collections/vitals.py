@@ -48,7 +48,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.calculator.query.state.dataset_config import VITALS_REPORT_DATASET
-from recidiviz.common.date import current_date_us_eastern
+from recidiviz.common.date import current_date_us_eastern, first_day_of_month
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -58,6 +58,7 @@ VITALS_METRICS_LOOKBACK_MONTHS = 6
 
 def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsCollection:
     current_date = current_date_us_eastern()
+    first_of_month = first_day_of_month(current_date)
     sld_metric = one(
         metric
         for metric in AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION
@@ -117,6 +118,30 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                     f"30 day-long metric periods, with one ending on every day for the "
                     f"last {VITALS_METRICS_LOOKBACK_DAYS} days"
                 ),
+            ),
+            # Monthly periods covering the last 12 months
+            MetricTimePeriodConfig(
+                interval_unit=MetricTimePeriod.MONTH,
+                interval_length=1,
+                min_period_end_date=first_of_month - relativedelta(months=12),
+                max_period_end_date=first_of_month,
+                rolling_period_unit=MetricTimePeriod.MONTH,
+                rolling_period_length=1,
+                period_name="12M",
+                config_name="last_12_months",
+                description="Monthly metric periods for the last 12 months",
+            ),
+            # Single 1 year period ending on the first of the current month
+            MetricTimePeriodConfig(
+                interval_unit=MetricTimePeriod.YEAR,
+                interval_length=1,
+                min_period_end_date=first_of_month,
+                max_period_end_date=first_of_month,
+                rolling_period_unit=MetricTimePeriod.MONTH,
+                rolling_period_length=1,
+                period_name=MetricTimePeriod.YEAR.value,
+                config_name="year_ending_current_month",
+                description="Single 1 year period ending on the first of the current month",
             ),
         ],
         disaggregate_by_observation_attributes=None,

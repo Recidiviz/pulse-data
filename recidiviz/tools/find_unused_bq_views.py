@@ -576,6 +576,21 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Pre-processes Texas fines and fees data for use in an upcoming TES criterion related to outstanding fines and fees."
         "(Feona, 2026-03-10)"
     ),
+    BigQueryAddress.from_str(
+        "vitals_report_views.us_nd_officer_vitals_report"
+    ): "Referenced by a connected sheet shared with ND leadership "
+    "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
+    "(Justine Kunz, 2026-03-09)",
+    BigQueryAddress.from_str(
+        "vitals_report_views.us_nd_region_vitals_report"
+    ): "Referenced by a connected sheet shared with ND leadership "
+    "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
+    "(Justine Kunz, 2026-03-09)",
+    BigQueryAddress.from_str(
+        "vitals_report_views.us_nd_state_vitals_report"
+    ): "Referenced by a connected sheet shared with ND leadership "
+    "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
+    "(Justine Kunz, 2026-03-09)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
