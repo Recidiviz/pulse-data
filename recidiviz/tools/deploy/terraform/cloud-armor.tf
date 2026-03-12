@@ -196,7 +196,7 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     match {
       versioned_expr = "SRC_IPS_V1"
       config {
-        src_ip_ranges = ["205.169.39.63/32"]
+        src_ip_ranges = ["205.169.39.63/32", "62.169.31.201/32"]
       }
     }
     description = "Deny access to specific IPs"
