@@ -1548,10 +1548,10 @@ firebase-admin@^13.7.0:
     "@google-cloud/firestore" "^7.11.0"
     "@google-cloud/storage" "^7.19.0"
 
-firebase-functions@^7.0.6:
-  version "7.0.6"
-  resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-7.0.6.tgz#13b79c82e1fb668967738d168b7c468866e17162"
-  integrity sha512-RZLxrY4wkL0c9YuwU/NyBa3XzsFkWZjMC7Q1PEyKl9F+VTTeiLuukjfSu2G+E2nbbxZcokDTB5z7anc8e9mSBA==
+firebase-functions@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-7.1.1.tgz#04445274618e4fce73297232563290bd40f2d48f"
+  integrity sha512-blTBsAfp3f9hYN34SgQgUFiMqGqEb53xrWe+P3EVlhxkdYmcmFPIJ6S77FemtgWGW53lFdUdJErtwpMI4+1bYg==
   dependencies:
     "@types/cors" "^2.8.5"
     "@types/express" "^4.17.21"
