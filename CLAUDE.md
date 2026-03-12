@@ -136,6 +136,10 @@ and make sure they confirm before running the query.
   for example. US_OZ is fake state used for testing only. Some additional "fake"
   state codes (e.g. US_XX, US_YY, US_WW) are available in the context of
   unittests. These should be used when testing generic functionality.
+- `US_ID` and `US_IX` share the same codebase and data infrastructure. When
+  searching for code (criteria, eligibility spans, task builders) or querying BQ
+  datasets, always use `US_IX` (e.g., `compliance_task_eligibility_spans_us_ix`).
+  Use `US_ID` only in `state_code` filters of BQ queries.
 
 ## Data Ingestion Process
 
@@ -184,6 +188,9 @@ Available skills:
 - [Maintain Skill Files](./.claude/skills/maintain_skill_files/SKILL.md)
 - [Maintain CLAUDE.md Documentation](./.claude/skills/maintain_claude_md/SKILL.md)
 - [Upgrade Cloud Composer](./.claude/skills/upgrade_cloud_composer/SKILL.md)
+- [Investigate PG Ticket](./.claude/skills/investigate-pg-ticket/SKILL.md) -
+  Fetch a GitHub bug ticket, retrieve PII from go/github-pii, and suggest BQ
+  investigation paths
 
 # Personal preferences
 
