@@ -20,6 +20,7 @@ import os
 import shutil
 import tempfile
 
+import recidiviz
 from recidiviz.airflow.tests.test_airflow_config import (
     AIRFLOW_INTEGRATION_TEST_CONFIG_TEMPLATE,
 )
@@ -42,6 +43,7 @@ def create_airflow_config(directory: str) -> None:
 
 
 def pytest_configure() -> None:
+    recidiviz.called_from_test = True
     global TEST_AIRFLOW_HOME_DIRECTORY
     os.environ["_AIRFLOW__AS_LIBRARY"] = "True"
     # Create a temporary directory to store config, logs, etc
@@ -50,6 +52,11 @@ def pytest_configure() -> None:
     # Configure environment to point to that directory
     os.environ["AIRFLOW_HOME"] = TEST_AIRFLOW_HOME_DIRECTORY
     create_airflow_config(TEST_AIRFLOW_HOME_DIRECTORY)
+
+
+def pytest_unconfigure() -> None:
+    if hasattr(recidiviz, "called_from_test"):
+        del recidiviz.called_from_test
 
 
 def pytest_sessionfinish() -> None:

@@ -43,7 +43,8 @@ def pytest_configure(config: Config) -> None:
 
 
 def pytest_unconfigure() -> None:
-    del recidiviz.called_from_test
+    if hasattr(recidiviz, "called_from_test"):
+        del recidiviz.called_from_test
 
 
 def pytest_addoption(parser: Parser) -> None:
