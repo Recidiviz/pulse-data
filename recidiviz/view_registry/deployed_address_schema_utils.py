@@ -86,6 +86,9 @@ from recidiviz.calculator.query.state.views.sessions.custody_level_dedup_priorit
 from recidiviz.calculator.query.state.views.sessions.release_termination_reason_dedup_priority import (
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.roster_role_dedup_priority import (
+    ROSTER_ROLE_DEDUP_PRIORITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.state_staff_role_subtype_dedup_priority import (
     STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER,
 )
@@ -170,6 +173,7 @@ STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS = {
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER.address,
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER.address,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER.address,
+    ROSTER_ROLE_DEDUP_PRIORITY_VIEW_BUILDER.address,
     STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER.address,
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER.address,
     get_completion_event_metadata_view_builder().address,

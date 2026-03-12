@@ -297,6 +297,10 @@ class ProductType(Enum):
             return [
                 RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value.lower(),
             ]
+        if self == ProductType.PSI_CASE_INSIGHTS:
+            return [
+                RosterPredefinedRoles.PSI_STAFF.value.lower(),
+            ]
         return []
 
     @property

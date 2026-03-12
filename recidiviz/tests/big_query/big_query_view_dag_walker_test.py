@@ -1243,6 +1243,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 table_id="state_staff_role_subtype_dedup_priority",
             ),
             BigQueryAddress(
+                dataset_id="sessions",
+                table_id="roster_role_dedup_priority",
+            ),
+            BigQueryAddress(
                 dataset_id="sessions", table_id="assessment_lsir_scoring_key"
             ),
             BigQueryAddress(
