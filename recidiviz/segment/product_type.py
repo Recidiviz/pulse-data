@@ -267,7 +267,7 @@ class ProductType(Enum):
     def primary_role_types(self) -> list[str]:
         """Returns the primary role types for this product type in the product roster."""
         if self == ProductType.CASE_PLANNING_ASSISTANT:
-            return ["cpa_staff"]
+            return [RosterPredefinedRoles.CPA_STAFF.value.lower()]
         if self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
             return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
@@ -278,13 +278,16 @@ class ProductType(Enum):
             return [RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value.lower()]
         if self == ProductType.WORKFLOWS:
             return [
+                RosterPredefinedRoles.FACILITIES_LINE_STAFF.value.lower(),
+                RosterPredefinedRoles.FACILITIES_MANAGER.value.lower(),
+                RosterPredefinedRoles.FACILITIES_SEGREGATION_STAFF.value.lower(),
+                RosterPredefinedRoles.INCARCERATION_REENTRY_LINE_STAFF.value.lower(),
+                RosterPredefinedRoles.INCARCERATION_REENTRY_MANAGER.value.lower(),
                 RosterPredefinedRoles.SUPERVISION_LINE_STAFF.value.lower(),
+                # Keep legacy role types as strings
+                "facilities_staff",
                 "supervision_officer",
                 "supervision_staff",
-                "facilities_line_staff",
-                "facilities_staff",
-                "facilities_manager",
-                "facilities_segregation_staff",
             ]
         if self == ProductType.ROUTE_PLANNER:
             return [
