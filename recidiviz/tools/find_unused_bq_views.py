@@ -75,9 +75,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.jii_texting.scheduled_contacts_archive import (
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_contacts_drilldown_due_date_based import (
-    SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
 )
@@ -487,9 +484,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incident_infraction_descriptions"
     ): "TODO(#53520): This will be used to add incident and infraction descriptions to facility tools (Lydia Masr, 11/26/2025)",
-    SUPERVISION_CONTACTS_DRILLDOWN_DUE_DATE_BASED_VIEW_BUILDER.address: (
-        "Will be exported to power Operations module drilldown view in Supervisor Homepage (Mayuka Sarukkai, 11/6/2025)"
-    ),
     SCHEDULED_CONTACTS_ARCHIVE_VIEW_BUILDER.address: (
         "This view will be used just for validation views (Samantha Norcia, 11/10/2025)"
     ),

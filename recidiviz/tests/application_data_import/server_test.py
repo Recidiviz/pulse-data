@@ -1065,7 +1065,7 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
             self.assertEqual(
-                b"Invalid filename unknown_file.json, must match one of: supervision_state_metrics, metric_benchmarks, supervision_district_managers, supervision_client_events, supervision_clients, supervision_officer_metrics, supervision_officer_outlier_status, supervision_officer_supervisors, supervision_officers, supervision_officer_metrics_archive, supervision_officer_outlier_status_archive, supervision_officer_supervisors_archive, supervision_officers_archive, supervision_contacts_drilldown_due_date_based",
+                b"Invalid filename unknown_file.json, must match one of: supervision_state_metrics, metric_benchmarks, supervision_district_managers, supervision_client_events, supervision_clients, supervision_officer_metrics, supervision_officer_outlier_status, supervision_officer_supervisors, supervision_officers, supervision_contacts_drilldown_due_date_based, supervision_officer_metrics_archive, supervision_officer_outlier_status_archive, supervision_officer_supervisors_archive, supervision_officers_archive",
                 response.data,
             )
 
