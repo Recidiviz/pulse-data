@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Python bindings for cloudsql_proxy_control.sh, which allows us to start / stop the Cloud SQL Proxy """
+"""Python bindings for cloudsql_proxy_control.sh, which allows us to start / stop the Cloud SQL Proxy"""
 import atexit
 import contextlib
 import logging
@@ -69,12 +69,18 @@ class CloudSQLProxyControl:
     def _quit_proxy(self) -> str:
         return self._run_command(["-q"])
 
-    def _run_command(self, additional_flags: list[str]) -> str:
+    def _run_command(
+        self, additional_flags: list[str], *, log_output: bool = False
+    ) -> str:
+        """Runs the cloudsql_proxy_control.sh script with the provided additional flags and returns the output.
+
+        You can manually set log_output to True if you need to debug issues with starting / stopping the proxy
+        """
         output = run_command(
             f"{script_path} -p {self.port} {' '.join(additional_flags)}"
         )
 
-        if output:
+        if output and log_output:
             for line in output.splitlines():
                 logging.info(line.rstrip())
 
