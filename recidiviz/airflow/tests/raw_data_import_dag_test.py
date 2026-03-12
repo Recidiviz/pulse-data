@@ -2775,9 +2775,12 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 )
 
     def test_branching_resource_lock_acquisition_fails(self) -> None:
-        with Session(bind=self.engine) as session, patch(
-            "recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator.PostgresHook.get_records",
-            return_value=None,
+        with (
+            Session(bind=self.engine) as session,
+            patch(
+                "recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator.PostgresHook.get_records",
+                return_value=None,
+            ),
         ):
             result = self.run_dag_test(
                 self._create_dag(),
@@ -2870,7 +2873,6 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.raise_header_verification_errors",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
-                    r".*primary_import_branch.coalesce_import_ready_files",
                     r".*_primary_import_branch.cleanup_and_storage.write_file_processed_time",
                     r".*_primary_import_branch.maybe_trigger_dag_rerun",
                     "raw_data_branching.branch_end",

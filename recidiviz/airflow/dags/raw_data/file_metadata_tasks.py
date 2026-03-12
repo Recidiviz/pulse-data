@@ -300,11 +300,12 @@ def coalesce_import_ready_files(
     did not need pre-import normalization into equally sized batches.
     """
     if maybe_serialized_import_ready_files_no_normalization is None:
-        raise ValueError(
-            "If there are no import ready files, we expect an empty list; however since"
-            "we found None, that means the task failed to run upstream so let's fail "
-            "loud."
+        logging.info(
+            "Upstream task (split_by_pre_import_normalization_type) failed to run. "
+            "This is likely due to a failure in an earlier task in the DAG. "
+            "Returning empty list to avoid cascading failures."
         )
+        return []
 
     pre_import_normalization_results = (
         BatchedTaskInstanceOutput.deserialize(

@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for python logic for managing and handling raw file metadata"""
 import datetime
-import re
 from typing import Dict, List
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
@@ -434,15 +433,7 @@ class CoalesceImportReadyFilesTest(TestCase):
         assert not coalesce_import_ready_files.function([], None)
 
     def test_failed_upstream(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            re.escape(
-                "If there are no import ready files, we expect an empty list; however since"
-                "we found None, that means the task failed to run upstream so let's fail "
-                "loud."
-            ),
-        ):
-            coalesce_import_ready_files.function(None, None)
+        assert not coalesce_import_ready_files.function(None, None)
 
     def test_single_per_batch(self) -> None:
         files = [
