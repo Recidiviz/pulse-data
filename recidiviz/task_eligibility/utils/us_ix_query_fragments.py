@@ -953,20 +953,21 @@ HAVING COUNT(*) >= 2
     )
 
 
-def us_ix_supervision_start_cte() -> str:
-    """
-    Returns a SQL CTE that selects the start of supervision sessions in Idaho.
-    This is used for initial assessment triggers.
+def us_ix_supervision_start_spans_query() -> str:
+    """Returns a SQL query that selects supervision start spans in Idaho.
+
+    Each row represents a supervision period with the earliest
+    compartment_level_1_super_session start date and the
+    supervision_super_session end date. Used as the base contact-period
+    spans query for initial assessment triggers built with
+    non_recurring_contact_compliance_builder.
     """
     return f"""
-supervision_start AS (
-    -- Get the first compartment_level_1_super_session for each supervision_super_session
     SELECT
         css.state_code,
         css.person_id,
-        sss.end_date_exclusive AS end_datetime,
-        MIN(css.start_date) AS start_of_supervision_date,
-        MIN(css.start_date) AS start_datetime,
+        MIN(css.start_date) AS start_date,
+        sss.end_date_exclusive AS end_date,
     FROM `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` css
     LEFT JOIN `{{project_id}}.sessions.supervision_super_sessions_materialized` sss
         ON css.state_code = sss.state_code
@@ -975,8 +976,8 @@ supervision_start AS (
     WHERE css.state_code = 'US_IX'
         AND css.start_reason IN ('COURT_SENTENCE', 'RELEASE_FROM_INCARCERATION')
         AND css.compartment_level_1 = 'SUPERVISION'
-    GROUP BY 1,2,3
-)"""
+    GROUP BY css.state_code, css.person_id, sss.end_date_exclusive
+"""
 
 
 def us_ix_annual_assessment_criteria_view_builder(

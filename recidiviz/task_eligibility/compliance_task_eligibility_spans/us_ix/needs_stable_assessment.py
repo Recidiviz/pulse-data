@@ -55,8 +55,8 @@ meets_stable_reassessment_or_initial_assessment_triggers = (
         ],
         allowed_duplicate_reasons_keys=[
             "assessment_due_date",
-            "last_assessment_date",
             "contact_cadence",
+            "last_assessment_date",
         ],
         reasons_aggregate_function_override={
             "assessment_due_date": "MIN",

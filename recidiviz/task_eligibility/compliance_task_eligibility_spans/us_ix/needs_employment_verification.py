@@ -50,9 +50,11 @@ employment_verification_trigger_view_builder = (
             meets_employment_reverification_trigger.VIEW_BUILDER,
         ],
         allowed_duplicate_reasons_keys=[
+            "contact_cadence",
+            "contact_count",
             "contact_due_date",
             "last_contact_date",
-            "contact_cadence",
+            "overdue_flag",
         ],
         reasons_aggregate_function_override={
             "contact_due_date": "MIN",
