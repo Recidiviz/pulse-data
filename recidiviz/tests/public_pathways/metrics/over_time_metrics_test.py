@@ -111,7 +111,7 @@ class TestPrisonPopulationOverTime(PublicPathwaysOverTimeMetricTestBase, TestCas
             "lastUpdated": "2022-08-03",
             "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, {"value": "2", "label": "Facility 2"}]',
             "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}]',
-            "dynamicFilterOptions": '{"gender_id_name_map": [{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}]}',
+            "dynamicFilterOptions": '{"gender_id_name_map": [{"value": "MALE", "label": "Male"}, {"value": "FEMALE", "label": "Female"}, {"value": "NON_BINARY", "label": "Non-binary"}], "date_in_population_id_name_map": [{"value": "2022-01-01", "label": "January 1, 2022"}, {"value": "2021-12-01", "label": "December 1, 2021"}, {"value": "2021-11-01", "label": "November 1, 2021"}]}',
         }
 
     def test_demo(self) -> None:

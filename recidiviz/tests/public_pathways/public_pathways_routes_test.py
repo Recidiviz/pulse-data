@@ -259,7 +259,11 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "dynamicFilterOptions": '{"gender_id_name_map": '
                     '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
-                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    '{"value": "NON_BINARY", "label": "Non-binary"}], '
+                    '"date_in_population_id_name_map": '
+                    '[{"value": "2022-01-01", "label": "January 1, 2022"}, '
+                    '{"value": "2021-12-01", "label": "December 1, 2021"}, '
+                    '{"value": "2021-11-01", "label": "November 1, 2021"}]}',
                     "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
                     '{"value": "2", "label": "Facility 2"}]',
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
@@ -288,7 +292,11 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "dynamicFilterOptions": '{"gender_id_name_map": '
                     '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
-                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    '{"value": "NON_BINARY", "label": "Non-binary"}], '
+                    '"date_in_population_id_name_map": '
+                    '[{"value": "2022-01-01", "label": "January 1, 2022"}, '
+                    '{"value": "2021-12-01", "label": "December 1, 2021"}, '
+                    '{"value": "2021-11-01", "label": "November 1, 2021"}]}',
                     "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
                     '{"value": "2", "label": "Facility 2"}]',
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
@@ -339,7 +347,11 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "dynamicFilterOptions": '{"gender_id_name_map": '
                     '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
-                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    '{"value": "NON_BINARY", "label": "Non-binary"}], '
+                    '"date_in_population_id_name_map": '
+                    '[{"value": "2022-01-01", "label": "January 1, 2022"}, '
+                    '{"value": "2021-12-01", "label": "December 1, 2021"}, '
+                    '{"value": "2021-11-01", "label": "November 1, 2021"}]}',
                     "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
                     '{"value": "2", "label": "Facility 2"}]',
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
@@ -369,7 +381,11 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "dynamicFilterOptions": '{"gender_id_name_map": '
                     '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
-                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    '{"value": "NON_BINARY", "label": "Non-binary"}], '
+                    '"date_in_population_id_name_map": '
+                    '[{"value": "2022-01-01", "label": "January 1, 2022"}, '
+                    '{"value": "2021-12-01", "label": "December 1, 2021"}, '
+                    '{"value": "2021-11-01", "label": "November 1, 2021"}]}',
                     "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
                     '{"value": "2", "label": "Facility 2"}]',
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
@@ -403,7 +419,11 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                     "dynamicFilterOptions": '{"gender_id_name_map": '
                     '[{"value": "MALE", "label": "Male"}, '
                     '{"value": "FEMALE", "label": "Female"}, '
-                    '{"value": "NON_BINARY", "label": "Non-binary"}]}',
+                    '{"value": "NON_BINARY", "label": "Non-binary"}], '
+                    '"date_in_population_id_name_map": '
+                    '[{"value": "2022-01-01", "label": "January 1, 2022"}, '
+                    '{"value": "2021-12-01", "label": "December 1, 2021"}, '
+                    '{"value": "2021-11-01", "label": "November 1, 2021"}]}',
                     "facilityIdNameMap": '[{"value": "1", "label": "Facility 1"}, '
                     '{"value": "2", "label": "Facility 2"}]',
                     "genderIdNameMap": '[{"value": "MALE", "label": "Male"}, '
