@@ -27,6 +27,9 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
 )
+from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
+    truncate_to_calendar_period,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -304,7 +307,7 @@ def contact_compliance_builder_type_agnostic(
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
             AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
-            AND ci.contact_date >= p.contact_period_start
+            AND ci.contact_date >= {truncate_to_calendar_period("p.contact_period_start", "p.frequency_date_part")}
             AND ci.contact_date < DATE_ADD(CAST(p.contact_period_end AS DATE), INTERVAL 1 DAY)
     {where_clause}
     ),
@@ -379,7 +382,7 @@ def contact_compliance_builder_type_agnostic(
         FROM divided_periods p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
-            AND ci.contact_date >= p.contact_period_start
+            AND ci.contact_date >= {truncate_to_calendar_period("p.contact_period_start", "p.frequency_date_part")}
             AND ci.contact_date < p.period_end
             AND ci.contact_type IN UNNEST(SPLIT(p.contact_types_accepted, ','))
         -- Filter out zero-day spans that occur when contact dates coincide with period boundaries
