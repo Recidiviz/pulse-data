@@ -16,6 +16,7 @@
 # ============================================================================
 """Base class for all entity types"""
 import abc
+import datetime
 from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
@@ -27,6 +28,9 @@ from recidiviz.common.attr_mixins import attribute_field_type_reference_for_clas
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateOrDateTime
 from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.persistence.entity.state.reasonable_date_validators import (
+    STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+)
 from recidiviz.utils import environment
 
 
@@ -180,6 +184,21 @@ class ExternalIdEntity(Entity):
 
     external_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     id_type: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+    is_current_display_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    is_stable_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    id_active_from_datetime: datetime.datetime | None = attr.ib(
+        default=None,
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    )
+    id_active_to_datetime: datetime.datetime | None = attr.ib(
+        default=None,
+        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
+    )
 
     # Consider ExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls: Any, *_: Any, **__: Any) -> Any:

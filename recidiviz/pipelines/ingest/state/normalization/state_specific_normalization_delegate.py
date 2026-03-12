@@ -33,8 +33,6 @@ from recidiviz.pipelines.ingest.state.multiple_external_id_helpers import (
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
     select_single_external_id_with_is_current_display_id,
     select_single_external_id_with_is_stable_id,
-    select_single_staff_external_id_with_is_current_display_id,
-    select_single_staff_external_id_with_is_stable_id,
 )
 from recidiviz.pipelines.ingest.state.validator import (
     person_external_id_types_with_allowed_multiples_per_person,
@@ -196,7 +194,7 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         )
 
         if has_any_is_display_id_flags_set:
-            return select_single_staff_external_id_with_is_current_display_id(
+            return select_single_external_id_with_is_current_display_id(
                 staff_external_ids_of_type
             )
 
@@ -250,7 +248,7 @@ class StateSpecificNormalizationDelegate(abc.ABC, StateSpecificDelegate):
         )
 
         if has_any_is_stable_id_flags_set:
-            return select_single_staff_external_id_with_is_stable_id(
+            return select_single_external_id_with_is_stable_id(
                 staff_external_ids_of_type
             )
 

@@ -94,9 +94,23 @@ class EntityLookMLDashboardBuilder:
                 f"Entity {external_id_entity_cls} is not a subclass of ExternalIdEntity."
             )
 
+        external_id_filter_fields = ["external_id", "id_type"]
+        external_id_sorted_fields = attribute_field_type_reference_for_class(
+            ExternalIdEntity
+        ).sorted_fields
+        if not set(external_id_filter_fields).issubset(set(external_id_sorted_fields)):
+            fields_str = (
+                ", ".join(repr(f) for f in external_id_filter_fields[:-1])
+                + (" and " if external_id_filter_fields[:-1] else "")
+                + repr(external_id_filter_fields[-1])
+            )
+            raise ValueError(
+                f"Expected ExternalIdEntity to have fields {fields_str}, "
+                f"got: {external_id_sorted_fields}"
+            )
         filter_fields[
             external_id_entity_cls.get_entity_name()
-        ] = attribute_field_type_reference_for_class(ExternalIdEntity).sorted_fields
+        ] = external_id_filter_fields
 
         return dict_to_scoped_field_names(filter_fields)
 

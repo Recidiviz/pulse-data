@@ -19,8 +19,8 @@ from recidiviz.common.constants.state.external_id_types import US_AZ_PERSON_ID
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateStaffExternalId
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_staff_external_id,
-    select_alphabetically_lowest_staff_external_id,
+    select_alphabetically_highest_external_id,
+    select_alphabetically_lowest_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
@@ -38,9 +38,7 @@ class UsAzNormalizationDelegate(StateSpecificNormalizationDelegate):
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
         if id_type == US_AZ_PERSON_ID:
-            return select_alphabetically_highest_staff_external_id(
-                staff_external_ids_of_type
-            )
+            return select_alphabetically_highest_external_id(staff_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per staff member "
@@ -56,9 +54,7 @@ class UsAzNormalizationDelegate(StateSpecificNormalizationDelegate):
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
         if id_type == US_AZ_PERSON_ID:
-            return select_alphabetically_lowest_staff_external_id(
-                staff_external_ids_of_type
-            )
+            return select_alphabetically_lowest_external_id(staff_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per staff member "

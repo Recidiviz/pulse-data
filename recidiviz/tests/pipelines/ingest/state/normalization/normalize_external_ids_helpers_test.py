@@ -21,10 +21,10 @@ import unittest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_person_external_id,
-    select_alphabetically_lowest_person_external_id,
-    select_least_recently_active_person_external_id,
-    select_most_recently_active_person_external_id,
+    select_alphabetically_highest_external_id,
+    select_alphabetically_lowest_external_id,
+    select_least_recently_active_external_id,
+    select_most_recently_active_external_id,
     select_single_external_id_with_is_current_display_id,
     select_single_external_id_with_is_stable_id,
 )
@@ -33,9 +33,9 @@ _ID_TYPE = "US_XX_ID_TYPE"
 _ID_TYPE_2 = "US_XX_ID_TYPE_2"
 
 
-class TestSelectAlphabeticallyHighestOrLowestPersonExternalId(unittest.TestCase):
-    """Unittests for the select_alphabetically_highest_person_external_id() and
-    select_alphabetically_lowest_person_external_id() helpers in
+class TestSelectAlphabeticallyHighestOrLowestExternalId(unittest.TestCase):
+    """Unittests for the select_alphabetically_highest_external_id() and
+    select_alphabetically_lowest_external_id() helpers in
     normalize_external_ids_helpers.py.
     """
 
@@ -57,10 +57,10 @@ class TestSelectAlphabeticallyHighestOrLowestPersonExternalId(unittest.TestCase)
         ids = [
             self.make_external_id(external_id="ABC123"),
         ]
-        highest_result = select_alphabetically_highest_person_external_id(ids)
+        highest_result = select_alphabetically_highest_external_id(ids)
         self.assertEqual(highest_result.external_id, "ABC123")
 
-        lowest_result = select_alphabetically_lowest_person_external_id(ids)
+        lowest_result = select_alphabetically_lowest_external_id(ids)
         self.assertEqual(lowest_result.external_id, "ABC123")
 
     def test_returns_highest_alphabetical_id(self) -> None:
@@ -69,10 +69,10 @@ class TestSelectAlphabeticallyHighestOrLowestPersonExternalId(unittest.TestCase)
             self.make_external_id(external_id="ZZZ999"),
             self.make_external_id(external_id="LMN456"),
         ]
-        highest_result = select_alphabetically_highest_person_external_id(ids)
+        highest_result = select_alphabetically_highest_external_id(ids)
         self.assertEqual(highest_result.external_id, "ZZZ999")
 
-        lowest_result = select_alphabetically_lowest_person_external_id(ids)
+        lowest_result = select_alphabetically_lowest_external_id(ids)
         self.assertEqual(lowest_result.external_id, "ABC123")
 
     def test_returns_highest_alphabetical_id_numerical_strings(self) -> None:
@@ -81,26 +81,26 @@ class TestSelectAlphabeticallyHighestOrLowestPersonExternalId(unittest.TestCase)
             self.make_external_id(external_id="9"),
             self.make_external_id(external_id="10"),
         ]
-        highest_result = select_alphabetically_highest_person_external_id(ids)
+        highest_result = select_alphabetically_highest_external_id(ids)
         self.assertEqual(highest_result.external_id, "9")
 
-        lowest_result = select_alphabetically_lowest_person_external_id(ids)
+        lowest_result = select_alphabetically_lowest_external_id(ids)
         self.assertEqual(lowest_result.external_id, "10")
 
     def test_raises_on_empty_list(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"Cannot call select_alphabetically_highest_person_external_id\(\) with an "
+            r"Cannot call select_alphabetically_highest_external_id\(\) with an "
             r"empty external_ids list",
         ):
-            select_alphabetically_highest_person_external_id([])
+            select_alphabetically_highest_external_id([])
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Cannot call select_alphabetically_lowest_person_external_id\(\) with an "
+            r"Cannot call select_alphabetically_lowest_external_id\(\) with an "
             r"empty external_ids list",
         ):
-            select_alphabetically_lowest_person_external_id([])
+            select_alphabetically_lowest_external_id([])
 
     def test_raises_on_multiple_id_types(self) -> None:
         ids = [
@@ -110,12 +110,12 @@ class TestSelectAlphabeticallyHighestOrLowestPersonExternalId(unittest.TestCase)
         with self.assertRaisesRegex(
             ValueError, r"Found multiple id_types in the provided external_ids list"
         ):
-            _ = select_alphabetically_highest_person_external_id(ids)
+            _ = select_alphabetically_highest_external_id(ids)
 
         with self.assertRaisesRegex(
             ValueError, r"Found multiple id_types in the provided external_ids list"
         ):
-            _ = select_alphabetically_lowest_person_external_id(ids)
+            _ = select_alphabetically_lowest_external_id(ids)
 
     def test_raises_on_equal_external_ids(self) -> None:
         id1 = self.make_external_id(external_id="SAME123")
@@ -124,17 +124,17 @@ class TestSelectAlphabeticallyHighestOrLowestPersonExternalId(unittest.TestCase)
             ValueError,
             r"Found multiple external ids with external_id \[SAME123\] and id_type \[US_XX_ID_TYPE\]",
         ):
-            _ = select_alphabetically_highest_person_external_id([id1, id2])
+            _ = select_alphabetically_highest_external_id([id1, id2])
 
         with self.assertRaisesRegex(
             ValueError,
             r"Found multiple external ids with external_id \[SAME123\] and id_type \[US_XX_ID_TYPE\]",
         ):
-            _ = select_alphabetically_lowest_person_external_id([id1, id2])
+            _ = select_alphabetically_lowest_external_id([id1, id2])
 
 
-class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
-    """Unittests for the select_most_recently_active_person_external_id() and
+class TestSelectMostAndLeastRecentlyActiveExternalId(unittest.TestCase):
+    """Unittests for the select_most_recently_active_external_id() and
     select_leaset_recently_active_person_external_id() helpers in
     normalize_external_ids_helpers.py
     """
@@ -164,10 +164,10 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
                 id_active_from_datetime=datetime.datetime(2020, 1, 1),
             ),
         ]
-        most_result = select_most_recently_active_person_external_id(ids)
+        most_result = select_most_recently_active_external_id(ids)
         self.assertEqual(most_result.external_id, "ABC123")
 
-        least_result = select_least_recently_active_person_external_id(ids)
+        least_result = select_least_recently_active_external_id(ids)
         self.assertEqual(least_result.external_id, "ABC123")
 
     def test_only_active_from_dates_set(self) -> None:
@@ -185,10 +185,10 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
                 id_active_from_datetime=datetime.datetime(2020, 3, 3),
             ),
         ]
-        most_result = select_most_recently_active_person_external_id(ids)
+        most_result = select_most_recently_active_external_id(ids)
         self.assertEqual(most_result.external_id, "LMN456")
 
-        least_result = select_least_recently_active_person_external_id(ids)
+        least_result = select_least_recently_active_external_id(ids)
         self.assertEqual(least_result.external_id, "ZZZ999")
 
     def test_active_from_and_active_to_dates_set(self) -> None:
@@ -210,10 +210,10 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
                 id_active_to_datetime=datetime.datetime(2020, 2, 2),
             ),
         ]
-        most_result = select_most_recently_active_person_external_id(ids)
+        most_result = select_most_recently_active_external_id(ids)
         self.assertEqual(most_result.external_id, "ZZZ999")
 
-        least_result = select_least_recently_active_person_external_id(ids)
+        least_result = select_least_recently_active_external_id(ids)
         self.assertEqual(least_result.external_id, "LMN456")
 
     def test_active_from_and_active_to_dates_set_all_inactive(self) -> None:
@@ -241,10 +241,10 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
                 id_active_to_datetime=datetime.datetime(2020, 2, 2),
             ),
         ]
-        most_result = select_most_recently_active_person_external_id(ids)
+        most_result = select_most_recently_active_external_id(ids)
         self.assertEqual(most_result.external_id, "DEF456")
 
-        least_result = select_least_recently_active_person_external_id(ids)
+        least_result = select_least_recently_active_external_id(ids)
         self.assertEqual(least_result.external_id, "LMN456")
 
     def test_raise_on_active_from_null_by_default(self) -> None:
@@ -257,7 +257,7 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
             r"StatePersonExternalId\(external_id='ABC123', id_type='US_XX_ID_TYPE', "
             r"person_external_id_id=1\)\].",
         ):
-            select_most_recently_active_person_external_id(ids)
+            select_most_recently_active_external_id(ids)
 
         with self.assertRaisesRegex(
             ValueError,
@@ -265,7 +265,7 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
             r"StatePersonExternalId\(external_id='ABC123', id_type='US_XX_ID_TYPE', "
             r"person_external_id_id=1\)\].",
         ):
-            select_least_recently_active_person_external_id(ids)
+            select_least_recently_active_external_id(ids)
 
     def test_all_dates_null(self) -> None:
         ids = [
@@ -274,12 +274,12 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
             self.make_external_id(external_id="ZZZ999", id_active_from_datetime=None),
             self.make_external_id(external_id="LMN456", id_active_from_datetime=None),
         ]
-        most_result = select_most_recently_active_person_external_id(
+        most_result = select_most_recently_active_external_id(
             ids, enforce_nonnull_id_active_from=False
         )
         self.assertEqual(most_result.external_id, "ZZZ999")
 
-        least_result = select_least_recently_active_person_external_id(
+        least_result = select_least_recently_active_external_id(
             ids, enforce_nonnull_id_active_from=False
         )
         self.assertEqual(least_result.external_id, "ABC123")
@@ -289,13 +289,13 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
             ValueError,
             r"Must provide a non-empty external_ids list",
         ):
-            select_most_recently_active_person_external_id([])
+            select_most_recently_active_external_id([])
 
         with self.assertRaisesRegex(
             ValueError,
             r"Must provide a non-empty external_ids list",
         ):
-            select_least_recently_active_person_external_id([])
+            select_least_recently_active_external_id([])
 
     def test_raises_on_multiple_id_types(self) -> None:
         ids = [
@@ -313,12 +313,12 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, r"Found multiple id_types in the provided external_ids list"
         ):
-            _ = select_most_recently_active_person_external_id(ids)
+            _ = select_most_recently_active_external_id(ids)
 
         with self.assertRaisesRegex(
             ValueError, r"Found multiple id_types in the provided external_ids list"
         ):
-            _ = select_least_recently_active_person_external_id(ids)
+            _ = select_least_recently_active_external_id(ids)
 
     def test_raises_on_equal_external_ids(self) -> None:
         id1 = self.make_external_id(
@@ -333,13 +333,13 @@ class TestSelectMostAndLeastRecentlyActivePersonExternalId(unittest.TestCase):
             ValueError,
             r"Found multiple external ids with external_id \[SAME123\] and id_type \[US_XX_ID_TYPE\]",
         ):
-            _ = select_most_recently_active_person_external_id([id1, id2])
+            _ = select_most_recently_active_external_id([id1, id2])
 
         with self.assertRaisesRegex(
             ValueError,
             r"Found multiple external ids with external_id \[SAME123\] and id_type \[US_XX_ID_TYPE\]",
         ):
-            _ = select_least_recently_active_person_external_id([id1, id2])
+            _ = select_least_recently_active_external_id([id1, id2])
 
 
 class TestSelectSingleExternalId(unittest.TestCase):

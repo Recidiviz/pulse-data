@@ -133,6 +133,10 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
             "fake_person_external_id": [
                 SchemaField("external_id", "STRING", "NULLABLE"),
                 SchemaField("id_type", "STRING", "NULLABLE"),
+                SchemaField("is_current_display_id_for_type", "BOOLEAN", "NULLABLE"),
+                SchemaField("is_stable_id_for_type", "BOOLEAN", "NULLABLE"),
+                SchemaField("id_active_from_datetime", "DATETIME", "NULLABLE"),
+                SchemaField("id_active_to_datetime", "DATETIME", "NULLABLE"),
                 SchemaField("state_code", "STRING", "NULLABLE"),
                 SchemaField("fake_person_external_id_id", "INTEGER", "NULLABLE"),
                 SchemaField(

@@ -285,6 +285,36 @@ LOOKML_VIEWS = [
                 ],
             ),
             DimensionLookMLViewField(
+                field_name="id_active_from_datetime_date",
+                parameters=[
+                    FieldParameterType(field_type=LookMLFieldType.STRING),
+                    FieldParameterSql(sql_text="${TABLE}.id_active_from_datetime"),
+                ],
+            ),
+            DimensionLookMLViewField(
+                field_name="id_active_to_datetime_date",
+                parameters=[
+                    FieldParameterType(field_type=LookMLFieldType.STRING),
+                    FieldParameterSql(sql_text="${TABLE}.id_active_to_datetime"),
+                ],
+            ),
+            DimensionLookMLViewField(
+                field_name="is_current_display_id_for_type",
+                parameters=[
+                    FieldParameterType(field_type=LookMLFieldType.YESNO),
+                    FieldParameterSql(
+                        sql_text="${TABLE}.is_current_display_id_for_type"
+                    ),
+                ],
+            ),
+            DimensionLookMLViewField(
+                field_name="is_stable_id_for_type",
+                parameters=[
+                    FieldParameterType(field_type=LookMLFieldType.YESNO),
+                    FieldParameterSql(sql_text="${TABLE}.is_stable_id_for_type"),
+                ],
+            ),
+            DimensionLookMLViewField(
                 field_name="state_code",
                 parameters=[
                     FieldParameterType(field_type=LookMLFieldType.STRING),
@@ -474,6 +504,10 @@ class EntityDashboardBuilderTest(unittest.TestCase):
     fields: [fake_person_external_id.external_id,
       fake_person_external_id.fake_person_external_id_id,
       fake_person_external_id.id_type,
+      fake_person_external_id.id_active_from_datetime_date,
+      fake_person_external_id.id_active_to_datetime_date,
+      fake_person_external_id.is_current_display_id_for_type,
+      fake_person_external_id.is_stable_id_for_type,
       fake_person_external_id.state_code]
     sorts: []
     listen: 

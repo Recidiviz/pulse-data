@@ -3603,14 +3603,6 @@ class NormalizedStateStaffExternalId(NormalizedStateEntity, ExternalIdEntity):
 
     is_current_display_id_for_type: bool = attr.ib(validator=attr_validators.is_bool)
     is_stable_id_for_type: bool = attr.ib(validator=attr_validators.is_bool)
-    id_active_from_datetime: datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
-    )
-    id_active_to_datetime: datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
-    )
 
     # Cross-entity relationships
     staff: Optional["NormalizedStateStaff"] = attr.ib(

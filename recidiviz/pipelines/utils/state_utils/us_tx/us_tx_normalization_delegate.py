@@ -26,10 +26,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaffExternalId,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_person_external_id,
-    select_alphabetically_highest_staff_external_id,
-    select_alphabetically_lowest_person_external_id,
-    select_alphabetically_lowest_staff_external_id,
+    select_alphabetically_highest_external_id,
+    select_alphabetically_lowest_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
@@ -47,7 +45,7 @@ class UsTxNormalizationDelegate(StateSpecificNormalizationDelegate):
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
         if id_type == US_TX_TDCJ:
-            return select_alphabetically_highest_person_external_id(
+            return select_alphabetically_highest_external_id(
                 person_external_ids_of_type
             )
 
@@ -65,9 +63,7 @@ class UsTxNormalizationDelegate(StateSpecificNormalizationDelegate):
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
         if id_type == US_TX_TDCJ:
-            return select_alphabetically_lowest_person_external_id(
-                person_external_ids_of_type
-            )
+            return select_alphabetically_lowest_external_id(person_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per person and no "
@@ -83,9 +79,7 @@ class UsTxNormalizationDelegate(StateSpecificNormalizationDelegate):
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
         if id_type in (US_TX_EMAIL, US_TX_STAFF_ID):
-            return select_alphabetically_highest_staff_external_id(
-                staff_external_ids_of_type
-            )
+            return select_alphabetically_highest_external_id(staff_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per staff member "
@@ -101,9 +95,7 @@ class UsTxNormalizationDelegate(StateSpecificNormalizationDelegate):
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
         if id_type in (US_TX_EMAIL, US_TX_STAFF_ID):
-            return select_alphabetically_lowest_staff_external_id(
-                staff_external_ids_of_type
-            )
+            return select_alphabetically_lowest_external_id(staff_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per staff member "

@@ -31,10 +31,10 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_staff_external_id,
-    select_alphabetically_lowest_staff_external_id,
-    select_least_recently_active_person_external_id,
-    select_most_recently_active_person_external_id,
+    select_alphabetically_highest_external_id,
+    select_alphabetically_lowest_external_id,
+    select_least_recently_active_external_id,
+    select_most_recently_active_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
@@ -52,11 +52,11 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
         if id_type == US_CA_DOC:
-            return select_most_recently_active_person_external_id(
+            return select_most_recently_active_external_id(
                 person_external_ids_of_type, enforce_nonnull_id_active_from=False
             )
         if id_type == US_CA_CDCNO:
-            return select_most_recently_active_person_external_id(
+            return select_most_recently_active_external_id(
                 person_external_ids_of_type, enforce_nonnull_id_active_from=False
             )
 
@@ -74,11 +74,11 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
         person_external_ids_of_type: list[StatePersonExternalId],
     ) -> StatePersonExternalId:
         if id_type == US_CA_DOC:
-            return select_least_recently_active_person_external_id(
+            return select_least_recently_active_external_id(
                 person_external_ids_of_type, enforce_nonnull_id_active_from=False
             )
         if id_type == US_CA_CDCNO:
-            return select_least_recently_active_person_external_id(
+            return select_least_recently_active_external_id(
                 person_external_ids_of_type, enforce_nonnull_id_active_from=False
             )
 
@@ -96,9 +96,7 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
         if id_type == US_CA_BADGE_NO:
-            return select_alphabetically_highest_staff_external_id(
-                staff_external_ids_of_type
-            )
+            return select_alphabetically_highest_external_id(staff_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per staff member "
@@ -114,9 +112,7 @@ class UsCaNormalizationDelegate(StateSpecificNormalizationDelegate):
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
         if id_type == US_CA_BADGE_NO:
-            return select_alphabetically_lowest_staff_external_id(
-                staff_external_ids_of_type
-            )
+            return select_alphabetically_lowest_external_id(staff_external_ids_of_type)
 
         raise ValueError(
             f"Unexpected id type {id_type} with multiple ids per staff member "

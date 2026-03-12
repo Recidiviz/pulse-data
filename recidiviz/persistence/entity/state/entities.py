@@ -167,7 +167,6 @@ from recidiviz.persistence.entity.state.reasonable_date_validators import (
     STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
     STANDARD_REASONABLE_OPT_DATETIME_VALIDATOR,
     STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR,
-    STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
     reasonable_projected_sentence_date_validator,
@@ -380,21 +379,6 @@ class StatePersonExternalId(
     # written this entity to the persistence layer
     person_external_id_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
-    )
-
-    is_current_display_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-    is_stable_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-    id_active_from_datetime: datetime.datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
-    )
-    id_active_to_datetime: datetime.datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     )
 
     # Cross-entity relationships
@@ -2776,21 +2760,6 @@ class StateStaffExternalId(
     # written this entity to the persistence layer
     staff_external_id_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
-    )
-
-    is_current_display_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-    is_stable_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-    id_active_from_datetime: datetime.datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
-    )
-    id_active_to_datetime: datetime.datetime | None = attr.ib(
-        default=None,
-        validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     )
 
     # Cross-entity relationships

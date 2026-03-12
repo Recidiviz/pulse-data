@@ -27,8 +27,8 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateStaffExternalId,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
-    select_alphabetically_highest_staff_external_id,
-    select_alphabetically_lowest_staff_external_id,
+    select_alphabetically_highest_external_id,
+    select_alphabetically_lowest_external_id,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_staff_external_ids import (
     get_normalized_staff_external_ids,
@@ -54,9 +54,7 @@ class PickAlphabeticallyHighestAndLowestDelegate(StateSpecificNormalizationDeleg
         id_type: str,
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
-        return select_alphabetically_highest_staff_external_id(
-            staff_external_ids_of_type
-        )
+        return select_alphabetically_highest_external_id(staff_external_ids_of_type)
 
     def select_stable_id_for_staff_external_ids_of_type(
         self,
@@ -65,9 +63,7 @@ class PickAlphabeticallyHighestAndLowestDelegate(StateSpecificNormalizationDeleg
         id_type: str,
         staff_external_ids_of_type: list[StateStaffExternalId],
     ) -> StateStaffExternalId:
-        return select_alphabetically_lowest_staff_external_id(
-            staff_external_ids_of_type
-        )
+        return select_alphabetically_lowest_external_id(staff_external_ids_of_type)
 
 
 class TestNormalizeStaffExternalIds(unittest.TestCase):
@@ -231,7 +227,7 @@ class TestNormalizeStaffExternalIds(unittest.TestCase):
                 id_type: str,
                 staff_external_ids_of_type: list[StateStaffExternalId],
             ) -> StateStaffExternalId:
-                return select_alphabetically_lowest_staff_external_id(
+                return select_alphabetically_lowest_external_id(
                     staff_external_ids_of_type
                 )
 
@@ -274,7 +270,7 @@ class TestNormalizeStaffExternalIds(unittest.TestCase):
                 id_type: str,
                 staff_external_ids_of_type: list[StateStaffExternalId],
             ) -> StateStaffExternalId:
-                return select_alphabetically_highest_staff_external_id(
+                return select_alphabetically_highest_external_id(
                     staff_external_ids_of_type
                 )
 
