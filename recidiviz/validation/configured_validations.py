@@ -117,6 +117,9 @@ from recidiviz.validation.views.state.incarceration_release_reason_no_release_da
 from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import (
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.incarceration_staff_sessions_state_missing_stable_id_type import (
+    INCARCERATION_STAFF_SESSIONS_STATE_MISSING_STABLE_ID_TYPE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.insights_primary_users_not_in_state_staff import (
     INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
 )
@@ -424,6 +427,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INCARCERATION_STAFF_SESSIONS_STATE_MISSING_STABLE_ID_TYPE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
