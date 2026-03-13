@@ -4,8 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   OFFENDERID: STRING
-  CONTACTDATE: DATE
-  CONTACTTIME: STRING
+  CONTACTDATETIME: DATETIME
   CONTACTMETHOD: STRING
   CONTACTTYPE: STRING
   CONTACTSTAFF: STRING
@@ -24,162 +23,179 @@ output:
             $concat:
               $values:
                 - OFFENDERID
-                - CONTACTDATE
-                - CONTACTTIME
+                - CONTACTDATETIME
+                - CONTACTTYPE
           contacting_staff_external_id: CONTACTSTAFF
           contacting_staff_external_id_type:
             $conditional:
               - $if:
                   $not_null: CONTACTSTAFF
                 $then: $literal("US_CO_PARTYID")
-          contact_date: CONTACTDATE
+          contact_datetime: CONTACTDATETIME
           contact_type:
             $enum_mapping:
               $raw_text: CONTACTMETHOD
               $mappings:
                 StateSupervisionContactType.DIRECT:
-                  - Offender Phone
-                  - Offender FTF
-                  - Initial Offender FTF
-                  - Re-entry FTF
+                  - 1@@Initial Offender FTF
+                  - 2@@Offender FTF
+                  - 4@@Offender Phone
+                  - 8@@Re-entry FTF
                 StateSupervisionContactType.COLLATERAL:
-                  - Collateral Phone
-                  - Collateral FTF
-                  - Provider Meeting FTF
+                  - 3@@Collateral FTF
+                  - 5@@Collateral Phone
+                  - 7@@Provider Meeting FTF
                 ##StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT:
                 StateSupervisionContactType.INTERNAL_UNKNOWN:
-                  - Text Message/Email
-                  - Attempt/No Contact
-                  - See Contact Code below # related to giving good time
-                  - Case Management
-                  - Equipment
+                  - 0@@See Contact Code below # related to giving good time
+                  - 6@@Attempt/No Contact
+                  - A@@Equipment
+                  - B@@Case Management
+                  - C@@Text Message/Email
           contact_method:
             $enum_mapping:
               $raw_text: CONTACTMETHOD
               $mappings:
                 StateSupervisionContactMethod.TELEPHONE:
-                  - Offender Phone
-                  - Collateral Phone
+                  - 4@@Offender Phone
+                  - 5@@Collateral Phone
                 StateSupervisionContactMethod.WRITTEN_MESSAGE:
-                  - Text Message/Email
+                  - C@@Text Message/Email
                 StateSupervisionContactMethod.IN_PERSON:
-                  - Offender FTF
-                  - Initial Offender FTF
-                  - Re-entry FTF
-                  - Collateral FTF
-                  - Provider Meeting FTF
+                  - 1@@Initial Offender FTF
+                  - 2@@Offender FTF
+                  - 3@@Collateral FTF
+                  - 7@@Provider Meeting FTF
+                  - 8@@Re-entry FTF
                 StateSupervisionContactMethod.INTERNAL_UNKNOWN:
-                  - Attempt/No Contact
-                  - See Contact Code below # related to giving good time
-                  - Case Management
-                  - Equipment
+                  - 0@@See Contact Code below # related to giving good time
+                  - 6@@Attempt/No Contact
+                  - A@@Equipment
+                  - B@@Case Management
           contact_reason:
             $enum_mapping:
               $raw_text: CONTACTMETHOD
               $mappings:
                 StateSupervisionContactReason.INITIAL_CONTACT:
-                  - Initial Offender FTF
+                  - 1@@Initial Offender FTF
                 StateSupervisionContactReason.GENERAL_CONTACT:
-                  - Offender FTF
-                  - Re-entry FTF
-                  - Collateral FTF
-                  - Offender Phone
-                  - Collateral Phone
+                  - 2@@Offender FTF
+                  - 3@@Collateral FTF
+                  - 4@@Offender Phone
+                  - 5@@Collateral Phone
+                  - 8@@Re-entry FTF
                 StateSupervisionContactReason.INTERNAL_UNKNOWN:
-                  - Attempt/No Contact
-                  - Provider Meeting FTF
-                  - See Contact Code below # related to giving good time
-                  - Case Management
-                  - Equipment
-                  - Text Message/Email
+                  - 0@@See Contact Code below # related to giving good time
+                  - 6@@Attempt/No Contact
+                  - 7@@Provider Meeting FTF
+                  - A@@Equipment
+                  - B@@Case Management
+                  - C@@Text Message/Email
           status:
             $enum_mapping:
               $raw_text: CONTACTMETHOD
               $mappings:
                 StateSupervisionContactStatus.COMPLETED:
-                  - Provider Meeting FTF
-                  - See Contact Code below # related to giving good time
-                  - Case Management
-                  - Equipment
-                  - Text Message/Email
-                  - Offender FTF
-                  - Re-entry FTF
-                  - Collateral FTF
-                  - Offender Phone
-                  - Collateral Phone
-                  - Initial Offender FTF
+                  - 0@@See Contact Code below
+                  - 1@@Initial Offender FTF
+                  - 2@@Offender FTF
+                  - 3@@Collateral FTF
+                  - 4@@Offender Phone
+                  - 5@@Collateral Phone
+                  - 7@@Provider Meeting FTF
+                  - 8@@Re-entry FTF
+                  - A@@Equipment
+                  - B@@Case Management
+                  - C@@Text Message/Email
                 StateSupervisionContactStatus.ATTEMPTED:
-                  - Attempt/No Contact
+                  - 6@@Attempt/No Contact
           location:
             $enum_mapping:
               $raw_text: CONTACTTYPE
               $mappings:
                 StateSupervisionContactLocation.FIELD:
-                  - Field Contact
-                  - Agent-Visit-Field Contact
+                  - FC2@@Field Contact
+                  - FC@@Agent-Visit-Field Contact
                 StateSupervisionContactLocation.SUPERVISION_OFFICE:
-                  - Office
-                  - Agent-Visit-Office
-                  - Technician Contact at Parole Office
+                  - OV2@@Office
+                  - OV@@Agent-Visit-Office
+                  - TCH@@Technician Contact at Parole Office
                 StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
-                  - Agent-Visit-Employment
+                  - EMP@@Agent-Visit-Employment
                 StateSupervisionContactLocation.JAIL:
-                  - County Jail Visit
-                  - CCC Visit
-                  - Prison Visit
-                  - Agent-Visit-County Jail
-                  - Agent-Visit-Comm. Corr. Center
-                  - Agent-Visit-Prison
+                  - JV2@@County Jail Visit
+                  - HW2@@CCC Visit
+                  - PR2@@Prison Visit
+                  - JV@@Agent-Visit-County Jail
+                  - HWH@@Agent-Visit-Comm. Corr. Center
+                  - PRI@@Agent-Visit-Prison
                 StateSupervisionContactLocation.INTERNAL_UNKNOWN:
-                  - School Visit
-                  - Case Audit Generated
-                  - Education Updated
-                  - Host Site Visit
-                  - Achievement Earned Time
-                  - Drive By Visit
-                  - Hospital Visit
-                  - Video Visit
-                  - ATP Contact
-                  - WAGEES Visit
-                  - Address Updated
-                  - After Hours Visit
-                  - Earn Time
-                  - Hold and Release Generated
-                  - Placement Visit
-                  - Technician Contact
-                  - Technician Contact at Vendor Office
-                  - Agent-Visit-Other
-                  - Legacy Incentives (CDOC_INCENTIVES)
-                  - Revocation Hearing Scheduled
-                  - Legacy Jail Based Treatment (CDOC_JBT)
-                  - Legacy LSI Assessment Data (CDOC_LSIFORM1st)
-                  - Jail Based Treatment (JBT)
-                  - BI Call Center
-                  - Sex Offender Registration Completed
-                  - Administrative
-                  - Protection Order
-                  - Collateral Contact Info.
-                  - Community Service Info.
-                  - Positive Incentives
-                  - Social Service Visit
-                  - Volunteer Information
-                  - Legacy Smart Start (CDOC_SMART_START)
-                  - Caseload Summary
-                  - Agent-Visit-Hospital
-                  - Legacy Drive Request (CDOC_DRIVE_REQ)
+                  - SCH@@School Visit
+                  - CSA@@Case Audit Generated
+                  - ED@@Education Updated
+                  - AET@@Achievement Earned Time
+                  - DB@@Drive By Visit
+                  - HP2@@Hospital Visit
+                  - VV@@Video Visit
+                  - ATP@@ATP Contact
+                  - WAG@@WAGEES Visit
+                  - ADR@@Address Updated
+                  - AH@@After Hours Visit
+                  - AT@@Earn Time
+                  - HRF@@Hold and Release Generated
+                  - PL@@Placement Visit
+                  - TCK@@Technician Contact
+                  - TCJ@@Technician Contact at Vendor Office
+                  - OTH@@Agent-Visit-Other
+                  - YIN@@Legacy Incentives (CDOC_INCENTIVES)
+                  - RHS@@Revocation Hearing Scheduled
+                  - YJB@@Legacy Jail Based Treatment (CDOC_JBT)
+                  - YLS@@Legacy LSI Assessment Data (CDOC_LSIFORM1st)
+                  - XAB@@Jail Based Treatment (JBT)
+                  - BIC@@BI Call Center
+                  - SRC@@Sex Offender Registration Completed
+                  - ADM@@Administrative
+                  - PRO@@Protection Order
+                  - XAE@@Collateral Contact Info.
+                  - XAD@@Community Service Info.
+                  - XAA@@Positive Incentives
+                  - SS@@Social Service Visit
+                  - XAC@@Volunteer Information
+                  - YSS@@Legacy Smart Start (CDOC_SMART_START)
+                  - CLS@@Caseload Summary
+                  - HP@@Agent-Visit-Hospital
+                  - YDR@@Legacy Drive Request (CDOC_DRIVE_REQ)
+                  - NR@@Non-Relative Resd.
+                  - FM@@Family Member Resd.
                 StateSupervisionContactLocation.COURT:
-                  - Court Visit
-                  - Agent-Visit-Court
+                  - CT2@@Court Visit
+                  - CT@@Agent-Visit-Court
                 StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
-                  - Local Police Visit
+                  - LP@@Local Police Visit
                 StateSupervisionContactLocation.RESIDENCE:
-                  - Non-Relative Resd.
-                  - Family Member Resd.
-                  - Agent-Visit-Host Site (Home)
+                  - HV@@Agent-Visit-Host Site (Home)
+                  - HV2@@Host Site Visit
                 StateSupervisionContactLocation.TREATMENT_PROVIDER:
-                  - Treatment Provider
-                  - Agent-Visit-Service Provider
-                  - Service Provider Visit
+                  - TPX@@Treatment Provider
+                  - TX@@Agent-Visit-Service Provider
+                  - AT2@@Service Provider Visit
+          # TODO(#62320): Confirm employment mapping with CO
+          verified_employment:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: EMPLOYMENTSTATUS
+                    - $not_in:
+                        $value: EMPLOYMENTSTATUS
+                        $options:
+                          - $literal("Z@@Unknown")
+                $then: $literal_bool(True)
+              - $else_if:
+                  $equal:
+                    - CONTACTTYPE
+                    - $literal("EMP@@Agent-Visit-Employment")
+                $then: $literal_bool(True)
+              - $else: $literal_bool(False)
           supervision_contact_metadata:
             $normalized_values_json_dict:
               EMPLOYMENTSTATUS: EMPLOYMENTSTATUS
