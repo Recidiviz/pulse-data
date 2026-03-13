@@ -3,30 +3,35 @@
 # to corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  SID_Number: STRING
-  Period_ID_Number: STRING
-  supervision_officer: STRING
-  supervision_site: STRING
+  SID_NO: STRING
+  XREF_ID: STRING
+  Case_Type: STRING
+  CTH_CASE_CAT_REAS: STRING
+  SLH_SUP_LEVEL: STRING
+  SLH_SUP_LEVEL_REAS: STRING
   status: STRING
-  case_type: STRING
+  STH_STATUS_REAS: STRING
+  active_special_conditions: STRING
+  supervision_site: STRING
+  WTSK_USER_ID: STRING
+  RMF_RELEASE_TYPE: STRING
   start_date: DATE
   end_date: DATE
-  assessment_level: STRING
-  special_conditions: STRING
   rn: INTEGER
-unused_columns: []
+unused_columns:
+  - RMF_RELEASE_TYPE
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: SID_Number
+          external_id: SID_NO
           id_type: $literal("US_TX_SID")
     supervision_periods:
       - StateSupervisionPeriod:
           external_id:
             $concat:
               $values:
-                - Period_ID_Number
+                - XREF_ID
                 - rn
           start_date: start_date
           #Todo(#35059 Consider early release when hydrating termination date)
@@ -34,13 +39,16 @@ output:
           supervision_period_metadata:
             $normalized_values_json_dict:
               status: status
-              special_conditions: special_conditions
+              status_reason: STH_STATUS_REAS
+              special_conditions: active_special_conditions
+              case_type_reason: CTH_CASE_CAT_REAS
+              supervision_level_reason: SLH_SUP_LEVEL_REAS
           supervision_site: supervision_site
-          supervising_officer_staff_external_id: supervision_officer
+          supervising_officer_staff_external_id: WTSK_USER_ID
           supervising_officer_staff_external_id_type:
             $conditional:
               - $if:
-                  $not_null: supervision_officer
+                  $not_null: WTSK_USER_ID
                 $then: $literal("US_TX_STAFF_ID")
           supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
           supervision_level:
@@ -49,16 +57,16 @@ output:
                 $concat:
                   $separator: "@@"
                   $values:
-                    - case_type
+                    - Case_Type
                     - status
-                    - assessment_level
-                    - special_conditions
+                    - SLH_SUP_LEVEL
+                    - active_special_conditions
               $custom_parser: us_tx_custom_enum_parsers.parse_supervision_level
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
                 case_type:
                   $enum_mapping:
-                    $raw_text: case_type
+                    $raw_text: Case_Type
                     $mappings:
                       StateSupervisionCaseType.GENERAL:
                         - Regular

@@ -847,7 +847,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
     StateCode.US_TX: {
         "Charges": ["OFF_SENT_BEG_DATE", "OFF_SENT_DATE"],
         "Phases": ["OFFC_REGION", "PLM_TYPE_ID", "PLS_STATUS_DATE"],
-        "ProgramPhaseTransitions": ["PTMT_UPDATE_DATE"],
         "ProgramReferral": [
             "PREF_CREATION_DATE",
             "PREF_PROG_TYPE_ID",
