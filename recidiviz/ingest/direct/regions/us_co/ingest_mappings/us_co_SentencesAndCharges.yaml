@@ -110,7 +110,7 @@ output:
                         - FFGL # Guilty to Lesser Charge
                         - FFGM # Guilty Misdemeanor
                         - FFGY # Guilty
-                        - GU # Guilty (Conversion)
+                        - FGDC # Guilty Denver County Court
                         - PRVN # Proven
                         - FFNC # Nolo Contendere
                         - FDFS # Deferred Sentence
@@ -118,9 +118,14 @@ output:
                       StateChargeV2Status.INTERNAL_UNKNOWN:
                         - FFGI # NOT GUILTY INSANITY  # excluding from view since needs CONVICTED for pipeline
                         - NPRV # NOT PROVEN  # excluding from view since needs CONVICTED for pipeline
+                        - FDFA # Deferred Adjudication
+                        - FFDP # Deferred Prosecution
                       StateChargeV2Status.DROPPED:
                         - FFNG # Not Guilty
                         - DMDA # Dismissed by D.A.
+                        - DISS # Dfrd Completed
+                        - DMCT # Dismissed by Court
+                        - DMNF # Dismiss by DA - No File
                       StateChargeV2Status.EXTERNAL_UNKNOWN:
                         - UNKN # Unknown (Conversion)
                 offense_date: OFFENSEDATE
