@@ -15,6 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This module has reusable strings for various MI specific query fragments and constants referenced in multiple spots in our codebase."""
+from datetime import date
+
+# Date when Michigan migrated from OMNI to COMS for supervision data
+COMS_MIGRATION_DATE = date(2023, 8, 14)
 
 ACTIVE_SUPERVISION_STATUSES = """
       'Parole',

@@ -21,6 +21,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.ingest.direct.regions.us_mi.constants import COMS_MIGRATION_DATE
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -51,16 +52,17 @@ class UsMiSupervisionNormalizationDelegate(
 
         return periods_to_keep
 
-    # TODO(#30399) Revisit to see if we can do this in ingest directly
     def supervision_level_override(
         self,
         supervision_period_list_index: int,
         sorted_supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionLevel]:
         """
-        For any supervision period of time where supervision level is missing, the period doesn't end in discharge,
-        override the supervision level and set it to IN_CUSTODY.  We've validated with trusted testers that when
-        we see a supervision period with a missing supervision level, it is usually because the person is in custody.
+        For pre-COMS supervision periods (start date before 8/14/23) where supervision level is missing and the
+        period doesn't end in a successful termination, override the supervision level and set it to IN_CUSTODY.
+        We've validated with trusted testers that for pre-COMS data, a missing supervision level indicates the
+        person is in custody. Post-COMS, supervision levels are supposed to be consistently populated and this inference is
+        no longer needed.
         """
 
         sp = sorted_supervision_periods[supervision_period_list_index]
@@ -69,6 +71,7 @@ class UsMiSupervisionNormalizationDelegate(
             sp.supervision_level_raw_text is None
             and sp.supervision_level is None
             and sp.termination_reason not in SUCCESSFUL_TERMINATIONS
+            and sp.start_date < COMS_MIGRATION_DATE
         ):
             return StateSupervisionLevel.IN_CUSTODY
 
