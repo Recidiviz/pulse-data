@@ -28,7 +28,11 @@ gh issue view <NUMBER> --repo <ORG>/<REPO> --json title,body,labels,comments
 
 Use the Google Docs API with gcloud credentials to retrieve PII details. The
 parsing script is stored at
-`.claude/skills/investigate-pg-ticket/parse_github_pii_doc.py`:
+`.claude/skills/investigate-pg-ticket/parse_github_pii_doc.py`.
+
+The parser script detects API errors (e.g. expired auth tokens) and exits with
+a clear error message. If it reports an auth error, ask the user to run
+`gcloud auth login` and retry.
 
 ```bash
 ACCESS_TOKEN=$(gcloud auth print-access-token) && \

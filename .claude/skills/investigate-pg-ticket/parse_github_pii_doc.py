@@ -73,6 +73,17 @@ def main() -> None:
 
     issue_number = sys.argv[1]
     doc = json.load(sys.stdin)
+
+    if "error" in doc:
+        code = doc["error"].get("code", "unknown")
+        message = doc["error"].get("message", "unknown error")
+        print(
+            f"ERROR: Google Docs API returned {code}: {message}\n"
+            "Try running: gcloud auth login",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     lines = parse_doc(doc)
     output = find_issue_section(lines, issue_number)
 
