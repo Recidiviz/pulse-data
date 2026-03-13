@@ -174,6 +174,9 @@ from recidiviz.validation.views.state.parole_agent_badge_number_changes import (
 from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
     PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.product_roster_archive_missing_prioritized_role import (
+    PRODUCT_ROSTER_ARCHIVE_MISSING_PRIORITIZED_ROLE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.product_roster_blocked_30_days import (
     PRODUCT_ROSTER_BLOCKED_30_DAYS_VIEW_BUILDER,
 )
@@ -599,6 +602,11 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=PRODUCT_ROSTER_BLOCKED_30_DAYS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PRODUCT_ROSTER_ARCHIVE_MISSING_PRIORITIZED_ROLE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),

@@ -591,9 +591,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): "Referenced by a connected sheet shared with ND leadership "
     "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
     "(Justine Kunz, 2026-03-09)",
-    BigQueryAddress.from_str(
-        "sessions.roster_role_dedup_priority"
-    ): "TODO(#62264): Will be joined to the product roster archive in a subsequent PR. (Justine Kunz, 2026-03-09)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
