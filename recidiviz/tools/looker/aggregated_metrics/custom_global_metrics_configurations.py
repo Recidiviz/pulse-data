@@ -24,6 +24,8 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.common.constants.auth import RosterPredefinedRoles
+from recidiviz.common.str_field_utils import snake_to_title
 
 GLOBAL_ASSIGNMENT_NAMES_TO_TYPES = {
     "ALL_STATES": (
@@ -69,6 +71,13 @@ GLOBAL_ASSIGNMENT_NAMES_TO_TYPES = {
     "GLOBAL_PROVISIONED_USER": (
         MetricPopulationType.JUSTICE_INVOLVED,
         MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER,
+    ),
+}
+
+GLOBAL_JSON_FIELD_FILTERS_WITH_SUGGESTIONS = {
+    "system_type": ["Incarceration", "Supervision"],
+    "prioritized_role": sorted(
+        snake_to_title(role.value) for role in RosterPredefinedRoles
     ),
 }
 

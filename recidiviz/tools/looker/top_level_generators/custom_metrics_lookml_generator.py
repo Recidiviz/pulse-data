@@ -46,6 +46,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_cpa_metrics_configurations
 from recidiviz.tools.looker.aggregated_metrics.custom_global_metrics_configurations import (
     GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
     GLOBAL_IMPACT_LOOKER_METRICS,
+    GLOBAL_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_incarceration_system_health_metrics_configurations import (
     INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
@@ -212,7 +213,7 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=GLOBAL_IMPACT_LOOKER_METRICS,
             assignment_types_dict=GLOBAL_ASSIGNMENT_NAMES_TO_TYPES,
-            json_field_filters_with_suggestions={},
+            json_field_filters_with_suggestions=GLOBAL_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
         )
 
         # JII tablet app
