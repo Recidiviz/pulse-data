@@ -2874,6 +2874,18 @@ PAGE_VIEWS_JII_TABLET_APP_USER = EventCountMetric(
 )
 
 # Outcome metrics
+AVG_DAILY_POPULATION_TASK_CANDIDATE = DailyAvgSpanCountMetric(
+    name="avg_population_task_candidate",
+    display_name="Average Population: Task Candidate",
+    description="Average daily count of clients in the candidate population for selected task type",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_in_candidate_population": ["true"],
+        },
+    ),
+)
+
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",
     display_name="Average Population: Task Almost Eligible",
