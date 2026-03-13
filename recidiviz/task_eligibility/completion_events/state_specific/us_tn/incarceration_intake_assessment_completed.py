@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows when intake classification hearings have occurred"""
+"""Defines a view that shows when intake classification hearings have occurred under the 
+pre-2026 classification policy.
+"""
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (

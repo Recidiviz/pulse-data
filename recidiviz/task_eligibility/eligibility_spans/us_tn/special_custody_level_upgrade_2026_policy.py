@@ -23,7 +23,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population_state_prison_exclude_safekeeping,
 )
-from recidiviz.task_eligibility.completion_events.general import custody_level_upgrade
+from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
+    custody_level_upgrade_2026_policy,
+)
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_lower_than_recommended,
 )
@@ -60,7 +62,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         custody_level_not_lower_than_recommended_previous_policy_view_builder,
         has_not_been_classified_under_2026_policy.VIEW_BUILDER,
     ],
-    completion_event_builder=custody_level_upgrade.VIEW_BUILDER,
+    completion_event_builder=custody_level_upgrade_2026_policy.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

@@ -84,10 +84,13 @@ class TaskCompletionEventType(Enum):
     RELEASE_TO_LIMITED_SUPERVISION = "RELEASE_TO_LIMITED_SUPERVISION"
     SUPERVISION_LEVEL_DOWNGRADE = "SUPERVISION_LEVEL_DOWNGRADE"
     CUSTODY_LEVEL_DOWNGRADE = "CUSTODY_LEVEL_DOWNGRADE"
+    # TODO(#61946): Deprecate this completion event in favor of combining all CLDs
+    # into a single completion event in TN
+    CUSTODY_LEVEL_DOWNGRADE_2026_POLICY = "CUSTODY_LEVEL_DOWNGRADE_2026_POLICY"
     CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE = (
         "CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE"
     )
-    CUSTODY_LEVEL_UPGRADE = "CUSTODY_LEVEL_UPGRADE"
+    CUSTODY_LEVEL_UPGRADE_2026_POLICY = "CUSTODY_LEVEL_UPGRADE_2026_POLICY"
     SECURITY_CLASSIFICATION_COMMITTEE_REVIEW = (
         "SECURITY_CLASSIFICATION_COMMITTEE_REVIEW"
     )
@@ -133,16 +136,16 @@ class TaskCompletionEventType(Enum):
     # (potentially transfer to minimum facility & transfer to re-entry facility)
     TRANSFER_TO_MINIMUM_FACILITY = "TRANSFER_TO_MINIMUM_FACILITY"
     INCARCERATION_ASSESSMENT_COMPLETED = "INCARCERATION_ASSESSMENT_COMPLETED"
-    # TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
-    # transfers into a single completion event in TN.
+    # TODO(#61946): Deprecate this completion event in favor of combining all reclass CAFs
+    # into a single completion event in TN
     INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED = (
         "INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED"
     )
     INCARCERATION_INTAKE_ASSESSMENT_COMPLETED = (
         "INCARCERATION_INTAKE_ASSESSMENT_COMPLETED"
     )
-    # TODO(#61946): Deprecate this completion event in favor of combining all diagnostic intake
-    # transfers into a single completion event in TN.
+    # TODO(#61946): Deprecate this completion event in favor of combining all diagnostic CAFs
+    # into a single completion event in TN
     INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED = (
         "INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED"
     )
@@ -174,8 +177,9 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_2026_POLICY,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
-            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM_NOT_OVERDUE,
@@ -251,6 +255,7 @@ class TaskCompletionEventType(Enum):
             return DecarceralImpactType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_2026_POLICY,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_INTAKE_ASSESSMENT_2026_POLICY_COMPLETED,
@@ -259,7 +264,7 @@ class TaskCompletionEventType(Enum):
         ]:
             return DecarceralImpactType.DOWNGRADE_CUSTODY_LEVEL
         if self in [
-            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
         ]:
             return DecarceralImpactType.NO_DECARCERAL_IMPACT
@@ -342,8 +347,8 @@ class TaskCompletionEventType(Enum):
         action and does not count as a JII transition."""
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_2026_POLICY,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
-            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
             TaskCompletionEventType.EARLY_DISCHARGE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,
@@ -390,6 +395,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
         ]:
             return False
         raise ValueError(
@@ -421,8 +427,9 @@ class TaskCompletionEventType(Enum):
             return True
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_2026_POLICY,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
-            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE,
+            TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
             TaskCompletionEventType.EARLY_DISCHARGE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_OVERDUE,

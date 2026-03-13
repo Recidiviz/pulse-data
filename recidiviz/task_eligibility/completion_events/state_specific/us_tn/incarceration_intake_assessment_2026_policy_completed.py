@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a view that shows when intake classification hearings have occurred that 
-use the new 2026 pollen policy.
+use the new 2026 classification policy.
 """
 
 from recidiviz.common.constants.states import StateCode

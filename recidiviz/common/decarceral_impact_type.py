@@ -27,7 +27,7 @@ class DecarceralImpactType(Enum):
     DOWNGRADE_CUSTODY_LEVEL = "DOWNGRADE_CUSTODY_LEVEL"
     DOWNGRADE_SUPERVISION_LEVEL = "DOWNGRADE_SUPERVISION_LEVEL"
     FURLOUGH = "FURLOUGH"
-    # TODO(#50728): Update to reflect appropriate impact type for this completion event
+    # TODO(#62777): Update to reflect appropriate impact type for this completion event
     NO_DECARCERAL_IMPACT = "NO_DECARCERAL_IMPACT"
     RELEASE_TO_LIBERTY_FROM_SUPERVISION = "RELEASE_TO_LIBERTY_FROM_SUPERVISION"
     RELEASE_TO_PAROLE = "RELEASE_TO_PAROLE"

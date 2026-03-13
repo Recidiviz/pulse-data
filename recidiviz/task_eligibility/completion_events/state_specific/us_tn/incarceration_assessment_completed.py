@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows when classification hearings that were scheduled have occurred, regardless
-of whether they were on time. Excludes classification hearings done during Intake
+"""Defines a view that shows when classification hearings that were scheduled have occurred 
+in TN under the pre-2026 classification policy, regardless of whether they were on time. 
+Excludes classification hearings done during Intake.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
