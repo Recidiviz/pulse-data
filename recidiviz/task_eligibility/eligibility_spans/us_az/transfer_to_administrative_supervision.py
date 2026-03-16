@@ -19,14 +19,13 @@ for a transfer to administrative supervision"""
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    active_supervision_population,
+    active_supervision_population_not_limited_level,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
     oras_community_supervision_completed,
-    supervision_level_is_not_limited,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
@@ -40,10 +39,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     risk_release_assessment_is_completed,
     risk_release_assessment_level_is_minimum,
 )
-from recidiviz.task_eligibility.criteria_condition import (
-    NotEligibleCriteriaCondition,
-    PickNCompositeCriteriaCondition,
-)
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -90,7 +86,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="TRANSFER_TO_ADMINISTRATIVE_SUPERVISION",
     description=__doc__,
-    candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population_not_limited_level.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # 1.1 Risk and needs assessment shows a risk determination of moderate or lower,
         # unless the client qualifies for administrative supervision under section 8.1.9.
@@ -133,7 +129,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=[],
         ),
-        supervision_level_is_not_limited.VIEW_BUILDER,
         # 1.3 Has completed initial intake and needs assessment
         risk_release_assessment_is_completed.VIEW_BUILDER,
         # 1.5 Currently employed, retired, or in school, as assessed in ORAS Question 2.4
@@ -150,26 +145,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         oras_community_supervision_completed.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
-    almost_eligible_condition=PickNCompositeCriteriaCondition(
-        # We need to necessarily include all 3 criteria below to ensure that 1) someone does not have an ORAS but also
-        # note that when they do not have an ORAS, they are necessarily ineligible for all ORAS-criteria
-        # so, therefore, if all 3 must necessarily be False when ORAS_completed is False, we must necessarily
-        # include all 3 in our almost eligible condition lest we not correctly surface everyone who has no ORAS.
-        sub_conditions_list=[
-            NotEligibleCriteriaCondition(
-                criteria=oras_employed_disabled_retired_or_student.VIEW_BUILDER,
-                description="Missing ORAS-assessed employment criteria",
-            ),
-            NotEligibleCriteriaCondition(
-                criteria=oras_has_substance_use_issues.VIEW_BUILDER,
-                description="Missing ORAS-assessed substance use criteria",
-            ),
-            NotEligibleCriteriaCondition(
-                criteria=oras_community_supervision_completed.VIEW_BUILDER,
-                description="Does not have an active ORAS supervision assessment",
-            ),
-        ],
-        at_least_n_conditions_true=3,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        # AZ has not fully rolled out ORAS assessment yet. We put clients without an ORAS into a separate
+        # eligibility category/tab for the time being.
+        criteria=oras_community_supervision_completed.VIEW_BUILDER,
+        description="Does not have an active ORAS supervision assessment",
     ),
 )
 
