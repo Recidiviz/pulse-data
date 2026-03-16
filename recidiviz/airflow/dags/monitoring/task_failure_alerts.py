@@ -60,6 +60,7 @@ def report_failed_tasks() -> None:
     If the task has succeeded since the incident was opened, we send with the subject `Task success: `
     which resolves the open incident in PagerDuty.
     """
+    errors = []
     for dag_id in get_all_dag_ids(project_id=get_project_id()):
 
         logging.info("Building task history for DAG: %s", dag_id)
@@ -101,4 +102,14 @@ def report_failed_tasks() -> None:
                     incident.unique_incident_id,
                     service.name,
                 )
-                service.handle_incident(incident)
+                try:
+                    service.handle_incident(incident)
+                except Exception as e:
+                    errors.append(
+                        f"Failed to report incident {incident.unique_incident_id} to {service.name}, error: {str(e)}"
+                    )
+
+    if errors:
+        raise ValueError(
+            f"Encountered the following errors while reporting incidents: {', '.join(errors)}"
+        )

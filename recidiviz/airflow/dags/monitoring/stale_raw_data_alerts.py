@@ -51,6 +51,7 @@ def report_stale_raw_data_to_github(
     current_utc_datetime = datetime.now(tz=timezone.utc)
     project_id = get_project_id()
 
+    errors = []
     for state_code in get_direct_ingest_states_launched_in_env():
         if state_code.value not in update_datetimes_by_region:
             logging.warning(
@@ -113,4 +114,14 @@ def report_stale_raw_data_to_github(
                 ],
             )
 
-            service.handle_incident(incident)
+            try:
+                service.handle_incident(incident)
+            except Exception as e:
+                errors.append(
+                    f"Failed to report incident for file [{file_tag}] in state [{state_code.value}], error: {str(e)}"
+                )
+
+    if errors:
+        raise ValueError(
+            f"Encountered the following errors while reporting incidents: {', '.join(errors)}"
+        )
