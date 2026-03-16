@@ -24,6 +24,9 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.calculator.query.state.views.reference.compliance_task_configs import (
+    COMPLIANCE_TASK_CONFIGS,
+)
 
 TASKS_ASSIGNMENT_NAMES_TO_TYPES = {
     "ALL_SUPERVISION_STATES": (
@@ -53,6 +56,7 @@ TASKS_ASSIGNMENT_NAMES_TO_TYPES = {
 }
 
 TASKS_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[str, list[str]] = {
+    "task_name": [config.view_builder.view_id for config in COMPLIANCE_TASK_CONFIGS],
     "tasks_contact_type": [],
 }
 
@@ -76,4 +80,7 @@ TASKS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION_CONTACT_TASKS_ELIGIBLE_WITH_SCHEDULED_APPOINTMENT,
     metric_config.AVG_DAILY_POPULATION_CONTACT_REQUIRED,
     metric_config.AVG_DAILY_POPULATION_CONTACT_OVERDUE,
+    metric_config.DISTINCT_POPULATION_COMPLIANCE_TASK_REQUIRED,
+    metric_config.DISTINCT_POPULATION_COMPLIANCE_TASK_ELIGIBLE,
+    metric_config.DISTINCT_POPULATION_COMPLIANCE_TASK_OVERDUE,
 ]

@@ -816,6 +816,36 @@ AVG_DAILY_POPULATION_CONTACT_TASKS_ELIGIBLE_WITH_SCHEDULED_APPOINTMENT = DailyAv
     ),
 )
 
+DISTINCT_POPULATION_COMPLIANCE_TASK_ELIGIBLE = SpanDistinctUnitCountMetric(
+    name="compliance_task_distinct_people_eligible",
+    display_name="Distinct Population: Compliance Task Eligible",
+    description="Total distinct count of clients eligible for a compliance task",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLIANCE_TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={"is_eligible": ["true"]},
+    ),
+)
+
+DISTINCT_POPULATION_COMPLIANCE_TASK_REQUIRED = SpanDistinctUnitCountMetric(
+    name="compliance_task_distinct_people_required",
+    display_name="Distinct Population: Compliance Task Required",
+    description="Total distinct count of clients with a compliance task requirement (has a due date)",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLIANCE_TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={"is_required": ["true"]},
+    ),
+)
+
+DISTINCT_POPULATION_COMPLIANCE_TASK_OVERDUE = SpanDistinctUnitCountMetric(
+    name="compliance_task_distinct_people_overdue",
+    display_name="Distinct Population: Compliance Task Overdue",
+    description="Total distinct count of clients overdue for a compliance task",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLIANCE_TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={"is_overdue": ["true"]},
+    ),
+)
+
 AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="avg_lsir_score",
     display_name="Average LSI-R Score",
@@ -920,7 +950,7 @@ CONTACT_DUE_DATES = EventCountMetric(
         event_type=EventType.SUPERVISION_CONTACT_DUE,
         event_conditions_dict={},
     ),
-    event_segmentation_columns=["tasks_contact_type"],
+    event_segmentation_columns=["task_name"],
 )
 
 CONTACT_DUE_DATES_MET = EventCountMetric(
@@ -931,7 +961,7 @@ CONTACT_DUE_DATES_MET = EventCountMetric(
         event_type=EventType.SUPERVISION_CONTACT_DUE,
         event_conditions_dict={"contact_missed": ["false"]},
     ),
-    event_segmentation_columns=["tasks_contact_type"],
+    event_segmentation_columns=["task_name"],
 )
 
 CUSTODY_LEVEL_DOWNGRADES = EventCountMetric(
