@@ -19,7 +19,10 @@ significant other(s) is required for a client in the Initial Assessment Phase (I
 meet contact standards.
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mo import (
     supervision_tasks_eligible_iap_population,
@@ -41,6 +44,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_initial_positive_contact_with_significant_other_iap_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
+    cadence_type=CadenceType.NONRECURRING,
     due_date_field="contact_due_date",
     last_task_completed_date_field="last_contact_date",
 )

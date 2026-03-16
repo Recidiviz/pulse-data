@@ -427,6 +427,8 @@ def us_mo_close_enough_to_earliest_established_release_date_criterion_builder(
 
 # TODO(#57815): Validate logic, especially for "2+ per 1 period" contacts and "2+ per 2+
 # period" contacts.
+# TODO(#62741): Deprecate overdue_flag from reasons blobs in favor of
+# compliance TES is_overdue column.
 def us_mo_contact_compliance_builder(
     *,
     criteria_name: str,

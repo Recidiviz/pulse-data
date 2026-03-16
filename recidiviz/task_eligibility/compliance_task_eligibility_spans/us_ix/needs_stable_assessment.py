@@ -23,7 +23,10 @@ need a STABLE assessment. Specifically:
 - This only applies to sex offenders (handled by the candidate population).
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
     active_male_sex_offender_supervision_population_for_tasks,
@@ -73,6 +76,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_stable_reassessment_or_initial_assessment_triggers,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
+    cadence_type=CadenceType.RECURRING_ROLLING,
     due_date_field="assessment_due_date",
     due_date_criteria_builder=meets_stable_reassessment_or_initial_assessment_triggers,
     last_task_completed_date_field="last_assessment_date",

@@ -23,7 +23,10 @@ for two overlapping spans.
 Currently, this only applies to MAXIMUM (High in TX) GENERAL (Regular in TX) clients.
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     prioritized_supervision_population_with_officer,
@@ -45,6 +48,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         needs_type_agnostic_contact_standard_policy_secondary.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
+    cadence_type=CadenceType.RECURRING_FIXED,
     due_date_field="contact_due_date",
     last_task_completed_date_field="last_contact_date",
 )

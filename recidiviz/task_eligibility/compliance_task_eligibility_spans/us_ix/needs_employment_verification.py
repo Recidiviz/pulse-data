@@ -22,7 +22,10 @@ need an employment verification task completed. This happens in the following ca
 Note: The candidate population already filters to clients who are able to work.
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
     active_supervision_population_for_tasks_able_to_work,
@@ -71,6 +74,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         employment_verification_trigger_view_builder,
     ],
     compliance_type=ComplianceType.CONTACT,
+    cadence_type=CadenceType.RECURRING_FIXED,
     due_date_field="contact_due_date",
     due_date_criteria_builder=employment_verification_trigger_view_builder,
     last_task_completed_date_field="last_contact_date",

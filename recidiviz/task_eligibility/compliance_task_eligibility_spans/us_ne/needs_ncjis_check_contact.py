@@ -18,7 +18,10 @@
 are not compliant with scheduled NCJIS check contacts, for the active parole population.
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_active_supervision_including_null_supervision_level_population,
@@ -40,6 +43,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_ncjis_check_contact_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
+    cadence_type=CadenceType.RECURRING_FIXED,
     due_date_field="contact_due_date",
     last_task_completed_date_field="last_contact_date",
 )

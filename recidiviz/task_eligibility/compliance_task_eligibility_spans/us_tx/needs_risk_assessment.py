@@ -18,7 +18,10 @@
 need a risk assessment conducted
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_tx import (
     tras_eligible_population,
@@ -40,6 +43,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_risk_assessment_event_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
+    cadence_type=CadenceType.RECURRING_ROLLING,
     due_date_field="due_assessment_date",
     last_task_completed_date_field="last_assessment_date",
 )

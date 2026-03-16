@@ -18,7 +18,10 @@
 need a home visit (i.e. are not compliant with scheduled home visits)
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
     active_supervision_population_for_tasks,
@@ -64,6 +67,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_home_visit_or_address_changes_triggers,
     ],
     compliance_type=ComplianceType.CONTACT,
+    cadence_type=CadenceType.RECURRING_FIXED,
     due_date_criteria_builder=meets_home_visit_or_address_changes_triggers,
     due_date_field="contact_due_date",
     last_task_completed_date_field="last_contact_date",

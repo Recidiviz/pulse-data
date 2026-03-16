@@ -20,7 +20,10 @@ from datetime import date
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_column import Bool, Date, Integer, Json, String
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -47,10 +50,26 @@ COMPLIANCE_ELIGIBILITY_VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryView
         TEST_CRITERIA_BUILDER_5,
     ],
     compliance_type=ComplianceType.ASSESSMENT,
+    cadence_type=CadenceType.RECURRING_FIXED,
     due_date_field="test_reason_date",
     due_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
     last_task_completed_date_field="last_contacted_date",
     last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
+)
+
+ROLLING_COMPLIANCE_ELIGIBILITY_VIEW_BUILDER = (
+    ComplianceTaskEligibilitySpansBigQueryViewBuilder(
+        state_code=StateCode.US_XX,
+        task_name="my_rolling_task",
+        candidate_population_view_builder=TEST_POPULATION_BUILDER,
+        criteria_spans_view_builders=[
+            TEST_CRITERIA_BUILDER_5,
+        ],
+        compliance_type=ComplianceType.CONTACT,
+        cadence_type=CadenceType.RECURRING_ROLLING,
+        due_date_field="test_reason_date",
+        last_task_completed_date_field="last_contacted_date",
+    )
 )
 
 COMPLIANCE_ELIGIBILITY_VIEW_BUILDER_NO_DUE_DATE_CRITERIA = (
@@ -62,6 +81,7 @@ COMPLIANCE_ELIGIBILITY_VIEW_BUILDER_NO_DUE_DATE_CRITERIA = (
             TEST_CRITERIA_BUILDER_5,
         ],
         compliance_type=ComplianceType.ASSESSMENT,
+        cadence_type=CadenceType.RECURRING_FIXED,
         due_date_field="test_reason_date",
         last_task_completed_date_field="last_contacted_date",
     )
@@ -72,7 +92,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
     """Tests for the ComplianceTaskEligibilitySpansBigQueryViewBuilder."""
 
     def test_schema(self) -> None:
-        """Test that the compliance builder schema includes due_date and last_task_completed_date."""
+        """Test that the compliance builder schema includes due_date, last_task_completed_date, and is_overdue."""
         schema = COMPLIANCE_ELIGIBILITY_VIEW_BUILDER.schema
         self.assertIsNotNone(schema)
         assert schema is not None
@@ -89,6 +109,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 (String, "ineligible_criteria", "REPEATED"),
                 (Date, "due_date", "NULLABLE"),
                 (Date, "last_task_completed_date", "NULLABLE"),
+                (Bool, "is_overdue", "REQUIRED"),
             ],
         )
 
@@ -129,6 +150,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
+                cadence_type=CadenceType.RECURRING_FIXED,
                 due_date_field="test_reason_date",
                 due_date_criteria_builder=TEST_CRITERIA_BUILDER_1,
                 last_task_completed_date_field="last_contacted_date",
@@ -153,6 +175,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
+                cadence_type=CadenceType.RECURRING_FIXED,
                 due_date_field="test_reason_date",
                 due_date_criteria_builder=TEST_CRITERIA_BUILDER_3,
                 last_task_completed_date_field="last_contacted_date",
@@ -177,6 +200,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
+                cadence_type=CadenceType.RECURRING_FIXED,
                 due_date_field="test_reason_date",
                 due_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
                 last_task_completed_date_field="last_contacted_date",
@@ -200,6 +224,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
+                cadence_type=CadenceType.RECURRING_FIXED,
                 due_date_field="test_reason_date",
                 last_task_completed_date_field="last_contacted_date",
                 last_task_completed_date_criteria_builder=TEST_CRITERIA_BUILDER_5,
@@ -222,6 +247,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                     TEST_CRITERIA_BUILDER_5,
                 ],
                 compliance_type=ComplianceType.ASSESSMENT,
+                cadence_type=CadenceType.RECURRING_FIXED,
                 due_date_field="test_reason_date",
                 due_date_criteria_builder=TEST_CRITERIA_BUILDER_3,
                 last_task_completed_date_field="last_contacted_date",
@@ -315,6 +341,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "ineligible_criteria": [TEST_CRITERIA_BUILDER_5.criteria_name],
                 "due_date": date(2024, 2, 8),
                 "last_task_completed_date": date(2024, 1, 1),
+                "is_overdue": False,
             },
             {
                 "state_code": "US_XX",
@@ -343,6 +370,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "ineligible_criteria": [TEST_CRITERIA_BUILDER_5.criteria_name],
                 "due_date": date(2024, 4, 3),
                 "last_task_completed_date": date(2024, 4, 1),
+                "is_overdue": False,
             },
             {
                 "state_code": "US_XX",
@@ -371,6 +399,7 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
                 "ineligible_criteria": [],
                 "due_date": date(2024, 4, 10),
                 "last_task_completed_date": date(2024, 4, 1),
+                "is_overdue": False,
             },
         ]
 
@@ -382,5 +411,167 @@ class TestComplianceTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTest
         # Check that the output is the same when no due date criteria builder is specified
         self.run_query_test(
             query_str=COMPLIANCE_ELIGIBILITY_VIEW_BUILDER_NO_DUE_DATE_CRITERIA.build().view_query,
+            expected_result=expected_result,
+        )
+
+    def test_rolling_cadence_splits_span_at_due_date(self) -> None:
+        """
+        Verify that rolling cadence compliance TES splits an eligible span at
+        the due date, producing an overdue portion after the due date.
+        """
+        load_data_for_task_criteria_view(
+            emulator=self,
+            criteria_view_builder=TEST_CRITERIA_BUILDER_5,
+            criteria_data=[
+                # Ineligible span: due date is within span but is_eligible=False,
+                # so no split and is_overdue=False.
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 2, 1),
+                    "meets_criteria": False,
+                    "reason": {
+                        "test_reason_date": "2024-01-31",
+                        "last_contacted_date": "2024-01-01",
+                    },
+                    "reason_v2": {
+                        "test_reason_date": "2024-01-31",
+                        "last_contacted_date": "2024-01-01",
+                    },
+                },
+                # Eligible span where due date (2024-02-29) falls within the
+                # span [2024-02-01, 2024-04-01). Since the due date is inclusive,
+                # the overdue period starts the day after, so this splits into:
+                #   [2024-02-01, 2024-03-01) is_overdue=False
+                #   [2024-03-01, 2024-04-01) is_overdue=True
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 2, 1),
+                    "end_date": date(2024, 4, 1),
+                    "meets_criteria": True,
+                    "reason": {
+                        "test_reason_date": "2024-02-29",
+                        "last_contacted_date": "2024-01-15",
+                    },
+                    "reason_v2": {
+                        "test_reason_date": "2024-02-29",
+                        "last_contacted_date": "2024-01-15",
+                    },
+                },
+                # Eligible span where due_date + 1 day (2024-04-01) <= start_date
+                # (2024-04-01), so entire span is overdue.
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 4, 1),
+                    "end_date": date(2024, 5, 1),
+                    "meets_criteria": True,
+                    "reason": {
+                        "test_reason_date": "2024-03-31",
+                        "last_contacted_date": "2024-01-15",
+                    },
+                    "reason_v2": {
+                        "test_reason_date": "2024-03-31",
+                        "last_contacted_date": "2024-01-15",
+                    },
+                },
+            ],
+        )
+        load_data_for_candidate_population_view(
+            emulator=self,
+            population_date_spans=[(date(2024, 1, 1), date(2024, 5, 1))],
+        )
+
+        reasons_ineligible = [
+            {
+                "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                "reason": {
+                    "test_reason_date": "2024-01-31",
+                    "last_contacted_date": "2024-01-01",
+                },
+            }
+        ]
+        reasons_eligible_split = [
+            {
+                "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                "reason": {
+                    "test_reason_date": "2024-02-29",
+                    "last_contacted_date": "2024-01-15",
+                },
+            }
+        ]
+        reasons_entirely_overdue = [
+            {
+                "criteria_name": TEST_CRITERIA_BUILDER_5.criteria_name,
+                "reason": {
+                    "test_reason_date": "2024-03-31",
+                    "last_contacted_date": "2024-01-15",
+                },
+            }
+        ]
+
+        expected_result = [
+            # Ineligible span: no split, is_overdue=False
+            {
+                "state_code": "US_XX",
+                "person_id": 12345,
+                "start_date": date(2024, 1, 1),
+                "end_date": date(2024, 2, 1),
+                "is_eligible": False,
+                "reasons": reasons_ineligible,
+                "reasons_v2": reasons_ineligible,
+                "ineligible_criteria": [TEST_CRITERIA_BUILDER_5.criteria_name],
+                "due_date": date(2024, 1, 31),
+                "last_task_completed_date": date(2024, 1, 1),
+                "is_overdue": False,
+            },
+            # Pre-due-date portion: eligible, not yet overdue (includes the due date itself)
+            {
+                "state_code": "US_XX",
+                "person_id": 12345,
+                "start_date": date(2024, 2, 1),
+                "end_date": date(2024, 3, 1),
+                "is_eligible": True,
+                "reasons": reasons_eligible_split,
+                "reasons_v2": reasons_eligible_split,
+                "ineligible_criteria": [],
+                "due_date": date(2024, 2, 29),
+                "last_task_completed_date": date(2024, 1, 15),
+                "is_overdue": False,
+            },
+            # Entirely overdue span (due_date + 1 day <= start_date)
+            {
+                "state_code": "US_XX",
+                "person_id": 12345,
+                "start_date": date(2024, 4, 1),
+                "end_date": date(2024, 5, 1),
+                "is_eligible": True,
+                "reasons": reasons_entirely_overdue,
+                "reasons_v2": reasons_entirely_overdue,
+                "ineligible_criteria": [],
+                "due_date": date(2024, 3, 31),
+                "last_task_completed_date": date(2024, 1, 15),
+                "is_overdue": True,
+            },
+            # Post-due-date portion: eligible and overdue (from overdue_splits, starts day after due date)
+            {
+                "state_code": "US_XX",
+                "person_id": 12345,
+                "start_date": date(2024, 3, 1),
+                "end_date": date(2024, 4, 1),
+                "is_eligible": True,
+                "reasons": reasons_eligible_split,
+                "reasons_v2": reasons_eligible_split,
+                "ineligible_criteria": [],
+                "due_date": date(2024, 2, 29),
+                "last_task_completed_date": date(2024, 1, 15),
+                "is_overdue": True,
+            },
+        ]
+
+        self.run_query_test(
+            query_str=ROLLING_COMPLIANCE_ELIGIBILITY_VIEW_BUILDER.build().view_query,
             expected_result=expected_result,
         )

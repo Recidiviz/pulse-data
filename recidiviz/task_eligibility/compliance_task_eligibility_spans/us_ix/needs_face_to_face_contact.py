@@ -18,7 +18,10 @@
 need a face to face contact (i.e. are not compliant with scheduled face-to-face contacts)
 """
 
-from recidiviz.calculator.query.state.views.tasks.compliance_type import ComplianceType
+from recidiviz.calculator.query.state.views.tasks.compliance_type import (
+    CadenceType,
+    ComplianceType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_ix import (
     active_supervision_population_for_tasks,
@@ -40,6 +43,7 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         meets_face_to_face_contact_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,
+    cadence_type=CadenceType.RECURRING_FIXED,
     due_date_field="earliest_unmet_due_date",
     last_task_completed_date_field="last_contact_date",
 )

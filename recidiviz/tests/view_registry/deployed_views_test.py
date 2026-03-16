@@ -451,7 +451,12 @@ class ViewDagInvariantTests(unittest.TestCase):
             GLOBAL_USER_ACTIVE_USAGE_EVENT_VIEW_BUILDER.address,
             # Views to help calculate compliance metrics pull from the unioned view of all tasks for a given state.
             BigQueryAddress(
-                dataset_id="analyst_data", table_id="assessment_compliance_spans"
+                dataset_id="analyst_data",
+                table_id="compliance_type_cadence_type_eligibility_sessions",
+            ),
+            BigQueryAddress(
+                dataset_id="observations__person_span",
+                table_id="compliance_task_eligibility_session",
             ),
             BigQueryAddress(
                 dataset_id="observations__person_event",

@@ -41,6 +41,8 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.string_formatting import fix_indent
 
 
+# TODO(#62741): Deprecate overdue_flag from reasons blobs in favor of
+# compliance TES is_overdue column.
 def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
     description: str,
     base_criteria: StateSpecificTaskCriteriaBigQueryViewBuilder,
