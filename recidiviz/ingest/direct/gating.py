@@ -63,14 +63,13 @@ class AutomaticRawDataPruningExemptionReason(Enum):
 
 
 RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW: dict[StateCode, dict[str, set[str]]] = {
-    StateCode.US_TN: {
-        "CAFScoreAssessment": {
-            # TODO(#60479): Remove front_end_classification_scores from this dict once it
-            #  is populated in prod. Right now it's expected that it's empty because there
-            #  are no user-submitted scores yet.
-            "front_end_classification_scores"
-        },
-    },
+    # e.g. --
+    # StateCode.US_XX: {
+    #    "ingest_view_name" : {
+    #         "raw_data_table_1",
+    #         "raw_data_table_2"
+    #   },
+    # }
 }
 
 
