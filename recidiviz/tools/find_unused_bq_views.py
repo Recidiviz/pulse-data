@@ -585,6 +585,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): "Referenced by a connected sheet shared with ND leadership "
     "https://docs.google.com/spreadsheets/d/137W3KdZ76lFaUSJL2u2VgDoIiSdMMXnJUX1vhCwx8ig/edit?gid=125136518#gid=125136518 "
     "(Justine Kunz, 2026-03-09)",
+    BigQueryAddress.from_str(
+        "analyst_data.us_tn_annex_sessions_preprocessed"
+    ): "View not yet referenced, but will be helpful for 2026 classification pilot monitoring and we intend to reference it in the future (Ethan Oro, 2026-03-13)",
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
