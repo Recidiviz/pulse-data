@@ -142,6 +142,7 @@ output:
                   - MANDATORY PAROLE TO TTF # clarifying with NE
                   - RE-PAROLE
                   - RELEASED TO PRS
+                  - PAROLE
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - RETURN FROM FEDERAL CUSTODY
                   - RETURN FROM OUT OF STATE TRANSFER
