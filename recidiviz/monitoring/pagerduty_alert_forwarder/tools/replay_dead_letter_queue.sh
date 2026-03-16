@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # This script pulls all messages from the dead letter queue and retries them on the alert forwarder queue
 
 # To replay an individual message

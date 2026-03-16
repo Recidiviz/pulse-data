@@ -135,9 +135,6 @@ from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisi
 from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_compartment_level_1_sessions import (
     PRIORITIZED_SUPERVISION_COMPARTMENT_LEVEL_1_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_mi.us_mi_housing_unit_type_collapsed_scc_seg_solitary_sessions import (
-    US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SCC_SEG_SOLITARY_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
@@ -459,9 +456,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_MI_EXPECTED_NUMBER_OF_SECURITY_CLASSIFICATION_COMMITTEE_REVIEWS_GREATER_THAN_OBSERVED.address: (
         "Will be used for reporting on late reviews (Samantha Norcia 06/11/2025)"
-    ),
-    US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SCC_SEG_SOLITARY_SESSIONS_VIEW_BUILDER.address: (
-        "Will be used in new criteria for RH refactor (Maggie Taylor 2/18/2026)"
     ),
     SUPERVISION_STATE_METRICS_VIEW_BUILDER.address: (
         "Read directly in the insights 'prototype' application that powers the monthly emails to PA (Dana Hoffman 5/5/25)"

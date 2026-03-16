@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Selects all spans of time in which a person is in INCARCERATION solitary confinement housing type eligible for SCC
-review opportunity, which includes TEMPORARY, ADMINISTRATIVE, or DISCIPLINARY solitary confinement types.
+"""Selects all spans of time in which a person is in a temp seg solitary confinement span that is
+eligible for SCC review opportunity
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "US_MI_SCC_SOLITARY_INCARCERATION_POPULATION"
+_POPULATION_NAME = "US_MI_TEMP_SEG_SCC_SOLITARY_INCARCERATION_POPULATION"
 
 _QUERY_TEMPLATE = """
     SELECT
@@ -34,6 +34,7 @@ _QUERY_TEMPLATE = """
         end_date_exclusive AS end_date,
     FROM
         `{project_id}.sessions.us_mi_housing_unit_type_collapsed_scc_seg_solitary_sessions`
+    WHERE housing_unit_type_collapsed_scc_seg = 'temp_seg_scc'
 """
 
 VIEW_BUILDER: StateSpecificTaskCandidatePopulationBigQueryViewBuilder = (
