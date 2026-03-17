@@ -3,7 +3,7 @@
 # to corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  OPUS: STRING
+  CDDORNUM: STRING
   CDOFICER: STRING
   sentence_seq: INTEGER
   period_start_date: DATETIME
@@ -12,20 +12,20 @@ input_columns:
   SUPERVISION: STRING
   CDPPSLOC_translated: STRING
   within_sentence_seq: INTEGER
-  SEXOFNDR: STRING
+  SO_NOTE: STRING
 unused_columns: []
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: OPUS
+          external_id: CDDORNUM
           id_type: $literal("US_NC_OPUS")
     supervision_periods:
       - StateSupervisionPeriod:
           external_id:
             $concat:
               $values:
-                - OPUS
+                - CDDORNUM
                 - sentence_seq
                 - within_sentence_seq
           supervision_type:
@@ -43,7 +43,7 @@ output:
           case_type_entries:
             - $conditional:
                 - $if:
-                    $equal: [$literal("SEX OFFENDER"), SEXOFNDR]
+                    $equal: [$literal("SEX OFFENDER"), SO_NOTE]
                   $then:
                     StateSupervisionCaseTypeEntry:
                       case_type: $literal_enum(StateSupervisionCaseType.SEX_OFFENSE)

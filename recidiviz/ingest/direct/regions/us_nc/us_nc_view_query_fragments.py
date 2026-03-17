@@ -20,18 +20,18 @@
 
 def compute_stints() -> str:
     return """
-    -- We use OPUS and CDBGDTSP (start_date) as the primary key in the offenders file. If the start date
+    -- We use CDDORNUM and CDBGDTSP (start_date) as the primary key in the offenders file. If the start date
     -- changes, but the person was still continously on supervision, we have been told
     -- by NCDIT to interpret this as a correction in the start date. However, because
     -- CDBGDTSP is included in the primary key for `offenders`, this will appear as
-    -- if the original OPUS + Start Date row was deleted (is_deleted = True), and a new
-    -- record with OPUS + New Start Date will appear. This CTE ignores the deleted row
+    -- if the original CDDORNUM + Start Date row was deleted (is_deleted = True), and a new
+    -- record with CDDORNUM + New Start Date will appear. This CTE ignores the deleted row
     -- in this situation -- later, we'll make sure to use the most recent start time as
     -- the sentence start time.
     drop_unecessary_deletions AS (
         SELECT *
         FROM {offenders@ALL_WITH_DELETED}
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY opus, update_datetime ORDER BY is_deleted) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY CDDORNUM, update_datetime ORDER BY is_deleted) = 1
     ), 
     -- Identify a stint on supervision by continous presence in the offenders file and
     -- begin creating a "sentence" flag.
@@ -43,17 +43,17 @@ def compute_stints() -> str:
             CASE
                 WHEN 
                     NOT is_deleted AND 
-                    LAG(is_deleted) OVER (opus) AND
+                    LAG(is_deleted) OVER (CDDORNUM) AND
                     -- Sometimes people are deleted from offenders, then return a few
                     -- days later with the same date. I think this is mostly due to
                     -- changes DIT made around 12/12, but shouldn't happen as often
                     -- after that.
-                    CDBGDTSP != LAG(CDBGDTSP) OVER (opus)
+                    CDBGDTSP != LAG(CDBGDTSP) OVER (CDDORNUM)
                 THEN 1
                 ELSE 0
             END AS sentence_flag
         FROM drop_unecessary_deletions
-        WINDOW opus AS (PARTITION BY OPUS ORDER BY update_datetime)
+        WINDOW CDDORNUM AS (PARTITION BY CDDORNUM ORDER BY update_datetime)
     ),
     -- Create a sentence identifier by doing a cumulative sum of the sentence flags. We call
     -- this "sentence_seq" because it effectively flags different stints on supervision.
@@ -62,7 +62,7 @@ def compute_stints() -> str:
     with_groups AS (
         SELECT
             *,
-            SUM(sentence_flag) OVER (PARTITION BY OPUS ORDER BY update_datetime) AS sentence_seq
+            SUM(sentence_flag) OVER (PARTITION BY CDDORNUM ORDER BY update_datetime) AS sentence_seq
         FROM with_change_flag
     ),
   """

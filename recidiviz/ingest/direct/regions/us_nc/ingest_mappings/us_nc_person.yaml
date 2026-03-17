@@ -3,7 +3,7 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  OPUS: STRING
+  CDDORNUM: STRING
   first_name: STRING
   middle_name: STRING
   last_name: STRING
@@ -17,7 +17,7 @@ output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: OPUS
+          external_id: CDDORNUM
           id_type: $literal("US_NC_OPUS")
     full_name:
       $person_name:

@@ -3,7 +3,7 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  OPUS: STRING
+  CDDORNUM: STRING
   sentence_seq: INTEGER
   update_datetime: DATETIME
   sen_length_days: INTEGER
@@ -14,7 +14,7 @@ output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: OPUS
+          external_id: CDDORNUM
           id_type: $literal("US_NC_OPUS")
     task_deadlines:
       - StateTaskDeadline:
@@ -26,7 +26,7 @@ output:
               sentence_id:
                 $concat:
                   $values:
-                    - OPUS
+                    - CDDORNUM
                     - sentence_seq
               sen_length_days: sen_length_days
               sen_start_date: CDBGDTSP
