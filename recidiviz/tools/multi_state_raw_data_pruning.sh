@@ -8,12 +8,7 @@ source "${BASH_SOURCE_DIR}/script_base.sh"
 # Please keep this declaration on a single line
 declare -a states=("US_TN" "US_MI" "US_ND" "US_AR")
 
-if ! gcloud auth application-default print-access-token > /dev/null 2>&1; then
-    echo "No Google Application Default Credentials found or they are expired. Please run:" >&2
-    echo "" >&2
-    echo "  gcloud auth login --update-adc" >&2
-    exit 1
-fi
+python -c "from recidiviz.tools.utils.script_helpers import verify_google_adc_credentials; verify_google_adc_credentials()" || exit_on_fail
 
 for state in "${states[@]}"
 do
