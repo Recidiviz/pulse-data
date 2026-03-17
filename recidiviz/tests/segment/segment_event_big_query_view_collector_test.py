@@ -27,12 +27,15 @@ from recidiviz.segment.segment_event_utils import (
     SEGMENT_FRONTEND_TRACKING_DATASETS,
     get_segment_frontend_event_source_table_addresses,
 )
+from recidiviz.segment.view_config import get_view_builders_for_views_to_update
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_addresses,
 )
 from recidiviz.source_tables.untracked_source_table_exemptions import (
     get_allowed_tables_in_source_table_datasets_with_no_config,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
@@ -153,3 +156,24 @@ class SegmentEventBigQueryViewCollectorTest(unittest.TestCase):
                 f"Found segment event source tables without corresponding _view exemptions: "
                 f"{missing_view_exemptions}"
             )
+
+    def test_all_collected_builders_have_schemas(self) -> None:
+        """Test that all collected segment event builders have non-None schemas."""
+        collector = SegmentEventBigQueryViewCollector()
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            for builder in collector.collect_view_builders():
+                view = builder.build()
+                self.assertIsNotNone(
+                    view.schema,
+                    f"Builder for {builder.view_id} has no schema.",
+                )
+
+    def test_all_segment_view_builders_have_schemas(self) -> None:
+        """Test that ALL segment view builders (event, union, pages) have schemas."""
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            for builder in get_view_builders_for_views_to_update():
+                view = builder.build()
+                self.assertIsNotNone(
+                    view.schema,
+                    f"Builder for {builder.view_id} has no schema.",
+                )
