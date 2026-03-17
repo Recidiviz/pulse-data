@@ -420,9 +420,12 @@ class SupervisionContactsdDilldown(InsightsBase):
 
     __tablename__ = "supervision_contacts_drilldown_due_date_based"
 
+    full_name = Column(String)
+    display_person_external_id = Column(String)
     state_code = Column(String, primary_key=True)
     person_id = Column(BigInteger, primary_key=True)
     officer_id = Column(String, primary_key=True)
     contact_type = Column(String, primary_key=True)
     contact_due_date = Column(Date, primary_key=True)
+    contact_completed = Column(Boolean)
     contact_completed_date = Column(String)

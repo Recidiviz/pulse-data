@@ -1177,35 +1177,51 @@ def create_outliers_api_blueprint() -> Blueprint:
             )
         )
 
-    @api.get(
-        "/<state>/supervisor/<supervisor_pseudonymized_id>/vitals/contacts_drilldown"
-    )
-    def vitals_contacts_drilldown_for_supervisor(
-        state: str, supervisor_pseudonymized_id: str
+    @api.get("/<state>/officer/<pseudonymized_officer_id>/vitals/contacts_drilldown")
+    def vitals_contacts_drilldown_for_officer(
+        state: str, pseudonymized_officer_id: str
     ) -> Response:
         state_code = StateCode(state.upper())
         user_context: UserContext = g.user_context
         querier = OutliersQuerier(state_code, user_context.feature_variants)
 
-        user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
+        officer = querier.get_supervision_officer_from_pseudonymized_id(
+            pseudonymized_officer_id
+        )
+
+        if officer is None:
+            return jsonify_response(
+                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        is_user_requested_officer = (
+            user_context.pseudonymized_id is not None
+            and user_context.pseudonymized_id == pseudonymized_officer_id
+        )
+
+        is_user_supervising_officer = (
+            user_context.user_external_id in officer.supervisor_external_ids
+        )
+
         if (
-            supervisor_pseudonymized_id != user_pseudonymized_id
-            and user_external_id != "RECIDIVIZ"
+            not is_user_requested_officer
+            and not is_user_supervising_officer
             and not user_context.can_access_all_supervisors
         ):
             # Return an unauthorized error if the requesting user is requesting information about someone else
             # and the requesting user is not a Recidiviz user
             return jsonify_response(
-                f"Non-recidiviz user with pseudonymized_id {user_pseudonymized_id} is requesting vitals for a user they do not have access to: {supervisor_pseudonymized_id}",
+                f" User with pseudonymized_id {user_pseudonymized_id} is requesting vitals for officers they do not have access to: {pseudonymized_officer_id}",
                 HTTPStatus.UNAUTHORIZED,
             )
 
         contacts_drilldown: List[
             SupervisionContactsDrilldownEntity
         ] = querier.get_supervision_contacts_drilldown_from_officer_pseudonymized_id(
-            supervisor_pseudonymized_id,
+            pseudonymized_officer_id,
         )
         return jsonify(
             [

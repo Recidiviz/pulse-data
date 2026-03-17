@@ -567,12 +567,15 @@ class SupervisionContactsDrilldownEntity:
     Represents a contact for an officer, it's due date, and completion date
     """
 
+    full_name: str
+    display_person_external_id: str
     state_code: str
     person_id: int
     officer_id: str
     contact_type: str
     contact_due_date: date
-    contact_completed_date: str
+    contact_completed: bool
+    contact_completed_date: Optional[str]
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)

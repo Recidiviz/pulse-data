@@ -1101,43 +1101,65 @@ class OutliersQuerier:
 
     def get_supervision_contacts_drilldown_from_officer_pseudonymized_id(
         self,
-        supervision_officer_pseudonymized_id: str,
+        pseudonymized_officer_id: str,
     ) -> List[SupervisionContactsDrilldownEntity]:
         with self.insights_database_session() as session:
             return (
                 self._get_supervision_contacts_drilldown_from_officer_pseudonymized_id(
-                    session, supervision_officer_pseudonymized_id
+                    session, pseudonymized_officer_id
                 )
             )
 
     def _get_supervision_contacts_drilldown_from_officer_pseudonymized_id(
         self,
         session: Session,
-        supervision_officer_pseudonymized_id: str,
+        pseudonymized_officer_id: str,
     ) -> List[SupervisionContactsDrilldownEntity]:
         """
         Retrieve vitals contacts for officers by officer ID.
 
-        :param supervision_officer_pseudonymized_ids: List[str] pseudonymized ids for the officers contacts will be retrieved for.
+        :param pseudonymized_officer_id: str pseudonymized id for the officers contacts will be retrieved for
         :return: List of supervision contact entities
         """
 
-        supervision_contacts_drilldown_from_officer_pseudonymized_ids = (
+        officer = (
+            session.query(SupervisionOfficer)
+            .filter(SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id)
+            .first()
+        )
+        if not officer:
+            return []
+
+        rows = (
             session.query(
-                SupervisionClients.client_name,
-                SupervisionClients.client_id,
+                SupervisionContactsdDilldown.full_name,
+                SupervisionContactsdDilldown.display_person_external_id,
+                SupervisionContactsdDilldown.state_code,
+                SupervisionContactsdDilldown.person_id,
+                SupervisionContactsdDilldown.officer_id,
                 SupervisionContactsdDilldown.contact_type,
                 SupervisionContactsdDilldown.contact_due_date,
+                SupervisionContactsdDilldown.contact_completed,
                 SupervisionContactsdDilldown.contact_completed_date,
             )
-            .join(SupervisionClients, person_id=SupervisionClients.client_id)
-            .filter(
-                SupervisionContactsdDilldown.officer_id
-                == supervision_officer_pseudonymized_id
-            )
+            .filter(SupervisionContactsdDilldown.officer_id == officer.external_id)
+            .all()
         )
 
-        return supervision_contacts_drilldown_from_officer_pseudonymized_ids
+        return [
+            SupervisionContactsDrilldownEntity(
+                full_name=row.full_name,
+                display_person_external_id=row.display_person_external_id,
+                state_code=row.state_code,
+                person_id=row.person_id,
+                officer_id=row.officer_id,
+                contact_type=row.contact_type,
+                contact_due_date=row.contact_due_date,
+                contact_completed=row.contact_completed,
+                contact_completed_date=row.contact_completed_date,
+            )
+            for row in rows
+        ]
 
     def _get_vitals_metrics_from_officer_pseudonymized_ids(
         self,

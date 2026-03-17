@@ -5737,13 +5737,19 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 self.snapshot.assert_match(response.json, name=test_message)  # type: ignore[attr-defined]
 
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_contacts_drilldown_from_officer_pseudonymized_id",
     )
     def test_get_contacts_drilldown_for_supervisor(
-        self, mock_get_contacts_drilldown: MagicMock, mock_enabled_states: MagicMock
+        self,
+        mock_get_contacts_drilldown: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer: MagicMock,
     ) -> None:
         # Mock the officer retrieval
         pseudo_id = "officerhash1"
@@ -5760,37 +5766,57 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_contacts_drilldown = [
             SupervisionContactsDrilldownEntity(
+                full_name="Michael DelGato",
+                display_person_external_id="11",
                 state_code="US_XX",
                 person_id=11,
                 officer_id="1",
                 contact_type="needs_scheduled_home_contact",
                 contact_due_date=date(2026, 2, 28),
+                contact_completed=True,
                 contact_completed_date="2026-03-11",
             ),
             SupervisionContactsDrilldownEntity(
+                full_name="Shalya Quin",
+                display_person_external_id="2",
                 state_code="US_XX",
                 person_id=2,
                 officer_id="1",
                 contact_type="needs_type_agnostic_contact",
                 contact_due_date=date(2026, 1, 12),
+                contact_completed=False,
                 contact_completed_date="None",
             ),
         ]
 
         mock_get_contacts_drilldown.return_value = mock_contacts_drilldown
 
+        mock_get_officer.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            supervisor_external_ids=["102"],
+            district="Hogwarts",
+            include_in_outcomes=True,
+            email="officer123@recidiviz.org",
+        )
+
         response = self.test_client.get(
-            f"outliers/us_xx/supervisor/{pseudo_id}/vitals/contacts_drilldown",
+            f"outliers/us_xx/officer/{pseudo_id}/vitals/contacts_drilldown",
             headers={"Origin": "http://localhost:3000"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.snapshot.assert_match(response.json, name="vitals_contacts_drilldown_for_supervisor")  # type: ignore[attr-defined]
 
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     def test_get_contacts_drilldown_for_supervisor_unauthorized(
-        self, mock_enabled_states: MagicMock
+        self, mock_enabled_states: MagicMock, mock_get_officer: MagicMock
     ) -> None:
         # Mock the officer retrieval
         pseudo_id = "officerhash1"
@@ -5805,8 +5831,19 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_enabled_states.return_value = ["US_XX"]
 
+        mock_get_officer.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            supervisor_external_ids=["102"],
+            district="Hogwarts",
+            include_in_outcomes=True,
+            email="officer123@recidiviz.org",
+        )
+
         response = self.test_client.get(
-            "outliers/us_xx/supervisor/unauthorized_pseudo_id/vitals/contacts_drilldown",
+            "outliers/us_xx/officer/unauthorized_pseudo_id/vitals/contacts_drilldown",
             headers={"Origin": "http://localhost:3000"},
         )
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
