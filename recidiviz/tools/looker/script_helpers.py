@@ -84,15 +84,20 @@ def get_generated_views_path(output_dir: str, module_name: str) -> str:
     return os.path.join(output_dir, VIEWS_DIR, module_name)
 
 
-def get_git_manager_for_temp_looker_repo(github_token: str) -> GitManager:
+def get_git_manager_for_temp_looker_repo(github_token: str | None = None) -> GitManager:
     """Factory method to create a GitManager instance for a temporary Looker repository."""
     repo_root = Path("__TEMP_LOOKER_REPO_DIR__").resolve()
     if repo_root.exists():
         # delete existing temp repo directory to ensure a clean clone
         shutil.rmtree(repo_root)
 
-    return GitManager.clone_repo_and_create_manager(
+    if github_token:
+        return GitManager.clone_repo(
+            repo_root=repo_root,
+            repo_name=LOOKER_REPO_NAME,
+            github_token=github_token,
+        )
+    return GitManager.clone_repo_with_user_credentials(
         repo_root=repo_root,
         repo_name=LOOKER_REPO_NAME,
-        github_token=github_token,
     )

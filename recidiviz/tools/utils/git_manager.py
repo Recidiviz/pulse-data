@@ -45,7 +45,26 @@ class GitManager:
             )
 
     @classmethod
-    def clone_repo_and_create_manager(
+    def _clone_repo_and_create_manager(
+        cls, repo_url: str, repo_root: Path
+    ) -> "GitManager":
+        """Clone the given repository and return a GitManager for it.
+
+        Args:
+            repo_url: URL of the repository to clone
+            repo_root: Local path to clone the repository into
+        """
+        if os.path.exists(repo_root):
+            raise ValueError(
+                f"Cannot clone repository into {repo_root} - path already exists."
+            )
+
+        run_command(f"git clone {repo_url} {repo_root}")
+
+        return cls(repo_root=repo_root)
+
+    @classmethod
+    def clone_repo(
         cls, github_token: str, repo_name: str, repo_root: Path
     ) -> "GitManager":
         """Clone the given repository and return a GitManager for it.
@@ -58,15 +77,30 @@ class GitManager:
         Returns:
             GitManager: An instance of GitManager for the cloned repository.
         """
-        if os.path.exists(repo_root):
-            raise ValueError(
-                f"Cannot clone repository into {repo_root} - path already exists."
-            )
         repo_url = f"https://{github_token}@github.com/{repo_name}.git"
 
-        run_command(f"git clone {repo_url} {repo_root}")
+        return cls._clone_repo_and_create_manager(
+            repo_url=repo_url, repo_root=repo_root
+        )
 
-        return GitManager(repo_root=repo_root)
+    @classmethod
+    def clone_repo_with_user_credentials(
+        cls, repo_name: str, repo_root: Path
+    ) -> "GitManager":
+        """Clone the given repository using the user's configured Git credentials.
+
+        Args:
+            repo_name: Name of the repository (e.g., "Recidiviz/looker")
+            repo_root: Local path to clone the repository into
+
+        Returns:
+            GitManager: An instance of GitManager for the cloned repository.
+        """
+        repo_url = f"https://github.com/{repo_name}.git"
+
+        return cls._clone_repo_and_create_manager(
+            repo_url=repo_url, repo_root=repo_root
+        )
 
     def _delete_remote_branch(self, branch_name: str) -> None:
         """Delete the remote branch with the name |branch_name|."""

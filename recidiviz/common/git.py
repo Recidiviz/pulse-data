@@ -44,3 +44,14 @@ def is_commit_in_current_branch(commit_hash: str) -> bool:
         timeout_sec=30,
     )
     return bool(result)
+
+
+def _get_git_username() -> str:
+    """Get the Git username from the user's Git configuration."""
+    return run_command("git config user.name").strip()
+
+
+def get_normalized_git_username() -> str:
+    """Replaces non-alphanumeric characters with hyphens in git username
+    and converts to lowercase."""
+    return re.sub(r"[^a-z0-9-]", "-", _get_git_username().lower())
