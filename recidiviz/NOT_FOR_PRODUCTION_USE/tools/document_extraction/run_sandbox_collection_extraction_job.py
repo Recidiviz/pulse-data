@@ -156,6 +156,7 @@ def main(
     sandbox_llm_job_artifact_bucket: str | None = None,
     active_in_compartment: str | None = None,
     lookback_days: int | None = None,
+    person_ids: list[int] | None = None,
 ) -> None:
     """Runs extraction jobs for all extractors in a collection."""
     # Discover extractors for this collection
@@ -210,6 +211,7 @@ def main(
                 sample_entity_count=sample_entity_count_per_state,
                 active_in_compartment=active_in_compartment,
                 lookback_days=lookback_days,
+                person_ids=person_ids,
             )
 
     # Step 2: Run extraction for each extractor (without view deployment)
@@ -225,6 +227,7 @@ def main(
             sandbox_llm_job_artifact_bucket=sandbox_llm_job_artifact_bucket,
             active_in_compartment=active_in_compartment,
             lookback_days=lookback_days,
+            person_ids=person_ids,
             deploy_views=False,
         )
 
@@ -305,6 +308,17 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
         default=None,
         help="Only include documents within the last N days.",
     )
+    parser.add_argument(
+        "--person_ids",
+        dest="person_ids",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated list of person IDs to restrict documents to "
+            "(e.g., 12345,67890). Cannot be used with --active_in_compartment, "
+            "--sample_size, or --sample_entity_count_per_state."
+        ),
+    )
 
     # Subparsers for modes
     subparsers = parser.add_subparsers(
@@ -347,6 +361,20 @@ if __name__ == "__main__":
             StateCode(s.strip()) for s in known_args.state_codes.split(",")
         ]
 
+    person_id_list: list[int] | None = None
+    if known_args.person_ids:
+        if (
+            known_args.active_in_compartment
+            or known_args.sample_entity_count_per_state
+            or known_args.sample_size
+        ):
+            print(
+                "Error: --person_ids cannot be used with --active_in_compartment, "
+                "--sample_entity_count_per_state, or --sample_size"
+            )
+            sys.exit(1)
+        person_id_list = [int(pid.strip()) for pid in known_args.person_ids.split(",")]
+
     with local_project_id_override(known_args.project_id):
         main(
             collection_name=known_args.collection_name,
@@ -361,4 +389,5 @@ if __name__ == "__main__":
             ),
             active_in_compartment=known_args.active_in_compartment,
             lookback_days=known_args.lookback_days,
+            person_ids=person_id_list,
         )

@@ -101,6 +101,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config
     DOCUMENT_ID_COLUMN_NAME,
     DOCUMENT_STORE_METADATA_DATASET_ID,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+    DocumentRootEntityIdType,
     get_document_collection_config,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.source_tables.document_extraction_raw_source_table_collector import (
@@ -282,6 +283,7 @@ def _build_input_document_query(
     sample_entity_count: int | None,
     active_in_compartment: str | None = None,
     lookback_days: int | None = None,
+    person_ids: list[int] | None = None,
 ) -> str:
     """Builds the query to get document IDs to process.
 
@@ -289,7 +291,8 @@ def _build_input_document_query(
     for deterministic randomization, then returns all documents for those entities.
     If max_documents_to_process is also set, it limits the final document count.
     If active_in_compartment is set, restricts to entities with an active session
-    in the given compartment.
+    in the given compartment. Cannot be used together with person_ids.
+    If person_ids is set, restricts to documents belonging to those person IDs.
     If lookback_days is set, only includes documents whose document_update_datetime
     is within the last N days.
     """
@@ -299,106 +302,116 @@ def _build_input_document_query(
     doc_metadata_address = doc_collection_config.metadata_table_address(
         dataset_override=doc_store_metadata_dataset
     )
+    metadata_table = (
+        f"`{{project_id}}.{doc_metadata_address.dataset_id}"
+        f".{doc_metadata_address.table_id}`"
+    )
+    root_entity_type = doc_collection_config.root_entity_type
 
+    # Build shared filter fragments
     limit_clause = (
         f"LIMIT {max_documents_to_process}" if max_documents_to_process else ""
     )
+    lookback_filter = (
+        f"AND m.{DOCUMENT_UPDATE_DATETIME_COLUMN_NAME}"
+        f" >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {lookback_days} DAY)"
+        if lookback_days is not None
+        else ""
+    )
 
-    # Build active compartment CTE if requested
-    active_entities_cte = ""
-    if active_in_compartment:
-        active_entities_cte = (
-            build_active_entities_cte_sql(
-                root_entity_type=doc_collection_config.root_entity_type,
-                project_id=project_id(),
-                state_code=extractor.state_code,
-                active_in_compartment=active_in_compartment,
-            )
-            + ","
-        )
+    # Build CTEs and filters based on the mutually exclusive sampling mode
+    ctes: list[str] = []
+    entity_join = ""
+    entity_filter = ""
 
-    # Build entity-based sampling if requested
     if sample_entity_count:
-        # Get entity columns based on root entity type
-        entity_columns = [
-            schema.name
-            for schema in doc_collection_config.root_entity_type.column_schemas()
-        ]
+        entity_columns = [schema.name for schema in root_entity_type.column_schemas()]
         entity_columns_str = ", ".join(entity_columns)
-
-        # Build a composite key for deterministic sampling
         entity_key_expr = (
             "CONCAT("
             + ", '|', ".join(f"CAST({col} AS STRING)" for col in entity_columns)
             + ")"
         )
 
-        # When active_in_compartment is set, filter sampled entities
+        # Optionally restrict entity sampling to active compartment
         active_filter_in_sample = ""
         if active_in_compartment:
+            ctes.append(
+                build_active_entities_cte_sql(
+                    root_entity_type=root_entity_type,
+                    project_id=project_id(),
+                    state_code=extractor.state_code,
+                    active_in_compartment=active_in_compartment,
+                )
+            )
             active_filter_in_sample = "WHERE " + build_active_entities_exists_filter(
-                root_entity_type=doc_collection_config.root_entity_type,
+                root_entity_type=root_entity_type,
                 table_alias="src",
             )
 
-        lookback_where = (
-            f"WHERE m.{DOCUMENT_UPDATE_DATETIME_COLUMN_NAME}"
-            f" >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {lookback_days} DAY)"
-            if lookback_days is not None
-            else ""
+        ctes.append(
+            f"""sampled_entities AS (
+            SELECT DISTINCT {entity_columns_str}
+            FROM {metadata_table} src
+            {active_filter_in_sample}
+            ORDER BY FARM_FINGERPRINT({entity_key_expr})
+            LIMIT {sample_entity_count}
+        )"""
         )
-        query_template = f"""
-            WITH {active_entities_cte}
-            sampled_entities AS (
-                SELECT DISTINCT {entity_columns_str}
-                FROM `{{project_id}}.{doc_metadata_address.dataset_id}.{doc_metadata_address.table_id}` src
-                {active_filter_in_sample}
-                ORDER BY FARM_FINGERPRINT({entity_key_expr})
-                LIMIT {sample_entity_count}
-            )
-            SELECT DISTINCT m.{DOCUMENT_ID_COLUMN_NAME}
-            FROM `{{project_id}}.{doc_metadata_address.dataset_id}.{doc_metadata_address.table_id}` m
-            INNER JOIN sampled_entities s
-                ON {" AND ".join(f"m.{col} = s.{col}" for col in entity_columns)}
-            {lookback_where}
-            {limit_clause}
-        """
+        entity_join = "INNER JOIN sampled_entities s ON " + " AND ".join(
+            f"m.{col} = s.{col}" for col in entity_columns
+        )
+
     elif active_in_compartment:
-        # No entity sampling, but still filter by active compartment
-        active_filter = build_active_entities_exists_filter(
-            root_entity_type=doc_collection_config.root_entity_type,
+        ctes.append(
+            build_active_entities_cte_sql(
+                root_entity_type=root_entity_type,
+                project_id=project_id(),
+                state_code=extractor.state_code,
+                active_in_compartment=active_in_compartment,
+            )
+        )
+        entity_filter = "AND " + build_active_entities_exists_filter(
+            root_entity_type=root_entity_type,
             table_alias="m",
         )
-        lookback_and = (
-            f"AND m.{DOCUMENT_UPDATE_DATETIME_COLUMN_NAME}"
-            f" >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {lookback_days} DAY)"
-            if lookback_days is not None
-            else ""
-        )
-        query_template = f"""
-            WITH {active_entities_cte}
-            src AS (
-                SELECT DISTINCT {DOCUMENT_ID_COLUMN_NAME}
-                FROM `{{project_id}}.{doc_metadata_address.dataset_id}.{doc_metadata_address.table_id}` m
-                WHERE {active_filter}
-                {lookback_and}
+
+    elif person_ids:
+        ids_str = ", ".join(str(pid) for pid in person_ids)
+        if root_entity_type == DocumentRootEntityIdType.PERSON_ID:
+            entity_filter = f"AND m.person_id IN ({ids_str})"
+        elif root_entity_type == DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
+            ctes.append(
+                f"""person_id_entities AS (
+            SELECT ext_id.external_id AS person_external_id,
+                            ext_id.id_type AS person_external_id_type
+            FROM `{{project_id}}.normalized_state.state_person_external_id` ext_id
+            WHERE ext_id.person_id IN ({ids_str})
+              AND ext_id.state_code = '{extractor.state_code.value}'
+        )"""
             )
-            SELECT {DOCUMENT_ID_COLUMN_NAME} FROM src
-            {limit_clause}
-        """
-    else:
-        lookback_where = (
-            f"WHERE {DOCUMENT_UPDATE_DATETIME_COLUMN_NAME}"
-            f" >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {lookback_days} DAY)"
-            if lookback_days is not None
-            else ""
-        )
-        query_template = f"""
-            SELECT DISTINCT {DOCUMENT_ID_COLUMN_NAME}
-            FROM `{{project_id}}.{doc_metadata_address.dataset_id}.{doc_metadata_address.table_id}`
-            {lookback_where}
-            {limit_clause}
-        """
+            entity_join = (
+                "INNER JOIN person_id_entities p "
+                "ON m.person_external_id = p.person_external_id "
+                "AND m.person_external_id_type = p.person_external_id_type"
+            )
+        else:
+            raise ValueError(
+                f"person_ids filtering is not supported for "
+                f"root entity type {root_entity_type.value}."
+            )
+
+    with_clause = f"WITH {', '.join(ctes)}" if ctes else ""
+    query_template = f"""
+        {with_clause}
+        SELECT DISTINCT m.{DOCUMENT_ID_COLUMN_NAME}
+        FROM {metadata_table} m
+        {entity_join}
+        WHERE TRUE
+        {entity_filter}
+        {lookback_filter}
+        {limit_clause}
+    """
 
     query_builder = BigQueryQueryBuilder(
         parent_address_overrides=None,
@@ -422,6 +435,7 @@ def main(
     sandbox_llm_job_artifact_bucket: str | None = None,
     active_in_compartment: str | None = None,
     lookback_days: int | None = None,
+    person_ids: list[int] | None = None,
     deploy_views: bool = True,
 ) -> None:
     """Runs a document extraction job using sandbox datasets."""
@@ -498,6 +512,7 @@ def main(
         sample_entity_count=sample_entity_count,
         active_in_compartment=active_in_compartment,
         lookback_days=lookback_days,
+        person_ids=person_ids,
     )
     document_provider = GCSDocumentProvider(
         document_id_bq_query=document_query,
@@ -627,6 +642,17 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
             "is within the last N days."
         ),
     )
+    parser.add_argument(
+        "--person_ids",
+        dest="person_ids",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated list of person IDs to restrict documents to "
+            "(e.g., 12345,67890). Cannot be used with --active_in_compartment "
+            "or --sample_entity_count."
+        ),
+    )
 
     # Subparsers for modes
     subparsers = parser.add_subparsers(
@@ -690,6 +716,20 @@ if __name__ == "__main__":
         print("Error: mode is required (fake, concurrent, or batch)")
         sys.exit(1)
 
+    person_id_list: list[int] | None = None
+    if known_args.person_ids:
+        if (
+            known_args.active_in_compartment
+            or known_args.sample_entity_count
+            or known_args.sample_size
+        ):
+            print(
+                "Error: --person_ids cannot be used with --active_in_compartment, "
+                "--sample_entity_count, or --sample_size"
+            )
+            sys.exit(1)
+        person_id_list = [int(pid.strip()) for pid in known_args.person_ids.split(",")]
+
     with local_project_id_override(known_args.project_id):
         main(
             extractor_id=known_args.extractor_id,
@@ -703,4 +743,5 @@ if __name__ == "__main__":
             ),
             active_in_compartment=known_args.active_in_compartment,
             lookback_days=known_args.lookback_days,
+            person_ids=person_id_list,
         )

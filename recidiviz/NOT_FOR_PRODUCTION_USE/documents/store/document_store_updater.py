@@ -63,6 +63,7 @@ class DocumentStoreUpdater:
         active_in_compartment: str | None = None,
         batch_size: int = 100,
         lookback_days: int | None = None,
+        person_ids: list[int] | None = None,
     ) -> DocumentUploadResult:
         """Updates a document collection by uploading new documents and recording metadata.
 
@@ -70,12 +71,17 @@ class DocumentStoreUpdater:
             collection_config: Configuration for the document collection.
             sample_size: If provided, limits the number of new documents to process.
             sample_entity_count: If provided, samples N distinct entities (e.g., people)
-                and returns ALL documents for those entities. Cannot be used with sample_size.
+                and returns ALL documents for those entities. Cannot be used with sample_size
+                or person_ids.
             active_in_compartment: If provided, restricts entity sampling to people
                 with an active session in the given compartment (e.g., SUPERVISION).
+                Cannot be used together with person_ids.
             batch_size: Number of documents to upload per batch.
             lookback_days: If provided, only includes documents whose
                 document_update_datetime is within the last N days.
+            person_ids: If provided, restricts documents to those belonging to the
+                given person IDs. Cannot be used together with active_in_compartment
+                or sample_entity_count.
 
         Returns:
             DocumentUploadResult containing successful and failed uploads.
@@ -97,6 +103,7 @@ class DocumentStoreUpdater:
             sample_entity_count=sample_entity_count,
             active_in_compartment=active_in_compartment,
             lookback_days=lookback_days,
+            person_ids=person_ids,
         )
         logging.info(
             "New documents table: %s.%s",

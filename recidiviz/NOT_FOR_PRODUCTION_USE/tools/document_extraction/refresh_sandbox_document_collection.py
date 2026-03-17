@@ -69,6 +69,7 @@ def main(
     sample_entity_count: int | None,
     active_in_compartment: str | None,
     lookback_days: int | None = None,
+    person_ids: list[int] | None = None,
 ) -> None:
     """Uploads documents from a collection to a sandbox."""
     current_project_id = project_id()
@@ -137,6 +138,7 @@ def main(
         active_in_compartment=active_in_compartment,
         batch_size=50,
         lookback_days=lookback_days,
+        person_ids=person_ids,
     )
 
     # Clean up the temp dataset
@@ -249,6 +251,17 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
             "is within the last N days."
         ),
     )
+    parser.add_argument(
+        "--person_ids",
+        dest="person_ids",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated list of person IDs to restrict documents to "
+            "(e.g., 12345,67890). Cannot be used with --active_in_compartment,"
+            " --sample_entity_count, or --sample_size."
+        ),
+    )
 
     return parser.parse_known_args(argv)
 
@@ -279,6 +292,20 @@ if __name__ == "__main__":
         print("Error: --sandbox_bucket is required for upload")
         sys.exit(1)
 
+    person_id_list: list[int] | None = None
+    if known_args.person_ids:
+        if (
+            known_args.active_in_compartment
+            or known_args.sample_entity_count
+            or known_args.sample_size
+        ):
+            print(
+                "Error: --person_ids cannot be used with --active_in_compartment, "
+                "--sample_entity_count, or --sample_size"
+            )
+            sys.exit(1)
+        person_id_list = [int(pid.strip()) for pid in known_args.person_ids.split(",")]
+
     with local_project_id_override(known_args.project_id):
         main(
             collection_name=known_args.collection_name,
@@ -288,4 +315,5 @@ if __name__ == "__main__":
             sample_entity_count=known_args.sample_entity_count,
             active_in_compartment=known_args.active_in_compartment,
             lookback_days=known_args.lookback_days,
+            person_ids=person_id_list,
         )

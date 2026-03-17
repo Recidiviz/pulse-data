@@ -52,7 +52,7 @@ def build_active_entities_cte_sql(
     match root_entity_type:
         case DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
             return f"""active_entities AS (
-            SELECT DISTINCT ext_id.external_id AS person_external_id,
+            SELECT ext_id.external_id AS person_external_id,
                             ext_id.id_type AS person_external_id_type
             FROM `{project_id}.sessions.compartment_sessions_materialized` cs
             INNER JOIN `{project_id}.normalized_state.state_person_external_id` ext_id

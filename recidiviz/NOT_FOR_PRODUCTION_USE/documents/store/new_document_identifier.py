@@ -88,6 +88,7 @@ class NewDocumentIdentifier:
         sample_entity_count: int | None = None,
         active_in_compartment: str | None = None,
         lookback_days: int | None = None,
+        person_ids: list[int] | None = None,
     ) -> BigQueryAddress:
         """Finds documents that need to be uploaded for the given collection.
 
@@ -101,8 +102,12 @@ class NewDocumentIdentifier:
             active_in_compartment: If provided, restricts entity sampling to people
                 with an active session in the given compartment (e.g., SUPERVISION,
                 INCARCERATION). Only supported for PERSON_* root entity types.
+                Cannot be used together with person_ids.
             lookback_days: If provided, only includes documents whose
                 document_update_datetime is within the last N days.
+            person_ids: If provided, restricts documents to those belonging to the
+                given person IDs. Cannot be used together with active_in_compartment,
+                sample_entity_count, or sample_size.
 
         Returns:
             Address of a temporary table containing new documents with columns:
@@ -116,6 +121,12 @@ class NewDocumentIdentifier:
                 "Cannot specify both sample_size and sample_entity_count. "
                 "Use sample_size to limit total documents, or sample_entity_count "
                 "to get all documents for N entities."
+            )
+        if person_ids and (active_in_compartment or sample_entity_count or sample_size):
+            raise ValueError(
+                "Cannot specify person_ids together with active_in_compartment, "
+                "sample_entity_count, or sample_size. person_ids is a standalone "
+                "filtering mode for running extractions on specific person entities."
             )
         if collection_config.state_code is None:
             raise ValueError(
@@ -260,6 +271,45 @@ class NewDocumentIdentifier:
                 f" >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {lookback_days} DAY)"
             )
 
+        # Build person_ids filter
+        person_ids_cte = ""
+        person_ids_filter = ""
+        if person_ids:
+            ids_str = ", ".join(str(pid) for pid in person_ids)
+            match collection_config.root_entity_type:
+                case DocumentRootEntityIdType.PERSON_ID:
+                    has_prior_where = (
+                        metadata_table_exists
+                        or bool(entity_filter)
+                        or bool(lookback_filter)
+                    )
+                    prefix = "AND" if has_prior_where else "WHERE"
+                    person_ids_filter = f"\n            {prefix} generated_docs.person_id IN ({ids_str})"
+                case DocumentRootEntityIdType.PERSON_EXTERNAL_ID:
+                    person_ids_cte = f"""person_id_entities AS (
+                SELECT ext_id.external_id AS person_external_id,
+                                ext_id.id_type AS person_external_id_type
+                FROM `{self.project_id}.normalized_state.state_person_external_id` ext_id
+                WHERE ext_id.person_id IN ({ids_str})
+                  AND ext_id.state_code = '{state_code.value}'
+            ),"""
+                    has_prior_where = (
+                        metadata_table_exists
+                        or bool(entity_filter)
+                        or bool(lookback_filter)
+                    )
+                    prefix = "AND" if has_prior_where else "WHERE"
+                    person_ids_filter = (
+                        f"\n            {prefix} EXISTS (SELECT 1 FROM person_id_entities"
+                        f" WHERE person_id_entities.person_external_id = generated_docs.person_external_id"
+                        f" AND person_id_entities.person_external_id_type = generated_docs.person_external_id_type)"
+                    )
+                case _:
+                    raise ValueError(
+                        f"person_ids filtering is not supported for "
+                        f"root entity type {collection_config.root_entity_type.value}."
+                    )
+
         # Generate unique table name for this batch
         batch_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         batch_uuid = uuid.uuid4().hex[:8]
@@ -275,7 +325,7 @@ class NewDocumentIdentifier:
                 {additional_metadata_columns_str + ',' if additional_metadata_columns_str else ''}
                 {root_entity_columns_str}
             FROM ({doc_gen_query})
-        ),{active_entities_cte}{entity_sample_cte}
+        ),{active_entities_cte}{person_ids_cte}{entity_sample_cte}
         filtered_docs AS (
             SELECT *
             FROM generated_docs
@@ -283,6 +333,7 @@ class NewDocumentIdentifier:
             {entity_filter}
             {active_filter_in_docs}
             {lookback_filter}
+            {person_ids_filter}
             {limit_clause}
         )
         SELECT
