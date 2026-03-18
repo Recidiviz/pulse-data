@@ -294,6 +294,8 @@ output:
                                 StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
                                   - Complete more than 10 hours of Community
                                     Service
+                                  - Community work service (up to and including
+                                    10 hours)
 
                                 StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
                                   - "Electronic Monitoring: House Arrest"
