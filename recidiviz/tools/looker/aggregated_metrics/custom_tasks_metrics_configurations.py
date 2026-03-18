@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -83,4 +83,7 @@ TASKS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.DISTINCT_POPULATION_COMPLIANCE_TASK_REQUIRED,
     metric_config.DISTINCT_POPULATION_COMPLIANCE_TASK_ELIGIBLE,
     metric_config.DISTINCT_POPULATION_COMPLIANCE_TASK_OVERDUE,
+    metric_config.AVG_DAILY_POPULATION_COMPLIANCE_TASK_REQUIRED,
+    metric_config.AVG_DAILY_POPULATION_COMPLIANCE_TASK_ELIGIBLE,
+    metric_config.AVG_DAILY_POPULATION_COMPLIANCE_TASK_OVERDUE,
 ]

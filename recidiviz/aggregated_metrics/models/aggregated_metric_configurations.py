@@ -846,6 +846,36 @@ DISTINCT_POPULATION_COMPLIANCE_TASK_OVERDUE = SpanDistinctUnitCountMetric(
     ),
 )
 
+AVG_DAILY_POPULATION_COMPLIANCE_TASK_ELIGIBLE = DailyAvgSpanCountMetric(
+    name="compliance_task_avg_people_eligible",
+    display_name="Average Population: Compliance Task Eligible",
+    description="Average daily population of clients eligible for a compliance task",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLIANCE_TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={"is_eligible": ["true"]},
+    ),
+)
+
+AVG_DAILY_POPULATION_COMPLIANCE_TASK_REQUIRED = DailyAvgSpanCountMetric(
+    name="compliance_task_avg_people_required",
+    display_name="Average Population: Compliance Task Required",
+    description="Average daily population of clients with a compliance task requirement (has a due date)",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLIANCE_TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={"is_required": ["true"]},
+    ),
+)
+
+AVG_DAILY_POPULATION_COMPLIANCE_TASK_OVERDUE = DailyAvgSpanCountMetric(
+    name="compliance_task_avg_people_overdue",
+    display_name="Average Population: Compliance Task Overdue",
+    description="Average daily population of clients overdue for a compliance task",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLIANCE_TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={"is_overdue": ["true"]},
+    ),
+)
+
 AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="avg_lsir_score",
     display_name="Average LSI-R Score",
