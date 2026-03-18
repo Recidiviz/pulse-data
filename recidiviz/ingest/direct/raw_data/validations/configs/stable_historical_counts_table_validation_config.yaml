@@ -55,6 +55,15 @@ defaults:
 #              a specific state."
 
 custom:
+  US_AR:
+    file_tags:
+      CASEMANAGEMENTPLAN:
+        tolerance_override:
+          percent_change_tolerance: 0.15
+          reason:
+            "The way this table is used has changed following the PROTECT Act's implementation,
+            so it's not unusual for its size to increase more steeply than the default threshold allows."
+
   US_MI:
     file_tags:
       COMS_Case_Managers:
