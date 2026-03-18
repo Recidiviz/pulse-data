@@ -3,7 +3,6 @@ Defines tests that no new / unexpected references to v1 sentence views are added
 of any view that is part of the given metric export for the given state code.
 """
 
-from collections import defaultdict
 from functools import cache
 
 import pytest
@@ -160,132 +159,98 @@ def _get_product_export_addresses(
     }
 
 
-def _should_filter_out_paths_with_address(
-    *,
+def _is_filtered_address(
     address: BigQueryAddress,
-    state_code_filter: StateCode | None,
-    filter_addresses: set[BigQueryAddress],
+    state_code_filter: StateCode,
     filter_datasets: set[str],
 ) -> bool:
     address_state_code = address.state_code_for_address()
-    return (
-        address in filter_addresses
-        or address.dataset_id in filter_datasets
-        or (
-            state_code_filter is not None
-            and address_state_code is not None
-            and address_state_code != state_code_filter
-        )
+    return address.dataset_id in filter_datasets or (
+        address_state_code is not None and address_state_code != state_code_filter
     )
 
 
-def find_all_paths_from_start_to_end_collections(
+def _find_deprecated_v1_dependency_edges_for_product_views(
     *,
     dag: BigQueryViewDagWalker,
-    start_addresses: set[BigQueryAddress],
-    end_addresses: set[BigQueryAddress],
-    state_code_filter: StateCode | None,
-    filter_addresses: set[BigQueryAddress],
+    deprecated_addresses: set[BigQueryAddress],
+    product_view_addresses: set[BigQueryAddress],
+    state_code: StateCode,
     filter_datasets: set[str],
-) -> list[list[BigQueryAddress]]:
-    """Find all paths that start at any of the start_addresses and terminate at any
-    of the end_addresses. All paths are terminated once we reach the first end address.
-    If one path is a full sub path of another, it is dropped.
+) -> dict[BigQueryAddress, set[tuple[BigQueryAddress, BigQueryAddress]]]:
+    """For each product view, returns which deprecated v1 views are referenced in that
+    product view's ancestor graph, as tuples of (deprecated_view, referencing_view)
+    edges, representing the point where a deprecated view is first referenced by a
+    non-deprecated view. Only product views with at least one edge are included.
+
+    Walks the view DAG from roots to leaves, propagating a set of v1 reference edges
+    through each view.
+
+    The propagation rules are:
+    - Deprecated views do not propagate edges; they act as new chain starts. This
+      means if deprecated_A -> deprecated_B -> view_C, only (deprecated_B, view_C)
+      is tracked (the closest deprecated ancestor).
+    - Product views collect edges but do not propagate them to their descendants,
+      so each product view only reports deprecated references that reach it without
+      passing through another product view in the same export.
+    - Views in |filter_datasets| or for a different state are skipped entirely.
 
     Descendant sub-DAGs must be already populated on |dag|.
     """
 
     def process_view(
         view: BigQueryView,
-        parent_results: dict[BigQueryView, list[list[BigQueryAddress]]],
-    ) -> list[list[BigQueryAddress]]:
+        parent_results: dict[
+            BigQueryView, set[tuple[BigQueryAddress, BigQueryAddress]]
+        ],
+    ) -> set[tuple[BigQueryAddress, BigQueryAddress]]:
         addr = view.address
         view_node = dag.node_for_view(view)
 
-        if _should_filter_out_paths_with_address(
-            address=view.address,
-            state_code_filter=state_code_filter,
-            filter_addresses=filter_addresses,
-            filter_datasets=filter_datasets,
-        ):
-            return []
+        if _is_filtered_address(addr, state_code, filter_datasets):
+            return set()
 
-        all_descendants: set[BigQueryAddress] = set(
-            view_node.descendants_sub_dag.nodes_by_address
-        )
-        if not any(a in all_descendants for a in end_addresses):
-            # This is a dead end - we won't get to any of the end
-            # addresses if we search this way.
-            return []
+        # Prune views that can't reach any product view
+        all_descendants = view_node.descendants_sub_dag.nodes_by_address
+        if not any(a in all_descendants for a in product_view_addresses):
+            return set()
 
-        paths: list[list[BigQueryAddress]] = []
+        # Deprecated views don't propagate - they start new chains
+        if addr in deprecated_addresses:
+            return set()
 
-        # Add direct table-to-view paths (for source tables that are start addresses)
-        for src_addr in dag.node_for_view(view).parent_tables:
-            if src_addr in start_addresses and src_addr not in dag.nodes_by_address:
-                paths.append([src_addr, addr])
+        result: set[tuple[BigQueryAddress, BigQueryAddress]] = set()
 
-        # Start path if this is a start address and there aren't already paths to this
-        # from other start views.
-        if addr in start_addresses and not parent_results:
-            paths.append([addr])
+        # Check for deprecated source tables (tables not in the DAG as views)
+        for src_addr in view_node.parent_tables:
+            if (
+                src_addr in deprecated_addresses
+                and src_addr not in dag.nodes_by_address
+            ):
+                result.add((src_addr, addr))
 
-        # Extend paths with this view's address
-        for parent_paths in parent_results.values():
-            for path in parent_paths:
-                # Don't count paths that already terminated in an end address
-                if path[-1] not in end_addresses:
-                    paths.append(path + [addr])
+        for parent_view, parent_edges in parent_results.items():
+            if parent_view.address in deprecated_addresses:
+                # Parent is deprecated - this view is the first non-deprecated
+                # reference, forming a new deprecated view reference edge
+                result.add((parent_view.address, addr))
+            elif parent_view.address not in product_view_addresses:
+                # Inherit edges from non-deprecated, non-product-view parents.
+                # Edges stop at product views so that downstream product views
+                # only see references that reach them independently.
+                result |= parent_edges
 
-        return paths
+        return result
 
-    view_to_paths = dag.process_dag(
+    view_to_edges = dag.process_dag(
         view_process_fn=process_view, synchronous=True
     ).view_results
 
-    # Collect only paths ending in one of the end addresses
-    return [
-        path
-        for view, paths in view_to_paths.items()
-        if view.address in end_addresses
-        for path in paths
-    ]
-
-
-def find_unique_paths_from_last_valid_start_address_to_terminal(
-    paths: list[list[BigQueryAddress]],
-    valid_start_addresses: set[BigQueryAddress],
-) -> list[list[BigQueryAddress]]:
-    """Truncate each path to start from the last occurrence of a valid start address.
-
-    For each path, search backwards until we hit a valid start address, then keep only
-    the end of the path starting with that address. Deduplicate the resulting paths.
-
-    Args:
-        paths: List of paths (each path is a list of addresses)
-        valid_start_addresses: Set of valid start addresses to search for
-
-    Returns:
-        Deduplicated list of truncated paths
-    """
-    truncated_paths = []
-
-    for path in paths:
-        # Search backwards to find the last valid start address in the path
-        truncate_index = None
-        for i in range(len(path) - 1, -1, -1):
-            if path[i] in valid_start_addresses:
-                truncate_index = i
-                break
-
-        # Keep from the ancestor to the end
-        if truncate_index is not None:
-            truncated_paths.append(path[truncate_index:])
-
-    # Deduplicate by converting to tuples (hashable), using set, then back to lists
-    unique_paths = list({tuple(path): path for path in truncated_paths}.values())
-
-    return unique_paths
+    return {
+        view.address: edges
+        for view, edges in view_to_edges.items()
+        if edges and view.address in product_view_addresses
+    }
 
 
 def _state_code_and_export_tuples() -> list[tuple[StateCode, str]]:
@@ -318,32 +283,21 @@ def test_no_v1_references_for_exported_views(
     """Tests that no new / unexpected references to v1 sentence views are added upstream
     of any view that is part of the given metric export for the given state code.
     """
+    export_addresses = _get_product_export_addresses(state_code, export_name)
     deprecated_addresses = _get_deprecated_v1_sentence_addresses_for_state(state_code)
-    paths = find_all_paths_from_start_to_end_collections(
-        dag=dag_walker,
-        start_addresses=deprecated_addresses,
-        end_addresses=_get_product_export_addresses(state_code, export_name),
-        state_code_filter=state_code,
-        filter_addresses=set(),
-        filter_datasets={SENTENCE_SESSIONS_DATASET, SENTENCE_SESSIONS_V2_ALL_DATASET},
-    )
 
-    # Truncate paths to start at the last deprecated address in the path
-    paths = find_unique_paths_from_last_valid_start_address_to_terminal(
-        paths, valid_start_addresses=deprecated_addresses
-    )
-
-    # Group paths by end product address and extract first edges (the first place we see
-    # a deprecated view referenced by a non-deprecated view)
-    product_view_address_path_first_edges: dict[
-        BigQueryAddress, set[tuple[BigQueryAddress, BigQueryAddress]]
-    ] = defaultdict(set)
-
-    for path in paths:
-        product_view_address = path[-1]
-        product_view_address_path_first_edges[product_view_address].add(
-            (path[0], path[1])
+    v1_ancestor_edges_by_product_view = (
+        _find_deprecated_v1_dependency_edges_for_product_views(
+            dag=dag_walker,
+            deprecated_addresses=deprecated_addresses,
+            product_view_addresses=export_addresses,
+            state_code=state_code,
+            filter_datasets={
+                SENTENCE_SESSIONS_DATASET,
+                SENTENCE_SESSIONS_V2_ALL_DATASET,
+            },
         )
+    )
 
     # Get exemptions for this state and export, converting from dict to set of tuples
     state_exemptions_dict = _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS.get(
@@ -365,7 +319,7 @@ def test_no_v1_references_for_exported_views(
     for (
         product_view_address,
         bad_edges,
-    ) in product_view_address_path_first_edges.items():
+    ) in v1_ancestor_edges_by_product_view.items():
         # Get exempted edges for this product view
         exempted_edges = state_exemptions.get(product_view_address, set())
 
@@ -387,7 +341,7 @@ def test_no_v1_references_for_exported_views(
     # Check for stale exemptions (exemptions that are no longer necessary)
     for product_view_address, exempted_edges in state_exemptions.items():
         # Get the actual bad edges for this product view
-        actual_bad_edges = product_view_address_path_first_edges.get(
+        actual_bad_edges = v1_ancestor_edges_by_product_view.get(
             product_view_address, set()
         )
 
