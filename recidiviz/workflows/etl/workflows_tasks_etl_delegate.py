@@ -29,6 +29,7 @@ COLLECTION_BY_FILENAME = {
     "us_nd_supervision_tasks_record.json": "US_ND-supervisionTasks",
     "us_ne_supervision_tasks_record.json": "US_NE-supervisionTasks",
     "us_tx_supervision_tasks_record.json": "US_TX-supervisionTasks",
+    "us_co_supervision_tasks_record.json": "US_CO-supervisionTasks",
 }
 
 

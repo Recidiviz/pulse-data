@@ -563,9 +563,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Identifies which TX DPOs are task-oriented and, if applicable, the date that the office became task-oriented. See #57891 for task-oriented definition and other info. Created for analysis of task-oriented offices in TX. Kept for potential future use. "
         "(Feona, 2026-01-28)"
     ),
-    BigQueryAddress.from_str(
-        "static_reference_data_views.us_co_contact_standards"
-    ): "TODO(#61209): This ref table will be used in us_co_contact_cadence_spans view for CO Tasks, to be built in separate PR shortly. (Kris Gerig, 2026-02-25)",
     BigQueryAddress.from_str("analyst_data.us_tx_fee_balances_preprocessed"): (
         "Pre-processes Texas fines and fees data for use in an upcoming TES criterion related to outstanding fines and fees."
         "(Feona, 2026-03-10)"
