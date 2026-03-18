@@ -20,7 +20,7 @@ from typing import Dict, Tuple
 import apache_beam as beam
 from apache_beam.pvalue import PBegin, PDone
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.gating import RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGEST_VIEW
@@ -153,6 +153,7 @@ class ProcessAllIngestViews(beam.PTransform):
                 input_or_inputs
                 | "Clear skipped ingest view results"
                 >> _ClearAllSkippedIngestViews(
+                    project_id=self.pipeline_parameters.project,
                     all_launchable_views=all_launchable_views,
                     ingest_views_to_run=ingest_views_to_run,
                     ingest_view_output_dataset=self.pipeline_parameters.ingest_view_results_output,
@@ -205,11 +206,13 @@ class _ClearAllSkippedIngestViews(beam.PTransform):
 
     def __init__(
         self,
+        project_id: str,
         all_launchable_views: list[str],
         ingest_views_to_run: list[str],
         ingest_view_output_dataset: str,
     ):
         super().__init__()
+        self.project_id = project_id
         self.all_launchable_views = all_launchable_views
         self.ingest_views_to_run = ingest_views_to_run
         self.ingest_view_output_dataset = ingest_view_output_dataset
@@ -218,9 +221,10 @@ class _ClearAllSkippedIngestViews(beam.PTransform):
         for ingest_view_name in self.all_launchable_views:
             if ingest_view_name not in self.ingest_views_to_run:
                 _ = input_or_inputs | f"Clear {ingest_view_name}" >> ClearBQTable(
-                    address=BigQueryAddress(
+                    address=ProjectSpecificBigQueryAddress(
+                        project_id=self.project_id,
                         dataset_id=self.ingest_view_output_dataset,
                         table_id=ingest_view_name,
-                    )
+                    ),
                 )
         return PDone(input_or_inputs.pipeline)

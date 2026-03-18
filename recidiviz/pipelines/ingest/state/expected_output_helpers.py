@@ -26,7 +26,12 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
+    get_all_many_to_many_relationships_in_module,
+    get_association_table_id,
     get_entity_class_in_module_with_table_id,
 )
 from recidiviz.persistence.entity.state import normalized_entities
@@ -97,8 +102,43 @@ def get_expected_output_normalized_entity_classes(
     return expected_normalized_entity_classes
 
 
-def get_ingest_pipeline_output_tables_for_schema(schema_module: ModuleType) -> set[str]:
-    """Returns the set of tables that the pipeline will output to given a list of
-    expected entity types that will be produced.
+def get_all_table_ids_for_schema(schema_module: ModuleType) -> set[str]:
+    """Returns the full set of table IDs (entity + association) defined in the
+    given entities schema module.
     """
     return set(get_bq_schema_for_entities_module(schema_module).keys())
+
+
+def get_expected_output_table_ids(
+    expected_entity_classes: set[type[Entity]],
+    entities_module: ModuleType,
+) -> set[str]:
+    """Returns the set of table IDs that the pipeline expects to produce data for,
+    including both entity tables and association tables for many-to-many
+    relationships where both sides are in the expected entity classes.
+    """
+    table_ids = {cls.get_table_id() for cls in expected_entity_classes}
+
+    context = entities_module_context_for_module(entities_module)
+    for parent_cls, child_cls in get_all_many_to_many_relationships_in_module(
+        entities_module
+    ):
+        if (
+            parent_cls in expected_entity_classes
+            and child_cls in expected_entity_classes
+        ):
+            table_ids.add(get_association_table_id(parent_cls, child_cls, context))
+
+    return table_ids
+
+
+def get_entity_table_ids_to_clear(
+    expected_entity_classes: set[type[Entity]],
+    entities_module: ModuleType,
+) -> set[str]:
+    """Returns the set of table IDs that the pipeline should explicitly clear
+    because it does NOT expect to produce data for them.
+    """
+    return get_all_table_ids_for_schema(
+        entities_module
+    ) - get_expected_output_table_ids(expected_entity_classes, entities_module)

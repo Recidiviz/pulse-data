@@ -273,10 +273,18 @@ def main() -> int:
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.big_query.big_query_address_formatter",
+                    "recidiviz.big_query.big_query_client",
+                    "recidiviz.big_query.big_query_create_or_replace_view_query_provider",
                     "recidiviz.big_query.big_query_query_builder",
+                    "recidiviz.big_query.big_query_view",
+                    "recidiviz.big_query.big_query_view_column",
+                    "recidiviz.big_query.big_query_view_sandbox_context",
+                    "recidiviz.big_query.export.export_query_config",
+                    "recidiviz.big_query.row_access_policy_query_builder",
                     "recidiviz.calculator.query.sessions_query_fragments",
                     "recidiviz.calculator.query.bq_utils",
                     "recidiviz.ingest",
+                    "recidiviz.metrics.metric_big_query_view",
                     "recidiviz.persistence",
                 }
             )

@@ -18,24 +18,45 @@
 import apache_beam as beam
 from apache_beam.pvalue import PBegin, PDone
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+
+
+def _delete_all_rows_from_table(address: ProjectSpecificBigQueryAddress) -> None:
+    """Deletes all rows from a BQ table via a DELETE query.
+
+    Uses BigQueryClient directly rather than WriteToBigQuery with
+    WRITE_TRUNCATE, because Beam's FILE_LOADS method does not submit a load job
+    (and therefore never applies WRITE_TRUNCATE) when zero elements flow to the
+    table.
+    """
+    bq_client = BigQueryClientImpl(project_id=address.project_id)
+    query_job = bq_client.run_query_async(
+        query_str=f"DELETE FROM `{address.to_str()}` WHERE TRUE",
+        use_query_cache=False,
+    )
+    query_job.result()
 
 
 class ClearBQTable(beam.PTransform):
-    """PTransform that clears the contents of the provided BQ table"""
+    """PTransform that clears the contents of the provided BQ table.
 
-    def __init__(self, address: BigQueryAddress) -> None:
+    Accepts either PBegin (runs immediately) or a PCollection (waits for all
+    upstream elements before clearing).
+    """
+
+    def __init__(self, address: ProjectSpecificBigQueryAddress) -> None:
         super().__init__()
         self.address = address
 
-    def expand(self, input_or_inputs: PBegin) -> PDone:
-        return (
-            input_or_inputs
-            | beam.Create([])
-            | WriteToBigQuery(
-                output_dataset=self.address.dataset_id,
-                output_table=self.address.table_id,
-                write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+    def expand(self, input_or_inputs: PBegin | beam.PCollection) -> PDone:
+        if isinstance(input_or_inputs, PBegin):
+            trigger = input_or_inputs | beam.Create([self.address])
+        else:
+            trigger = (
+                input_or_inputs
+                | beam.combiners.Count.Globally()
+                | beam.Map(lambda _: self.address)
             )
-        )
+        _ = trigger | beam.Map(_delete_all_rows_from_table)
+        return PDone(input_or_inputs.pipeline)

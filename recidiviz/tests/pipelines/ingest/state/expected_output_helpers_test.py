@@ -31,9 +31,11 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
+    get_all_table_ids_for_schema,
+    get_entity_table_ids_to_clear,
     get_expected_output_normalized_entity_classes,
     get_expected_output_pre_normalization_entity_classes,
-    get_ingest_pipeline_output_tables_for_schema,
+    get_expected_output_table_ids,
 )
 from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
@@ -44,7 +46,7 @@ from recidiviz.tests.ingest.direct import fake_regions
 class TestExpectedOutputHelpers(unittest.TestCase):
     """Tests for expected_output_helpers.py"""
 
-    def test_get_ingest_pipeline_output_tables_for_schema_state(self) -> None:
+    def test_get_all_table_ids_for_schema_state(self) -> None:
         expected_table_ids = {
             "state_assessment",
             "state_charge",
@@ -92,10 +94,10 @@ class TestExpectedOutputHelpers(unittest.TestCase):
         }
         self.assertEqual(
             expected_table_ids,
-            get_ingest_pipeline_output_tables_for_schema(entities),
+            get_all_table_ids_for_schema(entities),
         )
 
-    def test_get_ingest_pipeline_output_tables_for_schema_normalized_state(
+    def test_get_all_table_ids_for_schema_normalized_state(
         self,
     ) -> None:
         expected_table_ids = {
@@ -147,7 +149,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
         }
         self.assertEqual(
             expected_table_ids,
-            get_ingest_pipeline_output_tables_for_schema(normalized_entities),
+            get_all_table_ids_for_schema(normalized_entities),
         )
 
     def test_get_expected_output_pre_normalization_entity_classes(self) -> None:
@@ -274,3 +276,67 @@ class TestExpectedOutputHelpers(unittest.TestCase):
             },
             normalization_output_classes,
         )
+
+    def test_get_expected_output_table_ids_with_m2m(self) -> None:
+        """Entity classes that have M2M relationships should produce association
+        table IDs when both sides are in the expected set."""
+        expected_classes: set[type[Entity]] = {
+            entities.StatePerson,
+            entities.StatePersonExternalId,
+            entities.StateChargeV2,
+            entities.StateSentence,
+        }
+        table_ids = get_expected_output_table_ids(expected_classes, entities)
+
+        # Entity tables
+        self.assertIn("state_person", table_ids)
+        self.assertIn("state_person_external_id", table_ids)
+        self.assertIn("state_charge_v2", table_ids)
+        self.assertIn("state_sentence", table_ids)
+        # Association table for M2M between ChargeV2 and Sentence
+        self.assertIn("state_charge_v2_state_sentence_association", table_ids)
+
+    def test_get_expected_output_table_ids_no_m2m(self) -> None:
+        """When no M2M pairs are present, only entity table IDs are returned."""
+        expected_classes: set[type[Entity]] = {
+            entities.StatePerson,
+            entities.StatePersonExternalId,
+        }
+        table_ids = get_expected_output_table_ids(expected_classes, entities)
+
+        self.assertEqual(
+            {"state_person", "state_person_external_id"},
+            table_ids,
+        )
+
+    def test_get_entity_table_ids_to_clear(self) -> None:
+        """Tables to clear should be the complement of expected output tables."""
+        expected_classes: set[type[Entity]] = {
+            entities.StatePerson,
+            entities.StatePersonExternalId,
+        }
+        all_table_ids = get_all_table_ids_for_schema(entities)
+        expected_table_ids = get_expected_output_table_ids(expected_classes, entities)
+        to_clear = get_entity_table_ids_to_clear(expected_classes, entities)
+
+        self.assertEqual(all_table_ids - expected_table_ids, to_clear)
+        # Sanity: expected and to_clear are disjoint and cover all tables
+        self.assertEqual(set(), expected_table_ids & to_clear)
+        self.assertEqual(all_table_ids, expected_table_ids | to_clear)
+
+    def test_get_expected_output_table_ids_normalized(self) -> None:
+        """get_expected_output_table_ids works with the normalized entities module."""
+        expected_classes: set[type[Entity]] = {
+            normalized_entities.NormalizedStatePerson,
+            normalized_entities.NormalizedStatePersonExternalId,
+            normalized_entities.NormalizedStateSentence,
+            normalized_entities.NormalizedStateSentenceStatusSnapshot,
+            normalized_entities.NormalizedStateChargeV2,
+        }
+        table_ids = get_expected_output_table_ids(expected_classes, normalized_entities)
+
+        self.assertIn("state_person", table_ids)
+        self.assertIn("state_sentence", table_ids)
+        self.assertIn("state_charge_v2", table_ids)
+        # ChargeV2 <-> Sentence is M2M, both present
+        self.assertIn("state_charge_v2_state_sentence_association", table_ids)

@@ -582,7 +582,14 @@ class FakeWriteToBigQueryEmulator(apache_beam.PTransform):
             # a BigQueryEmulatorTestCase, this client will talk to the emulator.
             bq_client = BigQueryClientImpl()
 
-            if write_disposition == apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE:
+            # Only truncate when there are rows to write. This matches real Beam
+            # FILE_LOADS behavior: when zero elements flow, no load job is
+            # submitted, so WRITE_TRUNCATE is never applied.
+            if (
+                rows
+                and write_disposition
+                == apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE
+            ):
                 query_job = bq_client.run_query_async(
                     query_str=f"DELETE FROM `{bq_client.project_id}.{output_address.to_str()}` WHERE TRUE",
                     use_query_cache=False,

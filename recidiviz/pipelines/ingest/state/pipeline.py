@@ -20,8 +20,10 @@ from typing import Dict, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
+from apache_beam.pvalue import PDone
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
@@ -53,9 +55,10 @@ from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
 )
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
+    get_entity_table_ids_to_clear,
     get_expected_output_normalized_entity_classes,
     get_expected_output_pre_normalization_entity_classes,
-    get_ingest_pipeline_output_tables_for_schema,
+    get_expected_output_table_ids,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import string_representation
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
@@ -74,9 +77,39 @@ from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
+from recidiviz.pipelines.utils.beam_utils.clear_bq_table import ClearBQTable
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_normalization_delegate,
 )
+
+
+class _ClearNoOutputEntityTables(beam.PTransform):
+    """PTransform that clears entity tables the pipeline does NOT expect to
+    produce data for, ensuring stale rows from prior runs are removed.
+
+    Accepts a PCollection as input so that clearing runs only after upstream
+    entity computation is complete (i.e. at the same time as the associated
+    write steps).
+    """
+
+    def __init__(
+        self, table_ids_to_clear: set[str], output_dataset: str, project_id: str
+    ) -> None:
+        super().__init__()
+        self.table_ids_to_clear = table_ids_to_clear
+        self.output_dataset = output_dataset
+        self.project_id = project_id
+
+    def expand(self, input_or_inputs: beam.PCollection) -> PDone:
+        for table_id in sorted(self.table_ids_to_clear):
+            _ = input_or_inputs | f"Clear {table_id}" >> ClearBQTable(
+                address=ProjectSpecificBigQueryAddress(
+                    project_id=self.project_id,
+                    dataset_id=self.output_dataset,
+                    table_id=table_id,
+                ),
+            )
+        return PDone(input_or_inputs.pipeline)
 
 
 class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
@@ -163,9 +196,13 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
         )
 
-        output_state_tables = get_ingest_pipeline_output_tables_for_schema(
-            state_entities
+        expected_pre_norm_table_ids = get_expected_output_table_ids(
+            expected_output_entity_classes, state_entities
         )
+        pre_norm_table_ids_to_clear = get_entity_table_ids_to_clear(
+            expected_output_entity_classes, state_entities
+        )
+
         pre_normalization_root_entities: beam.PCollection[RootEntity] = (
             {
                 PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
@@ -187,9 +224,20 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 state_code=state_code,
                 entities_module=state_entities,
                 output_dataset=self.pipeline_parameters.pre_normalization_output,
-                output_table_ids=output_state_tables,
+                output_table_ids=expected_pre_norm_table_ids,
             )
         )
+
+        if pre_norm_table_ids_to_clear:
+            _ = (
+                pre_normalization_root_entities
+                | "Clear no output pre-normalization entity tables"
+                >> _ClearNoOutputEntityTables(
+                    table_ids_to_clear=pre_norm_table_ids_to_clear,
+                    output_dataset=self.pipeline_parameters.pre_normalization_output,
+                    project_id=self.pipeline_parameters.project,
+                )
+            )
 
         if self.pipeline_parameters.pre_normalization_only:
             return
@@ -200,6 +248,13 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 delegate=get_state_specific_normalization_delegate(state_code.value),
             )
         )
+        expected_norm_table_ids = get_expected_output_table_ids(
+            expected_output_normalized_entity_classes, normalized_entities
+        )
+        norm_table_ids_to_clear = get_entity_table_ids_to_clear(
+            expected_output_normalized_entity_classes, normalized_entities
+        )
+
         normalized_root_entities: beam.PCollection[RootEntity] = (
             pre_normalization_root_entities
             | "Normalize root entities"
@@ -216,8 +271,17 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 state_code=state_code,
                 entities_module=normalized_entities,
                 output_dataset=self.pipeline_parameters.normalized_output,
-                output_table_ids=get_ingest_pipeline_output_tables_for_schema(
-                    normalized_entities
-                ),
+                output_table_ids=expected_norm_table_ids,
             )
         )
+
+        if norm_table_ids_to_clear:
+            _ = (
+                normalized_root_entities
+                | "Clear no output normalized entity tables"
+                >> _ClearNoOutputEntityTables(
+                    table_ids_to_clear=norm_table_ids_to_clear,
+                    output_dataset=self.pipeline_parameters.normalized_output,
+                    project_id=self.pipeline_parameters.project,
+                )
+            )
