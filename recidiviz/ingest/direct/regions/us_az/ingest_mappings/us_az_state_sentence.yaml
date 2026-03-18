@@ -3,6 +3,7 @@ manifest_language: 1.0.0
 input_columns:
   PERSON_ID: STRING
   SC_EPISODE_ID: STRING
+  DOC_NUMBER: STRING
   OFFENSE_ID: STRING
   SENTENCED_DTM: DATE
   NUM_JAIL_CREDIT_DAYS: INTEGER
@@ -111,6 +112,7 @@ output:
                 status: $literal_enum(StateChargeV2Status.CONVICTED)
           sentence_metadata:
             $normalized_values_json_dict:
+              doc_number: DOC_NUMBER
               flat_sentence: flat_sentence_flag
               tpr_ineligible_from_previous_conviction: TPR_ineligible
               dtp_ineligible_from_previous_conviction: DTP_ineligible
