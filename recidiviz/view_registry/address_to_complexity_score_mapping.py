@@ -17,7 +17,7 @@
 """Returns a mapping that tells us the number of complexity score points that should
 be awarded for any view query reference to a given table or view address.
 """
-from typing import Callable
+import enum
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
@@ -30,7 +30,12 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
 from recidiviz.source_tables.source_table_config import RawDataSourceTableLabel
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 
-AddressComplexityScoreMappingFn = Callable[[BigQueryAddress], int]
+
+class ReferenceType(enum.Enum):
+    SOURCE_TABLE = "source_table"
+    RAW_DATA = "raw_data"
+    STATE_SPECIFIC_NON_RAW_DATA_VIEW = "state_specific_non_raw_data_view"
+    OTHER = "other"
 
 
 class ParentAddressComplexityScoreMapper:
@@ -44,22 +49,35 @@ class ParentAddressComplexityScoreMapper:
         source_table_repository: SourceTableRepository,
         all_view_builders: list[BigQueryViewBuilder],
     ) -> None:
-        self._source_table_repository = source_table_repository
         self._all_view_builders_by_address = {
             vb.address: vb for vb in all_view_builders
         }
-        self._default_scores_by_address = {
-            # Default score of 1 for all possible source tables / views referenced
-            # by any view
-            **{a: 1 for a in self._source_table_repository.source_tables},
+        self._reference_type_by_address = {
             **{
-                vb.table_for_query: 1
-                for vb in self._all_view_builders_by_address.values()
+                table: ReferenceType.SOURCE_TABLE
+                for table in source_table_repository.source_tables
+            },
+            **{
+                config.address: ReferenceType.RAW_DATA
+                for config in source_table_repository.tables_labeled_with(
+                    RawDataSourceTableLabel
+                )
+            },
+            **{
+                vb.table_for_query: self._reference_type_for_view_builder(address, vb)
+                for address, vb in self._all_view_builders_by_address.items()
             },
         }
-        self._raw_data_table_configs = (
-            self._source_table_repository.tables_labeled_with(RawDataSourceTableLabel)
-        )
+
+    @staticmethod
+    def _reference_type_for_view_builder(
+        address: BigQueryAddress, vb: BigQueryViewBuilder
+    ) -> ReferenceType:
+        if not address.is_state_specific_address():
+            return ReferenceType.OTHER
+        if isinstance(vb, DirectIngestRawDataTableLatestViewBuilder):
+            return ReferenceType.RAW_DATA
+        return ReferenceType.STATE_SPECIFIC_NON_RAW_DATA_VIEW
 
     @staticmethod
     def _view_can_reference_raw_data_directly_2025(
@@ -74,11 +92,10 @@ class ParentAddressComplexityScoreMapper:
         """
         return isinstance(view_builder, DirectIngestRawDataTableLatestViewBuilder)
 
-    def get_parent_complexity_map_for_view_2025(
+    def _get_reference_scores_for_caller_2025(
         self, view_address: BigQueryAddress
-    ) -> dict[BigQueryAddress, int]:
-        """Returns a mapping that tells us the number of complexity score points that
-        should be awarded for any view query reference to a given table or view address.
+    ) -> dict[ReferenceType, int]:
+        """Returns the score for each kind of parent reference from this given view.
         Most references are given 1 point. State-specific tables that should not be
         referenced in our view graph are given higher point values.
 
@@ -87,29 +104,29 @@ class ParentAddressComplexityScoreMapper:
         COMPARE HOW COMPLEXITY CHANGES OVER THE COURSE OF THE YEAR.
         """
         view_builder = self._all_view_builders_by_address[view_address]
-        state_specific_raw_data_reference_score = (
-            1 if self._view_can_reference_raw_data_directly_2025(view_builder) else 10
-        )
-
-        state_specific_non_raw_data_reference_score = (
-            1 if isinstance(view_builder, UnionAllBigQueryViewBuilder) else 5
-        )
-
-        state_specific_view_score_mapping = {
-            vb.table_for_query: (
-                state_specific_raw_data_reference_score
-                if isinstance(vb, DirectIngestRawDataTableLatestViewBuilder)
-                else state_specific_non_raw_data_reference_score
-            )
-            for address, vb in self._all_view_builders_by_address.items()
-            if address.is_state_specific_address()
-        }
         return {
-            **self._default_scores_by_address,
-            # Raw data tables are expensive
-            **{
-                config.address: state_specific_raw_data_reference_score
-                for config in self._raw_data_table_configs
-            },
-            **state_specific_view_score_mapping,
+            ReferenceType.SOURCE_TABLE: 1,
+            ReferenceType.RAW_DATA: 1
+            if self._view_can_reference_raw_data_directly_2025(view_builder)
+            else 10,
+            ReferenceType.STATE_SPECIFIC_NON_RAW_DATA_VIEW: 1
+            if isinstance(view_builder, UnionAllBigQueryViewBuilder)
+            else 5,
+            ReferenceType.OTHER: 1,
         }
+
+    def get_parent_complexity_for_view_2025(
+        self, *, child: BigQueryAddress, parent: BigQueryAddress
+    ) -> int:
+        """Returns the number of complexity score points that should be awarded for a
+        view query reference to the given parent table or view address.
+
+        NOTE: THE ALGORITHM FOR COMPUTING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE
+        ANY MODIFICATIONS TO THE LOGIC, OTHERWISE WE WON'T BE ABLE TO LEGITIMATELY
+        COMPARE HOW COMPLEXITY CHANGES OVER THE COURSE OF THE YEAR.
+        """
+        if parent not in self._reference_type_by_address:
+            raise ValueError(f"No known reference type for table [{parent.to_str()}]")
+        return self._get_reference_scores_for_caller_2025(child)[
+            self._reference_type_by_address[parent]
+        ]

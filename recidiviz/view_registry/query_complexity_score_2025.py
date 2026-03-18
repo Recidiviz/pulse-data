@@ -24,6 +24,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_sqlglot_helpers import (
     does_cte_expression_have_docstring,
 )
+from recidiviz.view_registry.address_to_complexity_score_mapping import (
+    ParentAddressComplexityScoreMapper,
+)
 
 
 def _join_type_complexity_score(join_expression: expr.Join) -> int:
@@ -371,11 +374,12 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
 
 def _table_complexity_score(
     table_expression: expr.Table,
-    address_to_complexity_score_mapping: dict[BigQueryAddress, int],
+    complexity_score_mapper: ParentAddressComplexityScoreMapper,
+    child_address: BigQueryAddress,
 ) -> int:
     """ ""Returns the complexity score for a single table reference. References to named
     table expressions (e.g. CTEs) are given 1 point. Scores for any other reference are
-    taken from the |address_to_complexity_score_mapping|.
+    looked up via the |complexity_score_mapper|.
     """
     table_name = table_expression.name
     if not table_name:
@@ -387,20 +391,22 @@ def _table_complexity_score(
         # complexity is captured in the query_expressions_score.
         return 0
 
-    address = BigQueryAddress(dataset_id=table_expression.db, table_id=table_name)
-    if address not in address_to_complexity_score_mapping:
-        raise ValueError(f"No known complexity score for table [{address.to_str()}]")
-
-    return address_to_complexity_score_mapping[address]
+    parent_address = BigQueryAddress(
+        dataset_id=table_expression.db, table_id=table_name
+    )
+    return complexity_score_mapper.get_parent_complexity_for_view_2025(
+        child=child_address, parent=parent_address
+    )
 
 
 def _tables_complexity_score(
     full_query_syntax_tree: expr.Query,
-    address_to_complexity_score_mapping: dict[BigQueryAddress, int],
+    complexity_score_mapper: ParentAddressComplexityScoreMapper,
+    child_address: BigQueryAddress,
 ) -> int:
     """Returns the complexity score for all table references in the query."""
     score = sum(
-        _table_complexity_score(e, address_to_complexity_score_mapping)
+        _table_complexity_score(e, complexity_score_mapper, child_address)
         for e in full_query_syntax_tree.find_all(expr.Table)
     )
 
@@ -456,7 +462,8 @@ def _query_expression_complexity_score(query_expression: expr.Query) -> int:
 
 def get_query_complexity_score_2025(
     full_query_syntax_tree: expr.Query,
-    address_to_complexity_score_mapping: dict[BigQueryAddress, int],
+    complexity_score_mapper: ParentAddressComplexityScoreMapper,
+    child_address: BigQueryAddress,
 ) -> int:
     """Returns a score that can be used to rank BigQuery SQL queries according to their
     conceptual complexity. In essence, this score tries to get at "how easy is it to
@@ -465,9 +472,10 @@ def get_query_complexity_score_2025(
 
     Args:
         full_query_syntax_tree: The parsed syntax tree for the SQL query to analyze
-        address_to_complexity_score_mapping: A mapping of address to point value for all
-            possible valid table / view addresses referenced by this query. This
-            function will crash if a referenced table is not in this map.
+        complexity_score_mapper: Mapper that returns the point value for a given
+            parent table / view address referenced by the child view. Will crash
+            if a referenced table is not known.
+        child_address: The address of the view whose query is being analyzed.
 
     NOTE: THE ALGORITHM FOR COMPUTING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE ANY
     MODIFICATIONS TO THE LOGIC, OTHERWISE WE WON'T BE ABLE TO LEGITIMATELY COMPARE HOW
@@ -478,7 +486,7 @@ def get_query_complexity_score_2025(
         for e in full_query_syntax_tree.find_all(expr.Query)
     )
     tables_score = _tables_complexity_score(
-        full_query_syntax_tree, address_to_complexity_score_mapping
+        full_query_syntax_tree, complexity_score_mapper, child_address
     )
 
     top_level_condition_expressions = {

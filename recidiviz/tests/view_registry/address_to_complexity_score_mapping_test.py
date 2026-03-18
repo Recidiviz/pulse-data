@@ -66,59 +66,87 @@ class TestParentAddressComplexityScoreMapper(unittest.TestCase):
             all_view_builders=all_view_builders,
         )
 
-    def test_get_parent_complexity_map_for_view_2025_regular(self) -> None:
-        regular_view_map = self.mapper.get_parent_complexity_map_for_view_2025(
-            _STATE_AGNOSTIC_VIEW_ADDRESS
-        )
-
+    def test_get_parent_complexity_for_view_2025_regular(self) -> None:
         # Referencing a raw data table / view directly in a normal view would cost 10
         # complexity points.
-        self.assertEqual(10, regular_view_map[_RAW_DATA_LATEST_VIEW_ADDRESS])
+        self.assertEqual(
+            10,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_STATE_AGNOSTIC_VIEW_ADDRESS,
+                parent=_RAW_DATA_LATEST_VIEW_ADDRESS,
+            ),
+        )
 
         # Referencing a non-raw data, state-specific view would cost 5 complexity
         # points.
         self.assertEqual(
-            5, regular_view_map[_STATE_SPECIFIC_VIEW_MATERIALIZED_TABLE_ADDRESS]
+            5,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_STATE_AGNOSTIC_VIEW_ADDRESS,
+                parent=_STATE_SPECIFIC_VIEW_MATERIALIZED_TABLE_ADDRESS,
+            ),
         )
 
         # Referencing a state-agnostic table is one point.
         self.assertEqual(
-            1, regular_view_map[_STATE_AGNOSTIC_VIEW_2_MATERIALIZED_TABLE_ADDRESS]
+            1,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_STATE_AGNOSTIC_VIEW_ADDRESS,
+                parent=_STATE_AGNOSTIC_VIEW_2_MATERIALIZED_TABLE_ADDRESS,
+            ),
         )
 
-    def test_get_parent_complexity_map_for_view_2025_union_all(self) -> None:
-
-        union_all_view_map = self.mapper.get_parent_complexity_map_for_view_2025(
-            _STATE_AGNOSTIC_UNION_ALL_VIEW_ADDRESS
-        )
-
+    def test_get_parent_complexity_for_view_2025_union_all(self) -> None:
         # Do not penalize referencing a state-specific view in the context of a
         # UnionAllBigQueryViewBuilder view.
         self.assertEqual(
-            1, union_all_view_map[_STATE_SPECIFIC_VIEW_MATERIALIZED_TABLE_ADDRESS]
+            1,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_STATE_AGNOSTIC_UNION_ALL_VIEW_ADDRESS,
+                parent=_STATE_SPECIFIC_VIEW_MATERIALIZED_TABLE_ADDRESS,
+            ),
         )
 
         # Referencing a raw data table is still very expensive
-        self.assertEqual(10, union_all_view_map[_RAW_DATA_LATEST_VIEW_ADDRESS])
+        self.assertEqual(
+            10,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_STATE_AGNOSTIC_UNION_ALL_VIEW_ADDRESS,
+                parent=_RAW_DATA_LATEST_VIEW_ADDRESS,
+            ),
+        )
 
         # Referencing a state-agnostic table is still one point.
         self.assertEqual(
-            1, union_all_view_map[_STATE_AGNOSTIC_VIEW_2_MATERIALIZED_TABLE_ADDRESS]
+            1,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_STATE_AGNOSTIC_UNION_ALL_VIEW_ADDRESS,
+                parent=_STATE_AGNOSTIC_VIEW_2_MATERIALIZED_TABLE_ADDRESS,
+            ),
         )
 
-    def test_get_parent_complexity_map_for_view_2025_latest_view(self) -> None:
-        raw_data_ok_view_map = self.mapper.get_parent_complexity_map_for_view_2025(
-            _RAW_DATA_LATEST_VIEW_ADDRESS
-        )
-
+    def test_get_parent_complexity_for_view_2025_latest_view(self) -> None:
         # Do not penalize for referencing a raw data view inside a raw data latest view
-        self.assertEqual(1, raw_data_ok_view_map[_RAW_DATA_SOURCE_TABLE_ADDRESS])
+        self.assertEqual(
+            1,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_RAW_DATA_LATEST_VIEW_ADDRESS,
+                parent=_RAW_DATA_SOURCE_TABLE_ADDRESS,
+            ),
+        )
 
         # Other views are normal points
         self.assertEqual(
-            5, raw_data_ok_view_map[_STATE_SPECIFIC_VIEW_MATERIALIZED_TABLE_ADDRESS]
+            5,
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_RAW_DATA_LATEST_VIEW_ADDRESS,
+                parent=_STATE_SPECIFIC_VIEW_MATERIALIZED_TABLE_ADDRESS,
+            ),
         )
         self.assertEqual(
             1,
-            raw_data_ok_view_map[_STATE_AGNOSTIC_VIEW_2_MATERIALIZED_TABLE_ADDRESS],
+            self.mapper.get_parent_complexity_for_view_2025(
+                child=_RAW_DATA_LATEST_VIEW_ADDRESS,
+                parent=_STATE_AGNOSTIC_VIEW_2_MATERIALIZED_TABLE_ADDRESS,
+            ),
         )

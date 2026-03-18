@@ -16,11 +16,15 @@
 # =============================================================================
 """Tests for query_complexity_score_2025.py"""
 import unittest
+from unittest.mock import MagicMock
 
 import sqlglot
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.utils.types import assert_type
+from recidiviz.view_registry.address_to_complexity_score_mapping import (
+    ParentAddressComplexityScoreMapper,
+)
 from recidiviz.view_registry.query_complexity_score_2025 import (
     get_query_complexity_score_2025,
 )
@@ -30,29 +34,34 @@ _TABLE_2_ADDRESS = BigQueryAddress.from_str("dataset.table_2")
 _TABLE_3_ADDRESS = BigQueryAddress.from_str("dataset.table_3")
 _STATE_SPECIFIC_TABLE_ADDRESS = BigQueryAddress.from_str("us_xx_dataset.table")
 _RAW_TABLE_ADDRESS = BigQueryAddress.from_str("us_xx_raw_data.table")
+_CHILD_ADDRESS = BigQueryAddress.from_str("dataset.child_view")
 
 
 class TestQueryComplexityScore2025(unittest.TestCase):
     """Tests for get_query_complexity_score_2025()"""
 
-    address_to_table_complexity_score: dict[BigQueryAddress, int]
+    mock_mapper: ParentAddressComplexityScoreMapper
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.address_to_table_complexity_score = {
+        address_to_table_complexity_score = {
             _TABLE_1_ADDRESS: 1,
             _TABLE_2_ADDRESS: 1,
             _TABLE_3_ADDRESS: 1,
             _STATE_SPECIFIC_TABLE_ADDRESS: 5,
             _RAW_TABLE_ADDRESS: 10,
         }
+        cls.mock_mapper = MagicMock(spec=ParentAddressComplexityScoreMapper)
+        cls.mock_mapper.get_parent_complexity_for_view_2025.side_effect = (
+            lambda *, child, parent: address_to_table_complexity_score[parent]
+        )
 
     def _get_query_score(self, query: str) -> int:
         parsed_query = assert_type(
             sqlglot.parse_one(query, dialect="bigquery"), sqlglot.expressions.Query
         )
         return get_query_complexity_score_2025(
-            parsed_query, self.address_to_table_complexity_score
+            parsed_query, self.mock_mapper, _CHILD_ADDRESS
         )
 
     def test_simplest_query(self) -> None:

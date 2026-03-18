@@ -1189,9 +1189,8 @@ class ViewQueryFormatTest(unittest.TestCase):
             try:
                 get_query_complexity_score_2025(
                     query_expression,
-                    address_to_table_complexity_score_mapper.get_parent_complexity_map_for_view_2025(
-                        view.address
-                    ),
+                    address_to_table_complexity_score_mapper,
+                    view.address,
                 )
             except ValueError as e:
                 exceptions.append(e)

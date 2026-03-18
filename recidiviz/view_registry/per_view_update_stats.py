@@ -273,9 +273,8 @@ def per_view_update_stats_for_view_update_result(
 
         complexity_score_2025 = get_query_complexity_score_2025(
             query_expression,
-            address_to_table_complexity_score_mapper.get_parent_complexity_map_for_view_2025(
-                v.address
-            ),
+            address_to_table_complexity_score_mapper,
+            v.address,
         )
 
         composite_complexity_score_2025 = (
