@@ -65,11 +65,18 @@ class TestReportStaleRawDataToGitHub(unittest.TestCase):
         )
         self.get_service_patcher.start()
 
+        self.get_all_referenced_file_tags_patcher = patch(
+            "recidiviz.airflow.dags.monitoring.stale_raw_data_alerts.get_all_referenced_file_tags",
+            return_value={"tagBasicData"},
+        )
+        self.get_all_referenced_file_tags_patcher.start()
+
     def tearDown(self) -> None:
         self.get_region_config_patcher.stop()
         self.in_gcp_production_patcher.stop()
         self.get_project_id_patcher.stop()
         self.get_service_patcher.stop()
+        self.get_all_referenced_file_tags_patcher.stop()
 
     @patch(
         "recidiviz.airflow.dags.monitoring.stale_raw_data_alerts.get_direct_ingest_states_launched_in_env"
@@ -125,6 +132,31 @@ class TestReportStaleRawDataToGitHub(unittest.TestCase):
         self.assertEqual(incident.state_code, "US_XX")
         self.assertEqual(incident.file_tag, "tagBasicData")
         self.assertEqual(incident.hours_stale, 0.0)
+
+    @patch(
+        "recidiviz.airflow.dags.monitoring.stale_raw_data_alerts.get_direct_ingest_states_launched_in_env"
+    )
+    def test_skips_unreferenced_file_tags(
+        self, mock_get_launched_states: MagicMock
+    ) -> None:
+        mock_get_launched_states.return_value = [StateCode.US_XX]
+        self.get_all_referenced_file_tags_patcher.stop()
+        with patch(
+            "recidiviz.airflow.dags.monitoring.stale_raw_data_alerts.get_all_referenced_file_tags",
+            return_value=set(),
+        ):
+            current_utc = datetime.now(timezone.utc)
+
+            update_datetimes_by_region = {
+                "US_XX": {
+                    "tagBasicData": (current_utc - timedelta(hours=181)).isoformat(),
+                }
+            }
+
+            report_stale_raw_data_to_github(update_datetimes_by_region)
+
+        self.mock_service.handle_incident.assert_not_called()
+        self.get_all_referenced_file_tags_patcher.start()
 
     def test_skips_non_production_environment(self) -> None:
         with patch(

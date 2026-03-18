@@ -26,6 +26,9 @@ from recidiviz.airflow.dags.monitoring.stale_raw_data_github_alerting_service im
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.ingest.direct.raw_data.raw_file_configs import get_region_raw_file_config
+from recidiviz.ingest.direct.raw_data.raw_file_references_utils import (
+    get_all_referenced_file_tags,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
@@ -37,8 +40,8 @@ def report_stale_raw_data_to_github(
 ) -> None:
     """Reports stale raw data files to GitHub, one issue per file.
 
-    For each regularly-updated file in each launched region, creates or updates a GitHub issue
-    if the file is stale, or closes the issue if the file becomes fresh.
+    For each regularly-updated file that is referenced by ingest or downstream views, creates or
+    updates a GitHub issue if the file is stale, or closes the issue if the file becomes fresh.
 
     Args:
         update_datetimes_by_region: Nested dictionary mapping upper case region codes
@@ -65,9 +68,11 @@ def report_stale_raw_data_to_github(
         )
 
         region_config = get_region_raw_file_config(state_code.value)
-        regularly_updated_configs = {
+        referenced_file_tags = get_all_referenced_file_tags(state_code)
+        regularly_updated_referenced_configs = {
             config.file_tag: config
             for config in region_config.get_configs_with_regularly_updated_data()
+            if config.file_tag in referenced_file_tags
         }
 
         most_recent_import_datetime_by_file_tag = {
@@ -77,7 +82,7 @@ def report_stale_raw_data_to_github(
             for file_tag in update_datetimes_by_region[state_code.value]
         }
 
-        for file_tag, config in regularly_updated_configs.items():
+        for file_tag, config in regularly_updated_referenced_configs.items():
             if file_tag not in most_recent_import_datetime_by_file_tag:
                 # if we have not yet imported this file, we can ignore
                 logging.info(
