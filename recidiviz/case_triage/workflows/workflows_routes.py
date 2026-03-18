@@ -857,6 +857,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             "intermediates": [{"placeId": pid} for pid in intermediate_place_ids],
             "travelMode": "DRIVE",
             "optimizeWaypointOrder": True,
+            "routingPreference": "TRAFFIC_AWARE",
         }
 
     @retry(
