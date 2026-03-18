@@ -262,6 +262,34 @@ class TestStaleRawDataGitHubService:
         different_file_issue.create_comment.assert_not_called()
         different_file_issue.edit.assert_not_called()
 
+    def test_handle_resolved_incident_does_not_close_issue_for_file_tag_with_shared_prefix(
+        self,
+        github_mocks: Mock,
+    ) -> None:
+        service = StaleRawDataGitHubService.get_stale_raw_data_service_for_state_code(
+            project_id="recidiviz-staging", state_code=StateCode.US_XX
+        )
+
+        incident = StaleRawDataAlertingIncident(
+            state_code="US_XX",
+            file_tag="test_file",
+            hours_stale=-5.0,
+            most_recent_import_date=datetime.datetime(2024, 1, 15),
+        )
+
+        issue_for_longer_file_tag = _create_issue(
+            title="[US_XX] [Staging] Stale raw data: test_fileType, last import: 2024-01-01",
+            issue_id=11111,
+            state="open",
+        )
+
+        github_mocks.get_issues.return_value = [issue_for_longer_file_tag]
+
+        service.handle_incident(incident)
+
+        issue_for_longer_file_tag.create_comment.assert_not_called()
+        issue_for_longer_file_tag.edit.assert_not_called()
+
     def test_handle_resolved_incident_no_open_issues(
         self,
         github_mocks: Mock,

@@ -36,11 +36,11 @@ class StaleRawDataAlertingIncident(AlertingIncident):
 
     @property
     def file_tag_incident_prefix(self) -> str:
-        return f"Stale raw data: {self.file_tag}"
+        return f"Stale raw data: {self.file_tag},"
 
     @property
     def unique_incident_id(self) -> str:
-        return f"{self.file_tag_incident_prefix}, last import: {self.most_recent_import_date.isoformat()}"
+        return f"{self.file_tag_incident_prefix} last import: {self.most_recent_import_date.isoformat()}"
 
     @property
     def is_resolved(self) -> bool:
