@@ -23,8 +23,12 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+    in_community_supervision_center,
     not_in_transition_center_on_supervision,
     supervision_case_type_is_serious_mental_illness_or_disability,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
@@ -39,7 +43,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_SMI_POPULATION"
 
 # TODO(#57821): Update/refine candidate population to ensure it's correct.
-# TODO(#57821): Exclude clients residing in Community Supervision Centers (CSCs).
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_POPULATION_NAME,
@@ -50,6 +53,9 @@ _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
         ),
         supervision_case_type_is_serious_mental_illness_or_disability.VIEW_BUILDER,
         not_in_transition_center_on_supervision.VIEW_BUILDER,
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=in_community_supervision_center.VIEW_BUILDER,
+        ),
     ],
 )
 

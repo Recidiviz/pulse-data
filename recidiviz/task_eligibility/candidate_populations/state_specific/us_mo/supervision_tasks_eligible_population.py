@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,8 +28,13 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_medium,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
+    in_community_supervision_center,
     in_supervision_initial_assessment_phase,
     not_in_transition_center_on_supervision,
+    supervision_case_type_is_treatment_court_offender,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
@@ -44,7 +49,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_POPULATION"
 
 # TODO(#57821): Update/refine candidate population to ensure it's correct.
-# TODO(#57821): Exclude clients residing in Community Supervision Centers (CSCs).
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_POPULATION_NAME,
@@ -71,6 +75,12 @@ _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
             ],
         ),
         not_in_transition_center_on_supervision.VIEW_BUILDER,
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=in_community_supervision_center.VIEW_BUILDER,
+        ),
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=supervision_case_type_is_treatment_court_offender.VIEW_BUILDER,
+        ),
     ],
 )
 
