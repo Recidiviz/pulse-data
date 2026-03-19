@@ -3465,8 +3465,6 @@ class NormalizedStatePerson(
             exempted_states={
                 # TODO(#55643): US_IX has ~27 invalid emails as of 1/6/26
                 StateCode.US_IX,
-                # TODO(#55644): US_NE has ~25 invalid emails as of 1/6/26
-                StateCode.US_NE,
                 # TODO(#55645): US_UT has ~200+ invalid emails as of 1/6/26
                 StateCode.US_UT,
             },
