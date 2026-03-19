@@ -49,10 +49,20 @@ output:
             $enum_mapping:
               $raw_text: RISKASSESSMENTTYPE
               $mappings:
-                StateAssessmentType.ORAS_PRISON_INTAKE: 3h
-                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: 2k
-                StateAssessmentType.ORAS_REENTRY: 4f
-                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY: 8b
+                StateAssessmentType.ORAS_PRISON_INTAKE:
+                  - 3h # Post-PAA PIT assessments
+                  - 3c # Pre-PAA PIT assessments
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION:
+                  - 2k # Post-PAA CST assessments
+                  - 2e # Pre-PAA CST assessments. Unused since 2015.
+                StateAssessmentType.ORAS_REENTRY:
+                  - 4f # Post-PAA RT assessments
+                  - 4c # Pre-PAA RT assessments. Unused since 2014.
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING:
+                  - 2h # Post-PAA CSST assessments
+                  - 2b # Pre-PAA CSST assessments
+                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY:
+                  - 8b # Post-PAA SRT assessments. Does not have a pre-PAA equivalent.
           conducting_staff_external_id: RISKASMTSTAFF
           conducting_staff_external_id_type:
             $conditional:
