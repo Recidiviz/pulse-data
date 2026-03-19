@@ -7,7 +7,7 @@ input_columns:
   lastName: STRING
   email: STRING
 unused_columns:
-  - argusId #TODO(#35505): Remove or encorporate in view once we get facility staff information
+  - argusId
 output:
   StateStaff:
     external_ids:

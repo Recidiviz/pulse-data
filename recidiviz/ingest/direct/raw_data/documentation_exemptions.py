@@ -99,13 +99,6 @@ COLUMN_DOCUMENTATION_FILE_LEVEL_EXEMPTIONS: dict[StateCode, set[str]] = {
     StateCode.US_MO: {
         "CODE_PDB_CLASS_EXIT_REASON_CODES",
     },
-    # TODO(#39248): Document columns used in these files and remove this exemption for US_NE
-    StateCode.US_NE: {
-        "AggregateSentence",
-        "LOCATION_HIST",
-        "ORASClientRiskLevelAndNeeds",
-        "PIMSParoleeInformation",
-    },
     # TODO(#39249): Document columns used in these files and remove this exemption for US_OR
     StateCode.US_OR: {
         "RCDVZ_CISPRDDTA_CLOVER",

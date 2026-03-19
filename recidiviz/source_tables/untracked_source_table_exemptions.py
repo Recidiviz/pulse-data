@@ -268,13 +268,6 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
         "elite_programservices",
         "recidiviz_elite_offences",
     },
-    # TODO(#57809): Delete these tables from BigQuery and remove this exemption
-    "us_ne_raw_data": {
-        "view_BMS_lnkEventResponse",
-        "view_BMS_lnkEventVio",
-        "view_BMS_tbl_NoncompliantBehaviors",
-        "view_BMS_tbl_NoncompliantResponses",
-    },
     # TODO(#57810): Delete these tables from BigQuery and remove this exemption
     "us_ny_raw_data": {"ADMISSIONS", "RELEASES"},
     # TODO(#57811): Delete this table from BigQuery and remove this exemption
@@ -410,13 +403,6 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
         "elite_offenderprogramprofiles",
         "elite_programservices",
         "recidiviz_elite_offences",
-    },
-    # TODO(#57809): Delete these tables from BigQuery and remove this exemption
-    "us_ne_raw_data_secondary": {
-        "view_BMS_lnkEventResponse",
-        "view_BMS_lnkEventVio",
-        "view_BMS_tbl_NoncompliantBehaviors",
-        "view_BMS_tbl_NoncompliantResponses",
     },
     # TODO(#57810): Delete these tables from BigQuery and remove this exemption
     "us_ny_raw_data_secondary": {"ADMISSIONS", "RELEASES"},

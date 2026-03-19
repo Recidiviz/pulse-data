@@ -149,19 +149,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     StateCode.US_ND: {
         "docstars_offensestable": ["LAST_UPDATE"],
     },
-    StateCode.US_NE: {
-        "AggregateSentence": ["projectedReleaseDate", "tentativeReleaseDate"],
-        "CodeValue": ["codeEndDate", "codeStartDate", "createdDate", "modifiedDate"],
-        "PIMSSpecialCondition": [
-            "beginDate",
-            "creationDateTime",
-            "endDate",
-            "lastUpdatedDateTime",
-            "noContactEndDate",
-            "sourceStartDate",
-            "suspendedDate",
-        ],
-    },
     StateCode.US_PA: {
         "dbo_Release": ["LastModifiedDate"],
         "dbo_vwCCISAllProgDtls": ["LstMod_Dt"],
