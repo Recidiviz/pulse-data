@@ -2063,7 +2063,7 @@ class BigQueryClientImpl(BigQueryClient):
         query_job_config.query_parameters = query_parameters or []
 
         if clustering_fields or time_partitioning or output_schema:
-            query_job_config.clustering_fields = clustering_fields or None
+            query_job_config.clustering_fields = clustering_fields
             query_job_config.time_partitioning = time_partitioning
 
             # If we are truncating, go ahead and delete the table (if it exists)

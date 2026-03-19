@@ -19,7 +19,6 @@ tool features and/or functionality."""
 from enum import Enum
 from typing import List, Optional
 
-from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, String
 from recidiviz.common.constants.auth import RosterPredefinedRoles
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel, snake_to_title
@@ -163,7 +162,7 @@ class ProductType(Enum):
         return f"({url_base_check}) AND ({path_filter})"
 
     @property
-    def columns_to_include_in_unioned_segment_view(self) -> list[BigQueryViewColumn]:
+    def columns_to_include_in_unioned_segment_view(self) -> list[str]:
         """Returns any additional attribute columns that should be included in the
         unioned Segment view for this product type.
         """
@@ -173,13 +172,7 @@ class ProductType(Enum):
             ProductType.CLIENT_PAGE,
             ProductType.TASKS,
         ]:
-            return [
-                String(
-                    name="opportunity_type",
-                    description="The Workflows opportunity associated with this event (e.g usIdEarnedDischarge, usNdEarlyTermination, usMeWorkRelease, etc)",
-                    mode="NULLABLE",
-                )
-            ]
+            return ["opportunity_type"]
         return []
 
     @property

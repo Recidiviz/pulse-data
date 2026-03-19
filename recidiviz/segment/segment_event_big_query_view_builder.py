@@ -22,7 +22,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
     build_segment_event_view_query_template,
-    segment_event_schema,
 )
 
 
@@ -72,10 +71,6 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 relevant_product_types=relevant_product_types,
                 has_session_id=has_session_id,
                 has_user_id=has_user_id,
-            ),
-            schema=segment_event_schema(
-                segment_events_source_table_address=segment_events_source_table_address,
-                additional_attribute_cols=additional_attribute_cols,
             ),
             should_materialize=True,
             clustering_fields=["state_code", "user_id"],
