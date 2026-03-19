@@ -91,9 +91,6 @@ from recidiviz.calculator.query.state.views.sessions.supervision_projected_compl
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sentences_preprocessed import (
     US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_me.us_me_consecutive_sentences_preprocessed import (
-    US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_consecutive_sentences_preprocessed import (
     US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -127,9 +124,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_d
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_transfer_to_limited_supervision_form_record import (
     US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
-    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_transfer_to_special_circumstances_supervision_request_record import (
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -153,9 +147,6 @@ from recidiviz.calculator.query.state.views.workflows.us_ar.resident_record_inca
 )
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_record_incarceration_cases_with_dates import (
     US_IX_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.us_me.resident_record_incarceration_cases_with_dates import (
-    US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
@@ -252,9 +243,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix.has_high_severity_
 from recidiviz.task_eligibility.criteria.state_specific.us_ix.supervision_past_full_term_completion_date import (
     VIEW_BUILDER as US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_me.supervision_past_half_full_term_release_date_from_probation_start import (
-    VIEW_BUILDER as US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_pa.meets_special_circumstances_criteria_for_time_served import (
     VIEW_BUILDER as US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER,
 )
@@ -349,32 +337,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
     (StateCode.US_IX, StateSupervisionSentence): {
         US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46255): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
-    },
-    (StateCode.US_ME, StateCharge): {
-        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
-    },
-    (StateCode.US_ME, StateIncarcerationSentence): {
-        US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove state_incarceration_sentence reference as "
-            "part of the v2 sentences migration"
-        ),
-        US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove state_incarceration_sentence reference as "
-            "part of the v2 sentences migration"
-        ),
-    },
-    (StateCode.US_ME, StateSupervisionSentence): {
-        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
-        US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove state_supervision_sentence reference as part "
             "of the v2 sentences migration"
         ),
     },
@@ -606,9 +568,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
-        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove this reference as part of the v2 sentences migration"
-        ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
         ),
@@ -712,9 +671,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
-        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove this reference as part of the v2 sentences migration"
         ),
         US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#50859): Remove this reference as part of the v2 sentences migration"
@@ -962,9 +918,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
-        US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove this reference as part of the v2 sentences migration"
-        ),
         SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -992,13 +945,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
-        ),
-    },
-    # TODO(#46256): Delete `us_me_consecutive_sentences_preprocessed` once US_ME is
-    #  migrated to v2 infra
-    US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-        CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
-            "TODO(#46256): Remove this reference as part of the v2 sentences migration"
         ),
     },
     # TODO(#46257): Delete `us_nd_consecutive_sentences_preprocessed` once US_ND is

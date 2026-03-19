@@ -20,44 +20,11 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.meetings.clients import (
     MEETINGS_CLIENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.meetings.residents import (
-    MEETINGS_RESIDENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
-    SENTENCE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
-    SENTENCES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_early_termination_record import (
-    US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
-    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.us_me.resident_record_incarceration_cases_with_dates import (
-    US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
-)
-from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StateCharge,
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-)
-from recidiviz.pipelines.ingest.dataset_config import (
-    normalized_state_dataset_for_state_code,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_me.supervision_past_half_full_term_release_date_from_probation_start import (
-    VIEW_BUILDER as US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER,
 )
 
 # For each US_ME metric export, for each product view in that export, a mapping of
@@ -73,39 +40,6 @@ US_ME_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
-        RESIDENT_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
-        },
-        US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER.address,
-            },
-        },
     },
     "MEETINGS": {
         # Meetings client/resident view doesn't pull sentence information, but does pull other
@@ -113,34 +47,7 @@ US_ME_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         MEETINGS_CLIENTS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-                US_ME_SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_PROBATION_START_VIEW_BUILDER.address,
             }
-        },
-        MEETINGS_RESIDENTS_VIEW_BUILDER.address: {
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ME),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                US_ME_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
         },
     },
 }
