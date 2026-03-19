@@ -9,6 +9,7 @@ input_columns:
   period_start_date: DATETIME
   end_date: DATETIME
   SUPVLEVL: STRING
+  ACTIVE_PW: STRING
   SUPERVISION: STRING
   CDPPSLOC_translated: STRING
   within_sentence_seq: INTEGER
@@ -29,15 +30,20 @@ output:
                 - sentence_seq
                 - within_sentence_seq
           supervision_type:
-            $enum_mapping:
-              $raw_text: SUPERVISION
-              $mappings:
-                StateSupervisionPeriodSupervisionType.PROBATION:
-                  - "PRO: PROBATION"
-                StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
-                  - "POR: POST-RELEASE"
-                StateSupervisionPeriodSupervisionType.PAROLE:
-                  - "PRB: POST RELEASE PROBATION"
+            $conditional:
+              - $if:
+                  $equal: [$literal("PAROLE WARRANT"), ACTIVE_PW]
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SUPERVISION
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - "PRO: PROBATION"
+                      StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+                        - "POR: POST-RELEASE"
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "PRB: POST RELEASE PROBATION"
           start_date: period_start_date
           termination_date: end_date
           case_type_entries:
@@ -55,12 +61,17 @@ output:
                   $not_null: CDOFICER
                 $then: $literal("US_NC_STAFF")
           supervision_level:
-            $enum_mapping:
-              $raw_text: SUPVLEVL
-              $mappings:
-                StateSupervisionLevel.INTAKE: "L0"
-                StateSupervisionLevel.MAXIMUM: "L1"
-                StateSupervisionLevel.HIGH: "L2"
-                StateSupervisionLevel.MEDIUM: "L3"
-                StateSupervisionLevel.MINIMUM: "L4"
-                StateSupervisionLevel.LIMITED: "L5"
+            $conditional:
+              - $if:
+                  $equal: [$literal("PAROLE WARRANT"), ACTIVE_PW]
+                $then: $literal_enum(StateSupervisionLevel.WARRANT)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SUPVLEVL
+                    $mappings:
+                      StateSupervisionLevel.INTAKE: "L0"
+                      StateSupervisionLevel.MAXIMUM: "L1"
+                      StateSupervisionLevel.HIGH: "L2"
+                      StateSupervisionLevel.MEDIUM: "L3"
+                      StateSupervisionLevel.MINIMUM: "L4"
+                      StateSupervisionLevel.LIMITED: "L5"
