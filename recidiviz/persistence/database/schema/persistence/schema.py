@@ -102,3 +102,8 @@ class UsTnCafFormEdits(PersistenceBase):
     TrusteeChecklistComplete = Column(String, nullable=True)
 
     DateOfFinalApprovalAndEntry = Column(DateTime, nullable=True)
+
+    SummaryTrusteeEverConvictedOfFirstDegreeMurder = Column(String, nullable=True)
+    SummaryTrusteeServingLifeSentence = Column(String, nullable=True)
+    SummaryTrusteeMoreThan10YearRemaining = Column(String, nullable=True)
+    SummaryTrusteeAllNoTrusteeCompleted = Column(String, nullable=True)
