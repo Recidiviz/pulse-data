@@ -49,14 +49,19 @@ output:
                 StateAssessmentClass.RISK:
                   - "8042/8043" # MDOC VFO Risk (Conviction)/MDOC Non-VFO Risk (Conviction)
                   - "8138/8139" # MDOC Non-VFO Risk (Conviction)/MDOC VFO Risk (Conviction)
+                  - "4139" # MDOC Male Core Non-VFO Risk Scale (Conviction)
+                  - "4140" # MDOC Male Core VFO Risk Scale (Conviction)
                   - "7/8" # Violent Recidivism Risk/General Recidivism Risk
                   - "72/73" # General Recidivism Risk (Conviction)/Violent Recidivism Risk (Conviction)
                   - "5002" # General Recidivism Risk
                   - "5001" # Violent Recidivism Risk
                   - "4050" # Recidivism Risk Scale V2
                   - "4047" # Recidivism Risk Sacle V1
+                  - "4142" # MDOC Female Core VFO Risk Scale (Conviction)
+                  - "4141" # MDOC Female Core Non-VFO Risk Scale (Conviction)
                 StateAssessmentClass.SOCIAL:
                   - "8047" # Cognitive Behavioral  (Conviction)
+                  - "4069" # Cognitive Behavioral (Conviction Version)
                   - "8046" # Social Adjustment Problems (Conviction)
                   - "4042" # Family and Socialization
                   - "4003" # Aggression
@@ -71,8 +76,10 @@ output:
                   - "8059" # Conflict with Family of origin  (Probation)
                   - "6016" # Conflict with Family of Origin (Reentry)
                   - "14" # Criminal Associates/Peers
+                  - "4068" # Associates and Peers
                   - "5029" # Criminal Personality
                   - "11" # Criminal Personality
+                  - "4075" # Personality Traits
                   - "5016" # Criminal Thinking Observation
                   - "29" # Criminal Thinking Observation (Reentry)
                   - "5028" # Criminal Thinking Self Report
@@ -88,6 +95,7 @@ output:
                   - "5008" # Gang Indicators
                   - "4030" # Impulsivity
                   - "17" # Leisure and Recreation
+                  - "4086" # Leisure and Recreation
                   - "5013" # Life Goals/Aimless
                   - "4017" # Low Educational Goals
                   - "5017" # Low Empathy
@@ -103,6 +111,7 @@ output:
                   - "23" # Social Isolation
                   - "9" # Socialization Failure
                   - "74" # Socialization Failure (Conviction)
+                  - "4079" # Socialization History (Conviction Version)
                   - "22" # Social Environment
                   - "5" # Social Adjustment Problems
                   - "1018" # Self-Efficacy
@@ -127,6 +136,7 @@ output:
                   - "5021" # Reentry Substance Abuse
                   - "4" # Substance Abuse
                   - "4036" # Common Drugs
+                  - "4106" # Substance Use
                 StateAssessmentClass.INTERNAL_UNKNOWN:
                   # Not sure how to classify ones that are more assessments on the history of circumstances
                   - "18" # (OLD) Failure to Appear
@@ -135,6 +145,7 @@ output:
                   - "8063" # Adult Victim Survey  (Probation)
                   - "4044" # Age at First Adjudication
                   - "20" # Residential Instability
+                  - "4105" # Residential Stability
                   - "1021" # Child Abuse Survey
                   - "8062" # Child Abuse Survey  (Probation)
                   - "19" # Community Non-Compliance
@@ -145,6 +156,7 @@ output:
                   - "6" # Criminal Opportunity
                   - "4039" # Current Offense
                   - "5026" # Current Violence
+                  - "4077" # Current Violence
                   - "3" # Current Violence
                   - "5020" # Depression/Mental Health
                   - "5003" # Early Onset
@@ -172,9 +184,11 @@ output:
                   - "5005" # History of Non-Compliance
                   - "2" # History of Non-Compliance
                   - "70" # History of Non-Compliance (Conviction)
+                  - "4082" # History of Non-Compliance (Conviction Version)
                   - "5006" # History of Violence
                   - "13" # History of Violence
                   - "71" # History of Violence (Conviction)
+                  - "4084" # History of Violence (Conviction Version)
                   - "1001" # Housing Safety
                   - "8048" # Housing Safety  (Probation)
                   - "6001" # Housing Safety (Reentry)
@@ -204,7 +218,11 @@ output:
                   - "4018" # Unsafe Neighborhood
                   - "5030" # Vocation/Education
                   - "15" # Vocational/Education
+                  - "4109" # Vocational/Educational
                   - "4009" # Inconsistent Discipline
+                  - "4072" # Legal System Involvement (Conviction Version)
+                  - "4071" # Thinking and Attitudes
+                  - "4074" # Society and Routines
           assessment_type:
             $conditional:
               - $if:
@@ -299,6 +317,7 @@ output:
                   - "Potential Faking Concern"
                   - "No Potential Faking Concern"
                   - "0"
+                  - "24" # TODO(#64619) determine what this really means -- only 1 occurence
           assessment_metadata:
             $normalized_values_json_dict:
               SCALE_SET: corfscaleset_name
