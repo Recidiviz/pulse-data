@@ -81,6 +81,7 @@ output:
                   - MAXIMUM
                 StateIncarcerationPeriodCustodyLevel.MINIMUM:
                   - MIT # Minimum Trustee
+                  - TRS # Trustee
                   - MIR # Minimum Restricted
                   - MID # Minimum Direct
                   - LOW
