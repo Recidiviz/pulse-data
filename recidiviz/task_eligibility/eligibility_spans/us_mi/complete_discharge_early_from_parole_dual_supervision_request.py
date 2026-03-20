@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
 from recidiviz.task_eligibility.criteria.general import (
     custodial_authority_is_supervision_authority_or_other_state,
     serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state,
+    supervision_level_is_not_residential_program,
     supervision_not_past_full_term_completion_date_or_upcoming_30_days,
     supervision_or_supervision_out_of_state_level_is_not_high,
     supervision_or_supervision_out_of_state_past_half_full_term_release_date,
@@ -86,6 +87,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_or_supervision_out_of_state_level_is_not_high.VIEW_BUILDER,
         custodial_authority_is_supervision_authority_or_other_state.VIEW_BUILDER,
         supervision_level_is_not_modified.VIEW_BUILDER,
+        supervision_level_is_not_residential_program.VIEW_BUILDER,
         no_conditions_blocking_early_discharge.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
