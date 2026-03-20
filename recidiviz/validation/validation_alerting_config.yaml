@@ -32,6 +32,7 @@ slack_people:
   not-a-doctor-stromberg: "U03V1BHSKQW"
   lydiamasri2: "U036XAJAL79"
   santymendoza: "U067TSCJD5X"
+  jkgerig: "U01S74N158A"
 
 # Default Slack channel for states without a configured channel
 default_slack_channel: zbrenda-validation-test
@@ -58,7 +59,7 @@ state_config:
   US_CO:
     slack_channel: us-colorado
     default_assignees:
-      - lydiamasri2
+      - jkgerig
   US_IA:
     slack_channel: us-iowa
     default_assignees:
