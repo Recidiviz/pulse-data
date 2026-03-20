@@ -31,6 +31,8 @@ python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
     --sandbox-dataset-prefix my_prefix \
     --source-bucket recidiviz-staging-my-test-bucket \
     [--file-tag-filter-regex "tagA|otherTagB"] \
+    [--start-datetime-inclusive "2024-01-01"] \
+    [--end-datetime-exclusive "2024-06-01"] \
     [--allow-incomplete-configs False]
     [--infer-schema-from-csv] \
     [--skip-blocking-validations] \
@@ -52,6 +54,7 @@ from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import parse_opt_datetime_maybe_add_tz
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -95,6 +98,8 @@ def get_unprocessed_raw_files_in_bucket(
     bucket_path: GcsfsBucketPath,
     region_raw_file_config: DirectIngestRegionRawFileConfig,
     file_tag_filters: Optional[List[str]],
+    start_datetime_inclusive: datetime.datetime | None,
+    end_datetime_exclusive: datetime.datetime | None,
 ) -> Tuple[List[GcsfsFilePath], List[SandboxConceptualFileImportResult]]:
     """Returns a list of paths to unprocessed raw files in the provided bucket that have
     registered file tags for a given region.
@@ -104,18 +109,7 @@ def get_unprocessed_raw_files_in_bucket(
     skipped_files = []
     for path in unprocessed_paths:
         parts = filename_parts_from_path(path)
-        if parts.file_tag in region_raw_file_config.raw_file_tags:
-            if file_tag_filters is not None and parts.file_tag not in file_tag_filters:
-                skipped_files.append(
-                    SandboxConceptualFileImportResult(
-                        paths=[path],
-                        status=SandboxImportStatus.SKIPPED,
-                        error_message="Excluded by file_tag_filters",
-                    )
-                )
-            else:
-                unprocessed_raw_files.append(path)
-        else:
+        if parts.file_tag not in region_raw_file_config.raw_file_tags:
             skipped_files.append(
                 SandboxConceptualFileImportResult(
                     paths=[path],
@@ -123,6 +117,41 @@ def get_unprocessed_raw_files_in_bucket(
                     error_message="Unrecognized file tag",
                 )
             )
+            continue
+
+        if file_tag_filters is not None and parts.file_tag not in file_tag_filters:
+            skipped_files.append(
+                SandboxConceptualFileImportResult(
+                    paths=[path],
+                    status=SandboxImportStatus.SKIPPED,
+                    error_message="Excluded by file_tag_filters",
+                )
+            )
+            continue
+
+        upload_dt = parts.utc_upload_datetime
+        if start_datetime_inclusive and upload_dt < start_datetime_inclusive:
+            skipped_files.append(
+                SandboxConceptualFileImportResult(
+                    paths=[path],
+                    status=SandboxImportStatus.SKIPPED,
+                    error_message="Excluded by start_datetime_inclusive filter",
+                )
+            )
+            continue
+
+        if end_datetime_exclusive and upload_dt >= end_datetime_exclusive:
+            skipped_files.append(
+                SandboxConceptualFileImportResult(
+                    paths=[path],
+                    status=SandboxImportStatus.SKIPPED,
+                    error_message="Excluded by end_datetime_exclusive filter",
+                )
+            )
+            continue
+
+        # We have no reason to skip this file
+        unprocessed_raw_files.append(path)
 
     return unprocessed_raw_files, skipped_files
 
@@ -205,10 +234,21 @@ def do_sandbox_raw_file_import(
     persist_intermediary_tables: bool,
     allow_incomplete_chunked_files: bool,
     skip_raw_data_pruning: bool,
+    start_datetime_inclusive: datetime.datetime | None,
+    end_datetime_exclusive: datetime.datetime | None,
 ) -> None:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
     """
+    if (
+        start_datetime_inclusive
+        and end_datetime_exclusive
+        and start_datetime_inclusive > end_datetime_exclusive
+    ):
+        raise ValueError(
+            f"The start datetime bound [{start_datetime_inclusive}] must be less than or "
+            f"equal to the end datetime bound [{end_datetime_exclusive}]."
+        )
 
     region_raw_file_config = DirectIngestRegionRawFileConfig(
         region_code=state_code.value.lower()
@@ -229,6 +269,8 @@ def do_sandbox_raw_file_import(
         source_bucket,
         region_raw_file_config,
         file_tag_filters,
+        start_datetime_inclusive=start_datetime_inclusive,
+        end_datetime_exclusive=end_datetime_exclusive,
     )
 
     logging.info("******************** Sandbox Plan ***********************")
@@ -332,6 +374,22 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--start-datetime-inclusive",
+        default=None,
+        help="Lower bound datetime filter (inclusive). Files with an upload datetime before "
+        "this value will be skipped. Accepts date format (YYYY-MM-DD) or ISO datetime "
+        "(e.g. 2019-09-03T12:00:00Z).",
+    )
+
+    parser.add_argument(
+        "--end-datetime-exclusive",
+        default=None,
+        help="Upper bound datetime filter (exclusive). Files with an upload datetime at or "
+        "after this value will be skipped. Accepts date format (YYYY-MM-DD) or ISO datetime "
+        "(e.g. 2019-09-03T12:00:00Z).",
+    )
+
+    parser.add_argument(
         "--infer-schema-from-csv",
         help=(
             "For files with a header row, will infers the raw file's schema from the "
@@ -406,6 +464,12 @@ def main() -> None:
             persist_intermediary_tables=known_args.persist_intermediary_tables,
             allow_incomplete_chunked_files=known_args.allow_incomplete_chunked_files,
             skip_raw_data_pruning=known_args.skip_raw_data_pruning,
+            start_datetime_inclusive=parse_opt_datetime_maybe_add_tz(
+                known_args.start_datetime_inclusive, tz_to_add=datetime.UTC
+            ),
+            end_datetime_exclusive=parse_opt_datetime_maybe_add_tz(
+                known_args.end_datetime_exclusive, tz_to_add=datetime.UTC
+            ),
         )
 
 
