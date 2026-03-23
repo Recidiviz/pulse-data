@@ -317,7 +317,10 @@ output:
                   - "Potential Faking Concern"
                   - "No Potential Faking Concern"
                   - "0"
-                  - "24" # TODO(#64619) determine what this really means -- only 1 occurence
+                  - "24" # TODO(#64619) determine what this really means
+                  - "25" # TODO(#64619) determine what this really means
+                  - "26" # TODO(#64619) determine what this really means
+                  - "27" # TODO(#64619) determine what this really means
           assessment_metadata:
             $normalized_values_json_dict:
               SCALE_SET: corfscaleset_name
