@@ -74,7 +74,6 @@ output:
                   - LG # LOW LEVEL FREEN LOW LEVEL 2
                   - OR # ORANGE - LEVEL 3
                   - WC # WEC OFFENDER
-                  # TODO(#45598): Verify description for VL and 4X
                   - VL # VERY LOW
                   - 4X # COMMUNITY X
                 StateIncarcerationPeriodCustodyLevel.MAXIMUM:

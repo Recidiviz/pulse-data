@@ -38,6 +38,7 @@ input_columns:
   DateOfApprovalAndEntry_Trustee: STRING
   CounselorRecommendedOverride: STRING
   CounselorRecommendedCustodyLevel: STRING
+  RecommendedCustody: STRING
   FinalOverrideCode: STRING
   FinalCustodyLevel: STRING
   TrusteeEligible: STRING
@@ -129,3 +130,4 @@ output:
               LastClassificationDate: LastClassificationDate
               firstFormEdit: firstFormEdit
               CAFDate: CAFDate
+              RecommendedCustody: RecommendedCustody
