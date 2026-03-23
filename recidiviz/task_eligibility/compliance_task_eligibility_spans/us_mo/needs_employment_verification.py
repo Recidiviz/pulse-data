@@ -40,10 +40,6 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     task_name="needs_employment_verification",
     candidate_population_view_builder=supervision_employment_verification_eligible_non_iap_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        # TODO(#57257): Because we're filtering out clients who are unemployed via the
-        # candidate population, we're not actually updating the underlying due dates for
-        # clients in this criterion based on whether they're unemployed. Do we want to
-        # update the criterion?
         meets_employment_verification_triggers.VIEW_BUILDER,
     ],
     compliance_type=ComplianceType.CONTACT,

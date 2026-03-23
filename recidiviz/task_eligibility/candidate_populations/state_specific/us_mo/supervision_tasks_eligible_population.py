@@ -48,7 +48,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _POPULATION_NAME = "US_MO_SUPERVISION_TASKS_ELIGIBLE_POPULATION"
 
-# TODO(#57821): Update/refine candidate population to ensure it's correct.
 _CRITERIA_GROUP = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.AND,
     criteria_name=_POPULATION_NAME,
