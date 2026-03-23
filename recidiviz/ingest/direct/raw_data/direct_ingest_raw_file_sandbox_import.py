@@ -401,6 +401,8 @@ def _build_bq_metadata(
 
     for metadata in gcs_metadata:
 
+        metadata.file_id = metadata.gcs_file_id
+
         if region_raw_file_config.raw_file_configs[
             metadata.parts.file_tag
         ].is_chunked_file:
@@ -409,7 +411,6 @@ def _build_bq_metadata(
             ].append(metadata)
             continue
 
-        metadata.file_id = metadata.gcs_file_id
         conceptual_files.append(
             RawBigQueryFileMetadata(
                 file_id=metadata.gcs_file_id,
@@ -436,14 +437,7 @@ def _build_bq_metadata(
                         [f.path.file_name for f in gcs_files],
                     )
                     conceptual_files.append(
-                        RawBigQueryFileMetadata(
-                            gcs_files=gcs_files,
-                            file_tag=file_tag,
-                            update_datetime=max(
-                                gcs_files,
-                                key=lambda x: x.parts.utc_upload_datetime,
-                            ).parts.utc_upload_datetime,
-                        )
+                        RawBigQueryFileMetadata.from_gcs_files(gcs_files)
                     )
 
                 else:

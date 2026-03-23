@@ -18,7 +18,6 @@
 deprecated storage directory for a given state."""
 import datetime
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Tuple
 
 import attr
@@ -38,6 +37,7 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.log_helpers import make_log_output_path
 
 MAX_THREADS = 12
@@ -195,24 +195,19 @@ class MoveIngestBucketRawFilesToDeprecatedController:
             dry_run=self.dry_run,
         )
 
-        failed_gcsfs_files = []
-        successful_gcsfs_files = []
-        with ThreadPoolExecutor(
-            max_workers=min(MAX_THREADS, len(gcsfs_files_to_operate_on))
-        ) as executor:
-            future_to_raw_file = {
-                executor.submit(self._move_file, raw_file): raw_file
-                for raw_file in gcsfs_files_to_operate_on
-            }
-
-            for future in as_completed(future_to_raw_file):
-                raw_file = future_to_raw_file[future]
-                try:
-                    future.result()
-                    successful_gcsfs_files.append(raw_file)
-                except Exception as e:
-                    print(f"Error processing file {raw_file}: {e}")
-                    failed_gcsfs_files.append(raw_file)
+        dry_run_str = "[DRY RUN] " if self.dry_run else ""
+        result = map_fn_with_progress_bar_results(
+            work_items=gcsfs_files_to_operate_on,
+            work_fn=self._move_file,
+            progress_bar_message=f"{dry_run_str}Moving files to deprecated storage...",
+            single_work_item_timeout_sec=60 * 20,
+            overall_timeout_sec=60 * 60 * 4,
+            max_workers=MAX_THREADS,
+        )
+        successful_gcsfs_files = [file for file, _ in result.successes]
+        failed_gcsfs_files = [file for file, _ in result.exceptions]
+        for raw_file, e in result.exceptions:
+            print(f"Error processing file {raw_file}: {e}")
 
         self._write_log_file(successful_gcsfs_files, failed_gcsfs_files)
 
