@@ -42,7 +42,7 @@ class AirflowAlertingIncident(AlertingIncident):
     """
 
     dag_id: str = attr.ib(validator=attr_validators.is_str)
-    dag_run_config: str = attr.ib(validator=attr_validators.is_str)
+    dag_run_config: str | None = attr.ib(validator=attr_validators.is_opt_str)
     job_id: str = attr.ib(validator=attr_validators.is_str)
     incident_type: str = attr.ib(validator=attr_validators.is_str)
     # sorted list of failed execution dates [ earliest date, ... , latest date ]
@@ -70,7 +70,7 @@ class AirflowAlertingIncident(AlertingIncident):
 
     @cached_property
     def dag_run_config_obj(self) -> Dict[str, Any]:
-        return json.loads(self.dag_run_config)
+        return json.loads(self.dag_run_config) if self.dag_run_config else {}
 
     @property
     def unique_incident_id(self) -> str:
@@ -79,7 +79,11 @@ class AirflowAlertingIncident(AlertingIncident):
         The unique incident id includes the last successful job run in order to group incidents by distinct sets of
         consecutive failures.
         """
-        conf_string = f"{self.dag_run_config} " if self.dag_run_config != "{}" else ""
+        conf_string = (
+            f"{self.dag_run_config} "
+            if self.dag_run_config and self.dag_run_config != "{}"
+            else ""
+        )
         start_date = self.incident_start_date.strftime("%Y-%m-%d %H:%M %Z")
         return f"{self.incident_type}: {conf_string}{self.dag_id}.{self.job_id}, started: {start_date}"
 
@@ -92,7 +96,7 @@ class AirflowAlertingIncident(AlertingIncident):
         cls,
         *,
         dag_id: str,
-        conf: str,
+        conf: str | None,
         job_id: str,
         failed_execution_dates: list[datetime],
         previous_success: pd.Timestamp | NaTType,

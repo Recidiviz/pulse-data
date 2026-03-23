@@ -21,6 +21,7 @@ from airflow.decorators import task, task_group
 from airflow.models import DagRun
 
 from recidiviz.airflow.dags.monitoring.dag_registry import (
+    INITIALIZE_DAG_GROUP_ID,
     get_known_configuration_parameters,
 )
 from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
@@ -88,7 +89,7 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     return True
 
 
-@task_group(group_id="initialize_dag")
+@task_group(group_id=INITIALIZE_DAG_GROUP_ID)
 def initialize_raw_data_dag_group() -> Any:
     wait_to_continue_or_cancel = WaitUntilCanContinueOrCancelSensorAsync(
         delegate=StateSpecificNonBlockingDagWaitUntilCanContinueOrCancelDelegate(),

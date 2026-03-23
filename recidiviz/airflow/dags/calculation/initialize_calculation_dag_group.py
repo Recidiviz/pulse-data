@@ -21,6 +21,7 @@ from airflow.decorators import task, task_group
 from airflow.models import DagRun
 
 from recidiviz.airflow.dags.monitoring.dag_registry import (
+    INITIALIZE_DAG_GROUP_ID,
     get_known_configuration_parameters,
 )
 from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
@@ -40,9 +41,6 @@ from recidiviz.airflow.dags.utils.wait_until_can_continue_or_cancel_delegates im
 
 # Need a disable expression-not-assigned because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
-
-
-INITIALIZE_DAG_GROUP_ID = "initialize_dag"
 
 
 def templated_argument_from_conf(

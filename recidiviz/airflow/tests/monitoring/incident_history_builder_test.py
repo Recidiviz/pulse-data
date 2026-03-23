@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 from recidiviz.airflow.dags.monitoring.airflow_task_run_history_delegate import (
     AirflowTaskRunHistoryDelegate,
 )
+from recidiviz.airflow.dags.monitoring.dag_registry import INITIALIZE_DAG_GROUP_ID
 from recidiviz.airflow.dags.monitoring.file_tag_import_run_summary import (
     BigQueryFailedFileImportRunSummary,
     FileTagImportRunSummary,
@@ -1511,3 +1512,72 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             )
             # July 10th is the next success
             self.assertEqual(incident.next_success_date, july_tenth.execution_date)
+
+    @patch(
+        "recidiviz.airflow.dags.monitoring.utils.get_discrete_configuration_parameters"
+    )
+    def test_initialize_dag_cross_config_resolution(
+        self, mock_get_discrete_parameters: MagicMock
+    ) -> None:
+        """
+        Given a DAG where a run with no config fails an initialize_dag task,
+        followed by a run with proper config that succeeds the same task:
+
+                                              2023-07-06 2023-07-07
+        {}                      initialize_dag.*  🟥
+        {"instance": "PRIMARY"} initialize_dag.*             🟩
+
+        Assert that the failure is resolved by the success, even though the
+        configs are different. initialize_dag tasks validate the run config itself,
+        so any subsequent success should close the alert regardless of partition.
+        """
+
+        def _fake_get_discrete_params(project_id: str, dag_id: str) -> list[str]:
+            if project_id == _PROJECT_ID and dag_id == _TEST_DAG_ID:
+                return ["instance"]
+            raise ValueError(f"Unexpected dag_id [{dag_id}]")
+
+        mock_get_discrete_parameters.side_effect = _fake_get_discrete_params
+
+        init_task = dummy_task(
+            test_dag, f"{INITIALIZE_DAG_GROUP_ID}.wait_to_continue_or_cancel"
+        )
+
+        with self._get_session() as session:
+            # Run with no config: init task fails
+            july_sixth = dummy_dag_run(test_dag, "2023-07-06 12:00", conf={})
+            july_sixth_init = dummy_ti(init_task, july_sixth, "failed")
+
+            # Run with proper config: init task succeeds
+            july_seventh = dummy_dag_run(
+                test_dag,
+                "2023-07-07 12:00",
+                conf={"instance": "PRIMARY"},
+            )
+            july_seventh_init = dummy_ti(init_task, july_seventh, "success")
+
+            session.add_all(
+                [
+                    july_sixth,
+                    july_sixth_init,
+                    july_seventh,
+                    july_seventh_init,
+                ]
+            )
+            session.commit()
+
+            # Capture dates before session closes to avoid DetachedInstanceError
+            july_sixth_date = july_sixth.execution_date
+            july_seventh_date = july_seventh.execution_date
+
+            history = IncidentHistoryBuilder(dag_id=test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+
+        # The initialize_dag failure (no-config run) should be resolved by the
+        # success from the properly-configured run.
+        init_incident_key = f"Task Run: test_dag.{INITIALIZE_DAG_GROUP_ID}.wait_to_continue_or_cancel, started: 2023-07-06 12:00 UTC"
+        self.assertIn(init_incident_key, history)
+        init_incident = history[init_incident_key]
+        self.assertEqual(init_incident.incident_start_date, july_sixth_date)
+        self.assertEqual(init_incident.next_success_date, july_seventh_date)

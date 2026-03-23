@@ -19,6 +19,8 @@ project.
 """
 from typing import List, Set
 
+INITIALIZE_DAG_GROUP_ID = "initialize_dag"
+
 
 def get_metadata_maintenance_dag_id(project_id: str) -> str:
     """Returns the id of the calculation DAG defined in metadata_maintenance_dag.py."""

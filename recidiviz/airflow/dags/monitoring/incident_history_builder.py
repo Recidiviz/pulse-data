@@ -58,7 +58,7 @@ class IncidentHistoryBuilder:
             return {}
 
         data_by_distinct_dag: dict[
-            tuple[str, str, str, str], list[dict[str, Any]]
+            tuple[str, str | None, str, str], list[dict[str, Any]]
         ] = defaultdict(list)
         for job_run in job_history:
             data_by_distinct_dag[job_run.unique_key].append(attr.asdict(job_run))

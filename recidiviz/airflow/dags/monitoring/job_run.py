@@ -23,6 +23,7 @@ from typing import Any
 import attr
 from airflow.utils.timezone import utc
 
+from recidiviz.airflow.dags.monitoring.dag_registry import INITIALIZE_DAG_GROUP_ID
 from recidiviz.airflow.dags.monitoring.utils import filter_params_to_discrete
 from recidiviz.common import attr_validators
 
@@ -65,8 +66,10 @@ class JobRun:
         - dag_id (str): the dag_id of the Airflow DAG this job is apart of
         - execution_date (datetime.datetime): the execution date of the DAG. for more
             context on the specific meaning in Airflow, see https://airflow.apache.org/docs/apache-airflow/stable/faq.html#faq-what-does-execution-date-mean
-        - dag_run_config (str): the run config associated with the DAG run. This is
-            serialized json, stored as a string so it can be used as a dataframe index.
+        - dag_run_config (str | None): the run config associated with the DAG run. This
+            is serialized json, stored as a string so it can be used as a dataframe
+            index. None for initialize_dag tasks, which are not associated with any
+            specific config for incident tracking purposes.
         - job_id (str): the unique job_id of the job run. If a job run is representing a
             an Airflow task, this will be the `task_id`.
         - state (JobRunState): the state of the this job.
@@ -85,7 +88,7 @@ class JobRun:
     )
     # n.b. make sure this is SORTED before you convert it to a string; otherwise, it might
     # break deduplication logic
-    dag_run_config: str = attr.field(validator=attr_validators.is_str)
+    dag_run_config: str | None = attr.field(validator=attr_validators.is_opt_str)
     job_id: str = attr.field(validator=attr_validators.is_str)
     state: JobRunState = attr.field(validator=attr.validators.in_(JobRunState))
     error_message: str | None = attr.field(validator=attr_validators.is_opt_str)
@@ -95,14 +98,21 @@ class JobRun:
 
     @classmethod
     def unique_keys(cls) -> list[str]:
+        """Returns the field names that make up the partition key. Used for
+        dropping these columns from dataframes in IncidentHistoryBuilder.
+
+        Note: the instance-level |unique_key| property may return a different
+        value for |dag_run_config| than the field itself (e.g. for initialize_dag
+        tasks). Use |unique_key| for partitioning, not this method.
+        """
         return ["dag_id", "dag_run_config", "job_type", "job_id"]
 
     @property
-    def unique_key(self) -> tuple[str, str, str, str]:
+    def unique_key(self) -> tuple[str, str | None, str, str]:
         """Returns the unique key for this job run, which is a tuple of the
         JobRun.unique_keys.
         """
-        return tuple(getattr(self, key) for key in self.unique_keys())
+        return (self.dag_id, self.dag_run_config, self.job_type, self.job_id)
 
     @classmethod
     def order_by_keys(cls) -> list[str]:
@@ -123,13 +133,19 @@ class JobRun:
         job_type: JobRunType,
         try_number: int | None,
         max_tries: int | None,
-        error_message: str | None
+        error_message: str | None,
     ) -> "JobRun":
-        # sort dag run config to make sure that two different parameter orderings
-        # doesn't break incident de-duplication
-        sorted_dag_run_config = dict(
-            sorted(filter_params_to_discrete(conf, dag_id).items())
-        )
+        # initialize_dag tasks are not associated with any specific config for
+        # incident tracking purposes — any subsequent success should resolve any
+        # failure regardless of what config was passed.
+        if task_id.startswith(f"{INITIALIZE_DAG_GROUP_ID}."):
+            dag_run_config: str | None = None
+        else:
+            # sort dag run config to make sure that two different parameter
+            # orderings doesn't break incident de-duplication
+            dag_run_config = json.dumps(
+                dict(sorted(filter_params_to_discrete(conf, dag_id).items()))
+            )
         # Airflow uses pendulum as it's timezone library; let's convert it to native UTC
         # so our validators understand it
         if execution_date.tzinfo == utc:
@@ -137,7 +153,7 @@ class JobRun:
         return JobRun(
             dag_id=dag_id,
             execution_date=execution_date,
-            dag_run_config=json.dumps(sorted_dag_run_config),
+            dag_run_config=dag_run_config,
             job_id=task_id,
             state=JobRunState(state),
             job_run_num=try_number or 0,

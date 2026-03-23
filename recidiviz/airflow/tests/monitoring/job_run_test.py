@@ -19,6 +19,7 @@ import datetime
 from unittest import TestCase
 from unittest.mock import patch
 
+from recidiviz.airflow.dags.monitoring.dag_registry import INITIALIZE_DAG_GROUP_ID
 from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState, JobRunType
 
 TEST_DAG = "test_dag"
@@ -93,3 +94,50 @@ class JobRunTest(TestCase):
             job_run_num=0,
         )
         assert run == run_is_the_same
+
+    def _make_job_run_from_airflow(self, task_id: str, conf: dict) -> JobRun:
+        return JobRun.from_airflow_task_instance(
+            dag_id=TEST_DAG,
+            execution_date=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+            conf=conf,
+            task_id=task_id,
+            state=JobRunState.SUCCESS.value,
+            job_type=JobRunType.AIRFLOW_TASK_RUN,
+            error_message=None,
+            try_number=0,
+            max_tries=None,
+        )
+
+    def test_from_airflow_initialize_dag_sets_null_config(self) -> None:
+        """initialize_dag tasks should have dag_run_config=None regardless of conf
+        so that a success from any config partition resolves a failure from any other."""
+        task_id = f"{INITIALIZE_DAG_GROUP_ID}.verify_parameters"
+        no_config_run = self._make_job_run_from_airflow(task_id=task_id, conf={})
+        primary_run = self._make_job_run_from_airflow(
+            task_id=task_id, conf={"ingest_instance": "PRIMARY"}
+        )
+        secondary_run = self._make_job_run_from_airflow(
+            task_id=task_id, conf={"ingest_instance": "SECONDARY"}
+        )
+
+        self.assertIsNone(no_config_run.dag_run_config)
+        self.assertIsNone(primary_run.dag_run_config)
+        self.assertIsNone(secondary_run.dag_run_config)
+        self.assertEqual(no_config_run.unique_key, primary_run.unique_key)
+        self.assertEqual(no_config_run.unique_key, secondary_run.unique_key)
+        self.assertEqual(primary_run.unique_key, secondary_run.unique_key)
+
+    def test_from_airflow_non_initialize_dag_respects_config(self) -> None:
+        """Non-initialize_dag tasks should still partition by config."""
+        task_id = "some_other_task"
+        no_config_run = self._make_job_run_from_airflow(task_id=task_id, conf={})
+        primary_run = self._make_job_run_from_airflow(
+            task_id=task_id, conf={"param_a": "PRIMARY"}
+        )
+        secondary_run = self._make_job_run_from_airflow(
+            task_id=task_id, conf={"param_a": "SECONDARY"}
+        )
+
+        self.assertNotEqual(no_config_run.unique_key, primary_run.unique_key)
+        self.assertNotEqual(no_config_run.unique_key, secondary_run.unique_key)
+        self.assertNotEqual(primary_run.unique_key, secondary_run.unique_key)
