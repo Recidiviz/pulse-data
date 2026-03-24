@@ -19,6 +19,7 @@ along with the product type associated with each page."""
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.calculator.query.state.dataset_config import (
     CASE_PLANNING_PRODUCTION_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
@@ -27,6 +28,7 @@ from recidiviz.segment.product_type import ProductType
 from recidiviz.segment.segment_event_utils import (
     SEGMENT_FRONTEND_TRACKING_DATASETS,
     build_segment_event_view_query_template,
+    segment_event_schema,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,6 +42,38 @@ _NULL_UTM_COLS_SNIPPET = ", ".join(
 )
 
 _DATASETS_WITH_UTM_COLS = [PULSE_DASHBOARD_SEGMENT_DATASET]
+
+event_schema = {col.name: col for col in segment_event_schema()}
+_SCHEMA = [
+    event_schema["state_code"],
+    event_schema["user_id"],
+    event_schema["email_address"],
+    event_schema["event_ts"],
+    event_schema["context_page_path"],
+    event_schema["context_page_url"],
+    event_schema["product_type"],
+] + [
+    String(
+        name="utm_source",
+        description="The utm_source query parameter in the URL that led to this pageview.",
+        mode="NULLABLE",
+    ),
+    String(
+        name="utm_medium",
+        description="The utm_medium query parameter in the URL that led to this pageview.",
+        mode="NULLABLE",
+    ),
+    String(
+        name="utm_campaign",
+        description="The utm_campaign query parameter in the URL that led to this pageview.",
+        mode="NULLABLE",
+    ),
+    String(
+        name="utm_term",
+        description="The utm_term query parameter in the URL that led to this pageview.",
+        mode="NULLABLE",
+    ),
+]
 
 
 def _get_pages_query_template(dataset: str, additional_cols: list[str]) -> str:
@@ -58,15 +92,17 @@ ALL_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     # Only pulse_dashboard_segment_metrics.pages has UTM parameter columns,
     # not case_planning_production.pages
     view_query_template="\nUNION ALL\n".join(
-        _get_pages_query_template(dataset, _UTM_COLS)
-        if dataset in _DATASETS_WITH_UTM_COLS
-        else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(CASE_PLANNING_PRODUCTION_DATASET, [])})"
+        (
+            _get_pages_query_template(dataset, _UTM_COLS)
+            if dataset in _DATASETS_WITH_UTM_COLS
+            else f"SELECT *, {_NULL_UTM_COLS_SNIPPET} FROM ({_get_pages_query_template(CASE_PLANNING_PRODUCTION_DATASET, [])})"
+        )
         for dataset in SEGMENT_FRONTEND_TRACKING_DATASETS
     ),
     view_id=_VIEW_ID,
     description=__doc__,
     should_materialize=True,
-    clustering_fields=[],
+    schema=_SCHEMA,
 )
 
 if __name__ == "__main__":

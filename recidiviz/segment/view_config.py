@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, String
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -34,6 +35,28 @@ from recidiviz.segment.segment_event_big_query_view_builder import (
 from recidiviz.segment.segment_event_big_query_view_collector import (
     SegmentEventBigQueryViewCollector,
 )
+from recidiviz.segment.segment_event_utils import segment_event_shared_columns_schema
+
+
+def _base_union_schema() -> list[BigQueryViewColumn]:
+    """Returns the base schema for union views, derived from segment_event_schema
+    by dropping columns not selected by union queries and adding the event column.
+    """
+    shared_cols = {col.name: col for col in segment_event_shared_columns_schema()}
+    return [
+        shared_cols["state_code"],
+        shared_cols["email_address"],
+        String(
+            name="event",
+            description="The name of the segment event, e.g. 'client_texts_launch', 'case_plan_view', etc.",
+            mode="NULLABLE",
+        ),
+        shared_cols["event_ts"],
+        shared_cols["person_id"],
+        shared_cols["context_page_path"],
+        shared_cols["product_type"],
+        shared_cols["session_id"],
+    ]
 
 
 def _get_unioned_product_specific_segment_event_builders(
@@ -78,13 +101,13 @@ def _get_unioned_product_specific_segment_event_builders(
             for col in product_specific_cols:
                 if (
                     builder.additional_attribute_cols
-                    and col in builder.additional_attribute_cols
+                    and col.name in builder.additional_attribute_cols
                 ):
                     # Include the actual column from the event
-                    select_cols.append(col)
+                    select_cols.append(col.name)
                 else:
                     # Include NULL placeholder for schema consistency
-                    select_cols.append(f"CAST(NULL AS STRING) AS {col}")
+                    select_cols.append(f"CAST(NULL AS STRING) AS {col.name}")
 
             # Join all columns with commas
             columns_statement = ",\n    ".join(select_cols)
@@ -100,6 +123,11 @@ WHERE product_type = "{product_type.value}"
 
         view_query_template = "\nUNION ALL\n".join(ctes)
 
+        # Product-specific unions don't include product_type (they filter by it instead)
+        union_schema = [c for c in _base_union_schema() if c.name != "product_type"]
+        for col in product_specific_cols:
+            union_schema.append(col)
+
         unioned_builder = SimpleBigQueryViewBuilder(
             dataset_id="segment_events",
             view_id=view_id,
@@ -107,6 +135,7 @@ WHERE product_type = "{product_type.value}"
             view_query_template=view_query_template,
             should_materialize=True,
             clustering_fields=["state_code", "person_id"],
+            schema=union_schema,
         )
         product_union_builders.append(unioned_builder)
     return product_union_builders
@@ -122,6 +151,7 @@ def _get_unioned_segment_event_view_builder(
         description="Union of all segment events across products.",
         parents=parents,
         clustering_fields=["state_code", "email_address"],
+        schema=_base_union_schema(),
         parent_view_to_select_statement=lambda vb: f"""
 SELECT
     state_code,

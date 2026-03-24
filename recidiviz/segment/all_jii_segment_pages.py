@@ -18,10 +18,57 @@
 recorded via the Segment pages table in jii_frontend_prod_segment_metrics."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    DateTime,
+    Integer,
+    String,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_ID = "all_jii_segment_pages"
+
+_SCHEMA = [
+    String(
+        name="id", description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT, mode="NULLABLE"
+    ),
+    String(
+        name="user_id",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    String(
+        name="session_id",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    DateTime(
+        name="event_ts",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="context_page_path",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="context_page_url",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="person_id",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 _QUERY_TEMPLATE = """
 WITH deduped_pages AS (
@@ -57,7 +104,7 @@ ALL_JII_SEGMENT_PAGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=__doc__,
     view_query_template=_QUERY_TEMPLATE,
     should_materialize=True,
-    clustering_fields=[],
+    schema=_SCHEMA,
 )
 
 if __name__ == "__main__":
