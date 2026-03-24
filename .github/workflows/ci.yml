@@ -68,8 +68,7 @@ jobs:
 
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
-    # The tmpfs extra speeds up the pull and run of the emulator
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
@@ -91,15 +90,14 @@ jobs:
         # If the emulator encounters an incorrect / unknown error that is continuously retried,
         # we'd rather the process time out than incur additional billed minutes.
         # Debugging can be done locally to find the root error
-        timeout-minutes: 6
+        timeout-minutes: 8
       - name: Remove the emulator docker containers
         if: ${{ always() }}
         run: uv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
 
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
-    # The tmpfs extra speeds up the pull and run of the emulator
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache+tmpfs
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0

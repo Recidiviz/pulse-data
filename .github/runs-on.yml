@@ -13,7 +13,7 @@ runners:
 
   x64:
     image: py311-postgres-x64
-    family: ["c7i", "m7i"]
+    family: ["m8", "c8"]
     extras: ["s3-cache"]
     # Disable SSH access to the runner instances
     ssh: false
