@@ -98,8 +98,13 @@ class BigQueryAddress:
         for s in [self.dataset_id, self.table_id]:
             s_lower = s.lower()
 
+            # State code is at the beginning of the dataset_id/table_id
             if match := re.match("^(?P<state>us_[a-z]{2})_.*$", s_lower):
                 found_state_codes.add(StateCode(match.group("state").upper()))
+            # State code is in the middle of the dataset_id/table_id
+            if match := re.match("^.*_(?P<state>us_[a-z]{2})_.*$", s_lower):
+                found_state_codes.add(StateCode(match.group("state").upper()))
+            # State code is at the end of the dataset_id/table_id
             if match := re.match("^.*_(?P<state>us_[a-z]{2})$", s_lower):
                 found_state_codes.add(StateCode(match.group("state").upper()))
 
@@ -115,7 +120,8 @@ class BigQueryAddress:
 
     def is_state_specific_address(self) -> bool:
         """Returns true if either of the dataset_id or table_id starts with a state code
-        prefix ('us_xx_') or ends with a state code suffix ('_us_xx').
+        prefix ('us_xx_'), ends with a state code suffix ('_us_xx'), or contains a
+        state code in the middle ('..._us_xx_...').
         """
         return bool(self.state_code_for_address())
 

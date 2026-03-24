@@ -169,6 +169,11 @@ class TestBigQueryAddress(unittest.TestCase):
             BigQueryAddress.from_str("my_dataset.Us_Xx_table"),
             BigQueryAddress.from_str("my_dataset_Us_Xx.my_table"),
             BigQueryAddress.from_str("my_dataset.my_table_US_XX"),
+            # Sandbox-prefixed addresses (state code in the middle of dataset_id)
+            BigQueryAddress.from_str("prefix_us_xx_raw_data.my_table"),
+            BigQueryAddress.from_str("my_c0mplex_prefix_us_xx_raw_data.my_table"),
+            # State code in the middle of table_id
+            BigQueryAddress.from_str("my_dataset.prefix_us_xx_table"),
         ]
 
         for address in state_specific_addresses:
@@ -183,6 +188,8 @@ class TestBigQueryAddress(unittest.TestCase):
             BigQueryAddress.from_str("us_states.my_table"),
             BigQueryAddress.from_str("my_dataset.us_states"),
             BigQueryAddress.from_str("my_dataset.US_STATES"),
+            BigQueryAddress.from_str("prefix_us_states.my_table"),
+            BigQueryAddress.from_str("my_dataset.prefix_us_states"),
         ]
 
         for address in not_state_specific_addresses:
@@ -203,6 +210,11 @@ class TestBigQueryAddress(unittest.TestCase):
             BigQueryAddress.from_str("my_dataset.Us_Xx_table"),
             BigQueryAddress.from_str("my_dataset_Us_Xx.my_table"),
             BigQueryAddress.from_str("my_dataset.my_table_US_XX"),
+            # Sandbox-prefixed addresses (state code in the middle of dataset_id)
+            BigQueryAddress.from_str("prefix_us_xx_raw_data.my_table"),
+            BigQueryAddress.from_str("my_c0mplex_prefix_us_xx_raw_data.my_table"),
+            # State code in the middle of table_id
+            BigQueryAddress.from_str("my_dataset.prefix_us_xx_table"),
         ]
 
         for address in us_xx_state_specific_addresses:
@@ -231,6 +243,8 @@ class TestBigQueryAddress(unittest.TestCase):
             BigQueryAddress.from_str("us_states.my_table"),
             BigQueryAddress.from_str("my_dataset.us_states"),
             BigQueryAddress.from_str("my_dataset.US_STATES"),
+            BigQueryAddress.from_str("prefix_us_states.my_table"),
+            BigQueryAddress.from_str("my_dataset.prefix_us_states"),
         ]
 
         for address in not_state_specific_addresses:
