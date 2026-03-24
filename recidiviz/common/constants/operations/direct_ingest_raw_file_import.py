@@ -29,8 +29,8 @@ class DirectIngestRawFileImportStatus(OperationsEnum):
     STARTED = operations_enum_strings.direct_ingest_raw_file_import_status_started
     SUCCEEDED = operations_enum_strings.direct_ingest_raw_file_import_status_succeeded
     DEFERRED = operations_enum_strings.direct_ingest_raw_file_import_status_deferred
-    FAILED_UNKNOWN = (
-        operations_enum_strings.direct_ingest_raw_file_import_status_failed_unknown
+    FAILED_DAG_LEVEL = (
+        operations_enum_strings.direct_ingest_raw_file_import_status_failed_dag_level
     )
     FAILED_LOAD_STEP = (
         operations_enum_strings.direct_ingest_raw_file_import_status_failed_load_step
@@ -73,9 +73,10 @@ _DIRECT_INGEST_RAW_FILE_IMPORT_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, s
         "is expected to happen during secondary reimport to limit the length of any "
         "single DAG run."
     ),
-    DirectIngestRawFileImportStatus.FAILED_UNKNOWN: (
-        "The FAILED_UNKNOWN status is a catch-all for an import failing without the "
-        "import DAG identifying what the specific issue is."
+    DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL: (
+        "The FAILED_DAG_LEVEL status indicates that a DAG-level failure occurred "
+        "(e.g. an upstream task crashed without writing results to xcom), preventing "
+        "the import of this file. The root cause is not file-specific."
     ),
     DirectIngestRawFileImportStatus.FAILED_LOAD_STEP: (
         "The FAILED_LOAD_STEP status means that the import failed during the load step, "
@@ -121,7 +122,7 @@ class DirectIngestRawFileImportStatusBucket(Enum):
     __FAILED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
         [
             DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
-            DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
             DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
             DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,

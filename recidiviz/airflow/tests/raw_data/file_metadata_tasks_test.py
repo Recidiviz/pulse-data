@@ -1184,7 +1184,8 @@ class CoalesceResultsAndErrorsTest(TestCase):
         assert summaries[3].file_id == 4
         assert summaries[3].historical_diffs_active is True
         assert (
-            summaries[3].import_status == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+            summaries[3].import_status
+            == DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL
         )
 
     def test_reconcile_file_imports_and_bq_metadata_all_accounted_for(self) -> None:
@@ -1375,7 +1376,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
         assert missing_file_imports[1].file_id == 3
         assert (
             one({summary.import_status for summary in missing_file_imports})
-            == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+            == DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL
         )
         for missing_file_import in missing_file_imports:
             assert missing_file_import.error_message == (

@@ -64,10 +64,10 @@ const rawDataImportStatusColorDict: {
     sortRank: 3,
     status: "Succeeded",
   },
-  FAILED_UNKNOWN: {
+  FAILED_DAG_LEVEL: {
     color: "error",
     sortRank: 4,
-    status: "Failed (Unknown Reason)",
+    status: "Failed (DAG-Level)",
   },
   FAILED_LOAD_STEP: {
     color: "error",

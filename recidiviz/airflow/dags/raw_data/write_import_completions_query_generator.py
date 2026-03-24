@@ -185,7 +185,7 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
         if not file_import_result:
             row = [
                 existing_file_import.file_import_id,
-                f"'{DirectIngestRawFileImportStatus.FAILED_UNKNOWN.value}'",
+                f"'{DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL.value}'",
                 None,
                 None,
                 None,

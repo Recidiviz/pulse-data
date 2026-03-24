@@ -312,7 +312,7 @@ ValueError: known_values for tagBasic must not be empty""",
             ),
             RawFileImport(
                 file_id=7,
-                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
                 historical_diffs_active=True,
                 error_message=(
                     "Could not locate a success or failure for this file_id "
@@ -515,7 +515,7 @@ ValueError: known_values for tagBasic must not be empty""",
                     record.file_id
                     == missing_file_imports[i - len(self.file_imports)].file_id
                 )
-                assert record.import_status == "FAILED_UNKNOWN"
+                assert record.import_status == "FAILED_DAG_LEVEL"
                 assert record.region_code == "US_XX"
                 assert record.raw_data_instance == "PRIMARY"
                 assert record.historical_diffs_active is None

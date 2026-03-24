@@ -416,7 +416,7 @@ def _reconcile_file_imports_and_bq_metadata(
     in |failed_file_imports_for_file_id|; in theory this should never happen
     but let's just backstop against it in case an upstream task failed without writing
     its results to xcom. For all "missing" file_ids, returns an RawFileImportSummary
-    object with an import_status of FAILED_UNKNOWN.
+    object with an import_status of FAILED_DAG_LEVEL.
     """
 
     missing_file_ids: List[RawFileImport] = []
@@ -433,7 +433,7 @@ def _reconcile_file_imports_and_bq_metadata(
             missing_file_ids.append(
                 RawFileImport(
                     file_id=assert_type(metadata.file_id, int),
-                    import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                    import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
                     historical_diffs_active=_historical_diffs_active_for_tag(
                         raw_region_config, raw_data_instance, metadata.file_tag
                     ),

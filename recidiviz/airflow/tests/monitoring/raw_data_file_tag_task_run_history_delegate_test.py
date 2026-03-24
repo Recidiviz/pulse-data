@@ -89,7 +89,7 @@ class RawDataFileTagTaskRunHistoryDelegateTest(TestCase):
                         update_datetime=datetime.datetime(
                             2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
                         ),
-                        file_import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                        file_import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
                         error_message="ERROR\n\n\n\n\nERROR!",
                     ),
                     BigQueryFailedFileImportRunSummary(
@@ -97,7 +97,7 @@ class RawDataFileTagTaskRunHistoryDelegateTest(TestCase):
                         update_datetime=datetime.datetime(
                             2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
                         ),
-                        file_import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                        file_import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
                         error_message="ERROR\n\n\n\n\nERROR!",
                     ),
                 ],

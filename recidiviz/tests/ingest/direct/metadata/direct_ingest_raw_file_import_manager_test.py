@@ -185,7 +185,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             file_id=file_metadata.file_id,
             import_run_id=import_run.import_run_id,
             historical_diffs_active=False,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             region_code=StateCode.US_XX.value,
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
@@ -194,7 +194,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             file_metadata.file_id,
             import_run.import_run_id,
             False,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
         )
 
         self.assertEqual(started_import, expected_import)
@@ -376,7 +376,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         self.us_xx_manager.update_file_import_by_id(
             started_import.file_import_id,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
         )
 
         new_import_run = self.us_xx_manager.get_import_by_id(
@@ -385,7 +385,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         assert (
             new_import_run.import_status
-            == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+            == DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL
         )
 
         with self.assertRaisesRegex(
@@ -446,7 +446,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         self.us_xx_manager.update_file_import_by_id(
             started_import.file_import_id,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             error_message="FAILURE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
         )
 
@@ -456,7 +456,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         assert (
             new_import_run.import_status
-            == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+            == DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL
         )
 
         assert (
@@ -495,7 +495,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         self.us_xx_manager.update_file_import_by_id(
             started_import.file_import_id,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
         )
 
         new_import_run = self.us_xx_manager.get_import_by_id(
@@ -504,7 +504,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         assert (
             new_import_run.import_status
-            == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+            == DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL
         )
 
         with self.assertRaisesRegex(
@@ -608,7 +608,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         self.us_xx_manager.update_most_recent_file_import_for_file_id(
             file_metadata.file_id,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
         )
 
         older_import = self.us_xx_manager.get_import_by_id(old_import.file_import_id)
@@ -618,7 +618,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
         assert older_import.import_status == DirectIngestRawFileImportStatus.STARTED
 
         assert (
-            new_import.import_status == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+            new_import.import_status == DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL
         )
 
         with self.assertRaisesRegex(
@@ -696,7 +696,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
                 file_id=file_metadata.file_id,
                 import_run_id=import_run.import_run_id,
                 historical_diffs_active=False,
-                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
                 region_code=StateCode.US_XX.value,
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             ),
@@ -713,7 +713,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             file_metadata.file_id,
             import_run.import_run_id,
             False,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
         )
         _ = self.us_xx_manager.start_file_import(
             file_metadata.file_id,
@@ -987,7 +987,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             )
             self.us_xx_manager.update_file_import_by_id(
                 file_import_2.file_import_id,
-                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             )
 
             summary = self.us_xx_manager.get_most_recent_import_run_summary()
@@ -1014,7 +1014,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             )
             self.us_xx_manager.update_file_import_by_id(
                 file_import_2.file_import_id,
-                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             )
 
             summary = self.us_xx_manager.get_most_recent_import_run_summary()
@@ -1044,7 +1044,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             )
             us_yy_manager.update_file_import_by_id(
                 file_import_2.file_import_id,
-                import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             )
 
             yy_summary = us_yy_manager.get_most_recent_import_run_summary()

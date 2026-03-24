@@ -33,7 +33,7 @@ direct_ingest_lock_resource_big_query_raw_data_dataset = "BIG_QUERY_RAW_DATA_DAT
 direct_ingest_raw_file_import_status_started = "STARTED"
 direct_ingest_raw_file_import_status_deferred = "DEFERRED"
 direct_ingest_raw_file_import_status_succeeded = "SUCCEEDED"
-direct_ingest_raw_file_import_status_failed_unknown = "FAILED_UNKNOWN"
+direct_ingest_raw_file_import_status_failed_dag_level = "FAILED_DAG_LEVEL"
 direct_ingest_raw_file_import_status_failed_pre_import_normalization_step = (
     "FAILED_PRE_IMPORT_NORMALIZATION_STEP"
 )

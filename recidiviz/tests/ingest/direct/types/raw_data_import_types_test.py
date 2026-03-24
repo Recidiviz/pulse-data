@@ -471,7 +471,7 @@ class TestSerialization(unittest.TestCase):
     def test_raw_file_import(self) -> None:
         original = RawFileImport(
             file_id=1,
-            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             raw_rows=1,
             historical_diffs_active=True,
             net_new_or_updated_rows=None,
