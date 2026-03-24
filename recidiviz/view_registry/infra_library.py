@@ -75,7 +75,7 @@ from recidiviz.calculator.query.state.views.sessions.custody_level_sessions impo
 from recidiviz.calculator.query.state.views.sessions.dataflow_sessions import (
     DATAFLOW_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
+from recidiviz.calculator.query.state.views.sessions.housing_unit_sessions import (
     HOUSING_UNIT_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
