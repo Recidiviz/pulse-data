@@ -446,6 +446,9 @@ output:
                   - "27" # Intensive Residential Treatment
                   - "28" # Posted Bond
                   - "29" # Own Recognizance
+                  - "2A" # Returned from Jail
+                  - "2B" # Voluntarily Returned - CCC
+                  - "2C" # Voluntarily Returned - ISP
                   - "30" # Private Custody during Hospital Stay
                   - "34" # Governor's Order
                   - "38" # Court Appearance (with DRAG Order)
