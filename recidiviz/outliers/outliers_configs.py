@@ -484,6 +484,21 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name_singular="transfer",
                 event_name_past_tense="were transferred",
             ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_AZ,
+                metric=ABSCONSIONS_BENCH_WARRANTS,
+                is_absconsion_metric=True,
+                title_display_name="Absconder Rate",
+                body_display_name="absconder rate",
+                event_name="absconsions",
+                event_name_singular="absconsion",
+                event_name_past_tense="absconded",
+                description_markdown="""All reported absconsions from supervision in the given time period.
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
+            ),
         ],
     ),
     StateCode.US_IA: OutliersBackendConfig(
