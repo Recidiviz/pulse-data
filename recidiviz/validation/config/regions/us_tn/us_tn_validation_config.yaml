@@ -115,3 +115,10 @@ num_allowed_rows_overrides:
   - validation_name: officer_monthly_usage_report_actions_without_logins
     hard_num_allowed_rows_override: 1
     override_reason: Will be resolved with the Polaris segment ad blocker work around
+  - validation_name: invalid_reason_json_format_tes_criteria_spans
+    hard_num_allowed_rows_override: 19188052
+    override_reason: |-
+      TODO(https://linear.app/recidiviz/issue/SPE-2635): HAS_AT_LEAST_1_NEGATIVE_DRUG_TEST_PAST_YEAR and
+      HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR produce JSON arrays instead of
+      objects. Fix is blocked on #61640 (requires coordinated FE changes tracked in
+      SPE-2635).
