@@ -27,9 +27,11 @@ from recidiviz.persistence.entity.entities_bq_schema import (
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.validation.views.state.stable_counts.entity_by_column_count_stable_counts import (
     exemptions_string_builder,
+    view_builder_for_entity_and_date_col,
 )
 from recidiviz.validation.views.state.stable_counts.stable_counts import (
     ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME,
+    DateCol,
 )
 
 
@@ -60,6 +62,25 @@ class TestStableCountsValidations(unittest.TestCase):
                 self.assertEqual(
                     bigquery.enums.SqlTypeNames.DATE.value, schema_field.field_type
                 )
+
+    def test_view_builder_schema(self) -> None:
+        date_col = DateCol(date_column_name="test_date", exemptions={})
+        view_builder = view_builder_for_entity_and_date_col(
+            entity="state_person", date_col=date_col
+        )
+        schema = view_builder.schema
+        assert schema is not None
+        col_info = [(c.name, c.field_type.name, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("month", "DATE", "NULLABLE"),
+                ("state_code", "STRING", "REQUIRED"),
+                ("test_date_count", "INTEGER", "NULLABLE"),
+                ("previous_month_test_date_count", "INTEGER", "NULLABLE"),
+                ("region_code", "STRING", "REQUIRED"),
+            ],
+        )
 
 
 class TestStableCountsExemptions(unittest.TestCase):

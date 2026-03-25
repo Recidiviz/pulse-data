@@ -36,6 +36,7 @@ from recidiviz.big_query.big_query_view_column import (
     Float,
     Integer,
     Json,
+    Numeric,
     Record,
     String,
     Time,
@@ -335,11 +336,11 @@ class SchemaFieldToViewColumnTest(unittest.TestCase):
             ("TIMESTAMP", Timestamp, bigquery.SqlTypeNames.TIMESTAMP),
             ("TIME", Time, bigquery.SqlTypeNames.TIME),
             ("JSON", Json, bigquery.StandardSqlTypeNames.JSON),
+            ("NUMERIC", Numeric, bigquery.SqlTypeNames.NUMERIC),
             # Aliases
             ("INT64", Integer, bigquery.SqlTypeNames.INTEGER),
             ("FLOAT64", Float, bigquery.SqlTypeNames.FLOAT),
             ("BOOL", Bool, bigquery.SqlTypeNames.BOOLEAN),
-            ("NUMERIC", Float, bigquery.SqlTypeNames.FLOAT),
         ]
     )
     def test_type_mapping(

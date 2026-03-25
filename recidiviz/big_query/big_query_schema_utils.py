@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_view_column import (
     Float,
     Integer,
     Json,
+    Numeric,
     Record,
     SqlFieldMode,
     String,
@@ -52,7 +53,7 @@ _FIELD_TYPE_TO_COLUMN_CLASS: dict[str, ConcreteBigQueryColumnType] = {
     "TIMESTAMP": Timestamp,
     "TIME": Time,
     "JSON": Json,
-    "NUMERIC": Float,
+    "NUMERIC": Numeric,
 }
 
 
@@ -122,7 +123,7 @@ def diff_declared_schema_to_bq_schema(
                 and declared_field.name == deployed_field.name
             ):
                 # Record subfield diff entries have names of the form
-                # `top_level_field.subfield_name`
+                # `top_level_field.subfield_name`.
                 subdiff = diff_declared_schema_to_bq_schema(
                     declared_field.fields, deployed_field.fields
                 )
