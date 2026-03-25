@@ -32,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_minimum,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ne import (
+    at_least_3_months_since_override_to_low,
     compliant_with_special_conditions,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
@@ -63,6 +64,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # TODO(#40214): Clarify whether this should use raw ORAS score instead of
         # ingested supervision level.
         supervision_level_is_minimum.VIEW_BUILDER,
+        # Must be on Low supervision for at least 3 months before eligible for CLR
+        at_least_3_months_since_override_to_low.VIEW_BUILDER,
     ],
     completion_event_builder=override_to_conditional_low_risk_supervision.VIEW_BUILDER,
 )
