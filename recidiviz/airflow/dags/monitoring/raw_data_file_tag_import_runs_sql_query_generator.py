@@ -61,6 +61,7 @@ WITH imports_in_lookback as (
         CASE
             WHEN fi.import_status in {pending_statuses} THEN {pending_value}
             WHEN fi.import_status in {success_statuses} THEN {success_value}
+            WHEN fi.import_status in {failed_no_alert_statuses} THEN {failed_no_alert_value}
             WHEN fi.import_status in {failed_statuses} THEN {failed_value}
             ELSE {unknown_value}
         END as import_state,
@@ -160,8 +161,12 @@ class RawDataFileTagImportRunSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]
                 DirectIngestRawFileImportStatusBucket.succeeded_statuses()
             ),
             success_value=JobRunState.SUCCESS.value,
+            failed_no_alert_statuses=self._statuses_as_str(
+                DirectIngestRawFileImportStatusBucket.dag_level_failure_statuses()
+            ),
+            failed_no_alert_value=JobRunState.FAILED_NO_ALERT.value,
             failed_statuses=self._statuses_as_str(
-                DirectIngestRawFileImportStatusBucket.failed_statuses()
+                DirectIngestRawFileImportStatusBucket.file_tag_level_failure_statuses()
             ),
             failed_value=JobRunState.FAILED.value,
             unknown_value=JobRunState.UNKNOWN.value,

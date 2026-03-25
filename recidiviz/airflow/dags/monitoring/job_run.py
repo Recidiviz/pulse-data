@@ -35,13 +35,21 @@ class JobRunState(Enum):
     - UNKNOWN: an indeterminate state.
     - PENDING: has not yet reached its terminal state (i.e. is waiting to start, is
         already in progress, is being retried, etc).
+    - FAILED_NO_ALERT: failed, but the failure is not attributable to this specific job.
     - FAILED: failed itself or failed to start due to a related failure.
+
+    UNKNOWN, PENDING, and FAILED_NO_ALERT are filtered out entirely when building incident
+    history. These statuses will not open a new alert or close out an existing one.
+
+    n.b. The integer values matter: MAX(import_state) is used in SQL to determine
+    the worst state for a file tag, so FAILED must have the highest value.
     """
 
     SUCCESS = 0
     UNKNOWN = 1
     PENDING = 2
-    FAILED = 3
+    FAILED_NO_ALERT = 3
+    FAILED = 4
 
 
 class JobRunType(StrEnum):

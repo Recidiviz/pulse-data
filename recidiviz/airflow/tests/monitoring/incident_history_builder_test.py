@@ -1581,3 +1581,243 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
         init_incident = history[init_incident_key]
         self.assertEqual(init_incident.incident_start_date, july_sixth_date)
         self.assertEqual(init_incident.next_success_date, july_seventh_date)
+
+    @patch(
+        "recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate.get_current_context"
+    )
+    def test_dag_level_failures_do_not_produce_file_tag_incidents(
+        self, context_patcher: MagicMock
+    ) -> None:
+        """
+        Given a raw data file import history where a file tag has only dag-level
+        failures, no file-tag-level incident should be created.
+
+        tag     id  instance        2024-01-01  2024-01-02
+        tag_a   1   PRIMARY         ⬛           ⬛
+
+        parent_task                 🟥           🟥
+        """
+        rd_test_dag, rd_parent_task, _ = build_test_dag_with_id(_RAW_DATA_DAG)
+
+        date_2024_01_01 = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+        date_2024_01_02 = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+
+        summaries = [
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_01,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.FAILED_NO_ALERT,
+                failed_file_import_runs=[],
+            ),
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_02,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.FAILED_NO_ALERT,
+                failed_file_import_runs=[],
+            ),
+        ]
+
+        ti = MagicMock()
+        ti.xcom_pull.return_value = [s.serialize() for s in summaries]
+        context_patcher.return_value = {"ti": ti}
+
+        with self._get_session() as session:
+            jan_one = dummy_dag_run(
+                rd_test_dag, date_2024_01_01.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_one_parent = dummy_ti(rd_parent_task, jan_one, "failed")
+
+            jan_two = dummy_dag_run(
+                rd_test_dag, date_2024_01_02.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_two_parent = dummy_ti(rd_parent_task, jan_two, "failed")
+
+            session.add_all([jan_one, jan_one_parent, jan_two, jan_two_parent])
+            session.commit()
+
+        history = IncidentHistoryBuilder(dag_id=_RAW_DATA_DAG).build(
+            lookback=TEST_START_DATE_LOOKBACK
+        )
+
+        # The parent task failures should still produce an incident
+        task_key = "Task Run: raw_data_dag.parent_task, started: 2024-01-01 01:01 UTC"
+        self.assertIn(task_key, history)
+
+        # But no file-tag-level incident should be created since FAILED_NO_ALERT
+        # runs are filtered out by the incident builder
+        file_tag_keys = [k for k in history if k.startswith("Raw Data Import:")]
+        self.assertEqual(file_tag_keys, [])
+
+    @patch(
+        "recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate.get_current_context"
+    )
+    def test_failed_no_alert_does_not_close_existing_incident(
+        self, context_patcher: MagicMock
+    ) -> None:
+        """
+        A FAILED_NO_ALERT run after a real failure should not close the incident —
+        only a SUCCESS should.
+
+        tag     id  instance        2024-01-01  2024-01-02
+        tag_a   1   PRIMARY         🟥           ⬛
+
+        parent_task                 🟥           🟥
+        """
+        rd_test_dag, rd_parent_task, _ = build_test_dag_with_id(_RAW_DATA_DAG)
+
+        date_2024_01_01 = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+        date_2024_01_02 = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+
+        summaries = [
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_01,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.FAILED,
+                failed_file_import_runs=[],
+            ),
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_02,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.FAILED_NO_ALERT,
+                failed_file_import_runs=[],
+            ),
+        ]
+
+        ti = MagicMock()
+        ti.xcom_pull.return_value = [s.serialize() for s in summaries]
+        context_patcher.return_value = {"ti": ti}
+
+        with self._get_session() as session:
+            jan_one = dummy_dag_run(
+                rd_test_dag, date_2024_01_01.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_one_parent = dummy_ti(rd_parent_task, jan_one, "failed")
+
+            jan_two = dummy_dag_run(
+                rd_test_dag, date_2024_01_02.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_two_parent = dummy_ti(rd_parent_task, jan_two, "failed")
+
+            session.add_all(
+                [
+                    jan_one,
+                    jan_one_parent,
+                    jan_two,
+                    jan_two_parent,
+                ]
+            )
+            session.commit()
+
+        history = IncidentHistoryBuilder(dag_id=_RAW_DATA_DAG).build(
+            lookback=TEST_START_DATE_LOOKBACK
+        )
+
+        file_tag_keys = [k for k in history if k.startswith("Raw Data Import:")]
+        self.assertEqual(len(file_tag_keys), 1)
+
+        incident = history[file_tag_keys[0]]
+
+        self.assertEqual(incident.incident_start_date, date_2024_01_01)
+        self.assertEqual(incident.most_recent_failure, date_2024_01_01)
+        self.assertEqual(incident.next_success_date, None)
+
+    @patch(
+        "recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate.get_current_context"
+    )
+    def test_success_after_failed_no_alert_resolves_existing_incident(
+        self, context_patcher: MagicMock
+    ) -> None:
+        """
+        A SUCCESS run after a real FAILED followed by a FAILED_NO_ALERT should
+        still resolve the incident.
+
+        tag     id  instance        2024-01-01  2024-01-02  2024-01-03
+        tag_a   1   PRIMARY         🟥           ⬛           🟩
+
+        parent_task                 🟥           🟥           🟩
+        """
+        rd_test_dag, rd_parent_task, _ = build_test_dag_with_id(_RAW_DATA_DAG)
+
+        date_2024_01_01 = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+        date_2024_01_02 = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+        date_2024_01_03 = datetime.datetime(2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC)
+
+        summaries = [
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_01,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.FAILED,
+                failed_file_import_runs=[],
+            ),
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_02,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.FAILED_NO_ALERT,
+                failed_file_import_runs=[],
+            ),
+            FileTagImportRunSummary(
+                import_run_start=date_2024_01_03,
+                state_code=StateCode.US_XX,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                file_tag="tag_a",
+                file_tag_import_state=JobRunState.SUCCESS,
+                failed_file_import_runs=[],
+            ),
+        ]
+
+        ti = MagicMock()
+        ti.xcom_pull.return_value = [s.serialize() for s in summaries]
+        context_patcher.return_value = {"ti": ti}
+
+        with self._get_session() as session:
+            jan_one = dummy_dag_run(
+                rd_test_dag, date_2024_01_01.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_one_parent = dummy_ti(rd_parent_task, jan_one, "failed")
+
+            jan_two = dummy_dag_run(
+                rd_test_dag, date_2024_01_02.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_two_parent = dummy_ti(rd_parent_task, jan_two, "failed")
+
+            jan_three = dummy_dag_run(
+                rd_test_dag, date_2024_01_03.strftime("%Y-%m-%d %H:%M")
+            )
+            jan_three_parent = dummy_ti(rd_parent_task, jan_three, "success")
+
+            session.add_all(
+                [
+                    jan_one,
+                    jan_one_parent,
+                    jan_two,
+                    jan_two_parent,
+                    jan_three,
+                    jan_three_parent,
+                ]
+            )
+            session.commit()
+
+        history = IncidentHistoryBuilder(dag_id=_RAW_DATA_DAG).build(
+            lookback=TEST_START_DATE_LOOKBACK
+        )
+
+        file_tag_keys = [k for k in history if k.startswith("Raw Data Import:")]
+        self.assertEqual(len(file_tag_keys), 1)
+
+        incident = history[file_tag_keys[0]]
+
+        self.assertEqual(incident.incident_start_date, date_2024_01_01)
+        self.assertEqual(incident.most_recent_failure, date_2024_01_01)
+        self.assertEqual(incident.next_success_date, date_2024_01_03)

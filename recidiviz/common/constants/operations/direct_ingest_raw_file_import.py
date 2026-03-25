@@ -119,14 +119,18 @@ class DirectIngestRawFileImportStatusBucket(Enum):
     __SUCCEEDED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
         [DirectIngestRawFileImportStatus.SUCCEEDED]
     )
-    __FAILED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
+    __FILE_TAG_LEVEL_FAILED_STATUSES: frozenset[
+        DirectIngestRawFileImportStatus
+    ] = frozenset(
         [
             DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
-            DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
             DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
             DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
             DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
         ]
+    )
+    __DAG_LEVEL_FAILED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
+        [DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL]
     )
 
     @classmethod
@@ -138,8 +142,23 @@ class DirectIngestRawFileImportStatusBucket(Enum):
         return cls.__SUCCEEDED_STATUSES
 
     @classmethod
+    def dag_level_failure_statuses(cls) -> frozenset[DirectIngestRawFileImportStatus]:
+        """Returns failure statuses that are attributable to DAG-level issues, rather than file-specific issues."""
+        return cls.__DAG_LEVEL_FAILED_STATUSES
+
+    @classmethod
+    def file_tag_level_failure_statuses(
+        cls,
+    ) -> frozenset[DirectIngestRawFileImportStatus]:
+        """Returns failure statuses that are attributable to a specific file tag,
+        excluding failures caused by DAG-level issues."""
+        return cls.__FILE_TAG_LEVEL_FAILED_STATUSES
+
+    @classmethod
     def failed_statuses(cls) -> frozenset[DirectIngestRawFileImportStatus]:
-        return cls.__FAILED_STATUSES
+        return cls.file_tag_level_failure_statuses().union(
+            cls.dag_level_failure_statuses()
+        )
 
     @classmethod
     def from_import_status(
@@ -152,7 +171,7 @@ class DirectIngestRawFileImportStatusBucket(Enum):
         if status in cls.__SUCCEEDED_STATUSES:
             return cls.SUCCEEDED
 
-        if status in cls.__FAILED_STATUSES:
+        if status in cls.failed_statuses():
             return cls.FAILED
 
         raise ValueError(

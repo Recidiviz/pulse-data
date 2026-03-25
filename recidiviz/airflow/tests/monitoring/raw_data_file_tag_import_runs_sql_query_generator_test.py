@@ -508,7 +508,7 @@ ValueError: known_values for tagBasic must not be empty""",
         failed_file_imports = list(
             filter(
                 lambda x: x.import_status
-                in DirectIngestRawFileImportStatusBucket.failed_statuses(),
+                in DirectIngestRawFileImportStatusBucket.file_tag_level_failure_statuses(),
                 file_imports,
             )
         )
@@ -534,6 +534,94 @@ ValueError: known_values for tagBasic must not be empty""",
             assert import_run.update_datetime == update_datetime
             assert import_run.file_import_status == failed_file_imports[i].import_status
             assert import_run.error_message == failed_file_imports[i].error_message
+
+    def test_dag_level_failures(self) -> None:
+        start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+
+        file_imports = [
+            RawFileImport(
+                file_id=1,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                historical_diffs_active=False,
+                raw_rows=2,
+                error_message=None,
+            ),
+            RawFileImport(
+                file_id=2,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
+                historical_diffs_active=False,
+                error_message="Could not locate a success or failure for this file_id "
+                "[2] despite it being marked for import. This"
+                "is likely indicative that there was a DAG-level failure "
+                "occurred during this import run",
+            ),
+            RawFileImport(
+                file_id=3,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
+                historical_diffs_active=False,
+                error_message="Could not locate a success or failure for this file_id "
+                "[3] despite it being marked for import. This"
+                "is likely indicative that there was a DAG-level failure "
+                "occurred during this import run.",
+            ),
+        ]
+
+        update_datetime = start_time - datetime.timedelta(hours=2)
+        self._seed_bq_metadata(file_imports, file_tag="tag_a", dt=update_datetime)
+        self._seed_import_run(file_imports, dt=start_time)
+
+        with freeze_time(start_time + datetime.timedelta(hours=1)):
+            result = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+        assert len(result) == 1
+
+        summary = FileTagImportRunSummary.deserialize(result[0])
+        assert summary.file_tag_import_state == JobRunState.FAILED_NO_ALERT
+        assert summary.failed_file_import_runs == []
+
+    def test_dag_level_failure_mixed_with_file_tag_failure(self) -> None:
+        """FAILED_DAG_LEVEL does not suppress a real file-tag failure in the same run."""
+        start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+
+        file_imports = [
+            RawFileImport(
+                file_id=1,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                historical_diffs_active=False,
+                error_message="broken!",
+            ),
+            RawFileImport(
+                file_id=2,
+                import_status=DirectIngestRawFileImportStatus.FAILED_DAG_LEVEL,
+                historical_diffs_active=False,
+                error_message="Could not locate a success or failure for this file_id "
+                "[2] despite it being marked for import. This"
+                "is likely indicative that there was a DAG-level failure "
+                "occurred during this import run",
+            ),
+        ]
+
+        update_datetime = start_time - datetime.timedelta(hours=2)
+        self._seed_bq_metadata(file_imports, file_tag="tag_a", dt=update_datetime)
+        self._seed_import_run(file_imports, dt=start_time)
+
+        with freeze_time(start_time + datetime.timedelta(hours=1)):
+            result = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+        assert len(result) == 1
+
+        summary = FileTagImportRunSummary.deserialize(result[0])
+        assert summary.file_tag_import_state == JobRunState.FAILED
+        assert len(summary.failed_file_import_runs) == 1
+        assert summary.failed_file_import_runs[0].file_id == 1
+        assert (
+            summary.failed_file_import_runs[0].file_import_status
+            == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
+        )
 
     def test_invalidation(self) -> None:
         start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
