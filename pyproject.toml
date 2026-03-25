@@ -136,7 +136,10 @@ dependencies = [
     # llama_index and openai are tightly coupled, so we pin them together
     "llama_index>=0.13.1",
     "openai>=1.99.8",
-    "litellm",
+    # TODO(#66748) litellm PyPI package was compromised in v1.82.7+. Pinning to
+    # last known safe version. Unpin once a new version is verified safe.
+    # See: https://www.stepsecurity.io/blog/litellm-credential-stealer-hidden-in-pypi-wheel
+    "litellm<1.82.7",
     "nest_asyncio",
 ]
 
