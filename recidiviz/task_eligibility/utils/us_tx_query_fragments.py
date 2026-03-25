@@ -339,7 +339,7 @@ def contact_compliance_builder_type_agnostic(
             frequency_date_part,
         FROM lookback_cte
         UNION DISTINCT
-        SELECT 
+        SELECT
             person_id,
             contact_types_accepted,
             contact_period_start,
@@ -351,6 +351,11 @@ def contact_compliance_builder_type_agnostic(
             frequency_date_part,
         FROM lookback_cte
         WHERE contact_date IS NOT NULL
+            -- Restrict critical dates to the contact period range so that contacts
+            -- from the calendar-month lookback don't create sub-period boundaries
+            -- outside the period, which would cause overlapping output spans when
+            -- a cadence change splits a month into two contact periods.
+            AND contact_date BETWEEN contact_period_start AND contact_period_end_exclusive
     ), 
     -- Creates smaller periods divided by contact dates.
     divided_periods AS (
