@@ -92,6 +92,7 @@ output:
           sentence_metadata:
             $normalized_values_json_dict:
               CC_CS_SENTENCE: HOWSERVEDSUMMARY # Indicates if consecutive or concurrent sentence
+              LIFESENTENCETYPE: LIFESENTENCETYPE
           charges:
             - StateChargeV2:
                 external_id:
