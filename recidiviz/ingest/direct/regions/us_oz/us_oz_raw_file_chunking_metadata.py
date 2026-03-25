@@ -23,6 +23,15 @@ from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import 
 )
 
 US_OZ_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] = {
+    "egt_vacations": RawFileChunkingMetadataHistory(
+        file_tag="egt_vacations",
+        chunking_metadata_history=[
+            SequentiallyChunkedFileMetadata(
+                known_chunk_count=None,
+                zero_indexed=True,
+            ),
+        ],
+    ),
     "lds_person": RawFileChunkingMetadataHistory(
         file_tag="lds_person",
         chunking_metadata_history=[

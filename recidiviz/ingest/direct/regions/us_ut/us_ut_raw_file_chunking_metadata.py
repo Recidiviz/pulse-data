@@ -27,6 +27,21 @@ from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import 
 )
 
 US_UT_CHUNKING_METADATA_BY_FILE_TAG: dict[str, RawFileChunkingMetadataHistory] = {
+    "sbstnc_rslt": RawFileChunkingMetadataHistory(
+        file_tag="sbstnc_rslt",
+        chunking_metadata_history=[
+            SingleFileMetadata(
+                start_date=None,
+                end_date_exclusive=datetime.date(2026, 3, 23),
+            ),
+            SequentiallyChunkedFileMetadata(
+                known_chunk_count=None,
+                start_date=datetime.date(2026, 3, 23),
+                end_date_exclusive=None,
+                zero_indexed=True,
+            ),
+        ],
+    ),
     "sprvsn_cntc": RawFileChunkingMetadataHistory(
         file_tag="sprvsn_cntc",
         chunking_metadata_history=[

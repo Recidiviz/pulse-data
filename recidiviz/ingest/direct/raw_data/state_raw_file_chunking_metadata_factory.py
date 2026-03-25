@@ -19,6 +19,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_chunking_metadata_history import (
     StateRawFileChunkingMetadata,
 )
+from recidiviz.ingest.direct.regions.us_oz.us_oz_raw_file_chunking_metadata import (
+    US_OZ_CHUNKING_METADATA_BY_FILE_TAG,
+)
 from recidiviz.ingest.direct.regions.us_tn.us_tn_raw_file_chunking_metadata import (
     US_TN_CHUNKING_METADATA_BY_FILE_TAG,
 )
@@ -43,7 +46,6 @@ _STATES_WITH_NO_CHUNKED_FILES: set[StateCode] = {
     StateCode.US_NE,
     StateCode.US_NY,
     StateCode.US_OR,
-    StateCode.US_OZ,
     StateCode.US_PA,
     StateCode.US_TX,
 }
@@ -62,6 +64,11 @@ class StateRawFileChunkingMetadataFactory:
         """
         state_code = StateCode(region_code.upper())
 
+        if state_code == StateCode.US_OZ:
+            return StateRawFileChunkingMetadata(
+                state_code=state_code,
+                chunking_metadata_by_file_tag=US_OZ_CHUNKING_METADATA_BY_FILE_TAG,
+            )
         if state_code == StateCode.US_TN:
             return StateRawFileChunkingMetadata(
                 state_code=state_code,

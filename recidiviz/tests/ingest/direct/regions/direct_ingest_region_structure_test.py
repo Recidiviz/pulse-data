@@ -66,6 +66,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     RawTableColumnFieldType,
 )
+from recidiviz.ingest.direct.raw_data.state_raw_file_chunking_metadata_factory import (
+    StateRawFileChunkingMetadataFactory,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
     get_existing_region_dir_paths,
@@ -1028,3 +1031,37 @@ def test_ingest_pipeline_integration_test_fixture_structure(
                     for fixture in unused_legacy_fixtures
                 )
             )
+
+
+@pytest.mark.parametrize("state_code", get_existing_direct_ingest_states())
+def test_chunked_file_tags_registered_in_chunking_metadata(
+    state_code: StateCode,
+) -> None:
+    """Fails if a file tag has is_chunked_file=True in its YAML config but is not
+    registered in the state's chunking_metadata_by_file_tag. Without this registration,
+    the Airflow import DAG fails at raise_operations_registration_errors with
+    'No known way of coalescing files for <file_tag>'."""
+    region_raw_file_config = DirectIngestRegionRawFileConfig(
+        region_code=state_code.value
+    )
+    chunking_metadata = StateRawFileChunkingMetadataFactory.build(
+        region_code=state_code.value
+    )
+    chunked_file_tags = {
+        file_tag
+        for file_tag, config in region_raw_file_config.raw_file_configs.items()
+        if config.is_chunked_file
+    }
+    registered_tags = set(chunking_metadata.chunking_metadata_by_file_tag or {})
+    missing = chunked_file_tags - registered_tags
+    if missing:
+        raise ValueError(
+            f"[{state_code.value}] has is_chunked_file=True in YAML but no entry in "
+            f"chunking_metadata_by_file_tag: {sorted(missing)}"
+        )
+    extra = registered_tags - chunked_file_tags
+    if extra:
+        raise ValueError(
+            f"[{state_code.value}] has entries in chunking_metadata_by_file_tag "
+            f"but is_chunked_file is not set in YAML config: {sorted(extra)}"
+        )
