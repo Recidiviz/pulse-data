@@ -59,8 +59,8 @@ class CreateOrReplaceViewQueryProviderTest(unittest.TestCase):
             query,
             """CREATE OR REPLACE VIEW `recidiviz-test.my_dataset.my_view`
 (
-  col1 OPTIONS(description='''First column'''),
-  col2 OPTIONS(description='''Second column''')
+  `col1` OPTIONS(description='''First column'''),
+  `col2` OPTIONS(description='''Second column''')
 )
 OPTIONS(description='''test view
 Explore this view\\'s lineage at https://go/lineage-staging/my_dataset.my_view''')
@@ -113,7 +113,7 @@ SELECT 1 AS col1""",
             query,
             """CREATE OR REPLACE VIEW `recidiviz-test.my_dataset.my_view`
 (
-  col1 OPTIONS(description='''It\\'s a column with \\'quotes\\'''')
+  `col1` OPTIONS(description='''It\\'s a column with \\'quotes\\'''')
 )
 OPTIONS(description='''It\\'s a view
 Explore this view\\'s lineage at https://go/lineage-staging/my_dataset.my_view''')

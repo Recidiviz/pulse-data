@@ -77,7 +77,7 @@ class CreateOrReplaceViewQueryProvider(BigQueryQueryProvider):
             for field in self._view.bq_schema:
                 escaped_desc = _escape_description(field.description)
                 column_defs.append(
-                    f"  {field.name} OPTIONS(description='''{escaped_desc}''')"
+                    f"  `{field.name}` OPTIONS(description='''{escaped_desc}''')"
                 )
             parts.append("(\n" + ",\n".join(column_defs) + "\n)")
 
