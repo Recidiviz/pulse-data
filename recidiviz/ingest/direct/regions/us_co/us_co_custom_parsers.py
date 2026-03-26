@@ -49,6 +49,11 @@ def null_far_future_date(date: str) -> Optional[str]:
     return None
 
 
+def has_contact_code(contact_codes: str, code: str) -> bool:
+    """Returns True if the given code appears in the comma-separated contact_codes string."""
+    return code in contact_codes.split(",")
+
+
 def date_diff_in_days(start: str, end: str) -> Optional[str]:
     if (
         start > end

@@ -10,7 +10,16 @@ input_columns:
   CONTACTSTAFF: STRING
   CONTACTOFFICE: STRING
   EMPLOYMENTSTATUS: STRING
+  contact_codes: STRING
 unused_columns: []
+variables:
+  # TODO(#67310): Refactor to use a single dict mapping contact codes to descriptions
+  - is_employment_verification:
+      $custom:
+        $function: us_co_custom_parsers.has_contact_code
+        $args:
+          contact_codes: contact_codes
+          code: $literal("043")
 output:
   StatePerson:
     external_ids:
@@ -179,24 +188,9 @@ output:
                   - TPX@@Treatment Provider
                   - TX@@Agent-Visit-Service Provider
                   - AT2@@Service Provider Visit
-          # TODO(#62320): Confirm employment mapping with CO
-          verified_employment:
-            $conditional:
-              - $if:
-                  $and:
-                    - $not_null: EMPLOYMENTSTATUS
-                    - $not_in:
-                        $value: EMPLOYMENTSTATUS
-                        $options:
-                          - $literal("Z@@Unknown")
-                $then: $literal_bool(True)
-              - $else_if:
-                  $equal:
-                    - CONTACTTYPE
-                    - $literal("EMP@@Agent-Visit-Employment")
-                $then: $literal_bool(True)
-              - $else: $literal_bool(False)
+          verified_employment: $variable(is_employment_verification)
           supervision_contact_metadata:
             $normalized_values_json_dict:
               EMPLOYMENTSTATUS: EMPLOYMENTSTATUS
               OFFICE: CONTACTOFFICE
+              CONTACT_CODES: contact_codes
