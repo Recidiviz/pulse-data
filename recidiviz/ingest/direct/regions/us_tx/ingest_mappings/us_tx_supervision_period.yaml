@@ -15,6 +15,7 @@ input_columns:
   supervision_site: STRING
   WTSK_USER_ID: STRING
   RMF_RELEASE_TYPE: STRING
+  termination_reason: STRING
   start_date: DATE
   end_date: DATE
   rn: INTEGER
@@ -36,6 +37,83 @@ output:
           start_date: start_date
           #Todo(#35059 Consider early release when hydrating termination date)
           termination_date: end_date
+          termination_reason:
+            $enum_mapping:
+              $raw_text: termination_reason
+              $mappings:
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - Death
+                  - Death reported
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - Discharge
+                  - Early Release From Supervision
+                  - Administrative Closure
+                  - Returned to TDCJ-ID - Allow to Dschg/Not revoked
+                StateSupervisionPeriodTerminationReason.PARDONED:
+                  - Full pardon
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - Revoked
+                  - Revoked - OOS
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - Revocation Warrant Issued - Not in Custody
+                  - Pending warrant closure
+                StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                  - Pre-Revocation - In Custody
+                  - Pre-Revocation - Not in Custody
+                  - Pre-Revocation - ISF
+                  - Pre-Revocation - FCI
+                  - Pre-Revocation - OOS
+                  - Pre-revocation - SAFPF
+                  - Pre-revocation - State Jail
+                  - Pre-revocation - Released on Bond
+                  - "Pre-revocation - Not in Custody/Not Absonder"
+                  - "Pre-revocation - TDCJ-ID (Pending Hearing)"
+                  - In custody - county jail
+                  - In custody - state jail
+                  - In Custody FCI - No PRW
+                  - In Custody OOS - No PRW
+                  - "In Custody OOS/FCI - Pending TDCJ Detainer"
+                  - Erroneous release - In custody
+                  - Erroneous release - Not in custody
+                  - Erroneous Release Returned to ID
+                  - "Returned to TDCJ-ID - Snow Case/Previous charge"
+                  - TDCJ detainer
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - Deported OOC
+                  - Supervised out of state
+                  - Returned ICC offender to sending state
+                  - "Released, Pending arrival to OOS"
+                  - ISC Offender With New Texas Conviction To ID
+                  - Other Agency Detainer
+                StateSupervisionPeriodTerminationReason.VACATED:
+                  - Sentence Reversed
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - Normal Report
+                  - Quarterly Report
+                  - "Annual Report-Inactive"
+                  - "Annual Report-Active"
+                  - "Released - Pending arrival"
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  - Removed from Review Process
+                  - Post revocation action release
+                  - PRA Approved
+                  - Snow Case
+                  - Pending arrival from OOS
+                  - ISC Review
+                  - ISC Rejected
+                  - ISC failure to arrive
+                  - Pre Release
+                  - "Rel. review"
+                  - BPP review
+                  - Board vote
+                  - "Rel.ready review"
+                  - "Rel.ready"
+                  - "RW-not IC"
+                  - TDCJ-ID no RW
+                  - "Legacy Rel. review"
+                  - Legacy BPP review
+                  - Legacy board vote
+                  - "Legacy Rel.ready"
           supervision_period_metadata:
             $normalized_values_json_dict:
               status: status
