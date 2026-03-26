@@ -3,12 +3,15 @@
 region_code: US_ME
 dev_mode: False
 exclusions:
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#28864) Hydrate new sentencing entities
   - validation_name: case_insights_rates_missing_charges
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: ME is being hydrated only with v2 sentences
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: ME is being hydrated only with v2 sentences
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     hard_max_allowed_error_override: 0.035
