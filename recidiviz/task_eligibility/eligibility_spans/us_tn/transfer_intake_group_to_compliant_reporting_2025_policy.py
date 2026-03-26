@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,8 +41,9 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_ineligible_cr_offense_2025_policy,
     no_supervision_sanction_since_intake_supervision_level,
     not_in_day_reporting_center,
+    not_in_programmed_supervision_unit,
     not_on_community_supervision_for_life,
-    three_face_to_face_contacts_within_60_days_of_intake_supervision_start,
+    three_face_to_face_contacts_within_2_months_of_intake_supervision_start,
 )
 from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
@@ -77,8 +78,16 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_sanction_since_intake_supervision_level.VIEW_BUILDER,
         no_supervision_violation_report_since_intake_supervision_level.VIEW_BUILDER,
         no_positive_drug_screens_since_intake_supervision_level.VIEW_BUILDER,
-        three_face_to_face_contacts_within_60_days_of_intake_supervision_start.VIEW_BUILDER,
+        three_face_to_face_contacts_within_2_months_of_intake_supervision_start.VIEW_BUILDER,
         no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
+        # NB: all of the PSU/SCU levels (for clients supervised for sex offenses) are
+        # currently mapped to MEDIUM, so this criterion is currently redundant because
+        # PSU/SCU clients will already be excluded by the criterion requiring that
+        # clients be on INTAKE and assessed Low-Compliant since starting intake. In case
+        # we ever remap PSU/SCU levels, this criterion is in place to ensure those
+        # clients are still filtered out of eligibility, since clients with prior or
+        # current sex-offense convictions are not eligible for CR.
+        not_in_programmed_supervision_unit.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center.VIEW_BUILDER,
         _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
@@ -88,8 +97,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             NotEligibleCriteriaCondition(
-                criteria=three_face_to_face_contacts_within_60_days_of_intake_supervision_start.VIEW_BUILDER,
-                description="Don't have 3 Face to Face contacts within 60 days of intake",
+                criteria=three_face_to_face_contacts_within_2_months_of_intake_supervision_start.VIEW_BUILDER,
+                description="Don't have 3 Face to Face contacts within 2 months of intake",
             ),
             NotEligibleCriteriaCondition(
                 criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,

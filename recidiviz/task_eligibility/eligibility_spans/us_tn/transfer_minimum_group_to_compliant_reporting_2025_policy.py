@@ -45,6 +45,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_ineligible_cr_offense_2025_policy,
     no_supervision_sanction_within_3_months,
     not_in_day_reporting_center,
+    not_in_programmed_supervision_unit,
     not_on_community_supervision_for_life,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -91,6 +92,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
+        # NB: all of the PSU/SCU levels (for clients supervised for sex offenses) are
+        # currently mapped to MEDIUM, so this criterion is currently redundant because
+        # PSU/SCU clients will already be excluded by the above criterion requiring that
+        # clients be on MINIMUM supervision for 6+ months. In case we ever remap PSU/SCU
+        # levels, this criterion is in place to ensure those clients are still filtered
+        # out of eligibility, since clients with prior or current sex-offense
+        # convictions are not eligible for CR.
+        not_in_programmed_supervision_unit.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center.VIEW_BUILDER,
         no_supervision_sanction_within_3_months.VIEW_BUILDER,
