@@ -220,25 +220,6 @@ _BASE_ALLOWED_TABLES: dict[str, set[str]] = {
         "Supervision_History_Events",
         "_PAROLE_REVO_HEARING_After_Control_Intake_Dates",
     },
-    # TODO(#57962): Delete these tables from BigQuery and remove this exemption
-    "us_co_raw_data": {
-        "eomis_CustodyClass",
-        "eomis_admissionsummary",
-        "eomis_bedassignment",
-        "eomis_facilitybed",
-        "eomis_gatepass",
-        "eomis_offendernamealias",
-        "eomis_plannedmovement",
-    },
-    "us_co_raw_data_secondary": {
-        "eomis_CustodyClass",
-        "eomis_admissionsummary",
-        "eomis_bedassignment",
-        "eomis_facilitybed",
-        "eomis_gatepass",
-        "eomis_offendernamealias",
-        "eomis_plannedmovement",
-    },
     # TODO(#57804): Delete this table from BigQuery and remove this exemption
     "us_az_raw_data": {"AZ_CS_OMS_SENTENCE_INFO"},
     # TODO(#57805): Delete these tables from BigQuery and remove this exemption
