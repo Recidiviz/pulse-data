@@ -35,7 +35,7 @@ output:
               $raw_text: start_reason
               $mappings:
                 StateSupervisionPeriodAdmissionReason.ABSCONSION:
-                  - Releasee Abscond
+                  - RELEASEE ABSCOND
                 StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
                   - SENTENCE EXPIRATION
                   - TEMPORARY RELEASE
@@ -53,13 +53,13 @@ output:
                   # This is the case when there was a warrant out for a person who absconded,
                   # but rather than send them back to custody when they returned, the warrant
                   # was quashed.
-                  - Warrant Quashed
+                  - WARRANT QUASHED
                 StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   # A release type not used since 1997.
                   - SHOCK INCARCERATION
                 StateSupervisionPeriodAdmissionReason.INVESTIGATION:
-                  - Temporary Placement
-                  - In Custody - Other
+                  - TEMPORARY PLACEMENT
+                  - IN CUSTODY - OTHER
                 StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                   - SUPV LEVEL ASSESSMENT
                   - OFFICER CHANGE
@@ -69,65 +69,67 @@ output:
               $raw_text: end_reason
               $mappings:
                 StateSupervisionPeriodTerminationReason.ABSCONSION:
-                  - Releasee Abscond
+                  - RELEASEE ABSCOND
                 StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
-                  - Close Supervision Episode - Leave Prison Episode Active
+                  - CLOSE SUPERVISION EPISODE - LEAVE PRISON EPISODE ACTIVE
                 StateSupervisionPeriodTerminationReason.INVESTIGATION:
-                  - In Custody - Other
-                  - Temporary Placement
+                  - IN CUSTODY - OTHER
+                  - TEMPORARY PLACEMENT
                 StateSupervisionPeriodTerminationReason.DEATH:
-                  - Death
+                  - DEATH
                 StateSupervisionPeriodTerminationReason.DISCHARGE:
-                  # Describes a person being released from their supervision earlier than their sentence’s end date.
-                  - Release by Court
-                  - Admin Action Case Closed
-                  - Early Discharge
-                  - Court Ordered Termination
-                  - NEW CODE - Earned Release
+                  # DESCRIBES A PERSON BEING RELEASED FROM THEIR SUPERVISION EARLIER THAN THEIR SENTENCE’S END DATE.
+                  - RELEASE BY COURT
+                  - ADMIN ACTION CASE CLOSED
+                  - EARLY DISCHARGE
+                  - COURT ORDERED TERMINATION
+                  - NEW CODE - EARNED RELEASE
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
-                  - OLD/NEW CODE - Expiration
+                  - OLD/NEW CODE - EXPIRATION
                   - DPPE END
-                  - Community Supervision End Date
-                  - End of Supervision
-                  - Absolute Discharge
-                  - ISC Closure
-                  - ISC Case Closure
+                  - COMMUNITY SUPERVISION END DATE
+                  - END OF SUPERVISION
+                  - ABSOLUTE DISCHARGE
+                  - ISC CLOSURE
+                  - ISC CASE CLOSURE
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                   - SUPV LEVEL ASSESSMENT
                   - OFFICER CHANGE
                   - START - INTERSTATE COMPACT # This only appears once due to a data entry error.
                   - START - INTERSTATE COMPACT PROBATION # This only appears twice due to data entry errors
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
-                  - Release ISC
-                  - Deport 1/2 Term
+                  - RELEASE ISC
+                  - DEPORT 1/2 TERM
                 StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
-                  - Warrant Quashed
+                  - WARRANT QUASHED
                   - DPPE START # This only appears 3 times, always after a warrant was quashed, due to data entry errors.
                 StateSupervisionPeriodTerminationReason.REVOCATION:
-                  - Return from Abscond
-                  - TIS Release Return
-                  - Correctional Release Center Release
-                  - Temporary Release Return
-                  - Home Arrest Rescinded/Revoked
-                  - Parole Revoked-Regular
-                  - Provisional Rel Rescinded/Revoked
-                  - SB1291 Violated
-                  - Mandatory Release Res/Rev
-                  - Reopen Last Prison Episode
-                  - Work Furlough Rescinded/Revoked
-                  - Parole Revoked/41.1604.11K
-                  - ERCD Release Return
-                  - Drug Transition Violated
+                  - RECOMMITMENT
+                  - INFERRED RECOMMITMENT
+                  - RETURN FROM ABSCOND
+                  - TIS RELEASE RETURN
+                  - CORRECTIONAL RELEASE CENTER RELEASE
+                  - TEMPORARY RELEASE RETURN
+                  - HOME ARREST RESCINDED/REVOKED
+                  - PAROLE REVOKED-REGULAR
+                  - PROVISIONAL REL RESCINDED/REVOKED
+                  - SB1291 VIOLATED
+                  - MANDATORY RELEASE RES/REV
+                  - REOPEN LAST PRISON EPISODE
+                  - WORK FURLOUGH RESCINDED/REVOKED
+                  - PAROLE REVOKED/41.1604.11K
+                  - ERCD RELEASE RETURN
+                  - DRUG TRANSITION VIOLATED
                   - RTRN CUSTDY ITP
-                  - 41-1604.16 Revoked
-                  - Revocation
-                  - Discretionary Release Returnee
+                  - 41-1604.16 REVOKED
+                  - REVOCATION
+                  - DISCRETIONARY RELEASE RETURNEE
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
-                  - Activated In Error
-                  - Release in Error Return
-                  - Deactivated in Error
+                  - ACTIVATED IN ERROR
+                  - RELEASE IN ERROR RETURN
+                  - DEACTIVATED IN ERROR
                   - INFERRED MIGRATION ERROR
-                  - Duplicate ADC Number Activation
+                  - DUPLICATE ADC NUMBER ACTIVATION
           supervision_level:
             $enum_mapping:
               $custom_parser: us_az_custom_enum_parsers.parse_supervision_level
@@ -143,12 +145,12 @@ output:
               - $if:
                   $equal:
                     - start_reason
-                    - $literal("Releasee Abscond")
+                    - $literal("RELEASEE ABSCOND")
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
               - $else_if:
                   $equal:
                     - start_reason
-                    - $literal("Interstate Compact Probation")
+                    - $literal("INTERSTATE COMPACT PROBATION")
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.PROBATION)
               - $else: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
           supervision_site: OFFICE

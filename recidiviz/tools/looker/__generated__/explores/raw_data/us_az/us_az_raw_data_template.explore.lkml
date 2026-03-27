@@ -59,4 +59,11 @@ explore: us_az_raw_data_template {
     view_label: "us_az_RECIDIVIZ_REFERENCE_staff_id_override"
   }
 
+  join: us_az_RECIDIVIZ_REFERENCE_supervisor_override {
+    sql_on: ${us_az_PERSON.PERSON_ID} = ${us_az_RECIDIVIZ_REFERENCE_supervisor_override.OFFICER_PERSON_ID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_az_RECIDIVIZ_REFERENCE_supervisor_override"
+  }
+
 }

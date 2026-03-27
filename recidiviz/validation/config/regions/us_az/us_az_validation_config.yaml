@@ -51,6 +51,9 @@ max_allowed_error_overrides:
   - validation_name: open_sessions_without_active_sentences
     hard_max_allowed_error_override: 0.04
     override_reason: TODO(#39885) - investigate missing sentence serving periods for open parole sessions
+  - validation_name: client_record_archive_duplicate_person_ids
+    hard_max_allowed_error_override: 0.0003
+    override_reason: TODO(#45221) - Delete duplicates resolved after #66209
 num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 2000
