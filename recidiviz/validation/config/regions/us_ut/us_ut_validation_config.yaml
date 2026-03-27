@@ -54,3 +54,9 @@ num_allowed_rows_overrides:
       HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR produce JSON arrays instead of
       objects. Fix is blocked on #61640 (requires coordinated FE changes tracked in
       SPE-2635).
+  - validation_name: current_supervision_staff_missing_district
+    hard_num_allowed_rows_override: 1
+    override_reason: |-
+      This is expected - there is a Release and Reentry "user" assigned to supervise 
+      some clients from a UDC Administration location that does not appear as a supervision
+      location in location metadata.
