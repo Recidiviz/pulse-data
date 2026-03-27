@@ -31,19 +31,28 @@ class UsNdIncarcerationDelegate(StateSpecificIncarcerationDelegate):
         self,
         incarceration_period: NormalizedStateIncarcerationPeriod,
     ) -> bool:
-        """In US_ND, only periods of incarceration that are under the custodial
-        authority of the state prison are included in the state population.
+        """In US_ND, periods under state prison or other-state custodial authority are
+        included in the state population. Two additional categories under county custodial
+        authority are also included because ND counts them in their official reports:
+          - DEFP (Deferred Placement): people awaiting facility placement, held prior to
+            prison admission (e.g. parole violators not yet transferred to a state facility).
+          - CJ (county jail): people physically housed at county jails under county
+            custodial authority (parole violator county jail stays, CJ-PV).
         """
-        return (
+        if incarceration_period.custodial_authority in (
             # TODO(#3723): Stop including OOS periods once we have handled the fact
             #  that the releases to this facility are classified as transferred.
-            incarceration_period.custodial_authority
-            in (
-                StateCustodialAuthority.STATE_PRISON,
-                StateCustodialAuthority.OTHER_STATE,
-            )
-            or bool(
-                incarceration_period.custodial_authority_raw_text
-                and "DEFP" in incarceration_period.custodial_authority_raw_text
-            )
-        )
+            StateCustodialAuthority.STATE_PRISON,
+            StateCustodialAuthority.OTHER_STATE,
+        ):
+            return True
+        # DEFP and CJ periods under county custodial authority are counted in ND's
+        # official population reports. The raw text is stored as
+        # "{bed_assignment}|{facility}|{datetime}", so we extract the facility
+        # from index 1 of the pipe-delimited string.
+        if incarceration_period.custodial_authority == StateCustodialAuthority.COUNTY:
+            raw_text = incarceration_period.custodial_authority_raw_text or ""
+            parts = raw_text.split("|")
+            facility = parts[1] if len(parts) >= 2 else ""
+            return facility in ("DEFP", "CJ")
+        return False

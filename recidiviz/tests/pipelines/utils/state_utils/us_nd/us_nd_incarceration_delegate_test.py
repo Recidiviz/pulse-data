@@ -91,6 +91,70 @@ class TestUsNdIncarcerationDelegate(unittest.TestCase):
                 )
             )
 
+    def test_is_period_included_in_state_population_county_cj(
+        self,
+    ) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority_raw_text="CJ-PV-BIS|CJ|2025-01-01 00:00:00",
+            state_code=STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
+        )
+
+        self.assertTrue(
+            self.delegate.is_period_included_in_state_population(incarceration_period)
+        )
+
+    def test_is_period_included_in_state_population_county_defp_included(
+        self,
+    ) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority_raw_text="DEFP-BAR|DEFP|2025-01-01 00:00:00",
+            state_code=STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
+        )
+
+        self.assertTrue(
+            self.delegate.is_period_included_in_state_population(incarceration_period)
+        )
+
+    def test_is_period_included_in_state_population_county_other_raw_text_excluded(
+        self,
+    ) -> None:
+        """COUNTY authority with raw text other than DEFP or CJ should not be included."""
+        incarceration_period = NormalizedStateIncarcerationPeriod(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority_raw_text="NW-CELL|NW|2025-01-01 00:00:00",
+            state_code=STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            sequence_num=0,
+        )
+
+        self.assertFalse(
+            self.delegate.is_period_included_in_state_population(incarceration_period)
+        )
+
     def test_is_period_included_in_state_population_null_custodial_authority(
         self,
     ) -> None:
