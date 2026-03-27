@@ -271,6 +271,18 @@ class TestBigQueryAddress(unittest.TestCase):
         ):
             _ = address.state_code_for_address()
 
+    def test_state_code_for_address_us_ix_us_id_equivalence(self) -> None:
+        # TODO(#10703): Remove this test after merging US_IX into US_ID.
+        # US_IX and US_ID share the same data infrastructure. When a view whose
+        # view_id starts with "us_ix_" is embedded in a table name that ends with
+        # "_US_ID" (due to a state-code export override), the method should resolve
+        # to US_ID without raising an error.
+        address = BigQueryAddress.from_str(
+            "workflows_views."
+            "WORKFLOWS_FIRESTORE_workflows_views_us_ix_complete_discharge_early_from_supervision_request_record_table_US_ID"
+        )
+        self.assertEqual(StateCode.US_ID, address.state_code_for_address())
+
     def test_addresses_to_str(self) -> None:
         self.assertEqual("", BigQueryAddress.addresses_to_str([]))
 

@@ -111,6 +111,16 @@ class BigQueryAddress:
         if not found_state_codes:
             return None
 
+        # TODO(#10703): Remove this after merging US_IX into US_ID.
+        # US_ID and US_IX share the same data infrastructure. When both appear in an
+        # address (e.g. a view named "us_ix_foo" is embedded in a table name that ends
+        # with "_US_ID" due to a state-code export override), treat them as one state.
+        if (
+            StateCode.US_IX in found_state_codes
+            and StateCode.US_ID in found_state_codes
+        ):
+            found_state_codes.discard(StateCode.US_IX)
+
         if len(found_state_codes) > 1:
             raise ValueError(
                 f"Found more than one state code referenced by address "
