@@ -36,14 +36,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_get_gendered_assessment_score_bucket_range(self) -> None:
+    def test_get_assessment_score_bucket_range(self) -> None:
         input_row = pd.Series({"gender": "FEMALE", "assessment_score": 0})
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(22, score_bucket_end)
 
@@ -51,9 +49,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(22, score_bucket_end)
 
@@ -61,9 +57,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(22, score_bucket_end)
 
@@ -71,9 +65,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(23, score_bucket_start)
         self.assertEqual(30, score_bucket_end)
 
@@ -81,9 +73,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(23, score_bucket_start)
         self.assertEqual(30, score_bucket_end)
 
@@ -91,9 +81,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(31, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -101,9 +89,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(31, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -111,9 +97,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(20, score_bucket_end)
 
@@ -121,9 +105,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(20, score_bucket_end)
 
@@ -131,9 +113,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(20, score_bucket_end)
 
@@ -141,9 +121,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(21, score_bucket_start)
         self.assertEqual(28, score_bucket_end)
 
@@ -151,9 +129,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(21, score_bucket_start)
         self.assertEqual(28, score_bucket_end)
 
@@ -161,9 +137,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(29, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -171,9 +145,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(29, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -181,9 +153,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(-1, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -191,9 +161,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(-1, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -201,9 +169,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(-1, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -211,29 +177,23 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
-        input_row = pd.Series({"gender": "TRANS_FEMALE", "assessment_score": 1})
+        input_row = pd.Series({"gender": "INTERNAL_UNKNOWN", "assessment_score": 1})
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
-        input_row = pd.Series({"gender": "TRANS_MALE", "assessment_score": 1})
+        input_row = pd.Series({"gender": "OTHER", "assessment_score": 1})
         (
             score_bucket_start,
             score_bucket_end,
-        ) = write_case_insights_data_to_bq.get_gendered_assessment_score_bucket_range(
-            input_row
-        )
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
@@ -1997,6 +1957,217 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         pd.testing.assert_frame_equal(
             expected_rollup_df_with_extracted_columns, rollup_df_with_extracted_columns
         )
+
+    def test_extract_rollup_columns_all_nan_ci_values(self) -> None:
+        """Test that all-NaN CI values are treated as exceeding the threshold.
+
+        This test verifies the pandas 2.0 compatibility fix: when all CI values
+        across cohort_groups are NaN for a given (row, rollup_level), it should
+        be treated as exceeding the threshold (rolling up to the next level).
+
+        This matches the pre-pandas-2.0 behavior where NaN comparisons in certain
+        contexts would result in True for the exceeds_ci_threshold check.
+        """
+        mock_rollup_attributes = {
+            "US_IX": [
+                ["state_code", "most_severe_description"],
+                ["state_code"],
+            ]
+        }
+        mock_rollup_ci_thresholds = {"US_IX": 0.2}
+        mock_rollup_criteria = {"US_IX": "largest"}
+
+        # Create test data with:
+        # - Row 0, level 0: CI values [0.25, 0.1, 0.05] -> max=0.25 > 0.2, should NOT roll up
+        # - Row 0, level 1: CI values [NaN, NaN, NaN] -> all NaN, SHOULD roll up (exceeds threshold)
+        # - Row 1, level 0: CI values [0.15, 0.09, 0.04] -> max=0.15 < 0.2, should roll up
+        # - Row 1, level 1: CI values [0.1, 0.05, 0.03] -> max=0.1 < 0.2, should roll up (but level 0 already rolled up)
+        all_rollup_levels_df = pd.DataFrame(
+            index=pd.MultiIndex.from_arrays(
+                [
+                    ["US_IX", "US_IX"],
+                    ["ASSAULT", "THEFT"],
+                    ["Assault", "Property Crime"],
+                ],
+                names=[
+                    "state_code",
+                    "most_severe_description",
+                    "most_severe_ncic_category_uniform",
+                ],
+            ),
+            data=[
+                [
+                    10,
+                    15,
+                    20,
+                    "event_rate_dict_probation_0_0",
+                    "event_rate_dict_rider_0_0",
+                    "event_rate_dict_term_0_0",
+                    0.25,
+                    0.1,
+                    0.05,  # Level 0: max=0.25 > 0.2, does NOT exceed threshold
+                    15,
+                    20,
+                    25,
+                    "event_rate_dict_probation_0_1",
+                    "event_rate_dict_rider_0_1",
+                    "event_rate_dict_term_0_1",
+                    float("nan"),
+                    float("nan"),
+                    float("nan"),  # Level 1: all NaN, SHOULD exceed threshold
+                ],
+                [
+                    11,
+                    16,
+                    21,
+                    "event_rate_dict_probation_1_0",
+                    "event_rate_dict_rider_1_0",
+                    "event_rate_dict_term_1_0",
+                    0.15,
+                    0.09,
+                    0.04,  # Level 0: max=0.15 < 0.2, exceeds threshold
+                    16,
+                    21,
+                    26,
+                    "event_rate_dict_probation_1_1",
+                    "event_rate_dict_rider_1_1",
+                    "event_rate_dict_term_1_1",
+                    0.1,
+                    0.05,
+                    0.03,  # Level 1: max=0.1 < 0.2, exceeds threshold
+                ],
+            ],
+            columns=pd.MultiIndex.from_tuples(
+                [
+                    ("cohort_size", "PROBATION", 0),
+                    ("cohort_size", "RIDER", 0),
+                    ("cohort_size", "TERM", 0),
+                    ("event_rate_dict", "PROBATION", 0),
+                    ("event_rate_dict", "RIDER", 0),
+                    ("event_rate_dict", "TERM", 0),
+                    ("final_ci_size", "PROBATION", 0),
+                    ("final_ci_size", "RIDER", 0),
+                    ("final_ci_size", "TERM", 0),
+                    ("cohort_size", "PROBATION", 1),
+                    ("cohort_size", "RIDER", 1),
+                    ("cohort_size", "TERM", 1),
+                    ("event_rate_dict", "PROBATION", 1),
+                    ("event_rate_dict", "RIDER", 1),
+                    ("event_rate_dict", "TERM", 1),
+                    ("final_ci_size", "PROBATION", 1),
+                    ("final_ci_size", "RIDER", 1),
+                    ("final_ci_size", "TERM", 1),
+                ],
+                names=["metric", "cohort_group", "rollup_level"],
+            ),
+        )
+
+        with (
+            patch(
+                "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.ROLLUP_ATTRIBUTES",
+                mock_rollup_attributes,
+            ),
+            patch(
+                "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.ROLLUP_CI_THRESHOLDS",
+                mock_rollup_ci_thresholds,
+            ),
+            patch(
+                "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.ROLLUP_CRITERIA",
+                mock_rollup_criteria,
+            ),
+        ):
+            rollup_df_with_extracted_columns = (
+                write_case_insights_data_to_bq.extract_rollup_columns(
+                    all_rollup_levels_df, "US_IX"
+                )
+            )
+
+        # Expected behavior (with the fix for pandas 2.0):
+        # Row 0 (ASSAULT):
+        #   - Level 0: max CI=0.25 > 0.2 → exceeds_ci_threshold=TRUE (CI too wide)
+        #   - Level 1: all NaN → with fix, treated as exceeds_ci_threshold=TRUE (CI too wide)
+        #   → [TRUE, TRUE] → idxmin=0 (all same, returns first index)
+        #   Expected rollup_level: 0
+        #
+        # Row 1 (THEFT):
+        #   - Level 0: max CI=0.15 < 0.2 → exceeds_ci_threshold=FALSE (CI acceptable)
+        #   - Level 1: max CI=0.1 < 0.2 → exceeds_ci_threshold=FALSE (CI acceptable)
+        #   → [FALSE, FALSE] → idxmin=0 (first False)
+        #   Expected rollup_level: 0
+
+        expected_rollup_df_with_extracted_columns = pd.DataFrame(
+            data=[
+                [
+                    "US_IX",
+                    "ASSAULT",
+                    "Assault",
+                    0,  # Level 0 selected: [TRUE, TRUE] → idxmin=0
+                    10,
+                    15,
+                    20,
+                    "event_rate_dict_probation_0_0",
+                    "event_rate_dict_rider_0_0",
+                    "event_rate_dict_term_0_0",
+                    0.25,
+                    0.1,
+                    0.05,
+                    45,
+                    '{"state_code": "US_IX", "most_severe_description": "ASSAULT"}',
+                ],
+                [
+                    "US_IX",
+                    "THEFT",
+                    "Property Crime",
+                    0,  # Level 0 selected: [FALSE, FALSE] → idxmin=0
+                    11,
+                    16,
+                    21,
+                    "event_rate_dict_probation_1_0",
+                    "event_rate_dict_rider_1_0",
+                    "event_rate_dict_term_1_0",
+                    0.15,
+                    0.09,
+                    0.04,
+                    48,
+                    '{"state_code": "US_IX", "most_severe_description": "THEFT"}',
+                ],
+            ],
+            columns=[
+                "state_code",
+                "most_severe_description",
+                "most_severe_ncic_category_uniform",
+                "rollup_level",
+                ("cohort_size", "PROBATION"),
+                ("cohort_size", "RIDER"),
+                ("cohort_size", "TERM"),
+                "recidivism_probation_series",
+                "recidivism_rider_series",
+                "recidivism_term_series",
+                ("final_ci_size", "PROBATION"),
+                ("final_ci_size", "RIDER"),
+                ("final_ci_size", "TERM"),
+                "recidivism_num_records",
+                "recidivism_rollup",
+            ],
+        )
+
+        # Compare everything except recidivism_rollup (JSON key order can vary)
+        pd.testing.assert_frame_equal(
+            expected_rollup_df_with_extracted_columns.drop(
+                columns=["recidivism_rollup"]
+            ),
+            rollup_df_with_extracted_columns.drop(columns=["recidivism_rollup"]),
+        )
+
+        # Compare recidivism_rollup by parsing JSON (to ignore key ordering)
+        for idx in expected_rollup_df_with_extracted_columns.index:
+            expected_json = json.loads(
+                expected_rollup_df_with_extracted_columns.loc[idx, "recidivism_rollup"]
+            )
+            actual_json = json.loads(
+                rollup_df_with_extracted_columns.loc[idx, "recidivism_rollup"]
+            )
+            self.assertEqual(expected_json, actual_json)
 
     def test_add_combined_attributes_to_rollup(self) -> None:
         rolled_up_recidivism_df = pd.DataFrame(

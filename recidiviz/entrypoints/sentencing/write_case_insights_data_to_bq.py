@@ -43,6 +43,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 
 # Comma-delimited strings of supported states
 SUPPORTED_STATES_STR = "'US_IX','US_ND'"
+STATES_TO_ADD_MISSING_OFFENSES = ["US_IX"]
 UNKNOWN_ATTRIBUTE = "UNKNOWN"
 
 # Attributes to aggregate by at each level of rollup, starting with most fine-grained
@@ -69,7 +70,12 @@ ROLLUP_ATTRIBUTES = {
             "most_severe_ncic_category_uniform",
         ],
         # NCIC category + gender
-        ["state_code", "cohort_group", "most_severe_ncic_category_uniform", "gender"],
+        [
+            "state_code",
+            "cohort_group",
+            "most_severe_ncic_category_uniform",
+            "gender",
+        ],
         # Combined offense category + gender
         ["state_code", "cohort_group", "combined_offense_category", "gender"],
         # Combined offense category
@@ -153,7 +159,7 @@ class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
         write_case_insights_data_to_bq(project_id=args.project_id)
 
 
-def get_gendered_assessment_score_bucket_range(
+def get_assessment_score_bucket_range(
     cohort_df_row: pd.Series,
 ) -> Tuple[int, int]:
     """Get the risk bucket range associated with the given gender and LSI-R assessment score.
@@ -183,7 +189,7 @@ def get_gendered_assessment_score_bucket_range(
         if assessment_score <= 30:
             return 23, 30
         return 31, -1
-    # For other genders (EXTERNAL_UNKNOWN, TRANS_MALE, TRANS_FEMALE), set the assessment score to be "all"
+    # For other genders/sexes (EXTERNAL_UNKNOWN, INTERNAL_UNKNOWN, OTHER), set the assessment score to be "all"
     return 0, -1
 
 
@@ -257,9 +263,7 @@ def get_combined_offense_category(cohort_df_row: pd.Series) -> str:
 def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
     cohort_df[
         ["assessment_score_bucket_start", "assessment_score_bucket_end"]
-    ] = cohort_df.apply(
-        get_gendered_assessment_score_bucket_range, axis=1, result_type="expand"
-    )
+    ] = cohort_df.apply(get_assessment_score_bucket_range, axis=1, result_type="expand")
 
     cohort_df.any_is_violent = cohort_df.any_is_violent.fillna(False)
     cohort_df.any_is_drug = cohort_df.any_is_drug.fillna(False)
@@ -283,7 +287,10 @@ def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
 
 def get_cohort_df(project_id: str) -> pd.DataFrame:
     cohort_query = f"""
-    SELECT *
+    SELECT *,
+        -- Rename to gender to maintain consistency with the front end
+        -- TODO(#54355): Rename gender->gender_or_sex
+        gender_or_sex AS gender
     FROM `{project_id}.sentencing_views.sentence_cohort`
     WHERE state_code IN ({SUPPORTED_STATES_STR})
     """
@@ -777,6 +784,15 @@ def extract_rollup_columns(
         ).difference({"cohort_group"})
         recidivism_rollup_dict = {col: row[col] for col in cols_in_rollup}
 
+        # ensure most_severe_description is uppercased in the rollup only for US_ND
+        if (
+            "most_severe_description" in recidivism_rollup_dict
+            and row["state_code"] == "US_ND"
+        ):
+            recidivism_rollup_dict["most_severe_description"] = recidivism_rollup_dict[
+                "most_severe_description"
+            ].upper()
+
         return json.dumps(recidivism_rollup_dict, default=int)
 
     def get_nsmallest(row: pd.Series, n: int = 2) -> float:
@@ -784,22 +800,28 @@ def extract_rollup_columns(
 
     # Get the appropriate rollup level for each row
     if ROLLUP_CRITERIA[state_code] == "largest":
-        exceeds_ci_threshold = (
+        max_ci = (
             all_rollup_levels_df.stack(
                 ["rollup_level", "cohort_group"], future_stack=True
             )["final_ci_size"]
             .unstack("cohort_group")
             .max(1)
-            > ROLLUP_CI_THRESHOLDS[state_code]
+        )
+        # Treat all-NaN rows as exceeding threshold (pandas 2.0 compatibility)
+        exceeds_ci_threshold = max_ci.isna() | (
+            max_ci > ROLLUP_CI_THRESHOLDS[state_code]
         )
     elif ROLLUP_CRITERIA[state_code] == "2nd smallest":
-        exceeds_ci_threshold = (
+        nsmallest_ci = (
             all_rollup_levels_df.stack(
                 ["rollup_level", "cohort_group"], future_stack=True
             )["final_ci_size"]
             .unstack("cohort_group")
             .apply(lambda row: get_nsmallest(row, 2), axis=1)
-            > ROLLUP_CI_THRESHOLDS[state_code]
+        )
+        # Treat all-NaN rows as exceeding threshold (pandas 2.0 compatibility)
+        exceeds_ci_threshold = nsmallest_ci.isna() | (
+            nsmallest_ci > ROLLUP_CI_THRESHOLDS[state_code]
         )
     else:
         raise ValueError(
@@ -1016,6 +1038,7 @@ def create_table_for_state(
     cohort_df: pd.DataFrame,
     event_df: pd.DataFrame,
     charge_df: pd.DataFrame,
+    project_id: str | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Create the case insights table for a given state."""
 
@@ -1028,7 +1051,10 @@ def create_table_for_state(
     cohort_df_for_state = cohort_df_for_state[
         cohort_df_for_state.cohort_start_date <= datetime.date.today()
     ]
-    cohort_df_for_state = add_missing_offenses(cohort_df_for_state, charge_df_for_state)
+    if state_code in STATES_TO_ADD_MISSING_OFFENSES:
+        cohort_df_for_state = add_missing_offenses(
+            cohort_df_for_state, charge_df_for_state
+        )
     cohort_df_for_state = add_offense_attributes(cohort_df_for_state)
 
     disposition_df_for_state = get_disposition_df(cohort_df_for_state, state_code)
@@ -1065,7 +1091,52 @@ def create_table_for_state(
     )
     final_table_for_state = add_consolidated_columns(final_table_for_state, state_code)
 
+    # Expand offense categories to individual offenses for US_ND
+    if state_code == "US_ND" and project_id:
+        offense_mapping = get_offense_category_mapping(project_id)
+        final_table_for_state = expand_offense_categories_to_offenses(
+            final_table_for_state, offense_mapping
+        )
+
     return final_table_for_state, recidivism_df_for_state, disposition_df_for_state
+
+
+def get_offense_category_mapping(project_id: str) -> pd.DataFrame:
+    """Get the offense category mapping for US_ND."""
+    mapping_query = f"""
+    SELECT DISTINCT
+        UPPER(description) AS offense_name,
+        COALESCE(recidiviz_offense_category, UPPER(description)) AS offense_category
+    FROM `{project_id}.us_nd_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_offense_category_mapping_latest`
+    """
+    return pd.read_gbq(mapping_query, project_id=project_id)
+
+
+def expand_offense_categories_to_offenses(
+    final_table_for_state: pd.DataFrame, offense_mapping: pd.DataFrame
+) -> pd.DataFrame:
+    """Expand rows with offense categories to individual offense names for US_ND"""
+    expanded_rows = []
+
+    for _, row in final_table_for_state.iterrows():
+        offense_category = row["most_severe_description"]
+
+        # Get all offense names for this category
+        matching_offenses = offense_mapping[
+            offense_mapping["offense_category"] == offense_category
+        ]["offense_name"].unique()
+
+        if len(matching_offenses) > 0:
+            # Create a row for each offense name in this category
+            for offense_name in matching_offenses:
+                new_row = row.copy()
+                new_row["most_severe_description"] = offense_name
+                expanded_rows.append(new_row)
+        else:
+            # Keep the original row if no mapping found
+            expanded_rows.append(row)
+
+    return pd.DataFrame(expanded_rows)
 
 
 def write_case_insights_data_to_bq(project_id: str) -> None:
@@ -1095,7 +1166,9 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
             final_table_for_state,
             recidivism_df_for_state,
             disposition_df_for_state,
-        ) = create_table_for_state(state_code, cohort_df, event_df, charge_df)
+        ) = create_table_for_state(
+            state_code, cohort_df, event_df, charge_df, project_id
+        )
         if final_table is None:
             final_table = final_table_for_state
             recidivism_df = recidivism_df_for_state
