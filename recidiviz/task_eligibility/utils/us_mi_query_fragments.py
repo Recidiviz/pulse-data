@@ -48,6 +48,103 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 from recidiviz.utils.string_formatting import fix_indent
 
 
+def generate_scc_review_eligibility_fan_out_cte(
+    input_cte_name: str,
+    upcoming_start_days: int,
+    due_start_days: int,
+    overdue_start_days: int,
+    extra_columns: list[str],
+    include_not_due: bool = True,
+) -> str:
+    """Generates the ``all_spans AS (...)`` SQL for SCC review eligibility windows.
+
+    Fans a normalized input CTE into NOT_DUE / UPCOMING / DUE / OVERDUE time
+    windows. All window boundaries are calendar day offsets from ``period_start``.
+
+    The input CTE must expose:
+        state_code, person_id
+        period_start -- DATE: start of the review period
+        period_end   -- DATE | NULL: exclusive end; NULL for ongoing sessions
+        <extra_columns>
+
+    Window layout (offsets from period_start):
+        NOT_DUE  (if include_not_due): [0,                    upcoming_start_days)
+        UPCOMING:                      [upcoming_start_days,   due_start_days)
+        DUE:                           [due_start_days,        overdue_start_days)
+        OVERDUE:                       [overdue_start_days,    period_end)
+
+    All windows except OVERDUE are capped by period_end via LEAST/IFNULL.
+    next_scc_due_date is auto-computed as the last day before OVERDUE:
+        DATE_ADD(period_start, INTERVAL overdue_start_days - 1 DAY)
+    """
+    extra_cols_sql = (
+        "\n        " + ",\n        ".join(extra_columns) + "," if extra_columns else ""
+    )
+    due_date_expr = f"DATE_ADD(period_start, INTERVAL {overdue_start_days - 1} DAY)"
+
+    arms = []
+
+    if include_not_due:
+        arms.append(
+            f"""    -- NOT_DUE: review period just started, next review not yet approaching
+    SELECT
+        state_code,
+        person_id,
+        period_start AS start_date,
+        LEAST(
+            DATE_ADD(period_start, INTERVAL {upcoming_start_days} DAY),
+            IFNULL(period_end, DATE_ADD(period_start, INTERVAL {upcoming_start_days} DAY))
+        ) AS end_date,
+        'NOT_DUE' AS eligibility_type,
+        {due_date_expr} AS next_scc_due_date,{extra_cols_sql}
+    FROM {input_cte_name}"""
+        )
+
+    arms.append(
+        f"""    -- UPCOMING: review approaching (days {upcoming_start_days}-{due_start_days - 1} after period start)
+    SELECT
+        state_code,
+        person_id,
+        DATE_ADD(period_start, INTERVAL {upcoming_start_days} DAY) AS start_date,
+        LEAST(
+            DATE_ADD(period_start, INTERVAL {due_start_days} DAY),
+            IFNULL(period_end, DATE_ADD(period_start, INTERVAL {due_start_days} DAY))
+        ) AS end_date,
+        'UPCOMING' AS eligibility_type,
+        {due_date_expr} AS next_scc_due_date,{extra_cols_sql}
+    FROM {input_cte_name}"""
+    )
+
+    arms.append(
+        f"""    -- DUE: review due (days {due_start_days}-{overdue_start_days - 1} after period start)
+    SELECT
+        state_code,
+        person_id,
+        DATE_ADD(period_start, INTERVAL {due_start_days} DAY) AS start_date,
+        LEAST(
+            DATE_ADD(period_start, INTERVAL {overdue_start_days} DAY),
+            IFNULL(period_end, DATE_ADD(period_start, INTERVAL {overdue_start_days} DAY))
+        ) AS end_date,
+        'DUE' AS eligibility_type,
+        {due_date_expr} AS next_scc_due_date,{extra_cols_sql}
+    FROM {input_cte_name}"""
+    )
+
+    arms.append(
+        f"""    -- OVERDUE: review not completed by day {overdue_start_days}+ after period start
+    SELECT
+        state_code,
+        person_id,
+        DATE_ADD(period_start, INTERVAL {overdue_start_days} DAY) AS start_date,
+        period_end AS end_date,
+        'OVERDUE' AS eligibility_type,
+        {due_date_expr} AS next_scc_due_date,{extra_cols_sql}
+    FROM {input_cte_name}"""
+    )
+
+    return "all_spans AS (\n" + "\n    UNION ALL\n".join(arms) + "\n)"
+
+
 def generate_sccp_form_opportunity_record_view_builder(
     description: str,
     view_id: str,
@@ -855,6 +952,7 @@ SELECT
     m.bondable_offenses_within_6_months AS form_information_bondable_offenses_within_6_months,
     m.nonbondable_offenses_within_1_year AS form_information_nonbondable_offenses_within_1_year,
     pf.form_ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
+    (COALESCE(smi.MMD, "No") = "Yes") AS form_information_SMI,
     --metadata
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
     DATE(sgt.person_projected_full_term_release_date_max) AS metadata_max_release_date,
@@ -902,6 +1000,9 @@ LEFT JOIN (
     SELECT state_code, person_id, facility, housing_unit
     FROM `{{project_id}}.us_mi_normalized_state.state_incarceration_period`
     WHERE CURRENT_DATE('US/Eastern') BETWEEN admission_date AND {nonnull_end_date_clause('release_date')}
+        -- When a period ends and a new one starts on the same day, both satisfy the
+        -- BETWEEN condition. Keep only the most recent period to avoid duplicate rows.
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY admission_date DESC) = 1
 ) si
 USING (state_code, person_id)
 LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.current_person_prison_projected_dates_materialized` sgt
