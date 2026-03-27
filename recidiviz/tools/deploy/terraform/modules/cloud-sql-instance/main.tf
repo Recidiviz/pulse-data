@@ -186,6 +186,33 @@ resource "google_sql_database_instance" "data" {
       value = 0
     }
 
+    # TODO(#54841) Remove these after the PG18/CMEK migration is complete
+    # See https://docs.cloud.google.com/database-migration/docs/postgres/configure-source-database#cloud-sql-postgresql
+    # for information on these flags.
+    dynamic "database_flags" {
+      for_each = var.project_id == "recidiviz-staging" ? [1] : []
+      content {
+        name  = "cloudsql.logical_decoding"
+        value = "on"
+      }
+    }
+
+    dynamic "database_flags" {
+      for_each = var.project_id == "recidiviz-staging" ? [1] : []
+      content {
+        name  = "cloudsql.enable_pglogical"
+        value = "on"
+      }
+    }
+
+    dynamic "database_flags" {
+      for_each = var.project_id == "recidiviz-staging" ? [1] : []
+      content {
+        name  = "wal_sender_timeout"
+        value = 0
+      }
+    }
+
 
     ip_configuration {
       ipv4_enabled = true
