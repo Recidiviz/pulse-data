@@ -109,7 +109,9 @@ COMMON_VESTIGES = [
     "pulse_dashboard_segment_metrics.tracks_view",
     "pulse_dashboard_segment_metrics.users",
     "jii_auth0_production_segment_metrics.login_succeeded",
+    "jii_frontend_prod_segment_metrics.frontend_cpa_intake_chat_client_address_submitted",
     "jii_frontend_prod_segment_metrics.identifies",
+    "jii_frontend_prod_segment_metrics.tracks",
     "jii_frontend_prod_segment_metrics.users",
     # GCS-backed reference tables not currently referenced in the view graph
     "gcs_backed_tables.county_resident_adult_populations",
