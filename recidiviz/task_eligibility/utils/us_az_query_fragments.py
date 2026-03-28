@@ -28,7 +28,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -37,6 +36,83 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+
+# Number of days after a TPR/DTP date passes before we stop considering it
+# active for eligibility purposes. ACIS itself does not expire these dates,
+# but for workflows we treat dates older than this as stale.
+_TPR_DTP_DATE_EXPIRATION_DAYS = 90
+
+# Constants for calculating projected dates from ERCD/CSBD
+_ERCD_TO_PROJECTED_CSBD_DAYS = 77
+_CSBD_TO_PROJECTED_TPR_DAYS = 90
+_ERCD_TO_PROJECTED_TPR_DAYS = (
+    _ERCD_TO_PROJECTED_CSBD_DAYS + _CSBD_TO_PROJECTED_TPR_DAYS
+)  # 167
+
+
+def _cap_span_end_at_date_expiration(
+    end_date_expr: str,
+    date_field: str,
+    expiration_days: int = _TPR_DTP_DATE_EXPIRATION_DAYS,
+) -> str:
+    """Caps a span's end date at date_field + expiration_days.
+
+    This is used to expire TPR/DTP dates in eligibility criteria after a
+    configurable number of days. For example, if someone's ACIS TPR date is
+    2025-10-14 and expiration_days is 90, the span will end no later than
+    2026-01-12 (Oct 14 + 90 days). After that, the criteria reverts to its
+    default value.
+
+    The date_field must be non-NULL for this to cap correctly. If date_field
+    is NULL, the original end_date is preserved via the IFNULL guard.
+    """
+    return (
+        f"LEAST({nonnull_end_date_clause(end_date_expr)}, "
+        f"IFNULL(DATE_ADD({date_field}, INTERVAL {expiration_days} DAY), "
+        f"{nonnull_end_date_clause(end_date_expr)}))"
+    )
+
+
+# TODO(#64715): Move this helper to a general location (e.g. bq_utils.py or
+# sentence_group_query_fragments.py) so other states can use it when migrating
+# to person_projected_date_sessions.
+def metadata_date_expr(field_name: str) -> str:
+    """Extracts a date from person_projected_date_sessions sentence_group_length_metadata JSON.
+
+    The metadata stores dates as DATETIME strings (e.g., '2026-09-23 12:00:00'),
+    so we need a double cast: DATETIME -> DATE.
+
+    Args:
+        field_name: The metadata key (e.g., 'tpr', 'ercd', 'csbd')
+    """
+    return (
+        f"SAFE_CAST(SAFE_CAST(JSON_VALUE(sentence_group_length_metadata, "
+        f"'$.state_specific_dates__{field_name}') AS DATETIME) AS DATE)"
+    )
+
+
+def projected_tpr_date_expr() -> str:
+    """SQL expression to calculate projected TPR date from CSBD/ERCD metadata.
+
+    projected_tpr = CSBD - 90 days, with fallback: ERCD - 167 days.
+    projected_dtp is identical to projected_tpr.
+    """
+    csbd = metadata_date_expr("csbd")
+    ercd = metadata_date_expr("ercd")
+    return (
+        f"COALESCE("
+        f"DATE_SUB({csbd}, INTERVAL {_CSBD_TO_PROJECTED_TPR_DAYS} DAY), "
+        f"DATE_SUB({ercd}, INTERVAL {_ERCD_TO_PROJECTED_TPR_DAYS} DAY))"
+    )
+
+
+def projected_csbd_date_expr() -> str:
+    """SQL expression to calculate projected CSBD from ERCD metadata.
+
+    projected_csbd = ERCD - 77 days.
+    """
+    ercd = metadata_date_expr("ercd")
+    return f"DATE_SUB({ercd}, INTERVAL {_ERCD_TO_PROJECTED_CSBD_DAYS} DAY)"
 
 
 def no_current_or_prior_convictions(
@@ -335,13 +411,26 @@ def acis_date_not_set_criteria_builder(
             description=f"{task}: Most recent ACIS date",
         ),
     ]
-    _TBL = "`{project_id}.{analyst_data}.us_az_projected_dates_materialized`"
+    # Map the ACIS date field to the metadata key in person_projected_date_sessions
+    metadata_key = "tpr" if task == "TPR" else "dtp"
+
+    _TBL = f"""(
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive AS end_date,
+            {metadata_date_expr(metadata_key)} AS {acis_date},
+        FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
+        WHERE state_code = 'US_AZ'
+    )"""
     _QUERY_TEMPLATE = f"""
     SELECT
       state_code,
       person_id,
       start_date,
-      end_date,
+      -- Cap end date so the date expires after {_TPR_DTP_DATE_EXPIRATION_DAYS} days
+      {_cap_span_end_at_date_expiration('end_date', acis_date)} AS end_date,
       FALSE AS meets_criteria,
       TO_JSON(STRUCT(
             {acis_date} AS {task.lower()}_latest_acis_date,
@@ -350,8 +439,6 @@ def acis_date_not_set_criteria_builder(
      start_date AS {task.lower()}_latest_acis_update_date,
      {acis_date} AS {task.lower()}_latest_acis_date,
     FROM
-      # We want to aggregate over our projected dates view to focus aggregation over the ACIS date rather than all dates
-      # as is done in the original view
       ({aggregate_adjacent_spans(_TBL, attribute=acis_date)})
     WHERE {acis_date} IS NOT NULL
     """
@@ -363,7 +450,7 @@ def acis_date_not_set_criteria_builder(
         criteria_spans_query_template=_QUERY_TEMPLATE,
         meets_criteria_default=True,
         reasons_fields=_REASONS_FIELDS,
-        analyst_data=ANALYST_VIEWS_DATASET,
+        sentence_sessions_dataset="sentence_sessions",
     )
 
 
@@ -460,15 +547,26 @@ def within_x_time_of_date(
 ) -> str:
     """Returns a query finding if the chosen opportunity date is within x time (defaults to x months)"""
     assert opp_name.upper() in ["TPR", "DTP"], "Opportunity Name must be TPR or DTP"
+    projected_date_expr = projected_tpr_date_expr()
     return f"""
         WITH critical_date_spans AS (
             SELECT
                 state_code,
                 person_id,
                 start_date AS start_datetime,
-                end_date AS end_datetime,
+                -- Cap end date so the date expires after {_TPR_DTP_DATE_EXPIRATION_DAYS} days
+                {_cap_span_end_at_date_expiration('end_date_exclusive', f'projected_{opp_name.lower()}_date')} AS end_datetime,
                 projected_{opp_name.lower()}_date AS critical_date
-            FROM `{{project_id}}.{{analyst_views_dataset}}.us_az_projected_dates_materialized`
+            FROM (
+                SELECT
+                    state_code,
+                    person_id,
+                    start_date,
+                    end_date_exclusive,
+                    {projected_date_expr} AS projected_{opp_name.lower()}_date,
+                FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
+                WHERE state_code = 'US_AZ'
+            )
             ),
         {critical_date_has_passed_spans_cte(
         meets_criteria_leading_window_time=time_interval,
@@ -936,6 +1034,7 @@ def incarceration_past_early_release_date(
         acis_date = "acis_tpr_date"
     else:
         acis_date = "acis_dtp_date"
+    metadata_key = "tpr" if opp_name.upper() == "TPR" else "dtp"
     return f"""
     WITH critical_date_spans AS
     (
@@ -943,9 +1042,19 @@ def incarceration_past_early_release_date(
         state_code,
         person_id,
         start_date AS start_datetime,
-        end_date AS end_datetime,
+        -- Cap end date so the date expires after {_TPR_DTP_DATE_EXPIRATION_DAYS} days
+        {_cap_span_end_at_date_expiration('end_date_exclusive', acis_date)} AS end_datetime,
         {acis_date} as critical_date
-    FROM `{{project_id}}.analyst_data.us_az_projected_dates_materialized` dates
+    FROM (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+            {metadata_date_expr(metadata_key)} AS {acis_date},
+        FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
+        WHERE state_code = 'US_AZ'
+    ) dates
     WHERE {acis_date} IS NOT NULL
     ),
     {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=leading_window_time, date_part=date_part)}
