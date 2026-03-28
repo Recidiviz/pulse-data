@@ -690,6 +690,16 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             config.get_pruning_status(DirectIngestInstance.PRIMARY),
         )
 
+    def test_max_hours_before_stale_default(self) -> None:
+        config = self.sparse_config
+        self.assertIsNone(config.max_hours_before_stale_override)
+        # WEEKLY = 7 days -> 7 * 24 + 12 = 180
+        self.assertEqual(180, config.max_hours_before_stale())
+
+    def test_max_hours_before_stale_override(self) -> None:
+        config = attr.evolve(self.sparse_config, max_hours_before_stale_override=48)
+        self.assertEqual(48, config.max_hours_before_stale())
+
     def test_column_types(self) -> None:
         """Tests a config with columns of various types / documentation levels."""
         config = attr.evolve(
@@ -1805,6 +1815,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
+        self.assertIsNone(default_config.default_max_hours_before_stale)
 
     def test_parsing_obeys_defaults(self) -> None:
         """Checks that all defaults are applied for a file that does not specify a
@@ -1838,6 +1849,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
+        self.assertIsNone(simple_file_config.max_hours_before_stale_override)
 
     def test_parsing_overrides_defaults(self) -> None:
         """Checks that all defaults are overridden for a file that does specify a
@@ -1878,6 +1890,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 RawDataImportBlockingValidationType.NONNULL_VALUES,
             )
         )
+        self.assertEqual(48, file_config.max_hours_before_stale_override)
+        self.assertEqual(48, file_config.max_hours_before_stale())
 
         # This file is always a historical export
         file_config = self.us_xx_region_config.raw_file_configs[

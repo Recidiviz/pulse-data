@@ -510,6 +510,12 @@ class DirectIngestRawFileDefaultConfig:
     default_import_blocking_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
+    # The default override for the maximum number of hours before a raw data file is
+    # considered stale. If set, overrides the value computed from update_cadence for all
+    # files in this region that do not set their own override.
+    default_max_hours_before_stale: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
 
 
 @attr.s(frozen=True, hash=False)
@@ -636,6 +642,12 @@ class DirectIngestRawFileConfig:
     # we are mainly concerned with enforcing a reasonable ceiling (like less than 10k)
     # than we are with strictly monitoring the number of bytes
     max_num_unparseable_bytes_per_chunk: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Override for the maximum number of hours before this raw data file is considered
+    # stale. If set, takes precedence over the value computed from update_cadence.
+    max_hours_before_stale_override: int | None = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 
@@ -891,9 +903,11 @@ class DirectIngestRawFileConfig:
         """Returns the maximum number of hours we will go between receiving exports of
         this file before calling it "stale".
 
-        In general, we want to allow some leniency between receiving files for the data
-        to actually enter our system (~ 12 hours).
+        If max_hours_before_stale_override is set, that value is used directly.
+        Otherwise, we compute from the update cadence with some leniency (~ 12 hours).
         """
+        if self.max_hours_before_stale_override is not None:
+            return self.max_hours_before_stale_override
         return self.get_update_interval_in_days() * 24 + 12
 
     def file_is_exempt_from_validation(
@@ -1031,6 +1045,7 @@ class DirectIngestRawFileConfig:
         default_export_lookback_window: RawDataExportLookbackWindow,
         default_no_valid_primary_keys: bool,
         default_infer_columns_from_config: bool,
+        default_max_hours_before_stale: int | None,
         default_import_blocking_validation_exemptions: Optional[
             List[ImportBlockingValidationExemption]
         ],
@@ -1215,6 +1230,10 @@ class DirectIngestRawFileConfig:
             "max_num_unparseable_bytes_per_chunk", int
         )
 
+        max_hours_before_stale = file_config_dict.pop_optional(
+            "max_hours_before_stale", int
+        )
+
         if len(file_config_dict) > 0:
             raise ValueError(
                 f"Found unexpected config values for raw file"
@@ -1268,6 +1287,11 @@ class DirectIngestRawFileConfig:
                 else default_import_blocking_validation_exemptions
             ),
             max_num_unparseable_bytes_per_chunk=max_num_unparseable_bytes_per_chunk,
+            max_hours_before_stale_override=(
+                max_hours_before_stale
+                if max_hours_before_stale is not None
+                else default_max_hours_before_stale
+            ),
         )
 
 
@@ -1368,6 +1392,9 @@ class DirectIngestRegionRawFileConfig:
         default_infer_columns_from_config = default_contents.pop(
             "default_infer_columns_from_config", bool
         )
+        default_max_hours_before_stale = default_contents.pop_optional(
+            "default_max_hours_before_stale", int
+        )
         default_import_blocking_validation_exemptions = None
         if (
             import_blocking_validation_exemptions_yaml := default_contents.pop_dicts_optional(
@@ -1395,6 +1422,7 @@ class DirectIngestRegionRawFileConfig:
             default_no_valid_primary_keys=default_no_valid_primary_keys,
             default_update_cadence=default_update_cadence,
             default_import_blocking_validation_exemptions=default_import_blocking_validation_exemptions,
+            default_max_hours_before_stale=default_max_hours_before_stale,
         )
 
     @property
@@ -1496,6 +1524,7 @@ class DirectIngestRegionRawFileConfig:
                 default_export_lookback_window=default_config.default_export_lookback_window,
                 default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
                 default_infer_columns_from_config=default_config.default_infer_columns_from_config,
+                default_max_hours_before_stale=default_config.default_max_hours_before_stale,
                 default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
                 file_config_dict=yaml_contents,
             )
