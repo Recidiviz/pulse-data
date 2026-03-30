@@ -895,29 +895,10 @@ def incident_based_caf_score_query_template(
             AND custodial_authority = 'STATE_PRISON'
     )
     ,
-    -- Get all incidents with relevant metadata
-    all_incidents AS {classification_v2_incidents()}
-    ,
-    -- Deduplicate to one incident per (person, date), filter to the provided condition,
-    -- and join to their state prison span
     relevant_incidents AS (
-        SELECT
-            all_incidents.person_id,
-            all_incidents.state_code,
-            state_prison_spans.custodial_authority_session_id,
-            all_incidents.incarceration_incident_id,
-            all_incidents.incident_date AS event_date,
-            all_incidents.infraction_type_raw_text,
-            all_incidents.incident_class,
-        FROM all_incidents
-        LEFT JOIN state_prison_spans
-        ON
-            all_incidents.person_id = state_prison_spans.person_id
-            AND all_incidents.state_code = state_prison_spans.state_code
-            AND all_incidents.incident_date >= state_prison_spans.start_date
-            AND all_incidents.incident_date < {nonnull_end_date_clause('state_prison_spans.end_date_exclusive')}
+        SELECT * 
+        FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_classification_preprocessed_materialized`
         WHERE {incident_filter_condition}
-            AND severity_rank = 1
     )
     ,
     -- Count incidents within each time window (e.g., 0-6 months, 6-12 months, etc.)
