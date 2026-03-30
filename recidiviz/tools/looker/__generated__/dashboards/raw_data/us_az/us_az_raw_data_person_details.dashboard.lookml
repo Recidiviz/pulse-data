@@ -400,25 +400,3 @@
     width: 24
     height: 6
 
-  - name: RECIDIVIZ_REFERENCE_supervisor_override
-    title: RECIDIVIZ_REFERENCE_supervisor_override
-    explore: us_az_raw_data
-    model: "@{model_name}"
-    type: looker_grid
-    fields: [us_az_RECIDIVIZ_REFERENCE_supervisor_override.primary_key,
-      us_az_RECIDIVIZ_REFERENCE_supervisor_override.OFFICER_PERSON_ID,
-      us_az_RECIDIVIZ_REFERENCE_supervisor_override.CORRECT_SUPERVISOR_PERSON_ID,
-      us_az_RECIDIVIZ_REFERENCE_supervisor_override.OVERRIDE_DATE__raw,
-      us_az_RECIDIVIZ_REFERENCE_supervisor_override.file_id,
-      us_az_RECIDIVIZ_REFERENCE_supervisor_override.is_deleted]
-    sorts: [us_az_RECIDIVIZ_REFERENCE_supervisor_override.OVERRIDE_DATE__raw]
-    note_display: hover
-    note_text: "A reference file maintained by Recidiviz to manually correct supervisor assignments that cannot be accurately represented in ACIS. ACIS only allows supervisors to be assigned to officers from the same office, so cross-office supervisor relationships must be captured here.  For each row, the override takes precedence over the supervisor value from the state data for any state data row whose UPDT_DTM is on or before the OVERRIDE_DATE. Once the state sends us a more recent update (UPDT_DTM > OVERRIDE_DATE), the state's value is used instead — on the assumption that the state has corrected the relationship in ACIS.  For example, if an officer in Office A is actually supervised by a supervisor in Office B, ACIS may record no supervisor or the wrong supervisor for that officer. We would add a row like:  | OFFICER_PERSON_ID | CORRECT_SUPERVISOR_PERSON_ID | OVERRIDE_DATE | |-|-|-| | 12345 | 67890 | 2024-06-01 |  This would cause the supervisor for officer 12345 to be recorded as 67890 for any state data rows with UPDT_DTM on or before 2024-06-01. If AZ later corrects the relationship in ACIS, the new state-sourced supervisor will take precedence."
-    listen: 
-      View Type: us_az_PERSON.view_type
-      US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
-    row: 48
-    col: 0
-    width: 24
-    height: 6
-
