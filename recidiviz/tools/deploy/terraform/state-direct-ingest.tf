@@ -35,4 +35,12 @@ module "state_direct_ingest_buckets_and_accounts" {
   state_admin_role                       = google_project_iam_custom_role.state-admin-role.name
   region_manifest                        = local.direct_ingest_region_manifests_to_deploy[each.key]
   raw_data_storage_notification_topic_id = google_pubsub_topic.raw_data_storage_notification_topic.id
+  # Restricted states get their state-specific group; non-restricted states get
+  # s-default-state-data@recidiviz.org for access to non-restricted rows in
+  # state-agnostic BQ tables.
+  state_data_access_group_resource_name = (
+    contains(local.restricted_access_states, each.key)
+    ? local.state_data_access_group_resource_names[each.key]
+    : local.default_state_data_group_resource_name
+  )
 }

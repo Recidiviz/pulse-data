@@ -32,4 +32,18 @@ locals {
   }
 
   sftp_state_alpha_codes = yamldecode(file("${path.module}/config/sftp_state_alpha_codes.yaml"))
+
+  # Cloud Identity group resource names for state-specific BQ data access groups.
+  # Loaded from YAML config; see big_query/config/state_data_access_groups.yaml for details
+  # on how to add new states.
+  state_data_access_group_resource_names = yamldecode(file("${local.recidiviz_root}/big_query/config/state_data_access_groups.yaml"))
+
+  # Resource name for s-default-state-data@recidiviz.org, used for non-restricted
+  # states that need access to non-restricted state data in state-agnostic BQ tables.
+  default_state_data_group_resource_name = "groups/03cqmetx1ujo2ct"
+
+  # States with row-level access restrictions, loaded from the same YAML that
+  # Python's row_access_policy_query_builder.py uses, so the two stay in sync.
+  restricted_access_state_groups = yamldecode(file("${local.recidiviz_root}/big_query/config/restricted_access_state_groups.yaml"))
+  restricted_access_states       = toset(keys(local.restricted_access_state_groups))
 }

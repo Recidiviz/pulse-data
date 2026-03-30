@@ -51,6 +51,13 @@ variable "raw_data_storage_notification_topic_id" {
   type = string
 }
 
+# The Cloud Identity group resource name (e.g. "groups/023ckvvd12tng70") for the
+# state's BQ data access group (e.g. s-mi-data@recidiviz.org). Used to add the
+# Dataflow SA as a member for row-level access permissions.
+variable "state_data_access_group_resource_name" {
+  type = string
+}
+
 locals {
   lower_state_code            = replace(lower(var.state_code), "_", "-")
   direct_ingest_formatted_str = "direct-ingest-state-${local.lower_state_code}"

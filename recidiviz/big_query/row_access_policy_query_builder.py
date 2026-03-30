@@ -15,31 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query builder for BigQuery row access policies."""
+import os
 from typing import Any, Dict, List
 
 import attr
 from google.cloud import bigquery
 
+import recidiviz.big_query.config as _bq_config_pkg
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import table_has_field
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.yaml_dict import YAMLDict
 
-# TODO(#41565) we currently treat two policies as equivalent even if
-# they have different access groups. This is because the API does not
-# return the access group email in the listRowAccessPolicies API response.
-# If you update an access group for an existing policy, you must
-# run the recidiviz.tools.deploy.oneoffs.rollback_row_level_permissions_from_all_tables
-# script before the calc dag run
-RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[StateCode, str] = {
-    StateCode.US_MI: "s-mi-data@recidiviz.org",
-    StateCode.US_PA: "s-pa-data@recidiviz.org",
-    StateCode.US_AZ: "s-az-data@recidiviz.org",
-    StateCode.US_NC: "s-nc-data@recidiviz.org",
-    StateCode.US_UT: "s-ut-data@recidiviz.org",
-    StateCode.US_ID: "s-id-data@recidiviz.org",
-    StateCode.US_IX: "s-ix-data@recidiviz.org",
-    StateCode.US_ME: "s-me-data@recidiviz.org",
-}
+_RESTRICTED_ACCESS_YAML_PATH = os.path.join(
+    os.path.dirname(_bq_config_pkg.__file__),
+    "restricted_access_state_groups.yaml",
+)
+
+
+def _load_restricted_access_state_code_to_access_group() -> Dict[StateCode, str]:
+    raw = YAMLDict.from_path(_RESTRICTED_ACCESS_YAML_PATH).raw_yaml
+    return {StateCode(state_code): str(email) for state_code, email in raw.items()}
+
+
+RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP: Dict[
+    StateCode, str
+] = _load_restricted_access_state_code_to_access_group()
 
 RESTRICTED_ACCESS_FIELDS = ["state_code", "region_code"]
 

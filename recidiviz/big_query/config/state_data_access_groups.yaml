@@ -1,0 +1,43 @@
+# Cloud Identity group resource names for state-specific BQ data access groups.
+# These control row-level access permissions via google_cloud_identity_group_membership
+# resources in Terraform.
+#
+# Each state's Dataflow SA is added to the appropriate group:
+# - Restricted states (those in restricted_access_state_groups.yaml) are added
+#   to their state-specific group.
+# - Non-restricted states are added to s-default-state-data@recidiviz.org so
+#   they can access non-restricted state data in state-agnostic BQ tables.
+#
+# To add a new state:
+# 1. Create a new Google Group named s-{state}-data@recidiviz.org via
+#    Google Workspace admin (admin.google.com > Directory > Groups)
+# 2. Get the group's resource name:
+#    gcloud identity groups describe "s-{state}-data@recidiviz.org" --format="value(name)"
+# 3. Add the state code and resource name to this file
+# 4. If the state has row-level access restrictions, also add it to
+#    restricted_access_state_groups.yaml
+#
+# The resource name for s-default-state-data@recidiviz.org (used for non-restricted
+# states) is: groups/03cqmetx1ujo2ct
+
+US_AR: groups/03jtnz0s24c62yo # s-ar-data@recidiviz.org
+US_AZ: groups/03oy7u290o8xak5 # s-az-data@recidiviz.org
+US_CA: groups/01pxezwc0z8ti7f # s-ca-data@recidiviz.org
+US_CO: groups/02p2csry1qbobwa # s-co-data@recidiviz.org
+US_IA: groups/02y3w2470mj6lm6 # s-ia-data@recidiviz.org
+US_ID: groups/02xcytpi19thuo8 # s-id-data@recidiviz.org
+US_IX: groups/03ygebqi4dphk1a # s-ix-data@recidiviz.org
+US_MA: groups/04k668n3136q0te # s-ma-data@recidiviz.org
+US_ME: groups/04f1mdlm3dpunnk # s-me-data@recidiviz.org
+US_MI: groups/023ckvvd12tng70 # s-mi-data@recidiviz.org
+US_MO: groups/00rjefff1xdp34o # s-mo-data@recidiviz.org
+US_NC: groups/01rvwp1q3prgm3b # s-nc-data@recidiviz.org
+US_ND: groups/034g0dwd4jxpwcs # s-nd-data@recidiviz.org
+US_NE: groups/040ew0vw2250izz # s-ne-data@recidiviz.org
+US_NY: groups/02afmg282vey36z # s-ny-data@recidiviz.org
+US_OR: groups/02bn6wsx15o7r9b # s-or-data@recidiviz.org
+US_OZ: groups/02nusc191ww3zsf # s-oz-data@recidiviz.org
+US_PA: groups/035nkun22ttbare # s-pa-data@recidiviz.org
+US_TN: groups/01qoc8b14l6pq52 # s-tn-data@recidiviz.org
+US_TX: groups/01664s554l9zfj3 # s-tx-data@recidiviz.org
+US_UT: groups/00haapch11f3l6o # s-ut-data@recidiviz.org

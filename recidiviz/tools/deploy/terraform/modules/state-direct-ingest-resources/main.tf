@@ -80,3 +80,19 @@ resource "google_project_iam_member" "cloudprofiler_agent" {
   role    = "roles/cloudprofiler.agent"
   member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
 }
+
+# Automatically add the Dataflow service account to the state's data access
+# group (e.g. s-mi-data@recidiviz.org) so it has the correct BigQuery row-level
+# access permissions.
+# See https://github.com/Recidiviz/pulse-data/issues/67067
+resource "google_cloud_identity_group_membership" "dataflow_sa_state_data_group" {
+  group = var.state_data_access_group_resource_name
+
+  preferred_member_key {
+    id = google_service_account.dataflow_service_account.email
+  }
+
+  roles {
+    name = "MEMBER"
+  }
+}

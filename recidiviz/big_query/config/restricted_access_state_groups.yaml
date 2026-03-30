@@ -1,0 +1,25 @@
+# Maps state codes with restricted BQ row-level access to their access group email.
+# This is the single source of truth for both Python (row_access_policy_query_builder.py)
+# and Terraform (direct-ingest-constants.tf).
+#
+# TODO(#41565) We currently treat two policies as equivalent even if they have
+# different access groups. This is because the API does not return the access
+# group email in the listRowAccessPolicies API response. If you update an access
+# group for an existing policy, you must run the
+# recidiviz.tools.deploy.oneoffs.rollback_row_level_permissions_from_all_tables
+# script before the calc dag run.
+#
+# To add a new restricted state:
+# 1. Create a Google Group s-{state}-data@recidiviz.org via Google Workspace
+#    admin (admin.google.com > Directory > Groups), if one doesn't already exist
+# 2. Add the state code and group email to this file
+# 3. Also add the state to state_data_access_groups.yaml if not already present
+
+US_AZ: s-az-data@recidiviz.org
+US_ID: s-id-data@recidiviz.org
+US_IX: s-ix-data@recidiviz.org
+US_ME: s-me-data@recidiviz.org
+US_MI: s-mi-data@recidiviz.org
+US_NC: s-nc-data@recidiviz.org
+US_PA: s-pa-data@recidiviz.org
+US_UT: s-ut-data@recidiviz.org
