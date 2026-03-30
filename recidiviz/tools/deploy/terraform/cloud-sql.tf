@@ -21,6 +21,7 @@ module "case_triage_database" {
   project_id        = var.project_id
   instance_key      = "case_triage"
   base_secret_name  = "case_triage"
+  instance_name     = var.project_id == "recidiviz-staging" ? "dev-case-triage-data-0af0a" : "prod-case-triage-data"
   region            = var.us_central_region
   zone              = var.zone
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
@@ -39,6 +40,7 @@ module "justice_counts_database" {
   project_id        = var.project_id
   instance_key      = "justice_counts"
   base_secret_name  = "justice_counts"
+  instance_name     = var.project_id == "recidiviz-staging" ? "dev-justice-counts-data" : "prod-justice-counts-data"
   region            = "us-east1"
   zone              = "us-east1-c"
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
@@ -58,6 +60,7 @@ module "operations_database_v2" {
   project_id        = var.project_id
   instance_key      = "operations_v2"
   base_secret_name  = "operations_v2"
+  instance_name     = var.project_id == "recidiviz-staging" ? "dev-operations-data-0x17a1b" : "prod-operations-data-0xf04e58"
   region            = "us-east1"
   zone              = "us-east1-b"
   tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
@@ -70,6 +73,7 @@ module "pathways_database" {
   project_id        = var.project_id
   instance_key      = "pathways"
   base_secret_name  = "pathways"
+  instance_name     = var.project_id == "recidiviz-staging" ? "dev-pathways-data" : "prod-pathways-data"
   region            = var.us_central_region
   zone              = var.zone
   secondary_zone    = "us-central1-b"
@@ -94,6 +98,7 @@ module "insights_database" {
   project_id       = var.project_id
   instance_key     = "insights"
   base_secret_name = "insights"
+  instance_name    = var.project_id == "recidiviz-staging" ? "dev-insights-data" : "prod-insights-data"
   region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
@@ -121,6 +126,7 @@ module "workflows_database" {
   project_id       = var.project_id
   instance_key     = "workflows"
   base_secret_name = "workflows"
+  instance_name    = var.project_id == "recidiviz-staging" ? "dev-workflows-data" : "prod-workflows-data"
   region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
@@ -149,6 +155,7 @@ module "persistence_database" {
   project_id       = var.project_id
   instance_key     = "persistence"
   base_secret_name = "persistence"
+  instance_name    = "persistence-data"
   region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
@@ -174,6 +181,7 @@ module "public_pathways_database" {
   project_id       = var.project_id
   instance_key     = "public_pathways"
   base_secret_name = "public_pathways"
+  instance_name    = var.project_id == "recidiviz-staging" ? "dev-public-pathways-data" : "prod-public-pathways-data"
   region           = var.us_central_region
   zone             = var.zone
   tier = coalesce(

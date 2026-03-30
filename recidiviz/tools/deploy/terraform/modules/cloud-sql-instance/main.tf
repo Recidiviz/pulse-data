@@ -81,6 +81,12 @@ variable "additional_databases" {
   default = []
 }
 
+variable "instance_name" {
+  type        = string
+  description = "The Cloud SQL instance name (not the full connection string). When set, overrides the name derived from the cloudsql_instance_id secret."
+  default     = null
+}
+
 variable "insights_config" {
   type = object({
     query_insights_enabled  = optional(bool)
@@ -121,6 +127,9 @@ locals {
   # Retrieve the last element in the resource identifier
   stripped_cloudsql_instance_id = element(local.split_cloudsql_instance_id, length(local.split_cloudsql_instance_id) - 1)
 
+  # Use explicit instance_name if provided, otherwise fall back to the secret-derived name.
+  effective_instance_name = coalesce(var.instance_name, local.stripped_cloudsql_instance_id)
+
   database_friendly_name = title(replace(var.instance_key, "_", " "))
 
   bq_connection_friendly_name = var.instance_key == "state" ? "LEGACY ${local.database_friendly_name}" : local.database_friendly_name
@@ -128,7 +137,7 @@ locals {
 
 
 resource "google_sql_database_instance" "data" {
-  name                = local.stripped_cloudsql_instance_id
+  name                = local.effective_instance_name
   database_version    = var.database_version
   region              = var.region
   deletion_protection = false
@@ -189,28 +198,19 @@ resource "google_sql_database_instance" "data" {
     # TODO(#54841) Remove these after the PG18/CMEK migration is complete
     # See https://docs.cloud.google.com/database-migration/docs/postgres/configure-source-database#cloud-sql-postgresql
     # for information on these flags.
-    dynamic "database_flags" {
-      for_each = var.project_id == "recidiviz-staging" ? [1] : []
-      content {
-        name  = "cloudsql.logical_decoding"
-        value = "on"
-      }
+    database_flags {
+      name  = "cloudsql.logical_decoding"
+      value = "on"
     }
 
-    dynamic "database_flags" {
-      for_each = var.project_id == "recidiviz-staging" ? [1] : []
-      content {
-        name  = "cloudsql.enable_pglogical"
-        value = "on"
-      }
+    database_flags {
+      name  = "cloudsql.enable_pglogical"
+      value = "on"
     }
 
-    dynamic "database_flags" {
-      for_each = var.project_id == "recidiviz-staging" ? [1] : []
-      content {
-        name  = "wal_sender_timeout"
-        value = 0
-      }
+    database_flags {
+      name  = "wal_sender_timeout"
+      value = 0
     }
 
 
@@ -245,6 +245,13 @@ resource "google_sql_database_instance" "data" {
       }
     }
 
+  }
+
+  # TODO(#54841): Remove this after the PG18/CMEK migration is complete
+  lifecycle {
+    ignore_changes = [
+      settings[0].ip_configuration[0].authorized_networks,
+    ]
   }
 }
 
