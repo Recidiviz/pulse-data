@@ -73,7 +73,7 @@ ALERT_EMOJIS = [
     ":avocado:",
     ":popcorn:",
     ":pretzel:",
-    ":cheese:",
+    ":cheese_wedge:",
     ":cookie:",
     ":croissant:",
     ":tea:",
