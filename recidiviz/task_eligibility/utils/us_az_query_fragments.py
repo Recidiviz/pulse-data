@@ -441,6 +441,9 @@ def acis_date_not_set_criteria_builder(
     FROM
       ({aggregate_adjacent_spans(_TBL, attribute=acis_date)})
     WHERE {acis_date} IS NOT NULL
+      -- Filter out spans where the 90-day expiration cap produces an end_date
+      -- before start_date (i.e., the date already expired before the span began)
+      AND {_cap_span_end_at_date_expiration('end_date', acis_date)} > start_date
     """
 
     return StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -567,6 +570,9 @@ def within_x_time_of_date(
                 FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
                 WHERE state_code = 'US_AZ'
             )
+            -- Filter out spans where the 90-day expiration cap produces an end
+            -- before start (i.e., the date already expired before the span began)
+            WHERE {_cap_span_end_at_date_expiration('end_date_exclusive', f'projected_{opp_name.lower()}_date')} > start_date
             ),
         {critical_date_has_passed_spans_cte(
         meets_criteria_leading_window_time=time_interval,
@@ -1056,6 +1062,9 @@ def incarceration_past_early_release_date(
         WHERE state_code = 'US_AZ'
     ) dates
     WHERE {acis_date} IS NOT NULL
+      -- Filter out spans where the 90-day expiration cap produces an end
+      -- before start (i.e., the date already expired before the span began)
+      AND {_cap_span_end_at_date_expiration('end_date_exclusive', acis_date)} > start_date
     ),
     {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=leading_window_time, date_part=date_part)}
     SELECT
