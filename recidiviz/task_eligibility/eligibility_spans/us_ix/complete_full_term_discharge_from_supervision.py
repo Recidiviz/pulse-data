@@ -24,9 +24,14 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import full_term_discharge
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    no_violation_without_decision,
     supervision_past_full_term_completion_date,
 )
-from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
+from recidiviz.task_eligibility.criteria_condition import (
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -40,14 +45,25 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,
+        no_violation_without_decision.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
-    almost_eligible_condition=TimeDependentCriteriaCondition(
-        criteria=supervision_past_full_term_completion_date.VIEW_BUILDER,
-        reasons_date_field="eligible_date",
-        interval_length=60,
-        interval_date_part=BigQueryDateInterval.DAY,
-        description="Within 60 days of FTRD",
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            TimeDependentCriteriaCondition(
+                criteria=supervision_past_full_term_completion_date.VIEW_BUILDER,
+                reasons_date_field="eligible_date",
+                interval_length=60,
+                interval_date_part=BigQueryDateInterval.DAY,
+                description="Within 60 days of FTRD",
+            ),
+            NotEligibleCriteriaCondition(
+                criteria=no_violation_without_decision.VIEW_BUILDER,
+                description="Has a violation without a decision",
+            ),
+        ],
+        at_least_n_conditions_true=1,
+        at_most_n_conditions_true=1,
     ),
 )
 
