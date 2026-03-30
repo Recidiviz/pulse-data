@@ -17,6 +17,7 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
+from typing import Any
 
 import attr
 import google
@@ -255,6 +256,32 @@ def _get_external_data_configuration_non_schema_update_type(
     return None
 
 
+def _time_partitioning_equal(
+    a: bigquery.TimePartitioning | None, b: bigquery.TimePartitioning | None
+) -> bool:
+    """Compare two TimePartitioning objects. Since the requirePartitionFilter
+    property is deprecated on TimePartitioning, sometimes it is None (or not set), which
+    should be treated as equivalent to a False value. This function normalizes the
+    requirePartitionFilter value accordingly before comparison.
+    """
+
+    if a is None and b is None:
+        return True
+
+    if a is None or b is None:
+        return False
+
+    def _normalize_api_repr(api_repr: dict[str, Any]) -> dict[str, Any]:
+        # Make it so missing key, None and False all normalize to False
+        api_repr["requirePartitionFilter"] = bool(
+            api_repr.get("requirePartitionFilter", None)
+        )
+
+        return api_repr
+
+    return _normalize_api_repr(a.to_api_repr()) == _normalize_api_repr(b.to_api_repr())
+
+
 def _validate_partitioning_fields_match(
     current_table: bigquery.Table, source_table_config: SourceTableConfig
 ) -> bool:
@@ -271,9 +298,8 @@ def _validate_partitioning_fields_match(
         current_table.require_partition_filter
     ) == bool(source_table_config.require_partition_filter)
 
-    return (
-        same_require_partition_filter
-        and current_table.time_partitioning == source_table_config.time_partitioning
+    return same_require_partition_filter and _time_partitioning_equal(
+        current_table.time_partitioning, source_table_config.time_partitioning
     )
 
 
@@ -567,6 +593,66 @@ class SourceTableWithRequiredUpdateTypes:
         return table_str
 
 
+def get_required_update_types_for_existing_table(
+    deployed_table: bigquery.Table,
+    source_table_config: SourceTableConfig,
+    only_check_required_columns: bool,
+) -> SourceTableWithRequiredUpdateTypes:
+    """Given a deployed BQ table and a desired source table config, determines
+    what updates are needed to make them match."""
+    table_level_update_types: set[SourceTableUpdateType] = set()
+    if not _validate_partitioning_fields_match(deployed_table, source_table_config):
+        table_level_update_types.add(SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS)
+
+    if not _validate_clustering_fields_match(deployed_table, source_table_config):
+        table_level_update_types.add(SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS)
+
+    if external_config_update_type := (
+        _get_external_data_configuration_non_schema_update_type(
+            deployed_table, source_table_config
+        )
+    ):
+        table_level_update_types.add(external_config_update_type)
+
+    existing_table_schema_fields = {
+        field.name: field for field in deployed_table.schema
+    }
+    existing_table_schema_field_names = set(existing_table_schema_fields.keys())
+    desired_table_schema_fields = {
+        field.name: field for field in source_table_config.schema_fields
+    }
+    desired_table_schema_field_names = set(desired_table_schema_fields.keys())
+
+    to_add = desired_table_schema_field_names - existing_table_schema_field_names
+    to_remove = existing_table_schema_field_names - desired_table_schema_field_names
+
+    if to_add:
+        table_level_update_types.add(SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS)
+
+    if to_remove and not only_check_required_columns:
+        table_level_update_types.add(SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS)
+
+    field_names_to_compare = desired_table_schema_field_names.intersection(
+        existing_table_schema_field_names
+    )
+    field_update_types = get_table_field_level_required_updates(
+        existing_table_schema_fields=existing_table_schema_fields,
+        desired_table_schema_fields=desired_table_schema_fields,
+        field_names_to_compare=field_names_to_compare,
+    )
+
+    return SourceTableWithRequiredUpdateTypes(
+        source_table_config=source_table_config,
+        table_level_update_types=table_level_update_types,
+        existing_field_update_types={
+            field_name: update_types
+            for field_name, update_types in field_update_types.items()
+            if update_types
+        },
+        deployed_table=deployed_table,
+    )
+
+
 class SourceTableUpdateManager:
     """Class for managing source table updates"""
 
@@ -607,68 +693,15 @@ class SourceTableUpdateManager:
                 deployed_table=None,
             )
 
-        # If the table exists, collect all the ways the table needs to be updated
-        table_level_update_types = set()
-        if not _validate_partitioning_fields_match(current_table, source_table_config):
-            table_level_update_types.add(
-                SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS
-            )
-
-        if not _validate_clustering_fields_match(current_table, source_table_config):
-            table_level_update_types.add(
-                SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS
-            )
-
-        if external_config_update_type := _get_external_data_configuration_non_schema_update_type(
-            current_table, source_table_config
-        ):
-            table_level_update_types.add(external_config_update_type)
-
-        only_check_required_columns = (
+        only_check_required_columns = bool(
             source_table_collection.validation_config
             and source_table_collection.validation_config.only_check_required_columns
         )
 
-        existing_table_schema_fields = {
-            field.name: field for field in current_table.schema
-        }
-        existing_table_schema_field_names = set(existing_table_schema_fields.keys())
-        desired_table_schema_fields = {
-            field.name: field for field in source_table_config.schema_fields
-        }
-        desired_table_schema_field_names = set(desired_table_schema_fields.keys())
-
-        to_add = desired_table_schema_field_names - existing_table_schema_field_names
-        to_remove = existing_table_schema_field_names - desired_table_schema_field_names
-
-        if to_add:
-            table_level_update_types.add(
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
-            )
-
-        if to_remove and not only_check_required_columns:
-            table_level_update_types.add(
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
-            )
-
-        field_names_to_compare = desired_table_schema_field_names.intersection(
-            existing_table_schema_field_names
-        )
-        field_update_types = get_table_field_level_required_updates(
-            existing_table_schema_fields=existing_table_schema_fields,
-            desired_table_schema_fields=desired_table_schema_fields,
-            field_names_to_compare=field_names_to_compare,
-        )
-
-        return SourceTableWithRequiredUpdateTypes(
-            source_table_config=source_table_config,
-            table_level_update_types=table_level_update_types,
-            existing_field_update_types={
-                field_name: update_types
-                for field_name, update_types in field_update_types.items()
-                if update_types
-            },
+        return get_required_update_types_for_existing_table(
             deployed_table=current_table,
+            source_table_config=source_table_config,
+            only_check_required_columns=only_check_required_columns,
         )
 
     # TODO(#33293): Delete tables in `regenerable()` collection datasets that do not exist in code anymore. We

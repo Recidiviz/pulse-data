@@ -44,6 +44,7 @@ from recidiviz.source_tables.source_table_update_manager import (
     SourceTableUpdateManager,
     SourceTableUpdateType,
     SourceTableWithRequiredUpdateTypes,
+    get_required_update_types_for_existing_table,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -51,6 +52,113 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 
 _DATASET_1 = "dataset_1"
 _TABLE_1 = "table_1"
+
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456"))
+class TestGetRequiredUpdateTypesPartitioning(unittest.TestCase):
+    """Tests that get_required_update_types_for_existing_table handles
+    time partitioning comparisons correctly, including the case where an
+    external process (e.g. Segment) embeds requirePartitionFilter inside
+    the TimePartitioning object."""
+
+    ADDRESS = BigQueryAddress(dataset_id="dataset", table_id="table")
+    SCHEMA = [bigquery.SchemaField("id", "STRING")]
+
+    def _make_table(
+        self,
+        time_partitioning: bigquery.TimePartitioning | None,
+        require_partition_filter: bool | None,
+    ) -> bigquery.Table:
+        table = bigquery.Table(
+            self.ADDRESS.to_project_specific_address(
+                project_id="recidiviz-456"
+            ).to_str()
+        )
+        table.schema = self.SCHEMA
+        if time_partitioning is not None:
+            table.time_partitioning = time_partitioning
+        if require_partition_filter is not None:
+            table.require_partition_filter = require_partition_filter
+        return table
+
+    def _make_config(
+        self,
+        time_partitioning: bigquery.TimePartitioning | None,
+        require_partition_filter: bool | None,
+    ) -> SourceTableConfig:
+        return SourceTableConfig(
+            address=self.ADDRESS,
+            description="test",
+            schema_fields=list(self.SCHEMA),
+            clustering_fields=None,
+            time_partitioning=time_partitioning,
+            require_partition_filter=require_partition_filter,
+        )
+
+    def test_embedded_require_partition_filter_treated_as_equivalent(self) -> None:
+        """Segment embeds requirePartitionFilter: false inside the
+        TimePartitioning object. Our YAML keeps it as a table-level property.
+        These should be treated as equivalent."""
+        deployed_table = self._make_table(
+            time_partitioning=bigquery.TimePartitioning(
+                type_="DAY", require_partition_filter=False
+            ),
+            require_partition_filter=None,
+        )
+        config = self._make_config(
+            time_partitioning=bigquery.TimePartitioning(type_="DAY"),
+            require_partition_filter=False,
+        )
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=deployed_table,
+            source_table_config=config,
+            only_check_required_columns=False,
+        )
+        self.assertNotIn(
+            SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+            result.all_update_types,
+        )
+
+    def test_matching_partitioning_no_mismatch(self) -> None:
+        deployed_table = self._make_table(
+            time_partitioning=bigquery.TimePartitioning(type_="DAY"),
+            require_partition_filter=False,
+        )
+        config = self._make_config(
+            time_partitioning=bigquery.TimePartitioning(type_="DAY"),
+            require_partition_filter=False,
+        )
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=deployed_table,
+            source_table_config=config,
+            only_check_required_columns=False,
+        )
+        self.assertNotIn(
+            SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+            result.all_update_types,
+        )
+
+    def test_different_partitioning_type_is_mismatch(self) -> None:
+        deployed_table = self._make_table(
+            time_partitioning=bigquery.TimePartitioning(type_="DAY"),
+            require_partition_filter=False,
+        )
+        config = self._make_config(
+            time_partitioning=bigquery.TimePartitioning(type_="HOUR"),
+            require_partition_filter=False,
+        )
+
+        result = get_required_update_types_for_existing_table(
+            deployed_table=deployed_table,
+            source_table_config=config,
+            only_check_required_columns=False,
+        )
+        self.assertIn(
+            SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+            result.all_update_types,
+        )
 
 
 class TestSourceTableUpdateType(unittest.TestCase):
