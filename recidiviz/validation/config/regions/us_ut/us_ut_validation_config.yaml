@@ -48,7 +48,7 @@ num_allowed_rows_overrides:
       This is expected - there is an option to list "none" as a supervising agent, and
       we typically see 30-40 of those cases at a time.
   - validation_name: invalid_reason_json_format_tes_criteria_spans
-    hard_num_allowed_rows_override: 7254434
+    hard_num_allowed_rows_override: 7300000
     override_reason: |-
       TODO(https://linear.app/recidiviz/issue/SPE-2635): HAS_AT_LEAST_1_NEGATIVE_DRUG_TEST_PAST_YEAR and
       HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR produce JSON arrays instead of

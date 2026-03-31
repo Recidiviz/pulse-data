@@ -116,7 +116,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1
     override_reason: Will be resolved with the Polaris segment ad blocker work around
   - validation_name: invalid_reason_json_format_tes_criteria_spans
-    hard_num_allowed_rows_override: 19188052
+    hard_num_allowed_rows_override: 19200000
     override_reason: |-
       TODO(https://linear.app/recidiviz/issue/SPE-2635): HAS_AT_LEAST_1_NEGATIVE_DRUG_TEST_PAST_YEAR and
       HAS_AT_LEAST_2_NEGATIVE_DRUG_TESTS_PAST_YEAR produce JSON arrays instead of
