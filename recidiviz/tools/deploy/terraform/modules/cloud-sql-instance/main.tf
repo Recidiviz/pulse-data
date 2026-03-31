@@ -250,7 +250,9 @@ resource "google_sql_database_instance" "data" {
   # TODO(#54841): Remove this after the PG18/CMEK migration is complete
   lifecycle {
     ignore_changes = [
+      settings[0].database_flags,
       settings[0].ip_configuration[0].authorized_networks,
+      settings[0].tier,
     ]
   }
 }
