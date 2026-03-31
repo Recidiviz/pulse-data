@@ -103,5 +103,6 @@ setuptools.setup(
             "metrics/template_metadata.json",
         ],
         "recidiviz.validation.views.metadata.config": ["*.yaml"],
+        "recidiviz.big_query.config": ["*.yaml"],
     },
 )
