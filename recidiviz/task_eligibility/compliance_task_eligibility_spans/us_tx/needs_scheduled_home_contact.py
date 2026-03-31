@@ -123,6 +123,8 @@ US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaG
         "contacts_needed",
         "scheduled_contact_dates",
         "earliest_unmet_due_date",
+        "contact_period_start",
+        "contact_period_end",
     ],
 )
 
