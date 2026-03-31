@@ -5,13 +5,13 @@ manifest_language: 1.0.0
 input_columns:
   OFFENDERID: STRING
   ADCNUMBER: STRING
-  INMATEFIRSTNAME: STRING
-  INMATEMIDDLENAME: STRING
-  INMATELASTNAME: STRING
-  INMATENAMESUFFIX: STRING
-  INMATEDATEOFBIRTH: STRING
-  INMATESEXCODE: STRING
-  INMATERACECODE: STRING
+  FIRSTNAME: STRING
+  MIDDLENAME: STRING
+  LASTNAME: STRING
+  NAMESUFFIX: STRING
+  DATEOFBIRTH: STRING
+  SEXCODE: STRING
+  RACECODE: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -22,16 +22,16 @@ output:
       - StatePersonExternalId:
           external_id: ADCNUMBER
           id_type: $literal("US_CO_ADCNUMBER")
-    birthdate: INMATEDATEOFBIRTH
+    birthdate: DATEOFBIRTH
     full_name:
       $person_name:
-        $given_names: INMATEFIRSTNAME
-        $middle_names: INMATEMIDDLENAME
-        $surname: INMATELASTNAME
-        $name_suffix: INMATENAMESUFFIX
+        $given_names: FIRSTNAME
+        $middle_names: MIDDLENAME
+        $surname: LASTNAME
+        $name_suffix: NAMESUFFIX
     sex:
       $enum_mapping:
-        $raw_text: INMATESEXCODE
+        $raw_text: SEXCODE
         $mappings:
           StateSex.MALE: M
           StateSex.FEMALE: F
@@ -41,7 +41,7 @@ output:
       - StatePersonRace:
           race:
             $enum_mapping:
-              $raw_text: INMATERACECODE
+              $raw_text: RACECODE
               $mappings:
                 StateRace.ASIAN: A
                 StateRace.BLACK: B
@@ -57,7 +57,7 @@ output:
     ethnicity:
       $enum_mapping:
         # TODO(#50107): Add in CULTURALETHNICAFFILIATION to better hydrate this field.
-        $raw_text: INMATERACECODE
+        $raw_text: RACECODE
         $mappings:
           StateEthnicity.HISPANIC: H
           StateEthnicity.NOT_HISPANIC:
