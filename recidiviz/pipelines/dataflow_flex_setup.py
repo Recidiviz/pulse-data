@@ -51,7 +51,7 @@ REQUIRED_PACKAGES = [
     "google-cloud-logging",
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the pyproject.toml
-    "google-cloud-tasks==2.21.0",
+    "google-cloud-tasks==2.22.0",
     "iteration-utilities",
     "jsonschema",
     "more-itertools",
