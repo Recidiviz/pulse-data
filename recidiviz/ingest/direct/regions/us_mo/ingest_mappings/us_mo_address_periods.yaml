@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  DOC_ID: STRING
+  ADDR_VALIDATED_IND: STRING
+  is_mailing: BOOLEAN
+  start_date: DATE
+  end_date: DATE
+  ADDR_LINE1: STRING
+  ADDR_LINE2: STRING
+  CITY_NM: STRING
+  STATE_CD: STRING
+  COUNTY_CD: STRING
+  BASE_ZIP_CD: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    address_periods:
+      - StatePersonAddressPeriod:
+          address_start_date: start_date
+          address_end_date: end_date
+          address_line_1: ADDR_LINE1
+          address_line_2: ADDR_LINE2
+          address_city: CITY_NM
+          address_county: COUNTY_CD
+          address_zip: BASE_ZIP_CD
+          address_state: STATE_CD
+          address_is_verified:
+            $equal: [ADDR_VALIDATED_IND, $literal("Y")]
+          address_type:
+            $enum_mapping:
+              $raw_text: is_mailing
+              $mappings:
+                StatePersonAddressType.MAILING_ONLY:
+                  - "True"
+                StatePersonAddressType.PHYSICAL_RESIDENCE:
+                  - "False"
