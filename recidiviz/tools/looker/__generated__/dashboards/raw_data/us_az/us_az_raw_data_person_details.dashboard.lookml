@@ -383,15 +383,17 @@
     model: "@{model_name}"
     type: looker_grid
     fields: [us_az_RECIDIVIZ_REFERENCE_staff_id_override.primary_key,
-      us_az_RECIDIVIZ_REFERENCE_staff_id_override.FIRST_NAME,
-      us_az_RECIDIVIZ_REFERENCE_staff_id_override.SURNAME,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.RAW_FIRST_NAME,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.RAW_SURNAME,
       us_az_RECIDIVIZ_REFERENCE_staff_id_override.PERSON_ID,
       us_az_RECIDIVIZ_REFERENCE_staff_id_override.OVERRIDE_ID,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.USE_FIRST_NAME,
+      us_az_RECIDIVIZ_REFERENCE_staff_id_override.USE_SURNAME,
       us_az_RECIDIVIZ_REFERENCE_staff_id_override.file_id,
       us_az_RECIDIVIZ_REFERENCE_staff_id_override.is_deleted]
     sorts: [us_az_RECIDIVIZ_REFERENCE_staff_id_override.PERSON_ID]
     note_display: hover
-    note_text: "A reference file maintained by Recidiviz based on feedback from Arizona about users we are conflating as a result of grouping USERID values by full name. The data in this sheet will allow us to differentiate between users with the same full name. Each user that shares a full name with another user will appear in this sheet with a distinct OVERRIDE_ID.  In the state_staff view, we can then group by full name and OVERRIDE_ID to differentiate between those two individuals. Each individual listed in this sheet should have exactly one OVERRIDE_ID value so that all of their USERIDs can be properly aggregated.  For example, if we see these rows in the PERSON table: | FIRST_NAME | SURNAME | PERSON_ID | |-|-|-| |John|Doe|1| |John|Doe|2| |John|Doe|3|  We would assume that there is exactly one John Doe, and they have been assigned each of the PERSON_IDs 1, 2, and 3 at some point. If we then get feedback from AZ that there are actually two employees named John Doe, we would clarify which IDs belong to which John Doe, and input the following into this reference data:   | FIRST_NAME | SURNAME | PERSON_ID | OVERRIDE_ID | |-|-|-|-| |John|Doe|1|1| |John|Doe|2|2| |John|Doe|3|1|  This would allow us to differentiate between the two John Does: One who has had PERSON_IDs 1 and 3, and one who has had PERSON_ID 2."
+    note_text: "A reference file maintained by Recidiviz based on feedback from Arizona about users we are conflating as a result of grouping USERID values by full name. This sheet supports two use cases:  1. DISAMBIGUATION: When two employees share the same full name but are different people, each employee's PERSON_IDs are assigned a distinct OVERRIDE_ID so the state_staff view can group by (name, OVERRIDE_ID) to keep them separate.  For example, if we see these rows in the PERSON table: | RAW_FIRST_NAME | RAW_SURNAME | PERSON_ID | |-|-|-| |John|Doe|1| |John|Doe|2| |John|Doe|3|  We would assume that there is exactly one John Doe, and they have been assigned each of the PERSON_IDs 1, 2, and 3 at some point. If we then get feedback from AZ that there are actually two employees named John Doe, we would clarify which IDs belong to which John Doe, and input the following into this reference data:  | RAW_FIRST_NAME | RAW_SURNAME | PERSON_ID | OVERRIDE_ID | |-|-|-|-| |John|Doe|1|1| |John|Doe|2|2| |John|Doe|3|1|  This would allow us to differentiate between the two John Does: One who has had PERSON_IDs 1 and 3, and one who has had PERSON_ID 2.  2. NAME CANONICALIZATION: When the same employee has been registered more than once under slightly different name spellings (e.g., \"Brittany\" vs \"Britney\"), populate USE_FIRST_NAME and/or USE_SURNAME to replace the raw name before grouping. This causes all of that employee's accounts to group together into a single StateStaff entity. Leave OVERRIDE_ID empty for these rows so they merge into the same group as the canonical-name account.  | RAW_FIRST_NAME | RAW_SURNAME | PERSON_ID | OVERRIDE_ID | USE_FIRST_NAME | USE_SURNAME | |-|-|-|-|-|-| |Britney|Smith|222||Brittany||"
     listen: 
       View Type: us_az_PERSON.view_type
       US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
