@@ -43,29 +43,31 @@ class TestStates(unittest.TestCase):
     def test_hasStates_not_in_test(self) -> None:
         self.mock_in_test.return_value = False
 
-        # There are 58 states included because we count US_DC, U.S. territories
+        # There are 60 states included because we count US_DC, U.S. territories
         # (US_AS - American Samoa, US_GU - Guam, US_MP - Northern Mariana Islands,
         # US_UM - U.S. Minor Outlying Islands, US_VI - U.S. Virgin Islands), a
-        # playground region (US_OZ), and an alternate ingest code for Idaho (US_IX for
-        # US_ID).
-        self.assertEqual(59, len(states.StateCode))
+        # playground region (US_OZ), an alternate ingest code for Idaho (US_IX for
+        # US_ID), and the demo state code.
+        self.assertEqual(60, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-3].value)
-        self.assertEqual("US_OZ", list(states.StateCode)[-2].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-4].value)
+        self.assertEqual("US_OZ", list(states.StateCode)[-3].value)
         # TODO(#10703): Remove this state_code after merging US_IX into US_ID
-        self.assertEqual("US_IX", list(states.StateCode)[-1].value)
+        self.assertEqual("US_IX", list(states.StateCode)[-2].value)
+        self.assertEqual("US_DEMO", list(states.StateCode)[-1].value)
 
     def test_hasStates_in_test(self) -> None:
         self.mock_in_test.return_value = True
 
-        # There are 63 states because we are in tests, so we add US_DD, US_LL,
+        # There are 65 states because we are in tests, so we add US_DD, US_LL,
         # US_WW, US_XX, and US_YY as valid values.
-        self.assertEqual(64, len(states.StateCode))
+        self.assertEqual(65, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-8].value)
-        self.assertEqual("US_OZ", list(states.StateCode)[-7].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-9].value)
+        self.assertEqual("US_OZ", list(states.StateCode)[-8].value)
         # TODO(#10703): Remove this state_code after merging US_IX into US_ID
-        self.assertEqual("US_IX", list(states.StateCode)[-6].value)
+        self.assertEqual("US_IX", list(states.StateCode)[-7].value)
+        self.assertEqual("US_DEMO", list(states.StateCode)[-6].value)
         self.assertEqual("US_DD", list(states.StateCode)[-5].value)
         self.assertEqual("US_LL", list(states.StateCode)[-4].value)
         self.assertEqual("US_WW", list(states.StateCode)[-3].value)

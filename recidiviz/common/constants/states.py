@@ -17,7 +17,6 @@
 """Constants for working with states."""
 
 import enum
-import re
 import typing
 from abc import abstractmethod
 from functools import lru_cache
@@ -26,8 +25,6 @@ from typing import Any, Dict, Optional
 import us
 
 from recidiviz.utils import environment
-
-STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
 
 # Maximum fips value of all states
 MAX_FIPS_CODE = 90
@@ -166,6 +163,27 @@ US_MINOR_OUTLYING_ISLANDS_TERRITORY_INFO = {
     ),
 }
 
+US_DEMO_STATE_CODE = "US_DEMO"
+US_DEMO_STATE_INFO = {
+    US_DEMO_STATE_CODE: us.states.State(
+        **{
+            "fips": "83",
+            "name": "Demo State",
+            "abbr": "DEMO",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 9999,
+            "capital": "Demo",
+            "capital_tz": "America/Demo",
+            "ap_abbr": "Demo",
+            "time_zones": ["America/Demo"],
+            "name_metaphone": "DEMO",
+        }
+    )
+}
+
 
 class _RealStateCode(_SharedStateCode):
     """Code for every state in the US"""
@@ -237,6 +255,9 @@ class _RealStateCode(_SharedStateCode):
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     US_IX = "US_IX"  # US_ID
 
+    # Demo states
+    US_DEMO = US_DEMO_STATE_CODE
+
     @classmethod
     def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:
         state_abbrev = state_code[len("US_") :]
@@ -245,6 +266,7 @@ class _RealStateCode(_SharedStateCode):
             or PLAYGROUND_STATE_INFO.get(state_code)
             or ALTERNATE_INGEST_US_ID_STATE_INFO.get(state_code)
             or US_MINOR_OUTLYING_ISLANDS_TERRITORY_INFO.get(state_code)
+            or US_DEMO_STATE_INFO.get(state_code)
         )
 
 
@@ -424,6 +446,9 @@ class _FakeStateCode(_SharedStateCode):
     # Alternate Ingest
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     US_IX = "US_IX"  # US_ID
+
+    # Demo states
+    US_DEMO = "US_DEMO"
 
     # Test codes
     US_DD = TEST_STATE_CODE_DATAFLOW

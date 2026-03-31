@@ -56,8 +56,9 @@ export const CreateAddStateRoleForm = ({
           rules={[
             {
               required: true,
-              pattern: /^US_[A-Z]{2}$/,
-              message: "State Code is required and must have the form US_XX",
+              pattern: /^US_([A-Z]{2}|DEMO)$/,
+              message:
+                "State Code is required and must have the form US_XX OR US_DEMO",
             },
           ]}
         >
