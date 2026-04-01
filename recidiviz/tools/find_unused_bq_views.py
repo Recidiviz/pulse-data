@@ -278,6 +278,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         )
         for table_id in get_bq_schema_for_entities_module(state_entities)
     },
+    BigQueryAddress(
+        dataset_id="segment_events",
+        table_id="all_sentencing_assessment_report_segment_events",
+    ): (
+        "Union view for Sentencing Assessment Report segment events. Kept for potential future use."
+    ),
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "
         "PSI work (Nick Tallant, 2025-01-30)"

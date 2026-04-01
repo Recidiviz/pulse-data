@@ -162,6 +162,9 @@ schema:
   - name: routes_psi
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_sar_access
+    type: BOOLEAN
+    mode: NULLABLE
   - name: feature_variants_case_note_search
     type: BOOLEAN
     mode: NULLABLE

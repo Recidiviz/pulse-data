@@ -46,6 +46,7 @@ class ProductType(Enum):
     MILESTONES = "MILESTONES"
     PATHWAYS = "PATHWAYS"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
+    SENTENCING_ASSESSMENT_REPORT = "SENTENCING_ASSESSMENT_REPORT"
     ROUTE_PLANNER = "ROUTE_PLANNER"
     SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE = "SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE"
     SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE = "SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE"
@@ -87,6 +88,7 @@ class ProductType(Enum):
             ProductType.MILESTONES,
             ProductType.PATHWAYS,
             ProductType.PSI_CASE_INSIGHTS,
+            ProductType.SENTENCING_ASSESSMENT_REPORT,
             ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
             ProductType.TASKS,
             ProductType.ROUTE_PLANNER,
@@ -130,6 +132,8 @@ class ProductType(Enum):
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system')"
         elif self == ProductType.PSI_CASE_INSIGHTS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
+        elif self == ProductType.SENTENCING_ASSESSMENT_REPORT:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/sarAccess')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_LAST_LOGIN_MODULE:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/insights')"
         elif self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
@@ -220,6 +224,8 @@ class ProductType(Enum):
             ]
         if self == ProductType.PSI_CASE_INSIGHTS:
             return ["psi"]
+        if self == ProductType.SENTENCING_ASSESSMENT_REPORT:
+            return ["sar_access"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OUTCOMES_MODULE:
             return ["insights"]
         if self == ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE:
@@ -307,6 +313,10 @@ class ProductType(Enum):
         if self == ProductType.PSI_CASE_INSIGHTS:
             return [
                 RosterPredefinedRoles.PSI_STAFF.value.lower(),
+            ]
+        if self == ProductType.SENTENCING_ASSESSMENT_REPORT:
+            return [
+                RosterPredefinedRoles.SAR_STAFF.value.lower(),
             ]
         return []
 
