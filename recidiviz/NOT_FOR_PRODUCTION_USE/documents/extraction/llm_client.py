@@ -45,11 +45,11 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.document_provider imp
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.extraction_output_schema import (
     ExtractionOutputSchema,
 )
-from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_error_type import (
-    DocumentExtractionErrorType,
-)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extractor_collection_metadata import (
     DocumentExtractorCollectionMetadata,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_exclusion_type import (
+    ExtractionExclusionType,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_job_error_type import (
     ExtractionJobErrorType,
@@ -125,7 +125,7 @@ class LLMExtractionResult:
     error_message: str | None
 
     # Structured error type if status is not SUCCESS
-    error_type: DocumentExtractionErrorType | None
+    error_type: ExtractionExclusionType | None
 
     def __attrs_post_init__(self) -> None:
         if self.status == LLMExtractionStatus.SUCCESS:

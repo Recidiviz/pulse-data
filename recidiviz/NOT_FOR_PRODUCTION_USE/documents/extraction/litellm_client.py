@@ -37,8 +37,8 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.llm_client import (
     LLMExtractionStatus,
     LLMResultReader,
 )
-from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_error_type import (
-    DocumentExtractionErrorType,
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_exclusion_type import (
+    ExtractionExclusionType,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_job_error_type import (
     ExtractionJobErrorType,
@@ -137,12 +137,12 @@ class LiteLLMClient(LLMClient, LLMResultReader):
         status = LLMExtractionStatus(data["status"])
         raw_error_type = data.get("error_type")
         if raw_error_type is not None:
-            error_type: DocumentExtractionErrorType | None = (
-                DocumentExtractionErrorType(raw_error_type)
+            error_type: ExtractionExclusionType | None = ExtractionExclusionType(
+                raw_error_type
             )
         elif status != LLMExtractionStatus.SUCCESS:
             # Backwards compat: old serialized data may not have error_type
-            error_type = DocumentExtractionErrorType.UNKNOWN
+            error_type = ExtractionExclusionType.LLM_UNKNOWN_ERROR
         else:
             error_type = None
         return LLMExtractionResult(
@@ -192,14 +192,7 @@ class LiteLLMClient(LLMClient, LLMResultReader):
         self,
         request: LLMExtractionRequest,
     ) -> LLMExtractionResult:
-        """Process a single extraction request asynchronously.
-
-        Args:
-            request: The extraction request.
-
-        Returns:
-            LLMExtractionResult with extracted data or error.
-        """
+        """Process a single extraction request asynchronously."""
         messages = request.build_messages()
         schema = request.output_schema.to_llm_json_schema()
         response_format = self._prepare_response_format(schema)
@@ -217,7 +210,6 @@ class LiteLLMClient(LLMClient, LLMResultReader):
             response = await acompletion(**completion_kwargs)
             response_text = response.choices[0].message.content
 
-            # Parse JSON response
             try:
                 response_data = json.loads(response_text)
             except json.JSONDecodeError as e:
@@ -226,7 +218,7 @@ class LiteLLMClient(LLMClient, LLMResultReader):
                     status=LLMExtractionStatus.PERMANENT_FAILURE,
                     extracted_data=None,
                     error_message=f"Failed to parse JSON response: {e}. Raw response: {response_text[:500]}",
-                    error_type=DocumentExtractionErrorType.LLM_MALFORMED_RESPONSE,
+                    error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
                 )
 
             # The schema returns a single object (one result per document).
@@ -244,16 +236,16 @@ class LiteLLMClient(LLMClient, LLMResultReader):
                 status=LLMExtractionStatus.PERMANENT_FAILURE,
                 extracted_data=None,
                 error_message=f"Unexpected response format from LLM. Got type: {type(response_data).__name__}. Raw: {response_text[:500]}",
-                error_type=DocumentExtractionErrorType.LLM_MALFORMED_RESPONSE,
+                error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
             )
 
         except Exception as e:
             return LLMExtractionResult(
                 document_id=request.document.document_id,
-                status=LLMExtractionStatus.TRANSIENT_FAILURE,
+                status=LLMExtractionStatus.PERMANENT_FAILURE,
                 extracted_data=None,
                 error_message=str(e),
-                error_type=DocumentExtractionErrorType.UNKNOWN,
+                error_type=ExtractionExclusionType.LLM_UNKNOWN_ERROR,
             )
 
     async def _process_batch_async(

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""DocumentExtractionResultMetadata model class."""
+"""DocumentResultExclusionMetadata model class."""
 import datetime
 from typing import Any
 
@@ -29,58 +29,43 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extr
 
 
 @attr.define
-class DocumentExtractionResultMetadata:
-    """Per-document extraction outcome. One row per document per extraction attempt."""
+class DocumentResultExclusionMetadata:
+    """Captures why a document was excluded from validated extraction output.
+
+    One row per failure reason per document per extraction attempt. A single
+    document can have multiple failure rows (e.g., both NOT_RELEVANT and
+    LOW_CONFIDENCE).
+    """
 
     job_id: str
     document_id: str
     extractor_id: str
     extractor_version_id: str
     extraction_datetime: datetime.datetime
-    status: str
-    result_json: str | None
-    error_message: str | None
-    error_type: ExtractionExclusionType | None
+    exclusion_type: ExtractionExclusionType
+    exclusion_details_json: str | None
 
-    def __attrs_post_init__(self) -> None:
-        if self.status == "SUCCESS":
-            if self.result_json is None:
-                raise ValueError("result_json must be set when status is SUCCESS")
-            if self.error_type is not None or self.error_message is not None:
-                raise ValueError(
-                    "error_type and error_message must be None when status is SUCCESS"
-                )
-        else:
-            if self.result_json is not None:
-                raise ValueError("result_json must be None when status is not SUCCESS")
-            if self.error_type is None or self.error_message is None:
-                raise ValueError(
-                    "error_type and error_message must both be set when status is not SUCCESS"
-                )
-
-    RAW_DATASET_ID = "document_extraction_results__raw"
+    EXCLUSIONS_DATASET_ID = "document_extraction_results__exclusions"
 
     @staticmethod
-    def raw_table_id(state_code: StateCode, collection_name: str) -> str:
-        """Returns the table ID for the per-extractor raw results table."""
+    def table_id(state_code: StateCode, collection_name: str) -> str:
         return f"{state_code.value.lower()}_{collection_name.lower()}"
 
     @classmethod
-    def raw_table_address(
+    def table_address(
         cls,
         state_code: StateCode,
         collection_name: str,
         sandbox_dataset_prefix: str | None,
     ) -> BigQueryAddress:
-        """Returns the BigQueryAddress for the per-extractor raw results table."""
-        dataset_id = cls.RAW_DATASET_ID
+        dataset_id = cls.EXCLUSIONS_DATASET_ID
         if sandbox_dataset_prefix:
             dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
                 sandbox_dataset_prefix, dataset_id
             )
         return BigQueryAddress(
             dataset_id=dataset_id,
-            table_id=cls.raw_table_id(state_code, collection_name),
+            table_id=cls.table_id(state_code, collection_name),
         )
 
     def as_metadata_row(self) -> dict[str, Any]:
@@ -90,8 +75,6 @@ class DocumentExtractionResultMetadata:
             "extractor_id": self.extractor_id,
             "extractor_version_id": self.extractor_version_id,
             "extraction_datetime": self.extraction_datetime,
-            "status": self.status,
-            "result_json": self.result_json,
-            "error_message": self.error_message,
-            "error_type": self.error_type.value if self.error_type else None,
+            "exclusion_type": self.exclusion_type.value,
+            "exclusion_details_json": self.exclusion_details_json,
         }

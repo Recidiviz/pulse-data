@@ -46,8 +46,8 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.llm_client import (
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.llm_provider_delegate import (
     LLMProviderDelegate,
 )
-from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_error_type import (
-    DocumentExtractionErrorType,
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_exclusion_type import (
+    ExtractionExclusionType,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_job_error_type import (
     ExtractionJobErrorType,
@@ -226,7 +226,7 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                                 status=LLMExtractionStatus.PERMANENT_FAILURE,
                                 extracted_data=None,
                                 error_message=f"Expected dict response, got {type(extracted).__name__}. Raw: {content_text[:500]}",
-                                error_type=DocumentExtractionErrorType.LLM_MALFORMED_RESPONSE,
+                                error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
                             )
                         )
                         continue
@@ -247,7 +247,7 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                             status=LLMExtractionStatus.PERMANENT_FAILURE,
                             extracted_data=None,
                             error_message=f"Failed to parse JSON: {e}. Raw: {content_text[:500]}",
-                            error_type=DocumentExtractionErrorType.LLM_MALFORMED_RESPONSE,
+                            error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
                         )
                     )
             else:
@@ -257,7 +257,7 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                         status=LLMExtractionStatus.PERMANENT_FAILURE,
                         extracted_data=None,
                         error_message="No text content in response",
-                        error_type=DocumentExtractionErrorType.LLM_EMPTY_RESPONSE,
+                        error_type=ExtractionExclusionType.LLM_EMPTY_RESPONSE,
                     )
                 )
 

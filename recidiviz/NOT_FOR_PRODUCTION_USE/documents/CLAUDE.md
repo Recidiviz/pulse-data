@@ -249,10 +249,13 @@ based on the collection's `ExtractionOutputSchema`.
 3. If `get_results()` returns `LLMExtractionInProgressBatchStatus`,
    `process_results()` returns `None` — callers should poll
 
-### Error Types
+### Exclusion / Error Types
 
-- **Per-document** (`DocumentExtractionErrorType`): `DOCUMENT_NOT_FOUND`,
-  `LLM_MALFORMED_RESPONSE`, `SCHEMA_VALIDATION_FAILURE`, etc.
+- **Per-document** (`ExtractionExclusionType`): Unified enum covering both
+  LLM errors (`DOCUMENT_NOT_FOUND`, `LLM_MALFORMED_RESPONSE`, etc.) and
+  validation failures (`NOT_RELEVANT`, `LOW_CONFIDENCE`). Used in the raw
+  table's `error_type` column (LLM errors only) and the failures table's
+  `failure_type` column (all types). Has an `is_llm_error` property.
 - **Per-job** (`ExtractionJobErrorType`): `JOB_TIMEOUT`,
   `JOB_RESULT_RETRIEVAL_FAILURE`, etc.
 

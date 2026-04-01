@@ -25,6 +25,7 @@ import pytz
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.document_extractor_configs import (
     get_extractor,
+    get_extractor_collection,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.llm_client import (
     LLMExtractionBatchResult,
@@ -32,11 +33,17 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.llm_client import (
     LLMExtractionStatus,
     LLMResultReader,
 )
-from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_error_type import (
-    DocumentExtractionErrorType,
-)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_result_metadata import (
     DocumentExtractionResultMetadata,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extractor_collection_metadata import (
+    DocumentExtractorCollectionMetadata,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_result_exclusion_metadata import (
+    DocumentResultExclusionMetadata,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_exclusion_type import (
+    ExtractionExclusionType,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_job_error_type import (
     ExtractionJobErrorType,
@@ -52,6 +59,13 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extr
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.llm_prompt_extractor_metadata import (
     LLMPromptExtractorMetadata,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.validated_extraction_result_metadata import (
+    ValidatedExtractionResultMetadata,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.result_validator import (
+    failure_from_extraction_error,
+    validate_extraction_result,
 )
 
 
@@ -82,10 +96,12 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
         llm_result_reader: LLMResultReader,
         sandbox_dataset_prefix: str | None,
         extractor: LLMPromptExtractorMetadata,
+        collection: DocumentExtractorCollectionMetadata,
     ) -> None:
         self.llm_result_reader = llm_result_reader
         self.sandbox_dataset_prefix = sandbox_dataset_prefix
         self.extractor = extractor
+        self.collection = collection
 
     def _write_extraction_results(
         self,
@@ -102,6 +118,87 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
             sandbox_dataset_prefix=self.sandbox_dataset_prefix,
         )
         bq_client.stream_into_table(raw_address, [r.as_metadata_row() for r in results])
+
+    def _write_validation_failures(
+        self,
+        failures: list[DocumentResultExclusionMetadata],
+        bq_client: BigQueryClient,
+    ) -> None:
+        """Writes validation failure rows to the failures table."""
+        if not failures:
+            return
+        address = DocumentResultExclusionMetadata.table_address(
+            state_code=self.extractor.state_code,
+            collection_name=self.extractor.collection_name,
+            sandbox_dataset_prefix=self.sandbox_dataset_prefix,
+        )
+        bq_client.stream_into_table(address, [f.as_metadata_row() for f in failures])
+
+    def _write_validated_results(
+        self,
+        results: list[ValidatedExtractionResultMetadata],
+        bq_client: BigQueryClient,
+    ) -> None:
+        """Writes validated extraction results to the validated table."""
+        if not results:
+            return
+        address = ValidatedExtractionResultMetadata.table_address(
+            state_code=self.extractor.state_code,
+            collection_name=self.extractor.collection_name,
+            sandbox_dataset_prefix=self.sandbox_dataset_prefix,
+        )
+        bq_client.stream_into_table(address, [r.as_metadata_row() for r in results])
+
+    def _validate_and_write_results(
+        self,
+        extraction_results: list[DocumentExtractionResultMetadata],
+        bq_client: BigQueryClient,
+    ) -> None:
+        """Validates extraction results and writes to failures + validated tables.
+
+        For failed extractions (status != SUCCESS): writes a failure row.
+        For successful extractions: runs validation checks, writes either a
+        validated result or failure row(s).
+        """
+        all_failures: list[DocumentResultExclusionMetadata] = []
+        validated_results: list[ValidatedExtractionResultMetadata] = []
+
+        for result in extraction_results:
+            if result.status != "SUCCESS":
+                all_failures.append(failure_from_extraction_error(result))
+                continue
+
+            validation = validate_extraction_result(
+                result=result,
+                output_schema=self.collection.output_schema,
+                confidence_threshold=self.collection.confidence_threshold,
+            )
+
+            if validation.validated_result_json is not None:
+                validated_results.append(
+                    ValidatedExtractionResultMetadata(
+                        job_id=result.job_id,
+                        document_id=result.document_id,
+                        extractor_id=result.extractor_id,
+                        extractor_version_id=result.extractor_version_id,
+                        extraction_datetime=result.extraction_datetime,
+                        state_code=self.extractor.state_code.value,
+                        result_json=validation.validated_result_json,
+                    )
+                )
+            else:
+                all_failures.extend(validation.failures)
+
+        # Write to BQ
+        self._write_validation_failures(all_failures, bq_client)
+        self._write_validated_results(validated_results, bq_client)
+
+        logging.info(
+            "Validation results for extractor %s: %d validated, %d failures",
+            self.extractor.extractor_id,
+            len(validated_results),
+            len(all_failures),
+        )
 
     def _query_submitted_documents(
         self,
@@ -152,12 +249,15 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
                 extraction_datetime=result_datetime,
                 status=LLMExtractionStatus.PERMANENT_FAILURE.value,
                 result_json=None,
-                error_type=DocumentExtractionErrorType.JOB_LEVEL_FAILURE,
+                error_type=ExtractionExclusionType.JOB_LEVEL_FAILURE,
                 error_message=doc_error_message,
             )
             for doc in submitted_docs
         ]
         self._write_extraction_results(per_doc_results, bq_client)
+
+        # Also write to failures table
+        self._validate_and_write_results(per_doc_results, bq_client)
 
         job_result = ExtractionJobResultMetadata(
             job_id=job.job_id,
@@ -267,6 +367,9 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
             )
             self._write_extraction_results(extraction_results, bq_client)
 
+            # Validate and write to failures + validated tables
+            self._validate_and_write_results(extraction_results, bq_client)
+
         # Create job result
         job_result = ExtractionJobResultMetadata(
             job_id=job.job_id,
@@ -312,9 +415,11 @@ class ExtractionJobResultsFinder:
         # Look up the extractor to determine its type
         extractor = get_extractor(job.extractor_id)
         if isinstance(extractor, LLMPromptExtractorMetadata):
+            collection = get_extractor_collection(extractor.collection_name)
             return LLMPromptExtractionJobResultProcessor(
                 llm_result_reader,
                 sandbox_dataset_prefix=sandbox_dataset_prefix,
                 extractor=extractor,
+                collection=collection,
             )
         raise ValueError(f"No processor for extractor type: {type(extractor)}")

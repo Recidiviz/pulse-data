@@ -32,8 +32,8 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.llm_client import (
     LLMExtractionStatus,
     LLMResultReader,
 )
-from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_error_type import (
-    DocumentExtractionErrorType,
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_exclusion_type import (
+    ExtractionExclusionType,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.extraction_job_metadata import (
     ExtractionJobMetadata,
@@ -89,7 +89,7 @@ class FakeLLMClient(LLMClient, LLMResultReader):
                         status=LLMExtractionStatus.PERMANENT_FAILURE,
                         extracted_data=None,
                         error_message="Fake extraction failure for testing",
-                        error_type=DocumentExtractionErrorType.UNKNOWN,
+                        error_type=ExtractionExclusionType.LLM_UNKNOWN_ERROR,
                     )
                 )
             else:

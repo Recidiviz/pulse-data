@@ -63,6 +63,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.document_extraction_j
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.document_extractor_configs import (
     collect_extractors,
     get_extractor,
+    get_extractor_collection,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.document_provider import (
     GCSDocumentProvider,
@@ -85,11 +86,16 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.data
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extraction_result_metadata import (
     DocumentExtractionResultMetadata,
 )
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_result_exclusion_metadata import (
+    DocumentResultExclusionMetadata,
+)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.llm_prompt_extractor_metadata import (
     LLMPromptExtractorMetadata,
 )
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.validated_extraction_result_metadata import (
+    ValidatedExtractionResultMetadata,
+)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.views.extraction_view_collector import (
-    UNVALIDATED_DATASET,
     VALIDATED_DATASET,
     get_document_extraction_view_builders,
 )
@@ -106,6 +112,10 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.source_tables.document_extraction_raw_source_table_collector import (
     collect_document_extraction_raw_source_table_collection,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.source_tables.document_extraction_validation_source_table_collector import (
+    collect_document_extraction_failures_source_table_collection,
+    collect_document_extraction_validated_source_table_collection,
 )
 from recidiviz.source_tables.collect_source_tables_from_yamls import (
     collect_source_tables_from_yamls_by_dataset,
@@ -161,28 +171,31 @@ def _create_sandbox_source_tables(
             collection.as_sandbox_collection(sandbox_dataset_prefix)
         )
 
-    # 2. Raw results table for this extractor
-    raw_collection = collect_document_extraction_raw_source_table_collection()
-    raw_table_id = DocumentExtractionResultMetadata.raw_table_id(
+    # 2. Raw results, exclusions, and validated results tables
+    extractor_table_id = DocumentExtractionResultMetadata.raw_table_id(
         extractor.state_code, extractor.collection_name
     )
-    # Build a filtered collection with only this extractor's table
-    filtered_collection = SourceTableCollection(
-        dataset_id=raw_collection.dataset_id,
-        update_config=SourceTableCollectionUpdateConfig.protected(),
-        description=raw_collection.description,
-        labels=[],
-    )
-    for source_table in raw_collection.source_tables:
-        if source_table.address.table_id == raw_table_id:
-            filtered_collection.add_source_table(
-                table_id=source_table.address.table_id,
-                schema_fields=source_table.schema_fields,
-                description=source_table.description,
-            )
-    sandbox_collections.append(
-        filtered_collection.as_sandbox_collection(sandbox_dataset_prefix)
-    )
+    for full_collection in [
+        collect_document_extraction_raw_source_table_collection(),
+        collect_document_extraction_failures_source_table_collection(),
+        collect_document_extraction_validated_source_table_collection(),
+    ]:
+        filtered_collection = SourceTableCollection(
+            dataset_id=full_collection.dataset_id,
+            update_config=SourceTableCollectionUpdateConfig.protected(),
+            description=full_collection.description,
+            labels=[],
+        )
+        for source_table in full_collection.source_tables:
+            if source_table.address.table_id == extractor_table_id:
+                filtered_collection.add_source_table(
+                    table_id=source_table.address.table_id,
+                    schema_fields=source_table.schema_fields,
+                    description=source_table.description,
+                )
+        sandbox_collections.append(
+            filtered_collection.as_sandbox_collection(sandbox_dataset_prefix)
+        )
 
     update_manager = SourceTableUpdateManager(bq_client)
     update_manager.update_async(
@@ -207,13 +220,13 @@ def _build_not_for_prod_address_overrides(
     These datasets are not in the standard source table repo, so we build
     overrides directly to avoid validation in address_overrides_for_input_source_tables.
     """
-    raw_dataset = DocumentExtractionResultMetadata.RAW_DATASET_ID
     builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
     for dataset_id in [
-        raw_dataset,
+        DocumentExtractionResultMetadata.RAW_DATASET_ID,
         DOCUMENT_STORE_METADATA_DATASET_ID,
         VALIDATED_DATASET,
-        UNVALIDATED_DATASET,
+        DocumentResultExclusionMetadata.EXCLUSIONS_DATASET_ID,
+        ValidatedExtractionResultMetadata.VALIDATED_DATASET_ID,
     ]:
         builder.register_custom_dataset_override(
             dataset_id,
@@ -537,10 +550,12 @@ def main(
         logging.info("Created job: %s", job.job_id)
 
         # Process results with polling loop
+        collection = get_extractor_collection(extractor.collection_name)
         result_processor = LLMPromptExtractionJobResultProcessor(
             llm_client,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
             extractor=extractor,
+            collection=collection,
         )
         while True:
             job_result = result_processor.process_results(job, bq_client)
