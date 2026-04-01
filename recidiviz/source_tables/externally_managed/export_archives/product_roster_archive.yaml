@@ -84,9 +84,6 @@ schema:
   - name: routes_psi
     type: BOOLEAN
     mode: NULLABLE
-  - name: routes_sar_access
-    type: BOOLEAN
-    mode: NULLABLE
   - name: routes_lantern
     type: BOOLEAN
     mode: NULLABLE
