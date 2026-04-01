@@ -68,6 +68,8 @@ class BasicSingleTaskEligibilitySpansBigQueryViewCollector(
                         task_name=vb.task_name,
                         candidate_population_view_builder=vb.candidate_population_view_builder,
                         criteria_spans_view_builders=vb.criteria_spans_view_builders,
+                        policy_start_date=vb.policy_start_date,
+                        policy_end_date=vb.policy_end_date,
                     )
                 )
 
