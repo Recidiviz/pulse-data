@@ -23,6 +23,23 @@ Supported field types: STRING, BOOLEAN, ENUM, INTEGER, FLOAT, ARRAY_OF_STRUCT.
 ARRAY_OF_STRUCT fields contain nested sub-fields, each individually wrapped in the
 standard {value, null_reason, confidence_score, citations} structure.
 
+Semantic consistency constraints can be expressed on any field (flat or sub-field)
+via three optional keys:
+
+  allowed_if_nonnull: <sibling_field>
+    This field can only be nonnull if the named sibling field is also nonnull.
+
+  allowed_if_value:
+    <sibling_field>: <value_or_list>
+    This field can only be nonnull if each listed sibling field has one of the
+    specified values. Multiple entries are ANDed together.
+
+  allowed_value_combinations:  (ENUM fields only)
+    <sibling_field>:
+      <sibling_value>: [<allowed_values_for_this_field>]
+    When this field is not null, its value must appear in the list associated
+    with the sibling field's actual value.
+
 Example YAML configuration:
 ```yaml
 output_schema:
@@ -32,15 +49,38 @@ output_schema:
     Comprehensive extraction of employment-related information from a case note.
 
   inferred_fields:
-    - name: primary_status
+    - name: employment_status
       type: ENUM
       description: The main employment status.
       values: [employed, unemployed, other]
       required: true
 
+    - name: employer_name
+      type: STRING
+      description: Name of the employer/organization.
+      allowed_if_value:
+        employment_status: employed
+
+    - name: employment_change_date
+      type: STRING
+      description: Date of the most recent employment status change.
+      allowed_if_nonnull: employment_change_type
+
+    - name: employment_change_type
+      type: ENUM
+      description: Type of employment status change.
+      values: [hired, fired, quit, laid_off, retired]
+      allowed_value_combinations:
+        employment_status:
+          employed: [hired, fired, quit, laid_off, retired]
+          unemployed: [fired, quit, laid_off, retired]
+          other: [fired, quit, laid_off, retired]
+
     - name: employers
       type: ARRAY_OF_STRUCT
       description: List of employers mentioned in this note.
+      allowed_if_value:
+        employment_status: employed
       fields:
         - name: employer_name
           type: STRING
@@ -105,6 +145,21 @@ class ExtractionInferredField:
     # Only populated for ARRAY_OF_STRUCT type — defines the fields within each struct
     struct_fields: tuple["ExtractionInferredField", ...] | None = None
 
+    # This field can only be nonnull if the named sibling field is also nonnull.
+    allowed_if_nonnull: str | None = None
+
+    # This field can only be nonnull if each named sibling field has one of the
+    # specified values. Multiple entries are ANDed together.
+    allowed_if_value: dict[str, tuple[str, ...]] | None = None
+
+    # ENUM only. When this field is not null, its value must appear in the list
+    # associated with the sibling field's actual value. E.g.:
+    #   {"status": {"employed": ("hired", "fired"), "unemployed": ("fired",)}}
+    # means: when status="employed" this field must be "hired" or "fired";
+    # when status="unemployed" this field must be "fired".
+    # Sibling values not listed in the map impose no constraint.
+    allowed_value_combinations: dict[str, dict[str, tuple[str, ...]]] | None = None
+
     def __attrs_post_init__(self) -> None:
         if self.field_type == ExtractionFieldType.ENUM and not self.enum_values:
             raise ValueError(
@@ -139,6 +194,38 @@ class ExtractionInferredField:
                     f"These values are reserved for the null_reason field. "
                     f"Use null_reason='not_applicable' or null_reason='no_info_found' instead."
                 )
+        # allowed_value_combinations is only valid on ENUM fields, and all
+        # listed current-field values must be in enum_values
+        if self.allowed_value_combinations is not None:
+            if self.field_type != ExtractionFieldType.ENUM:
+                raise ValueError(
+                    f"Field '{self.name}' has allowed_value_combinations but type is "
+                    f"{self.field_type.value}, not ENUM."
+                )
+            assert self.enum_values is not None
+            for sibling_field, value_map in self.allowed_value_combinations.items():
+                if sibling_field == self.name:
+                    raise ValueError(
+                        f"Field '{self.name}' has an allowed_value_combinations entry "
+                        f"referencing itself."
+                    )
+                for sibling_val, allowed_current_vals in value_map.items():
+                    for v in allowed_current_vals:
+                        if v not in self.enum_values:
+                            raise ValueError(
+                                f"Field '{self.name}' has allowed_value_combinations "
+                                f"['{sibling_field}']['{sibling_val}'] listing '{v}' "
+                                f"which is not in enum values {list(self.enum_values)}."
+                            )
+        # No self-references in allowed_if_nonnull or allowed_if_value
+        if self.allowed_if_nonnull == self.name:
+            raise ValueError(
+                f"Field '{self.name}' has allowed_if_nonnull referencing itself."
+            )
+        if self.allowed_if_value and self.name in self.allowed_if_value:
+            raise ValueError(
+                f"Field '{self.name}' has an allowed_if_value entry referencing itself."
+            )
 
     @property
     def description(self) -> str:
@@ -159,6 +246,27 @@ class ExtractionInferredField:
         elif self.field_type == ExtractionFieldType.FLOAT:
             description = description.rstrip().rstrip(".") + "."
             description = f"{description} Provide as a numeric string."
+
+        # Append allowed_if_nonnull constraint
+        if self.allowed_if_nonnull:
+            description += f" Only valid when '{self.allowed_if_nonnull}' has a value."
+
+        # Append allowed_if_value constraints
+        if self.allowed_if_value:
+            for field_name, allowed_values in self.allowed_if_value.items():
+                description += (
+                    f" Only valid when '{field_name}' is one of {list(allowed_values)}."
+                )
+
+        # Append allowed_value_combinations constraints
+        if self.allowed_value_combinations:
+            for sibling_field, value_map in self.allowed_value_combinations.items():
+                for sibling_val, allowed_current_vals in value_map.items():
+                    description += (
+                        f" When '{sibling_field}' is '{sibling_val}', "
+                        f"must be one of {list(allowed_current_vals)}."
+                    )
+
         return description
 
     @classmethod
@@ -194,6 +302,44 @@ class ExtractionInferredField:
                     f"Remove 'fields' or change type to ARRAY_OF_STRUCT."
                 )
 
+        # Parse allowed_if_nonnull (single sibling field name)
+        allowed_if_nonnull: str | None = yaml_dict.pop_optional(
+            "allowed_if_nonnull", str
+        )
+
+        # Parse allowed_if_value: {sibling_field: value_or_list}
+        allowed_if_value: dict[str, tuple[str, ...]] | None = None
+        raw_aiv = yaml_dict.pop_optional("allowed_if_value", dict)
+        if raw_aiv is not None:
+            allowed_if_value = {}
+            for fn, vals in raw_aiv.items():
+                if isinstance(vals, list):
+                    allowed_if_value[fn] = tuple(str(v) for v in vals)
+                else:
+                    allowed_if_value[fn] = (str(vals),)
+
+        # Parse allowed_value_combinations: {sibling_field: {sibling_val: [allowed_vals]}}
+        allowed_value_combinations: dict[str, dict[str, tuple[str, ...]]] | None = None
+        raw_avc = yaml_dict.pop_optional("allowed_value_combinations", dict)
+        if raw_avc is not None:
+            allowed_value_combinations = {}
+            for sibling_field, value_map in raw_avc.items():
+                if not isinstance(value_map, dict):
+                    raise ValueError(
+                        f"allowed_value_combinations['{sibling_field}'] must be a dict "
+                        f"mapping sibling values to lists of allowed field values."
+                    )
+                allowed_value_combinations[sibling_field] = {}
+                for sibling_val, allowed_vals in value_map.items():
+                    if not isinstance(allowed_vals, list):
+                        raise ValueError(
+                            f"allowed_value_combinations['{sibling_field}']"
+                            f"['{sibling_val}'] must be a list."
+                        )
+                    allowed_value_combinations[sibling_field][str(sibling_val)] = tuple(
+                        str(v) for v in allowed_vals
+                    )
+
         return cls(
             name=yaml_dict.pop("name", str),
             field_type=field_type,
@@ -201,6 +347,9 @@ class ExtractionInferredField:
             required=yaml_dict.pop_optional("required", bool) or False,
             enum_values=enum_values,
             struct_fields=struct_fields,
+            allowed_if_nonnull=allowed_if_nonnull,
+            allowed_if_value=allowed_if_value,
+            allowed_value_combinations=allowed_value_combinations,
         )
 
     def value_wrapped_schema_property(self) -> dict[str, Any]:
@@ -343,6 +492,56 @@ class ExtractionInferredField:
         ]
 
 
+def _validate_sibling_references(
+    field: ExtractionInferredField,
+    sibling_names: set[str],
+    context: str,
+) -> None:
+    """Validates that all semantic consistency field references point to
+    existing sibling fields."""
+
+    def _check_ref(ref_field: str, source: str) -> None:
+        if ref_field not in sibling_names:
+            raise ValueError(
+                f"{context}Field '{field.name}' has {source} referencing "
+                f"'{ref_field}', which does not exist as a sibling field. "
+                f"Available siblings: {sorted(sibling_names)}."
+            )
+
+    if field.allowed_if_nonnull:
+        _check_ref(field.allowed_if_nonnull, "allowed_if_nonnull")
+    if field.allowed_if_value:
+        for ref in field.allowed_if_value:
+            _check_ref(ref, "allowed_if_value")
+    if field.allowed_value_combinations:
+        for ref in field.allowed_value_combinations:
+            _check_ref(ref, "allowed_value_combinations")
+
+
+def _validate_field_sibling_references(
+    inferred_fields_by_name: dict[str, ExtractionInferredField],
+) -> None:
+    """Validates all semantic consistency references across the schema."""
+    top_level_names = set(inferred_fields_by_name.keys())
+
+    for field in inferred_fields_by_name.values():
+        # Validate top-level field references
+        _validate_sibling_references(field, top_level_names, "")
+
+        # Validate ARRAY_OF_STRUCT sub-field references
+        if (
+            field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT
+            and field.struct_fields
+        ):
+            sub_field_names = {sf.name for sf in field.struct_fields}
+            for sf in field.struct_fields:
+                _validate_sibling_references(
+                    sf,
+                    sub_field_names,
+                    f"In ARRAY_OF_STRUCT '{field.name}': ",
+                )
+
+
 @attr.define(frozen=True)
 class ExtractionOutputSchema:
     """Complete output schema for an extractor collection.
@@ -393,6 +592,9 @@ class ExtractionOutputSchema:
             if inferred_field.name in inferred_fields_by_name:
                 raise ValueError(f"Duplicate field name: '{inferred_field.name}'")
             inferred_fields_by_name[inferred_field.name] = inferred_field
+
+        # Validate semantic consistency references point to existing sibling fields
+        _validate_field_sibling_references(inferred_fields_by_name)
 
         return cls(
             full_batch_description=yaml_dict.pop("full_batch_description", str),

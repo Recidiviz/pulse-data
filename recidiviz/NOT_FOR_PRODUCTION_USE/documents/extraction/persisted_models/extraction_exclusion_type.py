@@ -48,6 +48,7 @@ class ExtractionExclusionType(enum.Enum):
     # --- Validation failures (written only to exclusions table) ---
     NOT_RELEVANT = "NOT_RELEVANT"
     LOW_CONFIDENCE = "LOW_CONFIDENCE"
+    SEMANTIC_CONSISTENCY_FAILURE = "SEMANTIC_CONSISTENCY_FAILURE"
 
     @property
     def is_llm_error(self) -> bool:
@@ -56,4 +57,5 @@ class ExtractionExclusionType(enum.Enum):
         return self not in (
             ExtractionExclusionType.NOT_RELEVANT,
             ExtractionExclusionType.LOW_CONFIDENCE,
+            ExtractionExclusionType.SEMANTIC_CONSISTENCY_FAILURE,
         )

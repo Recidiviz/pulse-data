@@ -28,3 +28,27 @@ output_schema:
       description: >
         A brief human-readable summary of the person's employment status.
       required: true
+
+    - name: employer_name
+      type: STRING
+      description: >
+        Name of the employer or organization.
+      allowed_if_value:
+        employment_status: employed
+
+    - name: employment_change_date
+      type: STRING
+      description: >
+        Date of the most recent employment status change.
+      allowed_if_nonnull: employment_change_type
+
+    - name: employment_change_type
+      type: ENUM
+      description: >
+        Type of employment status change.
+      values: [hired, fired, quit, laid_off, retired]
+      allowed_value_combinations:
+        employment_status:
+          employed: [hired, fired, quit, laid_off, retired]
+          unemployed: [fired, quit, laid_off, retired]
+          other: [fired, quit, laid_off, retired]

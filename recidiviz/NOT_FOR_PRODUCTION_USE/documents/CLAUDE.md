@@ -123,8 +123,8 @@ output_schema:
 ```
 
 The `confidence_threshold` controls the minimum confidence score for a row to
-appear in the validated output view. If any flat field in a row falls below this
-threshold, the entire row is excluded.
+appear in the validated output. If any field (or sub-field within an
+`ARRAY_OF_STRUCT`) falls below this threshold, the entire row is excluded.
 
 Supported field types: `STRING`, `BOOLEAN`, `ENUM`, `INTEGER`, `FLOAT`,
 `ARRAY_OF_STRUCT`.
@@ -151,15 +151,35 @@ inferred_fields:
         type: STRING
 ```
 
-In the **unvalidated** BQ view, each `ARRAY_OF_STRUCT` field becomes a native
-BQ `ARRAY<STRUCT<...>>` where each sub-field is a STRUCT with `{value,
-confidence_score, null_reason, citations_json}`. In the **validated** view,
-sub-fields are flattened to typed values with `__null_reason` companions (no
-top-level confidence filter is applied to `ARRAY_OF_STRUCT` fields since
-confidence is per-sub-field).
-
 Every extraction result automatically includes an `is_relevant` boolean field
 and, per flat field: `{value, null_reason, confidence_score, citations}`.
+
+#### Semantic Consistency Constraints
+
+Fields can declare constraints that must hold for the field's value to be valid.
+Three optional YAML keys are supported (can be combined; all are checked):
+
+```yaml
+# Field can only be nonnull if the named sibling is also nonnull
+allowed_if_nonnull: employment_change_type
+
+# Field can only be nonnull if each named sibling has one of the specified values
+allowed_if_value:
+  employment_status: employed          # scalar or list
+
+# ENUM only: when this field has a value, constrains it based on a sibling's value.
+# Sibling values not listed impose no constraint.
+allowed_value_combinations:
+  employment_status:
+    employed:   [hired, fired, quit, laid_off, retired]
+    unemployed: [fired, quit, laid_off, retired]
+    other:      [fired, quit, laid_off, retired]
+```
+
+Violations produce `SEMANTIC_CONSISTENCY_FAILURE` exclusion records (not LLM
+errors — `is_llm_error` is False). Constraints are checked on both top-level
+fields and sub-fields within `ARRAY_OF_STRUCT` elements (against their sibling
+sub-fields within the same element).
 
 ### Extractors (`extraction/config/collections/llm_prompt/{collection}/{state}_extractor.yaml`)
 
@@ -196,17 +216,32 @@ All metadata classes use `@attr.define` and implement `as_metadata_row()` /
 `from_metadata_row()` for BigQuery serialization. They map to tables in the
 `document_extraction_metadata` dataset:
 
+**Metadata tables** (`document_extraction_metadata` dataset, schemas in
+`recidiviz/source_tables/yaml_managed/document_extraction_metadata/`):
+
 | Class | BQ Table |
 |-------|----------|
 | `DocumentExtractorCollectionMetadata` | `extractor_collections` |
 | `LLMPromptExtractorMetadata` | `llm_prompt_extractors` |
 | `ExtractionJobMetadata` | `extraction_jobs` |
 | `ExtractionJobSubmittedDocumentMetadata` | `extraction_job_submitted_documents` |
-| `DocumentExtractionResultMetadata` | `document_extraction_results` |
+| `DocumentExtractionResultMetadata` | `document_extraction_results` (raw LLM output) |
 | `ExtractionJobResultMetadata` | `extraction_job_results` |
 
-BQ table schemas are defined in
-`recidiviz/source_tables/yaml_managed/document_extraction_metadata/`.
+**Validation output tables** (schemas managed by
+`document_extraction_validation_source_table_collector.py`):
+
+| Class | Dataset | Table naming |
+|-------|---------|--------------|
+| `DocumentResultExclusionMetadata` | `document_extraction_results__exclusions` | `{state_code}_{collection_name}` |
+| `ValidatedExtractionResultMetadata` | `document_extraction_results__validated` | `{state_code}_{collection_name}` |
+
+Both tables are append-only. The exclusions table records every document that
+was excluded and why (`exclusion_type` + `exclusion_details_json`). The
+validated table stores the `result_json` for passing documents, keeping the
+full LLM envelope `{value, confidence_score, null_reason, citations}` per field
+so confidence scores remain available downstream. Dedup to the latest result per
+document is handled by the SQL view layer.
 
 ### LLM Client Hierarchy
 
@@ -222,22 +257,25 @@ BQ table schemas are defined in
 
 ### Extraction Views
 
-Extraction results are exposed through two layers of auto-generated BQ views
-per extractor, plus a collection-level union:
+Extraction results are exposed through auto-generated BQ views per extractor,
+plus collection-level unions. View SQL is generated programmatically by
+`extraction_view_sql_generator.py` based on the collection's
+`ExtractionOutputSchema`.
 
 1. **Unvalidated** (`document_extraction_results__unvalidated`): All successful
-   extractions with per-field STRUCT columns containing `{value,
-   confidence_score, null_reason, citations_json}`. Deduped to the latest
-   extraction per document.
-2. **Validated** (`document_extraction_results`): Filtered to high-confidence,
-   relevant extractions. Flat typed columns with `__null_reason` and
-   `__citation` companions per field. Rows where any flat field's confidence
-   falls below the collection's `confidence_threshold` are excluded.
+   extractions. Each flat field is a STRUCT with `{value, confidence_score,
+   null_reason, citations_json}`. Each `ARRAY_OF_STRUCT` field is a native BQ
+   `ARRAY<STRUCT<...>>` where sub-fields are individually wrapped in the same
+   STRUCT. Deduped to the latest extraction per document.
+2. **Validated** (`document_extraction_results`): Reads from the
+   `document_extraction_results__validated` source table (append-only, written
+   by `ExtractionJobResultProcessor`). Exposes the same envelope structure as
+   the unvalidated view — flat fields as `{value, confidence_score, null_reason,
+   citations}` STRUCTs — but only for rows that passed all validation checks
+   (is_relevant, confidence threshold, semantic consistency). `is_relevant` is
+   stripped; all other field envelopes are preserved intact.
 3. **Union** (`document_extraction_results`): A `UnionAllBigQueryViewBuilder`
    combining validated results across all states in a collection.
-
-View SQL is generated programmatically by `extraction_view_sql_generator.py`
-based on the collection's `ExtractionOutputSchema`.
 
 ### Extraction Flow
 
@@ -249,13 +287,33 @@ based on the collection's `ExtractionOutputSchema`.
 3. If `get_results()` returns `LLMExtractionInProgressBatchStatus`,
    `process_results()` returns `None` — callers should poll
 
+### Validation Pipeline
+
+After the LLM returns results, `ExtractionJobResultProcessor` runs three checks
+in order via `validate_extraction_result()` in `result_validator.py`:
+
+1. **`is_relevant`** — LLM must return `true`. Produces `NOT_RELEVANT` exclusion.
+2. **Confidence threshold** — Every flat field (and every sub-field within each
+   `ARRAY_OF_STRUCT` element) must have `confidence_score >= confidence_threshold`.
+   Produces `LOW_CONFIDENCE` exclusion(s) naming the failing field(s).
+3. **Semantic consistency** — `allowed_if_nonnull`, `allowed_if_value`, and
+   `allowed_value_combinations` constraints defined in the collection schema.
+   Produces `SEMANTIC_CONSISTENCY_FAILURE` exclusion(s) with `constraint_type`,
+   `condition_field`, and `allowed_condition_values` in the details JSON.
+
+If any check fails, all failures for that document are written to the
+`document_extraction_results__exclusions` table and no validated row is written.
+If all checks pass, the result (with envelopes preserved) is written to
+`document_extraction_results__validated`.
+
 ### Exclusion / Error Types
 
 - **Per-document** (`ExtractionExclusionType`): Unified enum covering both
   LLM errors (`DOCUMENT_NOT_FOUND`, `LLM_MALFORMED_RESPONSE`, etc.) and
-  validation failures (`NOT_RELEVANT`, `LOW_CONFIDENCE`). Used in the raw
-  table's `error_type` column (LLM errors only) and the failures table's
-  `failure_type` column (all types). Has an `is_llm_error` property.
+  validation failures (`NOT_RELEVANT`, `LOW_CONFIDENCE`,
+  `SEMANTIC_CONSISTENCY_FAILURE`). Used in the raw table's `error_type` column
+  (LLM errors only) and the exclusions table's `exclusion_type` column (all
+  types). Has an `is_llm_error` property.
 - **Per-job** (`ExtractionJobErrorType`): `JOB_TIMEOUT`,
   `JOB_RESULT_RETRIEVAL_FAILURE`, etc.
 
