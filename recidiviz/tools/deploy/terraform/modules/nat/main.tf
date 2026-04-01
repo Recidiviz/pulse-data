@@ -75,6 +75,10 @@ resource "google_compute_router_nat" "default" {
   min_ports_per_vm                    = 64
   enable_endpoint_independent_mapping = var.enable_endpoint_independent_mapping
 
+  # Explicitly pin to current default (120s). Google is changing the default to
+  # 30s starting June 30, 2026. See #68938.
+  tcp_time_wait_timeout_sec = 120
+
   dynamic "rules" {
     for_each = var.rules
     content {
