@@ -56,9 +56,11 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
   }
 
 
+  # TODO(#54841): Remove cloud_sql_instance ignore after the PG18/CMEK migration is complete
   lifecycle {
     ignore_changes = [
       launch_stage,
+      template[0].template[0].volumes[0].cloud_sql_instance,
     ]
   }
 }

@@ -264,6 +264,13 @@ resource "google_cloud_run_service" "case-triage" {
   }
 
   autogenerate_revision_name = false
+
+  # TODO(#54841): Remove this and update cloudsql-instances for this resource post-migration
+  lifecycle {
+    ignore_changes = [
+      template[0].metadata[0].annotations["run.googleapis.com/cloudsql-instances"],
+    ]
+  }
 }
 
 # Initializes Application Data Import Cloud Run service
@@ -336,6 +343,13 @@ resource "google_cloud_run_service" "application-data-import" {
   }
 
   autogenerate_revision_name = false
+
+  # TODO(#54841): Remove this and update cloudsql-instances for this resource post-migration
+  lifecycle {
+    ignore_changes = [
+      template[0].metadata[0].annotations["run.googleapis.com/cloudsql-instances"],
+    ]
+  }
 }
 
 # Initializes Asset Generation Cloud Run service
@@ -487,6 +501,13 @@ resource "google_cloud_run_service" "public-pathways" {
   }
 
   autogenerate_revision_name = false
+
+  # TODO(#54841): Remove this and update cloudsql-instances for this resource post-migration
+  lifecycle {
+    ignore_changes = [
+      template[0].metadata[0].annotations["run.googleapis.com/cloudsql-instances"],
+    ]
+  }
 }
 
 # By default, Cloud Run services are private and secured by IAM.

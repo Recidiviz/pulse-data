@@ -105,6 +105,13 @@ resource "google_cloud_run_service" "admin_panel" {
     percent         = 100
     latest_revision = true
   }
+
+  # TODO(#54841): Remove this and update cloudsql-instances for this resource post-migration
+  lifecycle {
+    ignore_changes = [
+      template[0].metadata[0].annotations["run.googleapis.com/cloudsql-instances"],
+    ]
+  }
 }
 
 resource "google_compute_region_network_endpoint_group" "admin_panel_serverless_neg" {
