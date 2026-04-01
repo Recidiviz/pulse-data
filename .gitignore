@@ -207,6 +207,7 @@ release.out
 .gemini/
 .claude/settings.local.json
 .claude/pulse-data-local-settings.md
+/.claude/worktrees
 .mcp.json
 
 # Don't accidentally commit data files that our notebooks depend on / produce
