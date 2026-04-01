@@ -195,9 +195,7 @@ class TestOngoingValidationHardFailures(SimpleBigQueryViewBuilderTestCase):
             }
             for month_with_zero in pd.date_range(
                 start=date(2024, 1, 1),
-                end=date.fromtimestamp(
-                    datetime.now(tz=timezone("US/Eastern")).timestamp()
-                ),
+                end=datetime.now(tz=timezone("US/Eastern")).date(),
                 freq="MS",
             )
             if month_with_zero.date() not in months_with_failures
