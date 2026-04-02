@@ -138,6 +138,9 @@ from recidiviz.calculator.query.state.views.sessions.prioritized_supervision_com
 from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_ny.us_ny_historical_person_demographics import (
+    US_NY_HISTORICAL_PERSON_DEMOGRAPHICS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
@@ -333,6 +336,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER.address: (
         "Not currently referenced but captures state-specific logic that may eventually be relevant "
         "to assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
+    ),
+    US_NY_HISTORICAL_PERSON_DEMOGRAPHICS_VIEW_BUILDER.address: (
+        "Will be referenced in prison_population_over_time in a forthcoming change (n-damiani 4/1/26)"
     ),
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: (
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
