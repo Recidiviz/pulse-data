@@ -78,12 +78,12 @@ output:
                   - Erroneous Release Returned to ID
                   - "Returned to TDCJ-ID - Snow Case/Previous charge"
                   - TDCJ detainer
+                  - ISC Offender With New Texas Conviction To ID
                 StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - Deported OOC
                   - Supervised out of state
                   - Returned ICC offender to sending state
                   - "Released, Pending arrival to OOS"
-                  - ISC Offender With New Texas Conviction To ID
                   - Other Agency Detainer
                 StateSupervisionPeriodTerminationReason.VACATED:
                   - Sentence Reversed
