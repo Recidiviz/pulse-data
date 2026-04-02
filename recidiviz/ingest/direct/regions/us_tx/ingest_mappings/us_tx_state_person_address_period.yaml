@@ -8,6 +8,7 @@ input_columns:
   RESI_STATE: STRING
   RESI_ZIP: STRING
   RESI_COUNTY: STRING
+  placement: STRING
   start_date: DATE
   end_date: DATE
 unused_columns: []
@@ -28,3 +29,6 @@ output:
           address_zip: RESI_ZIP
           address_state: RESI_STATE
           address_type: $literal_enum(StatePersonAddressType.PHYSICAL_RESIDENCE)
+          address_metadata:
+            $normalized_values_json_dict:
+              placement: placement
