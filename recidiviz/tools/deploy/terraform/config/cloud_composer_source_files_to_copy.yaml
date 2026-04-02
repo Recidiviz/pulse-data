@@ -15,4 +15,5 @@
 - [recidiviz/ingest/direct/raw_data/validations/configs, "*.yaml"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/*.yaml"]
 - [recidiviz/ingest/direct/regions, "*/raw_data/migrations/**/*.csv"]
+- [recidiviz/big_query/config, "*.yaml"]
 - [recidiviz/view_registry, "raw_data_reference_reasons.yaml"]
