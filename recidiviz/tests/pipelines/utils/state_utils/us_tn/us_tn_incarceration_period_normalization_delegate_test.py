@@ -1661,7 +1661,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
     # Test overriding the PFI for periods with "SAREC" in the admission reason, along with all
-    # subsequent periods until a period is found with a NEW ADMISSION admission reason.
+    # subsequent periods until a period is found with a NEW ADMISSION/REVOCATION/safekeeping return admission reason.
     # Also tests that the safekeeping-related logic doesn't interfere with the legacy_standardize_purpose_for_incarceration_values
     # function, except for where safekeeping periods are concerned.
     def test_pfi_override_for_safekeeping_periods(
@@ -1827,30 +1827,28 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         # This period has "SARET" in the admission reason, indicating it is a SAFEKEEPING person returning
-        # from court to facility (CTFA). We were told by TN that safekeeping only ends when a person is
-        # fully released or you see a new admission so we want the PFI of TEMPORARY_CUSTODY to continue.
+        # from court to facility (CTFA). It therefore marks the end of the safekeeping period, so we stop
+        # replacing the normalized PFI (WEEKEND_CONFINEMENT) with SAFEKEEPING.
         ip5_normalized = deep_entity_update(
             deepcopy(incarceration_period_5),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT,
         )
 
-        # Because there has not been an admission reason of NEW_ADDMISSION since the "SAREC" code we
-        # expect this to return TEMPORARY_CUSTODY
+        # The safekeeping period ended with the last IP, so we continue to just carry over the WEEKEND_CONFINEMENT
+        # normalized PFI.
         ip6_normalized = deep_entity_update(
             deepcopy(incarceration_period_6),
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT,
         )
 
-        # This period has "SAREC" in the admission reason, so it's considered a safekeeping period and
-        # we have not seen a NEW_ADDMISSION so we continue to set the PFI to SAFEKEEPING.
+        # This period has "SAREC" in the admission reason, so it's considered a safekeeping period and we start
+        # overriding the PFI with SAFEKEEPING again.
         ip7_normalized = deep_entity_update(
             deepcopy(incarceration_period_7),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
         )
 
-        # This is the person's last period, and comes after a "SAREC" period. Its PFI is therefore
-        # set to SAFEKEEPING–the same would be true for all periods in the future until we
-        # see a NEW_ADMISSION.
+        # Continue setting PFI to SAFEKEEPING until we reach a new admission/revocation/SARET movement.
         ip8_normalized = deep_entity_update(
             deepcopy(incarceration_period_8),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
@@ -1924,6 +1922,116 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             ip1_normalized,
             ip2_normalized,
+        ]
+        self.assertEqual(expected_periods, ips_with_pfi_override)
+
+    # Tests that when periods with SAREC and SARET admission reasons occur on the same day, they're
+    # sorted by the sequence number in their external IDs (which serves as a proxy for admission datetime)
+    # and safekeeping periods are opened/closed in the correct order.
+    # This test case has a period with SAREC in the admission reason on the same day but earlier
+    # in the day than a period with SARET in the admission reason. The SAREC period should therefore
+    # be normalized with a SAFEKEEPING PFI while the SARET period marks the end of the 0-day safekeeping period
+    # and reverts to GENERAL PFI. Then, there's another day with both SARET and SAREC movements but this time in
+    # the opposite order. Because the SAREC period starts later than the SARET period, it results in an open
+    # safekeeping period, and the period that follows is normalized with a SAFEKEEPING PFI as well.
+    def test_pfi_override_saret_and_sarec_same_day(
+        self,
+    ) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="123-1",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 10, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CTFA-SAREC-T",
+            release_date=date(2018, 10, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="FACT-SARET-P",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="123-2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 10, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FACT-SARET-P",
+            release_date=date(2018, 11, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="123-3",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 11, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="FACT-SARET-P",
+            release_date=date(2018, 11, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="CTFA-SAREC-T",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=444,
+            external_id="123-4",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 11, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="CTFA-SAREC-T",
+            release_date=date(2018, 11, 10),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=555,
+            external_id="123-5",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2018, 11, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="UNITMOVEMENTFH-UNIT_MOVEMENT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        ips_with_pfi_override = (
+            self.delegate.standardize_purpose_for_incarceration_values(
+                incarceration_periods=deepcopy(
+                    [
+                        incarceration_period_1,
+                        incarceration_period_2,
+                        incarceration_period_3,
+                        incarceration_period_4,
+                        incarceration_period_5,
+                    ]
+                )
+            )
+        )
+        ip1_normalized = deep_entity_update(
+            deepcopy(incarceration_period_1),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
+        )
+        ip2_normalized = deepcopy(incarceration_period_2)
+        ip3_normalized = deepcopy(incarceration_period_3)
+        ip4_normalized = deep_entity_update(
+            deepcopy(incarceration_period_4),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
+        )
+        ip5_normalized = deep_entity_update(
+            deepcopy(incarceration_period_5),
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SAFEKEEPING,
+        )
+        expected_periods = [
+            ip1_normalized,
+            ip2_normalized,
+            ip3_normalized,
+            ip4_normalized,
+            ip5_normalized,
         ]
         self.assertEqual(expected_periods, ips_with_pfi_override)
 

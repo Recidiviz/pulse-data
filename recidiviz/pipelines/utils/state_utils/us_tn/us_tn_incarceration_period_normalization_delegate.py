@@ -149,7 +149,14 @@ class UsTnIncarcerationNormalizationDelegate(
         # periods on either side of the safekeeping periods would keep whatever PFI was set by legacy_standardize_purpose_for_incarceration_values.
         in_safekeeping_period = False
 
-        for ip in standard_date_sort_for_incarceration_periods(
+        # Sort periods using the sequence number of their external ID, which ranks periods by admission datetime.
+        # This lets us close out safekeeping periods when SARET movements happen on the same day, but later in the day
+        # than SAREC movements. Likewise, if a SAREC movement happens later in the day than a SARET movement, it should be
+        # treated as the start of a safekeeping period and the period shouldn't be closed by the SARET movement because
+        # it happened before the SAREC. Note that SARET admissions are treated differently than new admissions/revocations;
+        # if a new admission/revocation occurs on the same day as a SAREC admission, the safekeeping period will be closed,
+        # even if the SAREC happens later in the day.
+        for ip in _us_tn_sort_periods_by_admission_date_and_external_id(
             legacy_normalized_periods
         ):
             # This variable will be True if the period's admission reason OR the admission reason
@@ -162,7 +169,7 @@ class UsTnIncarcerationNormalizationDelegate(
             )
             in_safekeeping_period = (
                 ip.admission_reason_raw_text is not None
-                # and "-SARET" not in ip.admission_reason_raw_text
+                and "-SARET" not in ip.admission_reason_raw_text
                 and not safekeeping_end_same_day
                 and ("-SAREC" in ip.admission_reason_raw_text or in_safekeeping_period)
             )
@@ -195,6 +202,25 @@ RELEASED_FROM_TEMPORARY_CUSTODY_RAW_TEXT_VALUES: List[str] = [
     "PAFA-RECIS-P",  # Rescission
     "DVCT-PRVOK-P",  # Revocation
 ]
+
+
+def _us_tn_sort_periods_by_admission_date_and_external_id(
+    incarceration_periods: List[StateIncarcerationPeriod],
+    sort_in_reverse: bool = False,
+) -> List[StateIncarcerationPeriod]:
+    """Sorts a list of TN incarceration periods, first by admission date and then by the
+    sequence number taken from the external ID. The sequence number is used because this
+    value is set in the ingest view using the datetime version of admission date, before
+    the time component of this date is lost.
+    """
+    return sorted(
+        incarceration_periods,
+        key=lambda x: (
+            x.admission_date,
+            int(x.external_id.split("-")[1]),
+        ),
+        reverse=sort_in_reverse,
+    )
 
 
 def _us_tn_normalize_period_if_commitment_from_supervision(
@@ -411,15 +437,10 @@ def _us_tn_override_custodial_authority_for_temporary_movements(
                     # the admission date since multiple periods can occur on the same date at
                     # different times.
 
-                    adjacent_permanent_movement_periods.sort(
-                        key=lambda x: (
-                            x.admission_date,
-                            int(x.external_id.split("-")[1]),
-                        ),
-                        reverse=True,
-                    )
                     most_recent_adjacent_permanent_movement_period = (
-                        adjacent_permanent_movement_periods[0]
+                        _us_tn_sort_periods_by_admission_date_and_external_id(
+                            adjacent_permanent_movement_periods, sort_in_reverse=True
+                        )[0]
                     )
 
                     # Regardless of whether or not the custodial authority has actually changed,
