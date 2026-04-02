@@ -509,7 +509,7 @@ def contact_compliance_builder_type_agnostic(
         LEFT JOIN contact_info ci
           ON cc.person_id = ci.person_id
             AND ci.contact_type IN UNNEST(SPLIT(contact_types_accepted, ','))
-            AND ci.contact_date < start_date
+            AND ci.contact_date <= start_date
         QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, contact_types_accepted, start_date ORDER BY contact_date DESC) = 1
     ),
     join_scheduled_contacts AS (
