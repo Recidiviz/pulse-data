@@ -44,3 +44,36 @@ module "state_direct_ingest_buckets_and_accounts" {
     : local.default_state_data_group_resource_name
   )
 }
+
+# Add the CI/CD Cloud Build service account as a MANAGER of every state data
+# access group so that Terraform (run via Cloud Build) has permission to manage
+# group memberships (e.g. adding Dataflow SAs as members above).
+#
+# This is done at the top level rather than inside the per-state module because
+# non-restricted states share the default group, and having multiple module
+# instances create the same membership would conflict.
+locals {
+  # Collect all unique group resource names: state-specific groups + the default group.
+  all_data_access_group_resource_names = toset(concat(
+    values(local.state_data_access_group_resource_names),
+    [local.default_state_data_group_resource_name],
+  ))
+}
+
+resource "google_cloud_identity_group_membership" "ci_cd_sa_data_access_group_manager" {
+  for_each = local.all_data_access_group_resource_names
+
+  group = each.value
+
+  preferred_member_key {
+    id = "cloud-build-ci-cd@${var.project_id}.iam.gserviceaccount.com"
+  }
+
+  roles {
+    name = "MEMBER"
+  }
+
+  roles {
+    name = "MANAGER"
+  }
+}
