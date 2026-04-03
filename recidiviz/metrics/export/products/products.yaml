@@ -272,7 +272,7 @@ products:
       - PUBLIC_PATHWAYS
     states:
       - state_code: US_NY
-        environment: staging
+        environment: production
   - name: Case Planning Assistant
     description: Views that back the Case Planning Assistant v1 product
     exports:
