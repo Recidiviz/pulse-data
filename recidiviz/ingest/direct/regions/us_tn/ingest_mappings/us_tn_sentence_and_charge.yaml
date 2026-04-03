@@ -14,7 +14,7 @@ input_columns:
   SentenceImposedDate: DATE
   SuspendedToProbation: STRING
   SplitConfinementBalanceType: STRING
-  LifeDeathHabitual: STRING
+  lifetime_flag: STRING
   ConditionsText: STRING
   earliest_known_sentence_status: STRING
   earliest_known_sentenced_to: STRING
@@ -33,6 +33,7 @@ input_columns:
   AssaultiveOffenseFlag: STRING
   SexOffenderFlag: STRING
   OffenseDescription: STRING
+  JudicialDistrict: STRING
 
 unused_columns: []
 variables:
@@ -72,14 +73,16 @@ output:
           conditions: ConditionsText
           is_life:
             $in:
-              $value: LifeDeathHabitual
+              $value: lifetime_flag
               $options:
                 - $literal("L") # Life
                 - $literal("H") # Habitual, an old value equivalent to life
                 - $literal("W") # Life without parole
+                - $literal("Y") # Lifetime supervision
+                - $literal("R") # Lifetime supervision variant
           is_capital_punishment:
             $equal:
-              - LifeDeathHabitual
+              - lifetime_flag
               - $literal("D")
           parent_sentence_external_id_array:
             $conditional:
@@ -127,3 +130,4 @@ output:
                   $equal:
                     - SexOffenderFlag
                     - $literal("Y")
+                judicial_district_code: JudicialDistrict

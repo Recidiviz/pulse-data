@@ -22,6 +22,8 @@ input_columns:
   # StateChargeV2 information
   OffenseDate: DATE
   ConvictedOffense: STRING
+  AssaultiveOffenseFlag: STRING
+  SexOffenderFlag: STRING
 
   # StateSentenceStatusSnapshot
   ExpirationDate: DATE
@@ -68,6 +70,14 @@ output:
                 status: $literal_enum(StateChargeV2Status.CONVICTED)
                 offense_date: OffenseDate
                 description: ConvictedOffense
+                is_violent:
+                  $equal:
+                    - AssaultiveOffenseFlag
+                    - $literal("Y")
+                is_sex_offense:
+                  $equal:
+                    - SexOffenderFlag
+                    - $literal("Y")
           sentence_status_snapshots:
             - StateSentenceStatusSnapshot:
                 status_update_datetime: SentenceImposedDate

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_sentence_length` to
-#  corresponding Ingest Object fields.
+# This file associates the columns outputted from the query in
+# `view_diversion_sentence_length` to corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
   # Form the unique ID for sentences.
@@ -10,16 +10,10 @@ input_columns:
   CaseNumber: STRING
   CountNumber: STRING
 
-  # TODO(#44999) Understand StreetTime and other credit concepts
-  # There may be other critical dates to consider
-  SentenceChangedDate: DATE
-  ReleaseEligibilityDate: DATE
-  EarliestPossibleReleaseDate: DATE
+  update_datetime: DATETIME
   ExpirationDate: DATE
-  FullExpirationDate: DATE
 
-unused_columns:
-  - FullExpirationDate
+unused_columns: []
 variables:
   - sentence_external_id:
       $concat:
@@ -30,6 +24,8 @@ variables:
           - CaseYear
           - CaseNumber
           - CountNumber
+          # Must match the suffix used in us_tn_diversion_sentence.yaml
+          - $literal("DIVERSION")
 output:
   StatePerson:
     external_ids:
@@ -41,8 +37,8 @@ output:
           external_id: $variable(sentence_external_id)
           sentence_lengths:
             - StateSentenceLength:
-                length_update_datetime: SentenceChangedDate
-                # All of these can change over time and can be null
-                parole_eligibility_date_external: ReleaseEligibilityDate
-                projected_completion_date_min_external: EarliestPossibleReleaseDate
+                length_update_datetime: update_datetime
+                # Diversion sentences have a single ExpirationDate with no
+                # min/max distinction. We map to max since that is what
+                # downstream criteria reference.
                 projected_completion_date_max_external: ExpirationDate
