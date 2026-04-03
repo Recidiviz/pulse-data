@@ -172,6 +172,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_az_ingest_view_results.state_staff_periods",
     "us_az_ingest_view_results.state_task_deadline_csed",
     "us_az_ingest_view_results.state_task_deadline_tpr_dtp",
+    "us_az_ingest_view_results.supervision_contacts",
     "us_az_ingest_view_results.supervision_periods",
     "us_az_ingest_view_results.supervision_violation",
     "us_az_ingest_view_results.tabe_assessment",

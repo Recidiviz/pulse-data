@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `supervision_contacts`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  CASE_NOTE_ID: STRING
+  PERSON_ID: STRING
+  CREATE_USERID: STRING
+  contact_datetime: DATETIME
+  NOTE_TYPE_DESCRIPTION: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id: CASE_NOTE_ID
+          contact_date: contact_datetime
+          contacting_staff_external_id: CREATE_USERID
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CREATE_USERID
+                $then: $literal("US_AZ_PERSON_ID")
+          # All case notes are written after the fact, so the contact is completed.
+          status: $literal_enum(StateSupervisionContactStatus.COMPLETED)
+          # contact_type is set to DIRECT or COLLATERAL only for note types that
+          # represent an actual supervision contact per DO 1003 (face-to-face,
+          # field contact, employment visit, collateral, etc.). All other types of case
+          # note entered during a period of supervision (assessments, administrative
+          # updates, drug tests, etc.) are ingested as INTERNAL_UNKNOWN.
+          contact_type:
+            $enum_mapping:
+              $raw_text: NOTE_TYPE_DESCRIPTION
+              $mappings:
+                # All case note types excluded from results are assumed to be non-contact
+                # administrative records or events.
+                # TODO(#68976): Confirm with research team whether any should be
+                # reclassified as DIRECT or COLLATERAL.
+                StateSupervisionContactType.DIRECT:
+                  # Face-to-face and field contacts mandated by DO 1003
+                  - "Field Visit"
+                  - "Office Visit"
+                  - "Regular Office Visit"
+                  - "Contact  Visit"
+                  - "Offender Contact"
+                  - "Initial Intake"
+                  - "Compliance Check"
+                  - "Search"
+                  - "Verbal Reprimand"
+                  - "Sanction" # Typically involves face-to-face or phone contact
+                  - "Residence"
+                StateSupervisionContactType.COLLATERAL:
+                  - "Police Contact"
+                  - "Sponsor"
+                  - "Court"
+                  - "Victim"
+                  - "Employment"
+          contact_method:
+            $enum_mapping:
+              $raw_text: NOTE_TYPE_DESCRIPTION
+              $mappings:
+                StateSupervisionContactMethod.IN_PERSON:
+                  # Direct in-person contacts
+                  - "Field Visit"
+                  - "Office Visit"
+                  - "Regular Office Visit"
+                  - "Contact  Visit"
+                  - "Initial Intake"
+                  - "Compliance Check"
+                  - "Search"
+                  - "Police Contact"
+                  - "Offender Contact"
+                  - "Court"
+                  - "Urinalysis Test"
+                  - "Sanction"
+                  - "Verbal Reprimand"
+                  - "Residence"
+                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  # Contacts where method is unknown or non-contacts. This covers all
+                  # case note descriptions, not only those that are included
+                  - "Employment"
+                  - "Sponsor"
+                  - "Victim"
+          location:
+            $enum_mapping:
+              $raw_text: NOTE_TYPE_DESCRIPTION
+              $mappings:
+                StateSupervisionContactLocation.FIELD:
+                  - "Field Visit"
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - "Office Visit"
+                  - "Regular Office Visit"
+                  - "Initial Intake"
+                  - "Contact  Visit"
+                  - "Sanction"
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - "Employment"
+                StateSupervisionContactLocation.RESIDENCE:
+                  - "Residence"
+                StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
+                  - "Police Contact"
+                  - "Arrest"
+                StateSupervisionContactLocation.COURT:
+                  - "Court"
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  # Contacts without a determinable location, plus all non-contacts
+                  - "Offender Contact"
+                  - "Compliance Check"
+                  - "Search"
+                  - "Sponsor"
+                  - "Victim"
+                  - "Verbal Reprimand"
