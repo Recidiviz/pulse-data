@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements test for interface used to support external requests in Workflows"""
+"""Tests for WorkflowsUsTnWriteTEPENoteToTomisRequest format_request method."""
 import datetime
 import json
 from typing import Generator
@@ -22,30 +22,16 @@ from unittest import TestCase
 
 import freezegun
 import pytest
-import requests
-import responses
 from flask import Flask
 from mock import MagicMock, patch
-from responses import matchers
 
 from recidiviz.case_triage.workflows.constants import WorkflowsUsTnVotersRightsCode
-from recidiviz.case_triage.workflows.interface import (
-    WorkflowsUsNdExternalRequestInterface,
-    WorkflowsUsTnExternalRequestInterface,
+from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     WorkflowsUsTnWriteTEPENoteToTomisRequest,
 )
 
 PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
-CONTACT_NOTE_DATE_TIME = datetime.datetime.now().isoformat()
-
-EARLY_TERMINATION_PEI = 123
-USER_EMAIL = "foo@nd.gov"
-EARLY_TERMINATION_DATE = "2024-10-10"
-JUSTIFICATION_REASONS = [
-    {"code": "FOO", "description": "Code FOO"},
-    {"code": "BAR", "description": "Code BAR"},
-]
 
 
 @pytest.fixture(autouse=True)
@@ -55,92 +41,13 @@ def app_context() -> Generator[None, None, None]:
         yield
 
 
-class TestWorkflowsInterface(TestCase):
-    """Test class for making external requests in Workflows"""
+class TestWorkflowsUsTnWriteTEPENoteToTomisRequest(TestCase):
+    """Test class for the TEPE note request formatter"""
 
-    def setUp(self) -> None:
-        self.fake_url = "http://fake-url.com"
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_insert_contact_note_success(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock
-    ) -> None:
-        response_json = {"status": "OK"}
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, json=response_json)
-            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                PERSON_EXTERNAL_ID,
-                STAFF_ID,
-                CONTACT_NOTE_DATE_TIME,
-                {1: [], 2: []},
-                "VRRE",
-            )
-            # update_document is called 5 times: page 1 in progress, page 1 success, page 2 in progress, page 2 success,
-            # and entire note status success
-            # TODO(#2938): Explore more granular testing for firestore calls
-            self.assertEqual(mock_client.update_document.call_count, 5)
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_insert_contact_note_exception_raised_during_write(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock
-    ) -> None:
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
-            with self.assertRaises(ConnectionRefusedError):
-                WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                    PERSON_EXTERNAL_ID, STAFF_ID, CONTACT_NOTE_DATE_TIME, {1: []}
-                )
-            self.assertEqual(mock_client.update_document.call_count, 3)
-
-    @patch("requests.put")
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_insert_contact_note_no_secret(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock, mock_put: MagicMock
-    ) -> None:
-        mock_get_secret.return_value = None
-        mock_client = mock_client.return_value
-        with self.assertRaises(Exception):
-            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                PERSON_EXTERNAL_ID, STAFF_ID, CONTACT_NOTE_DATE_TIME, {}
-            )
-
-        mock_put.assert_not_called()
-        mock_client.update_document.assert_called_once()
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
-    def test_insert_contact_note_prod_and_recidiviz(
-        self,
-        mock_in_prod: MagicMock,
-        mock_client: MagicMock,
-        mock_get_secret: MagicMock,
-    ) -> None:
-        response_json = {"status": "OK"}
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        mock_in_prod.return_value = True
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, json=response_json)
-            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                PERSON_EXTERNAL_ID, "RECIDIVIZ", CONTACT_NOTE_DATE_TIME, {1: [], 2: []}
-            )
-
-            # Check third call to get_secret gets test url
-            mock_get_secret.mock_calls[2].assert_called_with(
-                "workflows_us_tn_insert_contact_note_test_url"
-            )
-            self.assertEqual(mock_client.update_document.call_count, 5)
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
+    @patch("recidiviz.case_triage.workflows.writeback.us_tn_contact_note.get_secret")
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.us_tn_contact_note.in_gcp_production"
+    )
     @freezegun.freeze_time("2000-12-30")
     def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request(
         self, mock_in_prod: MagicMock, mock_secret: MagicMock
@@ -171,8 +78,10 @@ class TestWorkflowsInterface(TestCase):
 
         self.assertEqual(actual, expected)
 
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
+    @patch("recidiviz.case_triage.workflows.writeback.us_tn_contact_note.get_secret")
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.us_tn_contact_note.in_gcp_production"
+    )
     @freezegun.freeze_time("2000-12-30")
     def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request_recidiviz(
         self, mock_in_prod: MagicMock, mock_secret: MagicMock
@@ -203,7 +112,9 @@ class TestWorkflowsInterface(TestCase):
 
         self.assertEqual(actual, expected)
 
-    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.us_tn_contact_note.in_gcp_production"
+    )
     @freezegun.freeze_time("2000-12-30")
     def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request_vrc(
         self, mock_in_prod: MagicMock
@@ -232,118 +143,3 @@ class TestWorkflowsInterface(TestCase):
         }
 
         self.assertEqual(actual, expected)
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_update_early_termination_date_success(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock
-    ) -> None:
-        response_json = {"status": "OK"}
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(
-                responses.PUT,
-                self.fake_url,
-                json=response_json,
-                match=[
-                    matchers.json_params_matcher(
-                        {
-                            "sid": EARLY_TERMINATION_PEI,
-                            "userEmail": USER_EMAIL,
-                            "earlyTerminationDate": EARLY_TERMINATION_DATE,
-                            "justificationReasons": JUSTIFICATION_REASONS,
-                        }
-                    )
-                ],
-            )
-            WorkflowsUsNdExternalRequestInterface(
-                EARLY_TERMINATION_PEI
-            ).update_early_termination_date(
-                USER_EMAIL,
-                EARLY_TERMINATION_DATE,
-                JUSTIFICATION_REASONS,
-            )
-
-    @patch("requests.put")
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_update_early_termination_date_no_secret(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock, mock_put: MagicMock
-    ) -> None:
-        mock_get_secret.return_value = None
-        mock_client = mock_client.return_value
-        with self.assertRaises(Exception):
-            WorkflowsUsNdExternalRequestInterface(
-                EARLY_TERMINATION_PEI
-            ).update_early_termination_date(
-                USER_EMAIL,
-                EARLY_TERMINATION_DATE,
-                JUSTIFICATION_REASONS,
-            )
-
-        mock_put.assert_not_called()
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
-    def test_update_early_termination_date_prod_and_recidiviz(
-        self,
-        mock_in_prod: MagicMock,
-        mock_client: MagicMock,
-        mock_get_secret: MagicMock,
-    ) -> None:
-        response_json = {"status": "OK"}
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        mock_in_prod.return_value = True
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, json=response_json)
-            WorkflowsUsNdExternalRequestInterface(
-                EARLY_TERMINATION_PEI
-            ).update_early_termination_date(
-                "internal@recidiviz.org",
-                EARLY_TERMINATION_DATE,
-                JUSTIFICATION_REASONS,
-            )
-
-            # Check third call to get_secret gets test url
-            mock_get_secret.mock_calls[2].assert_called_with(
-                "workflows_us_nd_early_termination_test_url"
-            )
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_update_early_termination_date_network_error(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock
-    ) -> None:
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
-            with self.assertRaises(ConnectionRefusedError):
-                WorkflowsUsNdExternalRequestInterface(
-                    EARLY_TERMINATION_PEI
-                ).update_early_termination_date(
-                    "internal@recidiviz.org",
-                    EARLY_TERMINATION_DATE,
-                    JUSTIFICATION_REASONS,
-                )
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
-    def test_update_early_termination_date_http_error(
-        self, mock_client: MagicMock, mock_get_secret: MagicMock
-    ) -> None:
-        mock_get_secret.return_value = self.fake_url
-        mock_client = mock_client.return_value
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, status=500)
-            with self.assertRaises(requests.exceptions.HTTPError):
-                WorkflowsUsNdExternalRequestInterface(
-                    EARLY_TERMINATION_PEI
-                ).update_early_termination_date(
-                    "internal@recidiviz.org",
-                    EARLY_TERMINATION_DATE,
-                    JUSTIFICATION_REASONS,
-                )

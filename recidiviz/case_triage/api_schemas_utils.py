@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Contains utils for API Marshmallow schemas"""
+"""Contains utils for API Marshmallow schemas"""
 from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, Union
 

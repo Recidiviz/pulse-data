@@ -37,6 +37,14 @@ from recidiviz.case_triage.workflows.workflows_routes import (
     OPT_OUT_MESSAGE,
     create_workflows_api_blueprint,
 )
+from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
+    UsNdEarlyTerminationRequestData,
+    UsNdEarlyTerminationWritebackExecutor,
+)
+from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
+    UsTnContactNoteRequestData,
+    UsTnContactNoteWritebackExecutor,
+)
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.utils.types import assert_type
@@ -135,9 +143,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         proxy_response = "test response"
         timeout = 360  # default defined in api_schemas.py
 
-        with responses.RequestsMock(
-            assert_all_requests_are_fired=True
-        ) as rsps, self.assertLogs(level="INFO") as log:
+        with (
+            responses.RequestsMock(assert_all_requests_are_fired=True) as rsps,
+            self.assertLogs(level="INFO") as log,
+        ):
             rsps.add(
                 responses.GET,
                 self.fake_url,
@@ -263,16 +272,25 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
-    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     @freeze_time("2023-01-01 01:23:45")
     def test_insert_tepe_contact_note_success(
         self,
         mock_task_manager: MagicMock,
-        mock_firestore: MagicMock,
+        mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsTnContactNoteWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsTnContactNoteWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -300,24 +318,31 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
             expected_task_body,
         )
-        mock_firestore.return_value.update_document.assert_called_once()
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.IN_PROGRESS
+        )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsTnExternalRequestInterface."
-        "insert_tepe_contact_note"
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
     )
-    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     @freeze_time("2023-01-01 01:23:45")
     def test_insert_tepe_contact_note_no_queue_success(
         self,
         mock_task_manager: MagicMock,
-        mock_firestore: MagicMock,
-        mock_insert: MagicMock,
+        mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsTnContactNoteWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsTnContactNoteWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -335,28 +360,31 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_body = {
-            "person_external_id": PERSON_EXTERNAL_ID,
-            "staff_id": STAFF_ID,
-            "contact_note_date_time": "2023-01-01T01:23:45",
-            "contact_note": {1: ["Line 1", "Line 2"]},
-        }
-        mock_task_manager.return_value.create_task.assert_not_called()
-        self.assertEqual(
-            mock_insert.call_args.kwargs,
-            expected_body,
+        expected_data = UsTnContactNoteRequestData(
+            person_external_id=PERSON_EXTERNAL_ID,
+            staff_id=STAFF_ID,
+            contact_note_date_time="2023-01-01T01:23:45",
+            contact_note={1: ["Line 1", "Line 2"]},
+            voters_rights_code=None,
         )
-        mock_firestore.return_value.update_document.assert_called_once()
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.SUCCESS
+        )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_insert_tepe_contact_note_exception(
         self,
         mock_task_manager: MagicMock,
-        mock_firestore: MagicMock,
+        mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
@@ -377,17 +405,22 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_called_once()
-        mock_firestore.return_value.update_document.assert_called_once()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_insert_tepe_contact_note_missing_param(
         self,
         mock_task_manager: MagicMock,
-        mock_firestore: MagicMock,
+        mock_interface: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
@@ -398,8 +431,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "contactNote": {1: ["Line 1", "Line 2"]},
         }
 
-        mock_task_manager.return_value.create_task.side_effect = Exception
-
         with self.test_app.test_request_context():
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/insert_tepe_contact_note",
@@ -408,7 +439,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_firestore.return_value.update_document.assert_not_called()
+        mock_interface.return_value.execute.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_handle_insert_tepe_contact_note_state_not_enabled(self) -> None:
@@ -428,7 +459,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
-    def test_handle_insert_tepe_contact_note_missing_param(self) -> None:
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    def test_handle_insert_tepe_contact_note_missing_param(
+        self, mock_interface: MagicMock
+    ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsTnContactNoteWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsTnContactNoteWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -445,16 +488,25 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     "User-Agent": "Google-Cloud-Tasks",
                 },
             )
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsTnExternalRequestInterface."
-        "insert_tepe_contact_note"
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
     )
     @freeze_time("2023-01-01 01:23:45")
     def test_handle_insert_tepe_contact_note_success(
-        self, mock_insert: MagicMock
+        self, mock_interface: MagicMock
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsTnContactNoteWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsTnContactNoteWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -464,7 +516,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "contact_note_date_time": str(datetime.datetime.now()),
         }
         with self.test_app.test_request_context():
-            mock_insert.return_value = None
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
                 headers={
@@ -474,26 +525,29 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_body = {
-            "person_external_id": PERSON_EXTERNAL_ID,
-            "staff_id": STAFF_ID,
-            "contact_note_date_time": "2023-01-01T01:23:45",
-            "contact_note": {1: ["Line 1", "Line 2"]},
-        }
-        self.assertEqual(
-            mock_insert.call_args.kwargs,
-            expected_body,
+        expected_data = UsTnContactNoteRequestData(
+            person_external_id=PERSON_EXTERNAL_ID,
+            staff_id=STAFF_ID,
+            contact_note_date_time="2023-01-01T01:23:45",
+            contact_note={1: ["Line 1", "Line 2"]},
+            voters_rights_code=None,
+        )
+        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.SUCCESS
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsTnExternalRequestInterface."
-        "insert_tepe_contact_note"
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
     )
     def test_handle_insert_tepe_contact_note_exception(
-        self, mock_insert: MagicMock
+        self, mock_interface: MagicMock
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        mock_interface.return_value.execute.side_effect = Exception("It broke!")
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
@@ -502,7 +556,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "contact_note_date_time": str(datetime.datetime.now()),
         }
         with self.test_app.test_request_context():
-            mock_insert.side_effect = Exception
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
                 json=request_body,
@@ -511,6 +564,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     "User-Agent": "Google-Cloud-Tasks",
                 },
             )
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch("uuid.uuid4")
@@ -1356,17 +1412,23 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_segment_client.return_value.track_milestones_message_status.assert_not_called()
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_date_success(
         self,
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1396,24 +1458,30 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
             expected_task_body,
         )
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.IN_PROGRESS
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_date_no_queue_success(
         self,
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1433,39 +1501,41 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_body = {
-            "user_email": "foo@nd.gov",
-            "early_termination_date": "2024-01-01",
-            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
-        }
-        mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
-            **expected_body,
+        expected_data = UsNdEarlyTerminationRequestData(
+            user_email="foo@nd.gov",
+            early_termination_date="2024-01-01",
+            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
         )
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.SUCCESS
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_date_no_queue_api_failure(
         self,
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
 
-        mock_interface.return_value.update_early_termination_date.side_effect = (
-            Exception("It broke!")
-        )
+        mock_interface.return_value.execute.side_effect = Exception("It broke!")
 
         request_body = {
             "personExternalId": "1234",
@@ -1482,32 +1552,36 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_body = {
-            "user_email": "foo@nd.gov",
-            "early_termination_date": "2024-01-01",
-            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
-        }
-        mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
-            **expected_body,
+        expected_data = UsNdEarlyTerminationRequestData(
+            user_email="foo@nd.gov",
+            early_termination_date="2024-01-01",
+            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
         )
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.FAILURE
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_queue_failure(
         self,
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1539,18 +1613,18 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
             expected_task_body,
         )
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.FAILURE
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_date_bad_state(
         self,
@@ -1576,16 +1650,16 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_date_mismatched_email(
         self,
@@ -1611,22 +1685,28 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
     )
     def test_update_docstars_early_termination_date_missing_field(
         self,
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1646,18 +1726,24 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_success(
         self,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1679,35 +1765,37 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_body = {
-            "user_email": "foo@nd.gov",
-            "early_termination_date": "2024-01-01",
-            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
-        }
-
-        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
-            **expected_body
+        expected_data = UsNdEarlyTerminationRequestData(
+            user_email="foo@nd.gov",
+            early_termination_date="2024-01-01",
+            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
         )
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_once_with(
+
+        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_once_with(
             ExternalSystemRequestStatus.SUCCESS
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_api_failure(
         self,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
 
-        mock_interface.return_value.update_early_termination_date.side_effect = (
-            Exception("It broke!")
-        )
+        mock_interface.return_value.execute.side_effect = Exception("It broke!")
 
         request_body = {
             "person_external_id": 1234,
@@ -1726,22 +1814,20 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_body = {
-            "user_email": "foo@nd.gov",
-            "early_termination_date": "2024-01-01",
-            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
-        }
-
-        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
-            **expected_body
+        expected_data = UsNdEarlyTerminationRequestData(
+            user_email="foo@nd.gov",
+            early_termination_date="2024-01-01",
+            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
         )
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_once_with(
+
+        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_once_with(
             ExternalSystemRequestStatus.FAILURE
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_missing_pei(
@@ -1768,18 +1854,24 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        "recidiviz.case_triage.workflows.workflows_routes.UsNdEarlyTerminationWritebackExecutor",
         autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_missing_field(
         self,
         mock_interface: MagicMock,
     ) -> None:
+        mock_interface.return_value.config.return_value = (
+            UsNdEarlyTerminationWritebackExecutor.config()
+        )
+        mock_interface.return_value.parse_request_data.side_effect = (
+            UsNdEarlyTerminationWritebackExecutor.parse_request_data
+        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1801,11 +1893,11 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        mock_interface.return_value.update_early_termination_date.assert_not_called()
-        mock_interface.return_value.set_firestore_early_termination_status.assert_called_once_with(
+        mock_interface.return_value.execute.assert_not_called()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_once_with(
             ExternalSystemRequestStatus.FAILURE
         )
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
     def test_workflows_config_response(self, mock_workflows_querier: MagicMock) -> None:
