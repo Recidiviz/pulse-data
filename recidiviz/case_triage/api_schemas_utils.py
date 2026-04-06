@@ -15,15 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains utils for API Marshmallow schemas"""
+import logging
 from functools import wraps
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, Union
+from http import HTTPStatus
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, TypeVar, Union
 
-from flask import g, request
+from flask import Response, g, request
 from marshmallow import RAISE, Schema, pre_load
 from marshmallow.fields import Field
+from pydantic import BaseModel, ValidationError
 
+from recidiviz.case_triage.workflows.utils import jsonify_response
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
+    get_cloud_task_json_body,
+)
 from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.utils.types import assert_type
+
+ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
 class CamelCaseSchema(Schema):
@@ -65,6 +74,38 @@ def requires_api_schema(api_schema: Type[Schema]) -> Callable:
         def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
             g.api_data = load_api_schema(api_schema, request.json)
 
+            return route(*args, **kwargs)
+
+        return decorated
+
+    return inner
+
+
+def requires_pydantic_schema(
+    model: Type[ModelT], *, use_cloud_task_body: bool = False
+) -> Callable[[Callable[..., Response]], Callable[..., Response]]:
+    """Decorator that validates the request body against a Pydantic model.
+
+    The validated model instance is passed as a `request_data` kwarg to the
+    decorated route function.
+
+    Args:
+        model: The Pydantic model class to validate against.
+        use_cloud_task_body: If True, reads the body via
+            get_cloud_task_json_body() (for Cloud Task handlers where
+            Content-Type headers are not set correctly). Otherwise uses
+            request.json.
+    """
+
+    def inner(route: Callable[..., Response]) -> Callable[..., Response]:
+        @wraps(route)
+        def decorated(*args: Any, **kwargs: Any) -> Response:
+            body = get_cloud_task_json_body() if use_cloud_task_body else request.json
+            try:
+                kwargs["parsed_request_body"] = model.model_validate(body)
+            except ValidationError as e:
+                logging.error("Schema validation failed: %s", e)
+                return jsonify_response("Invalid request body", HTTPStatus.BAD_REQUEST)
             return route(*args, **kwargs)
 
         return decorated

@@ -37,7 +37,11 @@ from twilio.rest import Client as TwilioClient
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
     get_workflows_enabled_states,
 )
-from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
+from recidiviz.case_triage.api_schemas_utils import (
+    load_api_schema,
+    requires_api_schema,
+    requires_pydantic_schema,
+)
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.helpers import (
     add_cors_headers_helper,
@@ -51,8 +55,6 @@ from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsOptimizeRouteSchema,
     WorkflowsSendSmsRequestSchema,
-    WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
-    WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.case_triage.workflows.constants import (
     WORKFLOWS_SMS_ENABLED_STATES,
@@ -72,14 +74,15 @@ from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization_recidiviz_only,
 )
 from recidiviz.case_triage.workflows.writeback.route_helpers import (
-    handle_writeback_cloud_task,
-    handle_writeback_direct,
+    handle_writeback,
     handle_writeback_enqueue,
 )
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
+    UsNdEarlyTerminationRequestData,
     UsNdEarlyTerminationWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
+    UsTnContactNoteRequestData,
     UsTnContactNoteWritebackExecutor,
 )
 from recidiviz.common.constants.states import StateCode
@@ -185,37 +188,42 @@ def create_workflows_api_blueprint() -> Blueprint:
         return jsonify({"ip": ip_response.text})
 
     @workflows_api.post("/external_request/<state>/insert_tepe_contact_note")
-    @requires_api_schema(WorkflowsUsTnInsertTEPEContactNoteSchema)
+    @requires_pydantic_schema(UsTnContactNoteRequestData)
     def insert_tepe_contact_note(
-        state: str,  # pylint: disable=unused-argument
+        state: str,
+        parsed_request_body: UsTnContactNoteRequestData,
     ) -> Response:
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
-        if g.api_data["should_queue_task"]:
+        if parsed_request_body.should_queue_task:
             return handle_writeback_enqueue(
-                writeback_executor_factory=UsTnContactNoteWritebackExecutor,
+                writeback_executor=UsTnContactNoteWritebackExecutor(
+                    parsed_request_body
+                ),
                 base_url=cloud_run_metadata.url,
                 handler_path="/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
             )
-        return handle_writeback_direct(
-            writeback_executor_factory=UsTnContactNoteWritebackExecutor,
+        return handle_writeback(
+            writeback_executor=UsTnContactNoteWritebackExecutor(parsed_request_body)
         )
 
+    # TODO(#69880): instead of having a fully separate handler, try fallback to getting
+    # json from text (or request.get_json(force=True))
     @workflows_api.post("/external_request/<state>/handle_insert_tepe_contact_note")
+    @requires_pydantic_schema(UsTnContactNoteRequestData, use_cloud_task_body=True)
     def handle_insert_tepe_contact_note(
         state: str,
+        parsed_request_body: UsTnContactNoteRequestData,
     ) -> Response:
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
-        return handle_writeback_cloud_task(
-            writeback_executor_factory=UsTnContactNoteWritebackExecutor,
-        )
+        return handle_writeback(UsTnContactNoteWritebackExecutor(parsed_request_body))
 
     @workflows_api.post("/external_request/<state>/enqueue_sms_request")
     @requires_api_schema(WorkflowsEnqueueSmsRequestSchema)
@@ -530,42 +538,52 @@ def create_workflows_api_blueprint() -> Blueprint:
     @workflows_api.post(
         "/external_request/<state>/update_docstars_early_termination_date"
     )
-    @requires_api_schema(WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema)
-    def update_docstars_early_termination_date(state: str) -> Response:
-        if state.upper() != StateCode.US_ND.value:
-            return jsonify_response(
-                f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
-            )
-
-        if g.api_data["user_email"] != g.authenticated_user_email:
-            return jsonify_response(
-                "user_email does not match authenticated user",
-                HTTPStatus.UNAUTHORIZED,
-            )
-
-        if g.api_data["should_queue_task"]:
-            return handle_writeback_enqueue(
-                writeback_executor_factory=UsNdEarlyTerminationWritebackExecutor,
-                base_url=cloud_run_metadata.url,
-                handler_path="/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
-            )
-        return handle_writeback_direct(
-            writeback_executor_factory=UsNdEarlyTerminationWritebackExecutor,
-        )
-
-    @workflows_api.post(
-        "/external_request/<state>/handle_update_docstars_early_termination_date"
-    )
-    def handle_update_docstars_early_termination_date(
-        state: str,
+    @requires_pydantic_schema(UsNdEarlyTerminationRequestData)
+    def update_docstars_early_termination_date(
+        state: str, parsed_request_body: UsNdEarlyTerminationRequestData
     ) -> Response:
         if state.upper() != StateCode.US_ND.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
-        return handle_writeback_cloud_task(
-            writeback_executor_factory=UsNdEarlyTerminationWritebackExecutor,
+        if parsed_request_body.user_email != g.authenticated_user_email:
+            return jsonify_response(
+                "user_email does not match authenticated user",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        if parsed_request_body.should_queue_task:
+            return handle_writeback_enqueue(
+                writeback_executor=UsNdEarlyTerminationWritebackExecutor(
+                    parsed_request_body
+                ),
+                base_url=cloud_run_metadata.url,
+                handler_path="/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+            )
+        return handle_writeback(
+            writeback_executor=UsNdEarlyTerminationWritebackExecutor(
+                parsed_request_body
+            )
+        )
+
+    # TODO(#69880): Migrate writeback handlers to unified handler using
+    # request.get_json(force=True)
+    @workflows_api.post(
+        "/external_request/<state>/handle_update_docstars_early_termination_date"
+    )
+    @requires_pydantic_schema(UsNdEarlyTerminationRequestData, use_cloud_task_body=True)
+    def handle_update_docstars_early_termination_date(
+        state: str,
+        parsed_request_body: UsNdEarlyTerminationRequestData,
+    ) -> Response:
+        if state.upper() != StateCode.US_ND.value:
+            return jsonify_response(
+                f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
+            )
+
+        return handle_writeback(
+            UsNdEarlyTerminationWritebackExecutor(parsed_request_body)
         )
 
     @workflows_api.post("/external_request/<state>/email_user")

@@ -18,20 +18,26 @@
 import abc
 from typing import Any, Generic, TypeVar
 
-import attr
-from marshmallow import Schema
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
-from recidiviz.common.constants.states import StateCode
-
-DataT = TypeVar("DataT")
 
 
-@attr.s(frozen=True)
-class WritebackConfig:
-    state_code: StateCode = attr.ib()
-    operation_action_description: str = attr.ib()
-    api_schema_cls: type[Schema] = attr.ib()
+class WritebackRequestData(BaseModel):
+    """Base pydantic model for writeback request data.
+
+    Accepts both camelCase (from frontend) and snake_case field names.
+    """
+
+    model_config = ConfigDict(
+        alias_generator=to_camel, populate_by_name=True, frozen=True
+    )
+
+    should_queue_task: bool = True
+
+
+RequestDataT = TypeVar("RequestDataT", bound=WritebackRequestData)
 
 
 class WritebackStatusTracker(abc.ABC):
@@ -40,23 +46,20 @@ class WritebackStatusTracker(abc.ABC):
         ...
 
 
-class WritebackExecutorInterface(abc.ABC, Generic[DataT]):
+class WritebackExecutorInterface(abc.ABC, Generic[RequestDataT]):
     @abc.abstractmethod
-    def execute(self, request_data: DataT) -> None:
-        """Perform the external system request. Raises on failure."""
+    def to_cloud_task_payload(self) -> dict[str, Any]:
+        ...
 
-    # TODO(#68791): Consider switching to pydantic instead of marshmallow, so that when
-    # we parse request bodies we get a class instance instead of a dict
-    @classmethod
     @abc.abstractmethod
-    def parse_request_data(cls, raw_request: dict[str, Any]) -> DataT:
-        """Convert a raw dict (from marshmallow dump) into a typed data object."""
+    def execute(self) -> None:
+        """Perform the external system request. Raises on failure."""
 
     @abc.abstractmethod
     def create_status_tracker(self) -> WritebackStatusTracker:
         ...
 
-    @classmethod
+    @property
     @abc.abstractmethod
-    def config(cls) -> WritebackConfig:
+    def operation_action_description(self) -> str:
         ...

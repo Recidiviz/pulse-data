@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains Marshmallow schemas for Workflows API"""
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from marshmallow import Schema, ValidationError, fields, validates_schema
 
@@ -24,62 +24,6 @@ from recidiviz.case_triage.api_schemas_utils import (
     CamelCaseSchema,
     CamelOrSnakeCaseSchema,
 )
-from recidiviz.case_triage.workflows.constants import WorkflowsUsTnVotersRightsCode
-
-
-def valid_us_tn_contact_note(data: Dict[int, List[str]]) -> None:
-    """
-    Validates the shape of the contact note for US_TN.
-
-    The note should be a dictionary, where the key is an integer representing the page number and
-    the value is a list of strings (each string is a line in the page).
-
-    External system requirements to be met:
-    - Pages must be numbered 1-10.
-    - Each page can have a maximum of 10 lines.
-    - Each line must be <= 70 characters.
-
-    Since we might receive a subset of pages for a note, i.e. if some pages failed and others succeeded, the
-    dictionary structure enables us to specify the page number.
-    """
-    if not data:
-        raise ValidationError("Note must be non-empty")
-
-    page_numbers = list(data.keys())
-    page_numbers.sort()
-
-    if max(page_numbers) > 10 or min(page_numbers) < 1:
-        raise ValidationError("Page number provided is outside the 1-10 range.")
-
-    for page_num in page_numbers:
-        lines = data[page_num]
-        if len(lines) > 10:
-            raise ValidationError(f"Page {page_num} has too many lines, maximum is 10")
-
-        line_too_long = any(len(line) > 70 for line in lines)
-        if line_too_long:
-            raise ValidationError(
-                f"Line in page {page_num} has too many characters, maximum is 70"
-            )
-
-
-class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelOrSnakeCaseSchema):
-    """
-    The schema expected by the /workflows/US_TN/insert_tepe_contact_note.
-    Camel-cased keys are expected since the request is coming from the dashboards app
-    """
-
-    person_external_id = fields.Str(required=True)
-    staff_id = fields.Str(required=True)
-    contact_note_date_time = fields.DateTime(required=True)
-    contact_note = fields.Dict(
-        keys=fields.Integer(),
-        values=fields.List(fields.Str),
-        validate=valid_us_tn_contact_note,
-        required=True,
-    )
-    voters_rights_code = fields.Enum(WorkflowsUsTnVotersRightsCode, by_value=True)
-    should_queue_task = fields.Boolean(load_default=True, load_only=True)
 
 
 class ProxySchema(Schema):
@@ -137,23 +81,6 @@ class WorkflowsSendSmsRequestSchema(CamelOrSnakeCaseSchema):
     recipient_external_id = fields.Str(required=True)
     recipient = fields.Str(required=True, validate=validate_e164_phone_number)
     client_firestore_id = fields.Str(required=True)
-
-
-class WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema(CamelOrSnakeCaseSchema):
-    """
-    The schema expected by the /workflows/external_request/US_ND/update_docstars_early_termination_date.
-    Camel-cased keys are expected since the request is coming from the dashboards app
-    """
-
-    class JustificationReasonSchema(Schema):
-        code = fields.Str(required=True)
-        description = fields.Str(required=True)
-
-    person_external_id = fields.Integer(required=True)
-    user_email = fields.Str(required=True)
-    early_termination_date = fields.Date(required=True)
-    justification_reasons = fields.List(fields.Nested(JustificationReasonSchema))
-    should_queue_task = fields.Boolean(load_default=True, load_only=True)
 
 
 class WorkflowsEmailUserSchema(CamelOrSnakeCaseSchema):

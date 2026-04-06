@@ -38,12 +38,11 @@ from recidiviz.case_triage.workflows.workflows_routes import (
     create_workflows_api_blueprint,
 )
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
+    JustificationReason,
     UsNdEarlyTerminationRequestData,
-    UsNdEarlyTerminationWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     UsTnContactNoteRequestData,
-    UsTnContactNoteWritebackExecutor,
 )
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
@@ -285,13 +284,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsTnContactNoteWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsTnContactNoteWritebackExecutor.parse_request_data
-        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        expected_task_body = {
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "should_queue_task": False,
+            "staff_id": STAFF_ID,
+            "contact_note_date_time": "2023-01-01T01:23:45",
+            "contact_note": {"1": ["Line 1", "Line 2"]},
+            "voters_rights_code": None,
+        }
+        mock_interface.return_value.to_cloud_task_payload.return_value = (
+            expected_task_body
+        )
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
@@ -307,12 +312,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_task_body = {
-            "person_external_id": PERSON_EXTERNAL_ID,
-            "staff_id": STAFF_ID,
-            "contact_note_date_time": "2023-01-01T01:23:45",
-            "contact_note": {1: ["Line 1", "Line 2"]},
-        }
         mock_task_manager.return_value.create_task.assert_called_once()
         self.assertEqual(
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
@@ -337,12 +336,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsTnContactNoteWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsTnContactNoteWritebackExecutor.parse_request_data
-        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -362,13 +355,15 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         expected_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            should_queue_task=False,
             staff_id=STAFF_ID,
-            contact_note_date_time="2023-01-01T01:23:45",
+            contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
             voters_rights_code=None,
         )
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
         mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.SUCCESS
         )
@@ -459,19 +454,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
-        autospec=True,
-    )
     def test_handle_insert_tepe_contact_note_missing_param(
-        self, mock_interface: MagicMock
+        self,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsTnContactNoteWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsTnContactNoteWritebackExecutor.parse_request_data
-        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -488,9 +473,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     "User-Agent": "Google-Cloud-Tasks",
                 },
             )
-        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
-            ExternalSystemRequestStatus.FAILURE
-        )
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
@@ -501,12 +483,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def test_handle_insert_tepe_contact_note_success(
         self, mock_interface: MagicMock
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsTnContactNoteWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsTnContactNoteWritebackExecutor.parse_request_data
-        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
 
         request_body = {
@@ -528,11 +504,12 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         expected_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
-            contact_note_date_time="2023-01-01T01:23:45",
+            contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
             voters_rights_code=None,
         )
-        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
         mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.SUCCESS
         )
@@ -1423,14 +1400,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
+        )
+
+        expected_task_body = {
+            "person_external_id": 1234,
+            "should_queue_task": False,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+        mock_interface.return_value.to_cloud_task_payload.return_value = (
+            expected_task_body
         )
 
         request_body = {
@@ -1447,12 +1429,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_task_body = {
-            "person_external_id": 1234,
-            "user_email": "foo@nd.gov",
-            "early_termination_date": "2024-01-01",
-            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
-        }
         mock_task_manager.return_value.create_task.assert_called_once()
         self.assertEqual(
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
@@ -1476,12 +1452,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
+
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1502,12 +1473,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_data = UsNdEarlyTerminationRequestData(
+            person_external_id=1234,
+            should_queue_task=False,
             user_email="foo@nd.gov",
-            early_termination_date="2024-01-01",
-            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
+            early_termination_date=datetime.date(2024, 1, 1),
+            justification_reasons=[
+                JustificationReason(code="FOO", description="Code foo.")
+            ],
         )
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
         mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.SUCCESS
         )
@@ -1525,12 +1501,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
+
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1553,12 +1524,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_data = UsNdEarlyTerminationRequestData(
+            person_external_id=1234,
+            should_queue_task=False,
             user_email="foo@nd.gov",
-            early_termination_date="2024-01-01",
-            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
+            early_termination_date=datetime.date(2024, 1, 1),
+            justification_reasons=[
+                JustificationReason(code="FOO", description="Code foo.")
+            ],
         )
         mock_task_manager.return_value.create_task.assert_not_called()
-        mock_interface.return_value.execute.assert_called_once_with(expected_data)
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
         mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.FAILURE
         )
@@ -1576,14 +1552,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
+        )
+
+        expected_task_body = {
+            "person_external_id": 1234,
+            "should_queue_task": False,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+        mock_interface.return_value.to_cloud_task_payload.return_value = (
+            expected_task_body
         )
 
         mock_task_manager.return_value.create_task.side_effect = Exception("It broke!")
@@ -1602,12 +1583,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        expected_task_body = {
-            "person_external_id": 1234,
-            "user_email": "foo@nd.gov",
-            "early_termination_date": "2024-01-01",
-            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
-        }
         mock_task_manager.return_value.create_task.assert_called_once()
         self.assertEqual(
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
@@ -1701,12 +1676,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
+
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1738,12 +1708,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
+
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1766,13 +1731,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_data = UsNdEarlyTerminationRequestData(
+            person_external_id=1234,
             user_email="foo@nd.gov",
-            early_termination_date="2024-01-01",
-            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
+            early_termination_date=datetime.date(2024, 1, 1),
+            justification_reasons=[
+                JustificationReason(code="FOO", description="Code foo.")
+            ],
         )
 
-        mock_interface.return_value.execute.assert_called_once_with(expected_data)
-        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_once_with(
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.SUCCESS
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -1785,12 +1754,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
+
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1815,13 +1779,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_data = UsNdEarlyTerminationRequestData(
+            person_external_id=1234,
             user_email="foo@nd.gov",
-            early_termination_date="2024-01-01",
-            justification_reasons=[{"code": "FOO", "description": "Code foo."}],
+            early_termination_date=datetime.date(2024, 1, 1),
+            justification_reasons=[
+                JustificationReason(code="FOO", description="Code foo.")
+            ],
         )
 
-        mock_interface.return_value.execute.assert_called_once_with(expected_data)
-        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_once_with(
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
+        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.FAILURE
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -1866,12 +1834,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self,
         mock_interface: MagicMock,
     ) -> None:
-        mock_interface.return_value.config.return_value = (
-            UsNdEarlyTerminationWritebackExecutor.config()
-        )
-        mock_interface.return_value.parse_request_data.side_effect = (
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data
-        )
+
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_nd", "foo@nd.gov"
         )
@@ -1893,10 +1856,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
-        mock_interface.return_value.execute.assert_not_called()
-        mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_once_with(
-            ExternalSystemRequestStatus.FAILURE
-        )
+        mock_interface.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")

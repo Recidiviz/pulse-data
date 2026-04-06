@@ -15,19 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND early termination writeback implementation."""
-import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
-import attr
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
-from recidiviz.case_triage.workflows.api_schemas import (
-    WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
-)
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.base import (
-    WritebackConfig,
     WritebackExecutorInterface,
+    WritebackRequestData,
     WritebackStatusTracker,
 )
 from recidiviz.case_triage.workflows.writeback.transports.rest import (
@@ -48,11 +45,29 @@ DOCSTARS_TRANSPORT_CONFIG = RestTransportConfig(
 )
 
 
-@attr.s(frozen=True)
-class UsNdEarlyTerminationRequestData:
-    user_email: str = attr.ib()
-    early_termination_date: str = attr.ib()
-    justification_reasons: list[dict[str, str]] = attr.ib()
+class JustificationReason(BaseModel):
+    code: str
+    description: str
+
+
+class UsNdEarlyTerminationRequestData(WritebackRequestData):
+    person_external_id: int
+    user_email: str
+    early_termination_date: date
+    justification_reasons: list[JustificationReason]
+
+
+class DocstarsEarlyTerminationRequest(BaseModel):
+    """Models the request body sent to DOCSTARS for early termination updates."""
+
+    model_config = ConfigDict(
+        alias_generator=to_camel, populate_by_name=True, frozen=True
+    )
+
+    sid: int
+    user_email: str
+    early_termination_date: date
+    justification_reasons: list[JustificationReason]
 
 
 class UsNdEarlyTerminationStatusTracker(WritebackStatusTracker):
@@ -80,47 +95,35 @@ class UsNdEarlyTerminationWritebackExecutor(
 ):
     """Writeback implementation for ND early termination."""
 
-    def __init__(self, person_external_id: int) -> None:
-        self.person_external_id = person_external_id
+    def __init__(self, request: UsNdEarlyTerminationRequestData) -> None:
+        self.request = request
 
-    @classmethod
-    def parse_request_data(
-        cls, raw_request: dict[str, Any]
-    ) -> UsNdEarlyTerminationRequestData:
-        return UsNdEarlyTerminationRequestData(
-            user_email=raw_request["user_email"],
-            early_termination_date=raw_request["early_termination_date"],
-            justification_reasons=raw_request["justification_reasons"],
+    def to_cloud_task_payload(self) -> dict[str, Any]:
+        return self.request.model_copy(update={"should_queue_task": False}).model_dump(
+            mode="json"
         )
 
-    def execute(self, request_data: UsNdEarlyTerminationRequestData) -> None:
+    def execute(self) -> None:
         transport = RestTransport(
             DOCSTARS_TRANSPORT_CONFIG,
             # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
             use_test_url=in_gcp_production()
-            and request_data.user_email.endswith("@recidiviz.org"),
+            and self.request.user_email.endswith("@recidiviz.org"),
         )
 
-        transport.send(
-            body=json.dumps(
-                {
-                    "sid": self.person_external_id,
-                    "userEmail": request_data.user_email,
-                    "earlyTerminationDate": request_data.early_termination_date,
-                    "justificationReasons": request_data.justification_reasons,
-                }
-            )
+        docstars_request = DocstarsEarlyTerminationRequest(
+            sid=self.request.person_external_id,
+            user_email=self.request.user_email,
+            early_termination_date=self.request.early_termination_date,
+            justification_reasons=self.request.justification_reasons,
         )
+        transport.send(body=docstars_request.model_dump_json(by_alias=True))
 
     def create_status_tracker(self) -> UsNdEarlyTerminationStatusTracker:
         return UsNdEarlyTerminationStatusTracker(
-            self.person_external_id, FirestoreClientImpl()
+            self.request.person_external_id, FirestoreClientImpl()
         )
 
-    @classmethod
-    def config(cls) -> WritebackConfig:
-        return WritebackConfig(
-            state_code=StateCode.US_ND,
-            operation_action_description="Updating early termination date in DOCSTARS",
-            api_schema_cls=WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
-        )
+    @property
+    def operation_action_description(self) -> str:
+        return "Updating early termination date in DOCSTARS"

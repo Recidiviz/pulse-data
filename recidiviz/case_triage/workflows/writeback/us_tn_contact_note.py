@@ -17,21 +17,17 @@
 """US_TN contact note writeback implementation."""
 import json
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any
 
-import attr
-import dateutil.parser
+from pydantic import BaseModel, ConfigDict, field_validator
 
-from recidiviz.case_triage.workflows.api_schemas import (
-    WorkflowsUsTnInsertTEPEContactNoteSchema,
-)
 from recidiviz.case_triage.workflows.constants import (
     ExternalSystemRequestStatus,
     WorkflowsUsTnVotersRightsCode,
 )
 from recidiviz.case_triage.workflows.writeback.base import (
-    WritebackConfig,
     WritebackExecutorInterface,
+    WritebackRequestData,
     WritebackStatusTracker,
 )
 from recidiviz.case_triage.workflows.writeback.transports.rest import (
@@ -45,67 +41,101 @@ from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.secrets import get_secret
 
 
-@attr.s(frozen=True)
-class WorkflowsUsTnWriteTEPENoteToTomisRequest:
-    """Models the required parameters needed for writing a TEPE note to TOMIS"""
+class UsTnContactNoteRequestData(WritebackRequestData):
+    """Writeback request data for inserting a contact note in TN"""
 
-    # The justice-impacted individual that the note is relevant for
-    offender_id: str = attr.ib(default=None)
+    person_external_id: str
+    staff_id: str
+    contact_note_date_time: datetime
+    contact_note: dict[int, list[str]]
+    voters_rights_code: WorkflowsUsTnVotersRightsCode | None = None
 
-    # The state user who authored the note
-    staff_id: str = attr.ib(default=None)
-
-    # The time that the request was submitted for the full note
-    # All pages from the same note should have the same contact_note_date_time
-    contact_note_date_time: str = attr.ib(default=None)
-
-    # The page number
-    contact_sequence_number: int = attr.ib(default=None)
-
-    # The page text
-    comments: List[str] = attr.ib(default=None)
-
-    # Voter's rights code
-    voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = attr.ib(default=None)
-
-    def format_request(self) -> str:
+    @field_validator("contact_note")
+    @classmethod
+    def validate_contact_note(cls, v: dict[int, list[str]]) -> dict[int, list[str]]:
         """
-        Format the request body for the request to TOMIS.
-        If not in production, override the requested id for the JII and user with acceptable test ids.
-        """
-        try:
-            dateutil.parser.parse(self.contact_note_date_time).date()
-        except Exception as exc:
-            raise ValueError(
-                f"{self.contact_note_date_time} is not a valid datetime str"
-            ) from exc
+        Validates the shape of the contact note for US_TN.
 
-        if not in_gcp_production() or self.staff_id == "RECIDIVIZ":
-            # If we are not in production or the user is Recidiviz, ensure we do not submit notes to TOMIS with real ids
+        The note should be a dictionary, where the key is an integer representing the page number and
+        the value is a list of strings (each string is a line in the page).
+
+        External system requirements to be met:
+        - Pages must be numbered 1-10.
+        - Each page can have a maximum of 10 lines.
+        - Each line must be <= 70 characters.
+
+        Since we might receive a subset of pages for a note, i.e. if some pages failed and others succeeded, the
+        dictionary structure enables us to specify the page number.
+        """
+        if not v:
+            raise ValueError("Note must be non-empty")
+
+        if min(v.keys()) < 1 or max(v.keys()) > 10:
+            raise ValueError("Page number provided is outside the 1-10 range.")
+
+        for page_num in sorted(v):
+            lines = v[page_num]
+            if len(lines) > 10:
+                raise ValueError(f"Page {page_num} has too many lines, maximum is 10")
+            if any(len(line) > 70 for line in lines):
+                raise ValueError(
+                    f"Line in page {page_num} has too many characters, maximum is 70"
+                )
+
+        return v
+
+
+class TomisContactNoteRequest(BaseModel):
+    """Models a single-page request body sent to TOMIS for contact note insertion."""
+
+    model_config = ConfigDict(frozen=True)
+
+    offender_id: str
+    staff_id: str
+    contact_note_date_time: datetime
+    page_number: int
+    comments: list[str]
+    voters_rights_code: WorkflowsUsTnVotersRightsCode | None = None
+
+    @classmethod
+    def from_request_data(
+        cls,
+        request_data: "UsTnContactNoteRequestData",
+        page_number: int,
+        comments: list[str],
+    ) -> "TomisContactNoteRequest":
+        """Build a TOMIS request, swapping in test IDs when not in production."""
+        if not in_gcp_production() or request_data.staff_id == "RECIDIVIZ":
             offender_id = get_secret("workflows_us_tn_test_offender_id")
             staff_id = get_secret("workflows_us_tn_test_user_id")
-
             if offender_id is None or staff_id is None:
                 raise ValueError("Missing OffenderId and/or StaffId secret")
         else:
-            offender_id = self.offender_id
-            staff_id = self.staff_id
+            offender_id = request_data.person_external_id
+            staff_id = request_data.staff_id
 
-        request = {
-            "ContactNoteDateTime": self.contact_note_date_time,
-            "OffenderId": offender_id,
-            "StaffId": staff_id,
+        return cls(
+            offender_id=offender_id,
+            staff_id=staff_id,
+            contact_note_date_time=request_data.contact_note_date_time,
+            page_number=page_number,
+            comments=comments,
+            voters_rights_code=request_data.voters_rights_code,
+        )
+
+    def to_json(self) -> str:
+        body: dict[str, str | int] = {
+            "ContactNoteDateTime": self.contact_note_date_time.isoformat(),
+            "OffenderId": self.offender_id,
+            "StaffId": self.staff_id,
             "ContactTypeCode1": "TEPE",
-            "ContactSequenceNumber": self.contact_sequence_number,
+            "ContactSequenceNumber": self.page_number,
         }
-
         for idx, line_text in enumerate(self.comments):
-            request[f"Comment{idx+1}"] = line_text
-
+            body[f"Comment{idx + 1}"] = line_text
         if self.voters_rights_code:
-            request["ContactTypeCode2"] = self.voters_rights_code.value
-
-        return json.dumps(request)
+            body["ContactTypeCode2"] = self.voters_rights_code.value
+        return json.dumps(body)
 
 
 TOMIS_TRANSPORT_CONFIG = RestTransportConfig(
@@ -153,65 +183,41 @@ class UsTnContactNoteStatusTracker(WritebackStatusTracker):
         )
 
 
-@attr.s(frozen=True)
-class UsTnContactNoteRequestData:
-    person_external_id: str = attr.ib()
-    staff_id: str = attr.ib()
-    contact_note_date_time: str = attr.ib()
-    contact_note: dict[int, list[str]] = attr.ib()
-    voters_rights_code: str | None = attr.ib()
-
-
 class UsTnContactNoteWritebackExecutor(
     WritebackExecutorInterface[UsTnContactNoteRequestData]
 ):
     """Writeback implementation for TN contact note."""
 
-    def __init__(self, person_external_id: str) -> None:
-        self.person_external_id = person_external_id
+    def __init__(self, request: UsTnContactNoteRequestData) -> None:
+        self.request = request
         self._tracker = UsTnContactNoteStatusTracker(
-            person_external_id, FirestoreClientImpl()
+            self.request.person_external_id, FirestoreClientImpl()
         )
 
-    @classmethod
-    def parse_request_data(
-        cls, raw_request: dict[str, Any]
-    ) -> UsTnContactNoteRequestData:
-        return UsTnContactNoteRequestData(
-            person_external_id=raw_request["person_external_id"],
-            staff_id=raw_request["staff_id"],
-            contact_note_date_time=raw_request["contact_note_date_time"],
-            contact_note=raw_request["contact_note"],
-            voters_rights_code=raw_request.get("voters_rights_code"),
+    def to_cloud_task_payload(self) -> dict[str, Any]:
+        return self.request.model_copy(update={"should_queue_task": False}).model_dump(
+            mode="json"
         )
 
-    def execute(self, request_data: UsTnContactNoteRequestData) -> None:
+    def execute(self) -> None:
         transport = RestTransport(
             TOMIS_TRANSPORT_CONFIG,
             # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
-            use_test_url=in_gcp_production() and request_data.staff_id == "RECIDIVIZ",
+            use_test_url=in_gcp_production() and self.request.staff_id == "RECIDIVIZ",
         )
 
-        for page_number, page_by_line in request_data.contact_note.items():
+        for page_number, page_by_line in self.request.contact_note.items():
             self._tracker.set_page_status(
                 page_number, ExternalSystemRequestStatus.IN_PROGRESS
             )
-            request_body = WorkflowsUsTnWriteTEPENoteToTomisRequest(
-                offender_id=request_data.person_external_id,
-                staff_id=request_data.staff_id,
-                contact_note_date_time=request_data.contact_note_date_time,
-                contact_sequence_number=page_number,
-                comments=page_by_line,
-                voters_rights_code=(
-                    WorkflowsUsTnVotersRightsCode[request_data.voters_rights_code]
-                    if request_data.voters_rights_code
-                    else None
-                ),
+
+            tomis_request = TomisContactNoteRequest.from_request_data(
+                self.request, page_number, page_by_line
             )
 
             try:
                 transport.send(
-                    request_body.format_request(),
+                    tomis_request.to_json(),
                     log_context=f"page {page_number}",
                 )
                 self._tracker.set_page_status(
@@ -226,10 +232,6 @@ class UsTnContactNoteWritebackExecutor(
     def create_status_tracker(self) -> UsTnContactNoteStatusTracker:
         return self._tracker
 
-    @classmethod
-    def config(cls) -> WritebackConfig:
-        return WritebackConfig(
-            state_code=StateCode.US_TN,
-            operation_action_description="Inserting contact note into TOMIS",
-            api_schema_cls=WorkflowsUsTnInsertTEPEContactNoteSchema,
-        )
+    @property
+    def operation_action_description(self) -> str:
+        return "Inserting contact note into TOMIS"

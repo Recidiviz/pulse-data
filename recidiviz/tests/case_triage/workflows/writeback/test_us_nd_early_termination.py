@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the US_ND early termination writeback."""
+from datetime import date
 from typing import Generator
 from unittest import TestCase
 
@@ -23,10 +24,12 @@ import requests
 import responses
 from flask import Flask
 from mock import MagicMock, patch
+from pydantic import ValidationError
 from responses import matchers
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
+    JustificationReason,
     UsNdEarlyTerminationRequestData,
     UsNdEarlyTerminationStatusTracker,
     UsNdEarlyTerminationWritebackExecutor,
@@ -34,10 +37,10 @@ from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
 
 EARLY_TERMINATION_PEI = 123
 USER_EMAIL = "foo@nd.gov"
-EARLY_TERMINATION_DATE = "2024-10-10"
+EARLY_TERMINATION_DATE = date(2024, 10, 10)
 JUSTIFICATION_REASONS = [
-    {"code": "FOO", "description": "Code FOO"},
-    {"code": "BAR", "description": "Code BAR"},
+    JustificationReason(code="FOO", description="Code FOO"),
+    JustificationReason(code="BAR", description="Code BAR"),
 ]
 
 MODULE = "recidiviz.case_triage.workflows.writeback.us_nd_early_termination"
@@ -57,6 +60,30 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
     def setUp(self) -> None:
         self.fake_url = "http://fake-url.com"
 
+    def test_to_cloud_task_payload(self) -> None:
+        request_data = UsNdEarlyTerminationRequestData(
+            person_external_id=EARLY_TERMINATION_PEI,
+            user_email=USER_EMAIL,
+            early_termination_date=EARLY_TERMINATION_DATE,
+            justification_reasons=JUSTIFICATION_REASONS,
+            should_queue_task=True,
+        )
+        executor = UsNdEarlyTerminationWritebackExecutor(request_data)
+
+        self.assertEqual(
+            executor.to_cloud_task_payload(),
+            {
+                "should_queue_task": False,
+                "person_external_id": EARLY_TERMINATION_PEI,
+                "user_email": USER_EMAIL,
+                "early_termination_date": EARLY_TERMINATION_DATE.isoformat(),
+                "justification_reasons": [
+                    {"code": "FOO", "description": "Code FOO"},
+                    {"code": "BAR", "description": "Code BAR"},
+                ],
+            },
+        )
+
     @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_success(
@@ -74,20 +101,23 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
                         {
                             "sid": EARLY_TERMINATION_PEI,
                             "userEmail": USER_EMAIL,
-                            "earlyTerminationDate": EARLY_TERMINATION_DATE,
-                            "justificationReasons": JUSTIFICATION_REASONS,
+                            "earlyTerminationDate": EARLY_TERMINATION_DATE.isoformat(),
+                            "justificationReasons": [
+                                {"code": "FOO", "description": "Code FOO"},
+                                {"code": "BAR", "description": "Code BAR"},
+                            ],
                         }
                     )
                 ],
             )
-            writeback = UsNdEarlyTerminationWritebackExecutor(EARLY_TERMINATION_PEI)
-            writeback.execute(
-                UsNdEarlyTerminationRequestData(
-                    user_email=USER_EMAIL,
-                    early_termination_date=EARLY_TERMINATION_DATE,
-                    justification_reasons=JUSTIFICATION_REASONS,
-                )
+            request_data = UsNdEarlyTerminationRequestData(
+                person_external_id=EARLY_TERMINATION_PEI,
+                user_email=USER_EMAIL,
+                early_termination_date=EARLY_TERMINATION_DATE,
+                justification_reasons=JUSTIFICATION_REASONS,
             )
+            writeback = UsNdEarlyTerminationWritebackExecutor(request_data)
+            writeback.execute()
 
     @patch("requests.put")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
@@ -97,14 +127,14 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
     ) -> None:
         mock_get_secret.return_value = None
         with self.assertRaises(EnvironmentError):
-            writeback = UsNdEarlyTerminationWritebackExecutor(EARLY_TERMINATION_PEI)
-            writeback.execute(
-                UsNdEarlyTerminationRequestData(
-                    user_email=USER_EMAIL,
-                    early_termination_date=EARLY_TERMINATION_DATE,
-                    justification_reasons=JUSTIFICATION_REASONS,
-                )
+            request_data = UsNdEarlyTerminationRequestData(
+                person_external_id=EARLY_TERMINATION_PEI,
+                user_email=USER_EMAIL,
+                early_termination_date=EARLY_TERMINATION_DATE,
+                justification_reasons=JUSTIFICATION_REASONS,
             )
+            writeback = UsNdEarlyTerminationWritebackExecutor(request_data)
+            writeback.execute()
         mock_put.assert_not_called()
 
     @patch(f"{TRANSPORT_MODULE}.get_secret")
@@ -121,14 +151,14 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
         mock_in_prod.return_value = True
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, json=response_json)
-            writeback = UsNdEarlyTerminationWritebackExecutor(EARLY_TERMINATION_PEI)
-            writeback.execute(
-                UsNdEarlyTerminationRequestData(
-                    user_email="internal@recidiviz.org",
-                    early_termination_date=EARLY_TERMINATION_DATE,
-                    justification_reasons=JUSTIFICATION_REASONS,
-                )
+            request_data = UsNdEarlyTerminationRequestData(
+                person_external_id=EARLY_TERMINATION_PEI,
+                user_email="internal@recidiviz.org",
+                early_termination_date=EARLY_TERMINATION_DATE,
+                justification_reasons=JUSTIFICATION_REASONS,
             )
+            writeback = UsNdEarlyTerminationWritebackExecutor(request_data)
+            writeback.execute()
 
             # When use_test_url=True, transport fetches test URL secret first
             mock_get_secret.assert_any_call(
@@ -144,14 +174,14 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
             with self.assertRaises(ConnectionRefusedError):
-                writeback = UsNdEarlyTerminationWritebackExecutor(EARLY_TERMINATION_PEI)
-                writeback.execute(
-                    UsNdEarlyTerminationRequestData(
-                        user_email="internal@recidiviz.org",
-                        early_termination_date=EARLY_TERMINATION_DATE,
-                        justification_reasons=JUSTIFICATION_REASONS,
-                    )
+                request_data = UsNdEarlyTerminationRequestData(
+                    person_external_id=EARLY_TERMINATION_PEI,
+                    user_email="internal@recidiviz.org",
+                    early_termination_date=EARLY_TERMINATION_DATE,
+                    justification_reasons=JUSTIFICATION_REASONS,
                 )
+                writeback = UsNdEarlyTerminationWritebackExecutor(request_data)
+                writeback.execute()
 
     @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
@@ -162,39 +192,90 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, status=500)
             with self.assertRaises(requests.exceptions.HTTPError):
-                writeback = UsNdEarlyTerminationWritebackExecutor(EARLY_TERMINATION_PEI)
-                writeback.execute(
-                    UsNdEarlyTerminationRequestData(
-                        user_email="internal@recidiviz.org",
-                        early_termination_date=EARLY_TERMINATION_DATE,
-                        justification_reasons=JUSTIFICATION_REASONS,
-                    )
+                request_data = UsNdEarlyTerminationRequestData(
+                    person_external_id=EARLY_TERMINATION_PEI,
+                    user_email="internal@recidiviz.org",
+                    early_termination_date=EARLY_TERMINATION_DATE,
+                    justification_reasons=JUSTIFICATION_REASONS,
                 )
+                writeback = UsNdEarlyTerminationWritebackExecutor(request_data)
+                writeback.execute()
 
 
-class TestUsNdEarlyTerminationParseData(TestCase):
-    def test_parse_data(self) -> None:
-        raw = {
-            "user_email": USER_EMAIL,
-            "early_termination_date": EARLY_TERMINATION_DATE,
-            "justification_reasons": JUSTIFICATION_REASONS,
-        }
-        result = UsNdEarlyTerminationWritebackExecutor.parse_request_data(raw)
-        self.assertEqual(
-            result,
-            UsNdEarlyTerminationRequestData(
-                user_email=USER_EMAIL,
-                early_termination_date=EARLY_TERMINATION_DATE,
-                justification_reasons=JUSTIFICATION_REASONS,
-            ),
+class TestUsNdEarlyTerminationRequestData(TestCase):
+    """Tests model validation for UsNdEarlyTerminationRequestData"""
+
+    def test_valid_camel_case(self) -> None:
+        data = UsNdEarlyTerminationRequestData.model_validate(
+            {
+                "personExternalId": 1234,
+                "userEmail": USER_EMAIL,
+                "earlyTerminationDate": "2024-10-10",
+                "justificationReasons": [
+                    {"code": "FOO", "description": "Code FOO"},
+                ],
+            }
         )
+        self.assertEqual(data.person_external_id, 1234)
+        self.assertEqual(data.early_termination_date, date(2024, 10, 10))
 
-    def test_parse_data_missing_field(self) -> None:
-        with self.assertRaises(KeyError):
-            UsNdEarlyTerminationWritebackExecutor.parse_request_data(
+    def test_valid_snake_case(self) -> None:
+        data = UsNdEarlyTerminationRequestData.model_validate(
+            {
+                "person_external_id": 1234,
+                "user_email": USER_EMAIL,
+                "early_termination_date": "2024-10-10",
+                "justification_reasons": [
+                    {"code": "FOO", "description": "Code FOO"},
+                ],
+            }
+        )
+        self.assertEqual(data.user_email, USER_EMAIL)
+
+    def test_missing_field(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsNdEarlyTerminationRequestData.model_validate(
                 {
+                    "person_external_id": 1234,
                     "user_email": USER_EMAIL,
-                    "early_termination_date": EARLY_TERMINATION_DATE,
+                    "early_termination_date": "2024-10-10",
+                }
+            )
+
+    def test_invalid_date(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsNdEarlyTerminationRequestData.model_validate(
+                {
+                    "person_external_id": 1234,
+                    "user_email": USER_EMAIL,
+                    "early_termination_date": "1/1/2024",
+                    "justification_reasons": [
+                        {"code": "FOO", "description": "Code FOO"},
+                    ],
+                }
+            )
+
+    def test_string_pei_rejected(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsNdEarlyTerminationRequestData.model_validate(
+                {
+                    "person_external_id": "A1234",
+                    "user_email": USER_EMAIL,
+                    "early_termination_date": "2024-10-10",
+                    "justification_reasons": [
+                        {"code": "FOO", "description": "Code FOO"},
+                    ],
+                }
+            )
+
+    def test_malformed_justification(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsNdEarlyTerminationRequestData.model_validate(
+                {
+                    "person_external_id": 1234,
+                    "user_email": USER_EMAIL,
+                    "early_termination_date": "2024-10-10",
+                    "justification_reasons": [{"code": "FOO"}],
                 }
             )
 
