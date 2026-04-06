@@ -73,7 +73,7 @@ def segment_event_shared_columns_schema() -> list[BigQueryViewColumn]:
         String(
             name="state_code",
             description="The state code (e.g. US_XX) associated with this Segment event",
-            mode="REQUIRED",
+            mode="NULLABLE",
         ),
         String(
             name="email_address",

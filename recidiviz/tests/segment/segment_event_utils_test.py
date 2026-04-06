@@ -39,7 +39,7 @@ class TestSegmentEventSchema(unittest.TestCase):
         self.assertEqual(
             col_info,
             [
-                ("state_code", bigquery.SqlTypeNames.STRING, "REQUIRED"),
+                ("state_code", bigquery.SqlTypeNames.STRING, "NULLABLE"),
                 ("user_id", bigquery.SqlTypeNames.STRING, "NULLABLE"),
                 ("email_address", bigquery.SqlTypeNames.STRING, "NULLABLE"),
                 ("event_ts", bigquery.SqlTypeNames.DATETIME, "NULLABLE"),
