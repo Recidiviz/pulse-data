@@ -15,16 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_TN contact note writeback implementation."""
-import base64
 import json
-import logging
-import time
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 import attr
 import dateutil.parser
-import requests
 
 from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsUsTnInsertTEPEContactNoteSchema,
@@ -37,6 +33,11 @@ from recidiviz.case_triage.workflows.writeback.base import (
     WritebackConfig,
     WritebackExecutorInterface,
     WritebackStatusTracker,
+)
+from recidiviz.case_triage.workflows.writeback.transports.rest import (
+    BasicAuth,
+    RestTransport,
+    RestTransportConfig,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
@@ -105,6 +106,15 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
             request["ContactTypeCode2"] = self.voters_rights_code.value
 
         return json.dumps(request)
+
+
+TOMIS_TRANSPORT_CONFIG = RestTransportConfig(
+    system_name="TOMIS",
+    url_secret="workflows_us_tn_insert_contact_note_url",  # nosec
+    credential_secret="workflows_us_tn_insert_contact_note_key",
+    test_url_secret="workflows_us_tn_insert_contact_note_test_url",
+    auth_strategy=BasicAuth(),
+)
 
 
 class UsTnContactNoteStatusTracker(WritebackStatusTracker):
@@ -176,23 +186,11 @@ class UsTnContactNoteWritebackExecutor(
         )
 
     def execute(self, request_data: UsTnContactNoteRequestData) -> None:
-        tomis_url = get_secret("workflows_us_tn_insert_contact_note_url")
-        tomis_key = get_secret("workflows_us_tn_insert_contact_note_key")
-
-        # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
-        if in_gcp_production() and request_data.staff_id == "RECIDIVIZ":
-            tomis_url = get_secret("workflows_us_tn_insert_contact_note_test_url")
-
-        if tomis_url is None or tomis_key is None:
-            logging.error("Unable to get secrets for TOMIS")
-            raise EnvironmentError("Unable to get secrets for TOMIS")
-
-        base64_encoded = base64.b64encode(tomis_key.encode())
-
-        headers = {
-            "Authorization": f"Basic {base64_encoded.decode()}",
-            "Content-Type": "application/json",
-        }
+        transport = RestTransport(
+            TOMIS_TRANSPORT_CONFIG,
+            # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
+            use_test_url=in_gcp_production() and request_data.staff_id == "RECIDIVIZ",
+        )
 
         for page_number, page_by_line in request_data.contact_note.items():
             self._tracker.set_page_status(
@@ -212,10 +210,9 @@ class UsTnContactNoteWritebackExecutor(
             )
 
             try:
-                self._write_to_tomis(
-                    tomis_url,
-                    headers,
-                    request_body,
+                transport.send(
+                    request_body.format_request(),
+                    log_context=f"page {page_number}",
                 )
                 self._tracker.set_page_status(
                     page_number, ExternalSystemRequestStatus.SUCCESS
@@ -225,51 +222,6 @@ class UsTnContactNoteWritebackExecutor(
                     page_number, ExternalSystemRequestStatus.FAILURE
                 )
                 raise
-
-    @staticmethod
-    def _write_to_tomis(
-        tomis_url: str,
-        headers: dict[str, Any],
-        request: WorkflowsUsTnWriteTEPENoteToTomisRequest,
-    ) -> None:
-        """Sends a single contact note page to TOMIS and raises on failure."""
-        page_number = request.contact_sequence_number
-        start_time = time.perf_counter()
-        request_body = request.format_request()
-
-        logging.info("Sending request to TOMIS: %s", request_body)
-
-        try:
-            tomis_response = requests.put(
-                tomis_url,
-                headers=headers,
-                data=request_body,
-                timeout=360,
-            )
-            if tomis_response.status_code != requests.codes.ok:
-                tomis_response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            duration = round(time.perf_counter() - start_time, 2)
-            logging.error(
-                f"Error response from TOMIS for page %s in % seconds: {e.response.text}",
-                page_number,
-                duration,
-            )
-            raise e
-        except Exception as e:
-            duration = round(time.perf_counter() - start_time, 2)
-            logging.error(
-                f"Request to TOMIS failed in %s seconds with error: {e}", duration
-            )
-            raise e
-
-        duration = round(time.perf_counter() - start_time, 2)
-        logging.info(
-            "Request to TOMIS for page %s completed with status code %s in %s seconds",
-            page_number,
-            tomis_response.status_code,
-            duration,
-        )
 
     def create_status_tracker(self) -> UsTnContactNoteStatusTracker:
         return self._tracker

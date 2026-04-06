@@ -16,12 +16,10 @@
 # =============================================================================
 """US_ND early termination writeback implementation."""
 import json
-import logging
 from datetime import datetime, timezone
 from typing import Any
 
 import attr
-import requests
 
 from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
@@ -32,10 +30,22 @@ from recidiviz.case_triage.workflows.writeback.base import (
     WritebackExecutorInterface,
     WritebackStatusTracker,
 )
+from recidiviz.case_triage.workflows.writeback.transports.rest import (
+    RestTransport,
+    RestTransportConfig,
+    TokenHeaderAuth,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import in_gcp_production
-from recidiviz.utils.secrets import get_secret
+
+DOCSTARS_TRANSPORT_CONFIG = RestTransportConfig(
+    system_name="DOCSTARS",
+    url_secret="workflows_us_nd_early_termination_url",  # nosec
+    credential_secret="workflows_us_nd_early_termination_key",
+    test_url_secret="workflows_us_nd_early_termination_test_url",
+    auth_strategy=TokenHeaderAuth("Recidiviz-Credential-Token"),
+)
 
 
 @attr.s(frozen=True)
@@ -84,54 +94,22 @@ class UsNdEarlyTerminationWritebackExecutor(
         )
 
     def execute(self, request_data: UsNdEarlyTerminationRequestData) -> None:
-        docstars_url = get_secret("workflows_us_nd_early_termination_url")
-        docstars_key = get_secret("workflows_us_nd_early_termination_key")
-
-        # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
-        if in_gcp_production() and request_data.user_email.endswith("@recidiviz.org"):
-            docstars_url = get_secret("workflows_us_nd_early_termination_test_url")
-
-        if docstars_url is None or docstars_key is None:
-            logging.error("Unable to get secrets for DOCSTARS")
-            raise EnvironmentError("Unable to get secrets for DOCSTARS")
-
-        headers = {
-            "Recidiviz-Credential-Token": docstars_key,
-            "Content-Type": "application/json",
-        }
-
-        request_body = json.dumps(
-            {
-                "sid": self.person_external_id,
-                "userEmail": request_data.user_email,
-                "earlyTerminationDate": request_data.early_termination_date,
-                "justificationReasons": request_data.justification_reasons,
-            }
+        transport = RestTransport(
+            DOCSTARS_TRANSPORT_CONFIG,
+            # TODO(#68802): Centralize logic for detecting a Recidiviz user in writeback code.
+            use_test_url=in_gcp_production()
+            and request_data.user_email.endswith("@recidiviz.org"),
         )
 
-        try:
-            docstars_response = requests.put(
-                docstars_url,
-                headers=headers,
-                data=request_body,
-                timeout=360,
+        transport.send(
+            body=json.dumps(
+                {
+                    "sid": self.person_external_id,
+                    "userEmail": request_data.user_email,
+                    "earlyTerminationDate": request_data.early_termination_date,
+                    "justificationReasons": request_data.justification_reasons,
+                }
             )
-            if docstars_response.status_code != requests.codes.ok:
-                docstars_response.raise_for_status()
-        except requests.exceptions.HTTPError:
-            logging.error(
-                "Request to DOCSTARS failed with code %s: %s",
-                docstars_response.status_code,
-                docstars_response.text,
-            )
-            raise
-        except Exception as e:
-            logging.error("Request to DOCSTARS failed with error: %s", e)
-            raise
-
-        logging.info(
-            "Request to DOCSTARS completed with status code %s",
-            docstars_response.status_code,
         )
 
     def create_status_tracker(self) -> UsNdEarlyTerminationStatusTracker:

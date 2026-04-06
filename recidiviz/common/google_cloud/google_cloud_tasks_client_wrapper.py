@@ -21,7 +21,6 @@ tasks_v2.CloudTasksClient.
 import json
 import logging
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import pytz
@@ -31,17 +30,9 @@ from google.protobuf import timestamp_pb2
 
 from recidiviz.common.common_utils import log_retried_google_api_error
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
+from recidiviz.common.http import HttpMethod
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.utils import metadata
-
-
-class HttpMethod(Enum):
-    GET = "GET"
-    POST = "POST"
-    PUT = "PUT"
-    PATCH = "PATCH"
-    DELETE = "DELETE"
-
 
 QUEUES_REGION = "us-east1"
 

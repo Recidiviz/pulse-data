@@ -36,6 +36,7 @@ STAFF_ID = "456"
 CONTACT_NOTE_DATE_TIME = datetime.datetime.now().isoformat()
 
 MODULE = "recidiviz.case_triage.workflows.writeback.us_tn_contact_note"
+TRANSPORT_MODULE = "recidiviz.case_triage.workflows.writeback.transports.rest"
 
 
 @pytest.fixture(autouse=True)
@@ -52,12 +53,15 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
         self.fake_url = "http://fake-url.com"
 
     @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_success(
         self,
         mock_client: MagicMock,
         mock_get_secret: MagicMock,
+        mock_interface_get_secret: MagicMock,
     ) -> None:
+        mock_interface_get_secret.return_value = "test-id"
         response_json = {"status": "OK"}
         mock_get_secret.return_value = self.fake_url
         mock_client = mock_client.return_value
@@ -78,12 +82,15 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             self.assertEqual(mock_client.update_document.call_count, 4)
 
     @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_exception_raised_during_write(
         self,
         mock_client: MagicMock,
         mock_get_secret: MagicMock,
+        mock_interface_get_secret: MagicMock,
     ) -> None:
+        mock_interface_get_secret.return_value = "test-id"
         mock_get_secret.return_value = self.fake_url
         mock_client = mock_client.return_value
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -103,7 +110,7 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             self.assertEqual(mock_client.update_document.call_count, 2)
 
     @patch("requests.put")
-    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_no_secret(
         self, mock_client: MagicMock, mock_get_secret: MagicMock, mock_put: MagicMock
@@ -125,6 +132,7 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
         mock_put.assert_not_called()
 
     @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     @patch(f"{MODULE}.in_gcp_production")
     def test_execute_prod_and_recidiviz(
@@ -132,7 +140,9 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
         mock_in_prod: MagicMock,
         mock_client: MagicMock,
         mock_get_secret: MagicMock,
+        mock_interface_get_secret: MagicMock,
     ) -> None:
+        mock_interface_get_secret.return_value = "test-id"
         response_json = {"status": "OK"}
         mock_get_secret.return_value = self.fake_url
         mock_client = mock_client.return_value
@@ -150,8 +160,8 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                 )
             )
 
-            # Check third call to get_secret gets test url
-            mock_get_secret.mock_calls[2].assert_called_with(
+            # When use_test_url=True, transport fetches test URL secret first
+            mock_get_secret.assert_any_call(
                 "workflows_us_tn_insert_contact_note_test_url"
             )
             self.assertEqual(mock_client.update_document.call_count, 4)
@@ -198,31 +208,38 @@ class TestUsTnContactNoteParseData(TestCase):
 
 
 class TestUsTnContactNoteStatusTracker(TestCase):
-    def setUp(self) -> None:
-        self.mock_firestore = MagicMock()
-        self.mock_firestore.timestamp_key = "serverTimestamp"
-        self.tracker = UsTnContactNoteStatusTracker("123", self.mock_firestore)
-        self.expected_path = (
-            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration"
-        )
+    """Tests for UsTnContactNoteStatusTracker"""
 
     def test_set_status_updates_firestore(self) -> None:
-        self.tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
+        mock_firestore = MagicMock()
+        mock_firestore.timestamp_key = "serverTimestamp"
+        tracker = UsTnContactNoteStatusTracker("123", mock_firestore)
+        tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
 
-        self.mock_firestore.update_document.assert_called_once()
-        call_args = self.mock_firestore.update_document.call_args
-        self.assertEqual(call_args[0][0], self.expected_path)
+        mock_firestore.update_document.assert_called_once()
+        call_args = mock_firestore.update_document.call_args
+        self.assertEqual(
+            call_args[0][0],
+            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration",
+        )
         self.assertEqual(
             call_args[0][1]["contactNote.status"],
             ExternalSystemRequestStatus.IN_PROGRESS.value,
         )
 
     def test_set_page_status_updates_firestore(self) -> None:
-        self.tracker.set_page_status(1, ExternalSystemRequestStatus.SUCCESS)
+        mock_firestore = MagicMock()
+        mock_firestore.timestamp_key = "serverTimestamp"
+        tracker = UsTnContactNoteStatusTracker("123", mock_firestore)
 
-        self.mock_firestore.update_document.assert_called_once()
-        call_args = self.mock_firestore.update_document.call_args
-        self.assertEqual(call_args[0][0], self.expected_path)
+        tracker.set_page_status(1, ExternalSystemRequestStatus.SUCCESS)
+
+        mock_firestore.update_document.assert_called_once()
+        call_args = mock_firestore.update_document.call_args
+        self.assertEqual(
+            call_args[0][0],
+            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration",
+        )
         self.assertEqual(
             call_args[0][1]["contactNote.noteStatus.1"],
             ExternalSystemRequestStatus.SUCCESS.value,

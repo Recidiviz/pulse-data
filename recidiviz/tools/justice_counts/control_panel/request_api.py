@@ -35,7 +35,7 @@ from typing import Dict
 
 import requests
 
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import HttpMethod
+from recidiviz.common.http import HttpMethod
 from recidiviz.utils.secrets import get_secret_from_local_directory
 
 LOCALHOST_URL = "http://localhost:5001/"

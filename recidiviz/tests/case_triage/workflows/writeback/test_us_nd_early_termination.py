@@ -41,6 +41,7 @@ JUSTIFICATION_REASONS = [
 ]
 
 MODULE = "recidiviz.case_triage.workflows.writeback.us_nd_early_termination"
+TRANSPORT_MODULE = "recidiviz.case_triage.workflows.writeback.transports.rest"
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +57,7 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
     def setUp(self) -> None:
         self.fake_url = "http://fake-url.com"
 
-    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_success(
         self, _mock_client: MagicMock, mock_get_secret: MagicMock
@@ -89,7 +90,7 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
             )
 
     @patch("requests.put")
-    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_missing_secrets(
         self, _mock_client: MagicMock, mock_get_secret: MagicMock, mock_put: MagicMock
@@ -106,7 +107,7 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
             )
         mock_put.assert_not_called()
 
-    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     @patch(f"{MODULE}.in_gcp_production")
     def test_execute_prod_recidiviz_user(
@@ -129,12 +130,12 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
                 )
             )
 
-            # Check third call to get_secret gets test url
-            mock_get_secret.mock_calls[2].assert_called_with(
+            # When use_test_url=True, transport fetches test URL secret first
+            mock_get_secret.assert_any_call(
                 "workflows_us_nd_early_termination_test_url"
             )
 
-    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_network_error(
         self, _mock_client: MagicMock, mock_get_secret: MagicMock
@@ -152,7 +153,7 @@ class TestUsNdEarlyTerminationWritebackExecutor(TestCase):
                     )
                 )
 
-    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
     def test_execute_http_error(
         self, _mock_client: MagicMock, mock_get_secret: MagicMock
