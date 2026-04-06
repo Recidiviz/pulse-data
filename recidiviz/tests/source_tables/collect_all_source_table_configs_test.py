@@ -21,9 +21,7 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.source_tables.source_table_config import (
-    IngestViewResultsSourceTableLabel,
     NormalizedStateAgnosticEntitySourceTableLabel,
-    RawDataSourceTableLabel,
     StateSpecificSourceTableLabel,
     UnionedStateAgnosticSourceTableLabel,
 )
@@ -70,19 +68,12 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
 
                 for dataset_collection in dataset_collections:
                     if any(
-                        isinstance(label, RawDataSourceTableLabel)
+                        isinstance(label, StateSpecificSourceTableLabel)
                         for label in dataset_collection.labels
                     ):
-                        # Raw data tables are state-specific tables and we do not expect
-                        # them to have `state_code` columns.
-                        continue
-
-                    if any(
-                        isinstance(label, IngestViewResultsSourceTableLabel)
-                        for label in dataset_collection.labels
-                    ):
-                        # Ingest view results tables are state-specific tables and we do
-                        # not expect them to have `state_code` columns.
+                        # State-specific tables (e.g. raw data, ingest view
+                        # results, document store) are not expected to have
+                        # `state_code` columns.
                         continue
 
                     for table in dataset_collection.source_tables:

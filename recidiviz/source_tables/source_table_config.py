@@ -521,6 +521,17 @@ class IngestViewResultsSourceTableLabel(SourceTableLabel[StateCode]):
 
 
 @attr.define
+class DocumentStoreSourceTableLabel(SourceTableLabel[StateCode]):
+    """Label for source tables in a state-specific document store dataset"""
+
+    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
+
+    @property
+    def value(self) -> StateCode:
+        return self.state_code
+
+
+@attr.define
 class SchemaTypeSourceTableLabel(SourceTableLabel[SchemaType]):
     """Tables whose schemas are defined by the schema with the given schema_type."""
 

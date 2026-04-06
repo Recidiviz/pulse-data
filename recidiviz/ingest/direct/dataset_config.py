@@ -82,3 +82,19 @@ def raw_data_temp_load_dataset(
     """Returns the dataset containing the temporary raw file load results"""
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
     return f"{prefix}{state_code.value.lower()}_{instance.value.lower()}_raw_data_temp_load"
+
+
+def document_store_metadata_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: Optional[str] = None
+) -> str:
+    """Returns the dataset containing document collection metadata tables for this region."""
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}{state_code.value.lower()}_document_store_metadata"
+
+
+def document_store_temp_dataset_for_region(
+    state_code: StateCode, sandbox_dataset_prefix: Optional[str] = None
+) -> str:
+    """Returns the dataset containing temporary tables used during document store processing."""
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}{state_code.value.lower()}_document_store_temp"

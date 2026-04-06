@@ -43,6 +43,9 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
+from recidiviz.source_tables.document_store_source_table_collection import (
+    collect_document_store_source_tables,
+)
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     collect_externally_managed_source_table_collections,
 )
@@ -220,6 +223,7 @@ def build_source_table_repository_for_collected_schemata(
             *collect_duplicative_us_mi_validation_oneoffs(),
             *get_dataflow_output_source_table_collections(),
             *collect_sentencing_source_tables(),
+            *collect_document_store_source_tables(),
         ],
     )
 
