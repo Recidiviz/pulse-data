@@ -20,6 +20,7 @@ import unittest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import (
+    BigQueryFieldMode,
     are_bq_schemas_same,
     format_description_for_big_query,
     is_big_query_valid_delimiter,
@@ -27,6 +28,8 @@ from recidiviz.big_query.big_query_utils import (
     is_big_query_valid_line_terminator,
     normalize_column_name_for_bq,
     to_big_query_valid_encoding,
+    to_validated_schema_field,
+    validate_unquoted_bq_identifier,
 )
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 
@@ -187,3 +190,68 @@ class AreBqSchemasSameTest(unittest.TestCase):
             ),
         ]
         self.assertFalse(are_bq_schemas_same(schema1, schema2))
+
+
+class ToValidatedSchemaFieldTest(unittest.TestCase):
+    """Tests for to_validated_schema_field."""
+
+    def test_invalid_field_name_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, "contains invalid characters"):
+            to_validated_schema_field(
+                field_name="bad-name",
+                description=None,
+                field_type=bigquery.enums.SqlTypeNames.STRING,
+                mode=BigQueryFieldMode.NULLABLE,
+            )
+
+    def test_long_description_is_truncated(self) -> None:
+        long_description = "x" * (BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH + 100)
+        field = to_validated_schema_field(
+            field_name="my_column",
+            description=long_description,
+            field_type=bigquery.enums.SqlTypeNames.STRING,
+            mode=BigQueryFieldMode.NULLABLE,
+        )
+        self.assertEqual(len(field.description), BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH)
+        self.assertTrue(field.description.endswith("(truncated)"))
+
+    def test_field_name_exceeds_length_limit_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exceeds the 300-character limit"):
+            to_validated_schema_field(
+                field_name="a" * 301,
+                description=None,
+                field_type=bigquery.enums.SqlTypeNames.STRING,
+                mode=BigQueryFieldMode.NULLABLE,
+            )
+
+
+class ValidateBqIdentifierTest(unittest.TestCase):
+    """Tests for validate_bq_identifier."""
+
+    def test_valid_identifiers(self) -> None:
+        validate_unquoted_bq_identifier("my_table")
+        validate_unquoted_bq_identifier("col_123")
+        validate_unquoted_bq_identifier("_leading_underscore")
+        validate_unquoted_bq_identifier("A")
+
+    def test_empty(self) -> None:
+        with self.assertRaisesRegex(ValueError, "cannot be empty"):
+            validate_unquoted_bq_identifier("")
+
+    def test_invalid_characters(self) -> None:
+        with self.assertRaisesRegex(ValueError, "contains invalid characters"):
+            validate_unquoted_bq_identifier("my-column")
+        with self.assertRaisesRegex(ValueError, "contains invalid characters"):
+            validate_unquoted_bq_identifier("has spaces")
+        with self.assertRaisesRegex(ValueError, "contains invalid characters"):
+            validate_unquoted_bq_identifier("col.name")
+
+    def test_starts_with_digit(self) -> None:
+        with self.assertRaisesRegex(ValueError, "cannot start with a digit"):
+            validate_unquoted_bq_identifier("1_bad_name")
+
+    def test_reserved_word(self) -> None:
+        with self.assertRaisesRegex(ValueError, "is a reserved word"):
+            validate_unquoted_bq_identifier("SELECT")
+        with self.assertRaisesRegex(ValueError, "is a reserved word"):
+            validate_unquoted_bq_identifier("select")

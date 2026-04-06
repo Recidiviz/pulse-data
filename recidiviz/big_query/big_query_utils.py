@@ -64,6 +64,14 @@ WILDCARD_EXPORT_NUM_DIGITS = 12
 LINEAGE_DESCRIPTION = "Explore this view's lineage at "
 LINEAGE_GO_LINK_BASE = "https://go/lineage-{environment}/{dataset_id}.{view_id}"
 
+_MAX_BQ_COLUMN_NAME_LENGTH = 300
+
+
+class BigQueryFieldMode(enum.Enum):
+    NULLABLE = "NULLABLE"
+    REQUIRED = "REQUIRED"
+    REPEATED = "REPEATED"
+
 
 class BigQueryDateInterval(enum.Enum):
     DAY = "DAY"
@@ -190,6 +198,58 @@ def schema_for_sqlalchemy_table(table: sqlalchemy.Table) -> List[bigquery.Schema
     ]
 
     return columns_for_table
+
+
+def validate_unquoted_bq_identifier(name: str) -> None:
+    """Validates that |name| is a valid unquoted BigQuery column or table identifier.
+    Raises ValueError if the name is empty, contains non-alphanumeric/underscore
+    characters, starts with a digit, or is a reserved word.
+
+    Note that BQ allows spaces and unicode characters in identifiers when surrounded
+    by quotes, but we are enforcing the stricter, unquoted rules here.
+    """
+    if not name:
+        raise ValueError("BigQuery identifier cannot be empty.")
+    if not all(
+        c in string.ascii_letters or c in string.digits or c == "_" for c in name
+    ):
+        raise ValueError(
+            f"BigQuery identifier [{name}] contains invalid characters. "
+            f"Only letters, digits, and underscores are allowed."
+        )
+    if name[0] in string.digits:
+        raise ValueError(f"BigQuery identifier [{name}] cannot start with a digit.")
+    if name.upper() in BIGQUERY_RESERVED_WORDS:
+        raise ValueError(f"BigQuery identifier [{name}] is a reserved word.")
+
+
+def to_validated_schema_field(
+    field_name: str,
+    description: Optional[str],
+    field_type: bigquery.enums.SqlTypeNames,
+    mode: BigQueryFieldMode,
+) -> bigquery.SchemaField:
+    """Returns a BigQuery SchemaField object for the given |field_name| with the
+    description field truncated if longer than the maximum allowed length. Ensures
+    that the field name, type, and mode are valid for BigQuery and raises ValueError if not.
+
+    You can pass any string as a field type or mode when creating a SchemaField object and it will not raise
+    an error at instantiation time, but it will cause errors when you try to create a table with that schema
+    or run a query against it, so we use this wrapper to validate that the field type and mode are valid BigQuery values.
+    """
+    validate_unquoted_bq_identifier(field_name)
+    if len(field_name) > _MAX_BQ_COLUMN_NAME_LENGTH:
+        raise ValueError(
+            f"BigQuery column name [{field_name}] exceeds the "
+            f"{_MAX_BQ_COLUMN_NAME_LENGTH}-character limit."
+        )
+
+    return bigquery.SchemaField(
+        name=field_name,
+        field_type=field_type.value,
+        mode=mode.value,
+        description=format_description_for_big_query(description),
+    )
 
 
 def normalize_column_name_for_bq(column_name: str) -> str:

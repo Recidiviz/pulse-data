@@ -23,7 +23,13 @@ from types import ModuleType
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_utils import format_description_for_big_query
+from recidiviz.big_query.big_query_attr_validators import (
+    is_valid_unquoted_bq_identifier,
+)
+from recidiviz.big_query.big_query_utils import (
+    BigQueryFieldMode,
+    to_validated_schema_field,
+)
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
@@ -53,18 +59,6 @@ def _state_collections_dir(state_code: StateCode, region_module: ModuleType) -> 
         Path(region_module.__file__).parent
         / state_code.value.lower()
         / DOCUMENT_COLLECTIONS_SUBDIR
-    )
-
-
-def _schema_field_from_yaml(
-    yaml_dict: YAMLDict, mode: str = "NULLABLE"
-) -> bigquery.SchemaField:
-    """Creates a bigquery.SchemaField from a YAML dictionary."""
-    return bigquery.SchemaField(
-        name=yaml_dict.pop("name", str),
-        field_type=yaml_dict.pop("field_type", str),
-        description=format_description_for_big_query(yaml_dict.pop("description", str)),
-        mode=mode,
     )
 
 
@@ -116,8 +110,7 @@ class DocumentCollectionConfig:
     state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
 
     # Name that uniquely identifies a collection of documents within a state.
-    # TODO(#68777) enforce that name is BQ table name compatible
-    name: str = attr.ib(validator=attr_validators.is_str)
+    name: str = attr.ib(validator=is_valid_unquoted_bq_identifier)
 
     # Description providing more detail about the collection, its intended use, and any other relevant information.
     # TODO(#68777) enforce that description is meaningful and not a placeholder.
@@ -193,11 +186,22 @@ class DocumentCollectionConfig:
         other_metadata_columns = []
         for col_dict in yaml_dict.pop_dicts_optional("document_metadata_columns") or []:
             is_pk = col_dict.pop_optional("is_document_primary_key", bool) or False
+            field_type = bigquery.enums.SqlTypeNames(col_dict.pop("field_type", str))
             if is_pk:
-                schema_field = _schema_field_from_yaml(col_dict, mode="REQUIRED")
+                schema_field = to_validated_schema_field(
+                    field_name=col_dict.pop("name", str),
+                    field_type=field_type,
+                    description=col_dict.pop("description", str),
+                    mode=BigQueryFieldMode.REQUIRED,
+                )
                 document_pk_columns.append(schema_field)
             else:
-                schema_field = _schema_field_from_yaml(col_dict)
+                schema_field = to_validated_schema_field(
+                    field_name=col_dict.pop("name", str),
+                    field_type=field_type,
+                    description=col_dict.pop("description", str),
+                    mode=BigQueryFieldMode.NULLABLE,
+                )
                 other_metadata_columns.append(schema_field)
 
         return cls(

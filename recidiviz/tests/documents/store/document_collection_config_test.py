@@ -108,8 +108,21 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 primary_key_columns=[
                     bigquery.SchemaField("duplicate_column", "STRING"),
                 ],
-                document_generation_query_template="SELECT 1",
                 other_metadata_columns=[
                     bigquery.SchemaField("duplicate_column", "INTEGER"),
                 ],
+                document_generation_query_template="SELECT 1",
+            )
+
+    def test_invalid_collection_name(self) -> None:
+        with self.assertRaisesRegex(ValueError, "contains invalid characters"):
+            DocumentCollectionConfig(
+                state_code=StateCode.US_XX,
+                name="bad-name",
+                description="test collection with bad name",
+                primary_key_columns=[
+                    bigquery.SchemaField("pk_col", "STRING"),
+                ],
+                other_metadata_columns=[],
+                document_generation_query_template="SELECT 1",
             )
