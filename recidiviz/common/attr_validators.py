@@ -401,6 +401,7 @@ def is_valid_email(instance: Any, attribute: attr.Attribute, value: str) -> None
 is_str = attr.validators.instance_of(str)
 is_opt_str = is_opt(str)
 
+
 # Int field validators
 is_int = attr.validators.instance_of(int)
 is_opt_int = is_opt(int)
@@ -511,6 +512,16 @@ class IsListOfValidator:
 
 def is_list_of(list_item_expected_type: Type) -> IsListOfValidator:
     return IsListOfValidator(list_item_expected_type)
+
+
+def is_non_empty_list(instance: Any, attribute: attr.Attribute, value: list) -> None:
+    is_list(instance, attribute, value)
+
+    if not value:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"non-empty list. Found value [{value}]"
+        )
 
 
 # Dict field validators

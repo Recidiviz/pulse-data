@@ -1468,3 +1468,25 @@ class TestIsNotSetAlongWithValidator(unittest.TestCase):
             r"first_field and second_field cannot both be set on class \[_TestClass\]",
         ):
             _ = self._TestClass(first_field="value 1", second_field="value 2")
+
+
+class TestIsNonEmptyList(unittest.TestCase):
+    """Tests for the is_non_empty_list() validator."""
+
+    @attr.define
+    class _TestClass:
+        items: list = attr.ib(validator=attr_validators.is_non_empty_list)
+
+    def test_non_empty_list(self) -> None:
+        _ = self._TestClass(items=["a", "b"])
+
+    def test_single_element_list(self) -> None:
+        _ = self._TestClass(items=[1])
+
+    def test_empty_list(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must be a non-empty list"):
+            _ = self._TestClass(items=[])
+
+    def test_not_a_list(self) -> None:
+        with self.assertRaises((TypeError, ValueError)):
+            _ = self._TestClass(items="not a list")  # type: ignore[arg-type]

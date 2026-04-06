@@ -1,0 +1,35 @@
+# TODO(#68777) create file for yaml-language-server: $schema=./../../yaml_schema/schema.json
+description: >
+  Records for members of the Fellowship of the Ring, combining fellowship
+  membership, role, and demographic information.
+root_entity_id_type: person_external_id
+document_metadata_columns:
+  - name: period_id
+    is_document_primary_key: true
+    field_type: STRING
+    description: The unique identifier for the incarceration period
+  - name: facility
+    field_type: STRING
+    description: The incarceration facility for this period
+document_generation_query: |
+  SELECT
+    fellowship.ID AS person_external_id,
+    'US_OZ_LOTR_ID' AS person_external_id_type,
+    periods.PeriodId AS period_id,
+    periods.Facility AS facility,
+    CONCAT(
+      'Fellowship member ', fellowship.FirstName, ' ', fellowship.LastName,
+      ' (', COALESCE(roles.Alias, 'no alias'), ')',
+      ' — ', COALESCE(demographics.Race, 'unknown race'), ' ', COALESCE(roles.Role, 'unknown role'),
+      ' at facility ', COALESCE(periods.Facility, 'unknown'),
+      ' from ', COALESCE(periods.StartDate, 'unknown'), ' to ', COALESCE(periods.EndDate, 'ongoing')
+    ) AS document_text,
+    CAST(periods.StartDate AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_oz_raw_data_up_to_date_views.lotr_fellowship_latest` fellowship
+  LEFT JOIN `{project_id}.us_oz_raw_data_up_to_date_views.lotr_roles_latest` roles
+    USING(ID)
+  LEFT JOIN `{project_id}.us_oz_raw_data_up_to_date_views.lotr_demographics_latest` demographics
+    USING(ID)
+  INNER JOIN `{project_id}.us_oz_raw_data_up_to_date_views.lotr_periods_latest` periods
+    ON fellowship.ID = periods.PersonId
+  WHERE periods.StartDate IS NOT NULL

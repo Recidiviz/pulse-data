@@ -1,0 +1,15 @@
+# TODO(#68777) create file for yaml-language-server: $schema=./../../yaml_schema/schema.json
+description: Fake person ID notes for testing document collection config parsing with person_id root entity.
+root_entity_id_type: person_id
+document_metadata_columns:
+  - name: note_id
+    is_document_primary_key: true
+    field_type: STRING
+    description: The unique identifier for the note
+document_generation_query: |
+  SELECT
+    person_id,
+    note_id,
+    note_body AS document_text,
+    CAST(created_at AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_xx_normalized_state.fake_person_notes`

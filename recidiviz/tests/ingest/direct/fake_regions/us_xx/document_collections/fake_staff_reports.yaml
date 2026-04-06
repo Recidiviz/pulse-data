@@ -1,0 +1,20 @@
+# TODO(#68777) create file for yaml-language-server: $schema=./../../yaml_schema/schema.json
+description: Fake staff reports for testing document collection config parsing with staff_external_id root entity.
+root_entity_id_type: staff_external_id
+document_metadata_columns:
+  - name: report_id
+    is_document_primary_key: true
+    field_type: STRING
+    description: The unique identifier for the staff report
+  - name: report_type
+    field_type: STRING
+    description: The type of report
+document_generation_query: |
+  SELECT
+    staff_external_id,
+    staff_external_id_type,
+    report_id,
+    report_type,
+    report_body AS document_text,
+    CAST(created_at AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_xx_raw_data.fake_staff_reports`
