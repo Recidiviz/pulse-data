@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,16 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains Workflows constants"""
-from enum import Enum
+"""Shared request data model for contact note writebacks."""
+from datetime import datetime
 
-from recidiviz.common.constants.states import StateCode
-
-
-class ExternalSystemRequestStatus(Enum):
-    IN_PROGRESS = "IN_PROGRESS"
-    SUCCESS = "SUCCESS"
-    FAILURE = "FAILURE"
+from recidiviz.case_triage.workflows.writeback.base import WritebackRequestData
 
 
-WORKFLOWS_SMS_ENABLED_STATES = {StateCode.US_CA.value}
+class ContactNoteRequestData(WritebackRequestData):
+    """Common fields shared across all state contact note writebacks.
+
+    State-specific subclasses extend this with a ``state_code`` Literal field
+    (used as the discriminator) and additional fields for the note content.
+    """
+
+    person_external_id: str
+    person_external_id_type: str
+    staff_id: str
+    staff_id_type: str
+    contact_note_date_time: datetime

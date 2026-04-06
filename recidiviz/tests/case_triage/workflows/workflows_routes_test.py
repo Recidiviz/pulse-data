@@ -43,8 +43,13 @@ from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
 )
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     UsTnContactNoteRequestData,
+    UsTnContactTypeCode,
 )
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
+from recidiviz.common.constants.state.external_id_types import (
+    US_TN_DOC,
+    US_TN_STAFF_TOMIS,
+)
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.utils.types import assert_type
 from recidiviz.workflows.types import (
@@ -354,11 +359,14 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_data = UsTnContactNoteRequestData(
-            person_external_id=PERSON_EXTERNAL_ID,
             should_queue_task=False,
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
+            contact_type_code=UsTnContactTypeCode.TEPE,
             voters_rights_code=None,
         )
         mock_task_manager.return_value.create_task.assert_not_called()
@@ -503,9 +511,12 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         expected_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
+            contact_type_code=UsTnContactTypeCode.TEPE,
             voters_rights_code=None,
         )
         mock_interface.assert_called_once_with(expected_data)

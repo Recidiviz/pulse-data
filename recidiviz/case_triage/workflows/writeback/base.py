@@ -47,9 +47,13 @@ class WritebackStatusTracker(abc.ABC):
 
 
 class WritebackExecutorInterface(abc.ABC, Generic[RequestDataT]):
-    @abc.abstractmethod
+    def __init__(self, request: RequestDataT) -> None:
+        self.request = request
+
     def to_cloud_task_payload(self) -> dict[str, Any]:
-        ...
+        return self.request.model_copy(update={"should_queue_task": False}).model_dump(
+            mode="json"
+        )
 
     @abc.abstractmethod
     def execute(self) -> None:

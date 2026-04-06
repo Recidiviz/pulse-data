@@ -17,23 +17,28 @@
 """US_TN contact note writeback implementation."""
 import json
 from datetime import datetime, timezone
-from typing import Any
+from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from recidiviz.case_triage.workflows.constants import (
-    ExternalSystemRequestStatus,
-    WorkflowsUsTnVotersRightsCode,
-)
+from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.base import (
     WritebackExecutorInterface,
     WritebackRequestData,
     WritebackStatusTracker,
 )
+from recidiviz.case_triage.workflows.writeback.contact_note import (
+    ContactNoteRequestData,
+)
 from recidiviz.case_triage.workflows.writeback.transports.rest import (
     BasicAuth,
     RestTransport,
     RestTransportConfig,
+)
+from recidiviz.common.constants.state.external_id_types import (
+    US_TN_DOC,
+    US_TN_STAFF_TOMIS,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
@@ -41,14 +46,61 @@ from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.secrets import get_secret
 
 
-class UsTnContactNoteRequestData(WritebackRequestData):
-    """Writeback request data for inserting a contact note in TN"""
+class UsTnContactTypeCode(Enum):
+    TEPE = "TEPE"
+    REIO = "REIO"
+    DEIO = "DEIO"
+    DEIR = "DEIR"
+    DECF = "DECF"
+    DEDF = "DEDF"
+    DEDU = "DEDU"
+    DECT = "DECT"
+    DECR = "DECR"
+    DEIJ = "DEIJ"
+
+
+class UsTnVotersRightsCode(Enum):
+    VRRE = "VRRE"
+    VRRI = "VRRI"
+
+
+class UsTnTEPEContactNoteRequestData(WritebackRequestData):
+    """Model for the legacy `insert_tepe_contact_note` endpoint."""
 
     person_external_id: str
     staff_id: str
     contact_note_date_time: datetime
     contact_note: dict[int, list[str]]
-    voters_rights_code: WorkflowsUsTnVotersRightsCode | None = None
+    voters_rights_code: UsTnVotersRightsCode | None = None
+
+    @field_validator("contact_note")
+    @classmethod
+    def validate_contact_note(cls, v: dict[int, list[str]]) -> dict[int, list[str]]:
+        return UsTnContactNoteRequestData.validate_contact_note(v)
+
+    def to_new_request_data(self) -> "UsTnContactNoteRequestData":
+        return UsTnContactNoteRequestData(
+            person_external_id=self.person_external_id,
+            person_external_id_type=US_TN_DOC,
+            staff_id=self.staff_id,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=self.contact_note_date_time,
+            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_note=self.contact_note,
+            voters_rights_code=self.voters_rights_code,
+            should_queue_task=self.should_queue_task,
+        )
+
+
+class UsTnContactNoteRequestData(ContactNoteRequestData):
+    """Writeback request data for inserting a contact note in TN"""
+
+    state_code: Literal["US_TN"] = StateCode.US_TN.value
+    person_external_id_type: Literal["US_TN_DOC"]
+    staff_id_type: Literal["US_TN_STAFF_TOMIS"]
+    contact_type_code: UsTnContactTypeCode
+    contact_note: dict[int, list[str]]
+    voters_rights_code: UsTnVotersRightsCode | None = None
 
     @field_validator("contact_note")
     @classmethod
@@ -93,9 +145,10 @@ class TomisContactNoteRequest(BaseModel):
     offender_id: str
     staff_id: str
     contact_note_date_time: datetime
+    contact_type_code: UsTnContactTypeCode
     page_number: int
     comments: list[str]
-    voters_rights_code: WorkflowsUsTnVotersRightsCode | None = None
+    voters_rights_code: UsTnVotersRightsCode | None = None
 
     @classmethod
     def from_request_data(
@@ -118,6 +171,7 @@ class TomisContactNoteRequest(BaseModel):
             offender_id=offender_id,
             staff_id=staff_id,
             contact_note_date_time=request_data.contact_note_date_time,
+            contact_type_code=request_data.contact_type_code,
             page_number=page_number,
             comments=comments,
             voters_rights_code=request_data.voters_rights_code,
@@ -128,7 +182,7 @@ class TomisContactNoteRequest(BaseModel):
             "ContactNoteDateTime": self.contact_note_date_time.isoformat(),
             "OffenderId": self.offender_id,
             "StaffId": self.staff_id,
-            "ContactTypeCode1": "TEPE",
+            "ContactTypeCode1": self.contact_type_code.value,
             "ContactSequenceNumber": self.page_number,
         }
         for idx, line_text in enumerate(self.comments):
@@ -189,14 +243,9 @@ class UsTnContactNoteWritebackExecutor(
     """Writeback implementation for TN contact note."""
 
     def __init__(self, request: UsTnContactNoteRequestData) -> None:
-        self.request = request
+        super().__init__(request)
         self._tracker = UsTnContactNoteStatusTracker(
             self.request.person_external_id, FirestoreClientImpl()
-        )
-
-    def to_cloud_task_payload(self) -> dict[str, Any]:
-        return self.request.model_copy(update={"should_queue_task": False}).model_dump(
-            mode="json"
         )
 
     def execute(self) -> None:

@@ -16,7 +16,6 @@
 # =============================================================================
 """US_ND early termination writeback implementation."""
 from datetime import date, datetime, timezone
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -94,14 +93,6 @@ class UsNdEarlyTerminationWritebackExecutor(
     WritebackExecutorInterface[UsNdEarlyTerminationRequestData]
 ):
     """Writeback implementation for ND early termination."""
-
-    def __init__(self, request: UsNdEarlyTerminationRequestData) -> None:
-        self.request = request
-
-    def to_cloud_task_payload(self) -> dict[str, Any]:
-        return self.request.model_copy(update={"should_queue_task": False}).model_dump(
-            mode="json"
-        )
 
     def execute(self) -> None:
         transport = RestTransport(

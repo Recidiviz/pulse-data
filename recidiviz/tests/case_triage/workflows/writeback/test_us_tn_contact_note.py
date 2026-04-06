@@ -28,15 +28,18 @@ from mock import MagicMock, patch
 from pydantic import ValidationError
 from pydantic_core import TzInfo
 
-from recidiviz.case_triage.workflows.constants import (
-    ExternalSystemRequestStatus,
-    WorkflowsUsTnVotersRightsCode,
-)
+from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     TomisContactNoteRequest,
     UsTnContactNoteRequestData,
     UsTnContactNoteStatusTracker,
     UsTnContactNoteWritebackExecutor,
+    UsTnContactTypeCode,
+    UsTnVotersRightsCode,
+)
+from recidiviz.common.constants.state.external_id_types import (
+    US_TN_DOC,
+    US_TN_STAFF_TOMIS,
 )
 
 PERSON_EXTERNAL_ID = "123"
@@ -64,10 +67,13 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
     def test_to_cloud_task_payload(self, _mock_client: MagicMock) -> None:
         request_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_code=UsTnContactTypeCode.TEPE,
             contact_note={1: ["line 1", "line 2"], 2: ["line 3"]},
-            voters_rights_code=WorkflowsUsTnVotersRightsCode.VRRE,
+            voters_rights_code=UsTnVotersRightsCode.VRRE,
             should_queue_task=True,
         )
         executor = UsTnContactNoteWritebackExecutor(request_data)
@@ -76,9 +82,13 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             executor.to_cloud_task_payload(),
             {
                 "should_queue_task": False,
+                "state_code": "US_TN",
                 "person_external_id": PERSON_EXTERNAL_ID,
+                "person_external_id_type": "US_TN_DOC",
                 "staff_id": STAFF_ID,
+                "staff_id_type": "US_TN_STAFF_TOMIS",
                 "contact_note_date_time": CONTACT_NOTE_DATE_TIME.isoformat(),
+                "contact_type_code": "TEPE",
                 "contact_note": {"1": ["line 1", "line 2"], "2": ["line 3"]},
                 "voters_rights_code": "VRRE",
             },
@@ -101,10 +111,13 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             rsps.add(responses.PUT, self.fake_url, json=response_json)
             request_data = UsTnContactNoteRequestData(
                 person_external_id=PERSON_EXTERNAL_ID,
+                person_external_id_type=US_TN_DOC,
                 staff_id=STAFF_ID,
+                staff_id_type=US_TN_STAFF_TOMIS,
                 contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+                contact_type_code=UsTnContactTypeCode.TEPE,
                 contact_note={1: [], 2: []},
-                voters_rights_code=WorkflowsUsTnVotersRightsCode.VRRE,
+                voters_rights_code=UsTnVotersRightsCode.VRRE,
             )
             writeback = UsTnContactNoteWritebackExecutor(request_data)
             writeback.execute()
@@ -129,8 +142,11 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             with self.assertRaises(ConnectionRefusedError):
                 request_data = UsTnContactNoteRequestData(
                     person_external_id=PERSON_EXTERNAL_ID,
+                    person_external_id_type=US_TN_DOC,
                     staff_id=STAFF_ID,
+                    staff_id_type=US_TN_STAFF_TOMIS,
                     contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+                    contact_type_code=UsTnContactTypeCode.TEPE,
                     contact_note={1: []},
                     voters_rights_code=None,
                 )
@@ -150,8 +166,11 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
         with self.assertRaises(EnvironmentError):
             request_data = UsTnContactNoteRequestData(
                 person_external_id=PERSON_EXTERNAL_ID,
+                person_external_id_type=US_TN_DOC,
                 staff_id=STAFF_ID,
+                staff_id_type=US_TN_STAFF_TOMIS,
                 contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+                contact_type_code=UsTnContactTypeCode.TEPE,
                 contact_note={1: []},
                 voters_rights_code=None,
             )
@@ -180,8 +199,11 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             rsps.add(responses.PUT, self.fake_url, json=response_json)
             request_data = UsTnContactNoteRequestData(
                 person_external_id=PERSON_EXTERNAL_ID,
+                person_external_id_type=US_TN_DOC,
                 staff_id="RECIDIVIZ",
+                staff_id_type=US_TN_STAFF_TOMIS,
                 contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+                contact_type_code=UsTnContactTypeCode.TEPE,
                 contact_note={1: [], 2: []},
                 voters_rights_code=None,
             )
@@ -202,21 +224,28 @@ class TestUsTnContactNoteRequestData(TestCase):
         data = UsTnContactNoteRequestData.model_validate(
             {
                 "personExternalId": PERSON_EXTERNAL_ID,
+                "personExternalIdType": "US_TN_DOC",
                 "staffId": STAFF_ID,
+                "staffIdType": "US_TN_STAFF_TOMIS",
                 "contactNoteDateTime": "2000-12-30T00:00:00",
+                "contactTypeCode": "TEPE",
                 "contactNote": {"1": ["line 1", "line 2"]},
                 "votersRightsCode": "VRRE",
             }
         )
         self.assertEqual(data.person_external_id, PERSON_EXTERNAL_ID)
         self.assertEqual(data.staff_id, STAFF_ID)
+        self.assertEqual(data.contact_type_code, UsTnContactTypeCode.TEPE)
 
     def test_valid_snake_case(self) -> None:
         data = UsTnContactNoteRequestData.model_validate(
             {
                 "person_external_id": PERSON_EXTERNAL_ID,
+                "person_external_id_type": "US_TN_DOC",
                 "staff_id": STAFF_ID,
+                "staff_id_type": "US_TN_STAFF_TOMIS",
                 "contact_note_date_time": "2000-12-30T00:00:00",
+                "contact_type_code": "TEPE",
                 "contact_note": {"1": ["line 1", "line 2"]},
                 "voters_rights_code": "VRRE",
             }
@@ -227,8 +256,11 @@ class TestUsTnContactNoteRequestData(TestCase):
         data = UsTnContactNoteRequestData.model_validate(
             {
                 "personExternalId": PERSON_EXTERNAL_ID,
+                "personExternalIdType": "US_TN_DOC",
                 "staffId": STAFF_ID,
+                "staffIdType": "US_TN_STAFF_TOMIS",
                 "contactNoteDateTime": "2000-12-30T00:00:00",
+                "contactTypeCode": "TEPE",
                 "contactNote": {"1": ["line 1"]},
             }
         )
@@ -237,11 +269,14 @@ class TestUsTnContactNoteRequestData(TestCase):
     def test_valid_iso_date_time(self) -> None:
         data = UsTnContactNoteRequestData.model_validate(
             {
-                "person_external_id": PERSON_EXTERNAL_ID,
-                "staff_id": STAFF_ID,
-                "contact_note_date_time": "2026-04-05T12:34:56.789Z",
-                "contact_note": {"1": ["line 1", "line 2"]},
-                "voters_rights_code": "VRRE",
+                "personExternalId": PERSON_EXTERNAL_ID,
+                "personExternalIdType": "US_TN_DOC",
+                "staffId": STAFF_ID,
+                "staffIdType": "US_TN_STAFF_TOMIS",
+                "contactNoteDateTime": "2026-04-05T12:34:56.789Z",
+                "contactTypeCode": "TEPE",
+                "contactNote": {"1": ["line 1", "line 2"]},
+                "votersRightsCode": "VRRE",
             }
         )
         self.assertEqual(
@@ -260,8 +295,11 @@ class TestUsTnContactNoteRequestData(TestCase):
             UsTnContactNoteRequestData.model_validate(
                 {
                     "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
                     "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
                     "contactNote": {"1": ["line 1"]},
                     "votersRightsCode": "VVVV",
                 }
@@ -272,8 +310,11 @@ class TestUsTnContactNoteRequestData(TestCase):
             UsTnContactNoteRequestData.model_validate(
                 {
                     "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
                     "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
                     "contactNote": {},
                 }
             )
@@ -295,8 +336,11 @@ class TestUsTnContactNoteRequestData(TestCase):
             UsTnContactNoteRequestData.model_validate(
                 {
                     "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
                     "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
                     "contactNote": {
                         "1": [f"line {i}" for i in range(11)],
                     },
@@ -308,9 +352,94 @@ class TestUsTnContactNoteRequestData(TestCase):
             UsTnContactNoteRequestData.model_validate(
                 {
                     "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
+                    "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
+                    "contactNote": {"11": ["line 1"]},
+                }
+            )
+
+    def test_non_tepe_contact_type_code(self) -> None:
+        data = UsTnContactNoteRequestData.model_validate(
+            {
+                "personExternalId": PERSON_EXTERNAL_ID,
+                "personExternalIdType": "US_TN_DOC",
+                "staffId": STAFF_ID,
+                "staffIdType": "US_TN_STAFF_TOMIS",
+                "contactNoteDateTime": "2000-12-30T00:00:00",
+                "contactTypeCode": "DEIO",
+                "contactNote": {"1": ["line 1"]},
+            }
+        )
+        self.assertEqual(data.contact_type_code, UsTnContactTypeCode.DEIO)
+
+    def test_missing_person_external_id_type_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
+                    "contactNote": {"1": ["line 1"]},
+                }
+            )
+
+    def test_missing_staff_id_type_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
                     "staffId": STAFF_ID,
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactNote": {"11": ["line 1"]},
+                    "contactTypeCode": "TEPE",
+                    "contactNote": {"1": ["line 1"]},
+                }
+            )
+
+    def test_invalid_person_external_id_type_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "WRONG",
+                    "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
+                    "contactNote": {"1": ["line 1"]},
+                }
+            )
+
+    def test_invalid_staff_id_type_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
+                    "staffId": STAFF_ID,
+                    "staffIdType": "WRONG",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "TEPE",
+                    "contactNote": {"1": ["line 1"]},
+                }
+            )
+
+    def test_invalid_contact_type_code_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
+                    "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCode": "INVALID",
+                    "contactNote": {"1": ["line 1"]},
                 }
             )
 
@@ -324,6 +453,7 @@ class TestTomisContactNoteRequestToJson(TestCase):
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
+            contact_type_code=UsTnContactTypeCode.TEPE,
             page_number=1,
             comments=["line 1", "line 2"],
         )
@@ -344,14 +474,30 @@ class TestTomisContactNoteRequestToJson(TestCase):
         )
 
     @freezegun.freeze_time("2000-12-30")
+    def test_non_tepe_contact_type_code(self) -> None:
+        request = TomisContactNoteRequest(
+            offender_id=PERSON_EXTERNAL_ID,
+            staff_id=STAFF_ID,
+            contact_note_date_time=datetime.datetime.now(),
+            contact_type_code=UsTnContactTypeCode.DEIO,
+            page_number=1,
+            comments=["line 1"],
+        )
+
+        actual = json.loads(request.to_json())
+
+        self.assertEqual(actual["ContactTypeCode1"], "DEIO")
+
+    @freezegun.freeze_time("2000-12-30")
     def test_with_voters_rights_code(self) -> None:
         request = TomisContactNoteRequest(
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
+            contact_type_code=UsTnContactTypeCode.TEPE,
             page_number=1,
             comments=["line 1", "line 2"],
-            voters_rights_code=WorkflowsUsTnVotersRightsCode.VRRE,
+            voters_rights_code=UsTnVotersRightsCode.VRRE,
         )
 
         actual = json.loads(request.to_json())
@@ -365,6 +511,7 @@ class TestTomisContactNoteRequestToJson(TestCase):
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
+            contact_type_code=UsTnContactTypeCode.TEPE,
             page_number=1,
             comments=["line 1"],
         )
@@ -386,8 +533,11 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
         mock_secret.return_value = "test-id"
         request_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_code=UsTnContactTypeCode.TEPE,
             contact_note={1: ["line 1"]},
         )
 
@@ -397,6 +547,7 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
 
         self.assertEqual(result.offender_id, "test-id")
         self.assertEqual(result.staff_id, "test-id")
+        self.assertEqual(result.contact_type_code, UsTnContactTypeCode.TEPE)
 
     @patch(f"{MODULE}.get_secret")
     @patch(f"{MODULE}.in_gcp_production")
@@ -407,8 +558,11 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
         mock_secret.return_value = "test-id"
         request_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id="RECIDIVIZ",
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_code=UsTnContactTypeCode.TEPE,
             contact_note={1: ["line 1"]},
         )
 
@@ -424,8 +578,11 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
         mock_in_prod.return_value = True
         request_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_code=UsTnContactTypeCode.TEPE,
             contact_note={1: ["line 1"]},
         )
 
@@ -445,8 +602,11 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
         mock_secret.return_value = None
         request_data = UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
             staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_code=UsTnContactTypeCode.TEPE,
             contact_note={1: ["line 1"]},
         )
 

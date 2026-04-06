@@ -27,8 +27,8 @@ def get_external_id_types() -> list[str]:
     return [
         assert_type(id_type, str)
         for id_type in dir(external_id_types)
-        # Skip built-in variables
-        if not id_type.startswith("__")
+        # Skip built-in variables and Final import
+        if not id_type.startswith("__") and not id_type == "Final"
     ]
 
 

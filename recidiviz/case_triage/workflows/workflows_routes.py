@@ -19,13 +19,14 @@ import datetime
 import logging
 import uuid
 from http import HTTPStatus
-from typing import List, Optional
+from typing import Annotated, List, Optional, Union
 
 import requests
 import werkzeug.wrappers
 from flask import Response, current_app, g, jsonify, make_response, request
 from flask_smorest import Blueprint
 from flask_wtf.csrf import generate_csrf
+from pydantic import Discriminator, TypeAdapter
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -73,9 +74,16 @@ from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
 )
+from recidiviz.case_triage.workflows.writeback.contact_note import (
+    ContactNoteRequestData,
+)
 from recidiviz.case_triage.workflows.writeback.route_helpers import (
     handle_writeback,
     handle_writeback_enqueue,
+)
+from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
+    UsCoContactNoteRequestData,
+    UsCoContactNoteWritebackExecutor,
 )
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
     UsNdEarlyTerminationRequestData,
@@ -84,6 +92,7 @@ from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     UsTnContactNoteRequestData,
     UsTnContactNoteWritebackExecutor,
+    UsTnTEPEContactNoteRequestData,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
@@ -103,6 +112,14 @@ from recidiviz.utils.sendgrid_client_wrapper import (
 )
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
 from recidiviz.workflows.types import OpportunityConfigResponse, WorkflowsSystemType
+
+ContactNoteRequest = Annotated[
+    Union[UsTnContactNoteRequestData, UsCoContactNoteRequestData],
+    Discriminator("state_code"),
+]
+_contact_note_adapter: TypeAdapter[ContactNoteRequestData] = TypeAdapter(
+    ContactNoteRequest
+)
 
 if in_gcp():
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
@@ -187,43 +204,77 @@ def create_workflows_api_blueprint() -> Blueprint:
         ip_response = requests.get("http://curlmyip.org", timeout=10)
         return jsonify({"ip": ip_response.text})
 
+    # TODO(#69065): Remove deprecated insert_tepe_contact_note endpoint once
+    # frontend has migrated to insert_contact_note.
     @workflows_api.post("/external_request/<state>/insert_tepe_contact_note")
-    @requires_pydantic_schema(UsTnContactNoteRequestData)
+    @requires_pydantic_schema(UsTnTEPEContactNoteRequestData)
     def insert_tepe_contact_note(
         state: str,
-        parsed_request_body: UsTnContactNoteRequestData,
+        parsed_request_body: UsTnTEPEContactNoteRequestData,
     ) -> Response:
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
+        new_request_data = parsed_request_body.to_new_request_data()
         if parsed_request_body.should_queue_task:
             return handle_writeback_enqueue(
-                writeback_executor=UsTnContactNoteWritebackExecutor(
-                    parsed_request_body
-                ),
+                writeback_executor=UsTnContactNoteWritebackExecutor(new_request_data),
                 base_url=cloud_run_metadata.url,
-                handler_path="/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
+                handler_path="/workflows/external_request/insert_contact_note",
             )
         return handle_writeback(
-            writeback_executor=UsTnContactNoteWritebackExecutor(parsed_request_body)
+            writeback_executor=UsTnContactNoteWritebackExecutor(new_request_data)
         )
 
-    # TODO(#69880): instead of having a fully separate handler, try fallback to getting
-    # json from text (or request.get_json(force=True))
+    # TODO(#69065): Remove deprecated handle_insert_tepe_contact_note endpoint once
+    # frontend has migrated to insert_contact_note and all in-flight cloud tasks
+    # targeting this handler have been processed.
     @workflows_api.post("/external_request/<state>/handle_insert_tepe_contact_note")
-    @requires_pydantic_schema(UsTnContactNoteRequestData, use_cloud_task_body=True)
+    @requires_pydantic_schema(UsTnTEPEContactNoteRequestData)
     def handle_insert_tepe_contact_note(
         state: str,
-        parsed_request_body: UsTnContactNoteRequestData,
+        parsed_request_body: UsTnTEPEContactNoteRequestData,
     ) -> Response:
         if state.upper() != StateCode.US_TN.value:
             return jsonify_response(
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
-        return handle_writeback(UsTnContactNoteWritebackExecutor(parsed_request_body))
+        return handle_writeback(
+            UsTnContactNoteWritebackExecutor(parsed_request_body.to_new_request_data())
+        )
+
+    @workflows_api.post("/external_request/insert_contact_note")
+    @requires_pydantic_schema(_contact_note_adapter)
+    def insert_contact_note(parsed_request_body: ContactNoteRequestData) -> Response:
+        writeback_or_enqueue_fn = (
+            (
+                lambda executor: handle_writeback_enqueue(
+                    executor,
+                    cloud_run_metadata.url,
+                    "/workflows/external_request/insert_contact_note",
+                )
+            )
+            if parsed_request_body.should_queue_task
+            else handle_writeback
+        )
+
+        match parsed_request_body:
+            case UsCoContactNoteRequestData():
+                return writeback_or_enqueue_fn(
+                    UsCoContactNoteWritebackExecutor(parsed_request_body)
+                )
+            case UsTnContactNoteRequestData():
+                return writeback_or_enqueue_fn(
+                    UsTnContactNoteWritebackExecutor(parsed_request_body)
+                )
+            case _:
+                return jsonify_response(
+                    "Unsupported state for contact note writeback",
+                    HTTPStatus.BAD_REQUEST,
+                )
 
     @workflows_api.post("/external_request/<state>/enqueue_sms_request")
     @requires_api_schema(WorkflowsEnqueueSmsRequestSchema)
@@ -572,7 +623,7 @@ def create_workflows_api_blueprint() -> Blueprint:
     @workflows_api.post(
         "/external_request/<state>/handle_update_docstars_early_termination_date"
     )
-    @requires_pydantic_schema(UsNdEarlyTerminationRequestData, use_cloud_task_body=True)
+    @requires_pydantic_schema(UsNdEarlyTerminationRequestData)
     def handle_update_docstars_early_termination_date(
         state: str,
         parsed_request_body: UsNdEarlyTerminationRequestData,
