@@ -669,7 +669,10 @@ def get_metrics_by_observation_type_and_metric_class(
     tuple[ObservationType, AggregatedMetricClassType],
     list[AggregatedMetric],
 ]:
-    metrics_by_observation_type_and_metric_class = defaultdict(list)
+    metrics_by_observation_type_and_metric_class: defaultdict[
+        tuple[ObservationType, AggregatedMetricClassType],
+        list[AggregatedMetric],
+    ] = defaultdict(list)
     for metric_class in METRIC_CLASSES:
         metrics_with_class = [
             metric for metric in metrics if isinstance(metric, metric_class)
