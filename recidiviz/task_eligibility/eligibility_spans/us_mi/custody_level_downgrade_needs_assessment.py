@@ -26,9 +26,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     has_assessment_since_latest_class_i_or_ii_misconduct,
+    management_level_could_drop_to_lower_level,
     management_level_greater_than_confinement_level,
     management_level_less_than_or_equal_to_custody_level,
-    management_level_within_six_points_of_lower_level,
     no_class_i_or_ii_misconduct_in_current_supersession,
     no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment,
 )
@@ -64,7 +64,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_housing_unit_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         management_level_greater_than_confinement_level.VIEW_BUILDER,
-        management_level_within_six_points_of_lower_level.VIEW_BUILDER,
+        management_level_could_drop_to_lower_level.VIEW_BUILDER,
         management_level_less_than_or_equal_to_custody_level.VIEW_BUILDER,
         no_class_i_or_ii_misconduct_in_six_months_and_no_security_assessment.VIEW_BUILDER,
         _NO_CLASS_I_OR_II_MISCONDUCT_OR_ASSESSMENT_AFTER_MISCONDUCT,
