@@ -67,7 +67,16 @@ class OverTimeMetricQueryBuilder(MetricQueryBuilder):
             if params.demo:
                 # Return a constant so we don't have to change dates in fixture files as time passes.
                 return PATHWAYS_DEMO_CURRENT_DATE
-            return func.current_date()
+            # Cap the generated month series at the most recent date actually
+            # present in the data. Otherwise, generate_series would extend
+            # through today and produce zero-count rows for months that
+            # haven't been ingested yet, which would (a) show misleading
+            # empty months in the response and (b) drag the running 3-month
+            # average down toward zero.
+            return func.coalesce(
+                select(func.max(self.date_column)).scalar_subquery(),
+                func.current_date(),
+            )
 
         event_counts = (
             Query(

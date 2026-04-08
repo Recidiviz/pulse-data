@@ -91,8 +91,10 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
 
     def test_all_joins_use_state_code(self) -> None:
         result = get_pathways_dynamic_filter_options()
-        # Count USING (state_code) — should match the number of LEFT JOINs (8)
+        # Count USING (state_code): 8 outer LEFT JOINs between top-level CTEs +
+        # 1 inner INNER JOIN against UNDER_CUSTODY_all inside the
+        # date_in_population CTE = 9.
         using_count = result.count("USING (state_code)") + result.count(
             "USING(state_code)"
         )
-        self.assertEqual(using_count, 8)
+        self.assertEqual(using_count, 9)

@@ -101,8 +101,6 @@ class TestPrisonPopulationOverTime(PublicPathwaysOverTimeMetricTestBase, TestCas
             {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
             {"avg90day": 2, "count": 3, "month": 12, "year": 2021},
             {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
-            {"avg90day": 2, "count": 0, "month": 2, "year": 2022},
-            {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
         ]
 
     @property

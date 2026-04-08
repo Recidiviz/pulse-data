@@ -454,7 +454,6 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             {
                 "data": [
                     {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
-                    {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
                 ],
                 "metadata": {
                     "lastUpdated": "2022-08-07",
@@ -473,7 +472,6 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 "data": [
                     {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
                     {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
-                    {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
                 ],
                 "metadata": {
                     "lastUpdated": "2022-08-07",
