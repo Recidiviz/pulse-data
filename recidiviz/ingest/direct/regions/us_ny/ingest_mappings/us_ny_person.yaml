@@ -23,6 +23,10 @@ output:
           StateGender.MALE: "1" # MALE
           StateGender.FEMALE: "2" # FEMALE
           StateGender.NON_BINARY: "3" # NON-BINARY
+          # genid can only be 9 if it has a raw value of 0, causing it to be replaced
+          # by the sex column, which has 9 ("NOT CODED") as a possible value (although
+          # this value has never actually shown up in the data).
+          StateGender.INTERNAL_UNKNOWN: "9"
     sex:
       $enum_mapping:
         $raw_text: sex
