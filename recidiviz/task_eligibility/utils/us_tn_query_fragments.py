@@ -136,6 +136,8 @@ STRONGR_ASSESSMENT_METADATA_DICT = {
     },
 }
 
+CLASSIFICATION_2026_PILOT_FACILITIES = ["BCCX", "TCIX", "RMSI"]
+
 
 # Combines state_supervision_violation_response with state_supervision_violation_response_decision_entry
 # to keep person-date level sanctions. We filter out certain types of decisions that don't result in an impact

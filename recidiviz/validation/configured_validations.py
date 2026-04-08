@@ -60,6 +60,15 @@ from recidiviz.validation.views.state.analyst_data_validation.us_pa.us_pa_releas
     US_PA_NO_NULL_SPAN_EXTERNAL_ID_VIEW_BUILDER,
     US_PA_NO_UNKNOWN_RELEASE_STATUS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_missing_classifications import (
+    US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wonky_recidiviz_data import (
+    US_TN_LOOPBACK_WONKY_RECIDIVIZ_DATA_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wonky_tomis_data import (
+    US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.dataflow_metrics.configured_validations import (
     get_all_dataflow_metrics_validations,
 )
@@ -647,6 +656,21 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_PA_IS_SCI_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=0,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=0,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TN_LOOPBACK_WONKY_RECIDIVIZ_DATA_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=0,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
