@@ -64,6 +64,7 @@ output:
                         - REFSEC
                         - INDEXP # Indecent Exposure
                         - THEFT
+                        - INCENDIARY
                       StateIncarcerationIncidentType.CONTRABAND:
                         - CONT
                         - PROP
