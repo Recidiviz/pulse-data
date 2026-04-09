@@ -10,7 +10,7 @@ input_columns:
   CaseNumber: STRING
   CountNumber: STRING
 
-  update_datetime: DATETIME
+  LastUpdateDate: DATE
   ExpirationDate: DATE
 
 unused_columns: []
@@ -37,7 +37,7 @@ output:
           external_id: $variable(sentence_external_id)
           sentence_lengths:
             - StateSentenceLength:
-                length_update_datetime: update_datetime
+                length_update_datetime: LastUpdateDate
                 # Diversion sentences have a single ExpirationDate with no
                 # min/max distinction. We map to max since that is what
                 # downstream criteria reference.
