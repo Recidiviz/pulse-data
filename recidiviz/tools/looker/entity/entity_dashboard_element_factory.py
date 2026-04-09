@@ -20,6 +20,7 @@ import attr
 from recidiviz.looker.lookml_dashboard_element import (
     FULL_SCREEN_WIDTH,
     SMALL_ELEMENT_HEIGHT,
+    X_SMALL_ELEMENT_HEIGHT,
     LookMLColorApplication,
     LookMLDashboardElement,
     LookMLElementType,
@@ -44,7 +45,7 @@ class EntityDashboardElementFactory:
             body_text="__Info:__ ❇️ - Indicates an open incarceration/supervision period in respective tables."
             " __Note:__ Person_id is not consistent between production and staging environments,"
             " make sure to filter by external id and state if you want to compare a person between the two environments.",
-            height=SMALL_ELEMENT_HEIGHT,
+            height=X_SMALL_ELEMENT_HEIGHT,
             width=FULL_SCREEN_WIDTH,
         )
 
@@ -57,7 +58,7 @@ class EntityDashboardElementFactory:
             type=LookMLElementType.TEXT,
             body_text="__Note:__ Multi-parent tables state_charge and state_early_discharge may be missing results."
             " Please migrate to sentences v2 and charges v2 for accurate results.",
-            height=SMALL_ELEMENT_HEIGHT,
+            height=X_SMALL_ELEMENT_HEIGHT,
             width=FULL_SCREEN_WIDTH,
         )
 

@@ -63,16 +63,16 @@
     row: 0
     col: 0
     width: 24
-    height: 2
+    height: 1
 
   - name: disclaimer
     title: Disclaimer
     type: text
     body_text: __Note:__ Multi-parent tables state_charge and state_early_discharge may be missing results. Please migrate to sentences v2 and charges v2 for accurate results.
-    row: 2
+    row: 1
     col: 0
     width: 24
-    height: 2
+    height: 1
 
   - name: actions
     title: Actions
@@ -85,7 +85,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 4
+    row: 3
     col: 0
     width: 24
     height: 2
@@ -110,7 +110,7 @@
     color_application: 
       collection_id: recidiviz-color-collection
       palette_id: recidiviz-color-collection-categorical-0
-    row: 10
+    row: 9
     col: 0
     width: 24
     height: 6
@@ -140,7 +140,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 16
+    row: 15
     col: 0
     width: 12
     height: 6
@@ -182,7 +182,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 16
+    row: 15
     col: 12
     width: 12
     height: 6
@@ -224,7 +224,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 22
+    row: 21
     col: 0
     width: 12
     height: 6
@@ -249,7 +249,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 22
+    row: 21
     col: 12
     width: 12
     height: 6
@@ -281,7 +281,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 28
+    row: 27
     col: 0
     width: 12
     height: 6
@@ -310,7 +310,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 28
+    row: 27
     col: 12
     width: 12
     height: 6
@@ -338,7 +338,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 34
+    row: 33
     col: 0
     width: 12
     height: 6
@@ -367,7 +367,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 34
+    row: 33
     col: 12
     width: 12
     height: 6
@@ -408,7 +408,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 40
+    row: 39
     col: 0
     width: 12
     height: 6
@@ -448,7 +448,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 40
+    row: 39
     col: 12
     width: 12
     height: 6
@@ -481,7 +481,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 46
+    row: 45
     col: 0
     width: 12
     height: 6
@@ -513,7 +513,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 46
+    row: 45
     col: 12
     width: 12
     height: 6
@@ -534,7 +534,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 52
+    row: 51
     col: 0
     width: 12
     height: 6
@@ -559,7 +559,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 52
+    row: 51
     col: 12
     width: 12
     height: 6
@@ -581,7 +581,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 58
+    row: 57
     col: 0
     width: 12
     height: 6
@@ -609,7 +609,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 58
+    row: 57
     col: 12
     width: 12
     height: 6
@@ -638,7 +638,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 64
+    row: 63
     col: 0
     width: 12
     height: 6
@@ -675,7 +675,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 64
+    row: 63
     col: 12
     width: 12
     height: 6
@@ -709,7 +709,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 70
+    row: 69
     col: 0
     width: 12
     height: 6
@@ -728,7 +728,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 70
+    row: 69
     col: 12
     width: 12
     height: 6
@@ -754,7 +754,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 76
+    row: 75
     col: 0
     width: 12
     height: 6
@@ -783,7 +783,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 76
+    row: 75
     col: 12
     width: 12
     height: 6
@@ -806,7 +806,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 82
+    row: 81
     col: 0
     width: 12
     height: 6
@@ -842,7 +842,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 82
+    row: 81
     col: 12
     width: 12
     height: 6
@@ -881,7 +881,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 88
+    row: 87
     col: 0
     width: 12
     height: 6
@@ -914,7 +914,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 88
+    row: 87
     col: 12
     width: 12
     height: 6
@@ -941,7 +941,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 94
+    row: 93
     col: 0
     width: 12
     height: 6
@@ -974,7 +974,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 94
+    row: 93
     col: 12
     width: 12
     height: 6
@@ -1000,7 +1000,7 @@
       State Code: state_person.state_code
       External Id: state_person_external_id.external_id
       Id Type: state_person_external_id.id_type
-    row: 100
+    row: 99
     col: 0
     width: 12
     height: 6

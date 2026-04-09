@@ -34,6 +34,7 @@ FULL_SCREEN_WIDTH = 24
 SPLIT_SCREEN_WIDTH = int(FULL_SCREEN_WIDTH / 2)
 DEFAULT_HEIGHT = 6
 SMALL_ELEMENT_HEIGHT = 2
+X_SMALL_ELEMENT_HEIGHT = 1
 
 
 def dict_to_scoped_field_names(d: dict[str, list[str]]) -> list[str]:
