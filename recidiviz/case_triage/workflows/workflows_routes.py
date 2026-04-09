@@ -246,9 +246,18 @@ def create_workflows_api_blueprint() -> Blueprint:
             UsTnContactNoteWritebackExecutor(parsed_request_body.to_new_request_data())
         )
 
-    @workflows_api.post("/external_request/insert_contact_note")
+    @workflows_api.post("/external_request/<state>/insert_contact_note")
     @requires_pydantic_schema(_contact_note_adapter)
-    def insert_contact_note(parsed_request_body: ContactNoteRequestData) -> Response:
+    def insert_contact_note(
+        state: str, parsed_request_body: ContactNoteRequestData
+    ) -> Response:
+        if state.upper() != parsed_request_body.state_code:
+            return jsonify_response(
+                f"State code from path ({state.upper()}) does not match state code in "
+                f"request body ({parsed_request_body.state_code})",
+                HTTPStatus.BAD_REQUEST,
+            )
+
         writeback_or_enqueue_fn = (
             (
                 lambda executor: handle_writeback_enqueue(

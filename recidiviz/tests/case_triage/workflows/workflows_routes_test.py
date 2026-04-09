@@ -37,6 +37,9 @@ from recidiviz.case_triage.workflows.workflows_routes import (
     OPT_OUT_MESSAGE,
     create_workflows_api_blueprint,
 )
+from recidiviz.case_triage.workflows.writeback.us_co_contact_note import (
+    UsCoContactNoteRequestData,
+)
 from recidiviz.case_triage.workflows.writeback.us_nd_early_termination import (
     JustificationReason,
     UsNdEarlyTerminationRequestData,
@@ -556,6 +559,213 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             ExternalSystemRequestStatus.FAILURE
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def test_insert_contact_note_state_mismatch(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "stateCode": "US_CO",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_CO_OFFENDERID",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_CO_DOC_BADGE_NUMBER",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "noteBody": "Test note",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        response_json = assert_type(response.get_json(), dict)
+        self.assertIn("does not match", response_json["message"])
+
+    def test_insert_contact_note_missing_state_code(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_TN_DOC",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_TN_STAFF_TOMIS",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "contactNote": {1: ["Line 1"]},
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
+    )
+    @freeze_time("2023-01-01 01:23:45")
+    def test_insert_contact_note_us_tn_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "stateCode": "US_TN",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_TN_DOC",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_TN_STAFF_TOMIS",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "contactNote": {1: ["Line 1", "Line 2"]},
+            "contactTypeCode": "TEPE",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_task_manager.return_value.create_task.assert_called_once()
+        mock_interface.return_value.execute.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
+    )
+    @freeze_time("2023-01-01 01:23:45")
+    def test_insert_contact_note_us_tn_no_queue(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "stateCode": "US_TN",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_TN_DOC",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_TN_STAFF_TOMIS",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "contactNote": {1: ["Line 1", "Line 2"]},
+            "contactTypeCode": "TEPE",
+            "shouldQueueTask": False,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_data = UsTnContactNoteRequestData(
+            state_code="US_TN",
+            should_queue_task=False,
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
+            staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
+            contact_note={1: ["Line 1", "Line 2"]},
+            contact_type_code=UsTnContactTypeCode.TEPE,
+            voters_rights_code=None,
+        )
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsCoContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
+    )
+    @freeze_time("2023-01-01 01:23:45")
+    def test_insert_contact_note_us_co_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_co")
+
+        request_body = {
+            "stateCode": "US_CO",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_CO_OFFENDERID",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_CO_DOC_BADGE_NUMBER",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "noteBody": "Test note body",
+            "shouldQueueTask": False,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_CO/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_data = UsCoContactNoteRequestData(
+            state_code="US_CO",
+            should_queue_task=False,
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type="US_CO_OFFENDERID",
+            staff_id=STAFF_ID,
+            staff_id_type="US_CO_DOC_BADGE_NUMBER",
+            contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
+            note_body="Test note body",
+        )
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.assert_called_once_with(expected_data)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_insert_contact_note_unsupported_state(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_nd")
+
+        request_body = {
+            "stateCode": "US_ND",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_ND_ELITE",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_ND_STAFF_ID",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "noteBody": "Test",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_insert_contact_note_not_authorized(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_id")
+
+        response = self.test_client.post(
+            "/workflows/external_request/US_TN/insert_contact_note", json={}
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     @patch("uuid.uuid4")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")

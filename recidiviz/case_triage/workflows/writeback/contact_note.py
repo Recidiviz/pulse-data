@@ -27,6 +27,7 @@ class ContactNoteRequestData(WritebackRequestData):
     (used as the discriminator) and additional fields for the note content.
     """
 
+    state_code: str
     person_external_id: str
     person_external_id_type: str
     staff_id: str
