@@ -19,6 +19,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     collect_document_collection_configs,
 )
+from recidiviz.documents.store.document_upload_status_table import (
+    DocumentUploadStatusTable,
+)
 from recidiviz.ingest.direct.dataset_config import (
     document_store_metadata_dataset_for_region,
     document_store_temp_dataset_for_region,
@@ -63,6 +66,12 @@ def collect_document_store_source_tables() -> list[SourceTableCollection]:
                 description=config.description,
                 schema_fields=config.build_bq_metadata_schema(),
             )
+
+        metadata_collection.add_source_table(
+            table_id=DocumentUploadStatusTable.table_id,
+            description=DocumentUploadStatusTable.description,
+            schema_fields=DocumentUploadStatusTable.schema(),
+        )
 
         collections.append(metadata_collection)
 

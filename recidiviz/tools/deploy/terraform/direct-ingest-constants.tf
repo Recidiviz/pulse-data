@@ -31,6 +31,12 @@ locals {
     if !local.is_production || !lookup(manifest, "playground", false)
   }
 
+  # States that have a document_collections/ directory under their region config
+  document_collection_states = toset([
+    for region, manifest in local.direct_ingest_region_manifests_to_deploy : region
+    if length(fileset("${local.direct_ingest_regions_package}/${lower(region)}/document_collections", "*.yaml")) > 0
+  ])
+
   sftp_state_alpha_codes = yamldecode(file("${path.module}/config/sftp_state_alpha_codes.yaml"))
 
   # Cloud Identity group resource names for state-specific BQ data access groups.
