@@ -47,18 +47,19 @@ output:
                   - "56" # Static-99R
                   - "8193" # Static-99R 2016
                 StateAssessmentClass.RISK:
+                  # NOTE: Downstream workflows (like SLD) filter by the following five assessment_class_raw_text values
+                  #.      Make sure when doing any mapping revisions/updates to check if anything needs to be updated downstream as well
+                  #.      (for example in assessment_score_sessions)
                   - "8042/8043" # MDOC VFO Risk (Conviction)/MDOC Non-VFO Risk (Conviction)
                   - "8138/8139" # MDOC Non-VFO Risk (Conviction)/MDOC VFO Risk (Conviction)
-                  - "4139" # MDOC Male Core Non-VFO Risk Scale (Conviction)
-                  - "4140" # MDOC Male Core VFO Risk Scale (Conviction)
+                  - "4139/4140" # MDOC Male Core Non-VFO Risk Scale (Conviction)/ MDOC Male Core VFO Risk Scale (Conviction)
+                  - "4141/4142" # MDOC Female Core VFO Risk Scale (Conviction) / MDOC Female Core Non-VFO Risk Scale (Conviction)
                   - "7/8" # Violent Recidivism Risk/General Recidivism Risk
                   - "72/73" # General Recidivism Risk (Conviction)/Violent Recidivism Risk (Conviction)
                   - "5002" # General Recidivism Risk
                   - "5001" # Violent Recidivism Risk
                   - "4050" # Recidivism Risk Scale V2
                   - "4047" # Recidivism Risk Sacle V1
-                  - "4142" # MDOC Female Core VFO Risk Scale (Conviction)
-                  - "4141" # MDOC Female Core Non-VFO Risk Scale (Conviction)
                 StateAssessmentClass.SOCIAL:
                   - "8047" # Cognitive Behavioral  (Conviction)
                   - "4069" # Cognitive Behavioral (Conviction Version)
