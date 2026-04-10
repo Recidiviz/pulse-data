@@ -62,7 +62,7 @@ def collect_document_store_source_tables() -> list[SourceTableCollection]:
 
         for config in configs.values():
             metadata_collection.add_source_table(
-                table_id=config.name,
+                table_id=config.metadata_table_id,
                 description=config.description,
                 schema_fields=config.build_bq_metadata_schema(),
             )

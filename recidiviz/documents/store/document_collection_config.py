@@ -149,6 +149,11 @@ class DocumentCollectionConfig:
                 f"has duplicate column names: {duplicate_names}."
             )
 
+    @property
+    def metadata_table_id(self) -> str:
+        """Returns the BigQuery table ID for this document collection's metadata table."""
+        return self.name
+
     def build_bq_metadata_schema(self) -> list[bigquery.SchemaField]:
         """Returns the full BigQuery schema for this collection's metadata table."""
         return [

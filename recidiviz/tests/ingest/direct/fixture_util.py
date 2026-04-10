@@ -17,6 +17,7 @@
 """Utility methods for working with fixture files specific to direct ingest"""
 import datetime
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -134,7 +135,7 @@ def read_ingest_view_results_fixture(
 
 
 def load_dataframe_from_path(
-    raw_fixture_path: str,
+    raw_fixture_path: str | Path,
     fixture_columns: list[str] | None,
     allow_comments: bool = True,
     encoding: str = FIXTURE_ENCODING,
