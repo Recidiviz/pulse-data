@@ -652,7 +652,6 @@ def main() -> int:
                 "recidiviz.firestore",
                 "recidiviz.ingest.direct.dataset_config",
                 "recidiviz.ingest.direct.regions.us_mi.constants",
-                "recidiviz.ingest.direct.regions.us_tx.ingest_views.us_tx_view_query_fragments",
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
                 "recidiviz.ingest.views.dataset_config",
                 "recidiviz.monitoring",
