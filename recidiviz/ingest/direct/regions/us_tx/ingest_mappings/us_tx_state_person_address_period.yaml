@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  RESI_SID_NO: STRING
-  RESI_STREET: STRING
-  RESI_STREET2: STRING
-  RESI_CITY: STRING
-  RESI_STATE: STRING
-  RESI_ZIP: STRING
-  RESI_COUNTY: STRING
+  SID_NO: STRING
+  street_1: STRING
+  street_2: STRING
+  city: STRING
+  state: STRING
+  zip: STRING
+  county: STRING
   placement: STRING
   start_date: DATE
   end_date: DATE
@@ -16,19 +16,45 @@ output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: RESI_SID_NO
+          external_id: SID_NO
           id_type: $literal("US_TX_SID")
     address_periods:
       - StatePersonAddressPeriod:
           address_start_date: start_date
           address_end_date: end_date
-          address_line_1: RESI_STREET
-          address_line_2: RESI_STREET2
-          address_city: RESI_CITY
-          address_county: RESI_COUNTY
-          address_zip: RESI_ZIP
-          address_state: RESI_STATE
+          address_line_1: street_1
+          address_line_2: street_2
+          address_city: city
+          address_county: county
+          address_zip: zip
+          address_state: state
           address_type: $literal_enum(StatePersonAddressType.PHYSICAL_RESIDENCE)
           address_metadata:
             $normalized_values_json_dict:
               placement: placement
+    housing_status_periods:
+      - StatePersonHousingStatusPeriod:
+          housing_status_start_date: start_date
+          housing_status_end_date: end_date
+          housing_status_type:
+            $enum_mapping:
+              $raw_text: placement
+              $map_null_to: $literal_enum(StatePersonHousingStatusType.INTERNAL_UNKNOWN)
+              $mappings:
+                StatePersonHousingStatusType.PERMANENT_RESIDENCE:
+                  - "Apartment"
+                  - "Condominium"
+                  - "Duplex"
+                  - "Private residence"
+                StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING:
+                  - "Alternative Housing"
+                  - "Personal care home"
+                  - "THAP-Temporary Housing Assistance Program"
+                StatePersonHousingStatusType.FACILITY:
+                  - "Facility"
+                  - "Treatment facility"
+                StatePersonHousingStatusType.EXTERNAL_UNKNOWN:
+                  - "Other"
+                StatePersonHousingStatusType.INTERNAL_UNKNOWN:
+                  - "Mental Hospital"
+                  - "Nursing home"
