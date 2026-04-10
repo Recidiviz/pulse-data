@@ -32,107 +32,21 @@ from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
-    critical_understaffing_needs_quarterly_scheduled_home_contact,
-    monthly_home_contact_required,
-    needs_scheduled_home_contact_monthly_critical_understaffing,
-    needs_scheduled_home_contact_standard_policy,
-    needs_scheduled_home_contact_virtual_override_critical_understaffing,
-    quarterly_home_contact_required,
-    supervision_officer_in_critically_understaffed_location,
-)
-from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
-    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
-    TaskCriteriaGroupLogicType,
+    needs_scheduled_home_contact,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-    logic_type=TaskCriteriaGroupLogicType.OR,
-    criteria_name="US_TX_NEEDS_SCHEDULED_HOME_CONTACT",
-    sub_criteria_list=[
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.AND,
-            criteria_name="US_TX_NEEDS_SCHEDULED_HOME_CONTACT_NOT_CRITICAL_UNDERSTAFFING",
-            sub_criteria_list=[
-                needs_scheduled_home_contact_standard_policy.VIEW_BUILDER,
-                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
-                    sub_criteria=StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-                        logic_type=TaskCriteriaGroupLogicType.AND,
-                        criteria_name="US_TX_QUARTERLY_HOME_CONTACT_REQUIRED_AND_SUPERVISION_OFFICER_IN_CRITICALLY_UNDERSTAFFED_LOCATION",
-                        sub_criteria_list=[
-                            quarterly_home_contact_required.VIEW_BUILDER,
-                            supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
-                        ],
-                    ),
-                ),
-                StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
-                    sub_criteria=StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-                        logic_type=TaskCriteriaGroupLogicType.AND,
-                        criteria_name="US_TX_MONTHLY_HOME_CONTACT_REQUIRED_AND_SUPERVISION_OFFICER_IN_CRITICALLY_UNDERSTAFFED_LOCATION",
-                        sub_criteria_list=[
-                            monthly_home_contact_required.VIEW_BUILDER,
-                            supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
-                        ],
-                    ),
-                ),
-            ],
-            allowed_duplicate_reasons_keys=[
-                "frequency",
-                "frequency_date_part",
-                "type_of_contact",
-                "contact_type",
-                "contact_cadence",
-                "scheduled_contact_dates",
-                "officer_in_critically_understaffed_location",
-            ],
-        ),
-        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
-            logic_type=TaskCriteriaGroupLogicType.AND,
-            criteria_name="US_TX_NEEDS_SCHEDULED_HOME_CONTACT_QUARTERLY_CRITICAL_UNDERSTAFFING",
-            sub_criteria_list=[
-                critical_understaffing_needs_quarterly_scheduled_home_contact.VIEW_BUILDER,
-                supervision_officer_in_critically_understaffed_location.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[
-                "frequency",
-                "frequency_date_part",
-                "type_of_contact",
-                "officer_in_critically_understaffed_location",
-            ],
-        ),
-        needs_scheduled_home_contact_monthly_critical_understaffing.VIEW_BUILDER,
-        needs_scheduled_home_contact_virtual_override_critical_understaffing.VIEW_BUILDER,
-    ],
-    allowed_duplicate_reasons_keys=[
-        "frequency",
-        "frequency_date_part",
-        "type_of_contact",
-        "contact_count",
-        "contact_due_date",
-        "last_contact_date",
-        "contact_type",
-        "officer_in_critically_understaffed_location",
-        "overdue_flag",
-        "period_type",
-        "override_contact_type",
-        "contact_cadence",
-        "contacts_needed",
-        "scheduled_contact_dates",
-        "earliest_unmet_due_date",
-        "contact_period_start",
-        "contact_period_end",
-    ],
+# Re-exported for use in compliance_task_configs.py
+US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER = (
+    needs_scheduled_home_contact.VIEW_BUILDER
 )
 
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TX,
     task_name="needs_scheduled_home_contact",
     candidate_population_view_builder=prioritized_supervision_population_not_in_custody_or_warrant_with_officer.VIEW_BUILDER,
-    criteria_spans_view_builders=[US_TX_NEEDS_SCHEDULED_HOME_CONTACT_CRITERIA_BUILDER],
+    criteria_spans_view_builders=[needs_scheduled_home_contact.VIEW_BUILDER],
     compliance_type=ComplianceType.CONTACT,
     cadence_type=CadenceType.RECURRING_FIXED,
     due_date_field="contact_due_date",
