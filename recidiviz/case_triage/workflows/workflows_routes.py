@@ -222,7 +222,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             return handle_writeback_enqueue(
                 writeback_executor=UsTnContactNoteWritebackExecutor(new_request_data),
                 base_url=cloud_run_metadata.url,
-                handler_path="/workflows/external_request/insert_contact_note",
+                handler_path=f"/workflows/external_request/{state.upper()}/insert_contact_note",
             )
         return handle_writeback(
             writeback_executor=UsTnContactNoteWritebackExecutor(new_request_data)
@@ -263,7 +263,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 lambda executor: handle_writeback_enqueue(
                     executor,
                     cloud_run_metadata.url,
-                    "/workflows/external_request/insert_contact_note",
+                    f"/workflows/external_request/{parsed_request_body.state_code}/insert_contact_note",
                 )
             )
             if parsed_request_body.should_queue_task

@@ -325,6 +325,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
             expected_task_body,
         )
+        self.assertIn(
+            "/US_TN/insert_contact_note",
+            mock_task_manager.return_value.create_task.call_args.kwargs["absolute_uri"],
+        )
         mock_interface.return_value.execute.assert_not_called()
         mock_interface.return_value.create_status_tracker.return_value.set_status.assert_called_with(
             ExternalSystemRequestStatus.IN_PROGRESS
@@ -637,6 +641,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_called_once()
+        self.assertIn(
+            "/US_TN/insert_contact_note",
+            mock_task_manager.return_value.create_task.call_args.kwargs["absolute_uri"],
+        )
         mock_interface.return_value.execute.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
