@@ -32,7 +32,9 @@ from recidiviz.tools.deploy.cloud_build.constants import (
     BUILDER_ALPINE,
     BUILDER_DOCKER,
     DOCKER_CREDENTIAL_HELPER,
+    IMAGE_BUILD_PLATFORMS,
     IMAGE_DOCKERFILES,
+    PLATFORM_LINUX_ARM64,
 )
 from recidiviz.tools.deploy.cloud_build.deployment_stage_interface import (
     DeploymentStageInterface,
@@ -60,6 +62,19 @@ _DOWNLOAD_DOCKER_CREDENTIAL_BUILD_STEP = build_step_for_shell_command(
 )
 
 
+# Cloud Build workers are amd64 machines, so they can't natively execute arm64
+# instructions. QEMU is an emulator that translates arm64 instructions to amd64,
+# allowing Docker to build arm64 images on amd64 hardware. This step registers
+# QEMU as a "binary format handler" in the Linux kernel so that arm64 binaries
+# are transparently routed through QEMU during `docker buildx` multi-platform
+# builds. Must run before any docker buildx build commands that build for arm64.
+_SETUP_QEMU_BUILD_STEP = BuildStep(
+    name=BUILDER_DOCKER,
+    id="setup-qemu",
+    args=["run", "--privileged", "--rm", "tonistiigi/binfmt", "--install", "arm64"],
+)
+
+
 def _generate_build_image_build_step(
     deployment_context: DeploymentContext,
     repository: ArtifactRegistryDockerImageRepository,
@@ -69,6 +84,9 @@ def _generate_build_image_build_step(
     builder_name = repository.repository_id
     tag = repository.version_url(version_tag=deployment_context.version_tag)
     cache_repo = repository.build_url(commit_ref="cache")
+    platforms = IMAGE_BUILD_PLATFORMS[repository.image_kind]
+    needs_arm64 = PLATFORM_LINUX_ARM64 in platforms
+
     build_and_push_image_command = (
         # Add the docker-credential-gcr binary to `PATH` so that `docker` can find it when authenticating
         f'export PATH="{DOCKER_CREDENTIAL_PATH}:$${{PATH}}" '
@@ -85,17 +103,23 @@ def _generate_build_image_build_step(
         f"--cache-from type=registry,ref={cache_repo} "
         # Push images to registry
         "--push "
+        # Target platforms
+        f"--platform={','.join(platforms)} "
     )
     if build_stage:
-        # Target the specified mult-stage build stage when applicable
+        # Target the specified multi-stage build stage when applicable
         build_and_push_image_command += f"--target={build_stage} "
+
+    wait_for_steps = [_DOWNLOAD_DOCKER_CREDENTIAL_BUILD_STEP.id]
+    if needs_arm64:
+        wait_for_steps.append(_SETUP_QEMU_BUILD_STEP.id)
 
     # Create a new build context that can build images in parallel with other build contexts
     create_build_context = BuildStep(
         name=BUILDER_DOCKER,
         args=["buildx", "create", "--name", builder_name],
         id=f"create-build-context-{repository.repository_id}",
-        wait_for=[_DOWNLOAD_DOCKER_CREDENTIAL_BUILD_STEP.id],
+        wait_for=wait_for_steps,
     )
 
     return [
@@ -133,9 +157,16 @@ class BuildImages(DeploymentStageInterface):
         """Generates a configuration for building Docker images and uploading them to Artifact Registry"""
 
         repositories = ArtifactRegistryDockerImageRepository.from_file()
-        build_steps = [
+        needs_qemu = any(
+            PLATFORM_LINUX_ARM64 in IMAGE_BUILD_PLATFORMS[image]
+            for image in args.images
+        )
+
+        build_steps: list[BuildStep] = [
             _DOWNLOAD_DOCKER_CREDENTIAL_BUILD_STEP,
         ]
+        if needs_qemu:
+            build_steps.append(_SETUP_QEMU_BUILD_STEP)
 
         for image in args.images:
             if image not in repositories:
@@ -151,13 +182,15 @@ class BuildImages(DeploymentStageInterface):
                 )
             )
 
+        # Builds with QEMU emulation are 2-4x slower, so use more CPUs.
+        machine_type = (
+            BuildOptions.MachineType.E2_HIGHCPU_32
+            if needs_qemu
+            else BuildOptions.MachineType.E2_HIGHCPU_8
+        )
+
         return BuildConfiguration(
             steps=build_steps,
             uses_source=True,
-            # Building Docker images is resource-intensive and done in parallel.
-            # Use multiple CPUs for this step
-            machine_type=assert_type(
-                BuildOptions.MachineType.E2_HIGHCPU_8,
-                BuildOptions.MachineType,
-            ),
+            machine_type=assert_type(machine_type, BuildOptions.MachineType),
         )

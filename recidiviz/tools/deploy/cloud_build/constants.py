@@ -48,4 +48,25 @@ IMAGE_DOCKERFILES: dict[ImageKind, tuple[str, str | None]] = {
     ImageKind.DATAFLOW_DEV: ("recidiviz/pipelines/Dockerfile.pipelines", None),
 }
 
+# Standard x86-64 architecture used by most cloud infrastructure (GCP, AWS),
+# CI runners, and Intel/AMD desktop machines.
+PLATFORM_LINUX_AMD64 = "linux/amd64"
+
+# ARM 64-bit architecture used by Apple Silicon Macs (M1/M2/M3/M4) and
+# ARM-based cloud instances (e.g. GCP T2A, AWS Graviton).
+PLATFORM_LINUX_ARM64 = "linux/arm64"
+
+# Platforms to build each image kind for. Images that are pulled and run locally
+# (e.g. for the admin panel via docker-compose) include arm64 so they work
+# natively on Apple Silicon Macs. Images that only run in GCP (e.g. Dataflow
+# pipelines) only need amd64.
+IMAGE_BUILD_PLATFORMS: dict[ImageKind, list[str]] = {
+    ImageKind.APP_ENGINE: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
+    ImageKind.RECIDIVIZ_BASE: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
+    ImageKind.ASSET_GENERATION: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
+    ImageKind.CASE_TRIAGE_PATHWAYS: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
+    ImageKind.DATAFLOW: [PLATFORM_LINUX_AMD64],
+    ImageKind.DATAFLOW_DEV: [PLATFORM_LINUX_AMD64],
+}
+
 RECIDIVIZ_SOURCE_VOLUME = Volume(name="git-source", path="/app/recidiviz/")

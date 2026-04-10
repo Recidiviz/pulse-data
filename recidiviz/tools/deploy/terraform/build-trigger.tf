@@ -54,13 +54,26 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     step {
       name = "gcr.io/cloud-builders/docker"
       args = [
+        "run",
+        "--privileged",
+        "--rm",
+        "tonistiigi/binfmt",
+        "--install",
+        "arm64"
+      ]
+      id = "setup-qemu"
+    }
+
+    step {
+      name = "gcr.io/cloud-builders/docker"
+      args = [
         "buildx",
         "create",
         "--name",
         "appengine"
       ]
       id       = "create-build-context-appengine"
-      wait_for = ["download-docker-credential"]
+      wait_for = ["download-docker-credential", "setup-qemu"]
     }
 
     step {
@@ -78,7 +91,9 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
             "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache,mode=max",
             "--cache-from",
             "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache",
-            "--push"
+            "--push",
+            "--platform=linux/amd64,linux/arm64",
+            "--target=recidiviz-app"
           ])
         ])
       ]
@@ -97,7 +112,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
         "recidiviz-base"
       ]
       id       = "create-build-context-recidiviz-base"
-      wait_for = ["download-docker-credential"]
+      wait_for = ["download-docker-credential", "setup-qemu"]
     }
 
     step {
@@ -115,7 +130,8 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
             "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache,mode=max",
             "--cache-from",
             "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache",
-            "--push"
+            "--push",
+            "--platform=linux/amd64,linux/arm64"
           ])
         ])
       ]
@@ -133,7 +149,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
         "asset-generation",
       ]
       id       = "create-build-context-asset-generation"
-      wait_for = ["download-docker-credential"]
+      wait_for = ["download-docker-credential", "setup-qemu"]
     }
 
     step {
@@ -152,6 +168,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
             "--cache-from",
             "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache",
             "--push",
+            "--platform=linux/amd64,linux/arm64"
           ])
         ])
       ]
@@ -169,7 +186,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
         "case-triage-pathways",
       ]
       id       = "create-build-context-case-triage-pathways"
-      wait_for = ["download-docker-credential"]
+      wait_for = ["download-docker-credential", "setup-qemu"]
     }
 
     step {
@@ -188,6 +205,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
             "--cache-from",
             "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:cache",
             "--push",
+            "--platform=linux/amd64,linux/arm64"
           ])
         ])
       ]

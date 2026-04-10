@@ -22,6 +22,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.utils.with_secrets import with_secrets
 from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import ImageKind
 from recidiviz.tools.deploy.cloud_build.build_configuration import DeploymentContext
+from recidiviz.tools.deploy.cloud_build.constants import IMAGE_BUILD_PLATFORMS
 from recidiviz.tools.deploy.cloud_build.deployment_stage_runner import (
     AVAILABLE_DEPLOYMENT_STAGES,
 )
@@ -66,3 +67,48 @@ class DeploymentStepRunnerTest(unittest.TestCase):
                     stage_args.get(deployment_stage, argparse.Namespace()),
                 )
                 self.assertGreater(len(build.steps), 0)
+
+    def test_multi_arch_build_includes_qemu_and_platform(self) -> None:
+        """Multi-arch images (e.g. APP_ENGINE) should include QEMU setup and --platform flag"""
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            build = BuildImages().configure_build(
+                DeploymentContext(
+                    project_id="test-project",
+                    commit_ref="1a2b3c4d",
+                    version_tag="v1.0",
+                    stage="Stage",
+                ),
+                argparse.Namespace(images=[ImageKind.APP_ENGINE]),
+            )
+            step_ids = [step.id for step in build.steps]
+            self.assertIn("setup-qemu", step_ids)
+
+            # The build step command should contain --platform
+            build_step = next(s for s in build.steps if s.id == "build-appengine")
+            build_command = " ".join(build_step.args)
+            expected_platforms = ",".join(IMAGE_BUILD_PLATFORMS[ImageKind.APP_ENGINE])
+            self.assertIn(f"--platform={expected_platforms}", build_command)
+
+    def test_dataflow_build_excludes_qemu_and_platform(self) -> None:
+        """Dataflow images should NOT include QEMU setup or --platform flag"""
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            build = BuildImages().configure_build(
+                DeploymentContext(
+                    project_id="test-project",
+                    commit_ref="1a2b3c4d",
+                    version_tag="v1.0",
+                    stage="Stage",
+                ),
+                argparse.Namespace(images=[ImageKind.DATAFLOW]),
+            )
+            step_ids = [step.id for step in build.steps]
+            self.assertNotIn("setup-qemu", step_ids)
+
+            build_step = next(s for s in build.steps if s.id == "build-dataflow")
+            build_command = " ".join(build_step.args)
+            self.assertNotIn("arm64", build_command)
+
+    def test_all_image_kinds_have_build_platforms(self) -> None:
+        """Every ImageKind must have an entry in IMAGE_BUILD_PLATFORMS."""
+        for image_kind in ImageKind:
+            self.assertIn(image_kind, IMAGE_BUILD_PLATFORMS)
