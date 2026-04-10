@@ -37,6 +37,12 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.new_document_identifier im
     NewDocumentIdentifier,
 )
 
+# Default number of documents to fetch from BQ per batch.
+DEFAULT_UPLOAD_BATCH_SIZE = 5000
+
+# Default number of concurrent GCS uploads within each batch.
+DEFAULT_MAX_CONCURRENT_UPLOADS = 50
+
 
 @attr.define
 class DocumentStoreUpdater:
@@ -44,8 +50,9 @@ class DocumentStoreUpdater:
 
     Given a collection config, this class:
     1. Identifies documents that haven't been uploaded yet
-    2. Uploads them to GCS
-    3. Records successful uploads to the metadata table
+    2. Uploads them to GCS in batches, with concurrent uploads within each batch
+    3. Records successful uploads to the metadata table after each batch,
+       so progress is preserved if the job is interrupted mid-run
     """
 
     big_query_client: BigQueryClient
@@ -61,11 +68,17 @@ class DocumentStoreUpdater:
         sample_size: int | None = None,
         sample_entity_count: int | None = None,
         active_in_compartment: str | None = None,
-        batch_size: int = 100,
+        batch_size: int = DEFAULT_UPLOAD_BATCH_SIZE,
+        max_concurrent_uploads: int = DEFAULT_MAX_CONCURRENT_UPLOADS,
         lookback_days: int | None = None,
         person_ids: list[int] | None = None,
     ) -> DocumentUploadResult:
         """Updates a document collection by uploading new documents and recording metadata.
+
+        Documents are uploaded in batches. Within each batch, GCS uploads run
+        concurrently (up to max_concurrent_uploads at a time). Metadata is committed
+        to BQ after each batch completes, so progress is preserved if the job is
+        interrupted.
 
         Args:
             collection_config: Configuration for the document collection.
@@ -76,7 +89,9 @@ class DocumentStoreUpdater:
             active_in_compartment: If provided, restricts entity sampling to people
                 with an active session in the given compartment (e.g., SUPERVISION).
                 Cannot be used together with person_ids.
-            batch_size: Number of documents to upload per batch.
+            batch_size: Number of documents to fetch from BQ per batch.
+            max_concurrent_uploads: Number of GCS uploads to run in parallel within
+                each batch.
             lookback_days: If provided, only includes documents whose
                 document_update_datetime is within the last N days.
             person_ids: If provided, restricts documents to those belonging to the
@@ -111,33 +126,73 @@ class DocumentStoreUpdater:
             new_documents_address.table_id,
         )
 
-        # Step 2: Upload documents to GCS
-        logging.info("Uploading documents to GCS")
+        # Step 2: Get total document count
+        count_query = f"""
+        SELECT COUNT(*) as total
+        FROM `{self.project_id}.{new_documents_address.dataset_id}.{new_documents_address.table_id}`
+        """
+        total_docs = list(
+            self.big_query_client.run_query_async(
+                query_str=count_query, use_query_cache=True
+            ).result()
+        )[0]["total"]
+        logging.info(
+            "Uploading %d documents for collection %s "
+            "(batch_size=%d, max_concurrent_uploads=%d)",
+            total_docs,
+            collection_config.collection_name,
+            batch_size,
+            max_concurrent_uploads,
+        )
+
+        # Step 3: Upload in batches, committing metadata after each batch so that
+        # a restart will skip already-committed batches.
         uploader = DocumentUploader(
             gcs_fs=self.gcs_fs,
             big_query_client=self.big_query_client,
             project_id=self.project_id,
             sandbox_bucket=self.sandbox_bucket,
         )
-        upload_result = uploader.upload_all_documents(
-            document_collection_config=collection_config,
-            new_documents_address=new_documents_address,
-            batch_size=batch_size,
-        )
 
-        # Step 3: Record successful uploads to metadata table
-        if upload_result.successes:
-            logging.info(
-                "Recording %d successful uploads to metadata table",
-                len(upload_result.successes),
-            )
-            self._record_uploads_to_metadata(
-                collection_config=collection_config,
+        all_successes = {}
+        all_failures = {}
+
+        # sequence_num is 1-indexed (from SQL ROW_NUMBER())
+        start_index = 1
+        while start_index <= total_docs:
+            batch_result = uploader.upload_document_batch(
+                document_collection_config=collection_config,
                 new_documents_address=new_documents_address,
-                successful_document_ids=list(upload_result.successes.keys()),
+                start_index=start_index,
+                batch_size=batch_size,
+                max_concurrent_uploads=max_concurrent_uploads,
             )
 
-        return upload_result
+            if batch_result.successes:
+                self._record_uploads_to_metadata(
+                    collection_config=collection_config,
+                    new_documents_address=new_documents_address,
+                    successful_document_ids=list(batch_result.successes.keys()),
+                )
+
+            all_successes.update(batch_result.successes)
+            all_failures.update(batch_result.failures)
+
+            uploaded_through = min(start_index + batch_size - 1, total_docs)
+            logging.info(
+                "Batch complete: %d/%d documents processed (%d successes, %d failures)",
+                uploaded_through,
+                total_docs,
+                len(batch_result.successes),
+                len(batch_result.failures),
+            )
+            start_index += batch_size
+
+        return DocumentUploadResult(
+            collection_config=collection_config,
+            successes=all_successes,
+            failures=all_failures,
+        )
 
     def _record_uploads_to_metadata(
         self,
@@ -163,11 +218,10 @@ class DocumentStoreUpdater:
 
         upload_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-        # Format document IDs as SQL string literals for the IN clause
-        # Document IDs are SHA256 hex strings, so safe to embed directly
+        # Format document IDs as SQL string literals for the IN clause.
+        # Document IDs are SHA256 hex strings, so safe to embed directly.
         ids_sql = ", ".join(f"'{doc_id}'" for doc_id in successful_document_ids)
 
-        # Insert successful uploads into metadata table
         insert_query = f"""
         INSERT INTO `{self.project_id}.{metadata_address.dataset_id}.{metadata_address.table_id}`
             ({columns_str}, {UPLOAD_DATETIME_COLUMN_NAME})

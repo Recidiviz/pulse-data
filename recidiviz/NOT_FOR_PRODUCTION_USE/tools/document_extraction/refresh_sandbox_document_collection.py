@@ -49,6 +49,8 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config
     get_document_collection_config,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_store_updater import (
+    DEFAULT_MAX_CONCURRENT_UPLOADS,
+    DEFAULT_UPLOAD_BATCH_SIZE,
     DocumentStoreUpdater,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.new_document_identifier import (
@@ -136,7 +138,8 @@ def main(
         sample_size=sample_size,
         sample_entity_count=sample_entity_count,
         active_in_compartment=active_in_compartment,
-        batch_size=50,
+        batch_size=DEFAULT_UPLOAD_BATCH_SIZE,
+        max_concurrent_uploads=DEFAULT_MAX_CONCURRENT_UPLOADS,
         lookback_days=lookback_days,
         person_ids=person_ids,
     )
