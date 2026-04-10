@@ -262,14 +262,6 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
 fi
 
 if [[ -n ${PROMOTE} ]]; then
-    echo "Deploy succeeded - triggering post-deploy jobs."
-    verify_hash "$COMMIT_HASH"
-    post_deploy_triggers "$PROJECT_ID"
-else
-    echo "Deploy succeeded - skipping post deploy triggers for no promote build."
-fi
-
-if [[ -n ${PROMOTE} ]]; then
     echo "Deploying Looker version $VERSION_TAG at commit ${LOOKER_COMMIT_HASH:0:7} to $LOOKER_PROJECT_ID."
     deploy_looker_staging_version "$VERSION_TAG" "$LOOKER_PROJECT_ID"
     echo "Deployed Looker version $VERSION_TAG to $LOOKER_PROJECT_ID."
@@ -284,6 +276,14 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
 
   echo "Pushing tags to remote"
   run_cmd git push origin --tags
+fi
+
+if [[ -n ${PROMOTE} ]]; then
+    echo "Triggering post-deploy jobs."
+    verify_hash "$COMMIT_HASH"
+    post_deploy_triggers "$PROJECT_ID"
+else
+    echo "Skipping post deploy triggers for no promote build."
 fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"

@@ -97,19 +97,9 @@ echo "Updating configuration / infrastructure in preparation for deploy"
 verify_hash "$TAG_COMMIT_HASH"
 pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
 
-echo "Deploy succeeded - triggering post-deploy jobs."
-post_deploy_triggers 'recidiviz-123'
-
 echo "Deploying Looker version [$GIT_VERSION_TAG] to project [$LOOKER_PROJECT_ID]."
 deploy_looker_prod_version "$GIT_VERSION_TAG" "$LOOKER_PROJECT_ID"
 echo "Deployed Looker version [$GIT_VERSION_TAG] to project [$LOOKER_PROJECT_ID]."
-
-update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
-
-duration=$SECONDS
-MINUTES=$((duration / 60))
-echo "Production deploy completed in ${MINUTES} minutes."
-echo "Release candidate staging deploy completed in ${MINUTES} minutes."
 
 echo "Checking for PRs open against the release branch"
 GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat) || exit_on_fail
@@ -118,5 +108,14 @@ run_cmd_no_exiting_no_echo uv run python -m recidiviz.tools.deploy.generate_rele
   --new_tag "${GIT_VERSION_TAG}" \
   --github_token "${GITHUB_DEPLOY_BOT_TOKEN}" || exit_on_fail
 
+echo "Triggering post-deploy jobs."
+post_deploy_triggers 'recidiviz-123'
+
+update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
+
+duration=$SECONDS
+MINUTES=$((duration / 60))
+echo "Production deploy completed in ${MINUTES} minutes."
+echo "Release candidate staging deploy completed in ${MINUTES} minutes."
 
 script_prompt "Have you completed all Post-Deploy tasks for this PROD version in https://go/platform-deploy-log ?"
