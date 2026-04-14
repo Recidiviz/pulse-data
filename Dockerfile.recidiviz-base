@@ -1,6 +1,6 @@
 FROM ubuntu:noble
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 # NOTE: It is is extremely important that we do not delete this
 # variable. One of our dependencies, dateparser, seems to require
@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # properly. If it is not defined, our date parsing will silently
 # return None in a large set of circumstances which is of course,
 # unideal.
-ENV TZ America/New_York
+ENV TZ=America/New_York
 
 RUN apt update -y && apt upgrade -y && \
     apt install -y software-properties-common && \
@@ -26,16 +26,16 @@ RUN apt update -y && apt upgrade -y && \
     apt-get clean
 
 RUN locale-gen en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
-ENV LC_CTYPE en_US.UTF-8
-ENV LANG en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LC_CTYPE=en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # Postgres pulls in tzdata which must have these set to stay noninteractive.
 RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
 
 # Make stdout/stderr unbuffered. This prevents delay between output and cloud
 # logging collection.
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 
 # If DEV_MODE="True", then install dependencies required for running tests
@@ -49,7 +49,7 @@ RUN if [ "$DEV_MODE" = "True" ]; \
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
     apt-get update && \
-    apt-get install postgresql-13 -y && \
+    apt-get install postgresql-18 -y && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean; \
     fi

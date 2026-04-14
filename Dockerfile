@@ -1,12 +1,12 @@
 FROM ubuntu:noble AS recidiviz-init
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 # NOTE: It is is extremely important that we do not delete this
 # variable. One of our dependencies, dateparser, seems to require
 # that TZ is defined (to be truly anything) in order to parse dates
 # properly. If it is not defined, our date parsing will silently
 # return None in a large set of circumstances which is of course,
 # unideal.
-ENV TZ America/New_York
+ENV TZ=America/New_York
 # Add a package repo to get archived python versions.
 RUN apt update -y && apt upgrade -y && \
     apt install -y software-properties-common && \
@@ -26,14 +26,14 @@ RUN apt-get update -y && apt install -y \
 RUN apt-get update -y && \
     apt-get install -y freetds-dev gcc g++ unixodbc-dev
 RUN locale-gen en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
-ENV LC_CTYPE en_US.UTF-8
-ENV LANG en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LC_CTYPE=en_US.UTF-8
+ENV LANG=en_US.UTF-8
 # Postgres pulls in tzdata which must have these set to stay noninteractive.
 RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
 # Make stdout/stderr unbuffered. This prevents delay between output and cloud
 # logging collection.
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 RUN adduser recidiviz && mkdir /app && chown recidiviz /app/
 USER recidiviz
 RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
@@ -68,7 +68,7 @@ RUN wget -O /dev/stdout https://apt.releases.hashicorp.com/gpg             | \
     apt-get update -y && apt-get install terraform -y &&               \
     apt-mark hold terraform
 # Install postgres to be used by tests that need to write to a database from multiple threads.
-ARG PG_VERSION=13
+ARG PG_VERSION=18
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
     apt-get update && apt-get install postgresql-${PG_VERSION} -y

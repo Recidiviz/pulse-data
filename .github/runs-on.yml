@@ -26,13 +26,13 @@ images:
     arch: "x64"
     # Our AWS Account ID
     owner: "475312562243"
-    # Built using runner_images/python311-postgres13/templates/python311-postgres13.pkr.hcl
-    name: x64-python311-postgres13-runs-on-2026-04-13-094636
+    # Built using runner_images/python311-postgres18/templates/python311-postgres18.pkr.hcl
+    name: x64-python311-postgres18-runs-on-2026-04-13-230955
 
   py311-postgres-arm64:
     platform: "linux"
     arch: "arm64"
     # Our AWS Account ID
     owner: "475312562243"
-    # Built using runner_images/python311-postgres13/templates/python311-postgres13.pkr.hcl
-    name: arm64-python311-postgres13-runs-on-2026-04-13-094636
+    # Built using runner_images/python311-postgres18/templates/python311-postgres18.pkr.hcl
+    name: arm64-python311-postgres18-runs-on-2026-04-13-230955

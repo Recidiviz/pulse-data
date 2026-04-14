@@ -51,9 +51,9 @@ On a Mac with [Homebrew](https://brew.sh/):
 ```bash
 brew install uv
 # or curl -LsSf https://astral.sh/uv/install.sh | sh
-brew install xz postgresql@13 openssl
+brew install xz postgresql@18 openssl
 # Add postgres to your $PATH
-export PATH="/opt/homebrew/opt/postgresql@13/bin:$PATH"
+export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
 ```
 
 On Ubuntu 18.04:
@@ -342,7 +342,7 @@ An error occurred while installing psycopg2==...
 On a Mac:
 
 1. Ensure `postgresql` and `openssl` are installed with:
-   `brew install postgresql openssl`
+   `brew install postgresql@18 openssl`
 2. Run the setup script: `./initial_setup.sh`
 
 On Linux: Ensure `libpq` is installed with:

@@ -16,7 +16,7 @@ services:
       - SQLALCHEMY_DB_PASSWORD=example
 
   case_triage_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: case_triage_user
       POSTGRES_PASSWORD: example
@@ -28,7 +28,7 @@ services:
       - case_triage_db_socket:/var/run/postgresql/
 
   justice_counts_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: justice_counts_user
       POSTGRES_PASSWORD: example
@@ -54,7 +54,7 @@ services:
       - SQLALCHEMY_DB_PASSWORD=example
 
   operations_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: operations_user
       POSTGRES_PASSWORD: example
@@ -80,7 +80,7 @@ services:
       - SQLALCHEMY_DB_PASSWORD=example
 
   pathways_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: pathways_user
       POSTGRES_PASSWORD: example
@@ -91,7 +91,7 @@ services:
       - pathways_db_socket:/var/run/postgresql/
 
   workflows_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: workflows_user
       POSTGRES_PASSWORD: example
@@ -127,7 +127,7 @@ services:
       - IS_DEV=true
 
   insights_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: insights_user
       POSTGRES_PASSWORD: example
@@ -138,7 +138,7 @@ services:
       - insights_db_socket:/var/run/postgresql/
 
   public_pathways_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: public_pathways_user
       POSTGRES_PASSWORD: example
@@ -159,7 +159,7 @@ services:
       - IS_DEV=true
 
   persistence_db:
-    image: postgres:13.1-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: persistence_user
       POSTGRES_PASSWORD: example
