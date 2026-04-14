@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 class StateStaffRoleType(StateEntityEnum):
     SUPERVISION_OFFICER = state_enum_strings.state_staff_role_type_supervision_officer
     REENTRY_OFFICER = state_enum_strings.state_staff_role_type_reentry_officer
+    CASE_MANAGER = state_enum_strings.state_staff_role_type_case_manager
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -45,9 +46,18 @@ _STATE_STAFF_ROLE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateStaffRoleType.SUPERVISION_OFFICER: "An official of the state supervision "
     "department who oversees someone while they are on supervision. Also referred to "
     "as a probation/parole officer.",
-    StateStaffRoleType.REENTRY_OFFICER: "An official assigned to someone in a facility "
-    "preparing for release. These individuals are distinct from parole/probation "
-    "officers as they do not oversee them once they are on supervision",
+    StateStaffRoleType.REENTRY_OFFICER: "An official assigned to someone in a "
+    "facility as they are preparing for release. These individuals are distinct from "
+    "parole/probation officers as they do not oversee them once they are on "
+    "supervision, and different from CASE_MANAGERs because they are only responsible "
+    "tasks immediately related to release (such as finding housing or employment). "
+    "While a CASE_MANAGER may also assist with reentry tasks, CMs have a broader "
+    "scope in that they work with someone throughout their incarceration. Usually "
+    "people fulfilling this role are not also CASE_MANAGERs.",
+    StateStaffRoleType.CASE_MANAGER: "A case manager in a prison is an official assigned "
+    "to support specific incarcerated individuals by coordinating their rehabilitation, "
+    "addressing their needs, and facilitating access to services throughout their "
+    "incarceration.",
 }
 
 
@@ -68,6 +78,7 @@ class StateStaffRoleSubtype(StateEntityEnum):
     SUPERVISION_STATE_LEADERSHIP = (
         state_enum_strings.state_staff_role_subtype_supervision_state_leadership
     )
+    CASE_MANAGER = state_enum_strings.state_staff_role_subtype_case_manager
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -96,4 +107,6 @@ _STATE_STAFF_ROLE_TYPE_SUBTYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = 
     StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP: "State leadership oversees the administration "
     "of supervision in the entire state as opposed to specific "
     "locations within the state.",
+    StateStaffRoleSubtype.CASE_MANAGER: "An employee at a facility assigned to manage "
+    "the cases of specific residents.",
 }

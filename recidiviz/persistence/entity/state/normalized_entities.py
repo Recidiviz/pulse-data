@@ -3696,6 +3696,10 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
         default=None, validator=IsNormalizedStaffBackedgeValidator()
     )
 
+    def __attrs_post_init__(self) -> None:
+        if self.role_type == StateStaffRoleType.CASE_MANAGER:
+            assert self.role_subtype == StateStaffRoleSubtype.CASE_MANAGER
+
     @classmethod
     def global_unique_constraints(cls) -> list[UniqueConstraint]:
         return [

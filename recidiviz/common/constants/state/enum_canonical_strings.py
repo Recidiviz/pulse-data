@@ -376,6 +376,7 @@ state_sentencing_authority_federal = "FEDERAL"
 # state_staff_role_period.py
 state_staff_role_type_supervision_officer = "SUPERVISION_OFFICER"
 state_staff_role_type_reentry_officer = "REENTRY_OFFICER"
+state_staff_role_type_case_manager = "CASE_MANAGER"
 state_staff_role_subtype_supervision_officer = "SUPERVISION_OFFICER"
 state_staff_role_subtype_supervision_officer_supervisor = (
     "SUPERVISION_OFFICER_SUPERVISOR"
@@ -383,6 +384,7 @@ state_staff_role_subtype_supervision_officer_supervisor = (
 state_staff_role_subtype_supervision_district_manager = "SUPERVISION_DISTRICT_MANAGER"
 state_staff_role_subtype_supervision_regional_manager = "SUPERVISION_REGIONAL_MANAGER"
 state_staff_role_subtype_supervision_state_leadership = "SUPERVISION_STATE_LEADERSHIP"
+state_staff_role_subtype_case_manager = "CASE_MANAGER"
 
 
 # state_supervision_sentence.py

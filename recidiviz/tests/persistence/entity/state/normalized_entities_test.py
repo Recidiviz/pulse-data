@@ -42,6 +42,10 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
     StateSentencingAuthority,
 )
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
@@ -812,4 +816,37 @@ class TestNormalizedStatePersonStaffRelationshipPeriod(unittest.TestCase):
                 associated_staff_id=1,
                 relationship_priority=1,
                 location_external_id="UNIT 1",
+            )
+
+
+class TestNormalizedStateStaffRolePeriod(unittest.TestCase):
+    """Tests for NormalizedStateStaffRolePeriod entity."""
+
+    def _build_role_period(
+        self,
+        role_type: StateStaffRoleType,
+        role_subtype: StateStaffRoleSubtype | None,
+    ) -> normalized_entities.NormalizedStateStaffRolePeriod:
+        return normalized_entities.NormalizedStateStaffRolePeriod(
+            staff_role_period_id=1,
+            state_code=StateCode.US_XX.value,
+            external_id="RP1",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=None,
+            role_type=role_type,
+            role_subtype=role_subtype,
+        )
+
+    def test_case_manager_with_correct_subtype(self) -> None:
+        # Should not raise
+        _ = self._build_role_period(
+            role_type=StateStaffRoleType.CASE_MANAGER,
+            role_subtype=StateStaffRoleSubtype.CASE_MANAGER,
+        )
+
+    def test_case_manager_with_wrong_subtype(self) -> None:
+        with self.assertRaises(AssertionError):
+            _ = self._build_role_period(
+                role_type=StateStaffRoleType.CASE_MANAGER,
+                role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER,
             )
