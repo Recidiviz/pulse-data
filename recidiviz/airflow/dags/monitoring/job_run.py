@@ -135,7 +135,7 @@ class JobRun:
         *,
         dag_id: str,
         execution_date: datetime.datetime,
-        conf: dict[str, Any],
+        conf: dict[str, Any] | None,
         task_id: str,
         state: int,
         job_type: JobRunType,
@@ -152,7 +152,7 @@ class JobRun:
             # sort dag run config to make sure that two different parameter
             # orderings doesn't break incident de-duplication
             dag_run_config = json.dumps(
-                dict(sorted(filter_params_to_discrete(conf, dag_id).items()))
+                dict(sorted(filter_params_to_discrete(conf or {}, dag_id).items()))
             )
         # Airflow uses pendulum as it's timezone library; let's convert it to native UTC
         # so our validators understand it

@@ -82,6 +82,7 @@ def build_dag_run_history(*, lookback: datetime.timedelta) -> list[dict]:
                 "project_id": project_id,
                 "write_time": write_datetime,
                 **dict(dag_run),
+                "dag_run_config": dag_run.dag_run_config or {},
             }
             for dag_run in latest_dag_runs.all()
         ]
