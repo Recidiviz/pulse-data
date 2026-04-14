@@ -25,7 +25,7 @@ from recidiviz.documents.store.document_collection_config import (
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
-    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+    ROW_CREATE_DATETIME_COLUMN_NAME,
 )
 from recidiviz.ingest.direct.dataset_config import (
     document_store_metadata_dataset_for_region,
@@ -44,7 +44,7 @@ class DocumentCollectionMetadataTableQueryBuilder:
     ) -> str:
         """Builds a query to select the latest version of each document in the
         collection, based on document primary keys and the
-        document_update_datetime column. Returns the primary key columns,
+        row_create_datetime column. Returns the primary key columns,
         other metadata columns, and document_contents_id for each document.
 
         Only documents with a non-null document_contents_id are returned, since a
@@ -57,11 +57,11 @@ class DocumentCollectionMetadataTableQueryBuilder:
             table_id=config.metadata_table_id,
         )
 
-        primary_keys = [col.name for col in config.primary_key_columns]
         output_columns = [
-            col.name
-            for col in config.primary_key_columns + config.other_metadata_columns
-        ] + [DOCUMENT_CONTENTS_ID_COLUMN_NAME]
+            *config.primary_key_column_names,
+            *config.other_metadata_column_names,
+            DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+        ]
 
         return f"""
     SELECT
@@ -69,8 +69,8 @@ class DocumentCollectionMetadataTableQueryBuilder:
     FROM
         {address.format_address_for_query()}
     QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY {list_to_query_string(primary_keys)}
-        ORDER BY {DOCUMENT_UPDATE_DATETIME_COLUMN_NAME} DESC
+        PARTITION BY {list_to_query_string(config.primary_key_column_names)}
+        ORDER BY {ROW_CREATE_DATETIME_COLUMN_NAME} DESC
     ) = 1
         -- Filter out documents that have been deleted
         AND {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL"""

@@ -27,58 +27,68 @@ STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME = "staff_external_id_type"
 DOCUMENT_CONTENTS_ID_COLUMN_NAME = "document_contents_id"
 DOCUMENT_TEXT_COLUMN_NAME = "document_text"
 DOCUMENT_UPDATE_DATETIME_COLUMN_NAME = "document_update_datetime"
-UPLOAD_DATETIME_COLUMN_NAME = "upload_datetime"
+ROW_CREATE_DATETIME_COLUMN_NAME = "row_create_datetime"
 
 _ALL_COLUMN_DEFINITIONS = [
     SchemaField(
         name=PERSON_ID_COLUMN_NAME,
         field_type=SqlTypeNames.INT64.value,
         mode="REQUIRED",
+        description="Recidiviz internal person_id for the root entity",
     ),
     SchemaField(
         name=PERSON_EXTERNAL_ID_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="REQUIRED",
+        description="External ID for the person associated with this document",
     ),
     SchemaField(
         name=PERSON_EXTERNAL_ID_TYPE_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="REQUIRED",
+        description="Type of the person external ID",
     ),
     SchemaField(
         name=STAFF_ID_COLUMN_NAME,
         field_type=SqlTypeNames.INT64.value,
         mode="REQUIRED",
+        description="Recidiviz internal staff_id for the root entity",
     ),
     SchemaField(
         name=STAFF_EXTERNAL_ID_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="REQUIRED",
+        description="External ID for the staff member associated with this document",
     ),
     SchemaField(
         name=STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="REQUIRED",
+        description="Type of the staff external ID",
     ),
     SchemaField(
         name=DOCUMENT_CONTENTS_ID_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="NULLABLE",
+        description="SHA256 hash of state_code | document_text, used to identify the document contents in GCS. NULL if the document has been deleted in the source data.",
     ),
     SchemaField(
         name=DOCUMENT_TEXT_COLUMN_NAME,
         field_type=SqlTypeNames.STRING.value,
         mode="NULLABLE",
+        description="The generated text content of the document. Present only in temporary tables during processing.",
     ),
     SchemaField(
         name=DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
         field_type=SqlTypeNames.TIMESTAMP.value,
         mode="REQUIRED",
+        description="Datetime from the source data indicating when the document was last updated",
     ),
     SchemaField(
-        name=UPLOAD_DATETIME_COLUMN_NAME,
+        name=ROW_CREATE_DATETIME_COLUMN_NAME,
         field_type=SqlTypeNames.TIMESTAMP.value,
         mode="REQUIRED",
+        description="Datetime when this metadata row was written by the document store process",
     ),
 ]
 

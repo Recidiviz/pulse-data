@@ -39,10 +39,10 @@ from recidiviz.documents.store.document_store_columns import (
     PERSON_EXTERNAL_ID_COLUMN_NAME,
     PERSON_EXTERNAL_ID_TYPE_COLUMN_NAME,
     PERSON_ID_COLUMN_NAME,
+    ROW_CREATE_DATETIME_COLUMN_NAME,
     STAFF_EXTERNAL_ID_COLUMN_NAME,
     STAFF_EXTERNAL_ID_TYPE_COLUMN_NAME,
     STAFF_ID_COLUMN_NAME,
-    UPLOAD_DATETIME_COLUMN_NAME,
     get_document_store_column_schema,
 )
 from recidiviz.ingest.direct import regions as default_regions_module
@@ -135,7 +135,6 @@ class DocumentCollectionConfig:
     )
 
     # The SQL query template used to generate documents in this collection.
-    # TODO(#68777): define the expected format of the query template and enforce it.
     document_generation_query_template: str = attr.ib(validator=attr_validators.is_str)
 
     def __attrs_post_init__(self) -> None:
@@ -154,6 +153,16 @@ class DocumentCollectionConfig:
         """Returns the BigQuery table ID for this document collection's metadata table."""
         return self.name
 
+    @property
+    def primary_key_column_names(self) -> list[str]:
+        """Returns the list of primary key column names for this document collection."""
+        return [col.name for col in self.primary_key_columns]
+
+    @property
+    def other_metadata_column_names(self) -> list[str]:
+        """Returns the list of other metadata column names for this document collection."""
+        return [col.name for col in self.other_metadata_columns]
+
     def build_bq_metadata_schema(self) -> list[bigquery.SchemaField]:
         """Returns the full BigQuery schema for this collection's metadata table."""
         return [
@@ -161,13 +170,13 @@ class DocumentCollectionConfig:
             *self.other_metadata_columns,
             get_document_store_column_schema(DOCUMENT_CONTENTS_ID_COLUMN_NAME),
             get_document_store_column_schema(DOCUMENT_UPDATE_DATETIME_COLUMN_NAME),
-            get_document_store_column_schema(UPLOAD_DATETIME_COLUMN_NAME),
+            get_document_store_column_schema(ROW_CREATE_DATETIME_COLUMN_NAME),
         ]
 
     def build_bq_temp_table_schema(self) -> list[bigquery.SchemaField]:
         """Returns the BigQuery schema for the temporary table used during
         document processing. Includes document_text (not persisted to the final
-        metadata table) and excludes upload_datetime (set at final write time).
+        metadata table) and excludes row_create_datetime (set at final write time).
         """
         return [
             *self.primary_key_columns,
