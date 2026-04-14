@@ -1,0 +1,6 @@
+person_id,note_id,note_type,note_body,created_at
+P001,NOTE_1,GENERAL,unchanged_note_text,2026-01-01 10:00:00
+P001,NOTE_2,CONTACT,updated_note_2_text,2026-02-01 10:00:00
+P001,NOTE_3,GENERAL,new_note_3_text,2026-03-01 10:00:00
+P001,NOTE_6,CONTACT,note_6_text,2026-01-10 10:00:00
+P003,NOTE_8,CONTACT,,2026-03-10 10:00:00
