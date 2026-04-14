@@ -35,7 +35,6 @@ from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     UsTnContactNoteStatusTracker,
     UsTnContactNoteWritebackExecutor,
     UsTnContactTypeCode,
-    UsTnVotersRightsCode,
 )
 from recidiviz.common.constants.state.external_id_types import (
     US_TN_DOC,
@@ -44,7 +43,7 @@ from recidiviz.common.constants.state.external_id_types import (
 
 PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
-CONTACT_NOTE_DATE_TIME = datetime.datetime.now()
+CONTACT_NOTE_DATE_TIME = datetime.datetime(2026, 4, 10, 10, 20, 6, 563888)
 
 MODULE = "recidiviz.case_triage.workflows.writeback.us_tn_contact_note"
 TRANSPORT_MODULE = "recidiviz.case_triage.workflows.writeback.transports.rest"
@@ -71,9 +70,8 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             staff_id=STAFF_ID,
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE, UsTnContactTypeCode.VRRE],
             contact_note={1: ["line 1", "line 2"], 2: ["line 3"]},
-            voters_rights_code=UsTnVotersRightsCode.VRRE,
             should_queue_task=True,
         )
         executor = UsTnContactNoteWritebackExecutor(request_data)
@@ -88,9 +86,8 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                 "staff_id": STAFF_ID,
                 "staff_id_type": "US_TN_STAFF_TOMIS",
                 "contact_note_date_time": CONTACT_NOTE_DATE_TIME.isoformat(),
-                "contact_type_code": "TEPE",
+                "contact_type_codes": ["TEPE", "VRRE"],
                 "contact_note": {"1": ["line 1", "line 2"], "2": ["line 3"]},
-                "voters_rights_code": "VRRE",
             },
         )
 
@@ -115,15 +112,48 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                 staff_id=STAFF_ID,
                 staff_id_type=US_TN_STAFF_TOMIS,
                 contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-                contact_type_code=UsTnContactTypeCode.TEPE,
+                contact_type_codes=[UsTnContactTypeCode.TEPE, UsTnContactTypeCode.VRRE],
                 contact_note={1: [], 2: []},
-                voters_rights_code=UsTnVotersRightsCode.VRRE,
             )
             writeback = UsTnContactNoteWritebackExecutor(request_data)
             writeback.execute()
             # update_document called 4 times: page 1 in_progress, page 1 success,
             # page 2 in_progress, page 2 success
             self.assertEqual(mock_client.update_document.call_count, 4)
+
+    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_success_denials(
+        self,
+        mock_client: MagicMock,
+        mock_get_secret: MagicMock,
+        mock_interface_get_secret: MagicMock,
+    ) -> None:
+        mock_interface_get_secret.return_value = "test-id"
+        response_json = {"status": "OK"}
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, json=response_json)
+            request_data = UsTnContactNoteRequestData(
+                person_external_id=PERSON_EXTERNAL_ID,
+                person_external_id_type=US_TN_DOC,
+                staff_id=STAFF_ID,
+                staff_id_type=US_TN_STAFF_TOMIS,
+                contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+                contact_type_codes=[
+                    UsTnContactTypeCode.DECF,
+                    UsTnContactTypeCode.DECR,
+                    UsTnContactTypeCode.DEIJ,
+                ],
+                contact_note={1: [], 2: [], 3: ["foo", "bar", "baz"]},
+            )
+            writeback = UsTnContactNoteWritebackExecutor(request_data)
+            writeback.execute()
+            # update_document called 6 times: page 1 in_progress, page 1 success,
+            # page 2 in_progress, page 2 success, page 3 in_progress, page 3 success
+            self.assertEqual(mock_client.update_document.call_count, 6)
 
     @patch(f"{MODULE}.get_secret")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
@@ -146,9 +176,8 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                     staff_id=STAFF_ID,
                     staff_id_type=US_TN_STAFF_TOMIS,
                     contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-                    contact_type_code=UsTnContactTypeCode.TEPE,
+                    contact_type_codes=[UsTnContactTypeCode.TEPE],
                     contact_note={1: []},
-                    voters_rights_code=None,
                 )
                 writeback = UsTnContactNoteWritebackExecutor(request_data)
                 writeback.execute()
@@ -170,9 +199,8 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                 staff_id=STAFF_ID,
                 staff_id_type=US_TN_STAFF_TOMIS,
                 contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-                contact_type_code=UsTnContactTypeCode.TEPE,
+                contact_type_codes=[UsTnContactTypeCode.TEPE],
                 contact_note={1: []},
-                voters_rights_code=None,
             )
             writeback = UsTnContactNoteWritebackExecutor(request_data)
             writeback.execute()
@@ -203,9 +231,8 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                 staff_id="RECIDIVIZ",
                 staff_id_type=US_TN_STAFF_TOMIS,
                 contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-                contact_type_code=UsTnContactTypeCode.TEPE,
+                contact_type_codes=[UsTnContactTypeCode.TEPE],
                 contact_note={1: [], 2: []},
-                voters_rights_code=None,
             )
             writeback = UsTnContactNoteWritebackExecutor(request_data)
             writeback.execute()
@@ -228,14 +255,16 @@ class TestUsTnContactNoteRequestData(TestCase):
                 "staffId": STAFF_ID,
                 "staffIdType": "US_TN_STAFF_TOMIS",
                 "contactNoteDateTime": "2000-12-30T00:00:00",
-                "contactTypeCode": "TEPE",
+                "contactTypeCodes": ["TEPE", "VRRE"],
                 "contactNote": {"1": ["line 1", "line 2"]},
-                "votersRightsCode": "VRRE",
             }
         )
         self.assertEqual(data.person_external_id, PERSON_EXTERNAL_ID)
         self.assertEqual(data.staff_id, STAFF_ID)
-        self.assertEqual(data.contact_type_code, UsTnContactTypeCode.TEPE)
+        self.assertEqual(
+            data.contact_type_codes,
+            [UsTnContactTypeCode.TEPE, UsTnContactTypeCode.VRRE],
+        )
 
     def test_valid_snake_case(self) -> None:
         data = UsTnContactNoteRequestData.model_validate(
@@ -245,26 +274,11 @@ class TestUsTnContactNoteRequestData(TestCase):
                 "staff_id": STAFF_ID,
                 "staff_id_type": "US_TN_STAFF_TOMIS",
                 "contact_note_date_time": "2000-12-30T00:00:00",
-                "contact_type_code": "TEPE",
+                "contact_type_codes": ["TEPE"],
                 "contact_note": {"1": ["line 1", "line 2"]},
-                "voters_rights_code": "VRRE",
             }
         )
         self.assertEqual(data.person_external_id, PERSON_EXTERNAL_ID)
-
-    def test_optional_voters_rights_code(self) -> None:
-        data = UsTnContactNoteRequestData.model_validate(
-            {
-                "personExternalId": PERSON_EXTERNAL_ID,
-                "personExternalIdType": "US_TN_DOC",
-                "staffId": STAFF_ID,
-                "staffIdType": "US_TN_STAFF_TOMIS",
-                "contactNoteDateTime": "2000-12-30T00:00:00",
-                "contactTypeCode": "TEPE",
-                "contactNote": {"1": ["line 1"]},
-            }
-        )
-        self.assertIsNone(data.voters_rights_code)
 
     def test_valid_iso_date_time(self) -> None:
         data = UsTnContactNoteRequestData.model_validate(
@@ -274,9 +288,8 @@ class TestUsTnContactNoteRequestData(TestCase):
                 "staffId": STAFF_ID,
                 "staffIdType": "US_TN_STAFF_TOMIS",
                 "contactNoteDateTime": "2026-04-05T12:34:56.789Z",
-                "contactTypeCode": "TEPE",
+                "contactTypeCodes": ["TEPE"],
                 "contactNote": {"1": ["line 1", "line 2"]},
-                "votersRightsCode": "VRRE",
             }
         )
         self.assertEqual(
@@ -290,21 +303,6 @@ class TestUsTnContactNoteRequestData(TestCase):
                 {"personExternalId": PERSON_EXTERNAL_ID, "staffId": STAFF_ID}
             )
 
-    def test_invalid_voters_rights_code(self) -> None:
-        with self.assertRaises(ValidationError):
-            UsTnContactNoteRequestData.model_validate(
-                {
-                    "personExternalId": PERSON_EXTERNAL_ID,
-                    "personExternalIdType": "US_TN_DOC",
-                    "staffId": STAFF_ID,
-                    "staffIdType": "US_TN_STAFF_TOMIS",
-                    "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
-                    "contactNote": {"1": ["line 1"]},
-                    "votersRightsCode": "VVVV",
-                }
-            )
-
     def test_empty_contact_note(self) -> None:
         with self.assertRaises(ValidationError):
             UsTnContactNoteRequestData.model_validate(
@@ -314,7 +312,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {},
                 }
             )
@@ -327,7 +325,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "contactNoteDateTime": "15/01/2024 10:00",
                     "contactNote": {"1": ["line 1", "line 2"]},
-                    "votersRightsCode": "VRRE",
+                    "contactTypeCodes": ["TEPE"],
                 }
             )
 
@@ -340,7 +338,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {
                         "1": [f"line {i}" for i in range(11)],
                     },
@@ -356,7 +354,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {"11": ["line 1"]},
                 }
             )
@@ -369,11 +367,11 @@ class TestUsTnContactNoteRequestData(TestCase):
                 "staffId": STAFF_ID,
                 "staffIdType": "US_TN_STAFF_TOMIS",
                 "contactNoteDateTime": "2000-12-30T00:00:00",
-                "contactTypeCode": "DEIO",
+                "contactTypeCodes": ["DEIO"],
                 "contactNote": {"1": ["line 1"]},
             }
         )
-        self.assertEqual(data.contact_type_code, UsTnContactTypeCode.DEIO)
+        self.assertEqual(data.contact_type_codes, [UsTnContactTypeCode.DEIO])
 
     def test_missing_person_external_id_type_raises(self) -> None:
         with self.assertRaises(ValidationError):
@@ -383,7 +381,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {"1": ["line 1"]},
                 }
             )
@@ -396,7 +394,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "personExternalIdType": "US_TN_DOC",
                     "staffId": STAFF_ID,
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {"1": ["line 1"]},
                 }
             )
@@ -410,7 +408,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {"1": ["line 1"]},
                 }
             )
@@ -424,7 +422,7 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "WRONG",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "TEPE",
+                    "contactTypeCodes": ["TEPE"],
                     "contactNote": {"1": ["line 1"]},
                 }
             )
@@ -438,10 +436,107 @@ class TestUsTnContactNoteRequestData(TestCase):
                     "staffId": STAFF_ID,
                     "staffIdType": "US_TN_STAFF_TOMIS",
                     "contactNoteDateTime": "2000-12-30T00:00:00",
-                    "contactTypeCode": "INVALID",
+                    "contactTypeCodes": ["INVALID"],
                     "contactNote": {"1": ["line 1"]},
                 }
             )
+
+
+class TestContactTypeCodeValidation(TestCase):
+    """Tests for contact type code combination validation rules."""
+
+    def _make_request(
+        self, contact_type_codes: list[UsTnContactTypeCode]
+    ) -> UsTnContactNoteRequestData:
+        return UsTnContactNoteRequestData(
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
+            staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_codes=contact_type_codes,
+            contact_note={1: ["line 1"]},
+        )
+
+    # --- Valid combinations ---
+
+    def test_tepe_alone(self) -> None:
+        data = self._make_request([UsTnContactTypeCode.TEPE])
+        self.assertEqual(data.contact_type_codes, [UsTnContactTypeCode.TEPE])
+
+    def test_tepe_with_one_voters_rights_code(self) -> None:
+        data = self._make_request([UsTnContactTypeCode.TEPE, UsTnContactTypeCode.VRRE])
+        self.assertEqual(len(data.contact_type_codes), 2)
+
+    def test_reio_alone(self) -> None:
+        data = self._make_request([UsTnContactTypeCode.REIO])
+        self.assertEqual(data.contact_type_codes, [UsTnContactTypeCode.REIO])
+
+    def test_single_denial_code(self) -> None:
+        data = self._make_request([UsTnContactTypeCode.DEIO])
+        self.assertEqual(data.contact_type_codes, [UsTnContactTypeCode.DEIO])
+
+    def test_multiple_denial_codes(self) -> None:
+        data = self._make_request(
+            [
+                UsTnContactTypeCode.DEIO,
+                UsTnContactTypeCode.DEIR,
+                UsTnContactTypeCode.DECF,
+            ]
+        )
+        self.assertEqual(len(data.contact_type_codes), 3)
+
+    # --- Invalid combinations ---
+
+    def test_empty_codes_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([])
+
+    def test_voters_rights_code_alone_raises(self) -> None:
+        with self.assertRaises(ValidationError, msg="VRRE alone should be rejected"):
+            self._make_request([UsTnContactTypeCode.VRRE])
+
+    def test_both_voters_rights_codes_alone_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.VRRE, UsTnContactTypeCode.VRRI])
+
+    def test_tepe_with_both_voters_rights_codes_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request(
+                [
+                    UsTnContactTypeCode.TEPE,
+                    UsTnContactTypeCode.VRRE,
+                    UsTnContactTypeCode.VRRI,
+                ]
+            )
+
+    def test_tepe_with_denial_code_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.TEPE, UsTnContactTypeCode.DEIO])
+
+    def test_tepe_with_reio_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.TEPE, UsTnContactTypeCode.REIO])
+
+    def test_reio_with_denial_code_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.REIO, UsTnContactTypeCode.DEIO])
+
+    def test_reio_with_voters_rights_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.REIO, UsTnContactTypeCode.VRRE])
+
+    def test_denial_code_with_voters_rights_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.DEIO, UsTnContactTypeCode.VRRE])
+
+    def test_denial_code_with_tepe_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.DEIO, UsTnContactTypeCode.TEPE])
+
+    def test_too_many_codes_raises(self) -> None:
+        with self.assertRaises(ValidationError):
+            self._make_request([UsTnContactTypeCode.DEIO] * 11)
 
 
 class TestTomisContactNoteRequestToJson(TestCase):
@@ -453,7 +548,7 @@ class TestTomisContactNoteRequestToJson(TestCase):
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
             page_number=1,
             comments=["line 1", "line 2"],
         )
@@ -479,7 +574,7 @@ class TestTomisContactNoteRequestToJson(TestCase):
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
-            contact_type_code=UsTnContactTypeCode.DEIO,
+            contact_type_codes=[UsTnContactTypeCode.DEIO],
             page_number=1,
             comments=["line 1"],
         )
@@ -489,29 +584,28 @@ class TestTomisContactNoteRequestToJson(TestCase):
         self.assertEqual(actual["ContactTypeCode1"], "DEIO")
 
     @freezegun.freeze_time("2000-12-30")
-    def test_with_voters_rights_code(self) -> None:
+    def test_multiple_contact_type_codes(self) -> None:
         request = TomisContactNoteRequest(
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE, UsTnContactTypeCode.VRRE],
             page_number=1,
             comments=["line 1", "line 2"],
-            voters_rights_code=UsTnVotersRightsCode.VRRE,
         )
 
         actual = json.loads(request.to_json())
 
-        self.assertEqual(actual["ContactTypeCode2"], "VRRE")
         self.assertEqual(actual["ContactTypeCode1"], "TEPE")
+        self.assertEqual(actual["ContactTypeCode2"], "VRRE")
 
     @freezegun.freeze_time("2000-12-30")
-    def test_no_voters_rights_code_omits_field(self) -> None:
+    def test_single_code_omits_second_field(self) -> None:
         request = TomisContactNoteRequest(
             offender_id=PERSON_EXTERNAL_ID,
             staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now(),
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
             page_number=1,
             comments=["line 1"],
         )
@@ -537,7 +631,7 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
             staff_id=STAFF_ID,
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
             contact_note={1: ["line 1"]},
         )
 
@@ -547,7 +641,7 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
 
         self.assertEqual(result.offender_id, "test-id")
         self.assertEqual(result.staff_id, "test-id")
-        self.assertEqual(result.contact_type_code, UsTnContactTypeCode.TEPE)
+        self.assertEqual(result.contact_type_codes, [UsTnContactTypeCode.TEPE])
 
     @patch(f"{MODULE}.get_secret")
     @patch(f"{MODULE}.in_gcp_production")
@@ -562,7 +656,7 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
             staff_id="RECIDIVIZ",
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
             contact_note={1: ["line 1"]},
         )
 
@@ -582,7 +676,7 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
             staff_id=STAFF_ID,
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
             contact_note={1: ["line 1"]},
         )
 
@@ -606,7 +700,7 @@ class TestTomisContactNoteRequestFromRequestData(TestCase):
             staff_id=STAFF_ID,
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
-            contact_type_code=UsTnContactTypeCode.TEPE,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
             contact_note={1: ["line 1"]},
         )
 
@@ -622,7 +716,12 @@ class TestUsTnContactNoteStatusTracker(TestCase):
     def test_set_status_updates_firestore(self) -> None:
         mock_firestore = MagicMock()
         mock_firestore.timestamp_key = "serverTimestamp"
-        tracker = UsTnContactNoteStatusTracker("123", mock_firestore)
+        tracker = UsTnContactNoteStatusTracker(
+            "123",
+            CONTACT_NOTE_DATE_TIME,
+            [UsTnContactTypeCode.TEPE],
+            mock_firestore,
+        )
         tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
 
         mock_firestore.update_document.assert_called_once()
@@ -636,10 +735,37 @@ class TestUsTnContactNoteStatusTracker(TestCase):
             ExternalSystemRequestStatus.IN_PROGRESS.value,
         )
 
+    def test_set_status_updates_firestore_reio(self) -> None:
+        mock_firestore = MagicMock()
+        mock_firestore.timestamp_key = "serverTimestamp"
+        tracker = UsTnContactNoteStatusTracker(
+            "123",
+            CONTACT_NOTE_DATE_TIME,
+            [UsTnContactTypeCode.REIO],
+            mock_firestore,
+        )
+        tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
+
+        mock_firestore.update_document.assert_called_once()
+        call_args = mock_firestore.update_document.call_args
+        self.assertEqual(
+            call_args[0][0],
+            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnContactNote_2026-04-10T10:20:06.563888",
+        )
+        self.assertEqual(
+            call_args[0][1]["contactNote.status"],
+            ExternalSystemRequestStatus.IN_PROGRESS.value,
+        )
+
     def test_set_page_status_updates_firestore(self) -> None:
         mock_firestore = MagicMock()
         mock_firestore.timestamp_key = "serverTimestamp"
-        tracker = UsTnContactNoteStatusTracker("123", mock_firestore)
+        tracker = UsTnContactNoteStatusTracker(
+            "123",
+            CONTACT_NOTE_DATE_TIME,
+            [UsTnContactTypeCode.TEPE],
+            mock_firestore,
+        )
 
         tracker.set_page_status(1, ExternalSystemRequestStatus.SUCCESS)
 
@@ -648,6 +774,29 @@ class TestUsTnContactNoteStatusTracker(TestCase):
         self.assertEqual(
             call_args[0][0],
             "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration",
+        )
+        self.assertEqual(
+            call_args[0][1]["contactNote.noteStatus.1"],
+            ExternalSystemRequestStatus.SUCCESS.value,
+        )
+
+    def test_set_page_status_updates_firestore_reio(self) -> None:
+        mock_firestore = MagicMock()
+        mock_firestore.timestamp_key = "serverTimestamp"
+        tracker = UsTnContactNoteStatusTracker(
+            "123",
+            CONTACT_NOTE_DATE_TIME,
+            [UsTnContactTypeCode.REIO],
+            mock_firestore,
+        )
+
+        tracker.set_page_status(1, ExternalSystemRequestStatus.SUCCESS)
+
+        mock_firestore.update_document.assert_called_once()
+        call_args = mock_firestore.update_document.call_args
+        self.assertEqual(
+            call_args[0][0],
+            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnContactNote_2026-04-10T10:20:06.563888",
         )
         self.assertEqual(
             call_args[0][1]["contactNote.noteStatus.1"],

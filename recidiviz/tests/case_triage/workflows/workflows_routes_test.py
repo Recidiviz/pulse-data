@@ -300,7 +300,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "staff_id": STAFF_ID,
             "contact_note_date_time": "2023-01-01T01:23:45",
             "contact_note": {"1": ["Line 1", "Line 2"]},
-            "voters_rights_code": None,
+            "contact_type_codes": ["TEPE"],
         }
         mock_interface.return_value.to_cloud_task_payload.return_value = (
             expected_task_body
@@ -373,8 +373,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
-            contact_type_code=UsTnContactTypeCode.TEPE,
-            voters_rights_code=None,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
         )
         mock_task_manager.return_value.create_task.assert_not_called()
         mock_interface.assert_called_once_with(expected_data)
@@ -523,8 +522,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
-            contact_type_code=UsTnContactTypeCode.TEPE,
-            voters_rights_code=None,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
         )
         mock_interface.assert_called_once_with(expected_data)
         mock_interface.return_value.execute.assert_called_once()
@@ -630,7 +628,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "staffIdType": "US_TN_STAFF_TOMIS",
             "contactNoteDateTime": "2023-01-01T01:23:45",
             "contactNote": {1: ["Line 1", "Line 2"]},
-            "contactTypeCode": "TEPE",
+            "contactTypeCodes": ["TEPE"],
         }
 
         with self.test_app.test_request_context():
@@ -671,7 +669,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "staffIdType": "US_TN_STAFF_TOMIS",
             "contactNoteDateTime": "2023-01-01T01:23:45",
             "contactNote": {1: ["Line 1", "Line 2"]},
-            "contactTypeCode": "TEPE",
+            "contactTypeCodes": ["TEPE"],
             "shouldQueueTask": False,
         }
 
@@ -691,8 +689,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             staff_id_type=US_TN_STAFF_TOMIS,
             contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
-            contact_type_code=UsTnContactTypeCode.TEPE,
-            voters_rights_code=None,
+            contact_type_codes=[UsTnContactTypeCode.TEPE],
         )
         mock_task_manager.return_value.create_task.assert_not_called()
         mock_interface.assert_called_once_with(expected_data)
