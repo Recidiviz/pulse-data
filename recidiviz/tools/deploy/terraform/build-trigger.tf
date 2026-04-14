@@ -209,12 +209,14 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
           ])
         ])
       ]
-      id         = "build-case-triage-pathways"
-      wait_for   = ["create-build-context-case-triage-pathways"]
+      id = "build-case-triage-pathways"
+      # Dockerfile.case-triage-pathways does `FROM recidiviz-base/default:latest`,
+      # so we must wait for recidiviz-base to be pushed before building this image.
+      wait_for   = ["create-build-context-case-triage-pathways", "build-recidiviz-base"]
       entrypoint = "sh"
     }
     options {
-      machine_type = "N1_HIGHCPU_32"
+      machine_type = "E2_HIGHCPU_32"
     }
     timeout = "3600s"
   }
