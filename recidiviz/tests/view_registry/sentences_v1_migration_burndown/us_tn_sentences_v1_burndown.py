@@ -20,6 +20,12 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.meetings.clients import (
+    MEETINGS_CLIENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.meetings.residents import (
+    MEETINGS_RESIDENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -245,6 +251,42 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "MEETINGS": {
+        MEETINGS_CLIENTS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+            SENTENCE_SPANS_VIEW_BUILDER.address: {
+                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
+                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
+                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
+                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
+            },
+            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
+                US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
+                US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
+                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
+                US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
+            },
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
+                table_id=StateIncarcerationSentence.get_table_id(),
+            ): {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
+                table_id=StateSupervisionSentence.get_table_id(),
+            ): {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
+        MEETINGS_RESIDENTS_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },

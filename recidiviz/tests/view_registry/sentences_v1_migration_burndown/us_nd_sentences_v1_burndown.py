@@ -29,6 +29,12 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_su
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_time_series import (
     VITALS_TIME_SERIES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.meetings.clients import (
+    MEETINGS_CLIENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.meetings.residents import (
+    MEETINGS_RESIDENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -383,6 +389,28 @@ US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
+            },
+        },
+    },
+    "MEETINGS": {
+        MEETINGS_CLIENTS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                SUPERVISION_EARLY_DISCHARGE_BEFORE_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+            BigQueryAddress(
+                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_ND),
+                table_id=StateSupervisionSentence.get_table_id(),
+            ): {
+                US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
+            },
+        },
+        MEETINGS_RESIDENTS_VIEW_BUILDER.address: {
+            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                INCARCERATION_WITHIN_1_YEAR_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                INCARCERATION_WITHIN_2_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
+                US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },
