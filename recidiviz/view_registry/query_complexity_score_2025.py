@@ -202,6 +202,8 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
         expr.Least,
         expr.Greatest,
         expr.Sum,
+        expr.Stddev,
+        expr.Sqrt,
         expr.LogicalOr,
         expr.LogicalAnd,
         expr.Abs,
