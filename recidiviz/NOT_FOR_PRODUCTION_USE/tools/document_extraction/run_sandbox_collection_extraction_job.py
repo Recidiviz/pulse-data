@@ -42,7 +42,10 @@ import argparse
 import logging
 import sys
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalkerProcessingFailureMode,
 )
@@ -57,16 +60,19 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.llm_
     LLMPromptExtractorMetadata,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.views.extraction_view_collector import (
+    DOCUMENT_STORE_METADATA_DATASET,
     VALIDATED_DATASET,
+    generate_context_metadata_union_sql,
     get_document_extraction_view_builders,
 )
-from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.refresh_sandbox_document_collection import (
-    SANDBOX_DATASET_EXPIRATION_MS,
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.views.view_config import (
+    get_document_extraction_current_summary_view_builders,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.refresh_sandbox_document_collection import (
     main as refresh_document_collection_main,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.run_sandbox_document_extraction_job import (
+    SANDBOX_DATASET_EXPIRATION_MS,
     _build_not_for_prod_address_overrides,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.run_sandbox_document_extraction_job import (
@@ -80,6 +86,7 @@ from recidiviz.utils.metadata import local_project_id_override
 def _deploy_collection_views_to_sandbox(
     ran_extractors: list[LLMPromptExtractorMetadata],
     sandbox_dataset_prefix: str,
+    include_summary_builders: bool = True,
 ) -> None:
     """Deploys collection-level views to sandbox datasets.
 
@@ -92,21 +99,59 @@ def _deploy_collection_views_to_sandbox(
 
     # Get all production builders
     all_extraction_builders = get_document_extraction_view_builders()
-    # Collect per-extractor validated builders for only the states we ran
+    # Collect per-extractor builders for only the states we ran. Use startswith
+    # so that derived per-extractor views (e.g. *_entities) are included alongside
+    # the base validated view.
     ran_extractor_ids = {e.extractor_id.lower() for e in ran_extractors}
     per_extractor_builders: list[BigQueryViewBuilder] = []
     ran_validated_parents = []
+    ran_entities_parents: list[SimpleBigQueryViewBuilder] = []
+    collection_entities_view_id = f"{collection_view_id}_entities"
 
     for builder in all_extraction_builders:
-        if builder.view_id in ran_extractor_ids:
+        is_per_extractor = any(
+            builder.view_id.startswith(extractor_id)
+            for extractor_id in ran_extractor_ids
+        )
+        if is_per_extractor:
             per_extractor_builders.append(builder)
             if builder.dataset_id == VALIDATED_DATASET:
-                ran_validated_parents.append(builder)
-        # Skip the production union view — we'll create our own with only ran states
-        elif builder.view_id == collection_view_id:
+                if builder.view_id in ran_extractor_ids:
+                    ran_validated_parents.append(builder)
+                elif builder.view_id.endswith("_entities") and isinstance(
+                    builder, SimpleBigQueryViewBuilder
+                ):
+                    ran_entities_parents.append(builder)
+        # Skip the production collection-level union views — we'll build our own
+        # with only the states that were actually run.
+        elif builder.view_id in (collection_view_id, collection_entities_view_id):
             continue
+        elif (
+            builder.dataset_id == DOCUMENT_STORE_METADATA_DATASET
+            and "_entity_resolution" in collection_view_id
+            and builder.view_id
+            == collection_view_id.replace("_entity_resolution", "_context_metadata")
+        ):
+            # Context metadata union view for this ER collection — build a
+            # custom version that only includes the states that were actually
+            # run (same principle as the custom extraction results union above).
+            # Guard against non-ER collections (which have no context metadata
+            # view) and against unrelated ER collections' metadata views.
+            assert isinstance(builder, SimpleBigQueryViewBuilder)
+            per_extractor_builders.append(
+                SimpleBigQueryViewBuilder(
+                    dataset_id=DOCUMENT_STORE_METADATA_DATASET,
+                    view_id=builder.view_id,
+                    description=builder.description,
+                    view_query_template=generate_context_metadata_union_sql(
+                        ran_extractors
+                    ),
+                    should_materialize=True,
+                    clustering_fields=["person_id"],
+                )
+            )
 
-    # Build a custom union with only ran states' validated builders as parents
+    # Build a custom validated union with only ran states' validated builders as parents
     custom_union_builder = UnionAllBigQueryViewBuilder(
         dataset_id=VALIDATED_DATASET,
         view_id=collection_view_id,
@@ -118,10 +163,32 @@ def _deploy_collection_views_to_sandbox(
         clustering_fields=["state_code", "person_id"],
     )
 
+    # Combine builders: per-extractor + custom union + (optionally) summaries
+    # Filter summary builders to only those for the current collection
     all_builders: list[BigQueryViewBuilder] = [
         *per_extractor_builders,
         custom_union_builder,
     ]
+    if include_summary_builders:
+        all_summary_builders = get_document_extraction_current_summary_view_builders()
+        all_builders += [
+            b for b in all_summary_builders if collection_view_id in b.view_id
+        ]
+
+    # If the collection has entities views, also build a custom entities union.
+    if ran_entities_parents:
+        all_builders.append(
+            UnionAllBigQueryViewBuilder(
+                dataset_id=VALIDATED_DATASET,
+                view_id=collection_entities_view_id,
+                description=(
+                    f"Union of resolved entities for {collection_name} "
+                    f"(sandbox: {len(ran_entities_parents)} states)."
+                ),
+                parents=ran_entities_parents,
+                clustering_fields=["state_code", "person_id"],
+            )
+        )
 
     # Build overrides directly to skip validation against the standard source
     # table repo (these datasets live in NOT_FOR_PRODUCTION_USE).

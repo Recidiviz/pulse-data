@@ -54,7 +54,10 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalkerProcessingFailureMode,
 )
@@ -97,7 +100,9 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.vali
     ValidatedExtractionResultMetadata,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.views.extraction_view_collector import (
+    DOCUMENT_STORE_METADATA_DATASET,
     VALIDATED_DATASET,
+    generate_context_metadata_union_sql,
     get_document_extraction_view_builders,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.active_compartment_filter import (
@@ -274,6 +279,7 @@ def _build_not_for_prod_address_overrides(
         VALIDATED_DATASET,
         DocumentResultExclusionMetadata.EXCLUSIONS_DATASET_ID,
         ValidatedExtractionResultMetadata.VALIDATED_DATASET_ID,
+        "employer_name_standardization",
     ]:
         builder.register_custom_dataset_override(
             dataset_id,
@@ -301,13 +307,37 @@ def _deploy_extraction_views_to_sandbox(
     extractor_view_id = extractor.extractor_id.lower()
     collection_view_id = extractor.collection_name.lower()
     # Include per-extractor views, collection-level union view, and derived
-    # collection-level views (e.g., sessions, current_summary)
+    # collection-level views (e.g., sessions, current_summary).
     extractor_builders = [
         b
         for b in all_builders
         if b.view_id.startswith(extractor_view_id)
         or b.view_id.startswith(collection_view_id)
     ]
+
+    # For ER collections, also deploy a context metadata union view scoped to
+    # only this state (to avoid referencing non-existent sandbox tables).
+    if "_ENTITY_RESOLUTION" in extractor.collection_name:
+        context_metadata_view_id = collection_view_id.replace(
+            "_entity_resolution", "_context_metadata"
+        )
+        context_builders = [
+            b for b in all_builders if b.view_id == context_metadata_view_id
+        ]
+        if context_builders:
+            assert isinstance(context_builders[0], SimpleBigQueryViewBuilder)
+            extractor_builders.append(
+                SimpleBigQueryViewBuilder(
+                    dataset_id=DOCUMENT_STORE_METADATA_DATASET,
+                    view_id=context_metadata_view_id,
+                    description=context_builders[0].description,
+                    view_query_template=generate_context_metadata_union_sql(
+                        [extractor]
+                    ),
+                    should_materialize=True,
+                    clustering_fields=["person_id"],
+                )
+            )
 
     if not extractor_builders:
         logging.warning(
