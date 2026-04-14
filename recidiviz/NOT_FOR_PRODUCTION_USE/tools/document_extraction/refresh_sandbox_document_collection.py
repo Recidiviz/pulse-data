@@ -59,8 +59,8 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.new_document_identifier im
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 
-# 72-hour expiration for sandbox datasets (in milliseconds)
-SANDBOX_DATASET_EXPIRATION_MS = 72 * 60 * 60 * 1000
+# 30-day expiration for sandbox datasets (in milliseconds)
+SANDBOX_DATASET_EXPIRATION_MS = 30 * 24 * 60 * 60 * 1000
 
 
 def main(

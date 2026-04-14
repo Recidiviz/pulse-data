@@ -1,12 +1,12 @@
 # US_IX-specific Employment Extractor
 #
-# Example extractor config. Real configs live in the
-# mayukas/document-extraction-configs branch.
+# Tuned for Idaho's case note format and terminology.
 
 collection_name: CASE_NOTE_EMPLOYMENT_INFO
 
 description: >
-  Employment information extractor for US_IX case notes.
+  Employment information extractor tuned for US_IX case notes. Handles
+  Idaho-specific terminology and document structure.
 
 input_document_collection_name: US_IX_SUPERVISION_CASE_NOTES
 
@@ -15,5 +15,20 @@ model: gemini-2.5-flash
 
 prompt_vars:
   state_agency_name: "Idaho Department of Correction"
-  state_specific_context: ""
-  state_specific_fields_example: ""
+  state_specific_context: |
+    Idaho case notes often use specific abbreviations:
+    - "EMP" = Employment
+    - "UNEMP" = Unemployed
+    - "VOC" = Vocational training
+    - "P/T" = Part-time
+    - "F/T" = Full-time
+
+    In some cases the note may be formatted as such:
+    ```
+    {{note_title: XXX}} {{note: YYY}}
+    ```
+    In this case, parse the contents of the "note" field for employment information.
+
+    Notes that mention changes to assignment as Primary Officer should not be included as 
+    employment information, as these likely indicate a case transfer rather than an employment change for the client.
+  state_specific_fields_example: '(e.g., "Employment: X")'

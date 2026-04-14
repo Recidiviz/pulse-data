@@ -1,0 +1,26 @@
+# US_MI-specific Payment Extractor
+#
+# Tuned for Michigan's parole/probation case note format.
+
+collection_name: CASE_NOTE_PAYMENT_INFO
+
+description: >
+  Payment information extractor tuned for US_MI parole/probation case notes.
+
+input_document_collection_name: US_MI_CASE_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Michigan Department of Corrections"
+  state_specific_context: |
+    Michigan case notes are from parole or probation officers. Your goal is to
+    read the provided list of case notes for a single client and generate an
+    array of JSON objects, one per relevant note, that each summarize all
+    payment-related findings.
+
+    In the case that there are multiple payments, court-ordered obligations
+    (fines, restitution) should have an earlier payment_idx than supervision
+    fees and other administrative costs.
+  state_specific_fields_example: '(e.g., "Restitution: X")'

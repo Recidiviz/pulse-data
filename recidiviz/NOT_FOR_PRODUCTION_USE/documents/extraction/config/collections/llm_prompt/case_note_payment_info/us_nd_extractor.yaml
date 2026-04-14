@@ -1,0 +1,24 @@
+# US_ND-specific Payment Extractor
+#
+# Tuned for North Dakota's DOCSTARS contact note format.
+
+collection_name: CASE_NOTE_PAYMENT_INFO
+
+description: >
+  Payment information extractor tuned for US_ND DOCSTARS contact notes. Handles
+  North Dakota-specific terminology and document structure.
+
+input_document_collection_name: US_ND_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "North Dakota Department of Corrections and Rehabilitation"
+  state_specific_context: |
+    North Dakota uses the DOCSTARS system. DOCSTARS notes may reference:
+    - Restitution obligations and payment tracking
+    - Court costs and fines
+    - Supervision fees and payment compliance
+    - Financial obligation as a condition of supervision
+  state_specific_fields_example: '(e.g., "Restitution: X")'

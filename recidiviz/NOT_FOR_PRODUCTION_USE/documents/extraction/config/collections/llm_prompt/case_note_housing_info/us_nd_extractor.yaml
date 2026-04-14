@@ -1,0 +1,31 @@
+# US_ND-specific Housing Extractor
+#
+# Tuned for North Dakota's DOCSTARS contact note format.
+
+collection_name: CASE_NOTE_HOUSING_INFO
+
+description: >
+  Housing information extractor tuned for US_ND DOCSTARS contact notes.
+  Handles North Dakota-specific terminology and document structure.
+
+input_document_collection_name: US_ND_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "North Dakota Department of Corrections and Rehabilitation"
+  state_specific_context: |
+    DOCSTARS contact notes may reference:
+    - Home visits (HV contact code)
+    - Residence verifications
+    - Address changes
+    - Housing stability concerns
+    - Transitional housing or shelter placements
+
+    Common DOCSTARS contact codes:
+    - OV = Office Visit
+    - HV = Home Visit
+    - OO = Out of Office
+    - Categories may include: Supervision, Recovery, etc.
+  state_specific_fields_example: '(e.g., "Housing: X")'

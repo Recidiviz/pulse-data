@@ -1,0 +1,25 @@
+# Configuration for US_ND contact notes document collection
+#
+# This collection stores contact notes from probation/parole officers.
+
+collection_description: >
+  Contact notes from US_ND probation and parole officers documenting
+  scheduled and unscheduled contacts with people under supervision.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: contact_note_id
+    type: STRING
+    description: The unique identifier for the contact note in DOCSTARS (RecID)
+
+document_generation_query: |
+  SELECT
+    SID AS person_external_id,
+    'US_ND_SID' AS person_external_id_type,
+    CAST(RecID AS STRING) AS contact_note_id,
+    COALESCE(REMARKS, '') AS document_text,
+    CAST(CONTACT_DATE AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_contacts_latest`
+  WHERE REMARKS IS NOT NULL
+    AND TRIM(REMARKS) != ''

@@ -1,0 +1,107 @@
+# Extractor Collection: CASE_NOTE_HOUSING_INFO
+#
+# Extractors in this collection identify housing-related information
+# from case notes.
+
+name: CASE_NOTE_HOUSING_INFO
+confidence_threshold: 0.8
+
+description: >
+  Extract information about a person's housing status from case notes, including
+  whether they are housed, their address, stability, and whether they are
+  searching for housing.
+
+output_schema:
+  full_batch_description: >
+    An array of objects with housing information from case notes. Each element
+    in the array corresponds to a single case note.
+
+  result_level_description: >
+    Comprehensive extraction of housing-related information from a case note.
+
+  inferred_fields:
+    - name: primary_status
+      type: ENUM
+      description: The main housing status.
+      values: [housed, unhoused, in_custody]
+      required: true
+
+    - name: housed_type
+      type: ENUM
+      description: >
+        Additional descriptors of the housing situation when housed. Use
+        'renting' only when explicitly stated (living in apartment does NOT
+        imply renting). Use 'dependent' only when clearly relying on others for
+        housing, not just living with family/friends. If primary_status is
+        unhoused or in_custody, use null with null_reason='not_applicable'.
+      values: [renting, own, temporary_housing, dependent, other]
+      required: true
+      allowed_if_value:
+        primary_status: housed
+
+    - name: temporary_housing_type
+      type: ENUM
+      description: >
+        Type of temporary housing when applicable. Only populate when
+        housed_type is 'temporary_housing'. Use null with
+        null_reason='not_applicable' otherwise.
+      values:
+        [
+          sober_living,
+          treatment_program,
+          transitional_program,
+          shelter,
+          hotel_motel,
+        ]
+      allowed_if_value:
+        housed_type: temporary_housing
+
+    - name: dependent_housing_type
+      type: ENUM
+      description: >
+        Type of dependent housing arrangement. Only populate when housed_type is
+        'dependent'. Use null with null_reason='not_applicable' otherwise.
+      values: [with_family, with_partner, with_friend]
+      allowed_if_value:
+        housed_type: dependent
+
+    - name: unhoused_location
+      type: ENUM
+      description: >
+        Where the person is staying or sleeping when unhoused. Only populate
+        when primary_status is 'unhoused'. Use null with
+        null_reason='not_applicable' otherwise.
+      values: [vehicle, encampment, street, abandoned_building, other]
+      allowed_if_value:
+        primary_status: unhoused
+
+    - name: temporary_housing_name
+      type: STRING
+      description: >
+        Name of the temporary housing facility or program. Examples: 'Stride
+        Sober Living', 'Hope Homes', 'La Puente Homeless Shelter'. Use null with
+        null_reason='not_applicable' when housed_type is not
+        'temporary_housing'.
+      allowed_if_value:
+        housed_type: temporary_housing
+
+    - name: address
+      type: STRING
+      description: >
+        Full address of residence if found. Omit if address not found or person
+        is unhoused. Only include if the full address of the person's actual
+        residence is found. Standardize the format and case when possible, e.g.
+        use title case for street names and abbreviate consistently (St, Ave,
+        Blvd, Dr, etc.).
+      allowed_if_value:
+        primary_status: housed
+
+    - name: search
+      type: ENUM
+      description: >
+        Current housing search status. Mark 'searching' only if there is
+        specific mention that the individual is looking for new housing or
+        anticipating a move. Having or not having housing does not affect this
+        field.
+      values: [searching, not_searching]
+      required: true

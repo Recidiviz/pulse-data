@@ -1,0 +1,31 @@
+# US_IX-specific Payment Extractor
+#
+# Tuned for Idaho's case note format and terminology.
+
+collection_name: CASE_NOTE_PAYMENT_INFO
+
+description: >
+  Payment information extractor tuned for US_IX case notes. Handles
+  Idaho-specific terminology and document structure.
+
+input_document_collection_name: US_IX_SUPERVISION_CASE_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Idaho Department of Correction"
+  state_specific_context: |
+    Idaho case notes often use specific abbreviations:
+    - "REST" = Restitution
+    - "C/C" = Court Costs
+
+    In some cases the note may be formatted as such:
+    ```
+    {{note_title: XXX}} {{note: YYY}}
+    ```
+    In this case, parse the contents of the "note" field for payment information.
+
+    Notes may have different NoteTypeDesc values (e.g., Supervision Notes,
+    Facility Notes) and multiple ContactModeDesc values.
+  state_specific_fields_example: '(e.g., "Restitution: X")'

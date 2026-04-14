@@ -1,0 +1,24 @@
+# US_ND-specific Employment Extractor
+#
+# Tuned for North Dakota's DOCSTARS contact note format.
+
+collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+description: >
+  Employment information extractor tuned for US_ND DOCSTARS contact notes.
+  Handles North Dakota-specific terminology and document structure.
+
+input_document_collection_name: US_ND_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "North Dakota Department of Corrections and Rehabilitation"
+  state_specific_context: |
+    North Dakota uses the DOCSTARS system. DOCSTARS notes may reference:
+    - Employment verification contacts
+    - Job search requirements and compliance
+    - Workforce Center referrals
+    - Employment as a condition of supervision
+  state_specific_fields_example: '(e.g., "Employment: X")'

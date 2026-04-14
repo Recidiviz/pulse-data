@@ -1,0 +1,27 @@
+# US_NE-specific Employment Extractor
+#
+# Tuned for Nebraska's PIMS contact dashboard note format.
+
+collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+description: >
+  Employment information extractor tuned for US_NE supervision contact notes.
+  Handles Nebraska PIMS-specific terminology and document structure.
+
+input_document_collection_name: US_NE_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Nebraska Department of Correctional Services"
+  state_specific_context: |
+    Nebraska PIMS contact notes may include:
+    - Employment information field (employmentInformation)
+    - Job search requirements and compliance
+    - Vocational training and education programs
+    - Progress reports with employment updates
+    Note that the following are not employer names but rather likely indicate a transitional housing
+    program, and should not be included as employment information:
+    - Connecting Links (also commonly referred to as "CL" in notes)
+  state_specific_fields_example: '(e.g., "Employment: X", "employmentInformation")'

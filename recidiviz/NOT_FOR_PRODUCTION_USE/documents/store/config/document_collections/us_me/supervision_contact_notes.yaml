@@ -1,0 +1,38 @@
+# Configuration for US_ME contact notes document collection
+#
+# This collection stores contact notes from supervision officers about their
+# interactions with people on supervision.
+
+collection_description: >
+  Contact notes from US_ME supervision officers documenting interactions with
+  people on supervision. Notes include case management entries, education notes,
+  and other supervision-related documentation.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: note_id
+    type: STRING
+    description: The unique identifier for the note (Note_Id)
+
+additional_metadata_columns:
+  - name: note_type_cd
+    type: STRING
+    description: The note type code (e.g., Case Plan/Management, Education Notes)
+  - name: contact_mode_cd
+    type: STRING
+    description: The contact mode code
+
+document_generation_query: |
+  SELECT
+    Cis_100_Client_Id AS person_external_id,
+    'US_ME_DOC' AS person_external_id_type,
+    CAST(Note_Id AS STRING) AS note_id,
+    Cis_2041_Note_Type_Cd AS note_type_cd,
+    Cis_2040_Contact_Mode_Cd AS contact_mode_cd,
+    COALESCE(Note_Tx, Short_Note_Tx, '') AS document_text,
+    SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S', Note_Date) AS document_update_datetime
+  FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_204_GEN_NOTE_latest`
+  WHERE ((Note_Tx IS NOT NULL AND TRIM(Note_Tx) != '')
+     OR (Short_Note_Tx IS NOT NULL AND TRIM(Short_Note_Tx) != ''))
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(Note_Date, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)

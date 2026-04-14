@@ -1,0 +1,29 @@
+# US_ME-specific Employment Extractor
+#
+# Tuned for Maine's CIS supervision contact note format.
+
+collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+description: >
+  Employment information extractor tuned for US_ME supervision contact notes.
+  Handles Maine CIS-specific terminology and document structure.
+
+input_document_collection_name: US_ME_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Maine Department of Corrections"
+  state_specific_context: |
+    Maine CIS contact notes may include:
+    - Case Plan/Management notes with employment goals
+    - Employment verification and employer contacts
+    - Job search requirements and compliance
+    - Vocational training and education programs
+
+    Note types in Maine CIS include:
+    - Case Plan/Management
+    - Education Notes
+    - Program/Service notes
+  state_specific_fields_example: '(e.g., "Employment: X")'

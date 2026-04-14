@@ -1,0 +1,38 @@
+# Configuration for US_NE contact notes document collection
+#
+# This collection stores contact notes from probation/parole officers about their
+# interactions with people on supervision.
+
+collection_description: >
+  Contact notes from US_NE probation and parole officers documenting
+  interactions with people on supervision, including office visits, home visits,
+  phone calls, and other contacts.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: contact_id
+    type: STRING
+    description: The unique identifier for the contact record (contactDashboardId)
+
+additional_metadata_columns:
+  - name: contact_type
+    type: STRING
+    description: The type of contact (e.g., Office Visit, Home Visit)
+  - name: contact_location
+    type: STRING
+    description: Location where the contact occurred
+
+document_generation_query: |
+  SELECT
+    inmateNumber AS person_external_id,
+    'US_NE_ID_NBR' AS person_external_id_type,
+    CAST(contactDashboardId AS STRING) AS contact_id,
+    contactType AS contact_type,
+    contactLocation AS contact_location,
+    COALESCE(contactNotes, '') AS document_text,
+    CAST(dateOfContact AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_ne_raw_data_up_to_date_views.PIMSContactDashboard_latest`
+  WHERE contactNotes IS NOT NULL
+    AND TRIM(contactNotes) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(dateOfContact, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)

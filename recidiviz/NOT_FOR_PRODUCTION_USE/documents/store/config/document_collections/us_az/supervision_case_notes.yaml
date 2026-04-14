@@ -1,0 +1,49 @@
+# Configuration for US_AZ supervision case notes document collection
+#
+# This collection stores supervision case notes from Arizona Department of
+# Corrections, Rehabilitation and Reentry (ADCRR) for people on supervision.
+# Uses the same CASE_NOTE table as facilities but filtered to supervision
+# episodes via DPP_ID.
+
+collection_description: >
+  Supervision case notes from US_AZ ADCRR documenting interactions, assessments,
+  and case management activities for people on supervision.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: case_note_id
+    type: STRING
+    description: The unique identifier for the case note (CASE_NOTE_ID)
+
+additional_metadata_columns:
+  - name: note_type_id
+    type: STRING
+    description: Foreign key to lookup table for note type
+  - name: alert_type_id
+    type: STRING
+    description: Foreign key to lookup table for alert type
+  - name: contact_codes
+    type: STRING
+    description: Contact codes related to the case note
+  - name: dpp_id
+    type: STRING
+    description: Foreign key to the supervision episode (DPP_EPISODE)
+
+document_generation_query: |
+  SELECT
+    PERSON_ID AS person_external_id,
+    'US_AZ_PERSON_ID' AS person_external_id_type,
+    CAST(CASE_NOTE_ID AS STRING) AS case_note_id,
+    CAST(NOTE_TYPE_ID AS STRING) AS note_type_id,
+    CAST(ALERT_TYPE_ID AS STRING) AS alert_type_id,
+    contact_codes,
+    CAST(DPP_ID AS STRING) AS dpp_id,
+    COALESCE(note_text, xnote_text, '') AS document_text,
+    CAST(CREATE_DTM AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_az_raw_data_up_to_date_views.CASE_NOTE_latest`
+  WHERE ((note_text IS NOT NULL AND TRIM(note_text) != '')
+     OR (xnote_text IS NOT NULL AND TRIM(xnote_text) != ''))
+    AND COALESCE(entered_in_error, 'N') != 'Y'
+    AND DPP_ID IS NOT NULL
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CAST(CREATE_DTM AS STRING), 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)

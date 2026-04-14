@@ -1,0 +1,24 @@
+# US_CO-specific Employment Extractor
+#
+# Tuned for Colorado's EOMIS supervision contact note format.
+
+collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+description: >
+  Employment information extractor tuned for US_CO supervision contact notes.
+  Handles Colorado EOMIS-specific terminology and document structure.
+
+input_document_collection_name: US_CO_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Colorado Department of Corrections"
+  state_specific_context: |
+    Colorado EOMIS contact notes may include:
+    - Employment verification and employer contacts
+    - Job search requirements and compliance
+    - Employment status field (EMPLOYMENTSTATUS)
+    - Work schedule and income information
+  state_specific_fields_example: '(e.g., "Employment: X", "EMPLOYMENTSTATUS")'

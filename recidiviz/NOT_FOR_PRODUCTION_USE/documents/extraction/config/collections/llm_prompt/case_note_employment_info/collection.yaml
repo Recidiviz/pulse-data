@@ -1,54 +1,137 @@
 # Extractor Collection: CASE_NOTE_EMPLOYMENT_INFO
 #
-# Example collection config demonstrating the extraction schema format.
-# Real extraction schemas live in the mayukas/document-extraction-configs branch.
+# Extractors in this collection identify employment-related information
+# from case notes.
 
 name: CASE_NOTE_EMPLOYMENT_INFO
 confidence_threshold: 0.8
 
 description: >
-  Extract information about a person's employment status from case notes.
+  Extract information about a person's employment status, including whether they
+  are currently employed, their employer name, job title, employment type, and
+  any noted barriers to employment.
 
 output_schema:
   full_batch_description: >
     Employment information extracted from a case note.
 
   result_level_description: >
-    Employment information for a single case note.
+    Comprehensive extraction of employment-related information from a single
+    case note. Each document produces exactly one result.
 
   inferred_fields:
-    - name: employment_status
+    - name: primary_status
       type: ENUM
-      description: The person's employment status.
+      description: The main employment status.
       values: [employed, unemployed, other]
       required: true
 
-    - name: employment_status_summary
-      type: STRING
-      description: >
-        A brief human-readable summary of the person's employment status.
+    - name: search_status
+      type: ENUM
+      description: Current job search status.
+      values: [searching, not_searching, other]
       required: true
 
-    - name: employer_name
-      type: STRING
+    - name: employers
+      type: ARRAY_OF_STRUCT
       description: >
-        Name of the employer or organization.
+        List of employers mentioned in this note. Empty array if person is
+        unemployed or no employer details are available.
       allowed_if_value:
-        employment_status: employed
+        primary_status: employed
+      fields:
+        - name: employer_name
+          type: STRING
+          description: Name of the employer/organization.
 
-    - name: employment_change_date
-      type: STRING
-      description: >
-        Date of the most recent employment status change.
-      allowed_if_nonnull: employment_change_type
+        - name: employer_org_type
+          type: ENUM
+          description: Type of employer organization.
+          values:
+            [
+              direct_employer,
+              staffing_agency,
+              agency_placement,
+              agency_permanent_placement,
+              self_employed,
+              other,
+            ]
 
-    - name: employment_change_type
-      type: ENUM
+        - name: employment_type
+          type: ENUM
+          description: Type of employment relationship.
+          values:
+            [
+              employee_ft,
+              employee_pt,
+              intern,
+              apprentice,
+              contractor_1099,
+              temp_agency,
+              seasonal,
+              volunteer,
+              gig,
+              day_labor,
+              cash_informal,
+            ]
+
+        - name: job_title
+          type: STRING
+          description:
+            The person's job title (e.g., 'cashier', 'laborer'). Omit if not
+            mentioned.
+
+        - name: employer_location
+          type: STRING
+          description: Worksite location description or address. Omit if not mentioned.
+
+        - name: pay_rate_amount
+          type: FLOAT
+          description: Numeric pay rate amount (e.g., 15.50, 50000). Omit if unknown.
+
+        - name: pay_rate_time_period
+          type: ENUM
+          description: The time period the pay rate amount covers.
+          allowed_if_nonnull: pay_rate_amount
+          values:
+            [
+              hour,
+              day,
+              week,
+              bi_weekly,
+              month,
+              year,
+              paycheck_period,
+              YTD,
+              piece_rate,
+              commission,
+              stipend,
+              salary_unspecified_period,
+              other,
+            ]
+
+    - name: employment_changes
+      type: ARRAY_OF_STRUCT
       description: >
-        Type of employment status change.
-      values: [hired, fired, quit, laid_off, retired]
-      allowed_value_combinations:
-        employment_status:
-          employed: [hired, fired, quit, laid_off, retired]
-          unemployed: [fired, quit, laid_off, retired]
-          other: [fired, quit, laid_off, retired]
+        List of employment changes mentioned in this note. Empty array if no
+        changes are mentioned.
+      fields:
+        - name: employment_change_type
+          type: ENUM
+          description: Type of employment change.
+          values:
+            [
+              no_change,
+              fired,
+              quit,
+              other_became_unemployed,
+              changed_employer,
+              started_employment,
+            ]
+
+        - name: employment_change_date
+          type: STRING
+          description:
+            Date of the employment change if mentioned (free text, e.g.,
+            "2024-01-15" or "last week").
+          allowed_if_nonnull: employment_change_type

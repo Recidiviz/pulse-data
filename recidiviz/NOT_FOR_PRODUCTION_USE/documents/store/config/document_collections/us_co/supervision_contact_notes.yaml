@@ -1,0 +1,46 @@
+# Configuration for US_CO supervision contact notes document collection
+#
+# This collection stores supervision contact notes from officers about their
+# interactions with people on supervision.
+
+collection_description: >
+  Supervision contact notes from US_CO officers documenting interactions with
+  people on supervision, including office visits, home visits, phone calls, and
+  other contact types.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: contact_date
+    type: STRING
+    description: The date of the contact
+  - name: contact_time
+    type: STRING
+    description: The time of the contact
+  - name: contact_type
+    type: STRING
+    description: The type of contact
+
+additional_metadata_columns:
+  - name: contact_method
+    type: STRING
+    description: Method of contact (e.g., in-person, phone)
+  - name: employment_status
+    type: STRING
+    description: Employment status recorded during contact
+
+document_generation_query: |
+  SELECT
+    OFFENDERID AS person_external_id,
+    'US_CO_OFFENDERID' AS person_external_id_type,
+    CAST(CONTACTDATE AS STRING) AS contact_date,
+    CONTACTTIME AS contact_time,
+    CONTACTTYPE AS contact_type,
+    CONTACTMETHOD AS contact_method,
+    EMPLOYMENTSTATUS AS employment_status,
+    COALESCE(CONTACTCOMMENTS, '') AS document_text,
+    CAST(CONTACTDATE AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_co_raw_data_up_to_date_views.eomis_supervisioncontact_latest`
+  WHERE CONTACTCOMMENTS IS NOT NULL
+    AND TRIM(CONTACTCOMMENTS) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CONTACTDATE, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)

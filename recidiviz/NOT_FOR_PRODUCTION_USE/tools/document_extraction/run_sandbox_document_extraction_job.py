@@ -450,6 +450,7 @@ def main(
     lookback_days: int | None = None,
     person_ids: list[int] | None = None,
     deploy_views: bool = True,
+    deploy_views_only: bool = False,
 ) -> None:
     """Runs a document extraction job using sandbox datasets."""
 
@@ -465,11 +466,17 @@ def main(
         "Extractor: %s (state: %s)", extractor.extractor_id, extractor.state_code.value
     )
 
+    logging.info("Using sandbox dataset prefix: %s", sandbox_dataset_prefix)
+
+    if deploy_views_only:
+        logging.info("--deploy_views_only set: skipping extraction, deploying views.")
+        _deploy_extraction_views_to_sandbox(extractor, sandbox_dataset_prefix)
+        return
+
     doc_store_metadata_dataset = BigQueryAddressOverrides.format_sandbox_dataset(
         sandbox_dataset_prefix, DOCUMENT_STORE_METADATA_DATASET_ID
     )
 
-    logging.info("Using sandbox dataset prefix: %s", sandbox_dataset_prefix)
     logging.info("  Documents GCS bucket: %s", sandbox_documents_bucket)
     if sandbox_llm_job_artifact_bucket:
         logging.info(
@@ -668,6 +675,16 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
             "or --sample_entity_count."
         ),
     )
+    parser.add_argument(
+        "--deploy_views_only",
+        dest="deploy_views_only",
+        action="store_true",
+        default=False,
+        help=(
+            "Skip extraction and only redeploy the extraction result views. "
+            "Useful for picking up view SQL changes without re-running the LLM."
+        ),
+    )
 
     # Subparsers for modes
     subparsers = parser.add_subparsers(
@@ -724,12 +741,13 @@ if __name__ == "__main__":
     if not known_args.sandbox_dataset_prefix:
         print("Error: --sandbox_dataset_prefix is required")
         sys.exit(1)
-    if not known_args.sandbox_documents_bucket:
-        print("Error: --sandbox_documents_bucket is required")
-        sys.exit(1)
-    if not known_args.mode:
-        print("Error: mode is required (fake, concurrent, or batch)")
-        sys.exit(1)
+    if not known_args.deploy_views_only:
+        if not known_args.sandbox_documents_bucket:
+            print("Error: --sandbox_documents_bucket is required")
+            sys.exit(1)
+        if not known_args.mode:
+            print("Error: mode is required (fake, concurrent, or batch)")
+            sys.exit(1)
 
     person_id_list: list[int] | None = None
     if known_args.person_ids:
@@ -749,14 +767,15 @@ if __name__ == "__main__":
         main(
             extractor_id=known_args.extractor_id,
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
-            sandbox_documents_bucket=known_args.sandbox_documents_bucket,
+            sandbox_documents_bucket=known_args.sandbox_documents_bucket or "",
             sample_size=known_args.sample_size,
             sample_entity_count=known_args.sample_entity_count,
-            mode=known_args.mode,
+            mode=known_args.mode or "fake",
             sandbox_llm_job_artifact_bucket=getattr(
                 known_args, "sandbox_llm_job_artifact_bucket", None
             ),
             active_in_compartment=known_args.active_in_compartment,
             lookback_days=known_args.lookback_days,
             person_ids=person_id_list,
+            deploy_views_only=known_args.deploy_views_only,
         )

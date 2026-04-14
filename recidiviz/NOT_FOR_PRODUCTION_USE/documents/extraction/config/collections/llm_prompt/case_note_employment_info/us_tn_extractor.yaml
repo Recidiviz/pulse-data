@@ -1,0 +1,25 @@
+# US_TN-specific Employment Extractor
+#
+# Tuned for Tennessee's TOMIS contact note format.
+
+collection_name: CASE_NOTE_EMPLOYMENT_INFO
+
+description: >
+  Employment information extractor tuned for US_TN supervision contact notes.
+  Handles Tennessee-specific terminology and document structure.
+
+input_document_collection_name: US_TN_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Tennessee Department of Correction"
+  state_specific_context: |
+    Tennessee uses the TOMIS (Tennessee Offender Management Information System).
+    Notes are freeform prose written by supervision officers (POs). Each note
+    has associated contact type codes in the contact_note_types metadata field.
+
+    Notes may describe employment status, job searches, or employer contacts
+    as part of broader supervision narratives.
+  state_specific_fields_example: '(e.g., "Employment: X")'

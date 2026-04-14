@@ -1,0 +1,39 @@
+# Configuration for US_NC narrative notes document collection
+#
+# This collection stores narrative/case notes from supervision officers.
+# Notes are multi-line records that need to be aggregated by record date.
+
+collection_description: >
+  Narrative notes from US_NC supervision officers documenting interactions and
+  case information for people on supervision. Notes are stored as multi-line
+  records and aggregated by record date.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: record_date
+    type: STRING
+    description: The date of the narrative record
+  - name: narrative_type
+    type: STRING
+    description: The type of narrative entry
+
+additional_metadata_columns:
+  - name: line_count
+    type: STRING
+    description: Number of lines in the aggregated narrative
+
+document_generation_query: |
+  SELECT
+    OPUS AS person_external_id,
+    'US_NC_OPUS' AS person_external_id_type,
+    CAST(RECORDDT AS STRING) AS record_date,
+    NARRTYP AS narrative_type,
+    CAST(COUNT(*) AS STRING) AS line_count,
+    STRING_AGG(NOTETEXT, '\n' ORDER BY CAST(LINENO AS INT64)) AS document_text,
+    CAST(RECORDDT AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_nc_raw_data_up_to_date_views.narrative_latest`
+  WHERE NOTETEXT IS NOT NULL
+    AND TRIM(NOTETEXT) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(RECORDDT, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+  GROUP BY OPUS, RECORDDT, NARRTYP

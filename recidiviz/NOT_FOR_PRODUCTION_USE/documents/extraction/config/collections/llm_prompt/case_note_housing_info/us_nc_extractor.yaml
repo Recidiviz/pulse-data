@@ -1,0 +1,27 @@
+# US_NC-specific Housing Extractor
+#
+# Tuned for North Carolina's narrative note format.
+
+collection_name: CASE_NOTE_HOUSING_INFO
+
+description: >
+  Housing information extractor tuned for US_NC supervision narrative notes.
+  Handles North Carolina-specific terminology and document structure.
+
+input_document_collection_name: US_NC_SUPERVISION_NARRATIVE_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "North Carolina Department of Public Safety"
+  state_specific_context: |
+    North Carolina narrative notes may include:
+    - Home visit observations and residence verifications
+    - Address changes and residence updates
+    - Housing stability concerns
+    - Transitional housing or shelter placements
+
+    Notes are narrative entries that may span multiple lines and include various
+    narrative types (NARRTYP).
+  state_specific_fields_example: '(e.g., "Housing: X")'

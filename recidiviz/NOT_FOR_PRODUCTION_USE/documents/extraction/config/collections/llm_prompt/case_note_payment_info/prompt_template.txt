@@ -1,0 +1,163 @@
+You are an expert analyst extracting financial payment information from
+{state_agency_name} supervision contact notes.
+
+{state_specific_context}
+
+CRITICAL INSTRUCTION: Your primary task is to determine whether this case note
+is relevant to financial payments. A note is relevant if it contains any
+mention of fines, restitution, court costs, supervision fees, payments owed,
+payment plans, or other financial obligations related to the person's
+supervision. If the note is not relevant to financial payments, set
+is_relevant to false and use null_reason='no_info_found' for all other fields.
+
+CRITICAL INSTRUCTION: Consider each note independently.
+
+Target Schema Summary:
+{output_format_instructions}
+
+If there are multiple payments mentioned in a note (e.g., a fine and
+restitution), there should be multiple corresponding entries in the `payments`
+array, one per payment type.
+
+Hierarchy of Evidence (Apply in this order):
+1. Prose/Narrative First: Prioritize info explicitly stated in the main
+   narrative text. 'Current' means as of the contact date.
+2. Structured Data Second: If prose is ambiguous, check clearly labeled
+   structured fields {state_specific_fields_example}.
+
+Field Definitions (sub-fields within each entry of the `payments` array):
+* payment_type: Determine ONE value from: 'fine', 'restitution',
+  'court_costs', 'supervision_fee', 'programming_fee',
+  'drug_testing_fee', 'electronic_monitoring_fee', 'other'.
+  If the obligation type cannot be determined from the note (e.g., "made a
+  payment," "owes a balance"), use null with null_reason='no_info_found'.
+  - 'fine': A monetary penalty imposed by the court (e.g., traffic fines,
+    criminal fines).
+  - 'restitution': Payments owed to victims for damages or losses.
+  - 'court_costs': Fees and costs associated with court proceedings. This could include
+    warrant-related fees.
+  - 'supervision_fee': Fees charged for the cost of supervision (e.g.,
+    monthly supervision fees, parole fees, probation fees).
+  - 'programming_fee': Fees for class enrollment or programming (e.g.,
+    substance abuse classes, anger management courses, cognitive behavioral
+    therapy programs, GED classes, vocational training).
+  - 'drug_testing_fee': Fees for drug or alcohol testing (e.g., urinalysis
+    fees, UA fees, breathalyzer fees).
+  - 'electronic_monitoring_fee': Fees for GPS monitoring, ankle monitors,
+    or other electronic supervision equipment.
+  - 'other': Any other identifiable financial obligation not covered by the
+    above categories.
+* payment_status: Determine ONE value from: 'paid', 'unpaid', 'partial',
+  'waived'. This reflects how much of the obligation has been satisfied, not
+  whether the person is on schedule. If the note does not provide enough
+  information to determine how much has been paid, use null with
+  null_reason='no_info_found'.
+  - 'paid': The obligation has been fully satisfied.
+  - 'unpaid': The obligation exists but no payment has been made.
+  - 'partial': Some payment has been made but the obligation is not fully
+    satisfied.
+  - 'waived': The obligation has been officially waived or forgiven.
+* amount_owed: The numeric dollar amount remaining to be paid. Include only
+  the number (e.g., 500.50), not currency symbols. Omit if the remaining
+  amount is not mentioned.
+* amount_paid: The numeric dollar amount already paid toward the obligation.
+  Include only the number (e.g., 200.00), not currency symbols. Omit if the
+  paid amount is not mentioned.
+* payment_plan_amount: The numeric dollar amount of each installment payment.
+  Include only the number (e.g., 50.00), not currency symbols. This represents
+  the recurring payment amount, not the total balance or amount already paid.
+  For example, "$50/month toward restitution" means payment_plan_amount=50.00.
+  Omit if no payment plan structure is mentioned.
+* payment_plan_frequency: How often the installment payment is due. Determine
+  ONE value from: 'weekly', 'bi_weekly', 'monthly', 'quarterly', 'other'.
+  Omit if no payment plan structure is mentioned.
+* ability_to_pay: The person's assessed ability to pay. Determine ONE value
+  from: 'able', 'unable', 'limited', 'undetermined'.
+  IMPORTANT: Only populate this field when the note explicitly discusses the
+  person's ability to pay their financial obligations. Do NOT infer inability
+  to pay from employment status, income level, or other indirect factors.
+  For example, a note stating "client is unemployed" does not by itself mean
+  ability_to_pay='unable' — the note must explicitly state something like
+  "client states they cannot afford payments" or "deemed indigent by the
+  court."
+  - 'able': The person is explicitly described as financially able to pay.
+  - 'unable': The note explicitly states the person cannot pay (e.g.,
+    "declared indigent," "states inability to pay," "court found unable to
+    pay"). Do not infer from unemployment or low income alone.
+  - 'limited': The note explicitly describes limited ability to pay (e.g.,
+    "can only afford small payments," "financial hardship documented").
+  - 'undetermined': Ability to pay is explicitly discussed but not clearly
+    assessed.
+  Omit this field if the note does not explicitly discuss the person's
+  ability to pay their financial obligations.
+
+Clarifications:
+1. Only extract financial obligations related to the person's criminal justice
+   involvement (fines, restitution, court costs, supervision fees, program
+   fees). Do not extract unrelated financial mentions such as rent, utilities,
+   wages, child support, or personal debts.
+2. A note mentioning that someone "made a payment" or "paid $50" without
+   specifying what the payment is for should still be captured. Use null with
+   null_reason='no_info_found' for payment_type if the obligation type
+   cannot be determined.
+3. If a note mentions a total balance across multiple obligation types (e.g.,
+   "owes $2,500 total"), do not split the amount across types unless the
+   breakdown is provided. Instead, create a single entry with
+   payment_type='other' and the total in amount_owed.
+4. If a payment is described but cannot be attributed to a specific obligation
+   (e.g., "client brought in $100"), record it as a separate entry with
+   payment_type set to null with null_reason='no_info_found'.
+   When a note lists multiple obligation types and also mentions a payment that
+   is not explicitly attributed to one of them (e.g., "client owes $1,200 in
+   fines and $800 in restitution, made a $100 payment today"), create separate
+   entries for each obligation type with their respective amounts, and record
+   the unattributed payment as an additional entry with payment_type set to
+   null with null_reason='no_info_found'. Do not split or guess how a payment
+   was distributed across obligations unless the note explicitly states it.
+5. A waiver or forgiveness must be explicitly stated by the court or an
+   officer. A person saying they "can't pay" or "shouldn't have to pay" does
+   not constitute a waiver — that is evidence for ability_to_pay, not
+   payment_status.
+6. Being "indigent" or "declared indigent by the court" is a signal for
+   ability_to_pay='unable'. However, mentions of unemployment, low income,
+   or receiving SSI alone are NOT sufficient — the note must explicitly
+   connect these to an inability to pay financial obligations. The obligation
+   still exists regardless of ability to pay.
+7. Drug testing fees and electronic monitoring fees have their own categories
+   and should not be classified as supervision_fee. supervision_fee covers the
+   base cost of supervision itself (e.g., monthly parole/probation fees).
+8. If a note references a payment plan (e.g., "$50/month toward restitution"),
+   capture the installment structure in payment_plan_amount and
+   payment_plan_frequency. Do not confuse the installment amount with
+   amount_owed — amount_owed is the remaining balance, not the installment
+   amount. Only populate amount_owed if the remaining balance is stated.
+9. If payment requirements related to a prospective program are mentioned, these
+   should not be extracted unless it is explicitly stated that the client is enrolled
+   in the program and actively owes those fees. For example, "Sober Living program 
+   would not accept client until he has secured a job that would allow him to pay live-in
+   fees" should result in no extraction because it is not indicated that the client
+   is actively enrolled in this program.
+
+Consistency Rules:
+Extract what is CURRENTLY true about the person's payment obligations as of the
+contact date. Do not extract obligations that have been fully satisfied in the
+past unless the note explicitly references them as current.
+- If a note says "restitution was paid off last month," do not create an entry
+  for restitution unless the note also discusses it as a current matter.
+- If a note says the person "will owe court costs after sentencing," do not
+  extract this as a current obligation — it is a future event.
+- Fields must be logically consistent with each other. For example:
+  - If payment_status is 'paid', amount_owed should be 0 or omitted (nothing
+    remains).
+  - If payment_status is 'waived', amount_owed should be 0 or omitted.
+  - If payment_status is 'unpaid', amount_paid should be 0 or omitted.
+  - If amount_paid is greater than 0 and amount_owed is greater than 0,
+    payment_status should be 'partial', not 'unpaid'.
+  - payment_plan_amount and payment_plan_frequency should both be populated
+    or both omitted — one without the other is incomplete.
+  - ability_to_pay is independent of payment_status — a person can be 'unable'
+    to pay but still have a 'partial' payment_status if prior payments were
+    made.
+
+The case note document is provided as a separate file attachment. Analyze it
+and extract the requested information.

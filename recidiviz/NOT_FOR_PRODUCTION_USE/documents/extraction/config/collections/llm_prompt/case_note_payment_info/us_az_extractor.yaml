@@ -1,0 +1,24 @@
+# US_AZ-specific Payment Extractor
+#
+# Tuned for Arizona's ADCRR supervision case note format.
+
+collection_name: CASE_NOTE_PAYMENT_INFO
+
+description: >
+  Payment information extractor tuned for US_AZ supervision case notes.
+  Handles Arizona ADCRR-specific terminology and document structure.
+
+input_document_collection_name: US_AZ_SUPERVISION_CASE_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Arizona Department of Corrections, Rehabilitation and Reentry"
+  state_specific_context: |
+    Arizona ADCRR supervision case notes may include:
+    - Restitution and fine payment tracking
+    - Court-ordered financial obligations
+    - Supervision fee assessments and payment plans
+    - Payment compliance and delinquency notices
+  state_specific_fields_example: '(e.g., "Payments: X")'

@@ -1,0 +1,31 @@
+# US_TN-specific Payment Extractor
+#
+# Tuned for Tennessee's TOMIS contact note format.
+
+collection_name: CASE_NOTE_PAYMENT_INFO
+
+description: >
+  Payment information extractor tuned for US_TN supervision contact notes.
+  Handles Tennessee-specific terminology and document structure.
+
+input_document_collection_name: US_TN_SUPERVISION_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Tennessee Department of Correction"
+  state_specific_context: |
+    Tennessee uses the TOMIS (Tennessee Offender Management Information System).
+    Notes are freeform prose written by supervision officers (POs). Each note
+    has associated contact type codes in the contact_note_types metadata field.
+
+    Fee and payment contact codes include:
+    - FEEP: fees or exemptions current
+    - FEER: fee arrearage (see comments for remedial action)
+    - CCFT: court costs paid in full
+    - CCFM: court costs monthly payment
+
+    Notes may describe supervision fee payments, restitution, court cost
+    compliance, or other financial obligations.
+  state_specific_fields_example: '(e.g., "Restitution: X")'

@@ -3,10 +3,103 @@ You are an expert analyst extracting employment-related information from
 
 {state_specific_context}
 
-{state_specific_fields_example}
+CRITICAL INSTRUCTION: Your primary task is to determine whether this case note
+is relevant to employment. A note is relevant if it contains any mention of
+jobs, work, pay, employers, or job searching. If the note is not relevant to
+employment, set is_relevant to false and use null_reason='no_info_found' for
+all other fields.
 
 Target Schema Summary:
 {output_format_instructions}
+
+Each document produces exactly one extraction result. If there are multiple
+employers mentioned in a note, populate the `employers` array with one entry
+per employer. If the note indicates current employment and also job searching
+and/or job changes, the employers array should only include employers related to 
+current employment
+
+Employment changes (fired, quit, started, etc.) should be captured in the
+`employment_changes` array with one entry per change event.
+
+Hierarchy of Evidence (Apply in this order):
+1. Prose/Narrative First: Prioritize info explicitly stated in the main
+   narrative text. 'Current' means as of the contact date.
+2. Structured Data Second: If prose is ambiguous, check clearly labeled
+   structured fields {state_specific_fields_example}.
+3. Goals/Seeking/Training Third: Default status to 'unemployed' if the only
+   info relates to goals, training, or applications, unless overridden by
+   stronger evidence from Rule 1 or 2.
+
+Clarifications:
+1. Attending a job fair, submitting applications, or being referred to a
+   workforce program means 'searching' for search_status, but does NOT indicate whether the
+   person is employed or unemployed. Only use the employed label if explicitly stated
+   that the person has employment. Only use the unemployed label if explicitly stated that the
+   person is not employed (searching does not always imply unemployment). Otherwise, 
+   use "other".
+2. Being enrolled in vocational training, a GED program, or a job readiness
+   class does not count as employment. Set primary_status to 'unemployed' unless
+   the person also has a separate job.
+3. Gig work, day labor, and cash jobs count as employment. Use the specific
+   employment_type values: 'gig' for app-based or platform work (e.g.,
+   DoorDash, Uber, TaskRabbit), 'day_labor' for pickup or spot jobs (e.g.,
+   standing at a labor corner, hired for a single day of work), and
+   'cash_informal' for under-the-table or unreported work arrangements.
+   Self-employment (e.g., owning a business, freelancing) also counts as
+   employed with employer_org_type='self_employed'.
+4. Receiving disability benefits (SSI/SSDI) or retirement income does not make
+   someone 'employed'. Use primary_status='other' when the person is not working
+   but is receiving non-employment income.
+5. Work release, work crews, or prison/jail labor programs are not standard
+   employment. Use primary_status='other' and employer_org_type='other' for
+   these arrangements.
+6. Volunteering is not employment. If volunteering is the only work-like
+   activity mentioned, set primary_status to 'unemployed'. Only include the
+   volunteer position in the employers array if it is explicitly described
+   alongside other employment details.
+7. Being fired, laid off, or quitting a job is an employment_change, not
+   necessarily current status. If someone was fired but has since started a new
+   job, primary_status should be 'employed' based on the current job.
+8. Just because someone mentions a workplace, coworker, or boss does not mean
+   they are currently employed there. Look for explicit statements of current
+   employment.
+9. Having a pay rate, schedule, or work hours mentioned is strong evidence of
+   current employment, even if the word "employed" is not used. Do not assume employment
+   if the hours/schedule are related to housing or other programs; there must be some indication
+   that these are work related schedules.
+10. If a person has multiple jobs, include all current employers in the
+    employers array.
+11. employment_type 'employee_pt' should only be used when the note explicitly
+    states that the person is working part-time. Likewise, 'employee_ft' should
+    only be used when the note explicitly states full-time employment. Mentions
+    of specific hours or having multiple jobs do not automatically indicate
+    part-time work. If the employment type cannot be determined from the note,
+    leave employment_type as null with null_reason='no_info_found'.
+
+Consistency Rules:
+Extract what is CURRENTLY true about the person's employment as of the contact
+date. Do not extract past jobs that have ended, or future employment that has
+not yet started.
+- If a note says the person "was working at" one place but "just started at"
+  another, extract only the new employer as a current employer. Capture the
+  departure from the old job in employment_changes.
+- If a note says the person "has an interview next week" or "was offered a
+  position," do not set primary_status to 'employed' — these are future/pending
+  events. Do set search_status to 'searching'.
+- Fields must be logically consistent with each other. For example:
+  - If primary_status is 'unemployed', the employers array should be empty
+    (no current employers to list).
+  - If primary_status is 'employed', there should be at least one entry in the
+    employers array.
+  - If search_status is 'searching', this does not affect primary_status — a
+    person can be employed and still searching.
+  - pay_rate_time_period should only be populated when pay_rate_amount is
+    populated.
+  - pay_rate_amount and pay_rate_time_period should not be populated unless
+    primary_status is 'employed'. Pay information is only meaningful when
+    associated with a current job.
+  - employment_change_type='no_change' should only be used when the note
+    explicitly confirms the person is still at the same job, not as a default.
 
 The case note document is provided as a separate file attachment. Analyze it
 and extract the requested information.
