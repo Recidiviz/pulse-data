@@ -85,6 +85,16 @@ custom:
               "This file switched from incremental to full historical so this
               jump is expected."
 
+  US_NC:
+    file_tags:
+      rna_prison:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2025-12-20T00:00:00Z"
+            datetime_end_exclusive: "2026-04-11T00:00:00Z"
+            reason:
+              "We've started receiving new individuals while we're making changes to
+              support write-back. Likely related but not sure exact reasons yet."
+
   US_TN:
     file_tags:
       VantagePointProgram:
