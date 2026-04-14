@@ -1176,6 +1176,7 @@ def load_collected_views_to_sandbox(
     failure_mode: BigQueryViewDagWalkerProcessingFailureMode,
     schemas_only: bool,
     input_source_table_overrides: BigQueryAddressOverrides | None = None,
+    default_table_expiration_ms: int | None = None,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset.
 
@@ -1185,6 +1186,8 @@ def load_collected_views_to_sandbox(
             input_source_table_dataset_overrides_dict. Use this for source
             tables not in the standard source table repo (e.g.,
             NOT_FOR_PRODUCTION_USE datasets).
+        default_table_expiration_ms: If set, new datasets will be created with
+            this default table expiration (in milliseconds).
     """
     if not collected_builders:
         logging.warning("Did not find any views to load to the sandbox. Exiting.")
@@ -1254,6 +1257,7 @@ def load_collected_views_to_sandbox(
             allow_slow_views=allow_slow_views,
             rematerialize_changed_views_only=rematerialize_changed_views_only,
             failure_mode=failure_mode,
+            default_table_expiration_for_new_datasets=default_table_expiration_ms,
         )
 
         check_deployed_view_schemas(deployment_results.view_results)

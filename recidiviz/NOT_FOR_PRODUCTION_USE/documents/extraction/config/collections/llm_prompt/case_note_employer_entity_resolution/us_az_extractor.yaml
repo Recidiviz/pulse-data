@@ -1,0 +1,16 @@
+# US_AZ Employer Entity Resolution Extractor
+
+collection_name: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+
+description: >
+  Employer entity resolution for US_AZ. Clusters employer mentions from Arizona
+  case notes into real-world employer entities.
+
+input_document_collection_name: US_AZ_CASE_NOTE_EMPLOYER_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Arizona Department of Corrections, Rehabilitation and Reentry (ADCRR)"
+  state_specific_context:

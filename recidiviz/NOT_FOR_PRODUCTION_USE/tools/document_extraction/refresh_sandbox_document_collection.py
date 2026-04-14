@@ -40,6 +40,7 @@ import logging
 import sys
 from typing import List, Tuple
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config import (
@@ -55,6 +56,9 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_store_updater imp
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.new_document_identifier import (
     DEFAULT_TEMP_DATASET_ID,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.run_sandbox_document_extraction_job import (
+    _build_not_for_prod_address_overrides,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
@@ -133,6 +137,14 @@ def main(
         sandbox_bucket=sandbox_bucket,
     )
 
+    # Derived document collections query extraction result views that may be
+    # sandbox-prefixed. Pass overrides so the query targets sandbox datasets.
+    address_overrides: BigQueryAddressOverrides | None = None
+    if collection_config.prerequisite_extractor_id is not None:
+        address_overrides = _build_not_for_prod_address_overrides(
+            sandbox_dataset_prefix
+        )
+
     result = updater.update_document_collection(
         collection_config=collection_config,
         sample_size=sample_size,
@@ -142,6 +154,7 @@ def main(
         max_concurrent_uploads=DEFAULT_MAX_CONCURRENT_UPLOADS,
         lookback_days=lookback_days,
         person_ids=person_ids,
+        address_overrides=address_overrides,
     )
 
     # Clean up the temp dataset

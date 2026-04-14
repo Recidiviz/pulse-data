@@ -1,0 +1,84 @@
+# Extractor Collection: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+#
+# Second-pass LLM that clusters employer mentions across all case notes for
+# one person into resolved real-world entities, and maps each mention to its
+# entity. Reads from the US_IX_CASE_NOTE_EMPLOYER_CONTEXT derived document
+# collection (one document per person).
+
+name: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+confidence_threshold: 0.8
+
+description: >
+  Cluster employer mentions extracted from case notes into real-world employer
+  entities, and map each mention to its entity. Input documents contain
+  sequential mention IDs that must be echoed back exactly in the output.
+
+output_schema:
+  full_batch_description: >
+    Entity resolution output for employer mentions across all case notes for
+    one person.
+
+  result_level_description: >
+    Resolved employer entities and mention-to-entity mappings for one person.
+    Contains two arrays: entities (one per resolved real-world employer) and
+    mention_mappings (one per input mention, covering every mention exactly once).
+
+  inferred_fields:
+    - name: entities
+      type: ARRAY_OF_STRUCT
+      description: >
+        Resolved real-world employer entities for this person. Each entity
+        represents a distinct employer and carries canonical key field values
+        synthesized from the mentions that map to it.
+      required: true
+      fields:
+        - name: entity_id
+          type: INTEGER
+          field_mode: STRUCTURAL
+          description: >
+            Unique integer ID for this entity. Assign sequential integers
+            starting from 1 (1, 2, 3, ...). Must be unique within this
+            response.
+          required: true
+
+        - name: employer_name
+          type: STRING
+          description: >
+            Canonical employer name synthesized from all mentions of this
+            entity. Standardize: correct misspellings, use proper
+            capitalization, expand abbreviations where the full name is clear.
+            Self-employment of any kind becomes "Self-Employed". A generic
+            description (e.g. "a restaurant") with no other identifying
+            information is still a valid entity name.
+
+        - name: employer_location
+          type: STRING
+          description: >
+            Canonical worksite location (city, address, or descriptive
+            identifier) synthesized across all mentions. Null if no location
+            information is available in any mention of this entity.
+
+    - name: mention_mappings
+      type: ARRAY_OF_STRUCT
+      description: >
+        One entry per input mention. Maps every mention ID from the input
+        context to a resolved entity. Every mention in the input must appear
+        here exactly once — no mentions may be skipped or duplicated.
+      required: true
+      fields:
+        - name: mention_id
+          type: INTEGER
+          field_mode: STRUCTURAL
+          description: >
+            The mention ID exactly as shown in the input context (e.g. 1, 2,
+            3). Do not invent IDs — copy them verbatim from the input. Every
+            mention ID in the input must appear here exactly once.
+          required: true
+
+        - name: entity_id
+          type: INTEGER
+          field_mode: STRUCTURAL
+          description: >
+            The entity_id from the entities array that this mention resolves
+            to. Must reference a valid entity_id defined in this response.
+          required: true

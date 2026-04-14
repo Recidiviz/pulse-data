@@ -51,6 +51,7 @@ import time
 
 import recidiviz.NOT_FOR_PRODUCTION_USE.source_tables
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
@@ -107,6 +108,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config
     DOCUMENT_ID_COLUMN_NAME,
     DOCUMENT_STORE_METADATA_DATASET_ID,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
+    DocumentCollectionConfig,
     DocumentRootEntityIdType,
     get_document_collection_config,
 )
@@ -129,22 +131,37 @@ from recidiviz.tools.load_views_to_sandbox import load_collected_views_to_sandbo
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 
+# 30-day expiration for sandbox datasets (in milliseconds)
+SANDBOX_DATASET_EXPIRATION_MS = 30 * 24 * 60 * 60 * 1000
 
-def _create_sandbox_source_tables(
+
+def _create_sandbox_shared_metadata_tables(
     bq_client: BigQueryClient,
-    extractor: LLMPromptExtractorMetadata,
     sandbox_dataset_prefix: str,
 ) -> None:
-    """Creates sandbox source tables for extraction metadata and raw results.
+    """Creates the shared extraction metadata sandbox tables.
 
-    Uses SourceTableCollection.as_sandbox_collection() to create sandbox versions
-    of the extraction metadata tables and the raw results table for the given
-    extractor.
+    These tables are shared across all extractors within a sandbox prefix.
+    Idempotent: skips creation if the tables already exist, so it is safe to
+    call from multiple parallel processes (the race window is small enough that
+    at most one will attempt creation).
     """
+    sandbox_metadata_dataset = (
+        f"{sandbox_dataset_prefix}_{EXTRACTION_METADATA_DATASET_ID}"
+    )
+    sentinel_address = BigQueryAddress(
+        dataset_id=sandbox_metadata_dataset,
+        table_id="extractor_collections",
+    )
+    if bq_client.table_exists(sentinel_address):
+        logging.info(
+            "Shared sandbox metadata tables already exist in %s, skipping creation.",
+            sandbox_metadata_dataset,
+        )
+        return
+
     sandbox_collections: list[SourceTableCollection] = []
 
-    # 1. Extraction metadata tables (from NOT_FOR_PRODUCTION_USE YAML-managed
-    #    source tables, which are not included in the standard YAML repo)
     not_for_prod_yamls_root = os.path.join(
         os.path.dirname(recidiviz.NOT_FOR_PRODUCTION_USE.source_tables.__file__),
         "yaml_managed",
@@ -171,7 +188,37 @@ def _create_sandbox_source_tables(
             collection.as_sandbox_collection(sandbox_dataset_prefix)
         )
 
-    # 2. Raw results, exclusions, and validated results tables
+    update_manager = SourceTableUpdateManager(bq_client)
+    update_manager.update_async(
+        source_table_collections=sandbox_collections,
+        log_file=os.path.join(
+            os.path.dirname(__file__),
+            "logs/create_sandbox_source_tables.log",
+        ),
+        log_output=False,
+    )
+
+
+def _create_sandbox_source_tables(
+    bq_client: BigQueryClient,
+    extractor: LLMPromptExtractorMetadata,
+    sandbox_dataset_prefix: str,
+) -> None:
+    """Creates sandbox source tables for extraction metadata and raw results.
+
+    Uses SourceTableCollection.as_sandbox_collection() to create sandbox versions
+    of the extraction metadata tables and the raw results table for the given
+    extractor.
+
+    The shared metadata tables are created idempotently (skipped if they already
+    exist), so this is safe to call from multiple parallel processes.
+    """
+    _create_sandbox_shared_metadata_tables(bq_client, sandbox_dataset_prefix)
+
+    # Per-extractor: raw results, exclusions, and validated results tables.
+    # Each extractor writes to a table named after its state+collection, so
+    # these are safe to create concurrently across different extractors.
+    sandbox_collections: list[SourceTableCollection] = []
     extractor_table_id = DocumentExtractionResultMetadata.raw_table_id(
         extractor.state_code, extractor.collection_name
     )
@@ -286,6 +333,7 @@ def _deploy_extraction_views_to_sandbox(
         rematerialize_changed_views_only=False,
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
         schemas_only=False,
+        default_table_expiration_ms=SANDBOX_DATASET_EXPIRATION_MS,
     )
 
 
@@ -437,6 +485,50 @@ def _build_input_document_query(
     )
 
 
+def _check_prerequisite_extractor(
+    bq_client: BigQueryClient,
+    doc_collection_config: DocumentCollectionConfig,
+    sandbox_dataset_prefix: str,
+) -> bool:
+    """Checks that a derived collection's prerequisite extractor has validated results.
+
+    Returns True if the check passes or no prerequisite is set. Raises
+    RuntimeError if the prerequisite's validated source table does not exist,
+    indicating the prerequisite extractor must be run first.
+    """
+    if not doc_collection_config.prerequisite_extractor_id:
+        return True
+
+    prereq_id = doc_collection_config.prerequisite_extractor_id
+    prereq_extractor = get_extractor(prereq_id)
+    if not isinstance(prereq_extractor, LLMPromptExtractorMetadata):
+        raise ValueError(
+            f"Prerequisite extractor '{prereq_id}' is not an "
+            f"LLMPromptExtractorMetadata."
+        )
+
+    validated_dataset = BigQueryAddressOverrides.format_sandbox_dataset(
+        sandbox_dataset_prefix,
+        ValidatedExtractionResultMetadata.VALIDATED_DATASET_ID,
+    )
+    validated_address = BigQueryAddress(
+        dataset_id=validated_dataset,
+        table_id=ValidatedExtractionResultMetadata.table_id(
+            prereq_extractor.state_code,
+            prereq_extractor.collection_name,
+        ),
+    )
+
+    if not bq_client.table_exists(validated_address):
+        raise RuntimeError(
+            f"Prerequisite extractor '{prereq_id}' has no validated results table "
+            f"at [{validated_address.to_str()}]. Run that extractor first before "
+            f"running '{doc_collection_config.collection_name}'."
+        )
+
+    return True
+
+
 def main(
     *,
     extractor_id: str,
@@ -523,6 +615,12 @@ def main(
             doc_metadata_address.to_str(),
         )
         return
+
+    # For derived document collections, check that the prerequisite extractor
+    # has validated results before proceeding.
+    _check_prerequisite_extractor(
+        bq_client, doc_collection_config, sandbox_dataset_prefix
+    )
 
     # Build the document query and create provider
     document_query = _build_input_document_query(

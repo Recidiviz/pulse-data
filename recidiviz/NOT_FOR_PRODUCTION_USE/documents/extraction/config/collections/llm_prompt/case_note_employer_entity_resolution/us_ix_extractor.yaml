@@ -1,0 +1,16 @@
+# US_IX Employer Entity Resolution Extractor
+
+collection_name: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+
+description: >
+  Employer entity resolution for US_IX. Clusters employer mentions from Idaho
+  case notes into real-world employer entities.
+
+input_document_collection_name: US_IX_CASE_NOTE_EMPLOYER_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Idaho Department of Correction"
+  state_specific_context:

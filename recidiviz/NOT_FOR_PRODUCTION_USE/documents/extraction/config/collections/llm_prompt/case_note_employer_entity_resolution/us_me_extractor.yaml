@@ -1,0 +1,16 @@
+# US_ME Employer Entity Resolution Extractor
+
+collection_name: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+
+description: >
+  Employer entity resolution for US_ME. Clusters employer mentions from Maine
+  contact notes into real-world employer entities.
+
+input_document_collection_name: US_ME_CASE_NOTE_EMPLOYER_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Maine Department of Corrections"
+  state_specific_context:

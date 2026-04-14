@@ -1,0 +1,94 @@
+collection_description: >
+  Per-person context documents for employer entity resolution. Each document
+  covers one person and lists all employer mentions extracted from their case
+  notes, with sequential mention IDs, citation evidence, and the full original
+  case note text. Used as input to the CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+  extractor.
+
+root_entity_type: PERSON_ID
+
+# No additional primary key columns — one document per person.
+primary_key_columns: []
+
+additional_metadata_columns:
+  - name: mention_id_mapping
+    type: STRING
+    description: >
+      JSON array mapping sequential mention IDs to their source identifiers.
+      Each element: {"mention_id": <int>, "document_id": "<str>",
+      "mention_index": <int>}. Used by downstream views to join entity
+      resolution output back to the original extraction rows.
+
+prerequisite_extractor_id: US_NC_CASE_NOTE_EMPLOYMENT_INFO
+
+document_generation_query: |
+  WITH employer_mentions AS (
+    SELECT
+      e.person_id,
+      e.state_code,
+      e.document_id,
+      emp.mention_index,
+      emp.employer_name,
+      emp.employer_location,
+      e.document_date,
+      ROW_NUMBER() OVER (
+        PARTITION BY e.person_id
+        ORDER BY e.document_date, e.document_id, emp.mention_index
+      ) AS mention_id
+    FROM
+      `{project_id}.document_extraction_results.us_nc_case_note_employment_info` e
+    CROSS JOIN UNNEST(e.employers) AS emp
+    WHERE
+      e.person_id IS NOT NULL
+      AND (
+        emp.employer_name IS NOT NULL
+        OR emp.employer_location IS NOT NULL
+      )
+  ),
+  case_note_text AS (
+    SELECT
+      meta.document_id,
+      STRING_AGG(notes.NOTETEXT, '\n' ORDER BY CAST(notes.LINENO AS INT64)) AS note_text
+    FROM `{project_id}.document_store_metadata.us_nc_supervision_narrative_notes_metadata` meta
+    JOIN `{project_id}.us_nc_raw_data_up_to_date_views.narrative_latest` notes
+      ON meta.person_external_id = notes.OPUS
+      AND meta.record_date = CAST(notes.RECORDDT AS STRING)
+      AND meta.narrative_type = notes.NARRTYP
+    GROUP BY meta.document_id
+  ),
+  person_context AS (
+    SELECT
+      em.person_id,
+      em.state_code,
+      STRING_AGG(
+        CONCAT(
+          '=== Mention ', CAST(em.mention_id AS STRING), ' ===\n',
+          'employer_name: ', COALESCE(em.employer_name, '[not provided]'), '\n',
+          'employer_location: ', COALESCE(em.employer_location, '[not provided]'), '\n',
+          'case_note_text: ', COALESCE(cnt.note_text, '[not available]')
+        ),
+        '\n\n'
+        ORDER BY em.mention_id
+      ) AS document_text,
+      TO_JSON_STRING(
+        ARRAY_AGG(
+          STRUCT(
+            em.mention_id AS mention_id,
+            em.document_id AS document_id,
+            em.mention_index AS mention_index
+          )
+          ORDER BY em.mention_id
+        )
+      ) AS mention_id_mapping,
+      MAX(em.document_date) AS document_update_datetime
+    FROM employer_mentions em
+    LEFT JOIN case_note_text cnt
+      ON em.document_id = cnt.document_id
+    GROUP BY em.person_id, em.state_code
+  )
+  SELECT
+    person_id,
+    document_text,
+    mention_id_mapping,
+    TIMESTAMP(document_update_datetime) AS document_update_datetime
+  FROM person_context

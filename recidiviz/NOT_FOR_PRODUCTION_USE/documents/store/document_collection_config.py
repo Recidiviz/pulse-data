@@ -23,6 +23,7 @@ from pathlib import Path
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.common.constants.states import StateCode
@@ -158,6 +159,11 @@ class DocumentCollectionConfig:
     # document_text, and document_update_datetime.
     document_generation_query_template: str
 
+    # If set, the ID of an extractor whose validated results must exist before this
+    # collection's documents can be generated. Used by derived collections that query
+    # extraction result tables. The refresh script enforces this check at runtime.
+    prerequisite_extractor_id: str | None = None
+
     def __attrs_post_init__(self) -> None:
         if self.state_code is not None:
             expected_prefix = f"{self.state_code.value}_"
@@ -197,10 +203,18 @@ class DocumentCollectionConfig:
             ),
         ]
 
-    def build_document_generation_query(self, project_id: str) -> str:
-        """Builds the document generation query with the given project_id."""
+    def build_document_generation_query(
+        self,
+        project_id: str,
+        address_overrides: BigQueryAddressOverrides | None = None,
+    ) -> str:
+        """Builds the document generation query with the given project_id.
+
+        address_overrides can be supplied for derived collections whose queries
+        reference extraction result tables that may be sandbox-prefixed.
+        """
         query_builder = BigQueryQueryBuilder(
-            parent_address_overrides=None,
+            parent_address_overrides=address_overrides,
             parent_address_formatter_provider=None,
         )
         return query_builder.build_query(
@@ -290,6 +304,9 @@ class DocumentCollectionConfig:
             additional_metadata_column_schemas=additional_metadata_columns,
             document_generation_query_template=yaml_dict.pop(
                 "document_generation_query", str
+            ),
+            prerequisite_extractor_id=yaml_dict.pop_optional(
+                "prerequisite_extractor_id", str
             ),
         )
 

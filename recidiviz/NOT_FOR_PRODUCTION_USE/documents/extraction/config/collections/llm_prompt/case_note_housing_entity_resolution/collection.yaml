@@ -1,0 +1,95 @@
+# Extractor Collection: CASE_NOTE_HOUSING_ENTITY_RESOLUTION
+#
+# Second-pass LLM that clusters housing mentions across all case notes for
+# one person into resolved real-world housing entities, and maps each mention
+# to its entity. Reads from the US_IX_CASE_NOTE_HOUSING_CONTEXT derived
+# document collection (one document per person, flat mode — one mention per
+# case note, no array unnesting).
+
+name: CASE_NOTE_HOUSING_ENTITY_RESOLUTION
+confidence_threshold: 0.8
+
+description: >
+  Cluster housing mentions extracted from case notes into real-world housing
+  entities, and map each mention to its entity. Input documents contain
+  sequential mention IDs that must be echoed back exactly in the output.
+  Only mentions with at least one key field present (address, housed_type, or
+  temporary_housing_name) appear in the input.
+
+output_schema:
+  full_batch_description: >
+    Entity resolution output for housing mentions across all case notes for
+    one person.
+
+  result_level_description: >
+    Resolved housing entities and mention-to-entity mappings for one person.
+    Contains two arrays: entities (one per resolved housing situation) and
+    mention_mappings (one per input mention, covering every mention exactly once).
+
+  inferred_fields:
+    - name: entities
+      type: ARRAY_OF_STRUCT
+      description: >
+        Resolved real-world housing entities for this person. Each entity
+        represents a distinct housing situation and carries canonical key field
+        values synthesized from the mentions that map to it.
+      required: true
+      fields:
+        - name: entity_id
+          type: INTEGER
+          field_mode: STRUCTURAL
+          description: >
+            Unique integer ID for this entity. Assign sequential integers
+            starting from 1 (1, 2, 3, ...). Must be unique within this
+            response.
+          required: true
+
+        - name: address
+          type: STRING
+          description: >
+            Canonical address of the residence. Standardize format and case
+            when possible (title case for street names, consistent
+            abbreviations). Null if no address is available across any mention
+            of this entity.
+
+        - name: housed_type
+          type: STRING
+          description: >
+            Canonical housing type for this entity (e.g. renting, own,
+            temporary_housing, dependent). Synthesized from the mentions that
+            map to this entity.
+
+        - name: temporary_housing_name
+          type: STRING
+          description: >
+            Canonical name of the temporary housing facility or program,
+            standardized to Title Case (e.g. "Stride Sober Living",
+            "Hope Homes"). Merge names that are likely the same facility
+            due to typos, abbreviations, or shorthand into a single canonical
+            name using the most complete version available. Null if this
+            entity is not a temporary housing facility.
+
+    - name: mention_mappings
+      type: ARRAY_OF_STRUCT
+      description: >
+        One entry per input mention. Maps every mention ID from the input
+        context to a resolved entity. Every mention in the input must appear
+        here exactly once — no mentions may be skipped or duplicated.
+      required: true
+      fields:
+        - name: mention_id
+          type: INTEGER
+          field_mode: STRUCTURAL
+          description: >
+            The mention ID exactly as shown in the input context (e.g. 1, 2,
+            3). Do not invent IDs — copy them verbatim from the input. Every
+            mention ID in the input must appear here exactly once.
+          required: true
+
+        - name: entity_id
+          type: INTEGER
+          field_mode: STRUCTURAL
+          description: >
+            The entity_id from the entities array that this mention resolves
+            to. Must reference a valid entity_id defined in this response.
+          required: true

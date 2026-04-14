@@ -1,0 +1,16 @@
+# US_NE Employer Entity Resolution Extractor
+
+collection_name: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
+
+description: >
+  Employer entity resolution for US_NE. Clusters employer mentions from Nebraska
+  contact notes into real-world employer entities.
+
+input_document_collection_name: US_NE_CASE_NOTE_EMPLOYER_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Nebraska Department of Correctional Services"
+  state_specific_context:

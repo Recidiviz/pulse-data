@@ -61,6 +61,9 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.views.extraction_view
     get_document_extraction_view_builders,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.refresh_sandbox_document_collection import (
+    SANDBOX_DATASET_EXPIRATION_MS,
+)
+from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.refresh_sandbox_document_collection import (
     main as refresh_document_collection_main,
 )
 from recidiviz.NOT_FOR_PRODUCTION_USE.tools.document_extraction.run_sandbox_document_extraction_job import (
@@ -82,7 +85,7 @@ def _deploy_collection_views_to_sandbox(
 
     Constructs a custom union view that only includes the states that were
     actually run (to avoid referencing non-existent sandbox tables), then
-    deploys per-extractor views, the custom union, and derived views.
+    deploys per-extractor views and the custom union.
     """
     collection_name = ran_extractors[0].collection_name
     collection_view_id = collection_name.lower()
@@ -115,7 +118,6 @@ def _deploy_collection_views_to_sandbox(
         clustering_fields=["state_code", "person_id"],
     )
 
-    # Combine all builders: per-extractor + custom union
     all_builders: list[BigQueryViewBuilder] = [
         *per_extractor_builders,
         custom_union_builder,
@@ -141,6 +143,7 @@ def _deploy_collection_views_to_sandbox(
         rematerialize_changed_views_only=False,
         failure_mode=BigQueryViewDagWalkerProcessingFailureMode.FAIL_FAST,
         schemas_only=False,
+        default_table_expiration_ms=SANDBOX_DATASET_EXPIRATION_MS,
     )
 
 

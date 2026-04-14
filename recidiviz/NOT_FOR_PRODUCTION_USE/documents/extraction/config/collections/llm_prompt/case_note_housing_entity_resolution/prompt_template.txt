@@ -1,0 +1,60 @@
+You are an expert analyst resolving housing mentions from {state_agency_name}
+supervision case notes into real-world housing entities.
+
+{state_specific_context}
+
+TASK: You are given a list of housing mentions extracted from case notes for
+one person. Each mention has a sequential ID (Mention 1, Mention 2, etc.) and
+shows the extracted address, housed_type, and temporary_housing_name values.
+Your job is to:
+
+1. Identify the distinct real-world housing situations this person has been
+   associated with (the "entities").
+2. Map every mention to the entity it refers to.
+
+OUTPUT FORMAT:
+{output_format_instructions}
+
+STRUCTURAL FIELDS — CRITICAL:
+The following fields are identifiers, not inferences. Output them as plain
+integers, NOT as {{value, null_reason, confidence_score, citations}} objects:
+  - entities[].entity_id
+  - mention_mappings[].mention_id
+  - mention_mappings[].entity_id
+
+All other fields (address, housed_type, temporary_housing_name) use the
+standard {{value, null_reason, confidence_score, citations}} wrapper.
+
+ENTITY RULES:
+- Two mentions refer to the same housing entity if they describe the same
+  physical location or living arrangement:
+    - Same address (accounting for formatting differences)
+    - Same temporary housing facility name (even if one mention lacks the name
+      but the type and context strongly suggest the same facility)
+    - Same dependent housing arrangement if the context indicates continuity
+      (e.g., "still staying with mom" across multiple notes)
+- A permanent address and a temporary stay at a different location are
+  separate entities.
+- Mentions that describe being housed at a specific place at different times
+  should be grouped into the same entity if it is the same physical location.
+- Only create an entity if at least one key field (address, housed_type, or
+  temporary_housing_name) is non-null across the mentions that map to it.
+- Synthesize canonical key field values across all mentions of an entity:
+  prefer the most complete and specific version available.
+- Standardize temporary_housing_name to Title Case (e.g., "stride sober living"
+  → "Stride Sober Living", "HOPE HOMES" → "Hope Homes").
+- Treat facility names that differ only in spelling, capitalization, punctuation,
+  or common shorthand as the same entity and merge them into one canonical name
+  (e.g., "Stride" and "Stride Sober Living" should resolve to one entity with
+  the canonical name "Stride Sober Living").
+
+MENTION MAPPING RULES — CRITICAL:
+- Every mention in the input MUST appear in mention_mappings exactly once.
+  Do not skip or duplicate any mention.
+- Use only the mention IDs shown in the input. Do not invent IDs.
+- Every entity_id in mention_mappings must reference an entity defined in
+  the entities array.
+- entity_ids must be unique sequential integers starting from 1.
+
+The document is provided as a separate attachment. It contains all housing
+mentions for one person, each labeled with a mention ID.

@@ -26,6 +26,7 @@ import attr
 
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.extraction_output_schema import (
     RESERVED_FIELD_NAME_IS_RELEVANT,
+    ExtractionFieldMode,
     ExtractionFieldType,
     ExtractionInferredField,
     ExtractionOutputSchema,
@@ -117,6 +118,9 @@ def _check_field_confidence(
     For ARRAY_OF_STRUCT fields, checks each sub-field's confidence_score
     within each array element.
     """
+    if field.field_mode == ExtractionFieldMode.STRUCTURAL:
+        return []
+
     if field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
         return _check_array_of_struct_confidence(
             result_data, field, confidence_threshold, result
@@ -161,6 +165,8 @@ def _check_array_of_struct_confidence(
     failures: list[DocumentResultExclusionMetadata] = []
     for element_index, element in enumerate(array_data):
         for sf in field.struct_fields:
+            if sf.field_mode == ExtractionFieldMode.STRUCTURAL:
+                continue
             sf_wrapper = element.get(sf.name, {})
             confidence_score = sf_wrapper.get("confidence_score")
             if (
@@ -359,6 +365,8 @@ def _check_array_of_struct_sub_field_semantic_consistency(
     failures: list[DocumentResultExclusionMetadata] = []
     for element_index, element in enumerate(array_data):
         for sf in field.struct_fields:
+            if sf.field_mode == ExtractionFieldMode.STRUCTURAL:
+                continue
             sf_wrapper = element.get(sf.name, {})
             sf_value = sf_wrapper.get("value")
 

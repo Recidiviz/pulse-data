@@ -21,6 +21,7 @@ from datetime import datetime
 
 import attr
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
@@ -89,6 +90,7 @@ class NewDocumentIdentifier:
         active_in_compartment: str | None = None,
         lookback_days: int | None = None,
         person_ids: list[int] | None = None,
+        address_overrides: BigQueryAddressOverrides | None = None,
     ) -> BigQueryAddress:
         """Finds documents that need to be uploaded for the given collection.
 
@@ -141,7 +143,7 @@ class NewDocumentIdentifier:
 
         # Build the document generation query
         doc_gen_query = collection_config.build_document_generation_query(
-            self.project_id
+            self.project_id, address_overrides=address_overrides
         )
 
         # Build list of primary key columns for the SELECT clause

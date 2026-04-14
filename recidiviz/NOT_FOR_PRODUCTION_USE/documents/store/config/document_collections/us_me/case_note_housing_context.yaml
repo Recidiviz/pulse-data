@@ -1,0 +1,94 @@
+collection_description: >
+  Per-person context documents for housing entity resolution. Each document
+  covers one person and lists all housing mentions extracted from their case
+  notes, with sequential mention IDs, extracted fields, and the full original
+  case note text. Only mentions with at least one entity key field present
+  (address, housed_type, or temporary_housing_name) are included. Used as
+  input to the CASE_NOTE_HOUSING_ENTITY_RESOLUTION extractor.
+
+root_entity_type: PERSON_ID
+
+# No additional primary key columns — one document per person.
+primary_key_columns: []
+
+additional_metadata_columns:
+  - name: mention_id_mapping
+    type: STRING
+    description: >
+      JSON array mapping sequential mention IDs to their source document IDs.
+      Each element: {"mention_id": <int>, "document_id": "<str>"}. Used by
+      downstream views to join entity resolution output back to the original
+      extraction rows. No mention_index since housing extraction is flat
+      (one housing situation per document).
+
+prerequisite_extractor_id: US_ME_CASE_NOTE_HOUSING_INFO
+
+document_generation_query: |
+  WITH housing_mentions AS (
+    SELECT
+      h.person_id,
+      h.state_code,
+      h.document_id,
+      h.address,
+      h.housed_type,
+      h.temporary_housing_name,
+      h.document_date,
+      ROW_NUMBER() OVER (
+        PARTITION BY h.person_id
+        ORDER BY h.document_date, h.document_id
+      ) AS mention_id
+    FROM
+      `{project_id}.document_extraction_results.us_me_case_note_housing_info` h
+    WHERE
+      h.person_id IS NOT NULL
+      AND (
+        h.address IS NOT NULL
+        OR h.housed_type IS NOT NULL
+        OR h.temporary_housing_name IS NOT NULL
+      )
+  ),
+  case_note_text AS (
+    SELECT
+      meta.document_id,
+      COALESCE(notes.Note_Tx, notes.Short_Note_Tx) AS note_text
+    FROM `{project_id}.document_store_metadata.us_me_supervision_contact_notes_metadata` meta
+    JOIN `{project_id}.us_me_raw_data_up_to_date_views.CIS_204_GEN_NOTE_latest` notes
+      ON meta.note_id = CAST(notes.Note_Id AS STRING)
+  ),
+  person_context AS (
+    SELECT
+      hm.person_id,
+      hm.state_code,
+      STRING_AGG(
+        CONCAT(
+          '=== Mention ', CAST(hm.mention_id AS STRING), ' ===\n',
+          'address: ', COALESCE(hm.address, '[not provided]'), '\n',
+          'housed_type: ', COALESCE(hm.housed_type, '[not provided]'), '\n',
+          'temporary_housing_name: ',
+          COALESCE(hm.temporary_housing_name, '[not provided]'), '\n',
+          'case_note_text: ', COALESCE(cnt.note_text, '[not available]')
+        ),
+        '\n\n'
+        ORDER BY hm.mention_id
+      ) AS document_text,
+      TO_JSON_STRING(
+        ARRAY_AGG(
+          STRUCT(
+            hm.mention_id AS mention_id,
+            hm.document_id AS document_id
+          )
+          ORDER BY hm.mention_id
+        )
+      ) AS mention_id_mapping,
+      MAX(hm.document_date) AS document_update_datetime
+    FROM housing_mentions hm
+    LEFT JOIN case_note_text cnt
+      ON hm.document_id = cnt.document_id
+    GROUP BY hm.person_id, hm.state_code
+  )
+  SELECT
+    person_id,
+    document_text,
+    mention_id_mapping,
+    TIMESTAMP(document_update_datetime) AS document_update_datetime
+  FROM person_context

@@ -144,8 +144,14 @@ class TestExtractionInferredFieldSemanticConstraints(unittest.TestCase):
             }
         )
         field = ExtractionInferredField.from_yaml_dict(yaml_dict)
-        assert field.allowed_if_value is not None
-        self.assertEqual(field.allowed_if_value["primary_status"], ("employed",))
+        allowed_if_value = field.allowed_if_value
+        assert allowed_if_value is not None
+        self.assertEqual(
+            allowed_if_value[
+                "primary_status"
+            ],  # pylint: disable=unsubscriptable-object
+            ("employed",),
+        )
 
     def test_from_yaml_dict_allowed_if_value_list(self) -> None:
         yaml_dict = YAMLDict(
@@ -157,9 +163,13 @@ class TestExtractionInferredFieldSemanticConstraints(unittest.TestCase):
             }
         )
         field = ExtractionInferredField.from_yaml_dict(yaml_dict)
-        assert field.allowed_if_value is not None
+        allowed_if_value = field.allowed_if_value
+        assert allowed_if_value is not None
         self.assertEqual(
-            field.allowed_if_value["primary_status"], ("housed", "unhoused")
+            allowed_if_value[  # pylint: disable=unsubscriptable-object
+                "primary_status"
+            ],
+            ("housed", "unhoused"),
         )
 
     def test_from_yaml_dict_allowed_if_nonnull(self) -> None:
@@ -190,14 +200,19 @@ class TestExtractionInferredFieldSemanticConstraints(unittest.TestCase):
             }
         )
         field = ExtractionInferredField.from_yaml_dict(yaml_dict)
-        assert field.allowed_value_combinations is not None
-        self.assertIn("employment_status", field.allowed_value_combinations)
+        avc = field.allowed_value_combinations
+        assert avc is not None
+        self.assertIn("employment_status", avc)
         self.assertEqual(
-            field.allowed_value_combinations["employment_status"]["employed"],
+            avc["employment_status"][  # pylint: disable=unsubscriptable-object
+                "employed"
+            ],
             ("hired", "fired", "quit"),
         )
         self.assertEqual(
-            field.allowed_value_combinations["employment_status"]["unemployed"],
+            avc["employment_status"][  # pylint: disable=unsubscriptable-object
+                "unemployed"
+            ],
             ("fired", "quit"),
         )
 

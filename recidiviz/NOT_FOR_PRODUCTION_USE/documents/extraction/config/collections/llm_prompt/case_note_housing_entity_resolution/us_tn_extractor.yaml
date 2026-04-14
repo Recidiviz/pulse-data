@@ -1,0 +1,16 @@
+# US_TN Housing Entity Resolution Extractor
+
+collection_name: CASE_NOTE_HOUSING_ENTITY_RESOLUTION
+
+description: >
+  Housing entity resolution for US_TN. Clusters housing mentions from Tennessee
+  contact notes into real-world housing entities.
+
+input_document_collection_name: US_TN_CASE_NOTE_HOUSING_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Tennessee Department of Correction"
+  state_specific_context:

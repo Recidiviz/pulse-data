@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 
 import attr
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
@@ -65,6 +66,7 @@ class DocumentStoreUpdater:
     def update_document_collection(
         self,
         collection_config: DocumentCollectionConfig,
+        *,
         sample_size: int | None = None,
         sample_entity_count: int | None = None,
         active_in_compartment: str | None = None,
@@ -72,6 +74,7 @@ class DocumentStoreUpdater:
         max_concurrent_uploads: int = DEFAULT_MAX_CONCURRENT_UPLOADS,
         lookback_days: int | None = None,
         person_ids: list[int] | None = None,
+        address_overrides: BigQueryAddressOverrides | None = None,
     ) -> DocumentUploadResult:
         """Updates a document collection by uploading new documents and recording metadata.
 
@@ -119,6 +122,7 @@ class DocumentStoreUpdater:
             active_in_compartment=active_in_compartment,
             lookback_days=lookback_days,
             person_ids=person_ids,
+            address_overrides=address_overrides,
         )
         logging.info(
             "New documents table: %s.%s",

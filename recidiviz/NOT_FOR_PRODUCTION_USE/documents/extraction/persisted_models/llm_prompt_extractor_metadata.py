@@ -184,6 +184,7 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
             base_template = f.read()
 
         prompt_vars = yaml_dict.pop_optional("prompt_vars", dict) or {}
+        prompt_vars = {k: (v if v is not None else "") for k, v in prompt_vars.items()}
 
         # Load the collection's output schema to render output_format_instructions
         collection_yaml_path = os.path.join(collection_dir, "collection.yaml")

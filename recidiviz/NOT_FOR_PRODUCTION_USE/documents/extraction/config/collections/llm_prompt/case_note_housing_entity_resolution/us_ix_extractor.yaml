@@ -1,0 +1,16 @@
+# US_IX Housing Entity Resolution Extractor
+
+collection_name: CASE_NOTE_HOUSING_ENTITY_RESOLUTION
+
+description: >
+  Housing entity resolution for US_IX. Clusters housing mentions from Idaho case
+  notes into real-world housing entities.
+
+input_document_collection_name: US_IX_CASE_NOTE_HOUSING_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Idaho Department of Correction"
+  state_specific_context:

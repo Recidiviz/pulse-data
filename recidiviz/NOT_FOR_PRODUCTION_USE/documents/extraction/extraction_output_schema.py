@@ -113,6 +113,22 @@ class ExtractionFieldType(Enum):
     ARRAY_OF_STRUCT = "ARRAY_OF_STRUCT"
 
 
+class ExtractionFieldMode(Enum):
+    """Controls how a field appears in the LLM schema and validation pipeline.
+
+    INFERRED (default): field is an LLM inference, wrapped in the standard
+    {value, null_reason, confidence_score, citations} envelope.
+
+    STRUCTURAL: field is an identifier the LLM echoes back or assigns
+    sequentially (e.g. entity_id, mention_id). No confidence envelope,
+    excluded from confidence-threshold validation.
+    Only valid for STRING, INTEGER, FLOAT, and BOOLEAN field types.
+    """
+
+    INFERRED = "INFERRED"
+    STRUCTURAL = "STRUCTURAL"
+
+
 # TODO(#61717): Implement better classification for document-level errors
 
 # Valid values for the null_reason field
@@ -144,6 +160,8 @@ class ExtractionInferredField:
     enum_values: tuple[str, ...] | None = None
     # Only populated for ARRAY_OF_STRUCT type — defines the fields within each struct
     struct_fields: tuple["ExtractionInferredField", ...] | None = None
+
+    field_mode: ExtractionFieldMode = ExtractionFieldMode.INFERRED
 
     # This field can only be nonnull if the named sibling field is also nonnull.
     allowed_if_nonnull: str | None = None
@@ -202,7 +220,8 @@ class ExtractionInferredField:
                     f"Field '{self.name}' has allowed_value_combinations but type is "
                     f"{self.field_type.value}, not ENUM."
                 )
-            assert self.enum_values is not None
+            enum_values = self.enum_values
+            assert enum_values is not None
             for sibling_field, value_map in self.allowed_value_combinations.items():
                 if sibling_field == self.name:
                     raise ValueError(
@@ -211,18 +230,49 @@ class ExtractionInferredField:
                     )
                 for sibling_val, allowed_current_vals in value_map.items():
                     for v in allowed_current_vals:
-                        if v not in self.enum_values:
+                        if (
+                            v
+                            not in enum_values  # pylint: disable=unsupported-membership-test
+                        ):
                             raise ValueError(
                                 f"Field '{self.name}' has allowed_value_combinations "
                                 f"['{sibling_field}']['{sibling_val}'] listing '{v}' "
-                                f"which is not in enum values {list(self.enum_values)}."
+                                f"which is not in enum values {list(enum_values)}."
                             )
+        if self.field_mode == ExtractionFieldMode.STRUCTURAL:
+            if self.field_type in (
+                ExtractionFieldType.ENUM,
+                ExtractionFieldType.ARRAY_OF_STRUCT,
+            ):
+                raise ValueError(
+                    f"Field '{self.name}' has field_mode=STRUCTURAL but type "
+                    f"{self.field_type.value}. STRUCTURAL is only valid for "
+                    f"STRING, INTEGER, FLOAT, or BOOLEAN fields."
+                )
+            if any(
+                [
+                    self.allowed_if_nonnull,
+                    self.allowed_if_value,
+                    self.allowed_value_combinations,
+                ]
+            ):
+                raise ValueError(
+                    f"Field '{self.name}' has field_mode=STRUCTURAL but also has "
+                    f"semantic consistency constraints, which are not valid for "
+                    f"structural fields."
+                )
+
         # No self-references in allowed_if_nonnull or allowed_if_value
         if self.allowed_if_nonnull == self.name:
             raise ValueError(
                 f"Field '{self.name}' has allowed_if_nonnull referencing itself."
             )
-        if self.allowed_if_value and self.name in self.allowed_if_value:
+        allowed_if_value = self.allowed_if_value
+        if (
+            allowed_if_value is not None
+            and self.name
+            in allowed_if_value  # pylint: disable=unsupported-membership-test
+        ):
             raise ValueError(
                 f"Field '{self.name}' has an allowed_if_value entry referencing itself."
             )
@@ -340,6 +390,13 @@ class ExtractionInferredField:
                         str(v) for v in allowed_vals
                     )
 
+        field_mode_str = yaml_dict.pop_optional("field_mode", str)
+        field_mode = (
+            ExtractionFieldMode(field_mode_str.upper())
+            if field_mode_str
+            else ExtractionFieldMode.INFERRED
+        )
+
         return cls(
             name=yaml_dict.pop("name", str),
             field_type=field_type,
@@ -347,10 +404,28 @@ class ExtractionInferredField:
             required=yaml_dict.pop_optional("required", bool) or False,
             enum_values=enum_values,
             struct_fields=struct_fields,
+            field_mode=field_mode,
             allowed_if_nonnull=allowed_if_nonnull,
             allowed_if_value=allowed_if_value,
             allowed_value_combinations=allowed_value_combinations,
         )
+
+    def structural_schema_property(self) -> dict[str, Any]:
+        """Returns a bare value schema for STRUCTURAL fields.
+
+        Structural fields are identifiers the LLM echoes back or assigns
+        sequentially — they carry no confidence envelope.
+        """
+        _json_type_map = {
+            ExtractionFieldType.STRING: "string",
+            ExtractionFieldType.INTEGER: "integer",
+            ExtractionFieldType.FLOAT: "number",
+            ExtractionFieldType.BOOLEAN: "boolean",
+        }
+        return {
+            "type": _json_type_map[self.field_type],
+            "description": self.description,
+        }
 
     def value_wrapped_schema_property(self) -> dict[str, Any]:
         """Returns the standard {value, null_reason, confidence_score, citations}
@@ -445,7 +520,10 @@ class ExtractionInferredField:
             fields = list(self.struct_fields)
             struct_properties: dict[str, Any] = {}
             for sf in fields:
-                struct_properties[sf.name] = sf.value_wrapped_schema_property()
+                if sf.field_mode == ExtractionFieldMode.STRUCTURAL:
+                    struct_properties[sf.name] = sf.structural_schema_property()
+                else:
+                    struct_properties[sf.name] = sf.value_wrapped_schema_property()
             return {
                 "type": "ARRAY",
                 "description": self.description,
@@ -456,6 +534,8 @@ class ExtractionInferredField:
                     "required": [sf.name for sf in fields if sf.required],
                 },
             }
+        if self.field_mode == ExtractionFieldMode.STRUCTURAL:
+            return self.structural_schema_property()
         return self.value_wrapped_schema_property()
 
     def example_results(self) -> list[dict[str, Any]]:
@@ -667,6 +747,27 @@ class ExtractionOutputSchema:
             inferred_example = {"my_field": inferred_example_value}
             for json_line in json.dumps(inferred_example, indent=2).split("\n"):
                 lines.append(f"  {json_line}")
+            lines.append("")
+
+        # Structural field note
+        has_structural_fields = any(
+            f.field_mode == ExtractionFieldMode.STRUCTURAL
+            or (
+                f.field_type == ExtractionFieldType.ARRAY_OF_STRUCT
+                and f.struct_fields is not None
+                and any(
+                    sf.field_mode == ExtractionFieldMode.STRUCTURAL
+                    for sf in f.struct_fields
+                )
+            )
+            for f in self.inferred_fields_by_name.values()
+        )
+        if has_structural_fields:
+            lines.append(
+                "Some fields are marked STRUCTURAL. These are identifiers you assign "
+                "or echo back — output them as plain values, not as "
+                "{value, null_reason, confidence_score, citations} objects."
+            )
             lines.append("")
 
         # ARRAY_OF_STRUCT example

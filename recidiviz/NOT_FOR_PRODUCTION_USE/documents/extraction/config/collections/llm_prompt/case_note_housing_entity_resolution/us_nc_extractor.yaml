@@ -1,0 +1,16 @@
+# US_NC Housing Entity Resolution Extractor
+
+collection_name: CASE_NOTE_HOUSING_ENTITY_RESOLUTION
+
+description: >
+  Housing entity resolution for US_NC. Clusters housing mentions from North
+  Carolina narrative notes into real-world housing entities.
+
+input_document_collection_name: US_NC_CASE_NOTE_HOUSING_CONTEXT
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "North Carolina Department of Adult Correction"
+  state_specific_context:
