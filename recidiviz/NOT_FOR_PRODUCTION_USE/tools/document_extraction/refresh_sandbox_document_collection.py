@@ -76,8 +76,11 @@ def main(
     active_in_compartment: str | None,
     lookback_days: int | None = None,
     person_ids: list[int] | None = None,
-) -> None:
-    """Uploads documents from a collection to a sandbox."""
+) -> int:
+    """Uploads documents from a collection to a sandbox.
+
+    Returns the number of failed uploads.
+    """
     current_project_id = project_id()
 
     # Get the collection config
@@ -187,6 +190,8 @@ def main(
                 logging.info("  ... and %d more", len(result.successes) - 5)
                 break
             logging.info("  %s -> %s", doc_id[:16] + "...", path.uri())
+
+    return len(result.failures)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
