@@ -18,78 +18,54 @@
 module "case_triage_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id        = var.project_id
-  instance_key      = "case_triage"
-  base_secret_name  = "case_triage"
-  instance_name     = var.project_id == "recidiviz-staging" ? "dev-case-triage-data-0af0a" : "prod-case-triage-data"
-  region            = var.us_central_region
-  zone              = var.zone
-  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
-  has_readonly_user = true
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
+  project_id       = var.project_id
+  instance_key     = "case_triage"
+  instance_name    = var.project_id == "recidiviz-staging" ? "dev-case-triage-data-0af0a" : "prod-case-triage-data"
+  database_version = "POSTGRES_13"
+  region           = var.us_central_region
+  zone             = var.zone
+  tier             = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
 }
 
 module "justice_counts_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id        = var.project_id
-  instance_key      = "justice_counts"
-  base_secret_name  = "justice_counts"
-  instance_name     = var.project_id == "recidiviz-staging" ? "dev-justice-counts-data" : "prod-justice-counts-data"
-  region            = "us-east1"
-  zone              = "us-east1-c"
-  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
-  has_readonly_user = local.is_production
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
+  project_id       = var.project_id
+  instance_key     = "justice_counts"
+  database_version = "POSTGRES_13"
+  region           = var.us_east_region
+  zone             = "us-east1-c"
+  tier             = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
 }
-
 
 module "operations_database_v2" {
   source = "./modules/cloud-sql-instance"
 
-  project_id        = var.project_id
-  instance_key      = "operations_v2"
-  base_secret_name  = "operations_v2"
-  instance_name     = var.project_id == "recidiviz-staging" ? "dev-operations-data-0x17a1b" : "prod-operations-data-0xf04e58"
-  region            = "us-east1"
-  zone              = "us-east1-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
-  has_readonly_user = true
+  project_id       = var.project_id
+  instance_key     = "operations_v2"
+  instance_name    = var.project_id == "recidiviz-staging" ? "dev-operations-data-0x17a1b" : "prod-operations-data-0xf04e58"
+  database_version = "POSTGRES_13"
+  region           = var.us_east_region
+  zone             = "us-east1-b"
+  tier             = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
+  insights_config  = null
 }
 
 module "pathways_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id        = var.project_id
-  instance_key      = "pathways"
-  base_secret_name  = "pathways"
-  instance_name     = var.project_id == "recidiviz-staging" ? "dev-pathways-data" : "prod-pathways-data"
-  region            = var.us_central_region
-  zone              = var.zone
-  secondary_zone    = "us-central1-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
-  has_readonly_user = true
+  project_id       = var.project_id
+  instance_key     = "pathways"
+  database_version = "POSTGRES_13"
+  region           = var.us_central_region
+  zone             = var.zone
+  secondary_zone   = "us-central1-b"
+  tier             = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
 
   additional_databases = [
     for value in local.pathways_enabled_states :
     lower(value)
   ]
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
 }
 
 module "insights_database" {
@@ -97,8 +73,7 @@ module "insights_database" {
 
   project_id       = var.project_id
   instance_key     = "insights"
-  base_secret_name = "insights"
-  instance_name    = var.project_id == "recidiviz-staging" ? "dev-insights-data" : "prod-insights-data"
+  database_version = "POSTGRES_13"
   region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
@@ -106,18 +81,11 @@ module "insights_database" {
     var.default_sql_tier,
     var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
   ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
-  has_readonly_user = true
 
   additional_databases = [
     for value in local.outliers_enabled_states :
     lower(value)
   ]
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
 }
 
 module "workflows_database" {
@@ -125,8 +93,7 @@ module "workflows_database" {
 
   project_id       = var.project_id
   instance_key     = "workflows"
-  base_secret_name = "workflows"
-  instance_name    = var.project_id == "recidiviz-staging" ? "dev-workflows-data" : "prod-workflows-data"
+  database_version = "POSTGRES_13"
   region           = var.us_central_region
   zone             = var.zone
   secondary_zone   = "us-central1-b"
@@ -134,45 +101,29 @@ module "workflows_database" {
     var.default_sql_tier,
     var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
   ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
-  has_readonly_user = true
 
   additional_databases = [
     for value in local.workflows_enabled_states :
     lower(value)
   ]
 
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
 }
 
 module "persistence_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id       = var.project_id
-  instance_key     = "persistence"
-  base_secret_name = "persistence"
-  instance_name    = "persistence-data"
-  region           = var.us_central_region
-  zone             = var.zone
-  secondary_zone   = "us-central1-b"
-  database_version = "POSTGRES_18"
+  project_id     = var.project_id
+  instance_key   = "persistence"
+  instance_name  = "persistence-data"
+  region         = var.us_central_region
+  zone           = var.zone
+  secondary_zone = "us-central1-b"
 
   tier = coalesce(
     var.default_sql_tier,
     var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
   ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
-  has_readonly_user = true
 
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
 }
 
 module "public_pathways_database" {
@@ -180,25 +131,17 @@ module "public_pathways_database" {
 
   project_id       = var.project_id
   instance_key     = "public_pathways"
-  base_secret_name = "public_pathways"
-  instance_name    = var.project_id == "recidiviz-staging" ? "dev-public-pathways-data" : "prod-public-pathways-data"
+  database_version = "POSTGRES_13"
   region           = var.us_central_region
   zone             = var.zone
   tier = coalesce(
     var.default_sql_tier,
     var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
   ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
-  has_readonly_user = true
   additional_databases = [
     for value in local.public_pathways_enabled_states :
     lower(value)
   ]
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
 }
 
 locals {

@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-output "cloudsql_instance_id" {
-  value = data.google_secret_manager_secret_version.cloudsql_instance_id.secret_data
-}
-
 output "connection_name" {
   value = google_sql_database_instance.data.connection_name
 }

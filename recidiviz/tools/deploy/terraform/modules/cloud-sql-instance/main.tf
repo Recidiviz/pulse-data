@@ -26,15 +26,17 @@ variable "instance_key" {
 }
 
 # The base name for our database-related secrets per `recidiviz.persistence.database.sqlalchemy_engine_manager`
+# Defaults to instance_key if not provided.
 variable "base_secret_name" {
-  type = string
+  type    = string
+  default = null
 }
 
 # Postgres database version
 # See also https://cloud.google.com/sql/docs/postgres/create-instance#create-2nd-gen
 variable "database_version" {
   type    = string
-  default = "POSTGRES_13"
+  default = "POSTGRES_18"
 }
 
 # Cloud SQL edition
@@ -42,11 +44,6 @@ variable "database_version" {
 variable "edition" {
   type    = string
   default = "ENTERPRISE"
-}
-
-# If true, a readonly user will be created from the configured `readonly` secrets
-variable "has_readonly_user" {
-  type = bool
 }
 
 # Preferred region for the instance
@@ -76,6 +73,12 @@ variable "secondary_zone" {
   default = null
 }
 
+variable "encryption_key_name" {
+  type        = string
+  description = "The full resource name of the Cloud KMS key to use for CMEK encryption."
+  default     = null
+}
+
 variable "additional_databases" {
   type    = set(string)
   default = []
@@ -83,7 +86,7 @@ variable "additional_databases" {
 
 variable "instance_name" {
   type        = string
-  description = "The Cloud SQL instance name (not the full connection string). When set, overrides the name derived from the cloudsql_instance_id secret."
+  description = "The Cloud SQL instance name (not the full connection string). When set, overrides the name derived from instance_key."
   default     = null
 }
 
@@ -94,41 +97,27 @@ variable "insights_config" {
     record_application_tags = optional(bool)
     record_client_address   = optional(bool)
   })
-  default = null
+  default = {
+    query_insights_enabled  = true
+    query_string_length     = 1024
+    record_application_tags = false
+    record_client_address   = false
+  }
 }
-
-# Data from Google Secrets Manager is added in this terraform module's scope
-# The following secrets are used to configure the instance:
-# =========================================================
-# Instance ID i.e. `recidiviz-staging:us-east1:dev-case-triage-data`
-data "google_secret_manager_secret_version" "cloudsql_instance_id" { secret = "${var.base_secret_name}_cloudsql_instance_id" }
 
 # Default username
-data "google_secret_manager_secret_version" "db_user" { secret = "${var.base_secret_name}_db_user" }
+data "google_secret_manager_secret_version" "db_user" { secret = "${local.effective_base_secret_name}_db_user" }
 
 # Password for the default user
-data "google_secret_manager_secret_version" "db_password" { secret = "${var.base_secret_name}_db_password" }
+data "google_secret_manager_secret_version" "db_password" { secret = "${local.effective_base_secret_name}_db_password" }
 
-# (Optional) Readonly user name
-data "google_secret_manager_secret_version" "db_readonly_user" {
-  secret = "${var.base_secret_name}_db_readonly_user"
-  count  = var.has_readonly_user ? 1 : 0
-}
-
-# (Optional) Readonly user password
-data "google_secret_manager_secret_version" "db_readonly_password" {
-  secret = "${var.base_secret_name}_db_readonly_password"
-  count  = var.has_readonly_user ? 1 : 0
-}
 
 locals {
-  split_cloudsql_instance_id = split(":", data.google_secret_manager_secret_version.cloudsql_instance_id.secret_data)
+  env_prefix                 = var.project_id == "recidiviz-staging" ? "dev" : "prod"
+  effective_base_secret_name = coalesce(var.base_secret_name, var.instance_key)
 
-  # Retrieve the last element in the resource identifier
-  stripped_cloudsql_instance_id = element(local.split_cloudsql_instance_id, length(local.split_cloudsql_instance_id) - 1)
-
-  # Use explicit instance_name if provided, otherwise fall back to the secret-derived name.
-  effective_instance_name = coalesce(var.instance_name, local.stripped_cloudsql_instance_id)
+  effective_instance_name = coalesce(var.instance_name, "${local.env_prefix}-${replace(var.instance_key, "_", "-")}-data")
+  connection_name        = "${var.project_id}:${var.region}:${local.effective_instance_name}"
 
   database_friendly_name = title(replace(var.instance_key, "_", " "))
 
@@ -138,6 +127,7 @@ locals {
 
 resource "google_sql_database_instance" "data" {
   name                = local.effective_instance_name
+  encryption_key_name = var.encryption_key_name
   database_version    = var.database_version
   region              = var.region
   deletion_protection = false
@@ -195,25 +185,6 @@ resource "google_sql_database_instance" "data" {
       value = 0
     }
 
-    # TODO(#54841) Remove these after the PG18/CMEK migration is complete
-    # See https://docs.cloud.google.com/database-migration/docs/postgres/configure-source-database#cloud-sql-postgresql
-    # for information on these flags.
-    database_flags {
-      name  = "cloudsql.logical_decoding"
-      value = "on"
-    }
-
-    database_flags {
-      name  = "cloudsql.enable_pglogical"
-      value = "on"
-    }
-
-    database_flags {
-      name  = "wal_sender_timeout"
-      value = 0
-    }
-
-
     ip_configuration {
       ipv4_enabled = true
       ssl_mode  = var.require_ssl_connection ? "TRUSTED_CLIENT_CERTIFICATE_REQUIRED" : "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
@@ -246,15 +217,6 @@ resource "google_sql_database_instance" "data" {
     }
 
   }
-
-  # TODO(#54841): Remove this after the PG18/CMEK migration is complete
-  lifecycle {
-    ignore_changes = [
-      settings[0].database_flags,
-      settings[0].ip_configuration[0].authorized_networks,
-      settings[0].tier,
-    ]
-  }
 }
 
 resource "google_project_iam_member" "gcs-read-write-access" {
@@ -267,14 +229,6 @@ resource "google_sql_user" "postgres" {
   instance = google_sql_database_instance.data.name
   name     = data.google_secret_manager_secret_version.db_user.secret_data
   password = data.google_secret_manager_secret_version.db_password.secret_data
-}
-
-resource "google_sql_user" "readonly" {
-  instance = google_sql_database_instance.data.name
-  name     = length(data.google_secret_manager_secret_version.db_readonly_user) > 0 ? data.google_secret_manager_secret_version.db_readonly_user[0].secret_data : null
-  password = length(data.google_secret_manager_secret_version.db_readonly_password) > 0 ? data.google_secret_manager_secret_version.db_readonly_password[0].secret_data : null
-
-  count = var.has_readonly_user ? 1 : 0
 }
 
 
@@ -290,7 +244,7 @@ resource "google_bigquery_connection" "default_db_bq_connection" {
   description = "Connection to the ${local.bq_connection_friendly_name} Cloud SQL database"
 
   cloud_sql {
-    instance_id = data.google_secret_manager_secret_version.cloudsql_instance_id.secret_data
+    instance_id = local.connection_name
     database    = "postgres"
     type        = "POSTGRES"
     credential {
@@ -305,12 +259,4 @@ resource "google_sql_database" "databases" {
   for_each = var.additional_databases
   name     = each.value
   instance = google_sql_database_instance.data.name
-}
-
-
-output "dbusername" {
-  value = var.has_readonly_user ? data.google_secret_manager_secret_version.db_readonly_user[0].secret_data : null
-}
-output "dbuserpassword" {
-  value = var.has_readonly_user ? data.google_secret_manager_secret_version.db_readonly_password[0].secret_data : null
 }
