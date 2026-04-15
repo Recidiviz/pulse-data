@@ -54,6 +54,7 @@ class ProductType(Enum):
         "SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE"
     )
     SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE = "SUPERVISOR_HOMEPAGE_OPERATIONS_MODULE"
+    MEETINGS = "MEETINGS"
     TASKS = "TASKS"
     VITALS = "VITALS"
     WORKFLOWS = "WORKFLOWS"
@@ -63,6 +64,8 @@ class ProductType(Enum):
         """Returns the base URL for this product type."""
         if self == ProductType.CASE_PLANNING_ASSISTANT:
             return "https://plan.recidiviz.org"
+        if self == ProductType.MEETINGS:
+            return "https://meet.recidiviz.org"
         return "https://dashboard.recidiviz.org"
 
     @property
@@ -85,6 +88,7 @@ class ProductType(Enum):
             ProductType.CASE_PLANNING_ASSISTANT,
             ProductType.CLIENT_PAGE,
             ProductType.LANTERN,
+            ProductType.MEETINGS,
             ProductType.MILESTONES,
             ProductType.PATHWAYS,
             ProductType.PSI_CASE_INSIGHTS,
@@ -122,6 +126,9 @@ class ProductType(Enum):
         if self == ProductType.CASE_NOTE_SEARCH:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows')"
         elif self == ProductType.CASE_PLANNING_ASSISTANT:
+            # No additional path filtering needed - just the url_base check
+            return url_base_check
+        elif self == ProductType.MEETINGS:
             # No additional path filtering needed - just the url_base check
             return url_base_check
         elif self == ProductType.CLIENT_PAGE:
@@ -211,6 +218,8 @@ class ProductType(Enum):
             ]
         if self == ProductType.LANTERN:
             return ["lantern"]
+        if self == ProductType.MEETINGS:
+            return ["meetings_supervision", "meetings_facilities"]
         if self == ProductType.MILESTONES:
             return ["workflows", "workflows_supervision"]
         if self == ProductType.PATHWAYS:

@@ -165,6 +165,12 @@ schema:
   - name: routes_sar_access
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_meetings_supervision
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: routes_meetings_facilities
+    type: BOOLEAN
+    mode: NULLABLE
   - name: feature_variants_case_note_search
     type: BOOLEAN
     mode: NULLABLE
