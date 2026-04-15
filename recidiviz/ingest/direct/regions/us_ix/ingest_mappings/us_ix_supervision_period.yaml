@@ -225,6 +225,7 @@ output:
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - Offender Moves Location
                         - Pre-Release Assignment
+                        - Temporary Remand To Community
                       StateSupervisionPeriodTerminationReason.ABSCONSION:
                         - Escape
               - $else_if:
