@@ -93,26 +93,6 @@ class BaseEngineManager:
         return password
 
     @classmethod
-    def _get_db_readonly_password(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_readonly_password"
-        password = secrets.get_secret(secret_key)
-        if password is None:
-            raise ValueError(
-                f"Unable to retrieve database readonly password for key [{secret_key}]"
-            )
-        return password
-
-    @classmethod
-    def _get_db_readonly_user(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_readonly_user"
-        user = secrets.get_secret(secret_key)
-        if user is None:
-            raise ValueError(
-                f"Unable to retrieve database readonly user for key [{secret_key}]"
-            )
-        return user
-
-    @classmethod
     def _get_db_user(
         cls,
         *,
@@ -207,7 +187,6 @@ class BaseEngineManager:
     def update_sqlalchemy_env_vars(
         cls,
         database_key: SQLAlchemyDatabaseKey,
-        readonly_user: bool = False,
         using_proxy: bool = False,
         secret_prefix_override: Optional[str] = None,
     ) -> Dict[str, Optional[str]]:
@@ -236,20 +215,12 @@ class BaseEngineManager:
                 database_key=database_key, secret_prefix_override=secret_prefix_override
             )
 
-        if readonly_user:
-            os.environ[SQLALCHEMY_DB_USER] = cls._get_db_readonly_user(
-                database_key=database_key
-            )
-            os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_readonly_password(
-                database_key=database_key
-            )
-        else:
-            os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(
-                database_key=database_key, secret_prefix_override=secret_prefix_override
-            )
-            os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_password(
-                database_key=database_key, secret_prefix_override=secret_prefix_override
-            )
+        os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
+        os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_password(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
 
         return original_values
 
