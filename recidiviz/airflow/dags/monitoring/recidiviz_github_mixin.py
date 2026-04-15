@@ -72,7 +72,7 @@ class RecidivizGithubMixin:
             and (comment_prefix is None or comment.body.startswith(comment_prefix))
         ]
 
-    def _get_helperbot_issues(
+    def get_helperbot_issues(
         self,
         labels: list[str],
         state: str = "all",
@@ -105,22 +105,7 @@ class RecidivizGithubMixin:
             state: The state of the issue(s) to return (open, closed, or all).
             since: If provided, only issues updated at or after this time are returned.
         """
-        matching_issues = self._get_helperbot_issues(
+        matching_issues = self.get_helperbot_issues(
             labels=labels, state=state, since=since
         )
         return [issue for issue in matching_issues if issue.title == title]
-
-    def get_helperbot_issues_for_title_prefix(
-        self, title_prefix: str, labels: list[str], state: str = "all"
-    ) -> list[Issue]:
-        """Returns a list of issues matching the given filters created by HELPERBOT_USER_NAME.
-
-        Args:
-            title_prefix: The prefix of the title of the issue(s) to return.
-            labels: The labels that the issue(s) must have.
-            state: The state of the issue(s) to return (open, closed, or all).
-        """
-        matching_issues = self._get_helperbot_issues(labels=labels, state=state)
-        return [
-            issue for issue in matching_issues if issue.title.startswith(title_prefix)
-        ]

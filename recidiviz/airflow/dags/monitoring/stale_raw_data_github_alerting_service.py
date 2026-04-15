@@ -48,6 +48,8 @@ class StaleRawDataGitHubService(
     project_id: str
     issue_labels: list[str]
 
+    _cached_issues: list[Issue] | None = attr.ib(init=False, default=None)
+
     @classmethod
     def get_stale_raw_data_service_for_state_code(
         cls, *, project_id: str, state_code: StateCode
@@ -65,6 +67,16 @@ class StaleRawDataGitHubService(
             ],
         )
 
+    @property
+    def cached_gh_issues(self) -> list[Issue]:
+        """Returns all helperbot issues for this service's labels, fetching from
+        GitHub only on the first call and caching for subsequent calls."""
+        if self._cached_issues is None:
+            self._cached_issues = self.get_helperbot_issues(
+                labels=self.issue_labels, state="all"
+            )
+        return self._cached_issues
+
     def _get_issue_title_prefix(
         self,
     ) -> str:
@@ -78,20 +90,28 @@ class StaleRawDataGitHubService(
         self, incident: StaleRawDataAlertingIncident
     ) -> Issue | None:
         """Searches for an existing issue for the incident."""
-        issues = self.get_helperbot_issues_for_title(
-            title=self._get_issue_title(incident), labels=self.issue_labels
-        )
+        title = self._get_issue_title(incident)
+        issues = [i for i in self.cached_gh_issues if i.title == title]
         return one(issues) if issues else None
+
+    def _search_for_open_issues_for_prefix(
+        self, file_tag_incident_prefix: str
+    ) -> list[Issue]:
+        """Searches for any open issues for the file tag/environment/file_tag_incident_prefix combination."""
+        title_prefix = f"{self._get_issue_title_prefix()} {file_tag_incident_prefix}"
+        return [
+            i
+            for i in self.cached_gh_issues
+            if i.state == "open" and i.title.startswith(title_prefix)
+        ]
 
     def _handle_resolved_incident(self, incident: StaleRawDataAlertingIncident) -> None:
         """If a file is fresh, we want to close any open issues for that file/environment combination.
         We search by file tag prefix rather than unique incident id since the incident id includes the most recent import date,
         and the most recent import date will have changed by the time the incident is resolved.
         """
-        matching_issues = self.get_helperbot_issues_for_title_prefix(
-            title_prefix=f"{self._get_issue_title_prefix()} {incident.file_tag_incident_prefix}",
-            labels=self.issue_labels,
-            state="open",
+        matching_issues = self._search_for_open_issues_for_prefix(
+            incident.file_tag_incident_prefix
         )
 
         if not matching_issues:
