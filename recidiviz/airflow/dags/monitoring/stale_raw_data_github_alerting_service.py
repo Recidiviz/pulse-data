@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """GitHub alerting service specifically for stale raw data file monitoring."""
+import datetime
 import logging
 
 import attr
@@ -35,6 +36,7 @@ from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.string import StrictStringFormatter
 
 STALE_RAW_DATA_LABELS: list[str] = ["Stale Raw Data", "Team: State Pod"]
+DEFAULT_ISSUE_SEARCH_LOOKBACK_WINDOW_DAYS = 45
 
 
 @attr.define
@@ -47,6 +49,7 @@ class StaleRawDataGitHubService(
     state_code: StateCode
     project_id: str
     issue_labels: list[str]
+    issue_search_lookback_window_days: int
 
     _cached_issues: list[Issue] | None = attr.ib(init=False, default=None)
 
@@ -65,6 +68,7 @@ class StaleRawDataGitHubService(
                 label_for_state_code,
                 label_for_environment,
             ],
+            issue_search_lookback_window_days=DEFAULT_ISSUE_SEARCH_LOOKBACK_WINDOW_DAYS,
         )
 
     @property
@@ -72,8 +76,11 @@ class StaleRawDataGitHubService(
         """Returns all helperbot issues for this service's labels, fetching from
         GitHub only on the first call and caching for subsequent calls."""
         if self._cached_issues is None:
+            since = datetime.datetime.now(
+                tz=datetime.timezone.utc
+            ) - datetime.timedelta(days=self.issue_search_lookback_window_days)
             self._cached_issues = self.get_helperbot_issues(
-                labels=self.issue_labels, state="all"
+                labels=self.issue_labels, state="all", since=since
             )
         return self._cached_issues
 
