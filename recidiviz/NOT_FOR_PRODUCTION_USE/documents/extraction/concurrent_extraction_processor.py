@@ -42,6 +42,7 @@ from typing import Any
 
 import pytz
 import requests
+from aiolimiter import AsyncLimiter
 from google.cloud import storage  # type: ignore[import-untyped, attr-defined]
 from litellm import acompletion  # type: ignore[import-not-found]
 from litellm.exceptions import RateLimitError, ServiceUnavailableError
@@ -120,9 +121,19 @@ class ConcurrentExtractionProcessor:
         max_gcs_read_workers: int = 50,
         bq_write_batch_size: int = 500,
         temperature: float = 0.001,
-        max_output_tokens: int = 8192,
+        # Gemini 2.5 Flash supports up to 65K output tokens. We've seen
+        # truncated-JSON failures at 8192 when the model emits long citation
+        # arrays — bumping high to give headroom.
+        max_output_tokens: int = 32768,
         max_retries_per_doc: int = 5,
         retry_base_delay: float = 5.0,
+        # Max requests per second to send to the LLM provider. Caps burst rate
+        # independently of concurrency — Vertex AI enforces per-second burst
+        # limits well below the per-minute quota (typically ~100-300 RPS for
+        # Gemini Flash). With 200 concurrency and ~3s latency, steady-state
+        # throughput is ~66 RPS, but asyncio would otherwise fire 200 requests
+        # simultaneously at job start, overrunning the burst limit.
+        max_llm_rps: float = 50.0,
     ) -> None:
         self._extractor = extractor
         self._collection = collection
@@ -134,6 +145,7 @@ class ConcurrentExtractionProcessor:
         self._max_output_tokens = max_output_tokens
         self._max_retries_per_doc = max_retries_per_doc
         self._retry_base_delay = retry_base_delay
+        self._max_llm_rps = max_llm_rps
 
     def get_already_extracted_document_ids(
         self,
@@ -260,9 +272,10 @@ class ConcurrentExtractionProcessor:
             },
         }
 
-    async def _extract_single_doc_async(
+    async def _extract_single_doc_async(  # pylint: disable=too-many-positional-arguments
         self,
         semaphore: asyncio.Semaphore,
+        rate_limiter: AsyncLimiter,
         document_id: str,
         document_content: str,
         output_schema: ExtractionOutputSchema,
@@ -285,10 +298,38 @@ class ConcurrentExtractionProcessor:
         last_error: str | None = None
         for attempt in range(self._max_retries_per_doc + 1):
             try:
+                # Acquire both the concurrency cap (semaphore) and the
+                # per-second burst cap (rate_limiter) before firing. Order
+                # matters: semaphore first so we don't hold a rate-limit slot
+                # while blocked on concurrency.
                 async with semaphore:
-                    response = await acompletion(**completion_kwargs)
+                    async with rate_limiter:
+                        response = await acompletion(**completion_kwargs)
 
                 response_text = response.choices[0].message.content
+                finish_reason = getattr(response.choices[0], "finish_reason", None)
+                if response_text is None:
+                    # Vertex AI signals safety/content filter blocks via
+                    # finish_reason=content_filter (or "safety"). Distinguish
+                    # these from other empty completions for cleaner reporting.
+                    if finish_reason in ("content_filter", "safety"):
+                        error_type = ExtractionExclusionType.LLM_CONTENT_FILTERED
+                        error_message = (
+                            f"LLM response blocked by content/safety filter. "
+                            f"finish_reason={finish_reason}"
+                        )
+                    else:
+                        error_type = ExtractionExclusionType.LLM_EMPTY_RESPONSE
+                        error_message = (
+                            f"LLM returned no content. finish_reason={finish_reason}"
+                        )
+                    return LLMExtractionResult(
+                        document_id=document_id,
+                        status=LLMExtractionStatus.PERMANENT_FAILURE,
+                        extracted_data=None,
+                        error_message=error_message,
+                        error_type=error_type,
+                    )
                 try:
                     response_data = json.loads(response_text)
                 except json.JSONDecodeError as e:
@@ -296,7 +337,11 @@ class ConcurrentExtractionProcessor:
                         document_id=document_id,
                         status=LLMExtractionStatus.PERMANENT_FAILURE,
                         extracted_data=None,
-                        error_message=f"Failed to parse JSON: {e}. Raw: {response_text[:500]}",
+                        error_message=(
+                            f"Failed to parse JSON: {e}. "
+                            f"finish_reason={finish_reason}. "
+                            f"Raw: {response_text[:500]}"
+                        ),
                         error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
                     )
 
@@ -568,6 +613,9 @@ class ConcurrentExtractionProcessor:
         """
         output_schema = self._collection.output_schema
         semaphore = asyncio.Semaphore(self._max_llm_concurrency)
+        # Token-bucket rate limiter: caps requests-per-second to avoid Vertex
+        # AI burst limits. max_rate tokens per time_period (seconds).
+        rate_limiter = AsyncLimiter(max_rate=self._max_llm_rps, time_period=1.0)
         total_docs = len(document_contents)
         total_success = 0
         total_failed = 0
@@ -577,7 +625,7 @@ class ConcurrentExtractionProcessor:
         tasks = {
             asyncio.ensure_future(
                 self._extract_single_doc_async(
-                    semaphore, doc_id, content, output_schema
+                    semaphore, rate_limiter, doc_id, content, output_schema
                 )
             ): doc_id
             for doc_id, content in document_contents.items()

@@ -287,16 +287,18 @@ def run_doc_upload(
     return num_failures
 
 
-def run_extraction(
+def run_extraction(  # pylint: disable=too-many-positional-arguments
     extractor_id: str,
     sandbox_dataset_prefix: str,
     sandbox_documents_bucket: str,
     segment_index: int | None = None,
     total_segments: int | None = None,
-    # Vertex AI has per-second burst limits below what the per-minute quota
-    # suggests. 200 concurrent avoids 429s while still processing ~9K docs
-    # in ~3 min. Can be tuned up via --max_llm_concurrency if quota allows.
+    # Concurrency cap: max in-flight LLM requests.
     max_llm_concurrency: int = 200,
+    # Rate cap: max requests per second to send to the LLM. Prevents Vertex
+    # AI burst-limit 429s that occur when all N concurrent requests fire
+    # simultaneously at job start.
+    max_llm_rps: float = 50.0,
 ) -> ExtractionJobResultMetadata | None:
     """Runs the EXTRACTION phase for an extractor.
 
@@ -380,6 +382,7 @@ def run_extraction(
         collection=collection,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         max_llm_concurrency=max_llm_concurrency,
+        max_llm_rps=max_llm_rps,
     )
     already_extracted = processor.get_already_extracted_document_ids(bq_client)
     remaining = [d for d in documents if d.document_id not in already_extracted]
@@ -460,6 +463,15 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--active_in_compartment", type=str, default=None)
     parser.add_argument("--max_llm_concurrency", type=int, default=200)
     parser.add_argument(
+        "--max_llm_rps",
+        type=float,
+        default=50.0,
+        help=(
+            "Max LLM requests per second. Caps burst rate to avoid Vertex AI "
+            "per-second 429s. Default 50."
+        ),
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Continue even if there are extraction failures.",
@@ -502,6 +514,7 @@ if __name__ == "__main__":
                 segment_index=args.segment_index,
                 total_segments=args.total_segments,
                 max_llm_concurrency=args.max_llm_concurrency,
+                max_llm_rps=args.max_llm_rps,
             )
             if (
                 extraction_result is not None

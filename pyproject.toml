@@ -102,6 +102,7 @@ dependencies = [
     # TODO(#46131): Unpin when sshtunnel issue is resolved
     "paramiko==3.5.1",
     "tqdm",
+    "aiolimiter",
     "linearmodels",
     "jsonschema",
     "proto-plus",

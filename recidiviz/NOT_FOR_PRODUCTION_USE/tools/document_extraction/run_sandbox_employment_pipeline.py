@@ -231,6 +231,7 @@ def run_phase(  # pylint: disable=too-many-positional-arguments
     segment_index: int | None,
     total_segments: int | None,
     max_llm_concurrency: int,
+    max_llm_rps: float,
     force: bool = False,
 ) -> None:
     """Runs a single employment pipeline phase."""
@@ -263,6 +264,7 @@ def run_phase(  # pylint: disable=too-many-positional-arguments
             segment_index=segment_index,
             total_segments=total_segments,
             max_llm_concurrency=max_llm_concurrency,
+            max_llm_rps=max_llm_rps,
         )
         if (
             extraction_result is not None
@@ -335,6 +337,15 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--active_in_compartment", type=str, default=None)
     parser.add_argument("--max_llm_concurrency", type=int, default=200)
     parser.add_argument(
+        "--max_llm_rps",
+        type=float,
+        default=50.0,
+        help=(
+            "Max LLM requests per second. Caps burst rate to avoid Vertex AI "
+            "per-second 429s. Default 50."
+        ),
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Continue even if there are extraction failures.",
@@ -373,5 +384,6 @@ if __name__ == "__main__":
                 segment_index=args.segment_index,
                 total_segments=args.total_segments,
                 max_llm_concurrency=args.max_llm_concurrency,
+                max_llm_rps=args.max_llm_rps,
                 force=args.force,
             )
