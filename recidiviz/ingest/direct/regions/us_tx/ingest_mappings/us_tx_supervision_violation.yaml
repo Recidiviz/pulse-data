@@ -6,7 +6,7 @@ input_columns:
   VIOLATION_ID: STRING
   SID_Number: STRING
   VIOLATION_DATE: DATE
-  response_list: STRING
+  condition_array: STRING
   VIOLATION_STATUS: STRING
 unused_columns: []
 output:
@@ -22,112 +22,105 @@ output:
           violation_metadata:
             $normalized_values_json_dict:
               ViolationStatus: VIOLATION_STATUS
-          # TODO(#45651): Improve violation_type and response_type for supervision violations
           supervision_violation_types:
-            - StateSupervisionViolationTypeEntry:
-                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN)
-          supervision_violation_responses:
             - $foreach:
-                $iterable:
-                  $split_json: response_list
+                $iterable: condition_array
                 $result:
-                  StateSupervisionViolationResponse:
-                    external_id:
-                      $concat:
-                        $values:
-                          - $json_extract:
-                              $key: VIOLATION_ID
-                              $json: $iter_item
-                          - $json_extract:
-                              $key: HEARING_PERIOD_ID
-                              $json: $iter_item
-                          - $json_extract:
-                              $key: RESPONSE_DATE
-                              $json: $iter_item
-                    response_date:
-                      $json_extract:
-                        $key: RESPONSE_DATE
-                        $json: $iter_item
-                    # TODO(#45651): Improve violation_type and response_type for supervision violations
-                    response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
-                    supervision_violation_response_decisions:
-                      - StateSupervisionViolationResponseDecisionEntry:
-                          decision:
-                            $enum_mapping:
-                              $raw_text:
-                                $json_extract:
-                                  $key: VIOLATION_DECISION_RESULT
-                                  $json: $iter_item
-                              $mappings:
-                                # CONTINUANCE mappings
-                                StateSupervisionViolationResponseDecision.CONTINUANCE:
-                                  - "|NON REVOCATION ACTION - ALLOW TO DISCHARGE"
-                                  - "|WITHDRAW ISF AND RETURN TO SUPERVISION STATUS"
-                                  - "CONTINUE SUPERVISION|"
-                                  - "CONTINUE SUPERVISION PENDING DISPOSITON|"
-                                  - "CONTINUE SUPERVISION PENDING PROBATION|"
-                                # DELAYED_ACTION mappings
-                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
-                                  - "|NON REVOCATION ACTION - PENDING ADJUDICATION OF CHARGES"
-                                  - "ISSUE WARRANT|AWAITING BPP VOTE"
-                                  - "PENDING ADJUDICATION OF CHARGES|"
-                                  - "|PROCEED TO PRELIMINARY HEARING"
-                                  - "REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)|"
-                                  - "CONTINUE SUPERVISION PENDING ADJUDICATION OF CHARGES|"
-                                  - "|REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)"
-                                  - "RETURN FOR CORRECTIONS|"
-                                  - "PS RETURN FOR CORRECTIONS|" # This is when a violation is returned to PO so they can fix something. Data entry issue.
-                                  - "CONDUCT PROBABLE CAUSE HEARING|"
-                                # REVOCATION mappings
-                                StateSupervisionViolationResponseDecision.REVOCATION:
-                                  - "|PROCEED TO REVOCATION HEARING"
-                                  - "PROCEED TO REVOCATION HEARING|"
-                                  - "|REVOKE"
-                                  - "REVOKE|"
-                                # NEW_CONDITIONS mapping
-                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
-                                  - "|NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS"
-                                # EXTERNAL_UNKNOWN mappings (for blank composite and unknown result)
-                                StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN:
-                                  - "|" # when both decision and result are blank
-                                  - "|UNKNOWN VIOLATION RECOMMENDATION"
-                                  - "UNKNOWN VIOLATION RECOMMENDATION|"
-                                # INTERNAL_UNKNOWN mappings (other unmapped values)
-                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
-                                  - "DPO VIOLATION RECOMMENDATION|"
-                                  - "IMPOSE LOCAL INTERVENTIONS|"
-                                  - "INTERVENTIONS|"
-                                  - "|US VIOLATION RECOMMENDATION"
-                                  - "US VIOLATION RECOMMENDATION|"
-                                # TREATMENT_IN_PRISON mappings
-                                StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
-                                  # Intermediate Sanction Facility (ISF) facilities are short term detention facilities for parole or mandatory supervision offenders who have violated the terms of their release agreement.
-                                  # The Substance Abuse Felony Punishment Facility (SAFPF) provide services to qualified inmates identified as needing substance use treatment.
-                                  - "|CONTINUE ISF"
-                                  - "|CONTINUE ISF IN EFFECT"
-                                  - "|CONTINUE SAFPF IN EFFECT"
-                                  - "|ISF"
-                                  - "|SAFPF"
-                                # VIOLATION_UNFOUNDED mappings
-                                StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
-                                  - "|DENY"
-                                  - "DO NOT ISSUE|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "DO NOT ISSUE|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "ADMINISTRATIVE CLOSURE|"
-                                  # Acccounting for typos in "recommendation" that appear in the data
-                                  - "CONTINUE SUPERVISION|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "CONTINUE SUPERVISION|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "ISSUE WARRANT|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "ISSUE WARRANT|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "NO RECOMMENDATION|"
-                                # WARRANT_ISSUED mappings
-                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
-                                  - "CONTINUE WARRANT IN EFFECT|"
-                                  - "|CONTINUE WARRANT IN EFFECT"
-                                  - "CONTINUE WARRANT IN EFFECT|CONTINUE WARRANT IN EFFECT"
-                                  - "ISSUE SUMMONS|"
-                                  - "ISSUE WARRANT|"
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolationType.ABSCONDED:
+                            - "FOLLOW REPORTING INSTRUCTIONS"
+                            - "ATTEND ALL PROCEEDINGS CONCERNING ALLEGED VIOLATIONS OF PAROLE"
+                          StateSupervisionViolationType.LAW:
+                            - "OFFENSE AGAINST STATE LAWS"
+                            - "OUT OF STATE ALLEGATION"
+                            - "GAIN UNLAWFUL ENTRY INTO US IF DEPORTED OR RELEASED TO DETAINER"
+                            - "NO ILLEGAL POSSESSION OF WEAPONS"
+                          StateSupervisionViolationType.TECHNICAL:
+                            - "FOLLOW INSTRUCTIONS FROM MY PAROLE OFFICER"
+                            - "RESIDE IN AN APPROVED PLACE"
+                            - "ABIDE BY ALL THE RULES OF THE FACILITY RESIDING IN"
+                            - "TRAVEL(OUT OF TEXAS) WITHOUT PRIOR APPROVAL"
+                            - "ALWAYS KEEP IN POSSESSION A DPS ID OR DRIVERS LICENSE"
+                            - "NO ALLIANCE WITH LAW AGENCIES WITHOUT APPROVAL"
+                            - "NO PROXIMITY TO DISREPUTABLE PEOPLE/PLACES"
+                            - "NOT CONTEST ANY EXTRADITION EFFORTS BY STATE OF TEXAS"
+                            - "PAY ALL FINES COURT COSTS AND SUPERVISION FEES"
+                            - "C"
+                            - "D"
+                            - "E"
+                            - "I"
+                            - "L"
+                            - "M"
+                            - "N"
+                            - "N1"
+                            - "P"
+                            - "R"
+                            - "S"
+                            - "T"
+                            - "V1"
+                            - "V2"
+                            - "X"
+                            - "Z"
+                            - "O.01"
+                            - "O.02"
+                            - "O.03"
+                            - "O.04"
+                            - "O.05"
+                            - "O.06"
+                            - "O.07"
+                            - "O.08"
+                            - "O.09"
+                            - "O.10"
+                            - "O.11"
+                            - "O.12"
+                            - "O.13"
+                            - "O.14"
+                            - "O.15"
+                            - "O.16"
+                            - "O.17"
+                            - "O.18"
+                            - "O.19"
+                            - "O.20"
+                            - "O.21"
+                            - "O.22"
+                            - "O.23"
+                            - "O.24"
+                            - "O.25"
+                            - "O.26"
+                            - "O.27"
+                            - "O.30"
+                            - "O.31"
+                            - "O.32"
+                            - "O.33"
+                            - "O.35"
+                            - "O.36"
+                            - "O.38"
+                            - "O.39"
+                            - "O.40"
+                            - "O.43"
+                            - "O.44"
+                            - "O.45"
+                            - "O.46"
+                            - "O.48"
+                            - "O.49"
+                            - "O.51"
+                            - "O.52"
+                            - "O.58"
+                            - "O.61"
+                            - "O.99"
+                            - "S.12"
+                            - "S.13"
+                            - "ISF"
+                            - "SAFP"
+                            - "SISP"
+                            - "PRE-PAVR"
+                            - "UPON WRITTEN INSTRUCTION I SHALL PARTICIPATE IN A DRUG AND ALCOHOL CONTINUUM OF CARE TREATMENT PROGRAM."
+                            - "UPON WRITTEN INSTRUCTION I SHALL NOT SUPERVISE OR PARTICIPATE IN ANY PROGRAM THAT INCLUDES PERSONS WHO ARE 17 YEARS OF AGE OR YOUNGER."
+                            - "UPON WRITTEN INSTRUCTION I SHALL REGISTER AS A SEX OFFENDER UNDER CHAPTER 62 CODE OF CRIMINAL PROCEDURE."
+                            - "UPON WRITTEN INSTRUCTION I SHALL PERFORM NOT LESS THAN 300 HOURS OF COMMUNITY SERVICE AT A SERVICE PROJECT DESIGNATED BY A PAROLE PANEL."
+                            - "UPON WRITTEN INSTRUCTION I SHALL NOT GO IN ON OR WITHIN A DISTANCE SPECIFIED BY A PAROLE PANEL OF PREMISES WHERE CHILDREN COMMONLY GATHER."
+                            - "UPON WRITTEN INSTRUCTION I SHALL ATTEND PSYCHOLOGICAL COUNSELING AS SPECIFIED BY MY SUPERVISING OFFICER."
