@@ -191,6 +191,8 @@ Available skills:
 - [Investigate PG Ticket](./.claude/skills/investigate-pg-ticket/SKILL.md) -
   Fetch a GitHub bug ticket, retrieve PII from go/github-pii, and suggest BQ
   investigation paths
+- [TX Critically Understaffed](./.claude/skills/tx_critically_understaffed/SKILL.md) -
+  Transform and upload TX critically understaffed locations xlsx to GCS
 
 # Personal preferences
 
