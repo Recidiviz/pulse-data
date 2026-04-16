@@ -17,14 +17,12 @@
 
 """Endpoints related to auth operations.
 """
-import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Callable, Tuple, Union
 
-import pandas as pd
 import sqlalchemy.orm.exc
 from dateutil.tz import tzlocal
 from flask import Blueprint, Response, jsonify, request
@@ -32,19 +30,15 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import delete, func, inspect, select, update
+from sqlalchemy import func, inspect
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
-from recidiviz.auth.cleanup_user_overrides import cleanup_user_overrides
 from recidiviz.auth.constants import PREDEFINED_ROLES
-from recidiviz.auth.helpers import (
-    bulk_delete_feature_variant,
-    convert_user_object_to_dict,
-    generate_pseudonymized_id,
-    generate_user_hash,
-    log_reason,
-    validate_roles,
+from recidiviz.auth.helpers import bulk_delete_feature_variant, log_reason
+from recidiviz.auth.import_ingested_users import (
+    ImportIngestedUsersGcsfsCsvReaderDelegate,
+    process_ingested_users_post_upsert,
 )
 from recidiviz.calculator.query.state.views.reference.ingested_incarceration_and_supervision_product_users import (
     INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
@@ -53,9 +47,6 @@ from recidiviz.calculator.query.state.views.reference.ingested_supervision_produ
     INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
-    SimpleGcsfsCsvReaderDelegate,
-)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
@@ -75,10 +66,8 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     UserOverride,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import metadata
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
@@ -93,102 +82,6 @@ def _validate_state_code(state_code: str) -> None:
         raise ValueError(
             f"Unknown state_code [{state_code}] received, must be a valid state code."
         )
-
-
-def _upsert(
-    session: Session,
-    row: Dict[str, Any],
-    table: Type[Roster] | Type[UserOverride],
-    update_null_only: bool = False,
-) -> None:
-    existing = (
-        session.query(table)
-        .filter_by(
-            state_code=f"{row['state_code']}", email_address=f"{row['email_address']}"
-        )
-        .first()
-    )
-    if existing:
-        for key, value in row.items():
-            if not update_null_only or getattr(existing, key) is None:
-                setattr(existing, key, value)
-    else:
-        new_row = table(**row)
-        session.add(new_row)
-
-
-def _upsert_user_rows(
-    session: Session,
-    state_code: str,
-    rows: List[Dict[str, Any]],
-    table: Type[Roster] | Type[UserOverride],
-    columns: List[str],
-) -> None:
-    """Upserts rows into a table that stores user attributes (Roster or UserOverride),
-    along with some validation."""
-    for row in rows:
-        # TODO(#53580): Remove this once supervision_product_users columns match incarceration_and_supervision_product_users columns
-        if columns != INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns:
-            row["external_id"] = row.get("staff_external_id") or row.get("external_id")
-            row["district"] = row.get("district_id") or row.get("district")
-            columns_to_delete = set(columns) - set(
-                INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns
-            )
-            for column in columns_to_delete:
-                del row[column]
-
-        # For UserOverride (admin panel CSV uploads): if external_id is
-        # None/empty, remove it from the row so _upsert() doesn't overwrite
-        # an existing value with NULL. This prevents orphaned pseudonymized_ids
-        # (where external_id is cleared but pseudonymized_id remains, causing
-        # lookup mismatches). For Roster (ingestion), we allow clearing values.
-        if table == UserOverride and row.get("external_id") is None:
-            row.pop("external_id", None)
-
-        if not row["email_address"]:
-            raise ValueError(
-                "Roster contains a row that is missing an email address (required)"
-            )
-        validate_email_address(row["email_address"])
-
-        email = row["email_address"].lower()
-
-        roles = [value.strip().lower() for value in row["roles"].split(",")]
-        row["roles"] = roles
-        validate_roles(row)
-
-        # Experiments create arbitrary roles, and we don't want to throw an error if they aren't all configured
-        non_experiment_roles = [
-            role for role in roles if not role.startswith("experiment-")
-        ]
-
-        associated_state_roles = (
-            session.query(StateRolePermissions.role)
-            .filter_by(state_code=f"{state_code.upper()}")
-            .where(StateRolePermissions.role.in_(non_experiment_roles))
-            .all()
-        )
-        if len(associated_state_roles) != len(non_experiment_roles):
-            raise ValueError(
-                f"Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email {email}"
-            )
-
-        # Enforce casing for columns where we have a preference.
-        row["state_code"] = state_code.upper()
-        row["email_address"] = email
-
-        if row.get("external_id") is not None:
-            row["external_id"] = row["external_id"].upper()
-            if row.get("pseudonymized_id") is None:
-                row["pseudonymized_id"] = generate_pseudonymized_id(
-                    row["state_code"], row["external_id"]
-                )
-        row["roles"] = roles
-        row["user_hash"] = generate_user_hash(row["email_address"])
-        # update existing row or add new row
-        _upsert(session, row, table)
-
-    session.commit()
 
 
 def get_auth_endpoint_blueprint(
@@ -716,25 +609,6 @@ def get_auth_endpoint_blueprint(
         )
         return "", HTTPStatus.OK
 
-    class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
-        """Helper class to upsert chunks of data read from GCS to the Roster table"""
-
-        def __init__(
-            self, session: Session, state_code: str, columns: Optional[List[str]]
-        ) -> None:
-            self.emails: List[str] = []
-            self.session = session
-            self.state_code = state_code
-            self.columns = columns if columns else []
-
-        def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
-            df.columns = self.columns
-            # df.to_dict exports missing values as 'nan', so export to json instead
-            rows = json.loads(df.to_json(orient="records"))
-            _upsert_user_rows(self.session, self.state_code, rows, Roster, self.columns)
-            self.emails.extend(r["email_address"] for r in rows)
-            return True
-
     @auth_endpoint_blueprint.route("/import_ingested_users", methods=["POST"])
     def import_ingested_users() -> Tuple[str, HTTPStatus]:
         """This endpoint triggers the import of the ingested product users file to Cloud SQL. It is
@@ -794,117 +668,12 @@ def get_auth_endpoint_blueprint(
                     chunk_size=1000,
                     header=None,
                 )
-                ingested_emails = reader_delegate.emails
-
-                # First remove any upcoming blocks for ingested users
-                session.execute(
-                    update(UserOverride)
-                    .where(
-                        UserOverride.state_code == state_code,
-                        UserOverride.email_address.in_(ingested_emails),
-                        UserOverride.blocked_on.isnot(None),
-                        UserOverride.blocked_on > func.now(),
-                    )
-                    .values(blocked_on=None),
-                    execution_options={"synchronize_session": False},
-                )
-
-                # For each user in Roster who is not ingested, copy over their info
-                # to UserOverride so we don't lose anything by accident. At the same
-                # time, set their upcoming block date for one week in the future.
-                roster_user_deletion_criteria = [
-                    Roster.state_code == state_code,
-                    Roster.email_address.not_in(ingested_emails),
-                ]
-
-                roster_users_to_delete = (
-                    session.execute(
-                        select(Roster).where(*roster_user_deletion_criteria)
-                    )
-                    .scalars()
-                    .all()
-                )
-
-                if supervision_only:
-                    # If a user has a facilities role, delete them from Roster but don't
-                    # block them. They are still an active user but should not be in Roster
-                    # anymore because they are not supervision staff/being ingested through
-                    # roster sync
-                    facilities_roles = [
-                        "facilities_line_staff",
-                        "facilities_non_primary_staff",
-                    ]
-                    facilities_users = (
-                        session.execute(
-                            select(UserOverride.email_address).where(
-                                UserOverride.email_address.in_(
-                                    [
-                                        user.email_address
-                                        for user in roster_users_to_delete
-                                    ]
-                                ),
-                                UserOverride.roles.overlap(facilities_roles),
-                            )
-                        )
-                        .scalars()
-                        .all()
-                    )
-                else:
-                    facilities_users = []
-
-                # If a user has a leadership, manager, or non_primary role, delete them from Roster
-                # but don't block them. They are still an active user but should not be in Roster
-                # anymore because they are not staff/being ingested through roster sync.
-                # These roles are a subset of PREDEFINED_ROLES
-                not_line_staff_roles = [
-                    "facilities_leadership",
-                    "supervision_leadership",
-                    "supervision_regional_leadership",
-                    "state_leadership",
-                    "facilities_manager",
-                    "facilities_segregation_staff",
-                    "facilities_non_primary_staff",
-                ]
-                not_line_staff_users = (
-                    session.execute(
-                        select(UserOverride.email_address).where(
-                            UserOverride.email_address.in_(
-                                [user.email_address for user in roster_users_to_delete]
-                            ),
-                            UserOverride.roles.overlap(not_line_staff_roles),
-                        )
-                    )
-                    .scalars()
-                    .all()
-                )
-
-                roster_users_as_dicts = [
-                    {
-                        **convert_user_object_to_dict(user),
-                        "blocked_on": datetime.now(tzlocal()) + timedelta(weeks=1)
-                        if user.email_address
-                        not in not_line_staff_users + facilities_users
-                        else None,
-                    }
-                    for user in roster_users_to_delete
-                ]
-
-                for user in roster_users_as_dicts:
-                    _upsert(session, user, UserOverride, update_null_only=True)
-
-                # Now we can delete the users not in the CSV file from Roster
-                session.execute(
-                    delete(Roster).where(*roster_user_deletion_criteria),
-                    execution_options={"synchronize_session": False},
-                )
-
-                session.commit()
-
-                # After the import, clean up any UserOverride data that is duplicative of Roster data.
-                # Users with upcoming blocks set above should be unaffected because they have been
-                # removed from Roster
-                cleanup_user_overrides(
-                    session=session, dry_run=False, state_code=state_code
+                process_ingested_users_post_upsert(
+                    session=session,
+                    state_code=state_code,
+                    ingested_emails=reader_delegate.emails,
+                    supervision_only=supervision_only,
+                    dry_run=False,
                 )
 
             logging.info(

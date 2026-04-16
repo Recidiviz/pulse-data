@@ -142,7 +142,7 @@ class AuthUsersEndpointTestCase(TestCase):
             return f"pseudo-{external_id}" if external_id else None
 
         self.generate_pseudonymized_ids_auth_endpoint_patcher = mock.patch(
-            "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+            "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
             new=mock_generate_pseudonymized_id,
         )
         self.generate_pseudonymized_ids_auth_endpoint_patcher.start()

@@ -45,7 +45,6 @@ from recidiviz.auth.auth_api_schemas import (
     UserRequestSchema,
     UserSchema,
 )
-from recidiviz.auth.auth_endpoint import _upsert_user_rows
 from recidiviz.auth.helpers import (
     bulk_delete_feature_variant,
     convert_to_dict_multiple_results,
@@ -55,6 +54,7 @@ from recidiviz.auth.helpers import (
     log_reason,
     validate_roles,
 )
+from recidiviz.auth.import_ingested_users import _upsert_user_rows
 from recidiviz.persistence.database.schema.case_triage.schema import (
     PermissionsOverride,
     Roster,

@@ -970,7 +970,7 @@ class AuthEndpointTests(TestCase):
 
     @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_remove_upcoming_block(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -1098,11 +1098,14 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_remove_upcoming_block_incarceration_and_supervision(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -1294,10 +1297,13 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_keep_existing_block(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -1423,10 +1429,13 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_keep_existing_block_incarceration_and_supervervision(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -1618,11 +1627,14 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_insert_user_override(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -1761,11 +1773,14 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_insert_user_override_incarceration_and_supervision(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -1998,11 +2013,14 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_update_user_override(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -2149,11 +2167,14 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @freezegun.freeze_time(datetime.now(tzlocal()))
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_update_user_override_incarceration_and_supervision(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -2402,10 +2423,13 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_keep_facilities_users(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -2555,10 +2579,13 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_keep_leadership_users(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -2769,10 +2796,13 @@ class AuthEndpointTests(TestCase):
                 self.users,
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.assertEqual(
+                sorted(expected, key=lambda u: u["emailAddress"]),
+                sorted(json.loads(response.data), key=lambda u: u["emailAddress"]),
+            )
 
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_cleanup_user_override(
         self, mock_generate_pseudonymized_id: MagicMock
@@ -2866,7 +2896,7 @@ class AuthEndpointTests(TestCase):
             )
 
     @patch(
-        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+        "recidiviz.auth.import_ingested_users.generate_pseudonymized_id",
     )
     def test_import_ingested_users_cleanup_user_override_incarceration_and_supervision(
         self, mock_generate_pseudonymized_id: MagicMock

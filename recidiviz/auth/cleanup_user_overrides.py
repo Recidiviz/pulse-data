@@ -78,7 +78,7 @@ def _run_update_stmt(
         results = session.execute(select(UserOverride).where(where_clause)).scalars()
         users_to_modify = [user.email_address for user in results]
         logging.info(
-            "[DRY RUN] would set %s to null for %d rows: %s",
+            "[DRY RUN] would set %s to null for %d UserOverride rows: %s",
             key,
             len(users_to_modify),
             users_to_modify,
@@ -93,7 +93,10 @@ def _run_update_stmt(
         ).all()
         updated_users = [user.email_address for user in results]
         logging.info(
-            "set %s to null for %d rows: %s", key, len(updated_users), updated_users
+            "set %s to null for %d UserOverride rows: %s",
+            key,
+            len(updated_users),
+            updated_users,
         )
 
 
@@ -128,7 +131,9 @@ def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> 
         ).scalars()
         users_to_delete = [user.email_address for user in results]
         logging.info(
-            "[DRY RUN] would delete %d rows: %s", len(users_to_delete), users_to_delete
+            "[DRY RUN] would delete %d UserOverride rows: %s",
+            len(users_to_delete),
+            users_to_delete,
         )
     else:
         results = session.execute(
@@ -152,4 +157,6 @@ def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> 
             .returning(UserOverride.email_address)
         )
         deleted_users = [user.email_address for user in results]
-        logging.info("deleted %d rows: %s", len(deleted_users), deleted_users)
+        logging.info(
+            "deleted %d UserOverride rows: %s", len(deleted_users), deleted_users
+        )
