@@ -44,6 +44,7 @@ input_columns:
   sentence_source: STRING
   Task_Dates: STRING
   CSL_flag: STRING
+  Life_Prison_Flag: STRING
 unused_columns:
   - ChargeOffense
 variables:
@@ -147,6 +148,7 @@ variables:
         CONVICTION_COUNTY: ConvictionCounty
         FULL_EXP_DATE: FullExpirationDate
         CSL_FLAG: CSL_flag
+        Life_Prison_Flag: Life_Prison_Flag
         SENTENCE_IMPOSED_DATE: Original_SentenceImposedDate
   - is_violent:
       $equal:
@@ -231,6 +233,7 @@ output:
                     $value: lifetime_flag
                     $options:
                       - $literal("L") # Life Sentence
+                      - $literal("D") # Death Sentence
                       - $literal("W") # Life sentence without parole
                       - $literal("H") # Habitual (equivalent to life sentence)
                       - $literal("is_life") # Lifetime flag for ISC Sentences
