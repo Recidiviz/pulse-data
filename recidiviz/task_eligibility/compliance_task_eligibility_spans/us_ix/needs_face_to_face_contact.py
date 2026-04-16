@@ -44,7 +44,8 @@ VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     ],
     compliance_type=ComplianceType.CONTACT,
     cadence_type=CadenceType.RECURRING_FIXED,
-    due_date_field="earliest_unmet_due_date",
+    due_date_field="contact_due_date",
+    display_due_date_field="earliest_unmet_due_date",
     last_task_completed_date_field="last_contact_date",
 )
 

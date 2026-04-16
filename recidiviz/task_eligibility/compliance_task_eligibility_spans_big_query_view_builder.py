@@ -57,6 +57,11 @@ def compliance_task_eligibility_span_schema() -> list[BigQueryViewColumn]:
             mode="NULLABLE",
         ),
         Date(
+            name="display_due_date",
+            description="Optional alternate due date for product display. When set, used instead of due_date in the product tasks UI. Falls back to due_date if NULL.",
+            mode="NULLABLE",
+        ),
+        Date(
             name="last_task_completed_date",
             description="The date when the compliance task was last completed, extracted from the criteria reason fields.",
             mode="NULLABLE",
@@ -90,6 +95,10 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         last_task_completed_date_field: str,
         due_date_criteria_builder: Optional[TaskCriteriaBigQueryViewBuilder] = None,
         last_task_completed_date_criteria_builder: Optional[
+            TaskCriteriaBigQueryViewBuilder
+        ] = None,
+        display_due_date_field: str | None = None,
+        display_due_date_criteria_builder: Optional[
             TaskCriteriaBigQueryViewBuilder
         ] = None,
     ) -> None:
@@ -130,9 +139,18 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
                 f"The last_task_completed_date_criteria_builder {last_task_completed_date_criteria_builder.criteria_name} not found among criteria_spans_view_builders."
             )
 
+        if (
+            display_due_date_criteria_builder is not None
+            and display_due_date_criteria_builder not in criteria_spans_view_builders
+        ):
+            raise ValueError(
+                f"The display_due_date_criteria_builder {display_due_date_criteria_builder.criteria_name} not found among criteria_spans_view_builders."
+            )
+
         self.compliance_type = compliance_type
         self.cadence_type = cadence_type
         self.due_date_field = due_date_field
+        self.display_due_date_field = display_due_date_field
         self.last_task_completed_date_field = last_task_completed_date_field
         self.candidate_population_view_builder = candidate_population_view_builder
         # Use the provided due_date_criteria_builder or default to the only criteria builder
@@ -149,12 +167,23 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
             last_task_completed_date_criteria_builder
         )
 
+        # Resolve display_due_date_criteria_builder: default to due_date_criteria_builder
+        # when display_due_date_field is set but no explicit builder is provided.
+        if (
+            display_due_date_field is not None
+            and display_due_date_criteria_builder is None
+        ):
+            display_due_date_criteria_builder = due_date_criteria_builder
+        self.display_due_date_criteria_builder = display_due_date_criteria_builder
+
         self.view_query_template = self._wrap_query_template(
             base_tes_builder=self,
             cadence_type=self.cadence_type,
             due_date_field=self.due_date_field,
+            display_due_date_field=self.display_due_date_field,
             last_task_completed_date_field=self.last_task_completed_date_field,
             due_date_criteria_builder=due_date_criteria_builder,
+            display_due_date_criteria_builder=display_due_date_criteria_builder,
             last_task_completed_date_criteria_builder=last_task_completed_date_criteria_builder,
         )
         self.schema = compliance_task_eligibility_span_schema()
@@ -179,28 +208,51 @@ class ComplianceTaskEligibilitySpansBigQueryViewBuilder(
         due_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
         last_task_completed_date_field: str,
         last_task_completed_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
+        display_due_date_field: str | None = None,
+        display_due_date_criteria_builder: Optional[
+            TaskCriteriaBigQueryViewBuilder
+        ] = None,
     ) -> str:
         """Wraps the base TES query with compliance fields (due_date,
-        last_task_completed_date, is_overdue). For rolling cadences, splits
-        spans at the due_date to compute is_overdue."""
+        display_due_date, last_task_completed_date, is_overdue). For rolling
+        cadences, splits spans at the due_date to compute is_overdue."""
 
-        # If both reason fields correspond to the same criteria builder, we pass
-        # consolidate `due_date_field` and `last_task_completed_date_field` into a
-        # single dict that can be passed into extract_reasons_from_criteria.
-        if last_task_completed_date_criteria_builder == due_date_criteria_builder:
-            criteria_reason_fields_dict = {
-                due_date_criteria_builder: [
-                    due_date_field,
-                    last_task_completed_date_field,
-                ]
-            }
-        else:
-            criteria_reason_fields_dict = {
-                due_date_criteria_builder: [due_date_field],
-                last_task_completed_date_criteria_builder: [
-                    last_task_completed_date_field
-                ],
-            }
+        # Build a dict mapping each criteria builder to the list of reason fields
+        # to extract from it. Start with due_date and last_task_completed_date.
+        criteria_reason_fields_dict: dict[
+            TaskCriteriaBigQueryViewBuilder, list[str]
+        ] = {}
+
+        for criteria_builder, field in [
+            (due_date_criteria_builder, due_date_field),
+            (last_task_completed_date_criteria_builder, last_task_completed_date_field),
+        ]:
+            if criteria_builder not in criteria_reason_fields_dict:
+                criteria_reason_fields_dict[criteria_builder] = []
+            if field not in criteria_reason_fields_dict[criteria_builder]:
+                criteria_reason_fields_dict[criteria_builder].append(field)
+
+        # If a separate display_due_date_field is requested, add it to the
+        # appropriate criteria builder's extraction list.
+        if (
+            display_due_date_field is not None
+            and display_due_date_criteria_builder is not None
+        ):
+            if display_due_date_criteria_builder not in criteria_reason_fields_dict:
+                criteria_reason_fields_dict[display_due_date_criteria_builder] = []
+            if (
+                display_due_date_field
+                not in criteria_reason_fields_dict[display_due_date_criteria_builder]
+            ):
+                criteria_reason_fields_dict[display_due_date_criteria_builder].append(
+                    display_due_date_field
+                )
+
+        display_due_date_sql = (
+            f"reasons_extract.{display_due_date_field}"
+            if display_due_date_field is not None
+            else "CAST(NULL AS DATE)"
+        )
 
         nonnull_end_date = nonnull_end_date_clause("joined.end_date")
 
@@ -234,6 +286,7 @@ joined AS (
         base_tes.reasons_v2,
         base_tes.ineligible_criteria,
         reasons_extract.{due_date_field} AS due_date,
+        {display_due_date_sql} AS display_due_date,
         reasons_extract.{last_task_completed_date_field} AS last_task_completed_date,
     FROM base_tes
     LEFT JOIN reasons_extract
@@ -275,7 +328,7 @@ not_overdue AS (
             ELSE end_date
         END AS end_date,
         is_eligible, reasons, reasons_v2, ineligible_criteria,
-        due_date, last_task_completed_date,
+        due_date, display_due_date, last_task_completed_date,
         -- Case 2: entire span is overdue
         CASE
             WHEN is_eligible AND due_date IS NOT NULL
@@ -293,7 +346,7 @@ overdue_splits AS (
         DATE_ADD(due_date, INTERVAL 1 DAY) AS start_date,
         end_date,
         is_eligible, reasons, reasons_v2, ineligible_criteria,
-        due_date, last_task_completed_date,
+        due_date, display_due_date, last_task_completed_date,
         TRUE AS is_overdue,
     FROM joined
     WHERE
