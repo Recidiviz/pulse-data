@@ -19,12 +19,18 @@ import argparse
 import logging
 from concurrent import futures
 
-from google.cloud import exceptions
+from google.cloud import bigquery, exceptions
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_address import (
+    BigQueryAddress,
+    ProjectSpecificBigQueryAddress,
+)
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClientImpl,
+)
+from recidiviz.big_query.row_access_policy_query_builder import (
+    RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -36,7 +42,6 @@ from recidiviz.view_registry.deployed_views import (
 )
 
 
-# TODO(#41470) Write tests for this entrypoint
 class ApplyRowLevelPermissionsEntrypoint(EntrypointInterface):
     """Entrypoint for applying row level permissions to all tables in our deployed datasets."""
 
@@ -51,6 +56,42 @@ class ApplyRowLevelPermissionsEntrypoint(EntrypointInterface):
         _apply_row_level_permissions_to_all_tables()
 
 
+def _table_may_need_row_access_policies(
+    table_item: bigquery.table.TableListItem,
+) -> bool:
+    """Returns True if the table might need row access policies based on
+    metadata available from TableListItem (without fetching full schema).
+
+    Tables that return False are guaranteed to not need policies.
+    Tables that return True may or may not need policies (schema inspection
+    via get_table() is still required for the final determination).
+    """
+    # Row-level policies can only be applied to regular tables
+    if table_item.table_type != "TABLE":
+        return False
+
+    address = BigQueryAddress(
+        dataset_id=table_item.dataset_id, table_id=table_item.table_id
+    )
+    state_code = address.state_code_for_address()
+
+    # Tables in non-restricted state-specific datasets never need policies
+    if (
+        state_code is not None
+        and state_code not in RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP
+    ):
+        return False
+
+    return True
+
+
+def _apply_permissions_for_table(
+    client: BigQueryClientImpl, address: ProjectSpecificBigQueryAddress
+) -> None:
+    table = client.get_table(address=address.to_project_agnostic_address())
+    client.apply_row_level_permissions(table)
+
+
 def _apply_row_level_permissions_to_all_tables() -> None:
     """Applies row level permissions to all tables in our deployed datasets."""
     client = BigQueryClientImpl()
@@ -60,40 +101,37 @@ def _apply_row_level_permissions_to_all_tables() -> None:
     managed_datasets = managed_source_table_datasets.union(managed_view_datasets)
 
     with futures.ThreadPoolExecutor(
-        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 4)
+        # Conservatively allow only half as many workers as allowed connections.
+        # Lower this number if we see "urllib3.connectionpool:Connection pool is
+        # full, discarding connection" errors.
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
     ) as executor:
-        futures_list = []
+        dataset_futures = []
         dataset_ids = [
             dataset_item.dataset_id
             for dataset_item in client.list_datasets()
             if dataset_item.dataset_id in managed_datasets
         ]
         for dataset_id in dataset_ids:
-            futures_list.append(
+            dataset_futures.append(
                 executor.submit(client.list_tables, dataset_id=dataset_id)
             )
 
-        for future in futures.as_completed(futures_list):
+        table_futures: dict[futures.Future, ProjectSpecificBigQueryAddress] = {}
+        for future in futures.as_completed(dataset_futures):
             try:
                 table_items = list(future.result())
             except exceptions.NotFound as e:
                 # Sometimes a dataset is deleted while we are running this script.
                 logging.info("Error getting tables: %s", e)
+                continue
 
-            table_futures = {}
             for table_item in table_items:
+                if not _table_may_need_row_access_policies(table_item):
+                    continue
                 table_address = ProjectSpecificBigQueryAddress.from_list_item(
                     table_item
                 )
-
-                def _apply_permissions_for_table(
-                    client: BigQueryClientImpl, address: ProjectSpecificBigQueryAddress
-                ) -> None:
-                    table = client.get_table(
-                        address=address.to_project_agnostic_address()
-                    )
-                    client.apply_row_level_permissions(table)
-
                 table_futures[
                     executor.submit(
                         _apply_permissions_for_table,

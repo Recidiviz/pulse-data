@@ -21,7 +21,9 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.row_access_policy_query_builder import (
     RESTRICTED_ACCESS_STATE_CODE_TO_ACCESS_GROUP,
+    RowAccessPolicy,
     RowAccessPolicyQueryBuilder,
+    row_access_policy_lists_are_equivalent,
 )
 
 
@@ -216,3 +218,54 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
             expected_query,
             RowAccessPolicyQueryBuilder.build_query_to_drop_row_access_policy(table),
         )
+
+
+def _make_policy(
+    policy_id: str, filter_predicate: str, table_id: str = "test_table"
+) -> RowAccessPolicy:
+    table = bigquery.Table(f"test_project.test_dataset.{table_id}")
+    return RowAccessPolicy(
+        policy_id=policy_id,
+        filter_predicate=filter_predicate,
+        access_group_email=None,
+        table=table,
+    )
+
+
+class TestRowAccessPolicyListsAreEquivalent(unittest.TestCase):
+    """Tests for the row_access_policy_lists_are_equivalent function."""
+
+    def test_equivalent_policies(self) -> None:
+        policies_a = [
+            _make_policy("POLICY_1", "TRUE"),
+            _make_policy("POLICY_2", 'UPPER(state_code) = "US_XX"'),
+        ]
+        policies_b = [
+            _make_policy("POLICY_1", "TRUE"),
+            _make_policy("POLICY_2", 'UPPER(state_code) = "US_XX"'),
+        ]
+        self.assertTrue(row_access_policy_lists_are_equivalent(policies_a, policies_b))
+
+    def test_different_filter_predicate(self) -> None:
+        policies_a = [_make_policy("POLICY_1", "TRUE")]
+        policies_b = [_make_policy("POLICY_1", 'UPPER(state_code) = "US_XX"')]
+        self.assertFalse(row_access_policy_lists_are_equivalent(policies_a, policies_b))
+
+    def test_extra_policy_in_new(self) -> None:
+        existing = [_make_policy("POLICY_1", "TRUE")]
+        new = [
+            _make_policy("POLICY_1", "TRUE"),
+            _make_policy("POLICY_2", "TRUE"),
+        ]
+        self.assertFalse(row_access_policy_lists_are_equivalent(existing, new))
+
+    def test_extra_policy_in_existing(self) -> None:
+        existing = [
+            _make_policy("POLICY_1", "TRUE"),
+            _make_policy("POLICY_2", "TRUE"),
+        ]
+        new = [_make_policy("POLICY_1", "TRUE")]
+        self.assertFalse(row_access_policy_lists_are_equivalent(existing, new))
+
+    def test_empty_lists(self) -> None:
+        self.assertTrue(row_access_policy_lists_are_equivalent([], []))
