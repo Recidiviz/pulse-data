@@ -47,6 +47,7 @@ input_columns:
   LastClassificationDate: STRING
   firstFormEdit: DATE
   CAFDate: DATE
+  CAFSiteID: STRING
   CAF_ID: INTEGER
 unused_columns: []
 output:
@@ -131,3 +132,4 @@ output:
               firstFormEdit: firstFormEdit
               CAFDate: CAFDate
               RecommendedCustody: RecommendedCustody
+              CAFSiteID: CAFSiteID
