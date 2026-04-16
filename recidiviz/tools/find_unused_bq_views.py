@@ -111,9 +111,6 @@ from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
 from recidiviz.calculator.query.state.views.sentencing.sentence_cohort import (
     SENTENCE_COHORT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.us_mo.us_mo_sentencing_time_served import (
-    US_MO_SENTENCING_TIME_SERVED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -286,10 +283,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         table_id="all_sentencing_assessment_report_segment_events",
     ): (
         "Union view for Sentencing Assessment Report segment events. Kept for potential future use."
-    ),
-    US_MO_SENTENCING_TIME_SERVED_VIEW_BUILDER.address: (
-        "New view for MO time served calculator. Will be used downstream once "
-        "MO is added to write_case_insights_data_to_bq entrypoint (Akhil Ghanta, 2026-04-13)"
     ),
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "
