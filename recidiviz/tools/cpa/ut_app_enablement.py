@@ -45,6 +45,7 @@ import sys
 from typing import Any
 
 import google.auth
+from python_http_client.exceptions import ServiceUnavailableError, TooManyRequestsError
 from sendgrid.helpers.mail import (  # type: ignore[attr-defined]
     ClickTracking,
     DynamicTemplateData,
@@ -53,6 +54,13 @@ from sendgrid.helpers.mail import (  # type: ignore[attr-defined]
     SubscriptionTracking,
     To,
     TrackingSettings,
+)
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
 )
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -294,6 +302,20 @@ def send_email(
     return True
 
 
+@retry(
+    retry=retry_if_exception_type((ServiceUnavailableError, TooManyRequestsError)),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(4),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+)
+def _fetch_sendgrid_messages(
+    sendgrid_client: SendGridClientWrapper, query_params: dict
+) -> Any:
+    return sendgrid_client.client.client.messages.get(  # type: ignore[attr-defined]
+        query_params=query_params
+    )
+
+
 def fetch_already_notified_client_names(
     sendgrid_client: SendGridClientWrapper,
 ) -> set[str]:
@@ -302,7 +324,8 @@ def fetch_already_notified_client_names(
         days=7
     )
     cutoff = seven_days_ago.strftime("%Y-%m-%dT%H:%M:%SZ")
-    response = sendgrid_client.client.client.messages.get(  # type: ignore[attr-defined]
+    response = _fetch_sendgrid_messages(
+        sendgrid_client,
         query_params={
             "limit": 1000,
             "query": f'template_id="{DYNAMIC_TEMPLATE_ID}" AND last_event_time>TIMESTAMP "{cutoff}"',
