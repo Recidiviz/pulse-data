@@ -36,6 +36,7 @@ PUBLIC_PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3050",
     r"https\://pathways-staging\.recidiviz\.org$",
     r"https\://pathways\.recidiviz\.org$",
+    r"https\://dashboards\.doccs\.ny\.gov$",
 ]
 
 
