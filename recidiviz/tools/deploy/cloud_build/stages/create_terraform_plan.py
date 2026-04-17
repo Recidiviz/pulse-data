@@ -20,7 +20,7 @@
 This deployment stage can also be used to generate the build configuration for our Terraform plan PR commenter by running
 https://console.cloud.google.com/cloud-build/triggers;region=us-west1/edit/d9469072-4bbc-45fe-97d4-45b4a708568c?project=recidiviz-staging
 
-python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
+uv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
     --project-id recidiviz-staging \
     --commit-ref "\$_COMMIT_REF" \
     --version-tag "latest" \

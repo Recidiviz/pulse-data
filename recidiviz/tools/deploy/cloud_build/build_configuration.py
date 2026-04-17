@@ -24,7 +24,7 @@ from google.cloud.devtools.cloudbuild_v1 import (
     Build,
     BuildOptions,
     BuildStep,
-    RepoSource,
+    ConnectedRepository,
     SecretManagerSecret,
     Secrets,
     Source,
@@ -38,6 +38,10 @@ from recidiviz.tools.deploy.cloud_build.constants import (
 )
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
+
+CLOUD_BUILD_REGION = "us-west1"
+CLOUD_BUILD_CONNECTION = "Github-Helperbot-West1"
+CLOUD_BUILD_REPOSITORY = "Recidiviz-pulse-data"
 
 
 @attr.define
@@ -129,10 +133,14 @@ def create_deployment_build_api_obj(
                 "_VERSION_TAG": deployment_context.version_tag,
             },
             source=Source(
-                repo_source=RepoSource(
-                    project_id=deployment_context.project_id,
-                    repo_name="github_Recidiviz_pulse-data",
-                    commit_sha=deployment_context.commit_ref,
+                connected_repository=ConnectedRepository(
+                    repository=(
+                        f"projects/{deployment_context.project_id}"
+                        f"/locations/{CLOUD_BUILD_REGION}"
+                        f"/connections/{CLOUD_BUILD_CONNECTION}"
+                        f"/repositories/{CLOUD_BUILD_REPOSITORY}"
+                    ),
+                    revision=deployment_context.commit_ref,
                 )
             )
             if build_configuration.uses_source
