@@ -18,6 +18,9 @@
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
 
+DOCUMENT_UPLOAD_SUCCESS = "SUCCESS"
+DOCUMENT_UPLOAD_FAILURE = "FAILURE"
+
 
 class DocumentUploadStatusTable:
     """Defines the schema for the document_upload_status table, which tracks
@@ -52,12 +55,12 @@ class DocumentUploadStatusTable:
                 name="status",
                 field_type=SqlTypeNames.STRING.value,
                 mode="REQUIRED",
-                description="SUCCESS or FAILURE",
+                description=f"{DOCUMENT_UPLOAD_SUCCESS} or {DOCUMENT_UPLOAD_FAILURE}",
             ),
             SchemaField(
                 name="error_message",
                 field_type=SqlTypeNames.STRING.value,
                 mode="NULLABLE",
-                description="Error details if FAILURE, NULL if SUCCESS",
+                description=f"Error details if {DOCUMENT_UPLOAD_FAILURE}, NULL if {DOCUMENT_UPLOAD_SUCCESS}",
             ),
         ]

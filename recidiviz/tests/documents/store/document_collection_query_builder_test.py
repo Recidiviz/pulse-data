@@ -32,6 +32,9 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_collection_query_builder import (
     DocumentCollectionDiffQueryBuilder,
 )
+from recidiviz.documents.store.document_upload_status_table import (
+    DocumentUploadStatusTable,
+)
 from recidiviz.ingest.direct.dataset_config import (
     document_store_metadata_dataset_for_region,
 )
@@ -39,9 +42,8 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.big_query.sqlglot_helpers import check_query_selects_output_columns
-from recidiviz.tests.documents.store.fixtures import document_diff
+from recidiviz.tests.documents.store.fixtures import document_diff, new_documents
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 
 
 class TestBuildDocumentGenerationQuery(unittest.TestCase):
@@ -94,8 +96,8 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
         return self.fixture_dir / f"{fixture_name}.csv"
 
     def _load_raw_table(self, fixture_path: Path) -> None:
-        self.create_mock_table(
-            self.raw_table_address,
+        self.load_fixture_into_table(
+            address=self.raw_table_address,
             schema=[
                 SchemaField("person_id", SqlTypeNames.STRING),
                 SchemaField("note_id", SqlTypeNames.STRING),
@@ -103,29 +105,23 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
                 SchemaField("note_body", SqlTypeNames.STRING),
                 SchemaField("created_at", SqlTypeNames.STRING),
             ],
-        )
-        df = load_dataframe_from_path(
-            fixture_path,
+            fixture_path=fixture_path,
             fixture_columns=None,
             allow_comments=False,
         )
-        self.load_rows_into_table(self.raw_table_address, df.to_dict("records"))
 
     def _load_metadata(
         self,
         config: DocumentCollectionConfig,
         fixture_path: Path,
     ) -> None:
-        self.create_mock_table(
-            self.metadata_address,
+        self.load_fixture_into_table(
+            address=self.metadata_address,
             schema=config.build_bq_metadata_schema(),
-        )
-        df = load_dataframe_from_path(
-            fixture_path,
+            fixture_path=fixture_path,
             fixture_columns=None,
             allow_comments=False,
         )
-        self.load_rows_into_table(self.metadata_address, df.to_dict("records"))
 
     def test_document_diff(self) -> None:
         """Fixture covers:
@@ -143,9 +139,97 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
             query = self.query_builder.build_document_diff_query(config=self.config)
         results = self.query(query)
 
-        expected = load_dataframe_from_path(
-            self._fixture_path("fake_case_notes_diff_output"),
+        self.compare_results_to_fixture(
+            results=results,
+            expected_output_fixture_path=self._fixture_path(
+                "fake_case_notes_diff_output"
+            ),
+            expect_missing_fixtures_on_empty_results=False,
+            create_expected=False,
+            expect_unique_output_rows=False,
+        )
+
+
+class TestBuildNewDocumentsQuery(BigQueryEmulatorTestCase):
+    """Tests for build_new_documents_query."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.config = get_document_collection_config(
+            StateCode.US_XX, "fake_case_notes", fake_regions
+        )
+        dataset_id = document_store_metadata_dataset_for_region(StateCode.US_XX)
+        self.temp_metadata_address = BigQueryAddress(
+            dataset_id=dataset_id,
+            table_id=f"{self.config.name}_temp_metadata",
+        )
+        self.upload_status_address = BigQueryAddress(
+            dataset_id=dataset_id,
+            table_id=DocumentUploadStatusTable.table_id,
+        )
+        self.fixture_dir = Path(new_documents.__file__).parent
+
+    def _fixture_path(self, fixture_name: str) -> Path:
+        return self.fixture_dir / f"{fixture_name}.csv"
+
+    def test_new_documents_query(self) -> None:
+        """Fixture covers:
+        - NOTE_1: already successfully uploaded, excluded
+        - NOTE_2 + NOTE_5: same document_contents_id, deduplicated to one row
+        - NOTE_3: genuinely new document, included
+        - NOTE_4: deletion (NULL document_contents_id), excluded
+        - NOTE_6: previously failed upload, included
+        """
+        self.load_fixture_into_table(
+            address=self.temp_metadata_address,
+            schema=self.config.build_bq_temp_table_schema(),
+            fixture_path=self._fixture_path("temp_metadata_input"),
             fixture_columns=None,
             allow_comments=False,
         )
-        self.compare_expected_and_result_dfs(expected=expected, results=results)
+        self.load_fixture_into_table(
+            address=self.upload_status_address,
+            schema=DocumentUploadStatusTable.schema(),
+            fixture_path=self._fixture_path("upload_status_input"),
+            fixture_columns=None,
+            allow_comments=False,
+        )
+
+        query = DocumentCollectionDiffQueryBuilder.build_new_documents_query(
+            temp_metadata_address=self.temp_metadata_address.to_project_specific_address(
+                self.project_id
+            ),
+            upload_status_address=self.upload_status_address.to_project_specific_address(
+                self.project_id
+            ),
+        )
+        results = self.query(query)
+
+        self.compare_results_to_fixture(
+            results=results,
+            expected_output_fixture_path=self._fixture_path("new_documents_output"),
+            expect_missing_fixtures_on_empty_results=False,
+            create_expected=False,
+            expect_unique_output_rows=False,
+        )
+
+    def test_empty_temp_metadata(self) -> None:
+        self.create_mock_table(
+            self.temp_metadata_address,
+            schema=self.config.build_bq_temp_table_schema(),
+        )
+        self.create_mock_table(
+            self.upload_status_address,
+            schema=DocumentUploadStatusTable.schema(),
+        )
+
+        query = DocumentCollectionDiffQueryBuilder.build_new_documents_query(
+            temp_metadata_address=self.temp_metadata_address.to_project_specific_address(
+                self.project_id
+            ),
+            upload_status_address=self.upload_status_address.to_project_specific_address(
+                self.project_id
+            ),
+        )
+        results = self.query(query)
+        self.assertEqual(len(results), 0)

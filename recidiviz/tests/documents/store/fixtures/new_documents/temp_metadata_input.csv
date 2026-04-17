@@ -1,0 +1,7 @@
+person_external_id,person_external_id_type,note_id,note_type,document_contents_id,document_text,document_update_datetime
+P001,US_XX_DOC,NOTE_1,GENERAL,already_uploaded_aaa,already uploaded text,2026-01-01 10:00:00
+P001,US_XX_DOC,NOTE_2,CONTACT,new_contents_bbb,new text b,2026-02-01 10:00:00
+P002,US_XX_DOC,NOTE_3,GENERAL,new_contents_ccc,new text c,2026-03-01 10:00:00
+P002,US_XX_DOC,NOTE_4,,,,2026-03-15 12:00:00
+P003,US_XX_DOC,NOTE_5,CONTACT,new_contents_bbb,new text b,2026-02-01 10:00:00
+P004,US_XX_DOC,NOTE_6,GENERAL,failed_upload_ddd,failed upload text,2026-04-01 10:00:00

@@ -28,6 +28,7 @@ DOCUMENT_CONTENTS_ID_COLUMN_NAME = "document_contents_id"
 DOCUMENT_TEXT_COLUMN_NAME = "document_text"
 DOCUMENT_UPDATE_DATETIME_COLUMN_NAME = "document_update_datetime"
 ROW_CREATE_DATETIME_COLUMN_NAME = "row_create_datetime"
+SEQUENCE_NUM_COLUMN_NAME = "sequence_num"
 
 _ALL_COLUMN_DEFINITIONS = [
     SchemaField(
@@ -89,6 +90,12 @@ _ALL_COLUMN_DEFINITIONS = [
         field_type=SqlTypeNames.TIMESTAMP.value,
         mode="REQUIRED",
         description="Datetime when this metadata row was written by the document store process",
+    ),
+    SchemaField(
+        name=SEQUENCE_NUM_COLUMN_NAME,
+        field_type=SqlTypeNames.INT64.value,
+        mode="REQUIRED",
+        description="Sequence number assigned to each document in a temp table, used to batch documents for processing",
     ),
 ]
 

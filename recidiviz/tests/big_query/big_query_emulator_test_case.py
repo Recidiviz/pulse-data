@@ -22,6 +22,7 @@ import os
 import tempfile
 import unittest
 from concurrent import futures
+from pathlib import Path
 from typing import Any, Dict, Iterable, List
 from unittest.mock import Mock, patch
 
@@ -316,11 +317,29 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     ) -> None:
         self.bq_client.stream_into_table(address, rows=data)
 
+    def load_fixture_into_table(
+        self,
+        address: BigQueryAddress,
+        schema: List[bigquery.SchemaField],
+        fixture_path: Path | str,
+        fixture_columns: list[str] | None,
+        allow_comments: bool = True,
+    ) -> None:
+        """Creates a table and populates it with data from a CSV fixture file."""
+        self.create_mock_table(address, schema=schema)
+        df = load_dataframe_from_path(
+            fixture_path,
+            fixture_columns=fixture_columns,
+            allow_comments=allow_comments,
+        )
+        if not df.empty:
+            self.load_rows_into_table(address, df.to_dict("records"))
+
     def compare_table_to_fixture(
         self,
         address: BigQueryAddress,
         columns_to_ignore: list[str],
-        expected_output_fixture_path: str,
+        expected_output_fixture_path: str | Path,
         expect_missing_fixtures_on_empty_results: bool,
         create_expected: bool,
         expect_unique_output_rows: bool,
@@ -350,7 +369,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     def compare_results_to_fixture(
         cls,
         results: pd.DataFrame,
-        expected_output_fixture_path: str,
+        expected_output_fixture_path: str | Path,
         expect_missing_fixtures_on_empty_results: bool,
         create_expected: bool,
         expect_unique_output_rows: bool,
