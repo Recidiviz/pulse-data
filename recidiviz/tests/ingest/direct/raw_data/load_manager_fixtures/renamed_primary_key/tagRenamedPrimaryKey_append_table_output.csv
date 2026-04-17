@@ -1,0 +1,5 @@
+COL1,COL2,file_id,update_datetime,is_deleted
+row1,val_a,2,2022-06-01,false
+row2,val_b,2,2022-06-01,false
+row3,val_c,1,2021-06-01,false
+row2,val_b,1,2021-06-01,true

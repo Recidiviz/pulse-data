@@ -25,12 +25,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_config_enums import (
+    ColumnUpdateOperation,
     RawDataClassification,
     RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
     RawTableColumnFieldType,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnUpdateInfo,
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
@@ -241,3 +243,62 @@ class TestDistinctPrimaryKeyValidation(BigQueryEmulatorTestCase):
         self.assertTrue(
             DistinctPrimaryKeyValidation.validation_applies_to_file(context_with_pk)
         )
+
+    def test_renamed_primary_key_column(self) -> None:
+        """Validates that when a PK column has been renamed, the query uses the
+        old column name matching the temp table loaded from a pre-rename file."""
+        rename_datetime = datetime.datetime(2025, 6, 1, tzinfo=datetime.timezone.utc)
+        pre_rename_datetime = datetime.datetime(
+            2025, 5, 1, tzinfo=datetime.timezone.utc
+        )
+        columns_with_rename = [
+            RawTableColumnInfo(
+                name="new_id",
+                state_code=self.state_code,
+                file_tag=self.file_tag,
+                field_type=RawTableColumnFieldType.STRING,
+                description="description",
+                update_history=[
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.RENAME,
+                        update_datetime=rename_datetime,
+                        previous_value="old_id",
+                    )
+                ],
+            ),
+            RawTableColumnInfo(
+                name="name",
+                state_code=self.state_code,
+                file_tag=self.file_tag,
+                field_type=RawTableColumnFieldType.STRING,
+                description="description",
+            ),
+        ]
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            columns=columns_with_rename,
+            primary_key_cols=["new_id"],
+        )
+        context = attr.evolve(
+            self.context,
+            raw_file_config=raw_file_config,
+            file_update_datetime=pre_rename_datetime,
+        )
+
+        validation = DistinctPrimaryKeyValidation.create_validation(context=context)
+
+        self.assertEqual(validation.primary_key_cols, ["old_id"])
+
+        self._load_data(
+            temp_table_data=[
+                {"old_id": "1", "name": "Alice"},
+                {"old_id": "2", "name": "Bob"},
+            ],
+            schema=[
+                schema_field_for_type("old_id", str),
+                schema_field_for_type("name", str),
+            ],
+        )
+        results = self.query(validation.build_query())
+        error = validation.get_error_from_results(results.to_dict("records"))
+        self.assertIsNone(error)

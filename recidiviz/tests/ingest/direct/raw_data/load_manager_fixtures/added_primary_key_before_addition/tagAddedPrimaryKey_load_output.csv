@@ -1,0 +1,3 @@
+COL1,COL3,file_id,update_datetime,is_deleted
+row1,val_a,1,2023-06-01,False
+row3,val_c,1,2023-06-01,False

@@ -1308,6 +1308,56 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             {"OldCol1": "Col1", "Col2": "Col2", "Col5": "Col5"},
         )
 
+    def test_primary_key_cols_at_datetime(self) -> None:
+        config = attr.evolve(
+            self.sparse_config,
+            columns=[
+                RawTableColumnInfo(
+                    name="Col1",
+                    state_code=StateCode.US_XX,
+                    file_tag=self.sparse_config.file_tag,
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.RENAME,
+                            update_datetime=datetime(2022, 3, 15, tzinfo=timezone.utc),
+                            previous_value="OldCol1",
+                        ),
+                    ],
+                ),
+                RawTableColumnInfo(
+                    name="Col2",
+                    state_code=StateCode.US_XX,
+                    file_tag=self.sparse_config.file_tag,
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.ADDITION,
+                            update_datetime=datetime(2022, 3, 15, tzinfo=timezone.utc),
+                        ),
+                    ],
+                ),
+            ],
+            primary_key_cols=["Col1", "Col2"],
+        )
+
+        self.assertEqual(
+            ["OldCol1"],
+            config.primary_key_cols_at_datetime(
+                datetime(2022, 1, 1, tzinfo=timezone.utc)
+            ),
+        )
+        self.assertEqual(
+            ["Col1", "Col2"],
+            config.primary_key_cols_at_datetime(
+                datetime(2022, 6, 1, tzinfo=timezone.utc)
+            ),
+        )
+
     def test_is_recidiviz_generated(self) -> None:
         self.assertFalse(self.sparse_config.is_recidiviz_generated)
 
@@ -1539,7 +1589,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_parse_yaml(self) -> None:
         region_config = self.us_xx_region_config
-        self.assertEqual(29, len(region_config.raw_file_configs))
+        self.assertEqual(31, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -1571,6 +1621,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 "multipleColPrimaryKeyHistorical",
                 "tagColumnRenamed",
                 "tagPipeSeparatedWindows",
+                "tagAddedPrimaryKey",
+                "tagRenamedPrimaryKey",
             },
             set(region_config.raw_file_configs.keys()),
         )

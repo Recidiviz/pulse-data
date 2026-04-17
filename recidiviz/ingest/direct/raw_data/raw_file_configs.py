@@ -787,6 +787,19 @@ class DirectIngestRawFileConfig:
         """A comma-separated string representation of the primary keys"""
         return ", ".join(self.primary_key_cols)
 
+    def primary_key_cols_at_datetime(self, dt: datetime) -> List[str]:
+        """Returns the primary key columns for this file at a given datetime."""
+        curr_pk_columns = [
+            self.get_column_info(column_name) for column_name in self.primary_key_cols
+        ]
+
+        pk_col_names_at_dt = []
+        for pk_col in curr_pk_columns:
+            if (name := pk_col.name_at_datetime(dt)) is not None:
+                pk_col_names_at_dt.append(name)
+
+        return pk_col_names_at_dt
+
     @property
     def quoting_mode(self) -> int:
         return csv.QUOTE_NONE if self.ignore_quotes else csv.QUOTE_MINIMAL

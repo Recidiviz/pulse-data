@@ -54,11 +54,14 @@ class DistinctPrimaryKeyValidation(
     def create_validation(
         cls, context: RawDataImportBlockingValidationContext
     ) -> "DistinctPrimaryKeyValidation":
+
         return cls(
             project_id=context.project_id,
             temp_table_address=context.temp_table_address,
             file_tag=context.file_tag,
-            primary_key_cols=context.raw_file_config.primary_key_cols,
+            primary_key_cols=context.raw_file_config.primary_key_cols_at_datetime(
+                context.file_update_datetime
+            ),
             state_code=context.state_code,
         )
 
@@ -68,7 +71,9 @@ class DistinctPrimaryKeyValidation(
         context: RawDataImportBlockingValidationContext,
     ) -> bool:
         return len(
-            context.raw_file_config.primary_key_cols
+            context.raw_file_config.primary_key_cols_at_datetime(
+                context.file_update_datetime
+            )
         ) > 0 and not context.raw_file_config.file_is_exempt_from_validation(
             cls.VALIDATION_TYPE
         )

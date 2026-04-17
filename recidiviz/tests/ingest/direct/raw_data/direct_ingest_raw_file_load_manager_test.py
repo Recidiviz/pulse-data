@@ -1179,3 +1179,154 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
         assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
+
+    def test_renamed_primary_key(self) -> None:
+        """Tests loading and appending a file whose primary key column has been
+        renamed, with raw data pruning enabled. The file's update_datetime is
+        before the rename, so the CSV uses the old column name."""
+        expected_append_summary = AppendSummary(
+            file_id=1,
+            net_new_or_updated_rows=1,
+            deleted_rows=1,
+            historical_diffs_active=True,
+        )
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("renamed_primary_key")
+        self._set_pruning_status(RawDataPruningStatus.AUTOMATIC)
+        raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2021, 6, 1, 0, 0, 0, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                file_headers=["OLD_COL1", "COL2"],
+                raw_file_config=raw_file_config,
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.test__tagRenamedPrimaryKey__1__transformed"
+        )
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        append_summary = self.manager.append_to_raw_data_table(append_ready_file)
+
+        assert append_summary == expected_append_summary
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+    def test_added_primary_key_before_addition(self) -> None:
+        """Tests loading and appending a file before a new primary key column
+        was added, with raw data pruning enabled. The file's update_datetime is
+        before the addition date, so the CSV does not contain the new column."""
+        expected_append_summary = AppendSummary(
+            file_id=1,
+            net_new_or_updated_rows=2,
+            deleted_rows=2,
+            historical_diffs_active=True,
+        )
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("added_primary_key_before_addition")
+        self._set_pruning_status(RawDataPruningStatus.AUTOMATIC)
+        raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2023, 6, 1, 0, 0, 0, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                file_headers=["COL1", "COL3"],
+                raw_file_config=raw_file_config,
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.test__tagAddedPrimaryKey__1__transformed"
+        )
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        append_summary = self.manager.append_to_raw_data_table(append_ready_file)
+
+        assert append_summary == expected_append_summary
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+    def test_added_primary_key_after_addition(self) -> None:
+        """Tests loading and appending a file after a new primary key column was
+        added, with raw data pruning enabled. The file's update_datetime is
+        after the addition date, so the CSV contains all columns including the
+        new primary key."""
+        expected_append_summary = AppendSummary(
+            file_id=1,
+            net_new_or_updated_rows=1,
+            deleted_rows=1,
+            historical_diffs_active=True,
+        )
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("added_primary_key_after_addition")
+        self._set_pruning_status(RawDataPruningStatus.AUTOMATIC)
+        raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 6, 1, 0, 0, 0, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
+                file_headers=["COL1", "COL2", "COL3"],
+                raw_file_config=raw_file_config,
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.test__tagAddedPrimaryKey__1__transformed"
+        )
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        append_summary = self.manager.append_to_raw_data_table(append_ready_file)
+
+        assert append_summary == expected_append_summary
+        self.compare_output_against_expected(raw_data_table, append_output)
