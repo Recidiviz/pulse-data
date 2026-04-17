@@ -441,6 +441,7 @@ output:
                   - "Death, Non Accidental"
                   - "Escapee Returned , new Charges, Pending Adjudication"
                   - "Work Release Return With Additional Sentence"
+                  - "Work Release Return, Day Reporting Revocation"
           termination_reason:
             $enum_mapping:
               $raw_text: next_movement
@@ -609,6 +610,7 @@ output:
                   - "Parole returned pending sentence on new charge"
                   - "Escapee Returned , new Charges, Pending Adjudication"
                   - "Work Release Return With Additional Sentence"
+                  - "Work Release Return, Day Reporting Revocation"
                   # Pretrial Release With Supervision
                   - "Revoked - New Arrest Non-Violent (Pretrial Only)"
                   - "Revoked - New Arrest Violent (Pretrial Only)"
