@@ -27,6 +27,7 @@ module "cloud-functions-bucket" {
   project_id  = var.project_id
   source      = "./modules/cloud-storage-bucket"
   name_suffix = "cloud-functions"
+  use_cmek    = false
 }
 
 locals {
