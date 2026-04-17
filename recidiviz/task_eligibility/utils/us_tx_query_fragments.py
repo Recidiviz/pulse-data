@@ -41,6 +41,23 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.string_formatting import fix_indent
 
 
+def alternative_contact_cadence_reason() -> str:
+    """Returns a SQL CASE expression that builds an alternative_contact_cadence_reason
+    string based on the is_every_other_month column (ODD/EVEN).
+
+    Expects `ca.is_every_other_month`, `cadence.quantity`, and
+    `cadence.frequency_date_part` to be available in the query context.
+    """
+    return """
+    CASE
+        WHEN ca.is_every_other_month = 'ODD'
+            THEN CONCAT(cadence.quantity, ' EVERY ODD ', cadence.frequency_date_part)
+        WHEN ca.is_every_other_month = 'EVEN'
+            THEN CONCAT(cadence.quantity, ' EVERY EVEN ', cadence.frequency_date_part)
+        ELSE NULL
+    END AS alternative_contact_cadence_reason"""
+
+
 # TODO(#62741): Deprecate overdue_flag from reasons blobs in favor of
 # compliance TES is_overdue column.
 def contact_compliance_builder_critical_understaffing_monthly_virtual_override(
