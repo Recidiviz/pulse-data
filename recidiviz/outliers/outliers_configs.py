@@ -35,6 +35,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_AND_INFERRED_FROM_PROBATION,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
+    INCARCERATION_STARTS_NEW_CRIME_VIOLATION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
     TIMELY_CONTACT,
@@ -94,7 +95,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 event_name="absconsions",
                 event_name_singular="absconsion",
                 event_name_past_tense="absconded",
-                description_markdown="""The numerator represents the number of all reported absconsion violations in the given time period, which could include multiple absconsion violations for the same client. Absconsion violations are calculated based on the number of Violation Surveys entered into Atlas with “Absconding” selected as one of its violation types. The time period of each absconsion violation is determined using the date the Violation Survey was completed. If the absconsion violation is filed after the incarceration event, neither the violation nor the incarceration event will be included in our metrics.
+                description_markdown="""The numerator represents the number of all reported absconsion violations in the given time period, which could include multiple absconsion violations for the same client. Absconsion violations are calculated based on the number of Violation Surveys entered into Atlas with "Absconding" selected as one of its violation types. The time period of each absconsion violation is determined using the date the Violation Survey was completed. If the absconsion violation is filed after the incarceration event, neither the violation nor the incarceration event will be included in our metrics.
 
 <br />
 The denominator is the average daily caseload for the officer over the given time period. Clients on Unsupervised/Court Probation or clients who are supervised out of state with respect to an Interstate Compact are excluded from an officer's active caseload.""",
@@ -174,7 +175,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 event_name="all incarcerations",
                 event_name_singular="incarceration",
                 event_name_past_tense="were incarcerated",
-                description_markdown="""All transitions to incarceration (state prison or county jail) from supervision in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from Probation to the Special Alternative for Incarceration (SAI) and transitions from supervision to incarceration due to any “New Commitment” movement reasons from OMNI.
+                description_markdown="""All transitions to incarceration (state prison or county jail) from supervision in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from Probation to the Special Alternative for Incarceration (SAI) and transitions from supervision to incarceration due to any "New Commitment" movement reasons from OMNI.
 
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
@@ -189,7 +190,7 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event_name="all incarcerations from parole",
                 event_name_singular="incarceration from parole",
                 event_name_past_tense="were incarcerated from parole",
-                description_markdown="""All transitions to incarceration (state prison or county jail) from parole in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from parole to incarceration due to any “New Commitment” movement reasons from OMNI.
+                description_markdown="""All transitions to incarceration (state prison or county jail) from parole in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from parole to incarceration due to any "New Commitment" movement reasons from OMNI.
 
 <br />
 Denominator is the average parole caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
@@ -206,7 +207,7 @@ Denominator is the average parole caseload for the agent over the given time per
                 event_name="all incarcerations from probation",
                 event_name_singular="incarceration from probation",
                 event_name_past_tense="were incarcerated from probation",
-                description_markdown="""All transitions to incarceration (state prison or county jail) from probation in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from Probation to the Special Alternative for Incarceration (SAI) and transitions from probation to incarceration due to any “New Commitment” movement reasons from OMNI.
+                description_markdown="""All transitions to incarceration (state prison or county jail) from probation in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from Probation to the Special Alternative for Incarceration (SAI) and transitions from probation to incarceration due to any "New Commitment" movement reasons from OMNI.
 
 <br />
 Denominator is the average probation caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
@@ -315,7 +316,7 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event_name="technical incarcerations",
                 event_name_singular="technical incarceration",
                 event_name_past_tense="had a technical incarceration",
-                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a “new admission”, as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison.
+                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a "new admission", as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison.
 
 There are situations where we are unable to find a violation to match an incarceration we see in the data. For example, if there are no violations entered because of data entry reasons or because someone was previously in a CCC who did not use TOMIS, we will either not know the cause of the reincarceration or be associating the incarceration with an erroneous violation type.
 
@@ -498,6 +499,31 @@ Denominator is the average daily caseload for the agent over the given time peri
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
                 list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_AZ,
+                metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+                title_display_name="Technical Incarceration Rate",
+                body_display_name="technical incarceration rate",
+                event_name="technical incarcerations",
+                event_name_singular="technical incarceration",
+                event_name_past_tense="had a technical incarceration",
+                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a "new admission", as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison."
+<br />
+Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_AZ,
+                metric=INCARCERATION_STARTS_NEW_CRIME_VIOLATION,
+                title_display_name="New Crime Incarceration Rate",
+                body_display_name="new crime incarceration rate",
+                event_name="new crime incarcerations",
+                event_name_singular="new crime incarceration",
+                event_name_past_tense="had a new crime incarceration",
+                description_markdown="""Transitions to incarceration from supervision due to new crime violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a new crime incarceration only if the most serious violation type across all violations in the prior 24 months was a new crime (felony, misdemeanor, or law violation).
+
+<br />
+Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
         ],
     ),

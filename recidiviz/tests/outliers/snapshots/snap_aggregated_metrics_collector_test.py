@@ -1,6 +1,6 @@
 """
 Snapshots for recidiviz/tests/outliers/aggregated_metrics_collector_test.py
-Update snapshots automatically by running `pytest recidiviz/tests/outliers/aggregated_metrics_collector_test.py --snapshot-update
+Update snapshots automatically by running `pytest recidiviz/tests/outliers/aggregated_metrics_collector_test.py --snapshot-update`
 Remember to include a docstring like this after updating the snapshots for Pylint purposes
 """
 
@@ -25,6 +25,7 @@ snapshots[
     "incarceration_starts_and_inferred_from_parole",
     "incarceration_starts_and_inferred_from_probation",
     "incarceration_starts_and_inferred_technical_violation",
+    "incarceration_starts_new_crime_violation",
     "early_discharge_requests",
     "task_completions_transfer_to_limited_supervision",
     "task_completions_full_term_discharge",
