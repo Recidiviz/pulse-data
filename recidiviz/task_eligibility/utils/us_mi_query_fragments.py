@@ -922,6 +922,27 @@ seg_span_dates AS (
         `{{project_id}}.sessions.us_mi_housing_unit_type_collapsed_scc_seg_solitary_sessions`
     WHERE housing_unit_type_collapsed_scc_seg IN ('temp_seg_scc','ad_seg_scc')
         AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+),
+-- This CTE pulls in current (referred or started) programming data
+programming_meta AS (
+    SELECT
+        person_id,
+        ARRAY_AGG(
+            TO_JSON(
+                STRUCT(Program as program,
+                       Referral_Date as referral_date,
+                       Start_Date as start_date,
+                       End_Date as end_date,
+                       Program_Status as program_status,
+                       Program_Status_Date as program_status_date,
+                       Program_End_Reason as program_end_reason)
+            )
+        ORDER BY Referral_Date, Start_Date, Program
+        ) AS programming_history
+    FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Program_Recommendations_latest`
+    LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
+    WHERE Program NOT IN ('Birth Certificate', 'Social Security Card', 'Identification Card')
+    GROUP BY person_id
 )
 SELECT
     tes.person_id,
@@ -968,15 +989,13 @@ SELECT
     rm.json_bondable_offenses_within_6_months AS metadata_json_recent_bondable_offenses,
     rm.json_nonbondable_offenses_within_1_year AS metadata_json_recent_nonbondable_offenses,
     p.json_ad_seg_stays_and_reasons_within_3_yrs AS metadata_json_ad_seg_stays_and_reasons_within_3_yrs,
-    #TODO(#28298) add in missing info when we receive data
-    NULL AS metadata_needed_programming,
-    NULL AS metadata_completed_programming,
     assessment.Management_Level_Assessment_Result AS metadata_management_security_level,
     assessment.Confinement_Level_Assessment_Result AS metadata_confinement_security_level,
     assessment.Actual_Placement_Level_Assessment_Result AS metadata_actual_security_level,
     e.next_scc_due_date AS metadata_next_scc_date,
     e.eligibility_type AS metadata_tab_name,
-    a.case_notes
+    a.case_notes,
+    pm.programming_history AS metadata_programming
 FROM eligibles tes
 LEFT JOIN `{{project_id}}.us_mi_normalized_state.state_person` sp
     USING (state_code, person_id)
@@ -1028,6 +1047,8 @@ LEFT JOIN stg_information stg
 LEFT JOIN array_case_notes_cte a
     USING (person_id)
 LEFT JOIN seg_span_dates ssd
+    USING (person_id)
+LEFT JOIN programming_meta pm
     USING (person_id)
 
     """
