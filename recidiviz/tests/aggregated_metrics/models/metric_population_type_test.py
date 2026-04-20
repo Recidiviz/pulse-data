@@ -73,7 +73,7 @@ class MetricPopulationsByTypeTest(unittest.TestCase):
                 span_type = span_selector.span_type
                 supported_attributes = span_builders_by_span_type[
                     span_type
-                ].attribute_cols
+                ].attribute_col_names
                 for attribute in span_selector.span_conditions_dict:
                     if attribute not in supported_attributes:
                         raise ValueError(

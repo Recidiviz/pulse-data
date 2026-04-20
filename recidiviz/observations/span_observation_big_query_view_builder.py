@@ -20,11 +20,16 @@ a specified type.
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.observations.dataset_config import dataset_for_observation_type
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.observation_attribute_cast import (
+    sql_cast_clause_for_attribute_column,
+)
+from recidiviz.observations.observation_schemas import span_observation_base_schema
 from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
@@ -53,8 +58,9 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # Source for generating metric entity: requires either a standalone SQL query
         # string, or a BigQueryAddress if referencing an existing table
         sql_source: BigQueryAddress | str,
-        # List of column names from source query to include in the attributes JSON blob
-        attribute_cols: list[str],
+        # Columns from source query to include in the attributes JSON blob, with
+        # explicit BQ types used for both the schema and SQL CAST.
+        attribute_cols: list[BigQueryViewColumn],
         # Name of the column from source table that should be used as the span start date
         span_start_date_col: str,
         # Name of the column from source table that should be used as the span end date
@@ -65,6 +71,10 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.span_start_date_col = span_start_date_col
         self.span_end_date_col = span_end_date_col
         self.attribute_cols = attribute_cols
+
+        schema = span_observation_base_schema(
+            span_type.unit_of_observation_type
+        ) + list(attribute_cols)
 
         address = self.view_address_for_span(span_type)
         super().__init__(
@@ -79,10 +89,15 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 span_end_date_col=span_end_date_col,
             ),
             should_materialize=True,
+            schema=schema,
             clustering_fields=MetricUnitOfObservation(
                 type=self.unit_of_observation_type
-            ).primary_key_columns_ordered,
+            ).primary_key_column_names_ordered,
         )
+
+    @property
+    def attribute_col_names(self) -> list[str]:
+        return [col.name for col in self.attribute_cols]
 
     @property
     def observation_name(self) -> str:
@@ -117,7 +132,7 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         cls,
         span_type: SpanType,
         sql_source: BigQueryAddress | str,
-        attribute_cols: list[str],
+        attribute_cols: list[BigQueryViewColumn],
         span_start_date_col: str,
         span_end_date_col: str,
     ) -> str:
@@ -138,10 +153,10 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
 
         column_clauses = [
-            *unit_of_observation.primary_key_columns_ordered,
+            *unit_of_observation.primary_key_column_names_ordered,
             f"DATE({span_start_date_col}) AS {cls.START_DATE_OUTPUT_COL_NAME}",
             f"DATE({span_end_date_col}) AS {cls.END_DATE_OUTPUT_COL_NAME}",
-            *[f"CAST({col} AS STRING) AS {col}" for col in attribute_cols],
+            *[sql_cast_clause_for_attribute_column(col) for col in attribute_cols],
         ]
         columns_str = ",\n".join(column_clauses)
 
@@ -156,9 +171,9 @@ FROM {source_query_fragment}
             type=self.unit_of_observation_type
         )
         return (
-            set(unit_of_observation.primary_key_columns)
+            set(unit_of_observation.primary_key_column_names)
             | {self.span_start_date_col, self.span_end_date_col}
-            | set(self.attribute_cols)
+            | set(self.attribute_col_names)
         )
 
     @classmethod
@@ -166,7 +181,7 @@ FROM {source_query_fragment}
         cls, unit_of_observation_type: MetricUnitOfObservationType
     ) -> list[str]:
         unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
-        return unit_of_observation.primary_key_columns_ordered + [
+        return unit_of_observation.primary_key_column_names_ordered + [
             cls.START_DATE_OUTPUT_COL_NAME,
             cls.END_DATE_OUTPUT_COL_NAME,
         ]

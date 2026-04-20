@@ -64,28 +64,28 @@ def build_single_observation_lookml_view(
     )
     all_attribute_dimensions = [
         DimensionLookMLViewField(
-            field_name=f"{observation_name}__{field}",
+            field_name=f"{observation_name}__{col.name}",
             parameters=[
                 LookMLFieldParameter.type(
                     LookMLFieldType.NUMBER
-                    if field == "person_id"
+                    if col.name == "person_id"
                     else LookMLFieldType.STRING
                 ),
                 LookMLFieldParameter.label(
-                    f"{snake_to_title(observation_name)}: {snake_to_title(field)}"
+                    f"{snake_to_title(observation_name)}: {snake_to_title(col.name)}"
                 ),
                 LookMLFieldParameter.view_label("Observation Attributes"),
-                LookMLFieldParameter.sql(f"${{TABLE}}.{field}"),
+                LookMLFieldParameter.sql(f"${{TABLE}}.{col.name}"),
             ],
         )
-        for field in builder.attribute_cols
+        for col in builder.attribute_cols
     ]
 
     unit_of_observation_keys = sorted(
         list(
             MetricUnitOfObservation(
                 type=observation_type.unit_of_observation_type
-            ).primary_key_columns
+            ).primary_key_column_names
         )
     )
 

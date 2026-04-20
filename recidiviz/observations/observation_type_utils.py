@@ -20,6 +20,7 @@ from functools import cache
 from typing import TypeVar
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -155,9 +156,19 @@ def get_observation_builders_by_observation_type() -> dict[
 
 def attribute_cols_for_observation_type(
     observation_type: ObservationTypeT,
-) -> list[str]:
-    """Returns the attribute columns associated with an observation type"""
+) -> list[BigQueryViewColumn]:
+    """Returns the typed attribute columns associated with an observation type"""
 
     return get_observation_builders_by_observation_type()[
         observation_type
     ].attribute_cols
+
+
+def attribute_col_names_for_observation_type(
+    observation_type: ObservationTypeT,
+) -> list[str]:
+    """Returns the attribute column names associated with an observation type"""
+
+    return get_observation_builders_by_observation_type()[
+        observation_type
+    ].attribute_col_names

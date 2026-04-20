@@ -20,6 +20,10 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    String,
+)
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -39,8 +43,16 @@ class SpanObservationBigQueryViewBuilderTest(unittest.TestCase):
             description="My description",
             sql_source=BigQueryAddress.from_str("dataset.source_table"),
             attribute_cols=[
-                "attribute_1",
-                "attribute_2",
+                String(
+                    name="attribute_1",
+                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                    mode="NULLABLE",
+                ),
+                String(
+                    name="attribute_2",
+                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                    mode="NULLABLE",
+                ),
             ],
             span_start_date_col="my_start_date_col",
             span_end_date_col="my_end_date_col",
@@ -89,6 +101,42 @@ FROM `test-project.input_prefix_dataset.source_table`
 """
         self.assertEqual(expected_view_query, view_with_overrides.view_query)
 
+    def test_build_view_schema(self) -> None:
+        view_builder = SpanObservationBigQueryViewBuilder(
+            span_type=SpanType.CUSTODY_LEVEL_SESSION,
+            description="My description",
+            sql_source=BigQueryAddress.from_str("dataset.source_table"),
+            attribute_cols=[
+                String(
+                    name="attribute_1",
+                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                    mode="NULLABLE",
+                ),
+                String(
+                    name="attribute_2",
+                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                    mode="NULLABLE",
+                ),
+            ],
+            span_start_date_col="my_start_date_col",
+            span_end_date_col="my_end_date_col",
+        )
+
+        view = view_builder.build(sandbox_context=None)
+        assert view.schema is not None
+        col_info = [(c.name, c.field_type, c.mode) for c in view.schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("person_id", "INTEGER", "NULLABLE"),
+                ("state_code", "STRING", "NULLABLE"),
+                ("start_date", "DATE", "NULLABLE"),
+                ("end_date", "DATE", "NULLABLE"),
+                ("attribute_1", "STRING", "NULLABLE"),
+                ("attribute_2", "STRING", "NULLABLE"),
+            ],
+        )
+
     def test_build_view_custom_sql_source(self) -> None:
         sql_source = """
 
@@ -101,8 +149,16 @@ FROM `test-project.input_prefix_dataset.source_table`
             description="My description",
             sql_source=sql_source,
             attribute_cols=[
-                "attribute_1",
-                "attribute_2",
+                String(
+                    name="attribute_1",
+                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                    mode="NULLABLE",
+                ),
+                String(
+                    name="attribute_2",
+                    description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                    mode="NULLABLE",
+                ),
             ],
             span_start_date_col="my_start_date_col",
             span_end_date_col="my_end_date_col",

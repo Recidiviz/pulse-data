@@ -83,7 +83,7 @@ WITH filtered_spans AS (
     {filter_clause}
 )
 ,
-{create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive",index_columns=sorted(self.unit_of_observation.primary_key_columns))}
+{create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive",index_columns=sorted(self.unit_of_observation.primary_key_column_names))}
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
@@ -95,7 +95,7 @@ sub_sessions_dedup AS (
 )
 {aggregate_adjacent_spans(
     table_name='sub_sessions_dedup',
-    index_columns=sorted(self.unit_of_observation.primary_key_columns),
+    index_columns=sorted(self.unit_of_observation.primary_key_column_names),
     attribute=[],
     end_date_field_name='end_date_exclusive')
 }

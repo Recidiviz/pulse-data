@@ -72,7 +72,7 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 span_type = span_selector.span_type
                 supported_attributes = self.span_builders_by_span_type[
                     span_type
-                ].attribute_cols
+                ].attribute_col_names
 
                 if attribute not in supported_attributes:
                     raise ValueError(
@@ -93,7 +93,7 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             for attribute in event_selector.event_conditions_dict:
                 supported_attributes = self.event_builders_by_span_type[
                     event_type
-                ].attribute_cols
+                ].attribute_col_names
                 if attribute not in supported_attributes:
                     raise ValueError(
                         f"Event attribute `{attribute}` is not supported by {event_type.value} event. "
@@ -110,7 +110,7 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             event = metric.event_type
             supported_attributes = self.event_builders_by_span_type[
                 event
-            ].attribute_cols
+            ].attribute_col_names
             if metric.event_value_numeric in supported_attributes:
                 continue
             raise ValueError(
@@ -131,7 +131,7 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 span = metric.span_selector.span_type
                 supported_attributes = self.span_builders_by_span_type[
                     span
-                ].attribute_cols
+                ].attribute_col_names
                 if metric.span_value_numeric not in supported_attributes:
                     raise ValueError(
                         f"Configured span_value_numeric `{metric.span_value_numeric}` is not supported by "
@@ -147,7 +147,7 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 span = metric.span_selector.span_type
                 supported_attributes = self.span_builders_by_span_type[
                     span
-                ].attribute_cols
+                ].attribute_col_names
                 if metric.weight_col and (
                     metric.weight_col not in supported_attributes
                 ):
@@ -169,7 +169,7 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 for col in metric.event_segmentation_columns:
                     supported_attributes = self.event_builders_by_span_type[
                         event
-                    ].attribute_cols
+                    ].attribute_col_names
                     if col not in supported_attributes:
                         raise ValueError(
                             f"Configured event_segmentation_columns `{col}` is not supported by "

@@ -77,7 +77,7 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 from recidiviz.observations.observation_selector import ObservationTypeT
 from recidiviz.observations.observation_type_utils import (
     ObservationType,
-    attribute_cols_for_observation_type,
+    attribute_col_names_for_observation_type,
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
     get_metric_explore_parameter,
@@ -354,7 +354,7 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
     primary_columns_str = unit_of_analysis.get_primary_key_columns_query_string()
     shared_columns = sorted(
         {
-            *unit_of_observation.primary_key_columns,
+            *unit_of_observation.primary_key_column_names,
             *unit_of_analysis.index_columns,
         }
     )
@@ -727,7 +727,7 @@ def _generate_single_observation_type_aggregated_metric_lookml_query_template(
     compatible_json_field_filters = [
         (
             field
-            if field in attribute_cols_for_observation_type(observation_type)
+            if field in attribute_col_names_for_observation_type(observation_type)
             else f"CAST(NULL AS STRING) AS {field}"
         )
         for field in json_field_filters
@@ -820,7 +820,7 @@ def _get_index_columns_to_exclude_for_assignment_type(
         col
         for col in MetricUnitOfObservation(
             type=unit_of_observation_type
-        ).primary_key_columns_ordered
+        ).primary_key_column_names_ordered
         if col
         not in MetricUnitOfAnalysis.for_type(unit_of_analysis_type).primary_key_columns
     ]

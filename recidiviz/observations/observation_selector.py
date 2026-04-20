@@ -194,7 +194,7 @@ class ObservationSelector(Generic[ObservationTypeT]):
             filters_str = "\nOR ".join(f"( {clause} )" for clause in filter_clauses)
 
         output_columns = [
-            *unit_of_observation.primary_key_columns_ordered,
+            *unit_of_observation.primary_key_column_names_ordered,
             *date_column_names_for_observation_type(observation_type),
             *sorted(output_attribute_columns),
         ]

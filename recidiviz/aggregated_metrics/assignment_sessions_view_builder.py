@@ -1202,7 +1202,7 @@ for use in the {unit_of_analysis_name}_metrics table, based on {unit_of_observat
     # of the unit of analysis
     child_primary_key_columns = [
         col
-        for col in unit_of_observation.primary_key_columns_ordered
+        for col in unit_of_observation.primary_key_column_names_ordered
         if col not in unit_of_analysis.primary_key_columns
     ]
     child_primary_key_columns_query_string = (
@@ -1236,16 +1236,16 @@ sample AS (
     {create_intersection_spans(
         table_1_name="assign", 
         table_2_name="sample", 
-        index_columns=unit_of_observation.primary_key_columns_ordered,
+        index_columns=unit_of_observation.primary_key_column_names_ordered,
         include_zero_day_intersections=True,
-        table_1_columns=[col for col in unit_of_analysis.primary_key_columns if col not in unit_of_observation.primary_key_columns_ordered] + ["dummy"],
+        table_1_columns=[col for col in unit_of_analysis.primary_key_columns if col not in unit_of_observation.primary_key_column_names_ordered] + ["dummy"],
         table_2_columns=[]
     )}
 )
 ,
 {create_sub_sessions_with_attributes(
     table_name="potentially_adjacent_spans", 
-    index_columns=unit_of_observation.primary_key_columns_ordered, 
+    index_columns=unit_of_observation.primary_key_column_names_ordered, 
     end_date_field_name="end_date_exclusive"
 )}
 , sub_sessions_with_attributes_distinct AS (
@@ -1286,13 +1286,13 @@ sample AS (
 -- We will add a flag for assignment start dates that fall on this date.
 population_start_dates AS (
     SELECT
-        {list_to_query_string(unit_of_observation.primary_key_columns_ordered)},
+        {list_to_query_string(unit_of_observation.primary_key_column_names_ordered)},
         start_date AS assignment_date,
     FROM
         sample
     QUALIFY
         IFNULL(
-            LAG(end_date_exclusive) OVER (PARTITION BY {list_to_query_string(unit_of_observation.primary_key_columns_ordered)} ORDER BY start_date),
+            LAG(end_date_exclusive) OVER (PARTITION BY {list_to_query_string(unit_of_observation.primary_key_column_names_ordered)} ORDER BY start_date),
             DATE("{MAGIC_START_DATE}")
         ) != start_date
 )
@@ -1307,7 +1307,7 @@ FROM {unit_of_analysis_name}_assignments
 LEFT JOIN
     population_start_dates
 USING
-    (assignment_date, {list_to_query_string(unit_of_observation.primary_key_columns_ordered)})
+    (assignment_date, {list_to_query_string(unit_of_observation.primary_key_column_names_ordered)})
 
 """
     return SimpleBigQueryViewBuilder(
@@ -1315,6 +1315,6 @@ USING
         view_id=view_address.table_id,
         view_query_template=query_template,
         description=view_description,
-        clustering_fields=unit_of_observation.primary_key_columns_ordered,
+        clustering_fields=unit_of_observation.primary_key_column_names_ordered,
         should_materialize=True,
     )

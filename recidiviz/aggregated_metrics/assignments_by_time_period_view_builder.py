@@ -197,7 +197,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
         self.clustering_fields = MetricUnitOfObservation(
             type=self.unit_of_observation_type
-        ).primary_key_columns_ordered
+        ).primary_key_column_names_ordered
 
         self.view_query_template = self.build_assignments_by_time_period_query_template(
             population_type=population_type,
@@ -286,7 +286,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             if c
             not in {
                 *unit_of_analysis.primary_key_columns,
-                *unit_of_observation.primary_key_columns,
+                *unit_of_observation.primary_key_column_names,
                 MetricTimePeriodConfig.METRIC_TIME_PERIOD_PERIOD_COLUMN,
             }
         ]
@@ -397,7 +397,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         """Returns the names of the columns output by a view builder with the given
         unit of analysis, unit of observation, and join type.
         """
-        columns = [*unit_of_observation.primary_key_columns_ordered]
+        columns = [*unit_of_observation.primary_key_column_names_ordered]
         # There may be overlap between unit_of_analysis and unit_of_observation PKs -
         # only add non-overlapping columns.
         for column in unit_of_analysis.primary_key_columns:

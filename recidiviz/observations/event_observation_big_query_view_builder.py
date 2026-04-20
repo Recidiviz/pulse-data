@@ -20,18 +20,19 @@ a specified type.
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.observations.dataset_config import dataset_for_observation_type
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.observation_attribute_cast import (
+    sql_cast_clause_for_attribute_column,
+)
+from recidiviz.observations.observation_schemas import event_observation_base_schema
 from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
-
-# Attribute columns that we assume should be interpreted as integer values and serialized
-# to JSON as such.
-_INFERRED_INTEGER_ATTRIBUTE_COLS = ["person_id"]
 
 
 class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -56,8 +57,9 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # Source for generating metric entity: requires either a standalone SQL query
         # string, or a BigQueryAddress if referencing an existing table
         sql_source: BigQueryAddress | str,
-        # List of column names from source query to include in the attributes JSON blob
-        attribute_cols: list[str],
+        # Columns from source query to include in the attributes JSON blob, with
+        # explicit BQ types used for both the schema and SQL CAST.
+        attribute_cols: list[BigQueryViewColumn],
         # Name of the column from source table that should be used as the event date
         event_date_col: str,
     ) -> None:
@@ -65,6 +67,10 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.event_type = event_type
         self.event_date_col = event_date_col
         self.attribute_cols = attribute_cols
+
+        schema = event_observation_base_schema(
+            event_type.unit_of_observation_type
+        ) + list(attribute_cols)
 
         address = self.view_address_for_event(event_type)
         super().__init__(
@@ -78,10 +84,15 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 event_date_col=event_date_col,
             ),
             should_materialize=True,
+            schema=schema,
             clustering_fields=MetricUnitOfObservation(
                 type=self.unit_of_observation_type
-            ).primary_key_columns_ordered,
+            ).primary_key_column_names_ordered,
         )
+
+    @property
+    def attribute_col_names(self) -> list[str]:
+        return [col.name for col in self.attribute_cols]
 
     @property
     def observation_name(self) -> str:
@@ -118,7 +129,7 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         cls,
         event_type: EventType,
         sql_source: BigQueryAddress | str,
-        attribute_cols: list[str],
+        attribute_cols: list[BigQueryViewColumn],
         event_date_col: str,
     ) -> str:
         """Builds and returns the query template for this event view."""
@@ -137,16 +148,9 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
 
         column_clauses = [
-            *unit_of_observation.primary_key_columns_ordered,
+            *unit_of_observation.primary_key_column_names_ordered,
             f"DATE({event_date_col}) AS {cls.EVENT_DATE_OUTPUT_COL_NAME}",
-            *[
-                (
-                    f"CAST({col} AS INT64) AS {col}"
-                    if col in _INFERRED_INTEGER_ATTRIBUTE_COLS
-                    else f"CAST({col} AS STRING) AS {col}"
-                )
-                for col in attribute_cols
-            ],
+            *[sql_cast_clause_for_attribute_column(col) for col in attribute_cols],
         ]
         columns_str = ",\n".join(column_clauses)
 
@@ -161,9 +165,9 @@ FROM {source_query_fragment}
             type=self.unit_of_observation_type
         )
         return (
-            set(unit_of_observation.primary_key_columns)
+            set(unit_of_observation.primary_key_column_names)
             | {self.event_date_col}
-            | set(self.attribute_cols)
+            | set(self.attribute_col_names)
         )
 
     @classmethod
@@ -171,6 +175,6 @@ FROM {source_query_fragment}
         cls, unit_of_observation_type: MetricUnitOfObservationType
     ) -> list[str]:
         unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
-        return unit_of_observation.primary_key_columns_ordered + [
+        return unit_of_observation.primary_key_column_names_ordered + [
             cls.EVENT_DATE_OUTPUT_COL_NAME,
         ]

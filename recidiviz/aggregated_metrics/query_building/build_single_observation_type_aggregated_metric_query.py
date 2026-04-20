@@ -181,7 +181,7 @@ def _observation_to_assignment_periods_join_logic(
 
     """
     observation_primary_key_columns = sorted(
-        metric_unit_of_observation.primary_key_columns
+        metric_unit_of_observation.primary_key_column_names
     )
     shared_join_clause = "\nAND ".join(
         f"{OBSERVATIONS_CTE_NAME}.{column} = {assignments_by_time_period_cte_name}.{column}"
@@ -426,12 +426,15 @@ def build_single_observation_type_aggregated_metric_query_template(
     # fill with NULL
     if not disaggregate_by_observation_attributes:
         disaggregate_by_observation_attributes = []
-    observation_attribute_columns = [
-        col
-        if col
-        in ObservationBigQueryViewCollector()
+    observation_attribute_col_names = {
+        c.name
+        for c in ObservationBigQueryViewCollector()
         .get_view_builder_for_observation_type(observation_type)
         .attribute_cols
+    }
+    observation_attribute_columns = [
+        col
+        if col in observation_attribute_col_names
         else f"CAST(NULL AS STRING) AS {col}"
         for col in disaggregate_by_observation_attributes
     ]
