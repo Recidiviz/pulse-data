@@ -51,6 +51,7 @@ from recidiviz.cloud_resources.resource_label import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.utils import format_resource_label
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
@@ -85,7 +86,8 @@ class PipelineParameters:
 
     # Args passed through to pipeline template
     project: str = attr.ib(validator=attr_validators.is_str)
-    state_code: str = attr.ib(validator=attr_validators.is_str)
+    state_code: str = attr.ib(default="", validator=attr_validators.is_str)
+    tenant: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     pipeline: str = attr.ib(validator=attr_validators.is_str)
     output_sandbox_prefix: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -197,7 +199,16 @@ class PipelineParameters:
 
     @service_account_email.default
     def _service_account_email_default(self) -> str:
-        return f"direct-ingest-state-{self.state_code.replace('_', '-').lower()}-df@{self.project}.iam.gserviceaccount.com"
+        sc = self.state_code or self.tenant
+        if not sc:
+            return ""
+        if not StateCode.is_state_code(sc):
+            raise ValueError(
+                f"No default service account for tenant {self.tenant}. Must add support for "
+                f"non-state tenant default service accounts or explicitly pass a "
+                f"service_account_email to this pipeline."
+            )
+        return f"direct-ingest-state-{sc.replace('_', '-').lower()}-df@{self.project}.iam.gserviceaccount.com"
 
     @service_account_email.validator
     def _service_account_email_validator(
@@ -257,6 +268,19 @@ class PipelineParameters:
         )
 
     def __attrs_post_init__(self) -> None:
+        if not self.state_code and not self.tenant:
+            raise ValueError("Either state_code or tenant must be provided.")
+        if self.state_code and not self.tenant:
+            self.tenant = self.state_code
+        elif self.tenant and not self.state_code:
+            if StateCode.is_state_code(self.tenant):
+                self.state_code = self.tenant
+        elif self.state_code != self.tenant:
+            raise ValueError(
+                f"state_code [{self.state_code}] and tenant [{self.tenant}] must "
+                f"match if both are provided."
+            )
+
         if self.is_sandbox_pipeline and not self.output_sandbox_prefix:
             raise ValueError(
                 f"This sandbox pipeline must define an output_sandbox_prefix. "
