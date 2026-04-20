@@ -29,14 +29,13 @@ python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
 """
 import argparse
 import logging
-import re
 import sys
 
-import proto
 import yaml
 
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
     DeploymentContext,
+    build_config_to_dict,
     create_deployment_build_api_obj,
 )
 from recidiviz.tools.deploy.cloud_build.cloud_build_client import CloudBuildClient
@@ -57,6 +56,7 @@ from recidiviz.tools.deploy.cloud_build.stages.tag_images import TagImages
 from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.secrets import get_secret
 
 AVAILABLE_DEPLOYMENT_STAGES: set[type[DeploymentStageInterface]] = {
     RunMigrations,
@@ -133,23 +133,20 @@ if __name__ == "__main__":
             unknown_args
         )
 
+        service_account = get_secret("ci_cd_service_account")
+
         if parsed_args.dry_run:
-            yaml_output = yaml.dump(
-                proto.Message.to_dict(  # type: ignore[attr-defined]
-                    create_deployment_build_api_obj(
-                        build_configuration=deployment_stage_cls().configure_build(
-                            deployment_context=deployment_context,
-                            args=deployment_stage_args,
-                        ),
-                        deployment_context=deployment_context,
-                    )
-                )
+            config_dict = build_config_to_dict(
+                build_configuration=deployment_stage_cls().configure_build(
+                    deployment_context=deployment_context,
+                    args=deployment_stage_args,
+                ),
+                deployment_context=deployment_context,
+                service_account=service_account,
             )
-            # Some protobuf fields are suffixed with `_` to avoid collision with Python global names ie `dir_` vs `dir`
-            # Replace the field name with the non-suffixed key
-            yaml_output = re.sub(r"(\s+.+)_(:.+)", r"\g<1>\g<2>", yaml_output)
             logging.info(
-                "Command generated the following build configuration: %s", yaml_output
+                "Command generated the following build configuration: %s",
+                yaml.dump(config_dict),
             )
 
             sys.exit()
@@ -162,6 +159,7 @@ if __name__ == "__main__":
                         args=deployment_stage_args,
                     ),
                     deployment_context=deployment_context,
+                    service_account=service_account,
                 ),
                 execute_async=parsed_args.execute_async,
             ),

@@ -58,6 +58,7 @@ class CloudBuildClientTest(unittest.TestCase):
                         steps=[], timeout_seconds=10
                     ),
                     deployment_context=self.deployment_context,
+                    service_account=None,
                 )
             )
 
@@ -79,5 +80,6 @@ class CloudBuildClientTest(unittest.TestCase):
                 create_deployment_build_api_obj(
                     build_configuration=BuildConfiguration(steps=[]),
                     deployment_context=self.deployment_context,
+                    service_account=None,
                 )
             )

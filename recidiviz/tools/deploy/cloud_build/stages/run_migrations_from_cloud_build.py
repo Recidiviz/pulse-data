@@ -74,9 +74,9 @@ class RunMigrations(DeploymentStageInterface):
         args: argparse.Namespace,
     ) -> BuildConfiguration:
         """Builds a configuration for running migrations"""
-        app_engine = ArtifactRegistryDockerImageRepository.from_file()[
-            ImageKind.APP_ENGINE
-        ]
+        app_engine = ArtifactRegistryDockerImageRepository.from_file(
+            deployment_context
+        )[ImageKind.APP_ENGINE]
         app_engine_image = app_engine.version_url(
             version_tag=deployment_context.version_tag
         )

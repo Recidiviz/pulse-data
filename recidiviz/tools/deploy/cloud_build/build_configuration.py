@@ -17,8 +17,10 @@
 """Module containing configuration objects for deployments"""
 import datetime
 from argparse import Namespace
+from typing import Any
 
 import attr
+import proto
 from google.cloud.devtools.cloudbuild_v1 import (
     Artifacts,
     Build,
@@ -36,7 +38,6 @@ from recidiviz.tools.deploy.cloud_build.constants import (
     BUILDER_GCLOUD,
     RECIDIVIZ_SOURCE_VOLUME,
 )
-from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
 CLOUD_BUILD_REGION = "us-west1"
@@ -117,12 +118,20 @@ class BuildConfiguration:
 
 
 def create_deployment_build_api_obj(
-    build_configuration: BuildConfiguration, deployment_context: DeploymentContext
+    build_configuration: BuildConfiguration,
+    deployment_context: DeploymentContext,
+    service_account: str | None,
 ) -> Build:
-    """Creates a Cloud Build gRPC API object given a deployment context and build configuration"""
+    """Creates a Cloud Build gRPC API object given a deployment context and build configuration.
+
+    Args:
+        service_account: The service account to run the build as. Pass None when
+            generating config that won't be submitted directly (e.g. for
+            Terraform consumption).
+    """
     builder = ProtoPlusBuilder(Build).compose(
         Build(
-            service_account=get_secret("ci_cd_service_account"),
+            service_account=service_account,
             logs_bucket="gs://${_PROJECT_ID}-ci-cd-logs",
             timeout=f"{build_configuration.timeout_seconds}s",
             # The default list of substitutions includes PROJECT_ID, BUILD_ID, LOCATION
@@ -203,6 +212,40 @@ def create_deployment_build_api_obj(
         )
     builder.update_args(available_secrets=available_secrets)
     return builder.build()
+
+
+def _clean_proto_dict(value: Any) -> Any:
+    """Strip trailing underscores from protobuf field names (e.g. dir_ → dir).
+
+    Protobuf fields like ``dir`` collide with Python builtins, so the generated
+    Python bindings suffix them with an underscore (``dir_``).  This function
+    recursively walks a dict produced by ``proto.Message.to_dict`` and removes
+    those suffixes so the output matches the canonical Cloud Build API field names.
+    """
+    if isinstance(value, dict):
+        return {k.rstrip("_"): _clean_proto_dict(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_clean_proto_dict(item) for item in value]
+    return value
+
+
+def build_config_to_dict(
+    build_configuration: BuildConfiguration,
+    deployment_context: DeploymentContext,
+    service_account: str | None,
+) -> dict:
+    """Convert a BuildConfiguration to a serializable dict.
+
+    Produces the dict representation of the full Cloud Build API object,
+    with protobuf field name suffixes cleaned up (e.g. dir_ → dir).
+    """
+    build_obj = create_deployment_build_api_obj(
+        build_configuration=build_configuration,
+        deployment_context=deployment_context,
+        service_account=service_account,
+    )
+    raw_dict = proto.Message.to_dict(build_obj)  # type: ignore[attr-defined]
+    return _clean_proto_dict(raw_dict)
 
 
 def secret_substitution_name(secret_name: str) -> str:

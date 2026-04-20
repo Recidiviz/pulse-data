@@ -15,15 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Data objects for Artifact Registry repositories"""
+from __future__ import annotations
+
 import enum
 import os
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 import attr
 
 import recidiviz
-from recidiviz.utils import metadata
 from recidiviz.utils.yaml_dict import YAMLDict
+
+if TYPE_CHECKING:
+    from recidiviz.tools.deploy.cloud_build.build_configuration import DeploymentContext
 
 ARTIFACT_REGISTRY_CONFIG_PATH = os.path.join(
     os.path.dirname(recidiviz.__file__),
@@ -78,14 +83,16 @@ class ArtifactRegistryDockerImageRepository:
         return f"{self._base_url}/default:latest"
 
     @classmethod
-    def from_file(cls) -> dict[ImageKind, "ArtifactRegistryDockerImageRepository"]:
+    def from_file(
+        cls, deployment_context: DeploymentContext
+    ) -> dict[ImageKind, ArtifactRegistryDockerImageRepository]:
         yaml_dict = YAMLDict.from_path(yaml_path=ARTIFACT_REGISTRY_CONFIG_PATH)
 
         return {
             ImageKind(
                 repository_config["repository_id"]
             ): ArtifactRegistryDockerImageRepository(
-                project_id=metadata.project_id(), **repository_config
+                project_id=deployment_context.project_id, **repository_config
             )
             for repository_config in yaml_dict.pop("repositories", dict).values()
             if repository_config["format"] == "DOCKER"

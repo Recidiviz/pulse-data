@@ -32,6 +32,7 @@ from recidiviz.tools.deploy.cloud_build.constants import (
     BUILDER_ALPINE,
     BUILDER_DOCKER,
     DOCKER_CREDENTIAL_HELPER,
+    IMAGE_BUILD_DEPENDENCIES,
     IMAGE_BUILD_PLATFORMS,
     IMAGE_DOCKERFILES,
     PLATFORM_LINUX_ARM64,
@@ -75,11 +76,25 @@ _SETUP_QEMU_BUILD_STEP = BuildStep(
 )
 
 
+def _build_step_id_for_repository(
+    repository: ArtifactRegistryDockerImageRepository,
+) -> str:
+    """Step id for the build-and-push step for the given image repository."""
+    return f"build-{repository.repository_id}"
+
+
 def _generate_build_image_build_step(
     deployment_context: DeploymentContext,
     repository: ArtifactRegistryDockerImageRepository,
+    extra_build_wait_for_steps: list[str],
 ) -> list[BuildStep]:
-    """Generates a build step that builds and pushes docker images to Artifact Registry"""
+    """Generates a build step that builds and pushes docker images to Artifact Registry.
+
+    extra_build_wait_for_steps is a list of step ids that the build-and-push
+    step should wait on in addition to its own create-build-context step — used
+    to serialize cross-image Dockerfile FROM dependencies (see
+    IMAGE_BUILD_DEPENDENCIES).
+    """
     dockerfile, build_stage = IMAGE_DOCKERFILES[repository.image_kind]
     builder_name = repository.repository_id
     tag = repository.version_url(version_tag=deployment_context.version_tag)
@@ -127,8 +142,8 @@ def _generate_build_image_build_step(
         build_step_for_shell_command(
             name=BUILDER_DOCKER,
             env=["DOCKER_BUILDKIT=1"],
-            id_=f"build-{repository.repository_id}",
-            wait_for=[create_build_context.id],
+            id_=_build_step_id_for_repository(repository),
+            wait_for=[create_build_context.id, *extra_build_wait_for_steps],
             command=build_and_push_image_command,
         ),
     ]
@@ -156,7 +171,9 @@ class BuildImages(DeploymentStageInterface):
     ) -> BuildConfiguration:
         """Generates a configuration for building Docker images and uploading them to Artifact Registry"""
 
-        repositories = ArtifactRegistryDockerImageRepository.from_file()
+        repositories = ArtifactRegistryDockerImageRepository.from_file(
+            deployment_context
+        )
         needs_qemu = any(
             PLATFORM_LINUX_ARM64 in IMAGE_BUILD_PLATFORMS[image]
             for image in args.images
@@ -168,6 +185,7 @@ class BuildImages(DeploymentStageInterface):
         if needs_qemu:
             build_steps.append(_SETUP_QEMU_BUILD_STEP)
 
+        images_set = set(args.images)
         for image in args.images:
             if image not in repositories:
                 raise ValueError(
@@ -175,10 +193,16 @@ class BuildImages(DeploymentStageInterface):
                 )
 
             repository = repositories[image]
+            extra_build_wait_for_steps: list[str] = [
+                _build_step_id_for_repository(repositories[dep])
+                for dep in IMAGE_BUILD_DEPENDENCIES.get(image, [])
+                if dep in images_set
+            ]
             build_steps.extend(
                 _generate_build_image_build_step(
                     deployment_context=deployment_context,
                     repository=repository,
+                    extra_build_wait_for_steps=extra_build_wait_for_steps,
                 )
             )
 

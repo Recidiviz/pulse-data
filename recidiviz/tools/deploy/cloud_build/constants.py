@@ -69,4 +69,11 @@ IMAGE_BUILD_PLATFORMS: dict[ImageKind, list[str]] = {
     ImageKind.DATAFLOW_DEV: [PLATFORM_LINUX_AMD64],
 }
 
+# Cross-image build dependencies: the dependent image's Dockerfile FROMs the
+# dependency image, so the dependent build must wait for the dependency build
+# to finish pushing before it starts.
+IMAGE_BUILD_DEPENDENCIES: dict[ImageKind, list[ImageKind]] = {
+    ImageKind.CASE_TRIAGE_PATHWAYS: [ImageKind.RECIDIVIZ_BASE],
+}
+
 RECIDIVIZ_SOURCE_VOLUME = Volume(name="git-source", path="/app/recidiviz/")

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# TODO(#73385): Generate these build steps from Python code the same way we do
+# for build-trigger.tf, instead of maintaining them manually in HCL.
 resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger" {
   provider    = google-beta
   description = "Builds a remote Docker image for flex pipelines on every push to main or a release branch."

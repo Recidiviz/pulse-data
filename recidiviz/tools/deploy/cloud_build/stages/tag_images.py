@@ -55,7 +55,9 @@ class TagImages(DeploymentStageInterface):
         args: argparse.Namespace,
     ) -> BuildConfiguration:
         """Generates a build configuration that promotes our built docker images"""
-        artifact_registries = ArtifactRegistryDockerImageRepository.from_file()
+        artifact_registries = ArtifactRegistryDockerImageRepository.from_file(
+            deployment_context
+        )
         # Downloads the gcloud builder image so that each of the `build_steps` below have it in cache
         prefetch_builder_image = build_step_for_shell_command(
             id_="prefetch-builder-image",

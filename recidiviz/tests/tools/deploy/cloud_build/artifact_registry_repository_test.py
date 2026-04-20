@@ -23,16 +23,22 @@ from recidiviz.tools.deploy.cloud_build.artifact_registry_repository import (
     ArtifactRegistryDockerImageRepository,
     ImageKind,
 )
+from recidiviz.tools.deploy.cloud_build.build_configuration import DeploymentContext
 from recidiviz.tools.deploy.cloud_build.constants import IMAGE_DOCKERFILES
-from recidiviz.utils.metadata import local_project_id_override
 
 
 class ArtifactRegistryDockerImageRepositoryTest(unittest.TestCase):
     """Test case for ArtifactRegistryRepository"""
 
     def test_parse(self) -> None:
-        with local_project_id_override("test-project"):
-            ArtifactRegistryDockerImageRepository.from_file()
+        ArtifactRegistryDockerImageRepository.from_file(
+            DeploymentContext(
+                project_id="test-project",
+                commit_ref="abc123",
+                version_tag="v1.0",
+                stage="Test",
+            )
+        )
 
     def test_all_images_have_registered_dockerfile(self) -> None:
         self.assertSetEqual(

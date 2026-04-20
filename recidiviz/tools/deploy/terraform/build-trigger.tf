@@ -14,6 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+# Build steps are generated from Python code. To update, run:
+#   python -m recidiviz.tools.deploy.cloud_build.generate_recidiviz_data_post_commit_docker_build_steps
+locals {
+  image_build_config = yamldecode(file("config/recidiviz_data_post_commit_docker_build_steps.yaml"))
+}
+
 resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
   provider    = google-beta
   description = "Builds a remote Docker image for staging on every push to main."
@@ -28,197 +35,29 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
   }
 
   build {
-    step {
-      name       = "gcr.io/cloud-builders/docker"
-      entrypoint = "chmod"
-      args       = ["a+w", "/workspace"]
-      id         = "Give non-root users access to /workspace/ volume"
-    }
+    dynamic "step" {
+      for_each = local.image_build_config.steps
+      content {
+        name       = step.value.name
+        id         = lookup(step.value, "id", null)
+        args       = lookup(step.value, "args", null)
+        entrypoint = lookup(step.value, "entrypoint", null)
+        env        = lookup(step.value, "env", null)
+        wait_for   = lookup(step.value, "wait_for", null)
 
-    step {
-      name       = "alpine"
-      entrypoint = "sh"
-      args = [
-        "-c",
-        join(" && ", [
-          format("wget -O docker-credential-gcr.tar.gz %s", "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v2.1.22/docker-credential-gcr_linux_amd64-2.1.22.tar.gz"),
-          "tar xz -f docker-credential-gcr.tar.gz docker-credential-gcr",
-          "chmod +x docker-credential-gcr",
-          "mkdir /workspace/gcloud",
-          "mv docker-credential-gcr /workspace/gcloud"
-        ])
-      ]
-      id = "download-docker-credential"
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "run",
-        "--privileged",
-        "--rm",
-        "tonistiigi/binfmt",
-        "--install",
-        "arm64"
-      ]
-      id = "setup-qemu"
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "buildx",
-        "create",
-        "--name",
-        "appengine"
-      ]
-      id       = "create-build-context-appengine"
-      wait_for = ["download-docker-credential", "setup-qemu"]
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      env  = ["DOCKER_BUILDKIT=1"]
-      args = [
-        "-c",
-        join(" && ", [
-          "export PATH=\"/workspace/gcloud:$$${PATH}\"",
-          "/workspace/gcloud/docker-credential-gcr configure-docker --registries=us-docker.pkg.dev",
-          join(" ", [
-            "docker buildx build . -f Dockerfile --builder appengine",
-            "--tag=us-docker.pkg.dev/$PROJECT_ID/appengine/build:$COMMIT_SHA",
-            "--cache-to",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache,mode=max",
-            "--cache-from",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache",
-            "--push",
-            "--platform=linux/amd64,linux/arm64",
-            "--target=recidiviz-app"
-          ])
-        ])
-      ]
-      id         = "build-appengine"
-      wait_for   = ["create-build-context-appengine"]
-      entrypoint = "sh"
-    }
-
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "buildx",
-        "create",
-        "--name",
-        "recidiviz-base"
-      ]
-      id       = "create-build-context-recidiviz-base"
-      wait_for = ["download-docker-credential", "setup-qemu"]
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      env  = ["DOCKER_BUILDKIT=1"]
-      args = [
-        "-c",
-        join(" && ", [
-          "export PATH=\"/workspace/gcloud:$$${PATH}\"",
-          "/workspace/gcloud/docker-credential-gcr configure-docker --registries=us-docker.pkg.dev",
-          join(" ", [
-            "docker buildx build . -f Dockerfile.recidiviz-base --builder recidiviz-base",
-            "--tag=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/default:latest",
-            "--cache-to",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache,mode=max",
-            "--cache-from",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache",
-            "--push",
-            "--platform=linux/amd64,linux/arm64"
-          ])
-        ])
-      ]
-      id         = "build-recidiviz-base"
-      wait_for   = ["create-build-context-recidiviz-base"]
-      entrypoint = "sh"
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "buildx",
-        "create",
-        "--name",
-        "asset-generation",
-      ]
-      id       = "create-build-context-asset-generation"
-      wait_for = ["download-docker-credential", "setup-qemu"]
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      env  = ["DOCKER_BUILDKIT=1"]
-      args = [
-        "-c",
-        join(" && ", [
-          "export PATH=\"/workspace/gcloud:$$${PATH}\"",
-          "/workspace/gcloud/docker-credential-gcr configure-docker --registries=us-docker.pkg.dev",
-          join(" ", [
-            "docker buildx build . -f Dockerfile.asset-generation --builder asset-generation",
-            "--tag=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:$COMMIT_SHA",
-            "--cache-to",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache,mode=max",
-            "--cache-from",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache",
-            "--push",
-            "--platform=linux/amd64,linux/arm64"
-          ])
-        ])
-      ]
-      id         = "build-asset-generation"
-      wait_for   = ["create-build-context-asset-generation"]
-      entrypoint = "sh"
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "buildx",
-        "create",
-        "--name",
-        "case-triage-pathways",
-      ]
-      id       = "create-build-context-case-triage-pathways"
-      wait_for = ["download-docker-credential", "setup-qemu"]
-    }
-
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      env  = ["DOCKER_BUILDKIT=1"]
-      args = [
-        "-c",
-        join(" && ", [
-          "export PATH=\"/workspace/gcloud:$$${PATH}\"",
-          "/workspace/gcloud/docker-credential-gcr configure-docker --registries=us-docker.pkg.dev",
-          join(" ", [
-            "docker buildx build . -f Dockerfile.case-triage-pathways --builder case-triage-pathways",
-            "--tag=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/default:latest",
-            "--cache-to",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:cache,mode=max",
-            "--cache-from",
-            "type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:cache",
-            "--push",
-            "--platform=linux/amd64,linux/arm64"
-          ])
-        ])
-      ]
-      id = "build-case-triage-pathways"
-      # Dockerfile.case-triage-pathways does `FROM recidiviz-base/default:latest`,
-      # so we must wait for recidiviz-base to be pushed before building this image.
-      wait_for   = ["create-build-context-case-triage-pathways", "build-recidiviz-base"]
-      entrypoint = "sh"
+        dynamic "volumes" {
+          for_each = lookup(step.value, "volumes", [])
+          content {
+            name = volumes.value.name
+            path = volumes.value.path
+          }
+        }
+      }
     }
     options {
-      machine_type = "E2_HIGHCPU_32"
+      machine_type = local.image_build_config.options.machine_type
     }
-    timeout = "3600s"
+    timeout = local.image_build_config.timeout
   }
 
   depends_on = [
