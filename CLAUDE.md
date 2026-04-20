@@ -1,11 +1,17 @@
 # CLAUDE.md
 
-Modify Claude.md and related files to add to claudes memory! If the developer
-needs to explain things multiple times, consider adding the information we're
-re-learning again and again to this file. Claude supports hierarchical
-documentation as well as imports. You can add to this file directly from a
-session using `/memory`. More documentation here:
-https://docs.claude.com/en/docs/claude-code/memory
+## Rules
+
+These apply to **every task** without exception:
+
+- **Python types**: Add type information to every function definition. Use modern types (`str | None` not `Optional[str]`). Avoid `Any` where reasonable.
+- **License headers**: Use the current year (e.g., `Copyright (C) 2026 Recidiviz, Inc.`) in new Python file headers. Look at recently created files for the correct format.
+- **No test imports in production**: Never import from `recidiviz/tests/` outside of `recidiviz/tests/`. Test utilities and constants must stay in test code.
+- **No obvious comments**: Don't add inline comments that explain things obvious from reading the code, or that are only meaningful in the current conversation context.
+- **TODO format**: Reference GitHub issues as `TODO(#12345)`. Use `TODO(XXXX)` as a placeholder before filing — this fails lint, forcing the task to be filed before merging. A closed issue doesn't necessarily mean the TODO was addressed.
+- **Data privacy**: Never access data from Maine (`US_ME`) or California (`US_CA`). If a query might touch this data, flag it to the user and confirm before running.
+- **US_ID vs US_IX**: Idaho uses two state codes (`US_ID` and `US_IX`) that historically shared the same codebase and data infrastructure. If working in Idaho-related code, confirm with the user which state code applies before proceeding.
+- **GitHub CLI**: Use `gh` for all GitHub operations (PRs, issues, etc.) — it has authenticated access to the private repo.
 
 ## Development Commands
 
@@ -17,79 +23,35 @@ https://docs.claude.com/en/docs/claude-code/memory
 - Run commands with: `uv run <cmd>`
 - Activate environment: `source .venv/bin/activate` or `make uv-shell`
 - Common tasks available via Makefile: `make help`
-- Whenever possible, use `gh` to examine pull requests (PRs), create PRs, etc --
-  this is because the `gh` cli has been authenticated to access our private
-  repo.
 
-### Python testing
+### Python Testing
 
-Tests for Python code live in `recidiviz/tests` directory. Generally, code is
-tested in a file whose name / path mirrors its name. For example,
-`recidiviz/big_query/big_query_view.py` has tests in
+Tests live in `recidiviz/tests/` and mirror the source path. For example,
+`recidiviz/big_query/big_query_view.py` is tested in
 `recidiviz/tests/big_query/big_query_view.py`.
 
-Running / configuring tests:
-
-- Run tests in a specific file: `uv run pytest recidiviz/tests/path/to/test_file.py`
-- Run all tests: `uv run pytest recidiviz`
-  - This is not a common development flow as it is slow and will be handled by
-    CI.
+- Run a specific test file: `uv run pytest recidiviz/tests/path/to/test_file.py`
+- Run all tests: `uv run pytest recidiviz` (slow — normally handled by CI)
 - Test configuration in `setup.cfg` with coverage settings
-- To make test discovery faster, exclude fixture directories
-
-### Python Code Style
-
-- When creating new Python files, use the current year in the license header
-  (e.g., `Copyright (C) 2026 Recidiviz, Inc.`). Look at recently created files
-  for the correct format.
-- Always add type information to every python function definition. Avoid using
-  Any where reasonable. Use modern python types, i.e. `str | None` instead of
-  `Optional[str]`.
-- Don't add inline comments to explain things that are blatantly obvious just by
-  reading the code or to explain something that is only meaningful in the
-  context of the current conversation.
-- Never import from `recidiviz/tests/` in production code (code outside of
-  `recidiviz/tests/`). Test utilities and constants should stay in test code.
 
 ### Code Quality
 
-- Lint:
-  - `./recidiviz/tools/lint/run_pylint.sh` - Runs differential `pylint` on
-    changed files and also some additional checks. Only works if on a branch
-    where code has been committed (i.e. HEAD != main).
-  - `make pylint` - Shortcut for the above
-- Type checking: `uv run mypy recidiviz`
-- Security checking: `uv run bandit` (configured in `.bandit` file)
-- Auto-formatting: `black` and `isort` (configured in pre-commit hooks)
-- Pre-commit hooks handle formatting automatically
+- Lint: `make pylint` (runs differential pylint on changed files; requires code to be committed, i.e. HEAD != main)
+- Type checking: `uv run mypy recidiviz/path/to/changed/file.py` (run on specific files; full-repo mypy is slow)
+- Security checking: `uv run bandit` (configured in `.bandit`)
+- Auto-formatting: `black` and `isort` run automatically via pre-commit hooks
 
 ### Docker Development
 
 - Build dev image: `make docker-build-dev`
 - Admin panel: `make docker-admin`
 
-### Github
+### Querying Actual Data
 
-- TODOs in code reference tasks in Github using a specific format:
-  - `TODO(#12345)` refers to a TODO that should be addressed by
-    https://github.com/Recidiviz/pulse-data/issues/12345
-  - `TODO(Recidiviz/looker#123)` refers to a TODO that should be addressed by
-    https://github.com/Recidiviz/looker/issues/123
-  - `TODO(XXXX)` can be used as a placeholder before filing a task - this will
-    cause lint to fail, ensuring the task gets filed before merging
-  - If you find a TODO in code that refers to a closed issue, it does not
-    necessarily mean it has been addressed, as tasks are sometimes erroneously
-    closed while TODOs still exist in code.
+The BigQuery (BQ) MCP server allows querying actual data. If no BQ MCP server
+is configured locally, use the `bq` CLI.
 
-### Querying actual data
-
-The BigQuery (BQ) MCP server allows you to query for actual data. If there is
-not a BQ MCP server configured locally, you should use the `bq` command line
-util to query data.
-
-However, never attempt to access any data from Maine or California. If you are
-worried a query you're running may access this data, please flag this to user
-and make sure they confirm before running the query.
+See the **Data privacy** rule above — never query ME or CA data.
 
 ## Codebase Architecture
 
@@ -97,27 +59,25 @@ and make sure they confirm before running the query.
 
 - **`recidiviz/`** - Main package with domain-specific modules:
   - **`admin_panel/`** - Administrative web interface
-  - **`aggregated_metrics/`** - BQ view generation framework for aggregated
-    metrics views
-  - **`airflow/`** - Apache Airflow logic for orchestration deployed in Google
-    Cloud Composer
-  - **`calculator/`** - Stores query logic for many (but not all) of our BQ
-    views
+  - **`aggregated_metrics/`** - BQ view generation framework for aggregated metrics views
+  - **`airflow/`** - Apache Airflow logic for orchestration deployed in Google Cloud Composer
+  - **`calculator/`** - Stores query logic for many (but not all) BQ views
   - **`case_triage/`** - Case triage and pathways functionality
   - **`documents/`** - Document storage and LLM-based extraction
   - **`ingest/`** - Data ingestion configuration for different states/sources
   - **`persistence/`** - Database schemas, entities, and data access
-  - **`pipelines/`** - Apache Beam data processing pipelines
-    - **`ingest/state`** - Pipeline for ingest (reads configurations from
-      `recidiviz/ingest/direct/regions`)
-  - **`tools/`** - Scripts that can be run locally, in CI, or in Cloud Build
-    jobs for development / operational uses.
-  - **`validation/`** - Framework for running validation and quality checks
+  - **`pipelines/`** - Apache Beam data processing pipelines (see [Pipelines Documentation](./recidiviz/pipelines/CLAUDE.md))
+    - **`ingest/`** - Ingest pipeline
+    - **`metrics/`** - Metric computation pipelines
+    - **`supplemental/`** - State-specific supplemental dataset pipelines
+    - **`batch_identity_clustering/`** - Identity resolution clustering pipeline
+  - **`tools/`** - Scripts for local, CI, or Cloud Build use
+  - **`validation/`** - Framework for validation and quality checks
   - **`workflows/`** - Workflow orchestration and ETL
 
 ### Key Patterns
 
-- Uses SQLAlchemy for database ORM (version pinned <2.0.0)
+- SQLAlchemy for database ORM (version pinned <2.0.0)
 - Apache Beam for data processing pipelines
 - Flask for web applications with Flask-SQLAlchemy-Session
 - Google Cloud Platform integration throughout
@@ -125,75 +85,34 @@ and make sure they confirm before running the query.
 
 ### Configuration
 
-- Environment-specific settings managed via utils/environment.py
+- Environment-specific settings managed via `recidiviz/utils/environment.py`
 - Database migrations handled by Alembic
 - Pre-commit hooks configured for code quality enforcement
-- Docker Compose files for different service combinations
 
 ## Additional Context
 
-- States are abbreviated as US_XX, where XX is the state code. US_ME = Maine,
-  for example. US_OZ is fake state used for testing only. Some additional "fake"
-  state codes (e.g. US_XX, US_YY, US_WW) are available in the context of
-  unittests. These should be used when testing generic functionality.
-- `US_ID` and `US_IX` share the same codebase and data infrastructure. When
-  searching for code (criteria, eligibility spans, task builders) or querying BQ
-  datasets, always use `US_IX` (e.g., `compliance_task_eligibility_spans_us_ix`).
-  Use `US_ID` only in `state_code` filters of BQ queries.
+States are abbreviated as `US_XX`. `US_OZ` is a fake state used for testing.
+Additional fake codes (`US_XX`, `US_YY`, `US_WW`) are available in unit tests
+and should be used when testing generic functionality.
 
-## Data Ingestion Process
+## Sub-module Documentation
 
-For detailed information about how raw data is imported, transformed through
-ingest views, and normalized into Recidiviz entities, see:
-
-- [Ingest Process Documentation](./recidiviz/ingest/CLAUDE.md)
-
-## BigQuery Tooling and Libraries
-
-For detailed information about how to work with BigQuery infrastructure,
-tooling, and libraries:
-
-- [BigQuery Documentation](./recidiviz/big_query/CLAUDE.md)
-
-## Document Extraction & Storage
-
-For detailed information about the document storage and LLM-based extraction
-system:
-
-- [Document Extraction Documentation](./recidiviz/NOT_FOR_PRODUCTION_USE/documents/CLAUDE.md)
-
-## Task Eligibility Spans
-
-For detailed information about how to work with task eligibility spans
-(criteria, candidate populations, completion events, eligibility spans):
-
-- [Task Eligibility Spans Documentation](./recidiviz/task_eligibility/CLAUDE.md)
+- [Ingest Process](./recidiviz/ingest/CLAUDE.md)
+- [Pipelines](./recidiviz/pipelines/CLAUDE.md)
+- [BigQuery Tooling](./recidiviz/big_query/CLAUDE.md)
+- [Document Extraction](./recidiviz/NOT_FOR_PRODUCTION_USE/documents/CLAUDE.md)
+- [Task Eligibility Spans](./recidiviz/task_eligibility/CLAUDE.md)
 
 ## Skills
 
-Skills are specific workflows or procedures that Claude can follow. Each skill
-is documented in its own directory under `.claude/skills/`. To create a new
-skill, add a directory with a `SKILL.md` file:
-
-- **`.claude/skills/[skill_name]/SKILL.md`** - Documentation for a specific
-  skill
-
-Available skills:
-
-- [Commit](./.claude/skills/commit/SKILL.md) - Commit uncommitted changes with
-  clear commit messages
-- [Create PR](./.claude/skills/create-pr/SKILL.md) - Create a GitHub PR for the
-  current branch
-- [Create Recidiviz Data GitHub Tasks](./.claude/skills/create_recidiviz_data_github_tasks/SKILL.md)
-- [Maintain Skill Files](./.claude/skills/maintain_skill_files/SKILL.md)
-- [Maintain CLAUDE.md Documentation](./.claude/skills/maintain_claude_md/SKILL.md)
-- [Upgrade Cloud Composer](./.claude/skills/upgrade_cloud_composer/SKILL.md)
-- [Investigate PG Ticket](./.claude/skills/investigate-pg-ticket/SKILL.md) -
-  Fetch a GitHub bug ticket, retrieve PII from go/github-pii, and suggest BQ
-  investigation paths
-- [TX Critically Understaffed](./.claude/skills/tx_critically_understaffed/SKILL.md) -
-  Transform and upload TX critically understaffed locations xlsx to GCS
+Skills are invocable workflows documented in `.claude/skills/[skill_name]/SKILL.md`.
+Available skills are listed in the system prompt at session start.
 
 # Personal preferences
+
+Each developer can maintain a personal local settings file at
+`.claude/pulse-data-local-settings.md`. This file is gitignored and never
+checked in. Use it for personal preferences, local paths, or any
+machine-specific context you want Claude to have.
 
 - @.claude/pulse-data-local-settings.md
