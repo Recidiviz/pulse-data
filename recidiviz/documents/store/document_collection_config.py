@@ -23,6 +23,7 @@ from types import ModuleType
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_attr_validators import (
     is_valid_unquoted_bq_identifier,
 )
@@ -30,7 +31,7 @@ from recidiviz.big_query.big_query_utils import (
     BigQueryFieldMode,
     to_validated_schema_field,
 )
-from recidiviz.common import attr_validators
+from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -46,6 +47,10 @@ from recidiviz.documents.store.document_store_columns import (
     get_document_store_column_schema,
 )
 from recidiviz.ingest.direct import regions as default_regions_module
+from recidiviz.ingest.direct.dataset_config import (
+    document_store_metadata_dataset_for_region,
+    document_store_temp_dataset_for_region,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DOCUMENT_COLLECTIONS_SUBDIR = "document_collections"
@@ -113,8 +118,9 @@ class DocumentCollectionConfig:
     name: str = attr.ib(validator=is_valid_unquoted_bq_identifier)
 
     # Description providing more detail about the collection, its intended use, and any other relevant information.
-    # TODO(#68777) enforce that description is meaningful and not a placeholder.
-    description: str = attr.ib(validator=attr_validators.is_str)
+    description: str = attr.ib(
+        validator=recidiviz_attr_validators.is_meaningful_description
+    )
 
     # Columns that uniquely identify a document within this collection. Includes root
     # entity columns (derived from root_entity_id_type) followed by document-specific
@@ -173,10 +179,15 @@ class DocumentCollectionConfig:
             get_document_store_column_schema(ROW_CREATE_DATETIME_COLUMN_NAME),
         ]
 
-    def build_bq_temp_table_schema(self) -> list[bigquery.SchemaField]:
-        """Returns the BigQuery schema for the temporary table used during
-        document processing. Includes document_text (not persisted to the final
-        metadata table) and excludes row_create_datetime (set at final write time).
+    def build_bq_temp_document_metadata_updates_schema(
+        self,
+    ) -> list[bigquery.SchemaField]:
+        """Returns the BigQuery schema for the temp document metadata updates
+        table that contains rows where there were any changes to
+        document_contents_id or another metadata column for each primary key in
+        this collection. Includes document_text (not persisted to the final
+        metadata table) and excludes row_create_datetime (set at final write
+        time).
         """
         return [
             *self.primary_key_columns,
@@ -185,6 +196,43 @@ class DocumentCollectionConfig:
             get_document_store_column_schema(DOCUMENT_TEXT_COLUMN_NAME),
             get_document_store_column_schema(DOCUMENT_UPDATE_DATETIME_COLUMN_NAME),
         ]
+
+    def temp_document_metadata_updates_table_address(
+        self, project_id: str, job_id: str
+    ) -> ProjectSpecificBigQueryAddress:
+        """Returns the BigQuery address for the temp document metadata updates
+        table that contains rows where there were any changes to
+        document_contents_id or another metadata column for each primary key in
+        this collection."""
+        return ProjectSpecificBigQueryAddress(
+            project_id=project_id,
+            dataset_id=document_store_metadata_dataset_for_region(self.state_code),
+            table_id=f"temp_document_metadata_updates_{self.name}_{job_id}",
+        )
+
+    def build_bq_temp_new_document_contents_schema(self) -> list[bigquery.SchemaField]:
+        """Returns the BigQuery schema for the temp new document contents table
+        that tracks which document_contents_ids in this collection have not yet
+        been uploaded for the state. This is the table read from to perform the
+        actual document upload.
+        """
+        return [
+            get_document_store_column_schema(DOCUMENT_CONTENTS_ID_COLUMN_NAME),
+            get_document_store_column_schema(DOCUMENT_TEXT_COLUMN_NAME),
+        ]
+
+    def temp_new_document_contents_table_address(
+        self, project_id: str, job_id: str
+    ) -> ProjectSpecificBigQueryAddress:
+        """Returns the BigQuery address for the temp new document contents table
+        that tracks which document_contents_ids in this collection have not yet
+        been uploaded for the state. This is the table read from to perform the
+        actual document upload."""
+        return ProjectSpecificBigQueryAddress(
+            project_id=project_id,
+            dataset_id=document_store_temp_dataset_for_region(self.state_code),
+            table_id=f"temp_new_document_contents_{self.name}_{job_id}",
+        )
 
     @classmethod
     def from_yaml(cls, yaml_path: Path) -> "DocumentCollectionConfig":

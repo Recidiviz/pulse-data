@@ -18,6 +18,12 @@
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    document_store_metadata_dataset_for_region,
+)
+
 DOCUMENT_UPLOAD_SUCCESS = "SUCCESS"
 DOCUMENT_UPLOAD_FAILURE = "FAILURE"
 
@@ -64,3 +70,14 @@ class DocumentUploadStatusTable:
                 description=f"Error details if {DOCUMENT_UPLOAD_FAILURE}, NULL if {DOCUMENT_UPLOAD_SUCCESS}",
             ),
         ]
+
+    @classmethod
+    def get_table_address(
+        cls, project_id: str, state_code: StateCode
+    ) -> ProjectSpecificBigQueryAddress:
+        """Returns the BigQuery address for the document_upload_status table."""
+        return ProjectSpecificBigQueryAddress(
+            project_id=project_id,
+            dataset_id=document_store_metadata_dataset_for_region(state_code),
+            table_id=cls.table_id,
+        )

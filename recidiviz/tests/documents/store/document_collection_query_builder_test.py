@@ -52,7 +52,8 @@ class TestBuildDocumentGenerationQuery(unittest.TestCase):
             configs = collect_document_collection_configs(state_code)
             for config in configs.values():
                 expected_columns = {
-                    field.name for field in config.build_bq_temp_table_schema()
+                    field.name
+                    for field in config.build_bq_temp_document_metadata_updates_schema()
                 }
                 query = DocumentCollectionDiffQueryBuilder(
                     project_id="test-project",
@@ -158,15 +159,15 @@ class TestBuildNewDocumentsQuery(BigQueryEmulatorTestCase):
         self.config = get_document_collection_config(
             StateCode.US_XX, "fake_case_notes", fake_regions
         )
-        dataset_id = document_store_metadata_dataset_for_region(StateCode.US_XX)
-        self.temp_metadata_address = BigQueryAddress(
-            dataset_id=dataset_id,
-            table_id=f"{self.config.name}_temp_metadata",
+        self.temp_document_metadata_updates_address = (
+            self.config.temp_document_metadata_updates_table_address(
+                self.project_id, "test_job_id"
+            )
         )
-        self.upload_status_address = BigQueryAddress(
-            dataset_id=dataset_id,
-            table_id=DocumentUploadStatusTable.table_id,
+        self.upload_status_address = DocumentUploadStatusTable.get_table_address(
+            project_id=self.project_id, state_code=StateCode.US_XX
         )
+
         self.fixture_dir = Path(new_documents.__file__).parent
 
     def _fixture_path(self, fixture_name: str) -> Path:
@@ -181,14 +182,14 @@ class TestBuildNewDocumentsQuery(BigQueryEmulatorTestCase):
         - NOTE_6: previously failed upload, included
         """
         self.load_fixture_into_table(
-            address=self.temp_metadata_address,
-            schema=self.config.build_bq_temp_table_schema(),
+            address=self.temp_document_metadata_updates_address.to_project_agnostic_address(),
+            schema=self.config.build_bq_temp_document_metadata_updates_schema(),
             fixture_path=self._fixture_path("temp_metadata_input"),
             fixture_columns=None,
             allow_comments=False,
         )
         self.load_fixture_into_table(
-            address=self.upload_status_address,
+            address=self.upload_status_address.to_project_agnostic_address(),
             schema=DocumentUploadStatusTable.schema(),
             fixture_path=self._fixture_path("upload_status_input"),
             fixture_columns=None,
@@ -196,12 +197,8 @@ class TestBuildNewDocumentsQuery(BigQueryEmulatorTestCase):
         )
 
         query = DocumentCollectionDiffQueryBuilder.build_new_documents_query(
-            temp_metadata_address=self.temp_metadata_address.to_project_specific_address(
-                self.project_id
-            ),
-            upload_status_address=self.upload_status_address.to_project_specific_address(
-                self.project_id
-            ),
+            temp_document_metadata_updates_address=self.temp_document_metadata_updates_address,
+            upload_status_address=self.upload_status_address,
         )
         results = self.query(query)
 
@@ -215,21 +212,17 @@ class TestBuildNewDocumentsQuery(BigQueryEmulatorTestCase):
 
     def test_empty_temp_metadata(self) -> None:
         self.create_mock_table(
-            self.temp_metadata_address,
-            schema=self.config.build_bq_temp_table_schema(),
+            self.temp_document_metadata_updates_address.to_project_agnostic_address(),
+            schema=self.config.build_bq_temp_document_metadata_updates_schema(),
         )
         self.create_mock_table(
-            self.upload_status_address,
+            self.upload_status_address.to_project_agnostic_address(),
             schema=DocumentUploadStatusTable.schema(),
         )
 
         query = DocumentCollectionDiffQueryBuilder.build_new_documents_query(
-            temp_metadata_address=self.temp_metadata_address.to_project_specific_address(
-                self.project_id
-            ),
-            upload_status_address=self.upload_status_address.to_project_specific_address(
-                self.project_id
-            ),
+            temp_document_metadata_updates_address=self.temp_document_metadata_updates_address,
+            upload_status_address=self.upload_status_address,
         )
         results = self.query(query)
         self.assertEqual(len(results), 0)

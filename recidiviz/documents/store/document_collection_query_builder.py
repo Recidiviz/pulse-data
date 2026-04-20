@@ -93,7 +93,7 @@ FROM ({inner_query})"""
             project_id=self.project_id,
         ).build_latest_documents_query(config)
 
-        temp_table_schema = config.build_bq_temp_table_schema()
+        temp_table_schema = config.build_bq_temp_document_metadata_updates_schema()
 
         join_clause = join_on_columns_fragment(
             config.primary_key_column_names, table1="new_docs", table2="current_docs"
@@ -160,23 +160,23 @@ SELECT {output_columns} FROM deleted"""
 
     @staticmethod
     def build_new_documents_query(
-        temp_metadata_address: ProjectSpecificBigQueryAddress,
+        temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
         upload_status_address: ProjectSpecificBigQueryAddress,
     ) -> str:
         """Builds a query that selects distinct (document_contents_id, document_text)
         pairs from the temp metadata diff table that have not already been
-        successfully uploaded in the state, and assigns each a 1-indexed sequence_num.
+        successfully uploaded in the state, and assigns each a 0-indexed sequence_num.
         """
         return f"""
 SELECT
     {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
     {DOCUMENT_TEXT_COLUMN_NAME},
-    ROW_NUMBER() OVER (ORDER BY {DOCUMENT_CONTENTS_ID_COLUMN_NAME}) AS {SEQUENCE_NUM_COLUMN_NAME}
+    ROW_NUMBER() OVER (ORDER BY {DOCUMENT_CONTENTS_ID_COLUMN_NAME}) - 1 AS {SEQUENCE_NUM_COLUMN_NAME}
 FROM (
     SELECT DISTINCT
         {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
         {DOCUMENT_TEXT_COLUMN_NAME}
-    FROM {temp_metadata_address.format_address_for_query()}
+    FROM {temp_document_metadata_updates_address.format_address_for_query()}
     WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL
 )
 WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
