@@ -180,11 +180,23 @@ def create_deployment_build_api_obj(
         ),
     ]
 
-    if build_configuration.uses_source:
+    source_volume_consumed = any(
+        any(v.name == RECIDIVIZ_SOURCE_VOLUME.name for v in step.volumes)
+        for step in build_configuration.steps
+    )
+    if build_configuration.uses_source and source_volume_consumed:
         additional_steps.append(
-            # This is effectively a no-op for deployment runs as the checked out source will be the same
-            # as what is bundled for the image.
-            # For Pull Requests / Continuous Delivery, this will allow us to use not-yet deployed code in the build
+            # Copies the checked-out source into the shared RECIDIVIZ_SOURCE_VOLUME
+            # so downstream steps that mount the volume (e.g. Airflow sync, PR
+            # comment upsert) see the webhook-specified commit's code rather
+            # than whatever is baked into their container images.
+            #
+            # Only added when a downstream step actually consumes the volume:
+            # Cloud Build validates that named volumes are mounted by >= 2
+            # steps, since a single-mounting means nothing reads what was
+            # written — almost always a configuration error. `uses_source=True`
+            # stages that have no consumer (e.g. BuildImages) skip the Copy
+            # step entirely.
             build_step_for_shell_command(
                 id_="Copy Git source to shared volume",
                 name=BUILDER_GCLOUD,

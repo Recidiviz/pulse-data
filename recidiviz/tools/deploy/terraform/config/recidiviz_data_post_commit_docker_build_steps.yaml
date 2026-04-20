@@ -12,15 +12,6 @@ steps:
       - /workspace
     id: Give non-root users access to /workspace/ volume
     entrypoint: chmod
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    args:
-      - -c
-      - cp -pr /workspace/recidiviz/* /app/recidiviz
-    id: Copy Git source to shared volume
-    entrypoint: sh
-    volumes:
-      - name: git-source
-        path: /app/recidiviz/
   - name: alpine
     args:
       - -c
