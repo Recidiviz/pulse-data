@@ -1126,6 +1126,7 @@ FILES_EXEMPT_FROM_AUTOMATIC_RAW_DATA_PRUNING_BY_STATE: dict[
         "RECIDIVIZ_REFERENCE_supervision_location_ids": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "RECIDIVIZ_REF_violent_crimes_codes": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "docstars_LSI_NEED": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
+        "docstars_OFFENDER_ACTIVE_BOOKINGS": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "docstars_REF_FTR_PENDING_REASON": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "docstars_REF_PROVIDER_LOCATION": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
         "docstars_REF_SPECIAL_CONDITION": AutomaticRawDataPruningExemptionReason.NEEDS_FULL_REIMPORT,
