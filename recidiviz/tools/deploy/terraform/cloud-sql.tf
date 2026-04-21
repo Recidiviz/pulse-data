@@ -46,8 +46,8 @@ module "operations_database_cmek" {
   instance_key     = "operations"
   base_secret_name = "operations_v2"
   region           = var.us_east_region
-  zone             = "us-east1-c"
-  secondary_zone   = var.project_id == "recidiviz-staging" ? "us-east1-b" : "us-east1-c"
+  zone             = "us-east1-b"
+  secondary_zone   = "us-east1-c"
   tier             = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   insights_config  = null
 
