@@ -43,6 +43,11 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     },
     StateCode.US_IA: {
         "IA_DOC_Charges": ["ArrestDt", "MPD", "OffenseDt", "SDD", "TDD"],
+        "IA_DOC_Interventions": [
+            "EligibilityDt",
+            "InterventionEndDt",
+            "InterventionStartDt",
+        ],
         "IA_DOC_Supervision_Modifiers": [
             "HoldEndDt",
             "HoldStartDt",
@@ -326,11 +331,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         ],
         "IA_DOC_FieldRuleViolations": ["EnteredDt"],
         "IA_DOC_FieldandResidentialRules": ["EndDt", "StartDt"],
-        "IA_DOC_Interventions": [
-            "EligibilityDt",
-            "InterventionEndDt",
-            "InterventionStartDt",
-        ],
         "IA_DOC_Movements": ["MovementDt"],
         "IA_DOC_OffenderWorkUnits": ["WorkUnitStartDt"],
         "IA_DOC_Offender_Details": ["DeceasedDt"],
@@ -947,6 +947,9 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
     StateCode.US_CA: {
         "ParoleHousing": ["ADDREFFECTIVEDATE", "ADDRENDDATE"],
     },
+    StateCode.US_IA: {
+        "IA_DOC_MAINT_Interventions": ["EnteredDt"],
+    },
     StateCode.US_IX: {
         "clsf_OffenderSecurityLevelAct": ["InsertDate", "UpdateDate"],
         "com_PSIReport": [
@@ -1270,7 +1273,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
         "IA_DOC_MAINT_InterventionLocations": ["EnteredDt"],
         "IA_DOC_MAINT_InterventionProgramLocations": ["EnteredDt"],
         "IA_DOC_MAINT_InterventionPrograms": ["EnteredDt"],
-        "IA_DOC_MAINT_Interventions": ["EnteredDt"],
         "IA_DOC_MilitaryInfo": ["EndDt", "EnteredDt", "StartDt"],
         "IA_DOC_Names": ["EnteredDt"],
         "IA_DOC_PSI": [

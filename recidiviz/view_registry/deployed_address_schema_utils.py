@@ -32,6 +32,21 @@ from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_p
 from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable_housing_status_periods import (
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_completed_sessions import (
+    US_IA_PROGRAM_INVENTORY_COMPLETED_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage import (
+    US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage_timeseries import (
+    US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_occurring_interventions import (
+    US_IA_PROGRAM_INVENTORY_OCCURRING_INTERVENTIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_office_visits import (
+    US_IA_PROGRAM_INVENTORY_OFFICE_VISITS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_level_raw_text_mappings import (
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
 )
@@ -236,6 +251,11 @@ def state_specific_deployed_views_without_state_code_columns(
         *raw_data_views_no_state_code_column,
         US_AR_RESIDENT_METADATA_VIEW_BUILDER.address,
         US_AZ_ACTION_QUEUE_VIEW_BUILDER.address,
+        US_IA_PROGRAM_INVENTORY_OFFICE_VISITS_VIEW_BUILDER.address,
+        US_IA_PROGRAM_INVENTORY_OCCURRING_INTERVENTIONS_VIEW_BUILDER.address,
+        US_IA_PROGRAM_INVENTORY_COMPLETED_SESSIONS_VIEW_BUILDER.address,
+        US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER.address,
+        US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER.address,
         US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address,
         US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER.address,
         US_IX_RESIDENT_METADATA_VIEW_BUILDER.address,

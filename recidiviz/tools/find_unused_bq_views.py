@@ -54,6 +54,12 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage import (
+    US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ia.us_ia_program_inventory_dosage_timeseries import (
+    US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_address_and_form_info_preprocessed import (
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER,
 )
@@ -506,6 +512,14 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_PA_ADDRESS_AND_FORM_PREPROCESSED_VIEW_BUILDER.address: (
         "Preprocessed view of address and form information entry, will be used in upcoming MA-ID validations (Ethan Oro, 11/25/25)"
+    ),
+    US_IA_PROGRAM_INVENTORY_DOSAGE_VIEW_BUILDER.address: (
+        "View used in IA program inventory sheet. https://docs.google.com/spreadsheets/d/1YhwoBkBEBIQ9-k3NX8qxSL3aYobD2xTGYoZhBuefRaw/edit?usp=sharing"
+        "(CJ Knoble, 04/13/26)"
+    ),
+    US_IA_PROGRAM_INVENTORY_DOSAGE_TIMESERIES_VIEW_BUILDER.address: (
+        "View used in IA program inventory sheet. https://docs.google.com/spreadsheets/d/1YhwoBkBEBIQ9-k3NX8qxSL3aYobD2xTGYoZhBuefRaw/edit?usp=sharing"
+        "(CJ Knoble, 04/13/26)"
     ),
     BigQueryAddress.from_str("segment_events.all_client_page_segment_events"): (
         "Union view for client page segment events. Kept for potential future use. "
