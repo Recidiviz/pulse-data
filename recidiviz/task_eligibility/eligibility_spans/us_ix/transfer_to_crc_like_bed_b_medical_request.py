@@ -17,8 +17,8 @@
 """
 Shows the spans of time during which someone in ID is eligible
 for a transfer to a Community Reentry Center (CRC)-like bed in South Idaho
-Correctional Institution (SICI) or Idaho Correctional Institution-Orofino (ICIO)
-according to criteria B.
+Correctional Institution (SICI), Idaho Correctional Institution-Orofino (ICIO),
+or Pocatello Women's Correctional Center (PWCC) according to criteria B.
 
 Criteria B re-uses the CRC work release time-based criteria and requires them to be
 marked medically ineligible for a CRC release.

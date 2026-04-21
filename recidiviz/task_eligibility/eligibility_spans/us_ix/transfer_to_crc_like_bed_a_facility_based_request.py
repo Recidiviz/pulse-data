@@ -17,8 +17,8 @@
 """
 Shows the spans of time during which someone in ID is eligible
 for a transfer to a Community Reentry Center (CRC)-like bed in South Idaho
-Correctional Institution (SICI) or Idaho Correctional Institution-Orofino (ICIO)
-according to criteria A.
+Correctional Institution (SICI), Idaho Correctional Institution-Orofino (ICIO),
+or Pocatello Women's Correctional Center (PWCC) according to criteria A.
 
 Criteria A uses its own time-based criteria based on offense severity,
 """
@@ -35,7 +35,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_like_bed_time_based_criteria,
-    in_sici_or_icio_or_relevant_release_notes,
+    in_crc_like_bed_facility_or_relevant_release_notes,
     not_denied_for_crc,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -61,8 +61,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *CRC_WORK_RELEASE_NOT_TIME_BASED,
         # Time-based criteria (low severity OR high severity)
         crc_like_bed_time_based_criteria.VIEW_BUILDER,
-        # Must be a resident of SICI, or ICIO, or expected to be released in a relevant district
-        in_sici_or_icio_or_relevant_release_notes.VIEW_BUILDER,
+        # Must be a resident of SICI, ICIO, or PWCC, or expected to be released in a relevant district
+        in_crc_like_bed_facility_or_relevant_release_notes.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
