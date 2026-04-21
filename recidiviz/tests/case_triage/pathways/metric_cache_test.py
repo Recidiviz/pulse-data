@@ -149,6 +149,49 @@ class PathwaysMetricCacheTest(TestCase):
             )
             mock_metric_fetcher.fetch.assert_not_called()
 
+    def test_reset_cache_logs(self) -> None:
+        with patch.object(self.metric_cache, "metric_fetcher") as mock_metric_fetcher:
+            mock_metric_fetcher.fetch.return_value = {}
+
+            mock_mapper = MagicMock(
+                build_params=lambda kwargs: CountByDimensionMetricParams(**kwargs),
+                cache_fragment="MockMetric",
+                dimension_mapping_collection=DimensionMappingCollection(
+                    [
+                        DimensionMapping(
+                            dimension=Dimension.GENDER,
+                            operations=DimensionOperation.GROUP,
+                        ),
+                    ]
+                ),
+            )
+            mock_mapper.configure_mock(name="MockMetric")
+
+            # Pre-populate a key so purge has something to delete
+            self.redis.set("US_XX MockMetric some_key", "value")
+
+            with self.assertLogs(level="INFO") as log:
+                self.metric_cache.reset_cache(mock_mapper)
+
+            self.assertTrue(
+                any(
+                    "Resetting cache for PATHWAYS/US_XX/MockMetric" in msg
+                    for msg in log.output
+                )
+            )
+            self.assertTrue(
+                any(
+                    "Purged 1 cache keys for PATHWAYS/US_XX/MockMetric" in msg
+                    for msg in log.output
+                )
+            )
+            self.assertTrue(
+                any(
+                    "Cache warming complete for PATHWAYS/US_XX/MockMetric" in msg
+                    for msg in log.output
+                )
+            )
+
     def test_initialize_cache(self) -> None:
         mock_metric_fetcher = MagicMock()
         with patch.object(self.metric_cache, "metric_fetcher") as mock_metric_fetcher:

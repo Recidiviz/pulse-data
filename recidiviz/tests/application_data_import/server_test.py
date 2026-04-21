@@ -405,6 +405,41 @@ class TestApplicationDataImportPathwaysRoutes(PathwaysRoutesTestMixin):
         autospec=True,
     )
     @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.PathwaysMetricCache",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_pathways_cache_warming_error(
+        self,
+        _mock_redis: MagicMock,
+        mock_metric_cache: MagicMock,
+        _mock_import_csv: MagicMock,
+    ) -> None:
+        mock_metric_cache.return_value.reset_cache.side_effect = Exception(
+            "Redis connection failed"
+        )
+        with self.app.test_request_context():
+            with self.assertLogs(level="INFO") as log:
+                response = self.client.post(
+                    f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
+                )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertTrue(
+                any(
+                    "Failed to reset/warm cache for PATHWAYS/US_XX/LibertyToPrisonTransitions"
+                    in msg
+                    for msg in log.output
+                )
+            )
+
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
         "recidiviz.case_triage.shared_pathways.metric_cache.get_pathways_metric_redis",
         return_value=FakeRedis(),
     )
@@ -711,6 +746,41 @@ class TestApplicationDataImportPublicPathwaysRoutes(PathwaysRoutesTestMixin):
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.PathwaysMetricCache",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.shared_pathways.metric_cache.get_public_pathways_metric_redis",
+        return_value=FakeRedis(),
+    )
+    def test_import_public_pathways_cache_warming_error(
+        self,
+        _mock_redis: MagicMock,
+        mock_metric_cache: MagicMock,
+        _mock_import_csv: MagicMock,
+    ) -> None:
+        mock_metric_cache.return_value.reset_cache.side_effect = Exception(
+            "Redis connection failed"
+        )
+        with self.app.test_request_context():
+            with self.assertLogs(level="INFO") as log:
+                response = self.client.post(
+                    f"{self.import_route}/{self.state_code}/{self.pathways_view}.csv",
+                )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertTrue(
+                any(
+                    "Failed to reset/warm cache for PUBLIC_PATHWAYS/US_XX/PublicPrisonPopulationOverTime"
+                    in msg
+                    for msg in log.output
+                )
+            )
 
     @patch(
         "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",

@@ -521,14 +521,24 @@ def _import_pathways_helper(
     )
 
     if reset_cache:
-        metric_cache = PathwaysMetricCache.build(
-            StateCode(state_code),
-            schema_type=schema_type,
-            enabled_states=enabled_states_getter(),
-            metadata_model=schema_module.MetricMetadata,
-        )
-        for metric in get_metrics_for_entity(db_entity):
-            metric_cache.reset_cache(metric)
+        try:
+            metric_cache = PathwaysMetricCache.build(
+                StateCode(state_code),
+                schema_type=schema_type,
+                enabled_states=enabled_states_getter(),
+                metadata_model=schema_module.MetricMetadata,
+            )
+            for metric in get_metrics_for_entity(db_entity):
+                metric_cache.reset_cache(metric)
+        except Exception as e:
+            logging.error(
+                "Failed to reset/warm cache for %s/%s/%s: %s",
+                schema_type.value,
+                state_code,
+                db_entity.__name__,
+                e,
+                exc_info=True,
+            )
 
     return "", HTTPStatus.OK
 

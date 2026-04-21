@@ -38,6 +38,7 @@ from recidiviz.case_triage.pathways.enabled_metrics import (
     ALL_PATHWAYS_METRICS_BY_STATE_CODE,
 )
 from recidiviz.case_triage.shared_pathways.metric_cache import PathwaysMetricCache
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     MetricMetadata as PathwaysMetricMetadata,
 )
@@ -85,6 +86,8 @@ if __name__ == "__main__":
 
     for state, metric_list in enabled_metrics_by_state.items():
         if state.value not in enabled_states:
+            continue
+        if state == StateCode.US_OZ:
             continue
         metric_cache = PathwaysMetricCache.build(
             state,

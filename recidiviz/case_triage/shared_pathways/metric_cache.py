@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Interface for fetching metrics from Pathways Cloud Memorystore, falling back to Cloud SQL """
+import logging
 from typing import List, Mapping, Union
 
 import attr
@@ -87,14 +88,35 @@ class PathwaysMetricCache:
         cache_key_pattern = f"{self.state_code.value} {mapper.cache_fragment}*"
         pipe = self.redis.pipeline()
 
+        keys_purged = 0
         for key in self.redis.scan_iter(cache_key_pattern):
             pipe.delete(key)
+            keys_purged += 1
 
         pipe.execute()
+        logging.info(
+            "Purged %d cache keys for %s/%s/%s",
+            keys_purged,
+            self.schema_type.value,
+            self.state_code.value,
+            mapper.name,
+        )
 
     def reset_cache(self, mapper: MetricQueryBuilder) -> None:
+        logging.info(
+            "Resetting cache for %s/%s/%s",
+            self.schema_type.value,
+            self.state_code.value,
+            mapper.name,
+        )
         self.purge_cache_for_mapper(mapper)
         self.initialize_cache(mapper)
+        logging.info(
+            "Cache warming complete for %s/%s/%s",
+            self.schema_type.value,
+            self.state_code.value,
+            mapper.name,
+        )
 
     def initialize_cache(self, mapper: MetricQueryBuilder) -> None:
         operable_dimensions = mapper.dimension_mapping_collection.operable_map
