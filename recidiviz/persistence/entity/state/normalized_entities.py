@@ -1271,21 +1271,16 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
             )
         return []
 
-    @property
-    def first_serving_status_to_terminating_status_dt_range(
+    def _first_qualifying_to_terminating_status_dt_range(
         self,
+        qualifying_statuses: set[StateSentenceStatus],
     ) -> PotentiallyOpenDateTimeRange | None:
-        """
-        Returns the datetime range from a sentence's first serving status to
-        its completion (if it is completed).
-
-        Some sentences may not have any serving statuses (e.g. consecutive sentences
-        that have been imposed and not started yet). These sentences will return None.
-        """
+        """Shared helper for `first_serving_status_to_terminating_status_dt_range`
+        and `first_serving_or_pending_status_to_terminating_status_dt_range`.
+        Returns the datetime range from the first snapshot whose status is in
+        `qualifying_statuses` to the sentence's completion (if completed)."""
         serving_snapshots = [
-            s
-            for s in self.sentence_status_snapshots
-            if s.status.is_considered_serving_status
+            s for s in self.sentence_status_snapshots if s.status in qualifying_statuses
         ]
         if not serving_snapshots:
             return None
@@ -1306,6 +1301,55 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
         return PotentiallyOpenDateTimeRange(
             lower_bound_inclusive=first_serving.status_update_datetime,
             upper_bound_exclusive=end_dt,
+        )
+
+    @property
+    def first_serving_status_to_terminating_status_dt_range(
+        self,
+    ) -> PotentiallyOpenDateTimeRange | None:
+        """
+        Returns the datetime range from a sentence's first serving status to
+        its completion (if it is completed).
+
+        Some sentences may not have any serving statuses (e.g. consecutive sentences
+        that have been imposed and not started yet). These sentences will return None.
+
+        Used by callers that care about when real serving actually began -- e.g.
+        `infer_sentence_groups.py` populating
+        NormalizedStateSentenceImposedGroup.serving_start_date, which must not
+        be populated from an IMPOSED_PENDING_SERVING snapshot alone (the person
+        has not actually started serving yet in that case).
+        """
+        return self._first_qualifying_to_terminating_status_dt_range(
+            {
+                status
+                for status in StateSentenceStatus
+                if status.is_considered_serving_status
+            }
+        )
+
+    @property
+    def first_serving_or_pending_status_to_terminating_status_dt_range(
+        self,
+    ) -> PotentiallyOpenDateTimeRange | None:
+        """
+        Like `first_serving_status_to_terminating_status_dt_range` but also
+        counts IMPOSED_PENDING_SERVING as a qualifying start status.
+
+        Used by the overlap-detection helper
+        `sentences_have_contiguous_or_overlapping_serving` when building
+        inferred sentence groups. A sentence that only has an
+        IMPOSED_PENDING_SERVING window should still be detected as overlapping
+        with a concurrently-serving sentence, so we treat IPS as a qualifying
+        start for this purpose.
+        """
+        return self._first_qualifying_to_terminating_status_dt_range(
+            {
+                status
+                for status in StateSentenceStatus
+                if status.is_considered_serving_status
+            }
+            | {StateSentenceStatus.IMPOSED_PENDING_SERVING}
         )
 
     @classmethod

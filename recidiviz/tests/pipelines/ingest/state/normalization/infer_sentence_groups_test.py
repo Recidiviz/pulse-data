@@ -1264,3 +1264,68 @@ class TestImposedSentenceGroups(unittest.TestCase):
             ],
         )
         assert len(groups) == 3
+
+    def test_imposed_group_serving_start_date_ignores_imposed_pending_serving(
+        self,
+    ) -> None:
+        """
+        An imposed group's serving_start_date should reflect when real serving
+        began, not when a consecutive sentence was imposed. A sentence that
+        has only an IMPOSED_PENDING_SERVING snapshot has not actually started
+        serving, so it should not contribute to the group's serving_start_date.
+
+        Example: two sentences imposed together on JAN_01. Sentence A begins
+        actively serving on FEB_01. Sentence B is a consecutive sentence that
+        has not started serving yet (only IMPOSED_PENDING_SERVING at JAN_01).
+        The group's serving_start_date should be FEB_01, not JAN_01.
+        """
+        sentence_a = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_1_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
+            sentence_group_external_id=None,
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
+            imposed_date=self.JAN_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.FEB_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
+            charges=[self.CHARGE_1],
+        )
+        sentence_b = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_2_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
+            sentence_group_external_id=None,
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
+            imposed_date=self.JAN_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
+                    sentence_status_snapshot_id=2,
+                ),
+            ],
+            charges=[self.CHARGE_1],
+        )
+        imposed_group = build_imposed_group_from_sentences(
+            self.STATE_CODE, self.DELEGATE, [sentence_a, sentence_b]
+        )
+        # serving_start_date should be FEB_01 (from sentence_a's real serving),
+        # NOT JAN_01 (which is sentence_b's IMPOSED_PENDING_SERVING date).
+        assert imposed_group.serving_start_date == self.FEB_01

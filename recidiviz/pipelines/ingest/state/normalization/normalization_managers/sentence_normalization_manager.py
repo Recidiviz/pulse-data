@@ -164,8 +164,8 @@ def sentences_have_contiguous_or_overlapping_serving(
     This is for the purpose of identifying sentences we intend to infer together
     into a NormalizedStateSentenceInferredGroup.
     """
-    span1 = s1.first_serving_status_to_terminating_status_dt_range
-    span2 = s2.first_serving_status_to_terminating_status_dt_range
+    span1 = s1.first_serving_or_pending_status_to_terminating_status_dt_range
+    span2 = s2.first_serving_or_pending_status_to_terminating_status_dt_range
     if not (span1 and span2):
         return False
     if span1.lower_bound_inclusive in span2 or span2.lower_bound_inclusive in span1:
@@ -262,6 +262,20 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         If True, if we see a StateSentenceStatusSnapshot that is not the last status for a sentence which
         has status COMPLETED, correct that status to SERVING. Otherwise, we'll throw if we see a COMPLETED
         status that is followed by other statuses.
+        """
+        return False
+
+    @property
+    def infer_imposed_pending_serving_from_imposed_date(self) -> bool:
+        """
+        If True, when a sentence has an imposed_date and either:
+          - no current_state_provided_start_date, or
+          - an imposed_date that is before the current_state_provided_start_date,
+        we will create an IMPOSED_PENDING_SERVING status snapshot at the imposed_date.
+
+        This captures the period between when a sentence was imposed and when it
+        began being actively served. For sentences without an effective date, this
+        ensures they are still represented in status snapshots.
         """
         return False
 

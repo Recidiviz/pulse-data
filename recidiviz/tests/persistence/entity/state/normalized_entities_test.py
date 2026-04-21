@@ -666,6 +666,58 @@ class TestSentencingEntities(unittest.TestCase):
         assert dt_range.lower_bound_inclusive == first_dt
         assert dt_range.upper_bound_exclusive is None
 
+    def test_first_serving_or_pending_status_to_terminating_status_dt_range__imposed_pending_serving(
+        self,
+    ) -> None:
+        """IMPOSED_PENDING_SERVING should be treated as a qualifying start
+        status for the serving-or-pending range, even though
+        is_considered_serving_status is False for IPS.
+
+        The plain first_serving_status_to_terminating_status_dt_range should
+        ignore IPS and return None for this sentence (no actually-serving
+        snapshot exists -- completed happens straight after IPS).
+        """
+        imposed_dt = datetime.datetime(2022, 1, 1, 0)
+        completed_dt = datetime.datetime(2022, 6, 15, 0)
+        sentence = normalized_entities.NormalizedStateSentence(
+            external_id="test",
+            sentence_id=1,
+            sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
+            state_code=StateCode.US_XX.value,
+            imposed_date=imposed_dt.date(),
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            sentence_status_snapshots=[
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=imposed_dt,
+                    status_end_datetime=completed_dt,
+                    status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
+                    sentence_status_snapshot_id=11,
+                    sequence_num=1,
+                ),
+                normalized_entities.NormalizedStateSentenceStatusSnapshot(
+                    state_code=StateCode.US_XX.value,
+                    status_update_datetime=completed_dt,
+                    status_end_datetime=None,
+                    status=StateSentenceStatus.COMPLETED,
+                    sentence_status_snapshot_id=12,
+                    sequence_num=2,
+                ),
+            ],
+        )
+        # first_serving_... ignores IPS.
+        assert sentence.first_serving_status_to_terminating_status_dt_range is None
+
+        # first_serving_or_pending_... includes IPS as a qualifying start.
+        dt_range = (
+            sentence.first_serving_or_pending_status_to_terminating_status_dt_range
+        )
+        assert dt_range is not None
+        assert dt_range.lower_bound_inclusive == imposed_dt
+        assert dt_range.upper_bound_exclusive == completed_dt
+
     def test_first_serving_status_to_terminating_status_dt_range__no_snapshots(
         self,
     ) -> None:

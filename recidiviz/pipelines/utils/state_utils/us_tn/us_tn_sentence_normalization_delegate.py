@@ -24,6 +24,13 @@ class UsTnSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
     """US_TN implementation of the StateSpecificSentenceNormalizationDelegate."""
 
     @property
+    def infer_imposed_pending_serving_from_imposed_date(self) -> bool:
+        """TN provides an effective date (SentenceEffectiveDate) as the serving start,
+        but many sentences have null or future effective dates. We create
+        IMPOSED_PENDING_SERVING from the imposed date to cover the gap."""
+        return True
+
+    @property
     def allow_non_credit_serving(self) -> bool:
         """TN has an 'oversight board' that revokes credit for time served, so we allow non-credit serving sentences."""
         return True

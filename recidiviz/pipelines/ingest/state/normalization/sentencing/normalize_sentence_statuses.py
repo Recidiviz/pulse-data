@@ -291,7 +291,7 @@ def normalize_snapshots_for_single_sentence(
     Depending on these factors, we may :
       - correct early completed statuses
       - designate NON_CREDIT_SERVING statuses
-      - TODO(#44525) change statuses to IMPOSED_PENDING_SERVING
+      - create IMPOSED_PENDING_SERVING statuses from imposed_date
     """
     all_snapshots = sorted(
         sentence.sentence_status_snapshots, key=lambda s: s.partition_key
@@ -336,6 +336,45 @@ def normalize_snapshots_for_single_sentence(
             status_value_to_relace_serving=StateSentenceStatus.IMPOSED_PENDING_SERVING,
             raw_text_for_new_serving_status="Created during normalization from parent sentences' final terminating statuses",
         )
+
+    # If enabled, create an IMPOSED_PENDING_SERVING snapshot at the imposed_date
+    # to cover the gap before the sentence begins being actively served.
+    #
+    # Note: this injection does NOT affect the sentence's current_start_date (set
+    # downstream in normalize_all_sentencing_entities). IMPOSED_PENDING_SERVING
+    # has is_considered_serving_status = False on the enum, so the
+    # `earliest_serving_status_date` computed there filters out these snapshots.
+    # The semantic is intentional: a sentence that only has IPS has not yet
+    # actually started serving, so its current_start_date should be None (or
+    # the current_state_provided_start_date if the state provided one).
+    if (
+        delegate.infer_imposed_pending_serving_from_imposed_date
+        and sentence.imposed_date is not None
+        and (
+            sentence.current_state_provided_start_date is None
+            or sentence.imposed_date < sentence.current_state_provided_start_date
+        )
+    ):
+        imposed_dt = as_datetime(assert_type(sentence.imposed_date, datetime.date))
+        # Don't create IMPOSED_PENDING_SERVING if there's already a terminating
+        # status at or before the imposed date (e.g., sentence completed before
+        # it was imposed — bad data, but we shouldn't crash on it).
+        has_terminating_at_or_before = any(
+            s.status.is_terminating_status and s.status_update_datetime <= imposed_dt
+            for s in all_snapshots
+        )
+        if not has_terminating_at_or_before:
+            all_snapshots.append(
+                StateSentenceStatusSnapshot(
+                    state_code=sentence.state_code,
+                    status=StateSentenceStatus.IMPOSED_PENDING_SERVING,
+                    status_raw_text="Created during normalization from imposed_date",
+                    status_update_datetime=imposed_dt,
+                    sentence=sentence,
+                    sequence_num=0,
+                )
+            )
+            all_snapshots = sorted(all_snapshots, key=lambda s: s.partition_key)
 
     if (
         delegate.allow_non_credit_serving
