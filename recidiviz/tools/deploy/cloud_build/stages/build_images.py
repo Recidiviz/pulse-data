@@ -105,7 +105,7 @@ def _generate_build_image_build_step(
     """
     dockerfile, build_stage = IMAGE_DOCKERFILES[repository.image_kind]
     builder_name = repository.repository_id
-    tag = repository.version_url(version_tag=deployment_context.version_tag)
+    tag = repository.build_url(tag=deployment_context.commit_ref)
     scoped_cache_url = repository.build_cache_url("$${SAFE_CACHE_SCOPE_KEY}")
     main_cache_url = repository.build_cache_url("main")
     platforms = IMAGE_BUILD_PLATFORMS[repository.image_kind]

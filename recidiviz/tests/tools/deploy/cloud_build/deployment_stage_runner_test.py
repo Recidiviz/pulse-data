@@ -157,6 +157,31 @@ class DeploymentStepRunnerTest(unittest.TestCase):
                 build_command,
             )
 
+    def test_build_command_tags_by_commit_sha_in_build_repo(self) -> None:
+        """The emitted buildx command must tag the image at
+        `<repo>/build:<commit_ref>`. `base_deploy_to_staging.sh` polls that
+        exact path to detect that the post-commit trigger has finished — tagging
+        under `/default:` instead (as a prior regression did) breaks release
+        cuts."""
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            build = BuildImages().configure_build(
+                DeploymentContext(
+                    project_id="test-project",
+                    commit_ref="1a2b3c4d",
+                    version_tag="v1.0",
+                    stage="Stage",
+                ),
+                argparse.Namespace(
+                    images=[ImageKind.APP_ENGINE], cache_scope_key="$BRANCH_NAME"
+                ),
+            )
+            build_step = next(s for s in build.steps if s.id == "build-appengine")
+            build_command = " ".join(build_step.args)
+            self.assertIn(
+                "--tag=us-docker.pkg.dev/test-project/appengine/build:1a2b3c4d",
+                build_command,
+            )
+
     def test_all_image_kinds_have_build_platforms(self) -> None:
         """Every ImageKind must have an entry in IMAGE_BUILD_PLATFORMS."""
         for image_kind in ImageKind:

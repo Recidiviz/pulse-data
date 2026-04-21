@@ -49,7 +49,7 @@ steps:
       - 'export PATH="/workspace/gcloud:$${PATH}" && /workspace/gcloud/docker-credential-gcr
         configure-docker --registries=us-docker.pkg.dev && SAFE_CACHE_SCOPE_KEY=$$(echo
         "$$CACHE_SCOPE_KEY" | tr "/." "--") && docker buildx build . -f Dockerfile
-        --builder appengine --tag=us-docker.pkg.dev/$PROJECT_ID/appengine/default:$COMMIT_SHA
+        --builder appengine --tag=us-docker.pkg.dev/$PROJECT_ID/appengine/build:$COMMIT_SHA
         --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache-$${SAFE_CACHE_SCOPE_KEY},mode=max
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache-$${SAFE_CACHE_SCOPE_KEY}
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/appengine/build:cache-main
@@ -77,7 +77,7 @@ steps:
       - 'export PATH="/workspace/gcloud:$${PATH}" && /workspace/gcloud/docker-credential-gcr
         configure-docker --registries=us-docker.pkg.dev && SAFE_CACHE_SCOPE_KEY=$$(echo
         "$$CACHE_SCOPE_KEY" | tr "/." "--") && docker buildx build . -f Dockerfile.recidiviz-base
-        --builder recidiviz-base --tag=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/default:$COMMIT_SHA
+        --builder recidiviz-base --tag=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:$COMMIT_SHA
         --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache-$${SAFE_CACHE_SCOPE_KEY},mode=max
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache-$${SAFE_CACHE_SCOPE_KEY}
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/recidiviz-base/build:cache-main
@@ -105,7 +105,7 @@ steps:
       - 'export PATH="/workspace/gcloud:$${PATH}" && /workspace/gcloud/docker-credential-gcr
         configure-docker --registries=us-docker.pkg.dev && SAFE_CACHE_SCOPE_KEY=$$(echo
         "$$CACHE_SCOPE_KEY" | tr "/." "--") && docker buildx build . -f Dockerfile.asset-generation
-        --builder asset-generation --tag=us-docker.pkg.dev/$PROJECT_ID/asset-generation/default:$COMMIT_SHA
+        --builder asset-generation --tag=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:$COMMIT_SHA
         --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache-$${SAFE_CACHE_SCOPE_KEY},mode=max
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache-$${SAFE_CACHE_SCOPE_KEY}
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache-main
@@ -133,7 +133,7 @@ steps:
       - 'export PATH="/workspace/gcloud:$${PATH}" && /workspace/gcloud/docker-credential-gcr
         configure-docker --registries=us-docker.pkg.dev && SAFE_CACHE_SCOPE_KEY=$$(echo
         "$$CACHE_SCOPE_KEY" | tr "/." "--") && docker buildx build . -f Dockerfile.case-triage-pathways
-        --builder case-triage-pathways --tag=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/default:$COMMIT_SHA
+        --builder case-triage-pathways --tag=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:$COMMIT_SHA
         --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:cache-$${SAFE_CACHE_SCOPE_KEY},mode=max
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:cache-$${SAFE_CACHE_SCOPE_KEY}
         --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/build:cache-main
