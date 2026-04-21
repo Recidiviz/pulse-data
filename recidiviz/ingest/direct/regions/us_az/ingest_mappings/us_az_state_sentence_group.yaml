@@ -22,6 +22,11 @@ input_columns:
   DPRAbsoluteDischargeDate: STRING
   DPRTransitionProgramReleaseDate: STRING
   DPRDrugTransitionProgramReleaseDate: STRING
+  # Non-date attributes
+  IsDprEligible: STRING
+  HasAnyDprProgramCompleted: STRING
+  TprApprovalStatus: STRING
+  DtpApprovalStatus: STRING
   OFFENSE_CHANGE_ID: STRING
 unused_columns: [OFFENSE_CHANGE_ID]
 output:
@@ -97,3 +102,8 @@ output:
                     state_specific_dates__dpr_dtp: DPRDrugTransitionProgramReleaseDate
                     state_specific_dates__dpr_tr_to_add: DPRTransitionToAbsoluteDischargeDate
                     state_specific_dates__dpr_add: DPRAbsoluteDischargeDate
+                    # Non-date attributes
+                    state_specific_attributes__is_dpr_eligible: IsDprEligible
+                    state_specific_attributes__has_any_dpr_program_completed: HasAnyDprProgramCompleted
+                    state_specific_attributes__tpr_approval_status: TprApprovalStatus
+                    state_specific_attributes__dtp_approval_status: DtpApprovalStatus
