@@ -448,8 +448,8 @@ resource "google_cloud_run_service" "public-pathways" {
 
         resources {
           limits = {
-            cpu    = "1000m"
-            memory = "1024Mi"
+            cpu    = "2000m"
+            memory = "2048Mi"
           }
         }
       }
