@@ -60,6 +60,12 @@ from recidiviz.validation.views.state.analyst_data_validation.us_pa.us_pa_releas
     US_PA_NO_NULL_SPAN_EXTERNAL_ID_VIEW_BUILDER,
     US_PA_NO_UNKNOWN_RELEASE_STATUS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_classification_2026_policy_form_edit_or_download_not_in_frontend_scores import (
+    US_TN_CLASSIFICATION_2026_POLICY_FORM_EDIT_OR_DOWNLOAD_NOT_IN_FRONTEND_SCORES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_classification_2026_policy_without_recent_form_download import (
+    US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_missing_classifications import (
     US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
 )
@@ -656,6 +662,22 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_PA_IS_SCI_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TN_CLASSIFICATION_2026_POLICY_FORM_EDIT_OR_DOWNLOAD_NOT_IN_FRONTEND_SCORES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            # Uses segment-event data, which isn't necessarily copied over to staging,
+            # so no need to run this validation in staging (won't be meaningful there).
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+            hard_num_allowed_rows=0,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            # Uses segment-event data, which isn't necessarily copied over to staging,
+            # so no need to run this validation in staging (won't be meaningful there).
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+            hard_num_allowed_rows=0,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
