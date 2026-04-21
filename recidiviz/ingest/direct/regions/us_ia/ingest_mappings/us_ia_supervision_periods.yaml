@@ -221,6 +221,7 @@ output:
                       StateSupervisionLevel.LIMITED:
                         - Level 1
                         - Level 1 - No Early Discharge - Owes Fines and Fees
+                        - Level 1 - No Early Discharge
                       StateSupervisionLevel.MINIMUM:
                         - Level 2
                       StateSupervisionLevel.MEDIUM:
