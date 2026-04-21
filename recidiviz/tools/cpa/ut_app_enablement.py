@@ -45,7 +45,11 @@ import sys
 from typing import Any
 
 import google.auth
-from python_http_client.exceptions import ServiceUnavailableError, TooManyRequestsError
+from python_http_client.exceptions import (
+    GatewayTimeoutError,
+    ServiceUnavailableError,
+    TooManyRequestsError,
+)
 from sendgrid.helpers.mail import (  # type: ignore[attr-defined]
     ClickTracking,
     DynamicTemplateData,
@@ -303,7 +307,9 @@ def send_email(
 
 
 @retry(
-    retry=retry_if_exception_type((ServiceUnavailableError, TooManyRequestsError)),
+    retry=retry_if_exception_type(
+        (ServiceUnavailableError, TooManyRequestsError, GatewayTimeoutError)
+    ),
     wait=wait_exponential(multiplier=1, min=2, max=30),
     stop=stop_after_attempt(4),
     before_sleep=before_sleep_log(logger, logging.WARNING),
