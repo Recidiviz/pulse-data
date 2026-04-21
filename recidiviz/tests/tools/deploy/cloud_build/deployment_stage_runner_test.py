@@ -49,7 +49,9 @@ class DeploymentStepRunnerTest(unittest.TestCase):
                 for_pull_requests=False,
             ),
             BuildImages: argparse.Namespace(
-                images=[ImageKind.APP_ENGINE], promote=False
+                images=[ImageKind.APP_ENGINE],
+                promote=False,
+                cache_scope_key="$BRANCH_NAME",
             ),
             TagImages: argparse.Namespace(images=[ImageKind.APP_ENGINE]),
             RunMigrations: argparse.Namespace(schema_types=[SchemaType.OPERATIONS]),
@@ -78,7 +80,9 @@ class DeploymentStepRunnerTest(unittest.TestCase):
                     version_tag="v1.0",
                     stage="Stage",
                 ),
-                argparse.Namespace(images=[ImageKind.APP_ENGINE]),
+                argparse.Namespace(
+                    images=[ImageKind.APP_ENGINE], cache_scope_key="$BRANCH_NAME"
+                ),
             )
             step_ids = [step.id for step in build.steps]
             self.assertIn("setup-qemu", step_ids)
@@ -99,7 +103,9 @@ class DeploymentStepRunnerTest(unittest.TestCase):
                     version_tag="v1.0",
                     stage="Stage",
                 ),
-                argparse.Namespace(images=[ImageKind.DATAFLOW]),
+                argparse.Namespace(
+                    images=[ImageKind.DATAFLOW], cache_scope_key="$BRANCH_NAME"
+                ),
             )
             step_ids = [step.id for step in build.steps]
             self.assertNotIn("setup-qemu", step_ids)
@@ -107,6 +113,49 @@ class DeploymentStepRunnerTest(unittest.TestCase):
             build_step = next(s for s in build.steps if s.id == "build-dataflow")
             build_command = " ".join(build_step.args)
             self.assertNotIn("arm64", build_command)
+
+    def test_build_command_has_scoped_cache_refs(self) -> None:
+        """The emitted buildx command should scope --cache-to/--cache-from by
+        the cache_scope_key and include cache-main as a fallback --cache-from.
+        The scope key flows in via the step's env (not via direct shell
+        interpolation), which prevents command injection from special chars in
+        the value."""
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            build = BuildImages().configure_build(
+                DeploymentContext(
+                    project_id="test-project",
+                    commit_ref="1a2b3c4d",
+                    version_tag="v1.0",
+                    stage="Stage",
+                ),
+                argparse.Namespace(
+                    images=[ImageKind.APP_ENGINE], cache_scope_key="$BRANCH_NAME"
+                ),
+            )
+            build_step = next(s for s in build.steps if s.id == "build-appengine")
+            build_command = " ".join(build_step.args)
+
+            # cache_scope_key flows in via env, not direct interpolation.
+            self.assertIn("CACHE_SCOPE_KEY=$BRANCH_NAME", list(build_step.env))
+            self.assertIn(
+                'SAFE_CACHE_SCOPE_KEY=$$(echo "$$CACHE_SCOPE_KEY" | tr "/." "--")',
+                build_command,
+            )
+            self.assertIn(
+                "--cache-to type=registry,"
+                "ref=us-docker.pkg.dev/test-project/appengine/build:cache-$${SAFE_CACHE_SCOPE_KEY},mode=max",
+                build_command,
+            )
+            self.assertIn(
+                "--cache-from type=registry,"
+                "ref=us-docker.pkg.dev/test-project/appengine/build:cache-$${SAFE_CACHE_SCOPE_KEY}",
+                build_command,
+            )
+            self.assertIn(
+                "--cache-from type=registry,"
+                "ref=us-docker.pkg.dev/test-project/appengine/build:cache-main",
+                build_command,
+            )
 
     def test_all_image_kinds_have_build_platforms(self) -> None:
         """Every ImageKind must have an entry in IMAGE_BUILD_PLATFORMS."""

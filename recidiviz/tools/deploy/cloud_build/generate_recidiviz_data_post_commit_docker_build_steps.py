@@ -107,7 +107,14 @@ def generate() -> dict:
     response-only fields stripped."""
     build_configuration = BuildImages().configure_build(
         deployment_context=_DEPLOYMENT_CONTEXT,
-        args=argparse.Namespace(images=TRIGGER_IMAGE_KINDS),
+        args=argparse.Namespace(
+            images=TRIGGER_IMAGE_KINDS,
+            # This gives each branch its own cache tag so main and
+            # release branches don't thrash each other's cache. Cloud Build substitutes
+            # $BRANCH_NAME at trigger fire time and build_images.py sanitizes to
+            # Docker-tag-safe chars in the shell command.
+            cache_scope_key="$BRANCH_NAME",
+        ),
     )
     # Match the timeout historically set on the staging release trigger's HCL.
     # The BuildConfiguration default (1800s) still applies to deployment-runner

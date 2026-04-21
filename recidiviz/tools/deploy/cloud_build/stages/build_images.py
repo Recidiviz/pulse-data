@@ -87,6 +87,7 @@ def _generate_build_image_build_step(
     deployment_context: DeploymentContext,
     repository: ArtifactRegistryDockerImageRepository,
     extra_build_wait_for_steps: list[str],
+    cache_scope_key: str,
 ) -> list[BuildStep]:
     """Generates a build step that builds and pushes docker images to Artifact Registry.
 
@@ -94,11 +95,19 @@ def _generate_build_image_build_step(
     step should wait on in addition to its own create-build-context step — used
     to serialize cross-image Dockerfile FROM dependencies (see
     IMAGE_BUILD_DEPENDENCIES).
+
+    cache_scope_key is the (pre-sanitization) scope for the BuildKit registry
+    cache tag. For GitHub-triggered builds, pass "$BRANCH_NAME" so each branch
+    gets its own `cache-<branch>` tag and does not thrash other branches'
+    caches. The value is sanitized to Docker-tag-safe chars at build time.
+    `cache-main` is always included as a `--cache-from` fallback so branches
+    cut from main get a warm first build.
     """
     dockerfile, build_stage = IMAGE_DOCKERFILES[repository.image_kind]
     builder_name = repository.repository_id
     tag = repository.version_url(version_tag=deployment_context.version_tag)
-    cache_repo = repository.build_url(commit_ref="cache")
+    scoped_cache_url = repository.build_cache_url("$${SAFE_CACHE_SCOPE_KEY}")
+    main_cache_url = repository.build_cache_url("main")
     platforms = IMAGE_BUILD_PLATFORMS[repository.image_kind]
     needs_arm64 = PLATFORM_LINUX_ARM64 in platforms
 
@@ -107,15 +116,25 @@ def _generate_build_image_build_step(
         f'export PATH="{DOCKER_CREDENTIAL_PATH}:$${{PATH}}" '
         # Add the `docker-credential-gcr` entry for `us-docker.pkg.dev` to `.docker/config.json`
         f"&& /workspace/gcloud/docker-credential-gcr configure-docker --registries={repository.host_name} "
+        # Derive a Docker-tag-safe scope key at build time; '/' and '.' are not
+        # valid in tag names, so translate both to '-' (e.g. "releases/v1.676-rc"
+        # → "releases-v1-676-rc"). CACHE_SCOPE_KEY is sourced from the step's
+        # `env` (see build_step_for_shell_command call below) rather than
+        # interpolated directly into the shell command, so that special chars
+        # in the value cannot escape the quoting and execute arbitrary commands.
+        '&& SAFE_CACHE_SCOPE_KEY=$$(echo "$$CACHE_SCOPE_KEY" | tr "/." "--") '
         # Build the image using BuildKit
         f"&& docker buildx build . -f {dockerfile} "
         f"--builder {builder_name} "
         # Tag to store the image to
         f"--tag={tag} "
-        # Push cache layers
-        f"--cache-to type=registry,ref={cache_repo},mode=max "
-        # Fetch cache layers
-        f"--cache-from type=registry,ref={cache_repo} "
+        # Push cache layers to the scope-specific tag only, so branches don't
+        # overwrite each other's cache manifest.
+        f"--cache-to type=registry,ref={scoped_cache_url},mode=max "
+        # Fetch cache layers from the scope-specific tag, with cache-main as a
+        # fallback so branches cut from main get a warm first build.
+        f"--cache-from type=registry,ref={scoped_cache_url} "
+        f"--cache-from type=registry,ref={main_cache_url} "
         # Push images to registry
         "--push "
         # Target platforms
@@ -141,7 +160,12 @@ def _generate_build_image_build_step(
         create_build_context,
         build_step_for_shell_command(
             name=BUILDER_DOCKER,
-            env=["DOCKER_BUILDKIT=1"],
+            # Pass cache_scope_key via env rather than string-interpolating into
+            # the shell command: Cloud Build resolves `$BRANCH_NAME` into the
+            # env value at step setup, and bash expansion of that env var
+            # inside double quotes is not re-parsed for shell metacharacters,
+            # so a malicious branch name cannot break out of the quoting.
+            env=["DOCKER_BUILDKIT=1", f"CACHE_SCOPE_KEY={cache_scope_key}"],
             id_=_build_step_id_for_repository(repository),
             wait_for=[create_build_context.id, *extra_build_wait_for_steps],
             command=build_and_push_image_command,
@@ -160,6 +184,15 @@ class BuildImages(DeploymentStageInterface):
             "--images",
             type=lambda images: [ImageKind(image) for image in str_to_list(images)],
             help=f"Comma delimited string of ImageKind values. Choices: {image_kinds}",
+        )
+        parser.add_argument(
+            "--cache-scope-key",
+            required=True,
+            help=(
+                "Key used to scope the Docker build cache tag; sanitized to "
+                "Docker-tag-safe characters at build time. Pass '$BRANCH_NAME' "
+                "for GitHub-triggered builds so each branch gets its own cache."
+            ),
         )
 
         return parser
@@ -203,6 +236,7 @@ class BuildImages(DeploymentStageInterface):
                     deployment_context=deployment_context,
                     repository=repository,
                     extra_build_wait_for_steps=extra_build_wait_for_steps,
+                    cache_scope_key=args.cache_scope_key,
                 )
             )
 

@@ -73,8 +73,16 @@ class ArtifactRegistryDockerImageRepository:
     def _base_url(self) -> str:
         return f"{self.host_name}/{self.project_id}/{self.repository_id}"
 
-    def build_url(self, commit_ref: str) -> str:
-        return f"{self._base_url}/build:{commit_ref}"
+    def build_url(self, tag: str) -> str:
+        return f"{self._base_url}/build:{tag}"
+
+    def build_cache_url(self, scope_key_expr: str) -> str:
+        """URL for the BuildKit registry cache tag for this repo, scoped by
+        `scope_key_expr`. Pass either a literal (e.g. "main") or a shell
+        expression resolved at Cloud Build runtime (e.g.
+        "$${SAFE_CACHE_SCOPE_KEY}"). Centralizes the `cache-<scope>` naming
+        convention used by build_images.py."""
+        return self.build_url(tag=f"cache-{scope_key_expr}")
 
     def version_url(self, version_tag: str) -> str:
         return f"{self._base_url}/default:{version_tag}"

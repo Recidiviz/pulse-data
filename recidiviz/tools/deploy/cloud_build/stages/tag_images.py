@@ -76,7 +76,7 @@ class TagImages(DeploymentStageInterface):
                         "container",
                         "images",
                         "add-tag",
-                        repository.build_url(commit_ref=deployment_context.commit_ref),
+                        repository.build_url(tag=deployment_context.commit_ref),
                         repository.version_url(
                             version_tag=deployment_context.version_tag
                         ),

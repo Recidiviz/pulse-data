@@ -28,12 +28,23 @@ locals {
 
 resource "google_artifact_registry_repository" "repositories" {
   provider               = google-beta
-  for_each               = tomap(local.config.repositories)
+  for_each               = local.config.repositories
   location               = each.value.location
   repository_id          = each.value.repository_id
   description            = each.value.description
   format                 = each.value.format
   cleanup_policy_dry_run = each.value.cleanup_policy_dry_run
+
+  # Evict stale per-branch BuildKit cache tags to avoid a ballooning cache
+  cleanup_policies {
+    id     = "delete-old-release-cache-tags"
+    action = "DELETE"
+    condition {
+      tag_state    = "TAGGED"
+      tag_prefixes = ["cache-releases-"]
+      older_than   = "${60 * 24 * 60 * 60}s"
+    }
+  }
 
   depends_on = [
     google_project_service.artifact_registry_api
