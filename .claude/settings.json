@@ -27,7 +27,12 @@
 
 
       "Bash(bq ls:*)",
-      "Bash(bq show:*)"
+      "Bash(bq show:*)",
+
+      "mcp__pagerduty__get_incident",
+      "mcp__pagerduty__get_alert_from_incident",
+      "mcp__pagerduty__list_alerts_from_incident",
+      "mcp__pagerduty__list_incident_notes"
     ],
     "deny": [
       "Read(./..env)",
