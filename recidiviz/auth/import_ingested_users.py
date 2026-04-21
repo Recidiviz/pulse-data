@@ -105,12 +105,13 @@ def _upsert_user_rows(
     along with some validation."""
     for row in rows:
         # TODO(#53580): Remove this once supervision_product_users columns match incarceration_and_supervision_product_users columns
-        if columns != INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns:
+        supervision_col_names = [
+            c.name for c in INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns
+        ]
+        if columns != supervision_col_names:
             row["external_id"] = row.get("staff_external_id") or row.get("external_id")
             row["district"] = row.get("district_id") or row.get("district")
-            columns_to_delete = set(columns) - set(
-                INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER.columns
-            )
+            columns_to_delete = set(columns) - set(supervision_col_names)
             for column in columns_to_delete:
                 del row[column]
 

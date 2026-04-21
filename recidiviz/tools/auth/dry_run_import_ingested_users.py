@@ -154,7 +154,7 @@ def _run_dry_run(session: Session, state_code: str, gcs_path: str) -> None:
         reader_delegate = ImportIngestedUsersGcsfsCsvReaderDelegate(
             session=session,
             state_code=state_code_upper,
-            columns=list(columns),
+            columns=[c.name for c in columns],
         )
         csv_reader = GcsfsCsvReader(fs=GcsfsFactory.build())
         csv_reader.streaming_read(

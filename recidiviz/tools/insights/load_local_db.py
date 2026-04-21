@@ -113,7 +113,7 @@ def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
     if not view_builder:
         raise ValueError(f"missing view builder {table.__tablename__}")
     return (
-        view_builder.columns
+        [c.name for c in view_builder.columns]
         if isinstance(view_builder, SelectedColumnsBigQueryViewBuilder)
         else []
     )

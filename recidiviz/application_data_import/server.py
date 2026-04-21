@@ -503,7 +503,7 @@ def _import_pathways_helper(
         database_key=database_key,
         model=db_entity,
         gcs_uri=csv_path,
-        columns=view_builder.columns,
+        columns=[c.name for c in view_builder.columns],
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
 
@@ -583,7 +583,7 @@ def _import_insights(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         database_key=database_key,
         model=db_entity,
         gcs_uri=json_path,
-        columns=view_builder.columns,
+        columns=[c.name for c in view_builder.columns],
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
 

@@ -659,7 +659,7 @@ def get_auth_endpoint_blueprint(
                 # exist in the CSV file. Do this instead of import_gcs_csv_to_cloud_sql in order to have
                 # more accurate created/updated timestamps
                 reader_delegate = ImportIngestedUsersGcsfsCsvReaderDelegate(
-                    session, state_code, view_builder.columns
+                    session, state_code, [c.name for c in view_builder.columns]
                 )
                 csv_reader = GcsfsCsvReader(fs=GcsfsFactory.build())
                 csv_reader.streaming_read(

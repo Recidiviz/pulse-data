@@ -52,4 +52,4 @@ class TestSchema(TestCase):
     ) -> None:
         table = get_database_entity_by_table_name(pathways_schema, view.view_id)
         table_columns = [column.name for column in inspect(table).c]
-        self.assertEqual(table_columns, view.delegate.columns)
+        self.assertEqual(table_columns, [c.name for c in view.delegate.columns])

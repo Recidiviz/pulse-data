@@ -19,6 +19,7 @@ from typing import List, Optional, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -26,7 +27,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 
 class SelectedColumnsBigQueryView(BigQueryView):
     """An extension of BigQueryView that adds the `columns` parameter, which provides
-    the in-order name of the columns returned by the view.
+    the in-order columns returned by the view, including their schema metadata.
 
     This field is, in particular, useful for CSV to Postgres exports in instances where migrations mean
     that our views and the Postgres schema may be slightly out of sync.
@@ -38,14 +39,14 @@ class SelectedColumnsBigQueryView(BigQueryView):
         dataset_id: str,
         view_id: str,
         view_query_template: str,
-        columns: List[str],
+        columns: List[BigQueryViewColumn],
         description: Optional[str],
         materialized_address: Optional[BigQueryAddress],
         sandbox_context: BigQueryViewSandboxContext | None,
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
     ):
-        query_format_kwargs["columns"] = ",\n    ".join(columns)
+        query_format_kwargs["columns"] = ",\n    ".join(c.name for c in columns)
         full_description = f"{view_id} view with selected columns. " + (
             description if description else ""
         )
@@ -60,7 +61,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             sandbox_context=sandbox_context,
             clustering_fields=clustering_fields,
             time_partitioning=None,
-            schema=None,
+            schema=list(columns),
             **query_format_kwargs,
         )
         self.columns = columns
@@ -85,7 +86,7 @@ class SelectedColumnsBigQueryViewBuilder(
         dataset_id: str,
         view_id: str,
         view_query_template: str,
-        columns: List[str],
+        columns: List[BigQueryViewColumn],
         description: Optional[str] = None,
         # Default to True since these views are often exported multiple times so we
         # materialize to limit export costs.
