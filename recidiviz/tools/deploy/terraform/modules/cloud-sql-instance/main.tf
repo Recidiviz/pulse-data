@@ -73,16 +73,9 @@ variable "secondary_zone" {
   default = null
 }
 
-# When true, creates a CMEK crypto key for this instance under the cloudsql-cmek
-# key ring in the shared CMEK project and uses it to encrypt the instance's disk.
-variable "use_cmek" {
-  type    = bool
-  default = true
-}
-
 variable "cmek_project_id" {
   type        = string
-  description = "GCP project ID that holds the cloudsql-cmek key ring. Only used when use_cmek is true."
+  description = "GCP project ID that holds the cloudsql-cmek key ring."
   default     = "cmek-82ade411-5705-4461-b2cb-9"
 }
 
@@ -123,9 +116,8 @@ locals {
   env_prefix                 = var.project_id == "recidiviz-staging" ? "dev" : "prod"
   effective_base_secret_name = coalesce(var.base_secret_name, var.instance_key)
 
-  cmek_suffix             = var.use_cmek ? "-cmek" : ""
-  effective_instance_name = coalesce(var.instance_name, "${local.env_prefix}-${replace(var.instance_key, "_", "-")}-data${local.cmek_suffix}")
-  connection_name        = "${var.project_id}:${var.region}:${local.effective_instance_name}"
+  effective_instance_name     = coalesce(var.instance_name, "${local.env_prefix}-${replace(var.instance_key, "_", "-")}-data-cmek")
+  connection_name             = "${var.project_id}:${var.region}:${local.effective_instance_name}"
 
   database_friendly_name = title(replace(var.instance_key, "_", " "))
 
@@ -133,19 +125,17 @@ locals {
 }
 
 
-# CMEK resources: when use_cmek is true, create a per-instance crypto key under
-# the shared cloudsql-cmek key ring in the CMEK project.
+# Create a per-instance crypto key under the shared cloudsql-cmek key ring in the CMEK project.
 data "google_kms_key_ring" "cloudsql_cmek" {
-  count    = var.use_cmek ? 1 : 0
   project  = var.cmek_project_id
   name     = "cloudsql-cmek"
   location = var.region
 }
 
 resource "google_kms_crypto_key" "cloudsql_cmek" {
-  count    = var.use_cmek ? 1 : 0
-  name     = local.effective_instance_name
-  key_ring = data.google_kms_key_ring.cloudsql_cmek[0].id
+  name            = local.effective_instance_name
+  key_ring        = data.google_kms_key_ring.cloudsql_cmek.id
+  rotation_period = "7776000s" # 90 days
 
   lifecycle {
     prevent_destroy = true
@@ -153,22 +143,20 @@ resource "google_kms_crypto_key" "cloudsql_cmek" {
 }
 
 data "google_project" "instance_project" {
-  count      = var.use_cmek ? 1 : 0
   project_id = var.project_id
 }
 
 # Grant the Cloud SQL service agent permission to use the key.
 resource "google_kms_crypto_key_iam_member" "cloudsql_sa_cmek_user" {
-  count         = var.use_cmek ? 1 : 0
-  crypto_key_id = google_kms_crypto_key.cloudsql_cmek[0].id
+  crypto_key_id = google_kms_crypto_key.cloudsql_cmek.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:service-${data.google_project.instance_project[0].number}@gcp-sa-cloud-sql.iam.gserviceaccount.com"
+  member        = "serviceAccount:service-${data.google_project.instance_project.number}@gcp-sa-cloud-sql.iam.gserviceaccount.com"
 }
 
 
 resource "google_sql_database_instance" "data" {
   name                = local.effective_instance_name
-  encryption_key_name = var.use_cmek ? google_kms_crypto_key.cloudsql_cmek[0].id : null
+  encryption_key_name = google_kms_crypto_key.cloudsql_cmek.id
   database_version    = var.database_version
   region              = var.region
   deletion_protection = false
@@ -276,10 +264,8 @@ resource "google_sql_user" "postgres" {
 
 
 # Provides a BQ connection to the default 'postgres' database in
-# this instance. Only created for CMEK instances; legacy non-CMEK instances
-# do not get a BQ connection (BQ traffic goes to the CMEK replica).
+# this instance.
 resource "google_bigquery_connection" "default_db_bq_connection" {
-  count    = var.use_cmek ? 1 : 0
   provider = google-beta
 
   connection_id = "${var.instance_key}_cloudsql"

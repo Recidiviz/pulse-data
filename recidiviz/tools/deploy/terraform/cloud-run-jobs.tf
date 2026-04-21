@@ -46,7 +46,6 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
         name = "cloudsql"
         cloud_sql_instance {
           instances = [
-            module.operations_database_v2.connection_name,
             module.operations_database_cmek.connection_name,
           ]
         }
