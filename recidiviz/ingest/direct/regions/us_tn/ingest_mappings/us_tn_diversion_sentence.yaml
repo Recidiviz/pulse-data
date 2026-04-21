@@ -50,6 +50,7 @@ output:
           external_id: $variable(sentence_external_id)
           sentence_type: $literal_enum(StateSentenceType.PROBATION)
           imposed_date: DiversionGrantedDate
+          county_code: ConvictionCounty
           sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
           charges:
             # TODO(#7424) Update classification when we've documented FelonyClass, etc.
