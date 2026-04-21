@@ -73,6 +73,7 @@ def build_dag_run_history(*, lookback: datetime.timedelta) -> list[dict]:
                 < text(f"interval '{lookback.total_seconds()} seconds'")
             )
             .filter(DagRun.dag_id.not_in(DAGS_TO_EXCLUDE))
+            .filter(DagRun.start_date.is_not(None))
             .filter(DagRun.end_date.is_not(None))
             .order_by(DagRun.execution_date)
         )

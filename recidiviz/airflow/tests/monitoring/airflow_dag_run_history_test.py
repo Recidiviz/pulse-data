@@ -52,7 +52,13 @@ DAG_RUN_METADATA_TABLE_PATH = os.path.join(
 )
 
 
-def dummy_dag_run(dag: DAG, date: str, *, state: DagRunState | None = None) -> DagRun:
+def dummy_dag_run(
+    dag: DAG,
+    date: str,
+    *,
+    state: DagRunState | None = None,
+    include_start_date: bool = True,
+) -> DagRun:
     try:
         execution_date = datetime.datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
@@ -64,7 +70,7 @@ def dummy_dag_run(dag: DAG, date: str, *, state: DagRunState | None = None) -> D
         dag_id=dag.dag_id,
         run_id=execution_date.strftime("%Y-%m-%d-%H:%M"),
         run_type="manual",
-        start_date=execution_date,
+        start_date=execution_date if include_start_date else None,
         execution_date=execution_date,
         state=state,
     )
@@ -242,6 +248,45 @@ class TestGenerateAirflowDAGMetrics(AirflowIntegrationTest):
                 call(DAG_RUN_METADATA_TABLE_ADDRESS, result)
                 for result in expected_results
             ]
+        )
+
+    def test_dag_failed_before_start(self) -> None:
+        # A DagRun manually marked failed before it starts has end_date set but
+        # start_date=None. The BQ table requires start_time, so these rows must
+        # be filtered out before streaming.
+        with self._get_session() as session:
+            never_started = dummy_dag_run(
+                test_dag,
+                "2023-07-06",
+                state=DagRunState.FAILED,
+                include_start_date=False,
+            )
+            never_started.end_date = datetime.datetime(2023, 7, 6, 1, tzinfo=utc)
+
+            normal_run = dummy_dag_run(
+                test_dag, "2023-07-07", state=DagRunState.SUCCESS
+            )
+            normal_run.end_date = datetime.datetime(2023, 7, 7, 1, tzinfo=utc)
+
+            session.add_all([never_started, normal_run])
+
+        job_history = build_dag_run_history(lookback=TEST_START_DATE_LOOKBACK)
+
+        self.assertEqual(
+            [
+                {
+                    "write_time": self.frozen_time,
+                    "project_id": _PROJECT_ID,
+                    "dag_id": _TEST_DAG_ID,
+                    "dag_run_id": "2023-07-07-00:00",
+                    "execution_time": datetime.datetime(2023, 7, 7, tzinfo=utc),
+                    "start_time": datetime.datetime(2023, 7, 7, tzinfo=utc),
+                    "end_time": datetime.datetime(2023, 7, 7, 1, tzinfo=utc),
+                    "dag_run_config": {},
+                    "terminal_state": "success",
+                },
+            ],
+            job_history,
         )
 
 
