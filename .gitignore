@@ -210,6 +210,12 @@ release.out
 /.claude/worktrees
 .mcp.json
 
+# Claude rules — personal rules are ignored, but shared security rules are tracked
+.claude/rules/*
+!.claude/rules/security.md
+.claude/commands/*
+!.claude/commands/security-review.md
+
 # Don't accidentally commit data files that our notebooks depend on / produce
 recidiviz/research/notebooks/astromberg/input/*
 recidiviz/research/notebooks/astromberg/output/*

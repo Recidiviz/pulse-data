@@ -109,6 +109,12 @@ and should be used when testing generic functionality.
 Skills are invocable workflows documented in `.claude/skills/[skill_name]/SKILL.md`.
 Available skills are listed in the system prompt at session start.
 
+# Security Rules
+
+Security patterns and anti-patterns that apply to all code in this repository:
+
+- @.claude/rules/security.md
+
 # Personal preferences
 
 Each developer can maintain a personal local settings file at

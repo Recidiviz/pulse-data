@@ -240,6 +240,12 @@ release.out
 .claude/pulse-data-local-settings.md
 .mcp.json
 
+# Claude rules — personal rules are ignored, but shared security rules are tracked
+.claude/rules/*
+!.claude/rules/security.md
+.claude/commands/*
+!.claude/commands/security-review.md
+
 # MCP tools (not needed in Docker images)
 recidiviz/tools/mcp/
 
