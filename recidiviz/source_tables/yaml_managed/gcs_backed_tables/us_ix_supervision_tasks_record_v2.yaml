@@ -1,8 +1,8 @@
 address:
   dataset_id: export_archives
-  table_id: us_tx_supervision_tasks_record_archive
+  table_id: us_ix_supervision_tasks_record_v2_archive
 description:
-  This table contains daily archives of the us_tx_supervision_tasks_record
+  This table contains daily archives of the us_ix_supervision_tasks_record_v2
   export, which is read directly from Cloud Storage.
 schema:
   - name: person_id
@@ -23,7 +23,7 @@ schema:
 clustering_fields: null
 external_data_configuration:
   sourceUris:
-    - gs://{project_id}-practices-etl-data-archive/*/us_tx_supervision_tasks_record.json
+    - gs://{project_id}-practices-etl-data-archive/*/us_ix_supervision_tasks_record_v2.json
   sourceFormat: NEWLINE_DELIMITED_JSON
   ignoreUnknownValues: true
   compression: NONE

@@ -168,6 +168,9 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.tasks.supervision_tasks_record_archive import (
+    SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.insights_user_available_actions import (
     INSIGHTS_USER_AVAILABLE_ACTIONS_VIEW_BUILDER,
 )
@@ -289,6 +292,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         table_id="all_sentencing_assessment_report_segment_events",
     ): (
         "Union view for Sentencing Assessment Report segment events. Kept for potential future use."
+    ),
+    SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER.address: (
+        "Consolidated archive view for supervision task records across states. "
+        "Will be used for cross-state task analysis (Sophie Pepin, 2026-04-22)"
     ),
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
         "This is a new table in the sentence_sessions dataset which will soon be used in "

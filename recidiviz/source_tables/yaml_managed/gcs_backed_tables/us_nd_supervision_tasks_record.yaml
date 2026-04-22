@@ -5,6 +5,9 @@ description:
   This table contains daily archives of the us_nd_supervision_tasks_record
   export, which is read directly from Cloud Storage.
 schema:
+  - name: person_id
+    type: INTEGER
+    mode: NULLABLE
   - name: person_external_id
     type: STRING
     mode: NULLABLE

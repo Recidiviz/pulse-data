@@ -5,6 +5,9 @@ description: This table contains daily archives of the LEGACY, V1
   us_ix_supervision_tasks_record export, which is read directly from Cloud
   Storage. This data predates the V2 tasks pipeline.
 schema:
+  - name: person_id
+    type: INTEGER
+    mode: NULLABLE
   - name: person_external_id
     type: STRING
     mode: NULLABLE

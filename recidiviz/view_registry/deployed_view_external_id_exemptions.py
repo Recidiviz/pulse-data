@@ -100,6 +100,9 @@ from recidiviz.calculator.query.state.views.sentencing.us_nd.us_nd_sentencing_ca
 from recidiviz.calculator.query.state.views.sessions.state_staff_id_to_legacy_supervising_officer_external_id import (
     STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.tasks.supervision_tasks_record_archive import (
+    SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_VIEWS_DATASET,
     STATE_BASE_VIEWS_DATASET,
@@ -338,6 +341,8 @@ _KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN: dict[BigQueryAddress, st
     # Sentencing views
     US_IX_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
     US_ND_SENTENCING_CASE_DISPOSITION_PREPROCESSED_VIEW_BUILDER.address: "TODO(#44755): Remove this exemption once we remove the person_external_id column from this view",
+    # tasks_views views
+    SUPERVISION_TASKS_RECORD_ARCHIVE_VIEW_BUILDER.address: "This is an archive of task record exports and therefore only includes person_external_id",
     **_EXPORTED_VIEWS_THAT_ARE_NOT_METRIC_EXPORT_VIEWS,
 }
 
