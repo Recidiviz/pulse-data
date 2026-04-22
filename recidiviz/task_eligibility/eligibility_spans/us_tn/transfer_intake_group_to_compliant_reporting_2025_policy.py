@@ -37,20 +37,20 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     assessed_risk_low_compliant_on_strong_r2_after_intake_supervision_level,
-    home_visit_since_intake_supervision_level,
+    no_arrests_since_intake_supervision_level,
     no_ineligible_cr_offense_2025_policy,
     no_supervision_sanction_since_intake_supervision_level,
     not_in_day_reporting_center,
     not_in_programmed_supervision_unit,
     not_on_community_supervision_for_life,
-    three_face_to_face_contacts_within_2_months_of_intake_supervision_start,
+    supervision_type_is_misdemeanor_probationer,
 )
-from recidiviz.task_eligibility.criteria_condition import (
-    NotEligibleCriteriaCondition,
-    PickNCompositeCriteriaCondition,
-)
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_minimum_group_to_compliant_reporting_2025_policy import (
     _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -58,14 +58,19 @@ from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# The new Compliant Reporting policy has 2 "pathways" to get the opportunity:
+# The new Compliant Reporting policy has 3 "pathways" to get the opportunity:
 #   - Intake pathway: for people who test Low-Compliant on the STRONG-R 2.0 during
 #     intake and meet the set of intake-specific criteria.
 #   - "Minimum" pathway: for people who have been on "Low" supervision (mapped to
 #     'MINIMUM' internally) for 6+ months and meet the set of criteria for this pathway.
-# There is some criteria set that is applied to both groups. This TES file is for the
-# intake pathway, and TRANSFER_MINIMUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY is for
-# the minimum pathway. Both are combined in one opportunity record query.
+#   - "Misdemeanor Probationer" pathway: for people supervised as "Misdemeanor
+#      Probationer" clients, who are eligible from intake and do not have a
+#      disqualifying offense.
+# There is some criteria set that is applied to both the intake and minimum groups. This
+# TES file is for the intake pathway,
+# TRANSFER_MINIMUM_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY is for the minimum pathway,
+# and TRANSFER_MISDEMEANOR_PROBATIONER_GROUP_TO_COMPLIANT_REPORTING_2025_POLICY is for
+# the misdemeanor probationer pathway. All are combined in one opportunity record query.
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
@@ -73,12 +78,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        home_visit_since_intake_supervision_level.VIEW_BUILDER,
         assessed_risk_low_compliant_on_strong_r2_after_intake_supervision_level.VIEW_BUILDER,
+        # The restriction of no "non-compliant behavior or violation warrants" is
+        # operationalized by checking for no sanctions, arrests, or violation reports
+        # since starting supervision.
         no_supervision_sanction_since_intake_supervision_level.VIEW_BUILDER,
+        no_arrests_since_intake_supervision_level.VIEW_BUILDER,
         no_supervision_violation_report_since_intake_supervision_level.VIEW_BUILDER,
         no_positive_drug_screens_since_intake_supervision_level.VIEW_BUILDER,
-        three_face_to_face_contacts_within_2_months_of_intake_supervision_start.VIEW_BUILDER,
+        _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
         no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
         # NB: all of the PSU/SCU levels (for clients supervised for sex offenses) are
         # currently mapped to MEDIUM, so this criterion is currently redundant because
@@ -90,22 +98,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_in_programmed_supervision_unit.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
         not_in_day_reporting_center.VIEW_BUILDER,
-        _FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
+        # Filter out misdemeanor probationer clients from this pathway to ensure TES
+        # spans for different CR (2025) pathways are mutually exclusive.
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=supervision_type_is_misdemeanor_probationer.VIEW_BUILDER,
+        ),
     ],
-    # Clients are almost eligible if they are: missing at least one of [fines & fees OR
-    # face to face contacts].
-    almost_eligible_condition=PickNCompositeCriteriaCondition(
-        sub_conditions_list=[
-            NotEligibleCriteriaCondition(
-                criteria=three_face_to_face_contacts_within_2_months_of_intake_supervision_start.VIEW_BUILDER,
-                description="Don't have 3 Face to Face contacts within 2 months of intake",
-            ),
-            NotEligibleCriteriaCondition(
-                criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
-                description="No FEEP code in last 90 days and no permanent exemption",
-            ),
-        ],
-        at_least_n_conditions_true=1,
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=_FEE_SCHEDULE_OR_PERMANENT_EXEMPTION,
+        description="No FEEP code in last 90 days and no permanent exemption",
     ),
     completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
 )
