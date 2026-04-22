@@ -19,6 +19,7 @@ input_columns:
 
   conditions: STRING
   ViolationComments: STRING
+  Addendum: STRING
 
 unused_columns: [WarrantRequested] #If we want we can also use this column, though warrants are sometimes noted as "Decision"
 
@@ -90,6 +91,9 @@ output:
                 response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
                 deciding_staff_external_id: CaseManagerStaffId
                 deciding_staff_external_id_type: $literal("US_IA_STAFFID")
+                violation_response_metadata:
+                  $json_dict:
+                    Addendum: Addendum
             - $conditional:
                 - $if:
                     $not_null: Decision

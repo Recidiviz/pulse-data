@@ -24,7 +24,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ia import (
     early_discharge,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    no_supervision_violation_report_within_6_months_using_response_date,
     not_serving_a_life_sentence_on_supervision_or_supervision_out_of_state,
     supervision_case_type_is_not_drug_court,
     supervision_case_type_is_not_sex_offense,
@@ -35,6 +34,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ia import (
     no_open_supervision_modifiers,
+    no_supervision_violation_report_within_6_months_using_response_date,
     not_excluded_from_early_discharge_by_parole_condition,
     not_serving_ineligible_offense_for_early_discharge,
     serving_supervision_case_at_least_90_days,
