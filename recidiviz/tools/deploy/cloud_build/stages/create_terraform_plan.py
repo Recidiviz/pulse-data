@@ -59,6 +59,15 @@ AIRFLOW_SOURCE_FILES_DIR = "/workspace/airflow_source_files"
 
 PAGERDUTY_SECRET_NAME = "pagerduty_terraform_key"  # nosec
 
+# Secret Manager secret and env var for the GitHub OAuth token used by the
+# PR-commenter trigger to fetch PR branches over HTTPS.
+GITHUB_TOKEN_SECRET_NAME = "Github-Helperbot-West1-github-oauthtoken-d8f7ac"  # nosec
+GITHUB_TOKEN_ENV_VAR = "GITHUB_TOKEN"  # nosec
+
+# In PR-commenter builds, the plan step writes its error-level Terraform logs
+# to this file (via TF_LOG=ERROR / TF_LOG_PATH). The comment step then reads
+# the file and, if the plan failed, surfaces the errors in the PR comment.
+TERRAFORM_PLAN_ERROR_LOG_PATH = "/workspace/terraform-plan-error.txt"
 
 # Disables TTY input, disables colored output
 TERRAFORM_CLI_ARGS_ENV = "TF_CLI_ARGS=-input=false -no-color -compact-warnings"
@@ -66,13 +75,38 @@ TERRAFORM_CLI_ARGS_ENV = "TF_CLI_ARGS=-input=false -no-color -compact-warnings"
 STEP_SHOW_TERRAFORM_PLAN = "Show Terraform plan contents"
 
 
+def _google_quota_project_env(deployment_context: DeploymentContext) -> str:
+    # Certain APIs like cloudidentity.googleapis.com requires an explicit quota project.
+    # Without it, operations like google_cloud_identity_group_membership Read fail
+    # silently during refresh and the plan proposes recreating resources that already
+    # exist.
+    return f"GOOGLE_CLOUD_QUOTA_PROJECT={deployment_context.project_id}"
+
+
 def plan_file_name_for_deployment(deployment_context: DeploymentContext) -> str:
     return f"{deployment_context.app_engine_tag}-{deployment_context.commit_ref}.tfplan"
 
 
 def get_terraform_plan_step(
-    deployment_context: DeploymentContext, output_path: str, wait_for: list[str]
+    deployment_context: DeploymentContext,
+    output_path: str,
+    wait_for: list[str],
+    for_pull_requests: bool,
 ) -> BuildStep:
+    """Build step that runs `terraform plan` and writes the plan to output_path.
+
+    Args:
+        deployment_context: project_id / version_tag / commit_ref used to
+            populate the plan's `-var` flags.
+        output_path: file path (within the build workspace) to write the
+            binary .tfplan to; later consumed by `terraform apply` (deploy) or
+            `terraform show` (PR commenter).
+        wait_for: IDs of prior steps that must complete before this step runs.
+        for_pull_requests: True when this step is part of the PR-commenter
+            build. Enables error-log capture (TF_LOG=ERROR → a file the comment
+            step reads) and sets allow_failure=True so a failed plan still
+            runs the subsequent show + comment steps to post a failure comment.
+    """
     terraform_variables = {
         "project_id": deployment_context.project_id,
         "docker_image_tag": deployment_context.version_tag,
@@ -87,14 +121,22 @@ def get_terraform_plan_step(
     for name, value in terraform_variables.items():
         plan_args.append(f"-var={name}={value}")
 
+    env = [TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)]
+    if for_pull_requests:
+        # PR-commenter plans run with allow_failure=True so a failure doesn't
+        # block the comment step. Capture error logs here so the comment step
+        # can include them in the PR comment when the plan fails.
+        env.extend(["TF_LOG=ERROR", f"TF_LOG_PATH={TERRAFORM_PLAN_ERROR_LOG_PATH}"])
+
     return BuildStep(
         id="Create Terraform plan",
         name=BUILDER_TERRAFORM,
         dir_=TERRAFORM_WORKDIR,
         args=plan_args,
-        env=[TERRAFORM_CLI_ARGS_ENV],
+        env=env,
         wait_for=wait_for,
         timeout="900s",  # 15 min timeout
+        allow_failure=for_pull_requests,
     )
 
 
@@ -188,7 +230,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 f"bucket={deployment_context.project_id}-tf-state",
                 "-reconfigure",
             ],
-            env=[TERRAFORM_CLI_ARGS_ENV],
+            env=[TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)],
             timeout="900s",  # 15 min timeout
         )
 
@@ -196,6 +238,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
             deployment_context=deployment_context,
             output_path=plan_path,
             wait_for=[terraform_init.id],
+            for_pull_requests=args.for_pull_requests,
         )
 
         build_steps = [
@@ -220,7 +263,10 @@ class CreateTerraformPlan(DeploymentStageInterface):
                         name=BUILDER_TERRAFORM,
                         dir_=TERRAFORM_WORKDIR,
                         args=["apply", "-parallelism=32", plan_path],
-                        env=[TERRAFORM_CLI_ARGS_ENV],
+                        env=[
+                            TERRAFORM_CLI_ARGS_ENV,
+                            _google_quota_project_env(deployment_context),
+                        ],
                         wait_for=[terraform_plan.id],
                         # No timeout for this step - this could take a long time for certain
                         # upgrades, e.g. upgrades to Cloud Composer versions.
@@ -232,9 +278,22 @@ class CreateTerraformPlan(DeploymentStageInterface):
             build_steps.insert(
                 0,
                 build_step_for_shell_command(
-                    command="git fetch origin $_COMMIT_REF && git checkout $_COMMIT_REF",
+                    # Cloud Build checks out main (from the trigger's
+                    # source_to_build) before running the build, but we need
+                    # to plan against the PR's head commit. Fetch + checkout
+                    # that commit explicitly using a GitHub OAuth token — the
+                    # repo is connected via Cloud Build's GitHub App, so
+                    # authenticated HTTPS over github.com is the supported
+                    # access path.
+                    command=(
+                        "git config --global credential.helper store && "
+                        'echo "https://oauth2:$${GITHUB_TOKEN}@github.com" > ~/.git-credentials && '
+                        "git fetch origin $_COMMIT_REF && "
+                        "git checkout $_COMMIT_REF"
+                    ),
                     id_="Fetch webhook-specified commit",
                     name=BUILDER_GIT,
+                    secret_env=[GITHUB_TOKEN_ENV_VAR],
                     timeout_seconds=(15 * 60),  # 15 min timeout
                 ),
             )
@@ -252,6 +311,11 @@ class CreateTerraformPlan(DeploymentStageInterface):
                             f"terraform show -no-color {plan_path} > /workspace/terraform-plan-output.txt",
                         ],
                         wait_for=[terraform_plan.id],
+                        # If the plan step failed, there's no .tfplan for
+                        # `terraform show` to read and this step will exit
+                        # non-zero. Allow that failure so the comment step
+                        # still runs and posts the plan error to the PR.
+                        allow_failure=True,
                     ),
                     build_step_for_shell_command(
                         id_="Comment plan on Pull Request",
@@ -263,6 +327,8 @@ class CreateTerraformPlan(DeploymentStageInterface):
                             "--pull-request-number $_PR_NUMBER "
                             f"--commit-ref {deployment_context.commit_ref} "
                             "--terraform-plan-output-path /workspace/terraform-plan-output.txt "
+                            f"--terraform-plan-error-logs-path {TERRAFORM_PLAN_ERROR_LOG_PATH} "
+                            '--cloud-build-url "https://console.cloud.google.com/cloud-build/builds;region=$LOCATION/$BUILD_ID?project=$PROJECT_ID"'
                         ),
                         volumes=[RECIDIVIZ_SOURCE_VOLUME],
                         wait_for=[STEP_SHOW_TERRAFORM_PLAN],
@@ -271,13 +337,27 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 ]
             )
 
+        # GITHUB_TOKEN is only needed by the PR-commenter's "Fetch
+        # webhook-specified commit" step (which checks out the PR head via
+        # authenticated HTTPS). Deploy builds fetch their source from the
+        # trigger's configured source ref, so no token is needed.
+        secrets = (
+            {GITHUB_TOKEN_SECRET_NAME: GITHUB_TOKEN_ENV_VAR}
+            if args.for_pull_requests
+            else {}
+        )
+
+        # Apply can take a long time for certain infrastructure updates (e.g.
+        # Cloud Composer upgrades), so budget 4 hours. Plan-only runs only need
+        # to accommodate the summed per-step timeouts (at most ~1h with the PR
+        # fetch/comment steps included).
+        timeout_seconds = 4 * 60 * 60 if args.apply else 60 * 60
+
         return BuildConfiguration(
             steps=build_steps,
+            secrets=secrets,
             uses_source=True,
-            # 4 hour timeout for the overall job - we expect most runs to take much less
-            # time than this, but some infrastructure updates may take a long time and
-            # we don't want to fail those in the middle.
-            timeout_seconds=4 * 60 * 60,
+            timeout_seconds=timeout_seconds,
             machine_type=assert_type(
                 BuildOptions.MachineType.E2_HIGHCPU_32,
                 BuildOptions.MachineType,

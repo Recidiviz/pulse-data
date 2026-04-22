@@ -30,7 +30,6 @@ commit the updated YAML file:
 """
 import argparse
 import os
-from typing import Any
 
 import attrs
 import yaml
@@ -40,6 +39,7 @@ import recidiviz
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
     DeploymentContext,
     build_config_to_dict,
+    strip_build_config_defaults,
 )
 from recidiviz.tools.deploy.cloud_build.constants import (
     IMAGE_BUILD_PLATFORMS,
@@ -72,35 +72,6 @@ OUTPUT_PATH = os.path.join(
 )
 
 
-# Fields from the BuildStep proto that are response-only and should not appear
-# in the generated config.
-_STEP_RESPONSE_ONLY_FIELDS = {
-    "status",
-    "exit_code",
-    "allow_exit_codes",
-    "allow_failure",
-    "script",
-    "automap_substitutions",
-}
-
-
-def _strip_defaults(value: Any) -> Any:
-    """Recursively remove fields with default proto values and response-only
-    step fields, so the generated YAML only contains meaningful config."""
-    if isinstance(value, dict):
-        cleaned = {
-            k: _strip_defaults(v)
-            for k, v in value.items()
-            if v not in ("", "0", [], None, 0, False, {})
-            and k not in _STEP_RESPONSE_ONLY_FIELDS
-        }
-        # Drop keys whose values became empty dicts after recursion
-        return {k: v for k, v in cleaned.items() if v != {}}
-    if isinstance(value, list):
-        return [_strip_defaults(item) for item in value]
-    return value
-
-
 def generate() -> dict:
     """Generate the post-commit Docker build config for the staging release
     trigger. Returns the full Cloud Build configuration dict with default and
@@ -127,7 +98,7 @@ def generate() -> dict:
         # configuration in Terraform, not via the build config.
         service_account=None,
     )
-    config_dict = _strip_defaults(config_dict)
+    config_dict = strip_build_config_defaults(config_dict)
     # The proto enum serializes as an integer; convert to the string name
     # that Terraform expects.
     config_dict["options"]["machine_type"] = BuildOptions.MachineType(

@@ -72,15 +72,18 @@ class BuildConfiguration:
     """Simplified entrypoint into `cloud_buildv1.Build` for use with `create_deployment_build_api_obj` factory"""
 
     steps: list[BuildStep]
-    # It is possible to use Secret Manager secret values in the build by using substitutions
+    # Secret Manager secrets to expose to build steps. Maps Secret Manager
+    # secret name → env var name that the secret's value is exposed as.
     # example: BuildConfiguration(
-    #   secrets=["deploy_slack_bot_authorization_token"],
+    #   secrets={"deploy_slack_bot_authorization_token": secret_substitution_name(
+    #       "deploy_slack_bot_authorization_token"
+    #   )},
     #   steps=[BuildStep(
     #       command=f"echo {secret_substitution('deploy_slack_bot_authorization_token')}",
     #       secret_env=[secret_substitution_name("deploy_slack_bot_authorization_token")],
     #   )]
     # )
-    secrets: list[str] = attr.ib(factory=dict)
+    secrets: dict[str, str] = attr.ib(factory=dict)
     # If set to true, Cloud Build will do a shallow checkout of the specified commit ref prior to running the build
     # The repository is cloned into the /workspace/ directory
     uses_source: bool = attr.ib(default=False)
@@ -215,15 +218,42 @@ def create_deployment_build_api_obj(
     )
 
     available_secrets = Secrets()
-    for secret_name in build_configuration.secrets:
+    for secret_name, env_name in build_configuration.secrets.items():
         available_secrets.secret_manager.append(
             SecretManagerSecret(
                 version_name=f"projects/$_PROJECT_ID/secrets/{secret_name}/versions/latest",
-                env=secret_substitution_name(secret_name),
+                env=env_name,
             )
         )
     builder.update_args(available_secrets=available_secrets)
     return builder.build()
+
+
+# Fields from the BuildStep proto that are response-only and should not appear
+# in generated configs.
+_STEP_RESPONSE_ONLY_FIELDS = {
+    "status",
+    "exit_code",
+    "allow_exit_codes",
+    "script",
+    "automap_substitutions",
+}
+
+
+def strip_build_config_defaults(value: Any) -> Any:
+    """Recursively remove fields with default proto values and response-only
+    step fields, so generated configs only contain meaningful config."""
+    if isinstance(value, dict):
+        cleaned = {
+            k: strip_build_config_defaults(v)
+            for k, v in value.items()
+            if v not in ("", "0", [], None, 0, False, {})
+            and k not in _STEP_RESPONSE_ONLY_FIELDS
+        }
+        return {k: v for k, v in cleaned.items() if v != {}}
+    if isinstance(value, list):
+        return [strip_build_config_defaults(item) for item in value]
+    return value
 
 
 def _clean_proto_dict(value: Any) -> Any:
