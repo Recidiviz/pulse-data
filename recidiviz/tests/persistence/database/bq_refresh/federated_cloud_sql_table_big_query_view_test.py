@@ -67,7 +67,7 @@ schema-specific datasets (`state`, `justice_counts`, etc)."""
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "test-project.us-east2.operations_v2_cloudsql",
+    "test-project.us-east2.operations_cloudsql",
     "SELECT * FROM direct_ingest_dataflow_job;"
 )"""
 
@@ -80,7 +80,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="operations_v2_cloudsql_connection",
+                dataset_id="operations_cloudsql_connection",
                 table_id="direct_ingest_dataflow_job",
             ),
             view.address,

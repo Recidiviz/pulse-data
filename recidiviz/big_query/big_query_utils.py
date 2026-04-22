@@ -441,7 +441,7 @@ def escape_backslashes_for_query(values: list[str]) -> list[str]:
 
 
 LINEAGE_LINK_DATASET_EXEMPTIONS = {
-    "operations_v2_cloudsql_connection",
+    "operations_cloudsql_connection",
     "case_triage_cloudsql_connection",
 }
 

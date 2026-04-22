@@ -112,7 +112,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         f"{FEDERATED_REFRESH_PACKAGE_NAME}.CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA",
         {
             SchemaType.OPERATIONS: {
-                "operations_v2_cloudsql_connection",
+                "operations_cloudsql_connection",
                 "operations_regional",
             }
         },
@@ -129,7 +129,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
                 mock.call(
-                    "operations_v2_cloudsql_connection",
+                    "operations_cloudsql_connection",
                     default_table_expiration_ms=None,
                 ),
                 mock.call("operations_regional", default_table_expiration_ms=None),
@@ -189,7 +189,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
                 mock.call(
-                    "my_prefix_operations_v2_cloudsql_connection",
+                    "my_prefix_operations_cloudsql_connection",
                     default_table_expiration_ms=expiration_ms,
                 ),
                 mock.call(

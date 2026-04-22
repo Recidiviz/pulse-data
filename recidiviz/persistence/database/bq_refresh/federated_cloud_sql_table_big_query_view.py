@@ -25,7 +25,6 @@ from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -117,10 +116,6 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
 
     @staticmethod
     def _connection_name_for_database(database_key: SQLAlchemyDatabaseKey) -> str:
-        # TODO(#8282): Remove this custom v2 logic when we're in the Phase 5 cleanup.
-        if database_key.schema_type == SchemaType.OPERATIONS:
-            return f"{database_key.schema_type.value.lower()}_v2_cloudsql"
-
         if database_key.is_default_db:
             return f"{database_key.schema_type.value.lower()}_cloudsql"
 

@@ -379,8 +379,8 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "case_triage_federated_regional",
     },
     SchemaType.OPERATIONS: {
-        # TODO(#8282): Remove this once we delete the v1 databases.
         "operations_cloudsql_connection",
+        # TODO(#73599): Remove once this dataset is deleted from prod and staging.
         "operations_v2_cloudsql_connection",
         "us_ar_operations_regional",
         "us_ca_operations_regional",
