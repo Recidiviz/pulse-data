@@ -20,9 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
-    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
@@ -53,17 +50,6 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
     "INSIGHTS": {
-        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,
-            },
-        },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,

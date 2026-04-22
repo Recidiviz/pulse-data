@@ -20,9 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
-    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
@@ -100,32 +97,6 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
     "INSIGHTS": {
-        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                # TODO(#50859): migrate these usages to sentence_sessions
-                US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address,
-                US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-                US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-            },
-            SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
-                # TODO(#50859): migrate these usages to sentence_sessions
-                US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED_VIEW_BUILDER.address,
-                US_PA_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
-                US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
-                table_id=StateCharge.get_table_id(),
-            ): {
-                # TODO(#50859): migrate these usages to sentence_sessions
-                US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
-                US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 # TODO(#50859): migrate these usages to sentence_sessions
