@@ -382,6 +382,24 @@ Denominator is the average daily caseload for the agent over the given time peri
         AND avg_daily_population BETWEEN 10 AND 175
         AND prop_period_with_critical_caseload >= 0.75""",
     ),
+    StateCode.US_NC: OutliersBackendConfig(
+        metrics=[
+            ################
+            # This is a placeholder metric required because there are various places in
+            # OutliersQuerier where we assume the existence of at least one outcomes metric.
+            # This data has not been validated and is not displayed to users.
+            ################
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_NC,
+                metric=INCARCERATION_STARTS,
+                title_display_name="Incarceration Rate",
+                body_display_name="incarceration rate",
+                event_name="incarcerations",
+                event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
+            ),
+        ],
+    ),
     StateCode.US_ND: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(

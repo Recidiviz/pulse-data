@@ -20,6 +20,15 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.meetings.clients import (
     MEETINGS_CLIENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
+    METRIC_BENCHMARKS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
+    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
+    SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -34,6 +43,23 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record im
 US_NC_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
+    "INSIGHTS": {
+        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
+        SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
+        METRIC_BENCHMARKS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
+    },
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
