@@ -27,9 +27,13 @@ data "google_project" "current" {}
 # whenever a PR modifies Terraform-related files. Runs `terraform plan` and
 # posts the output as a comment on the PR.
 resource "google_cloudbuild_trigger" "terraform_plan_pr_commenter" {
-  provider        = google-beta
-  count           = var.project_id == "recidiviz-staging" ? 1 : 0
-  name            = "terraform-plan-pr-commenter"
+  provider = google-beta
+  count    = var.project_id == "recidiviz-staging" ? 1 : 0
+  name     = "terraform-plan-pr-commenter"
+  # Triggers that reference a 2nd-gen repository resource (see source_to_build
+  # below) must live in the same region as the repository connection; they
+  # cannot be created in the default "global" region.
+  location        = "us-west1"
   description     = "Generates and comments Terraform plans on Github Pull Requests"
   service_account = "projects/${var.project_id}/serviceAccounts/terraform-plan-pr-commenter@${var.project_id}.iam.gserviceaccount.com"
 
