@@ -277,7 +277,10 @@ FROM intersection_spans_with_critical_understaffing
 
 
 def contact_compliance_builder_type_agnostic(
-    criteria_name: str, description: str, where_clause: str
+    criteria_name: str,
+    description: str,
+    where_clause: str,
+    use_alternative_contact_cadence_reason: bool = False,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """Returns a state-specific criteria view builder indicating the spans of time when
     a person has on supervision has not met the contact compliance cadence for a given
@@ -287,6 +290,10 @@ def contact_compliance_builder_type_agnostic(
         criteria_name (str): The name of the criteria
         description (str): The description of the criteria
         where_clause (str): What type-agnostic contacts to filter down to
+        use_alternative_contact_cadence_reason (bool): If True, COALESCE the
+            pre-computed `alternative_contact_cadence_reason` from the type-agnostic
+            cadence spans view into the `contact_cadence` string (e.g. surfaces
+            "1 EVERY EVEN MONTH" for MINIMUM/SMI office contacts).
     """
 
     _QUERY_TEMPLATE = f"""
@@ -322,6 +329,7 @@ def contact_compliance_builder_type_agnostic(
             CAST(p.contact_period_end AS DATE) AS contact_period_end,
             DATE_ADD(CAST(p.contact_period_end AS DATE), INTERVAL 1 DAY) as contact_period_end_exclusive,
             ci.contact_type,
+            {"p.alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM `{{project_id}}.tasks_views.us_tx_contact_cadence_spans_type_agnostic_materialized` p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
@@ -332,7 +340,7 @@ def contact_compliance_builder_type_agnostic(
     ),
     -- Union all critical dates (start date, end date, contact dates)
     critical_dates as (
-       SELECT 
+       SELECT
             person_id,
             contact_types_accepted,
             contact_period_start,
@@ -342,9 +350,10 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM lookback_cte
-        UNION DISTINCT 
-        SELECT 
+        UNION DISTINCT
+        SELECT
             person_id,
             contact_types_accepted,
             contact_period_start,
@@ -354,6 +363,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM lookback_cte
         UNION DISTINCT
         SELECT
@@ -366,6 +376,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM lookback_cte
         WHERE contact_date IS NOT NULL
             -- Restrict critical dates to the contact period range so that contacts
@@ -387,6 +398,7 @@ def contact_compliance_builder_type_agnostic(
             supervision_level,
             frequency,
             frequency_date_part,
+            {"alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM critical_dates
     ),
     -- Divided periods with the associated contacts connected
@@ -403,6 +415,7 @@ def contact_compliance_builder_type_agnostic(
             contact_types_accepted,
             frequency,
             frequency_date_part,
+            {"p.alternative_contact_cadence_reason," if use_alternative_contact_cadence_reason else ""}
         FROM divided_periods p
         LEFT JOIN contact_info ci
             ON p.person_id = ci.person_id
@@ -481,7 +494,7 @@ def contact_compliance_builder_type_agnostic(
                 ELSE
                  "CONTACT"
             END AS period_type,
-            CASE 
+            {"COALESCE(alternative_contact_cadence_reason, " if use_alternative_contact_cadence_reason else ""}CASE
                 WHEN frequency = 1 AND frequency_date_part = "MONTH"
                     THEN "1 EVERY MONTH"
                 WHEN frequency = 1 AND frequency_date_part = "WEEK"
@@ -489,8 +502,8 @@ def contact_compliance_builder_type_agnostic(
                 WHEN frequency = 1 AND frequency_date_part = "DAY"
                     THEN "1 EVERY DAY"
                 ELSE
-                    CONCAT("1 EVERY ", frequency, " ", frequency_date_part, "S") 
-            END AS contact_cadence,
+                    CONCAT("1 EVERY ", frequency, " ", frequency_date_part, "S")
+            END{")" if use_alternative_contact_cadence_reason else ""} AS contact_cadence,
             frequency,
             frequency_date_part
         FROM contact_count cc
