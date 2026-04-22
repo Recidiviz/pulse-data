@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][2W] {ACRONYM} - Run Bug Bash"
+body: |
+  Execute the bug bash session with trusted testers and other stakeholders to identify issues and gather feedback. See the [bug bash template](https://docs.google.com/document/d/1KhsOdwbISMWxbCjH7OvPlc2YJRj8zOjyhqIwavabLvM/edit?tab=t.0).
+
+  **Phase**: Two Weeks Before
+  **Ownership**: This task should be completed by the Product Manager.

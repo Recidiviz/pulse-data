@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][D] {ACRONYM} - Confirm Working After Daily Export"
+body: |
+  Verify that the workflow is functioning correctly after the first daily data export in production.
+
+  **Phase**: Day Of
+  **Ownership**: This task should be completed by the Tech Lead.

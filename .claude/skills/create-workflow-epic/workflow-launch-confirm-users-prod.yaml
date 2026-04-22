@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][W] {ACRONYM} - Confirm Users Created in Production"
+body: |
+  Confirm that all authorized users have been created in the production environment and have the appropriate access levels.
+
+  **Phase**: Week Before
+  **Ownership**: This task should be completed by the Software Engineer.

@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][MB] {ACRONYM} - Ensure Trusted Tester Calls Completed"
+body: |
+  Ensure that all necessary calls and meetings with trusted testers have been scheduled and completed to gather initial feedback.
+
+  **Phase**: Month Before
+  **Ownership**: This task should be completed by the Data Analyst.

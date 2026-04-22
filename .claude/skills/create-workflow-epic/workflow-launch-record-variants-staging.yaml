@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][2W] {ACRONYM} - Record Feature Variants for Staging"
+body: |
+  Record all feature variant flags for the workflow in the staging environment to enable pre-launch testing and validation.
+
+  **Phase**: Two Weeks Before
+  **Ownership**: This task should be completed by the Software Engineer.

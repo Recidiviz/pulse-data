@@ -1,0 +1,14 @@
+body: |
+  ## Workflow Name
+  {WORKFLOW_NAME}
+
+  ## Objective
+  {OBJECTIVE}
+
+  ## Documentation
+
+  Policy Document: {POLICY_DOC_LINK}
+  PRD: {PRD_LINK}
+
+  ---
+  _Filed by Claude_

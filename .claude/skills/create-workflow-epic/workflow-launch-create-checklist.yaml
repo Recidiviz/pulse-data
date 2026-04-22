@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][MB] {ACRONYM} - Create Launch Checklist"
+body: |
+  Create the launch checklist for the workflow using the template at: https://www.notion.so/recidiviz/Insert-Initiative-Name-Technical-Launch-Checklist-3187889f4d19807f9545c711716dfb82
+
+  **Phase**: Month Before
+  **Ownership**: This task should be completed by the Product Manager.

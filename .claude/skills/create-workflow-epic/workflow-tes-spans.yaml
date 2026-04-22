@@ -1,0 +1,5 @@
+title: "[{STATE_CODE}][Workflows] {ACRONYM} - Create TES Spans"
+body: |
+  Write and combine initial TES queries: candidate population (who could be eligible), individual criteria (when they meet specific criteria), and completion event (when the opportunity is granted). These are combined into a single task eligibility span view. See [Playbook steps 4-5](https://www.notion.so/recidiviz/Workflows-Data-Analyst-Technical-Workflows-Playbook-go-da-workflows-playbook-detail-fabe7d55bd224a8b9ea524b455b1864b).
+
+  **Ownership**: This task should be completed by the Data Analyst.

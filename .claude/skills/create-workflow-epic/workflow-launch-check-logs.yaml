@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][D] {ACRONYM} - Check GCP and Auth0 Logs"
+body: |
+  Monitor GCP and Auth0 logs during and immediately after launch to identify any authentication, access, or system errors.
+
+  **Phase**: Day Of
+  **Ownership**: This task should be completed by the Tech Lead.

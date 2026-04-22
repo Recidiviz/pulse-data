@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][MB] {ACRONYM} - Update Demo Mode"
+body: |
+  Update the demo mode configuration to accurately reflect the workflow, ensuring demo users can see the opportunity in staging.
+
+  **Phase**: Month Before
+  **Ownership**: This task should be completed by the Software Engineer.

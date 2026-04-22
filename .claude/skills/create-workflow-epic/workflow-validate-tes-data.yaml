@@ -1,0 +1,5 @@
+title: "[{STATE_CODE}][Workflows] {ACRONYM} - Validate TES Data with Trusted Testers"
+body: |
+  Coordinate with trusted testers to validate the task eligibility spans and opportunity queries. Validate both eligible and ineligible cases to ensure criteria alignment with actual policy implementation. See [Playbook step 9](https://www.notion.so/recidiviz/Workflows-Data-Analyst-Technical-Workflows-Playbook-go-da-workflows-playbook-detail-fabe7d55bd224a8b9ea524b455b1864b).
+
+  **Ownership**: This task should be completed by the Data Analyst.

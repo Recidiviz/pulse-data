@@ -95,6 +95,7 @@ Format the body to EXACTLY match the template structure you read in step 1.
 **Always show the user what you're about to file before filing it.** Display:
 - The title you've prepared
 - The labels you'll use
+- The parent issue (if provided)
 - The body you've formatted
 
 For example:
@@ -103,6 +104,7 @@ I'm ready to file this issue:
 
 Title: [Raw data import] Support configurable EOF character stripping
 Labels: Team: Data Platform
+Parent issue: Recidiviz/recidiviz-dashboards#9389 (if applicable)
 
 Body:
 **What needs to be done? Why does it need to be done?**
@@ -185,7 +187,49 @@ structure):
 - `.github/ISSUE_TEMPLATE/bug_report.md` - For bugs
 - Others: Check `.github/ISSUE_TEMPLATE/` directory
 
-#### 8. Fill in the issue number in in-code TODOs (if applicable)
+#### 8. Link to a parent issue (if applicable)
+
+After filing the issue, use the `AskUserQuestion` tool to ask whether the newly
+filed issue should be linked to a parent issue (e.g., an epic) — unless the user
+already provided one. Frame the question so the user can either provide a parent
+issue reference (e.g. `Recidiviz/recidiviz-dashboards#9389` or a full issue URL)
+or decline to link one.
+
+If the user provides a parent issue (e.g., `Recidiviz/recidiviz-dashboards#9389`
+or a full URL like `https://github.com/Recidiviz/recidiviz-dashboards/issues/9389`),
+link the newly created issue as a sub-issue using the GitHub GraphQL API:
+
+1. Get the node IDs for both the parent and child issues:
+   ```bash
+   # Get parent issue node ID (adjust --repo as needed)
+   gh issue view <parent_number> --repo <owner/repo> --json id --jq '.id'
+
+   # Get child issue node ID
+   gh issue view <child_number> --repo <owner/repo> --json id --jq '.id'
+   ```
+
+2. Add the sub-issue relationship using the `addSubIssue` GraphQL mutation:
+   ```bash
+   gh api graphql -f query='
+   mutation {
+     addSubIssue(input: {
+       issueId: "<PARENT_NODE_ID>",
+       subIssueId: "<CHILD_NODE_ID>"
+     }) {
+       issue { number title }
+       subIssue { number title }
+     }
+   }'
+   ```
+
+**Notes:**
+- This works across repositories (e.g., parent in `recidiviz-dashboards`, child
+  in `pulse-data`)
+- If the child issue already has a parent and you want to replace it, add
+  `replaceParent: true` to the input
+- If the user says "none" or "skip", proceed without linking
+
+#### 9. Fill in the issue number in in-code TODOs (if applicable)
 
 After filing the issue, if there are any `TODO(XXXX)` placeholder comments in code, update them to reference the new issue number (e.g. `TODO(#12345)`)
 

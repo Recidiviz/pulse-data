@@ -1,0 +1,5 @@
+title: "[{STATE_CODE}][Workflows] {ACRONYM} - Create Admin Panel Configuration for Opportunity"
+body: |
+  Create admin panel configuration for the opportunity to enable system administrators to manage and monitor the workflow.
+
+  **Ownership**: This task should be completed by the Data Analyst.

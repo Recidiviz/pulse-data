@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][2W] {ACRONYM} - Ensure Users Created"
+body: |
+  Ensure that all users in the provided list have been created in the system with appropriate permissions and access levels.
+
+  **Phase**: Two Weeks Before
+  **Ownership**: This task should be completed by the Software Engineer.

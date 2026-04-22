@@ -1,0 +1,5 @@
+title: "[{STATE_CODE}][Workflows] {ACRONYM} - Create Opportunity Record Query"
+body: |
+  Write a query that surfaces eligible and almost-eligible individuals with eligibility information, form fields for auto-population, case notes, and metadata. This query powers the frontend to display who is eligible for the opportunity. See [Playbook step 6](https://www.notion.so/recidiviz/Workflows-Data-Analyst-Technical-Workflows-Playbook-go-da-workflows-playbook-detail-fabe7d55bd224a8b9ea524b455b1864b).
+
+  **Ownership**: This task should be completed by the Data Analyst.

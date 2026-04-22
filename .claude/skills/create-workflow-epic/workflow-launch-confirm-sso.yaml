@@ -1,0 +1,6 @@
+title: "[{STATE_CODE}][Workflows][MB] {ACRONYM} - Confirm and Test SSO"
+body: |
+  Confirm that Single Sign-On (SSO) is properly configured and test the authentication flow for the workflow.
+
+  **Phase**: Month Before
+  **Ownership**: This task should be completed by the Software Engineer.
