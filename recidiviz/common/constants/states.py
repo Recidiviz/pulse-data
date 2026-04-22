@@ -97,6 +97,10 @@ class _SharedStateCode(enum.Enum):
 
         return channel_name
 
+    def lower_hyphened_code(self) -> str:
+        # str() cast needed to satisfy mypy
+        return str(self.value).lower().replace("_", "-")
+
 
 PLAYGROUND_STATE_CODE = "US_OZ"
 PLAYGROUND_STATE_INFO = {

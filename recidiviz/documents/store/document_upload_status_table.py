@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Schema definition for the document_upload_status table."""
+from datetime import datetime
+
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
 
@@ -26,6 +28,12 @@ from recidiviz.ingest.direct.dataset_config import (
 
 DOCUMENT_UPLOAD_SUCCESS = "SUCCESS"
 DOCUMENT_UPLOAD_FAILURE = "FAILURE"
+
+DOCUMENT_CONTENTS_ID = "document_contents_id"
+JOB_ID = "job_id"
+UPLOAD_DATETIME = "upload_datetime"
+STATUS = "status"
+ERROR_MESSAGE = "error_message"
 
 
 class DocumentUploadStatusTable:
@@ -40,31 +48,31 @@ class DocumentUploadStatusTable:
     def schema() -> list[SchemaField]:
         return [
             SchemaField(
-                name="document_contents_id",
+                name=DOCUMENT_CONTENTS_ID,
                 field_type=SqlTypeNames.STRING.value,
                 mode="REQUIRED",
                 description="SHA256 hash of state_code | document_text",
             ),
             SchemaField(
-                name="job_id",
+                name=JOB_ID,
                 field_type=SqlTypeNames.STRING.value,
                 mode="REQUIRED",
                 description="The job run id that attempted the upload",
             ),
             SchemaField(
-                name="upload_datetime",
+                name=UPLOAD_DATETIME,
                 field_type=SqlTypeNames.TIMESTAMP.value,
                 mode="REQUIRED",
                 description="When the upload was attempted",
             ),
             SchemaField(
-                name="status",
+                name=STATUS,
                 field_type=SqlTypeNames.STRING.value,
                 mode="REQUIRED",
                 description=f"{DOCUMENT_UPLOAD_SUCCESS} or {DOCUMENT_UPLOAD_FAILURE}",
             ),
             SchemaField(
-                name="error_message",
+                name=ERROR_MESSAGE,
                 field_type=SqlTypeNames.STRING.value,
                 mode="NULLABLE",
                 description=f"Error details if {DOCUMENT_UPLOAD_FAILURE}, NULL if {DOCUMENT_UPLOAD_SUCCESS}",
@@ -80,4 +88,24 @@ class DocumentUploadStatusTable:
             project_id=project_id,
             dataset_id=document_store_metadata_dataset_for_region(state_code),
             table_id=cls.table_id,
+        )
+
+    @classmethod
+    def column_names(cls) -> list[str]:
+        return [field.name for field in cls.schema()]
+
+    @staticmethod
+    def to_csv_row(
+        document_contents_id: str,
+        job_id: str,
+        upload_datetime: datetime,
+        status: str,
+        error_message: str | None,
+    ) -> tuple[str, str, str, str, str | None]:
+        return (
+            document_contents_id,
+            job_id,
+            upload_datetime.isoformat(),
+            status,
+            error_message,
         )

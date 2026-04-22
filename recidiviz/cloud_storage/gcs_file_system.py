@@ -30,6 +30,8 @@ from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 
 BYTES_CONTENT_TYPE = "application/octet-stream"
+CSV_CONTENT_TYPE = "text/csv"
+TEXT_CONTENT_TYPE = "text/plain"
 
 
 class GCSBlobDoesNotExistError(ValueError):

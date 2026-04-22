@@ -89,8 +89,7 @@ class RecidivizPagerDutyService(RecidivizAlertingService[AirflowAlertingIncident
         """Returns the service for alerts related to non-raw data, state-specific
         Airflow data platform task failures for the given state_code.
         """
-        state_code_str = state_code.value.lower().replace("_", "-")
-        base_username = f"{state_code_str}-airflow"
+        base_username = f"{state_code.lower_hyphened_code()}-airflow"
         return RecidivizPagerDutyService(
             name=f"{state_code.value} Airflow (Default) PagerDuty Service",
             project_id=project_id,
@@ -106,8 +105,7 @@ class RecidivizPagerDutyService(RecidivizAlertingService[AirflowAlertingIncident
         """Returns the service for alerts related to state-specific raw data import
         task failures for the given state_code.
         """
-        state_code_str = state_code.value.lower().replace("_", "-")
-        base_username = f"{state_code_str}-airflow-raw-data"
+        base_username = f"{state_code.lower_hyphened_code()}-airflow-raw-data"
         return RecidivizPagerDutyService(
             name=f"{state_code.value} Airflow (Raw Data) PagerDuty Service",
             project_id=project_id,

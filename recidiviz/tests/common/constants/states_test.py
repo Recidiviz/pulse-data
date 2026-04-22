@@ -143,6 +143,11 @@ class TestStates(unittest.TestCase):
         self.assertEqual("Virgin Islands", StateCode.US_VI.get_state().name)
         self.assertEqual("Northern Mariana Islands", StateCode.US_MP.get_state().name)
 
+    def test_lower_hyphened_code(self) -> None:
+        self.assertEqual("us-tn", StateCode.US_TN.lower_hyphened_code())
+        self.assertEqual("us-nd", StateCode.US_ND.lower_hyphened_code())
+        self.assertEqual("us-xx", StateCode.US_XX.lower_hyphened_code())
+
     def test_slack_channel(self) -> None:
         self.assertEqual("#us-tennessee", StateCode.US_TN.slack_channel_name())
         self.assertEqual("#us-missouri-internal", StateCode.US_MO.slack_channel_name())
