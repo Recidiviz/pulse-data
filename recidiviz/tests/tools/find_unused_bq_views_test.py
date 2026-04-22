@@ -43,7 +43,7 @@ class TestFindUnusedBQViews(unittest.TestCase):
                 2) If this view is no longer needed but there is a reason why you want to delete it in 
                   a later follow-up PR (e.g. because there are a lot of views to delete, you want to 
                   validate your change first, etc), add the address to 
-                  UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON with your name, date, and a comment that includes
+         with your name, date, and a comment that includes
                   a linked cleanup task.
                 3) If this is a new view that will soon be used in a product view, add the address to 
                   UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON with your name, date, and a comment that includes

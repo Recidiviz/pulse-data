@@ -605,6 +605,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "analyst_data.us_tn_annex_sessions_preprocessed"
     ): "View not yet referenced, but will be helpful for 2026 classification pilot monitoring and we intend to reference it in the future (Ethan Oro, 2026-03-13)",
+    BigQueryAddress.from_str("segment_events.all_public_pathways_segment_events"): (
+        "Union view for Public Pathways segment events. Kept for potential future use. "
+        "(Jen Overgaag, 2026-04-21)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

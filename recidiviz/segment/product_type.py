@@ -45,6 +45,7 @@ class ProductType(Enum):
     LANTERN = "LANTERN"
     MILESTONES = "MILESTONES"
     PATHWAYS = "PATHWAYS"
+    PUBLIC_PATHWAYS = "PUBLIC_PATHWAYS"
     PSI_CASE_INSIGHTS = "PSI_CASE_INSIGHTS"
     SENTENCING_ASSESSMENT_REPORT = "SENTENCING_ASSESSMENT_REPORT"
     ROUTE_PLANNER = "ROUTE_PLANNER"
@@ -66,6 +67,8 @@ class ProductType(Enum):
             return "https://plan.recidiviz.org"
         if self == ProductType.MEETINGS:
             return "https://meet.recidiviz.org"
+        if self == ProductType.PUBLIC_PATHWAYS:
+            return "https://pathways.recidiviz.org"
         return "https://dashboard.recidiviz.org"
 
     @property
@@ -91,6 +94,7 @@ class ProductType(Enum):
             ProductType.MEETINGS,
             ProductType.MILESTONES,
             ProductType.PATHWAYS,
+            ProductType.PUBLIC_PATHWAYS,
             ProductType.PSI_CASE_INSIGHTS,
             ProductType.SENTENCING_ASSESSMENT_REPORT,
             ProductType.SUPERVISOR_HOMEPAGE_OPPORTUNITIES_MODULE,
@@ -137,6 +141,9 @@ class ProductType(Enum):
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows/milestones')"
         elif self == ProductType.PATHWAYS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/system')"
+        elif self == ProductType.PUBLIC_PATHWAYS:
+            # No additional path filtering needed - just the url_base check
+            return url_base_check
         elif self == ProductType.PSI_CASE_INSIGHTS:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/psi')"
         elif self == ProductType.SENTENCING_ASSESSMENT_REPORT:
@@ -330,6 +337,12 @@ class ProductType(Enum):
         return []
 
     @property
+    def is_public_access(self) -> bool:
+        """Returns True if this product type is accessible without authentication
+        (i.e., no auth0 routes or feature variants are required to access it)."""
+        return self == ProductType.PUBLIC_PATHWAYS
+
+    @property
     def product_roster_feature_variants(self) -> list[str]:
         """Returns the feature variants that should be used to identify users who are provisioned
         to access this product type via product roster. Converts the auth0 feature variants to camelCase
@@ -374,6 +387,8 @@ class ProductType(Enum):
                 )
             )
         if not conditions:
+            if self.is_public_access:
+                return "(TRUE)"
             raise ValueError(
                 f"No product roster routes or feature variants defined for product type: {self}"
             )
@@ -423,6 +438,8 @@ class ProductType(Enum):
             )
 
         if not conditions:
+            if self.is_public_access:
+                return "(TRUE)"
             raise ValueError(
                 f"No auth0 routes or feature variants defined for product type: {self}"
             )

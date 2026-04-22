@@ -27,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     JII_AUTH0_PROD_SEGMENT_DATASET,
     JII_BACKEND_PRODUCTION_SEGMENT_METRICS,
     JII_FRONTEND_PROD_SEGMENT_DATASET,
+    PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -86,6 +87,9 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
         "Stores source tables that are updated manually."
+    ),
+    PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET: (
+        "Stores events logged from public-pathways via Segment."
     ),
     PULSE_DASHBOARD_SEGMENT_DATASET: (
         "Stores events logged from pulse-dashboard via Segment."
