@@ -286,7 +286,19 @@ def build_config_to_dict(
         deployment_context=deployment_context,
         service_account=service_account,
     )
-    raw_dict = proto.Message.to_dict(build_obj)  # type: ignore[attr-defined]
+    # use_integers_for_enums=False: emit enums as their string names
+    # (e.g. "ALLOW_LOOSE") rather than ints, so the generated YAML can be read
+    # directly by Terraform resources like google_cloudbuild_trigger whose
+    # enum-typed fields require the string form.
+    # always_print_fields_with_no_presence=False: skip fields set to their
+    # proto default (e.g. logging=LOGGING_UNSPECIFIED), which would otherwise
+    # surface as noise — strip_build_config_defaults only recognizes the int
+    # zero form, not the default string names.
+    raw_dict = proto.Message.to_dict(  # type: ignore[attr-defined]
+        build_obj,
+        use_integers_for_enums=False,
+        always_print_fields_with_no_presence=False,
+    )
     return _clean_proto_dict(raw_dict)
 
 

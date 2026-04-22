@@ -62,7 +62,7 @@ resource "google_cloudbuild_trigger" "terraform_plan_pr_commenter" {
 
     options {
       machine_type        = local.pr_commenter_build_config.options.machine_type
-      substitution_option = "ALLOW_LOOSE"
+      substitution_option = local.pr_commenter_build_config.options.substitution_option
     }
 
     available_secrets {

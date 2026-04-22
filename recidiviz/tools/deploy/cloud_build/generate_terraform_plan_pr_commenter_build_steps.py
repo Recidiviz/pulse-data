@@ -32,7 +32,6 @@ import argparse
 import os
 
 import yaml
-from google.cloud.devtools.cloudbuild_v1 import BuildOptions
 
 import recidiviz
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
@@ -81,9 +80,6 @@ def generate() -> dict:
         service_account=_BUILD_SERVICE_ACCOUNT,
     )
     config_dict = strip_build_config_defaults(config_dict)
-    config_dict["options"]["machine_type"] = BuildOptions.MachineType(
-        config_dict["options"]["machine_type"]
-    ).name
     return config_dict
 
 

@@ -33,7 +33,6 @@ import os
 
 import attrs
 import yaml
-from google.cloud.devtools.cloudbuild_v1 import BuildOptions
 
 import recidiviz
 from recidiviz.tools.deploy.cloud_build.build_configuration import (
@@ -99,11 +98,6 @@ def generate() -> dict:
         service_account=None,
     )
     config_dict = strip_build_config_defaults(config_dict)
-    # The proto enum serializes as an integer; convert to the string name
-    # that Terraform expects.
-    config_dict["options"]["machine_type"] = BuildOptions.MachineType(
-        config_dict["options"]["machine_type"]
-    ).name
     return config_dict
 
 

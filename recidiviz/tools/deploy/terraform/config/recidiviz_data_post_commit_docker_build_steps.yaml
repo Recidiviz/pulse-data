@@ -147,7 +147,7 @@ timeout: 3600s
 logs_bucket: gs://${_PROJECT_ID}-ci-cd-logs
 options:
   machine_type: E2_HIGHCPU_32
-  substitution_option: 1
+  substitution_option: ALLOW_LOOSE
 substitutions:
   _PROJECT_ID: $PROJECT_ID
   _COMMIT_REF: $COMMIT_SHA

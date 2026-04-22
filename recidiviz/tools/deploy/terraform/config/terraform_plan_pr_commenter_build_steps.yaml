@@ -79,6 +79,8 @@ steps:
     entrypoint: sh
     allow_failure: true
   - name: us-docker.pkg.dev/$_PROJECT_ID/appengine/default:$_VERSION_TAG
+    env:
+      - HOME=/home/recidiviz
     args:
       - -c
       - uv run python -m recidiviz.tools.github.upsert_terraform_plan --pull-request-number
@@ -98,7 +100,7 @@ timeout: 3600s
 logs_bucket: gs://${_PROJECT_ID}-ci-cd-logs
 options:
   machine_type: E2_HIGHCPU_32
-  substitution_option: 1
+  substitution_option: ALLOW_LOOSE
 substitutions:
   _PROJECT_ID: $_PROJECT_ID
   _COMMIT_REF: $_COMMIT_REF

@@ -331,6 +331,10 @@ class CreateTerraformPlan(DeploymentStageInterface):
                             '--cloud-build-url "https://console.cloud.google.com/cloud-build/builds;region=$LOCATION/$BUILD_ID?project=$PROJECT_ID"'
                         ),
                         volumes=[RECIDIVIZ_SOURCE_VOLUME],
+                        # Without HOME pointing at a writable dir, uv's cache
+                        # init fails with "Permission denied" on the default
+                        # /builder/home/.cache path.
+                        env=["HOME=/home/recidiviz"],
                         wait_for=[STEP_SHOW_TERRAFORM_PLAN],
                         timeout_seconds=(15 * 60),  # 15 min timeout
                     ),
