@@ -123,7 +123,7 @@ import logging
 import sys
 import textwrap
 from enum import Enum
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, NamedTuple, Optional, Set
 
 import attr
 import pytz
@@ -466,12 +466,18 @@ def _get_all_views_changed_on_branch(
     return view_address_to_change_type
 
 
-def _check_latest_view_update() -> str:
-    """Gets information about the latest deployed view update and prompts to notify
-    users if the update happened more than 24 hours ago (indicating something is
-    broken).
+class LatestViewUpdateInfo(NamedTuple):
+    """Info about the most recent successful view update in a project."""
 
-    Returns the commit hash used in the most recent successful view update.
+    data_platform_version: str
+    success_timestamp: datetime.datetime
+    commit_hash: str
+
+
+def get_latest_view_update_info() -> LatestViewUpdateInfo:
+    """Returns info about the most recent successful view update row in
+    `view_update_metadata.per_view_update_stats` for the active project (via
+    `metadata.project_id()`). Pure — no logging, no prompts.
     """
     bq_client = BigQueryClientImpl()
 
@@ -500,6 +506,25 @@ def _check_latest_view_update() -> str:
     commit_for_last_view_update = get_hash_of_data_platform_version(
         latest_view_update_data_platform_version
     )
+
+    return LatestViewUpdateInfo(
+        data_platform_version=latest_view_update_data_platform_version,
+        success_timestamp=last_view_update_success_dt,
+        commit_hash=commit_for_last_view_update,
+    )
+
+
+def _check_latest_view_update() -> str:
+    """Gets information about the latest deployed view update and prompts to notify
+    users if the update happened more than 24 hours ago (indicating something is
+    broken).
+
+    Returns the commit hash used in the most recent successful view update.
+    """
+    info = get_latest_view_update_info()
+    last_view_update_success_dt = info.success_timestamp
+    latest_view_update_data_platform_version = info.data_platform_version
+    commit_for_last_view_update = info.commit_hash
 
     # Format the success timestamp to a string that shows the time (using 12 hour time)
     # in the local timezone.

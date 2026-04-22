@@ -55,27 +55,56 @@ the alerts carry richer detail than the incident itself. If the alert body's
 `details` field is non-empty, inspect it. For email-integration alerts it will
 usually be empty; that's expected.
 
-## Step 4: Classify the alert
+## Step 4: Establish the deployed version in the alerting project
+
+**Before dispatching to a specialist**, find the deployed version of the
+project that fired the alert. All downstream "what changed" queries must be
+scoped to this tag, not to `origin/main`. Misattributing a prod alert to a
+commit that isn't in the deployed version is a common and expensive mistake.
+
+Derive the project id from the incident — for Recidiviz Airflow alerts, the
+`dag_id` prefix identifies it (`recidiviz-123_*` = prod, `recidiviz-staging_*`
+= staging). Then run:
+
+```bash
+./recidiviz/tools/deploy/print_deployed_version.sh <project_id>
+```
+
+The **TF-state version** is authoritative for what code is running —
+always use that as `deployed_tag`. The script also prints a **Cloud Run
+previous** row derived from `case-triage-web`'s revision history; use
+that as `prev_deployed_tag` for any "what changed between the last two
+deploys" work in the specialist. The script also prints the latest
+successful view-update version; if it lags the TF-state version by more
+than ~3 hours, the `update_managed_views_all` task may be failing, which
+matters for data-content alerts. For staging the script additionally
+prints the latest tag on `origin/main` (prod has no reliable branch-tip
+signal today). See `recidiviz/tools/deploy/CLAUDE.md` for details.
+
+Pass the resolved `deployed_tag` (and the prior deployed tag, for diffs) to
+the specialist in Step 5.
+
+## Step 5: Classify the alert
 
 Use the **incident title** and **service summary** to decide which specialist to
 invoke. Current dispatch table:
 
 | Match | Specialist |
 |---|---|
-| Title matches the regex `^Failure: Task Run: (?P<dag_id>[\w-]+)\.(?P<task_id>\w+), started: (?P<start>.+)$` **and** service summary contains `Airflow Tasks` | Read and follow `.claude/skills/investigate-airflow-failure/SKILL.md` — pass through the parsed `dag_id`, `task_id`, and incident `start` datetime |
-| _(anything else)_ | Skip Step 5 and go directly to Step 6 |
+| Title matches the regex `^Failure: Task Run: (?P<dag_id>[\w-]+)\.(?P<task_id>\w+), started: (?P<start>.+)$` **and** service summary contains `Airflow Tasks` | Read and follow `.claude/skills/investigate-airflow-failure/SKILL.md` — pass through the parsed `dag_id`, `task_id`, incident `start` datetime, and the `deployed_tag` from Step 4 |
+| _(anything else)_ | Skip Step 6 and go directly to Step 7 |
 
 The Airflow alert title format is produced by
 `AirflowAlertingIncident.unique_incident_id` in
 `recidiviz/airflow/dags/monitoring/airflow_alerting_incident.py`. If that format
 changes and the regex stops matching, update both files.
 
-## Step 5: Post the diagnosis as a PagerDuty note (specialist path only)
+## Step 6: Post the diagnosis as a PagerDuty note (specialist path only)
 
-Runs only after a specialist was dispatched in Step 4 and returned a diagnosis.
+Runs only after a specialist was dispatched in Step 5 and returned a diagnosis.
 Skip this step when no specialist matched — there is nothing to post.
 
-### 5a: Draft the note
+### 6a: Draft the note
 
 Take the same structured diagnosis you presented to the user and reformat it
 into a PagerDuty note. Include **all** of the sections the specialist produced
@@ -105,13 +134,13 @@ speculation, or omit the error excerpt. Trim purely repetitive log noise
 error intact. If the session's diagnosis is already in that shape, you can
 mostly copy it verbatim.
 
-### 5b: Preview and confirm
+### 6b: Preview and confirm
 
 Show the drafted note to the user in a fenced block and ask whether to post,
 edit, or skip. Do not post without explicit confirmation — `add_note_to_incident`
 is a write action and the note is visible to everyone triaging the incident.
 
-### 5c: Post the note
+### 6c: Post the note
 
 On user confirmation, call `mcp__pagerduty__add_note_to_incident` with the
 incident id and the drafted content. Return the URL of the incident (not the
@@ -122,7 +151,7 @@ If the user declines, leave the incident alone and tell the user the note
 content is preserved in the session transcript if they want to copy it
 manually.
 
-## Step 6: No specialist matched
+## Step 7: No specialist matched
 
 If no specialist matches, present a structured summary and stop:
 
@@ -144,16 +173,16 @@ Then tell the user:
 
 - **Write action**: the only write tool this skill calls is
   `mcp__pagerduty__add_note_to_incident`, and only with user confirmation in
-  Step 5. Never call `manage_incidents` (ack/resolve/snooze) or any other
+  Step 6. Never call `manage_incidents` (ack/resolve/snooze) or any other
   write tool unless the user explicitly asks.
 - **Pre-approval of add_note_to_incident is intentionally off**: it is *not*
   in `.claude/settings.json`'s allowlist, so every post surfaces a permission
-  prompt — a second confirmation layer on top of the skill's own Step 5b
+  prompt — a second confirmation layer on top of the skill's own Step 6b
   confirmation. Do not add it to the allowlist without team discussion.
 - **Never include PD tokens in command output you surface to the user** — they
   live in `~/.claude.json` and should stay there.
 - **Future headless use**: if this skill is ever invoked non-interactively
-  (cloud job, cron, etc.), the interactive confirmation in Step 5b will block.
+  (cloud job, cron, etc.), the interactive confirmation in Step 6b will block.
   That mode will need an explicit mechanism (caller-provided flag or
   pre-approved settings) before it can post autonomously — do not work
   around the confirmation in local sessions.
@@ -162,5 +191,7 @@ Then tell the user:
 
 - [Investigate Airflow Failure](../investigate-airflow-failure/SKILL.md) — the
   specialist for Airflow task failures
+- [Deploy tooling and versioning](../../../recidiviz/tools/deploy/CLAUDE.md) —
+  how to find the deployed version in each environment
 - [airflow_alerting_incident.py](../../../recidiviz/airflow/dags/monitoring/airflow_alerting_incident.py) —
   source of the PD alert title format

@@ -123,17 +123,50 @@ function last_version_tag_on_branch {
     echo "${LAST_VERSION_TAG_ON_BRANCH}"
 }
 
-# Returns the last deployed version tag in a given project
+# Returns the last deployed version tag in a given project by reading the
+# `docker_image_tag` output directly out of the Terraform state file in GCS.
+# Much faster than going through `terraform init` + `terraform output`; the
+# bucket is unencrypted and this is a read-only diagnostic, so bypassing
+# server-side state locks is fine — a stale read during an in-flight deploy
+# is acceptable for "what is currently applied?".
 function last_deployed_version_tag {
     PROJECT_ID=$1
     # Redirect output to stderr so output is not returned by this function but still
     # remains visible to the user.
     echo "Getting last deployed version tag from Terraform state for project ${PROJECT_ID}..." >&2
-    reconfigure_terraform_backend "${PROJECT_ID}" "" >&2
 
-    DOCKER_IMAGE_TAG="$(terraform -chdir="${BASH_SOURCE_DIR}/terraform" output -raw docker_image_tag)" || exit_on_fail
+    DOCKER_IMAGE_TAG="$(gsutil cat "gs://${PROJECT_ID}-tf-state/default.tfstate" \
+        | jq -r '.outputs.docker_image_tag.value')" || exit_on_fail
     echo "Retrieved last deployed version: ${DOCKER_IMAGE_TAG}" >&2
     echo "${DOCKER_IMAGE_TAG}"
+}
+
+# The Cloud Run service we use as the source of deploy history.
+# `case-triage-web` exists in both recidiviz-123 and recidiviz-staging, is
+# deployed on every release, and — importantly — its TF sets
+# `revision.metadata.name` to `case-triage-web-${local.git_short_hash}` (see
+# cloud-run.tf), so the deployed commit's short SHA is embedded right in the
+# revision name.
+DEPLOY_HISTORY_CLOUD_RUN_SERVICE="case-triage-web"
+DEPLOY_HISTORY_CLOUD_RUN_REGION="us-central1"
+
+# Prints up to $LIMIT most-recent revisions of the deploy-history Cloud Run
+# service as "<git_short_sha>\t<created_at>" rows, newest first. The SHA is
+# extracted from the revision name suffix; for older revisions that predate
+# the `<service>-<hash>` naming convention, that suffix will be the
+# auto-generated suffix (e.g. `00765-skz`) rather than a git hash — callers
+# need to detect and handle that case.
+function recent_deploy_cloud_run_revisions {
+    PROJECT_ID=$1
+    LIMIT=${2:-10}
+    gcloud run revisions list \
+        --service="${DEPLOY_HISTORY_CLOUD_RUN_SERVICE}" \
+        --region="${DEPLOY_HISTORY_CLOUD_RUN_REGION}" \
+        --project="${PROJECT_ID}" \
+        --format=json \
+        --limit="${LIMIT}" \
+        | jq -r --arg prefix "${DEPLOY_HISTORY_CLOUD_RUN_SERVICE}-" \
+            '.[] | "\(.metadata.name | sub($prefix; ""))\t\(.metadata.creationTimestamp)"'
 }
 
 function next_alpha_version {
