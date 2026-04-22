@@ -24,7 +24,6 @@ const SUPERVISION_LINESTAFF_INCLUDED_STATES = [
   "US_NE",
   "US_PA",
   "US_TX",
-  "US_UT",
 ];
 
 // =============================================================================
