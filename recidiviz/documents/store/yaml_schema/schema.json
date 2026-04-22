@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Recidiviz Document Collection Config",
+  "description": "Configuration schema for document collection YAML files.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "description": "A meaningful description of this document collection.",
+      "type": "string"
+    },
+    "root_entity_id_type": {
+      "description": "The type of root entity ID used to associate documents with entities.",
+      "type": "string",
+      "enum": [
+        "person_id",
+        "person_external_id",
+        "staff_id",
+        "staff_external_id"
+      ]
+    },
+    "document_metadata_columns": {
+      "description": "A list of metadata columns for documents in this collection.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "field_type",
+          "description"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The column name, must be a valid BigQuery identifier.",
+            "type": "string"
+          },
+          "field_type": {
+            "description": "The BigQuery SQL type for this column.",
+            "type": "string",
+            "enum": [
+              "STRING",
+              "INT64",
+              "FLOAT64",
+              "BOOLEAN",
+              "TIMESTAMP",
+              "DATE",
+              "DATETIME"
+            ]
+          },
+          "description": {
+            "description": "A description of this column.",
+            "type": "string"
+          },
+          "is_document_primary_key": {
+            "description": "If true, this column is part of the document's primary key.",
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "document_generation_query": {
+      "description": "A SQL query template that generates documents.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "description",
+    "root_entity_id_type",
+    "document_generation_query"
+  ]
+}

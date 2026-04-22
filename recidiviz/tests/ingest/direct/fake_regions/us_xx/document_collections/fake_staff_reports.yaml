@@ -1,4 +1,4 @@
-# TODO(#68777) create file for yaml-language-server: $schema=./../../yaml_schema/schema.json
+# yaml-language-server: $schema=./../../../../../../../recidiviz/documents/store/yaml_schema/schema.json
 description: Fake staff reports for testing document collection config parsing with staff_external_id root entity.
 root_entity_id_type: staff_external_id
 document_metadata_columns:

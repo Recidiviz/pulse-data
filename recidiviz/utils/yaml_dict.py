@@ -16,6 +16,7 @@
 # =============================================================================
 """Functionality for working with objects parsed from YAML."""
 import copy
+from pathlib import Path
 from typing import IO, Any, Dict, List, Optional, Type, TypeVar, Union
 
 import yaml
@@ -52,7 +53,7 @@ class YAMLDict:
         self.raw_yaml = raw_yaml
 
     @classmethod
-    def from_path(cls, yaml_path: str) -> "YAMLDict":
+    def from_path(cls, yaml_path: str | Path) -> "YAMLDict":
         with open(yaml_path, encoding="utf-8") as yaml_file:
             loaded_raw_yaml = yaml.load(yaml_file, Loader=SafeLoader)
             if not isinstance(loaded_raw_yaml, dict):

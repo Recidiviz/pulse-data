@@ -102,8 +102,6 @@ _ALL_COLUMN_DEFINITIONS = [
 _COLUMNS_BY_NAME: dict[str, SchemaField] = {c.name: c for c in _ALL_COLUMN_DEFINITIONS}
 
 
-# TODO(#68778) Write a test that looks for all symbols ending in _COLUMN_NAME
-# and verifies this function returns a valid result for each.
 def get_document_store_column_schema(column_name: str) -> SchemaField:
     """Return schema for a standard column that may exist in a document store
     collection metadata table.

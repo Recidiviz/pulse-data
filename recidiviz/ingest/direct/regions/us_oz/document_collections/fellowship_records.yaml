@@ -1,4 +1,4 @@
-# TODO(#68777) create file for yaml-language-server: $schema=./../../yaml_schema/schema.json
+# yaml-language-server: $schema=./../../../../documents/store/yaml_schema/schema.json
 description: >
   Records for members of the Fellowship of the Ring, combining fellowship
   membership, role, and demographic information.

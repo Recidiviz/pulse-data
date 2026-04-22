@@ -16,16 +16,21 @@
 # =============================================================================
 """Tests for document_collection_config.py."""
 import unittest
+from pathlib import Path
 
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.store import yaml_schema
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
+    collect_document_collection_config_yaml_paths,
     collect_document_collection_configs,
     get_document_collection_config,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.yaml_dict import YAMLDict
+from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
 
 class TestDocumentCollectionConfig(unittest.TestCase):
@@ -126,3 +131,21 @@ class TestDocumentCollectionConfig(unittest.TestCase):
                 other_metadata_columns=[],
                 document_generation_query_template="SELECT 1",
             )
+
+    def test_all_yaml_configs_conform_to_schema(self) -> None:
+        schema_path = Path(yaml_schema.__file__).parent / "schema.json"
+
+        for state_code in StateCode:
+            yaml_files = collect_document_collection_config_yaml_paths(state_code)
+            yaml_files.extend(
+                collect_document_collection_config_yaml_paths(
+                    state_code, region_module=fake_regions
+                )
+            )
+
+            for yaml_file in yaml_files:
+                with self.subTest(yaml_file=yaml_file):
+                    validate_yaml_matches_schema(
+                        yaml_dict=YAMLDict.from_path(yaml_file),
+                        json_schema_path=str(schema_path),
+                    )

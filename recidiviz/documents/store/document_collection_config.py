@@ -324,6 +324,20 @@ def _load_config_from_file(yaml_path: Path) -> DocumentCollectionConfig:
     return config
 
 
+def collect_document_collection_config_yaml_paths(
+    state_code: StateCode,
+    region_module: ModuleType | None = None,
+) -> list[Path]:
+    """Returns a list of file paths to document collection YAML configs for a given state."""
+    state_dir = _state_collections_dir(
+        state_code, region_module=region_module or default_regions_module
+    )
+    if not state_dir.is_dir():
+        return []
+
+    return list(state_dir.glob("*.yaml"))
+
+
 def collect_document_collection_configs(
     state_code: StateCode,
     region_module: ModuleType | None = None,
@@ -331,14 +345,9 @@ def collect_document_collection_configs(
     """Returns a map of document collection name to its configuration for all document
     collections defined for the given state code.
     """
-    state_dir = _state_collections_dir(
-        state_code, region_module=region_module or default_regions_module
-    )
-    if not state_dir.is_dir():
-        return {}
-
-    yaml_file_paths = list(state_dir.glob("*.yaml"))
-    for yaml_path in yaml_file_paths:
+    for yaml_path in collect_document_collection_config_yaml_paths(
+        state_code, region_module=region_module
+    ):
         _load_config_from_file(yaml_path)
 
     return _DOCUMENT_COLLECTION_CONFIGS[state_code]
