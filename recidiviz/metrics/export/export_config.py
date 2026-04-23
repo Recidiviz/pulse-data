@@ -62,6 +62,9 @@ from recidiviz.calculator.query.state.views.public_pathways.public_pathways_view
 from recidiviz.calculator.query.state.views.reentry.reentry_views import (
     REENTRY_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.reference.ingested_incarceration_and_supervision_product_users import (
+    INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.ingested_supervision_product_users import (
     INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -388,11 +391,23 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
-    # Product users
+    # Supervision Product users
     ExportViewCollectionConfig(
         view_builders_to_export=[INGESTED_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER],
         output_directory_uri_template=PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
         export_name="PRODUCT_USER_IMPORT",
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
+        },
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+    ),
+    # Incarceration and Supervision Product users
+    ExportViewCollectionConfig(
+        view_builders_to_export=[
+            INGESTED_INCARCERATION_AND_SUPERVISION_PRODUCT_USERS_VIEW_BUILDER
+        ],
+        output_directory_uri_template=PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
+        export_name="INCARCERATION_AND_SUPERVISION_PRODUCT_USER_IMPORT",
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
         },

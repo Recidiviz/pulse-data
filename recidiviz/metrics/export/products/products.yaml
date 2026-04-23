@@ -27,10 +27,11 @@ products:
         environment: production
       - state_code: US_PA
         environment: production
-  - name: Product User Import
+  - name: Supervision Product User Import
     description:
-      Potential users of Polaris tools that we receive via ingest, to be
-      imported into the Polaris Roster Postgres table
+      Potential supervision users of Polaris tools that we receive via ingest, to be
+      imported into the Polaris Roster Postgres table. Use this export to enable
+      supervision only roster sync (not facilities roster sync) for a state.
     exports:
       - PRODUCT_USER_IMPORT
     states:
@@ -46,8 +47,6 @@ products:
         environment: production
       - state_code: US_ME
         environment: production
-      - state_code: US_MI
-        environment: production
       - state_code: US_MO
         environment: production
       - state_code: US_NE
@@ -59,6 +58,16 @@ products:
       - state_code: US_TN
         environment: production
       - state_code: US_TX
+        environment: production
+  - name: Incarceration and Supervision Product User Import
+    description:
+      Potential incarceration (facilities) and supervision users of Polaris tools that we receive via ingest, to be
+      imported into the Polaris Roster Postgres table. Use this export to enable both incarceration and supervision
+      roster sync for a state.
+    exports:
+      - INCARCERATION_AND_SUPERVISION_PRODUCT_USER_IMPORT
+    states:
+      - state_code: US_MI
         environment: production
   - name: Public Dashboard
     description:
