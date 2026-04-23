@@ -1504,7 +1504,7 @@ def parse_employment_status(raw_text: str) -> StateEmploymentPeriodEmploymentSta
     in the future, make sure to also add them to EMPLOYMENT_TYPES_TO_PRIORITIZE in the employment
     periods view, to ensure that if statuses overlap, we prioritize the status with downstream significance.
     """
-    employment_type, employment_category = raw_text.split("@@")
+    employment_type, employment_category, employment_level = raw_text.split("@@")
     if employment_type in [
         "L15",  # STUDENT-ACADEMIC
         "L39",  # STUDENT-VOCATIONAL
@@ -1527,4 +1527,18 @@ def parse_employment_status(raw_text: str) -> StateEmploymentPeriodEmploymentSta
     if employment_category == "NON":  # NON-WORKFORCE
         return StateEmploymentPeriodEmploymentStatus.UNEMPLOYED
 
+    if employment_level in [
+        "FTR",  # Full time - regular
+        "FTT",  # Full time - temporary
+    ]:
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME
+
+    if employment_level in [
+        "PTR",  # Part time - regular
+        "PTT",  # Part time - temporary
+    ]:
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME
+
+    # Default to EMPLOYED_UNKNOWN_AMOUNT for employment data missing an employment_level
+    # value (taken from the WORK_STATUS_CD column) or with employment_level "SEA" ("Seasonal").
     return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT

@@ -5,6 +5,9 @@ manifest_language: 1.0.0
 input_columns:
   DOC_ID: STRING
   EMPLOY_TYPE_CD: STRING
+  COMPANY_NM: STRING
+  WORK_STATUS_CD: STRING
+  employer_address: STRING
   EMPLOY_TYPE_DESC: STRING
   EMPLOY_CAT_CD: STRING
   start_date: DATE
@@ -26,6 +29,8 @@ output:
                 - session_id
           start_date: start_date
           end_date: end_date
+          employer_name: COMPANY_NM
+          employer_address: employer_address
           job_title:
             $conditional:
               - $if:
@@ -42,4 +47,5 @@ output:
                   $values:
                     - EMPLOY_TYPE_CD
                     - EMPLOY_CAT_CD
+                    - WORK_STATUS_CD
               $custom_parser: us_mo_custom_enum_parsers.parse_employment_status
