@@ -43,11 +43,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     },
     StateCode.US_IA: {
         "IA_DOC_Charges": ["ArrestDt", "MPD", "OffenseDt", "SDD", "TDD"],
-        "IA_DOC_Interventions": [
-            "EligibilityDt",
-            "InterventionEndDt",
-            "InterventionStartDt",
-        ],
         "IA_DOC_Supervision_Modifiers": [
             "HoldEndDt",
             "HoldStartDt",
@@ -946,9 +941,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
     },
     StateCode.US_CA: {
         "ParoleHousing": ["ADDREFFECTIVEDATE", "ADDRENDDATE"],
-    },
-    StateCode.US_IA: {
-        "IA_DOC_MAINT_Interventions": ["EnteredDt"],
     },
     StateCode.US_IX: {
         "clsf_OffenderSecurityLevelAct": ["InsertDate", "UpdateDate"],
