@@ -60,7 +60,6 @@ from recidiviz.utils import metadata
 # test_opportunities_list_matches_workflows_config verifies we're in sync with configured ME opportunities
 ME_OPPORTUNITY_TYPES = [
     "usMeEarlyTermination",
-    "usMeOverdueForDischarge",
     "usMeSCCP",
     "usMeWorkRelease",
     "usMeFurloughRelease",
