@@ -39,10 +39,9 @@ class BaseEngineManager:
 
     @classmethod
     def _secret_manager_prefix_for_type(cls, schema_type: SchemaType) -> str:
-        # TODO(#8282): Clean up the _v2 suffix eventually.
         match schema_type:
             case SchemaType.OPERATIONS:
-                return "operations_v2"
+                return "operations"
             case SchemaType.JUSTICE_COUNTS:
                 return "justice_counts"
             case SchemaType.CASE_TRIAGE:

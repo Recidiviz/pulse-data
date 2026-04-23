@@ -40,7 +40,7 @@ class RunMigrationsTest(unittest.TestCase):
     @with_secrets(
         {
             "insights_cloudsql_instance_id": "123",
-            "operations_v2_cloudsql_instance_id": "123",
+            "operations_cloudsql_instance_id": "123",
         }
     )
     def test_parse_args(self) -> None:

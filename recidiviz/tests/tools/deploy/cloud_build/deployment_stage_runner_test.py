@@ -41,7 +41,7 @@ from recidiviz.utils.metadata import local_project_id_override
 class DeploymentStepRunnerTest(unittest.TestCase):
     """Test case for ArtifactRegistryRepository"""
 
-    @with_secrets({"operations_v2_cloudsql_instance_id": "123"})
+    @with_secrets({"operations_cloudsql_instance_id": "123"})
     def test_parse(self) -> None:
         stage_args = {
             CreateTerraformPlan: argparse.Namespace(
