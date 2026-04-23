@@ -20,7 +20,7 @@ module "external_reference_tables_bucket" {
 
   project_id  = var.project_id
   name_suffix = "external-reference-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "state_resident_populations_table" {

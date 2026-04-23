@@ -18,3 +18,8 @@
 output "name" {
   value = google_storage_bucket.bucket.name
 }
+
+output "cmek_key_id" {
+  description = "The ID of the CMEK crypto key for this bucket, or null if CMEK is not enabled."
+  value       = var.use_cmek ? google_kms_crypto_key.gcs_cmek[0].id : null
+}

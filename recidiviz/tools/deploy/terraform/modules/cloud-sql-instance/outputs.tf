@@ -39,3 +39,7 @@ output "instance_name" {
 output "region" {
   value = var.region
 }
+
+output "instance_service_account_email" {
+  value = google_sql_database_instance.data.service_account_email_address
+}

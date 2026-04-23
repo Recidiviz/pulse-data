@@ -24,7 +24,7 @@ module "justice-counts-data-bucket" {
 
   project_id  = var.project_id
   name_suffix = "justice-counts-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "justice-counts-ingest" {
@@ -32,7 +32,7 @@ module "justice-counts-ingest" {
 
   project_id  = var.project_id
   name_suffix = "justice-counts-ingest"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 # This "storage bucket" for raw data holds processed and deprecated
@@ -46,7 +46,7 @@ module "direct-ingest-state-storage" {
   location      = var.direct_ingest_region
   storage_class = "NEARLINE"
   name_suffix   = "direct-ingest-state-storage"
-  use_cmek      = false
+  use_cmek      = true
 }
 
 # This "storage bucket" for raw data holds processed and deprecated
@@ -59,7 +59,7 @@ module "direct-ingest-state-storage-secondary" {
   project_id  = var.project_id
   location    = var.direct_ingest_region
   name_suffix = var.direct_ingest_state_storage_secondary_bucket_name_suffix
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "direct-ingest-cloud-sql-exports" {
@@ -67,7 +67,7 @@ module "direct-ingest-cloud-sql-exports" {
 
   project_id  = var.project_id
   name_suffix = "cloud-sql-exports"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "direct-ingest-temporary-files" {
@@ -75,7 +75,7 @@ module "direct-ingest-temporary-files" {
 
   project_id  = var.project_id
   name_suffix = "direct-ingest-temporary-files"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -103,7 +103,7 @@ module "dashboard-data" {
   project_id    = var.project_id
   name_suffix   = "dashboard-data"
   storage_class = "MULTI_REGIONAL"
-  use_cmek      = false
+  use_cmek      = true
 }
 
 module "public-pathways-data" {
@@ -112,7 +112,7 @@ module "public-pathways-data" {
   project_id    = var.project_id
   name_suffix   = "public-pathways-data"
   storage_class = "MULTI_REGIONAL"
-  use_cmek      = false
+  use_cmek      = true
 }
 
 module "dashboard-event-level-data" {
@@ -120,7 +120,7 @@ module "dashboard-event-level-data" {
 
   project_id  = var.project_id
   name_suffix = "dashboard-event-level-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "dashboard-user-restrictions-bucket" {
@@ -128,7 +128,7 @@ module "dashboard-user-restrictions-bucket" {
 
   project_id  = var.project_id
   name_suffix = "dashboard-user-restrictions"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "product-user-import-bucket" {
@@ -136,7 +136,7 @@ module "product-user-import-bucket" {
 
   project_id  = var.project_id
   name_suffix = "product-user-import"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 # TODO(#13703): Figure out what we want to do with this data and whether we still want
@@ -147,7 +147,7 @@ module "state-aggregate-reports" {
 
   project_id  = var.project_id
   name_suffix = "state-aggregate-reports"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "case-triage-data" {
@@ -156,7 +156,7 @@ module "case-triage-data" {
   project_id                  = var.project_id
   name_suffix                 = "case-triage-data"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 }
 
 module "covid-dashboard-data" {
@@ -174,7 +174,7 @@ module "configs" {
   project_id                  = var.project_id
   name_suffix                 = "configs"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 }
 
 # Ensure we have an empty JSON file in storage somewhere so we can use it as the data source for
@@ -193,7 +193,7 @@ module "dbexport" {
   location                    = "us-east4"
   storage_class               = "REGIONAL"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 
   lifecycle_rules = [
     {
@@ -214,7 +214,7 @@ module "dataflow-templates" {
   name_suffix                 = "dataflow-templates"
   storage_class               = "MULTI_REGIONAL"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 
   lifecycle_rules = [
     {
@@ -242,7 +242,7 @@ module "gcslock" {
   project_id                  = var.project_id
   name_suffix                 = "gcslock"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 
   lifecycle_rules = [
     {
@@ -270,7 +270,7 @@ module "ingest-metadata" {
   project_id                  = var.project_id
   name_suffix                 = "ingest-metadata"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 }
 
 module "practices-etl-data" {
@@ -279,7 +279,7 @@ module "practices-etl-data" {
   project_id                  = var.project_id
   name_suffix                 = "practices-etl-data"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 
   lifecycle_rules = [
     {
@@ -300,7 +300,7 @@ module "practices-etl-data-demo" {
   name_suffix                 = "practices-etl-data-demo"
   uniform_bucket_level_access = false
   count                       = var.project_id == "recidiviz-staging" ? 1 : 0
-  use_cmek                    = false
+  use_cmek                    = true
 
   lifecycle_rules = [
     {
@@ -319,7 +319,7 @@ module "practices-etl-data-archive" {
 
   project_id  = var.project_id
   name_suffix = "practices-etl-data-archive"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -338,7 +338,7 @@ module "dashboard-firestore-backups" {
 
   project_id  = var.project_id
   name_suffix = "dashboard-firestore-backups"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -362,7 +362,7 @@ module "processed-state-aggregates" {
   name_suffix                 = "processed-state-aggregates"
   storage_class               = "MULTI_REGIONAL"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 
   labels = {
     "recidiviz_service" = "scrapers",
@@ -388,7 +388,7 @@ module "public-dashboard-data" {
   project_id                  = var.project_id
   name_suffix                 = "public-dashboard-data"
   uniform_bucket_level_access = false
-  use_cmek                    = false
+  use_cmek                    = true
 }
 
 module "report-data" {
@@ -396,7 +396,7 @@ module "report-data" {
 
   project_id  = var.project_id
   name_suffix = "report-data"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -415,7 +415,7 @@ module "report-data-archive" {
 
   project_id  = var.project_id
   name_suffix = "report-data-archive"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -434,7 +434,7 @@ module "report-html" {
 
   project_id  = var.project_id
   name_suffix = "report-html"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -453,7 +453,7 @@ module "report-images" {
 
   project_id  = var.project_id
   name_suffix = "report-images"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -472,7 +472,7 @@ module "sendgrid-data" {
 
   project_id  = var.project_id
   name_suffix = "sendgrid-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "validation-metadata" {
@@ -480,7 +480,7 @@ module "validation-metadata" {
 
   project_id  = var.project_id
   name_suffix = "validation-metadata"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 # A temporary staging area where templates are copied to as part of running templates
@@ -492,7 +492,7 @@ module "dataflow_templates_temporary" {
   location                    = "us-central1"
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
-  use_cmek                    = false
+  use_cmek                    = true
 
   soft_delete_policy = {
     retention_duration_seconds = 0
@@ -518,7 +518,7 @@ module "direct-ingest-county-storage" {
   location      = var.direct_ingest_region
   storage_class = "REGIONAL"
   name_suffix   = "direct-ingest-county-storage"
-  use_cmek      = false
+  use_cmek      = true
 }
 
 module "outliers-etl-data" {
@@ -526,7 +526,7 @@ module "outliers-etl-data" {
 
   project_id  = var.project_id
   name_suffix = "outliers-etl-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "outliers-etl-data-archive" {
@@ -534,7 +534,7 @@ module "outliers-etl-data-archive" {
 
   project_id  = var.project_id
   name_suffix = "outliers-etl-data-archive"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -553,7 +553,7 @@ module "insights-etl-data" {
 
   project_id  = var.project_id
   name_suffix = "insights-etl-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "insights-etl-data-demo" {
@@ -562,7 +562,7 @@ module "insights-etl-data-demo" {
   project_id  = var.project_id
   name_suffix = "insights-etl-data-demo"
   count       = var.project_id == "recidiviz-staging" ? 1 : 0
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "insights-etl-data-archive" {
@@ -570,7 +570,7 @@ module "insights-etl-data-archive" {
 
   project_id  = var.project_id
   name_suffix = "insights-etl-data-archive"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -589,7 +589,7 @@ module "case-notes-vertex-search-data" {
 
   project_id  = var.project_id
   name_suffix = "case-notes-vertex-search-data"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "generated-assets" {
@@ -597,7 +597,7 @@ module "generated-assets" {
 
   project_id  = var.project_id
   name_suffix = "generated-assets"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 resource "google_storage_bucket_iam_member" "asset-generation-generated-assets-bucket-member" {
@@ -619,7 +619,7 @@ module "override-districts-archive" {
 
   project_id  = var.project_id
   name_suffix = "override-districts-archive"
-  use_cmek    = false
+  use_cmek    = true
 }
 
 module "airflow-kubernetes-pod-operator-outputs" {
@@ -627,7 +627,7 @@ module "airflow-kubernetes-pod-operator-outputs" {
 
   project_id  = var.project_id
   name_suffix = "airflow-kubernetes-pod-operator-outputs"
-  use_cmek    = false
+  use_cmek    = true
 
   lifecycle_rules = [
     {
@@ -646,5 +646,5 @@ module "user-data-downloads" {
 
   project_id  = var.project_id
   name_suffix = "user-data-downloads"
-  use_cmek    = false
+  use_cmek    = true
 }

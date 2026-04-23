@@ -152,6 +152,34 @@ module "identity_service_database" {
   tier         = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
 }
 
+# Grant Cloud SQL per-instance service accounts cryptoKeyEncrypterDecrypter on
+# the cloud-sql-exports bucket's CMEK key. Required because SQL export operations
+# write to this bucket using the per-instance SA, and CMEK-encrypted buckets
+# require the writer to have key access.
+#
+# When adding a new Cloud SQL instance above, add it here too — the missing grant
+# won't surface until that instance tries to export to GCS.
+locals {
+  sql_instances_needing_gcs_cmek_access = {
+    case_triage_cmek     = module.case_triage_database_cmek
+    justice_counts_cmek  = module.justice_counts_database_cmek
+    operations_cmek      = module.operations_database_cmek
+    pathways_cmek        = module.pathways_database_cmek
+    insights_cmek        = module.insights_database_cmek
+    workflows_cmek       = module.workflows_database_cmek
+    persistence_cmek     = module.persistence_database_cmek
+    public_pathways_cmek = module.public_pathways_database_cmek
+    identity_service     = module.identity_service_database
+  }
+}
+
+resource "google_kms_crypto_key_iam_member" "sql_sa_gcs_cmek_access" {
+  for_each      = local.sql_instances_needing_gcs_cmek_access
+  crypto_key_id = module.direct-ingest-cloud-sql-exports.cmek_key_id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${each.value.instance_service_account_email}"
+}
+
 locals {
   # Add demo states to staging for demo mode
   pathways_enabled_states        = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
