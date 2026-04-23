@@ -113,6 +113,8 @@ COMMON_VESTIGES = [
     "jii_frontend_prod_segment_metrics.identifies",
     "jii_frontend_prod_segment_metrics.tracks",
     "jii_frontend_prod_segment_metrics.users",
+    "public_pathways_production_segment_metrics.pages",
+    "public_pathways_production_segment_metrics.tracks",
     # GCS-backed reference tables not currently referenced in the view graph
     "gcs_backed_tables.county_resident_adult_populations",
     "gcs_backed_tables.county_resident_populations",
