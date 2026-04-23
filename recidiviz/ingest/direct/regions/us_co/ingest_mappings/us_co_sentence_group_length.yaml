@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_SentenceGroupLength` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  update_datetime: DATETIME
+  sequence_num: INTEGER
+  ped_tent: DATE
+  mrd_tent: DATE
+  sdd_tent: DATE
+  date_last_recalc: DATE
+  incarceration_start_date: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+    sentence_groups:
+      - StateSentenceGroup:
+          # TODO(#73975): Revisit keying and consider commitment-level grouping.
+          external_id: OFFENDERID
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                sequence_num: sequence_num
+                group_update_datetime: update_datetime
+                # TODO(#71798): Hydrate parole_eligibility_date_external from
+                # ped_tent once the parole_possible mapping for WOP life
+                # sentences is resolved. Currently WOP sentences set
+                # parole_possible=False, which causes the pipeline validator
+                # to reject any group-level PED — even when CO's
+                # eomis_inmateprofile has a real date. For now PED is only
+                # in sentence_group_length_metadata.
+                # MRD tentative: mandatory release date (with credits) = full term release min
+                projected_full_term_release_date_min_external: mrd_tent
+                # SDD tentative: sentence discharge date (no credits) = full term release max
+                projected_full_term_release_date_max_external: sdd_tent
+                sentence_group_length_metadata:
+                  $normalized_values_json_dict:
+                    state_specific_dates__ped_tent: ped_tent
+                    state_specific_dates__mrd_tent: mrd_tent
+                    state_specific_dates__sdd_tent: sdd_tent
+                    state_specific_dates__date_last_recalc: date_last_recalc
+                    state_specific_dates__incarceration_start_date: incarceration_start_date

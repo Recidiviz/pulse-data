@@ -280,6 +280,17 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         return False
 
     @property
+    def correct_early_terminating_statuses(self) -> bool:
+        """
+        If True, any non-DEATH terminating status (VACATED, DISCHARGED, MERGED,
+        COMMUTED, etc.) that appears before the final status in a sentence's
+        status sequence will be corrected to SERVING. This handles states where
+        legitimate sequences like DISCHARGED -> VACATED occur. DEATH in a
+        non-final position is always an error regardless of this setting.
+        """
+        return False
+
+    @property
     def allow_non_credit_serving(self) -> bool:
         """
         If True, statuses that count towards serving that are before their sentence's

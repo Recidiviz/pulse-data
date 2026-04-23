@@ -96,6 +96,12 @@ class FakeDelegateThatInfersImposedPendingServingFromImposedDate(
         return True
 
 
+class FakeDelegateThatCorrectsTerminating(StateSpecificSentenceNormalizationDelegate):
+    @property
+    def correct_early_terminating_statuses(self) -> bool:
+        return True
+
+
 class FakeDelegateThatInfersProjectedDatesFromLengthDays(
     StateSpecificSentenceNormalizationDelegate
 ):
@@ -800,7 +806,7 @@ class TestSentenceV2Normalization(unittest.TestCase):
             == expected_normalized_status_snapshots
         )
 
-        # Early terminating statuses should raise an Error
+        # Early non-DEATH terminating statuses should raise with default delegate
         sentence = self._new_sentence(1)
         sentence.sentence_status_snapshots = [
             StateSentenceStatusSnapshot(
@@ -835,13 +841,90 @@ class TestSentenceV2Normalization(unittest.TestCase):
         )
         with self.assertRaisesRegex(
             ValueError,
-            re.escape(
-                "Found [VACATED] status that is not the final status. "
-                "Snapshot: StateSentenceStatusSnapshot(sentence_status_snapshot_id=2). "
-                "Person: StatePerson(person_id=None, external_ids=["
-                "StatePersonExternalId(external_id='person_external_id_1', "
-                "id_type='US_XX_ID_TYPE', person_external_id_id=None)])",
+            re.escape("Found [VACATED] status that is not the final status."),
+        ):
+            _ = self._get_normalized_sentences_for_person(person, self.delegate)
+
+        # Early non-DEATH terminating statuses should be corrected to SERVING
+        # when delegate opts in via correct_early_terminating_statuses
+        sentence = self._new_sentence(1)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
             ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.VACATED,
+                sentence_status_snapshot_id=2,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=third_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=3,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+            external_ids=[
+                state_entities.StatePersonExternalId(
+                    state_code=self.state_code_value,
+                    external_id="person_external_id_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatCorrectsTerminating()
+        )[0]
+        for snapshot in normalized_sentence.sentence_status_snapshots:
+            snapshot.sentence = None
+        assert (
+            normalized_sentence.sentence_status_snapshots[1].status
+            == StateSentenceStatus.SERVING
+        )
+
+        # Early DEATH status should still raise an error
+        sentence = self._new_sentence(1)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=self.start_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=second_dt,
+                status=StateSentenceStatus.DEATH,
+                sentence_status_snapshot_id=2,
+            ),
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=third_dt,
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=3,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+            external_ids=[
+                state_entities.StatePersonExternalId(
+                    state_code=self.state_code_value,
+                    external_id="person_external_id_1",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape("Found [DEATH] status that is not the final status."),
         ):
             _ = self._get_normalized_sentences_for_person(person, self.delegate)
 

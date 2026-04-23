@@ -35,13 +35,13 @@ variables:
           - OFFENDERID
           - COMMITMENTPREFIX
           - SENTENCECOMPONENT
-    #TODO(#54084): Confirm this is how we want to represent sentence groups once we have
-    # a better understanding of how sentences connect in CO
+    # Person-level group: all sentences for a person belong to one group.
+    # CO computes projected dates at the person level (eomis_inmateprofile),
+    # so the group aligns with the StateSentenceGroupLength date source.
   - sentence_group_external_id:
       $concat:
         $values:
           - OFFENDERID
-          - COMMITMENTPREFIX
 output:
   StatePerson:
     external_ids:
@@ -116,6 +116,13 @@ output:
                         - FFNC # Nolo Contendere
                         - FDFS # Deferred Sentence
                         - CNSD # Consolidated
+                      StateChargeV2Status.PRESENT_WITHOUT_INFO:
+                        # Prior to ~2022, CO coded virtually all sentence
+                        # findings as UNKN. These are overwhelmingly real
+                        # convictions where the finding type was simply never
+                        # recorded. PRESENT_WITHOUT_INFO is the best fit: the
+                        # charge exists but no meaningful status was provided.
+                        - UNKN # Unknown (Conversion)
                       StateChargeV2Status.INTERNAL_UNKNOWN:
                         - FFGI # NOT GUILTY INSANITY  # excluding from view since needs CONVICTED for pipeline
                         - NPRV # NOT PROVEN  # excluding from view since needs CONVICTED for pipeline
@@ -127,8 +134,6 @@ output:
                         - DISS # Dfrd Completed
                         - DMCT # Dismissed by Court
                         - DMNF # Dismiss by DA - No File
-                      StateChargeV2Status.EXTERNAL_UNKNOWN:
-                        - UNKN # Unknown (Conversion)
                 offense_date: OFFENSEDATE
                 date_charged: CURRCOMMITCONVICTIONDT
                 county_code: STATECOUNTY

@@ -249,6 +249,7 @@ def _correct_and_create_serving_statuses_from_watermark(
 def _validate_terminating_statuses(
     sorted_snapshots: list[StateSentenceStatusSnapshot],
     correct_early_completed_statuses: bool,
+    correct_early_terminating_statuses: bool,
 ) -> list[StateSentenceStatusSnapshot]:
     """
     Validate that if a terminating status exists in the given snapshots,
@@ -257,7 +258,18 @@ def _validate_terminating_statuses(
     If correct_early_completed_statuses is True, we will correct
     any early COMPLETED statuses to SERVING. Note that we only correct
     COMPLETED and not other terminating statuses (accessed via status.is_terminating_status).
-    For example, if a DEATH status is not the final status, we fail.
+
+    If correct_early_terminating_statuses is True, we will correct any early
+    non-DEATH terminating statuses (VACATED, DISCHARGED, MERGED, COMMUTED, etc.)
+    to SERVING. This handles states where legitimate sequences like
+    DISCHARGED -> VACATED occur.
+
+    DEATH in a non-final position is always treated as an error, as it likely
+    indicates a data quality issue.
+
+    TODO(#72600): Revisit whether the "one terminating status per sentence"
+    assumption holds in all cases. Rewriting early terminators to SERVING is
+    lossy when the intermediate termination reflects a real event.
     """
     if not sorted_snapshots:
         return []
@@ -268,6 +280,14 @@ def _validate_terminating_statuses(
                 snapshot.status == StateSentenceStatus.COMPLETED
                 and correct_early_completed_statuses
             ):
+                snapshot.status = StateSentenceStatus.SERVING
+            elif snapshot.status == StateSentenceStatus.DEATH:
+                raise ValueError(
+                    f"Found [{snapshot.status.value}] status that is not the final "
+                    f"status. Snapshot: {snapshot.limited_pii_repr()}. "
+                    f"Person: {assert_type(snapshot.person, StatePerson).limited_pii_repr()}"
+                )
+            elif correct_early_terminating_statuses:
                 snapshot.status = StateSentenceStatus.SERVING
             else:
                 raise ValueError(
@@ -310,7 +330,9 @@ def normalize_snapshots_for_single_sentence(
 
     if delegate.correct_early_completed_statuses:
         all_snapshots = _validate_terminating_statuses(
-            all_snapshots, correct_early_completed_statuses=True
+            all_snapshots,
+            correct_early_completed_statuses=True,
+            correct_early_terminating_statuses=delegate.correct_early_terminating_statuses,
         )
 
     # This should never happen but we check again just in case.
@@ -393,6 +415,8 @@ def normalize_snapshots_for_single_sentence(
     # We have possibly created new snapshots, and so we should validate that
     # there's at most one terminating status (and it is the last one).
     all_snapshots = _validate_terminating_statuses(
-        sorted_snapshots=all_snapshots, correct_early_completed_statuses=False
+        sorted_snapshots=all_snapshots,
+        correct_early_completed_statuses=False,
+        correct_early_terminating_statuses=delegate.correct_early_terminating_statuses,
     )
     return _add_end_datetime_and_normalize_sequence_num(snapshots=all_snapshots)
