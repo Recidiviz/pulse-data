@@ -56,16 +56,19 @@ steps:
       - TF_LOG=ERROR
       - TF_LOG_PATH=/workspace/terraform-plan-error.txt
     args:
-      - plan
-      - -parallelism=32
-      - -out=/workspace/$_VERSION_TAG-$_COMMIT_REF.tfplan
-      - -var=project_id=$_PROJECT_ID
-      - -var=docker_image_tag=$_VERSION_TAG
-      - -var=git_hash=$_COMMIT_REF
+      - -c
+      - "set -eu\ntag=$$(TF_CLI_ARGS= terraform output -raw docker_image_tag)\nhash=$$(TF_CLI_ARGS=\
+        \ terraform output -raw git_hash)\nif [ -z \"$${tag}\" ] || [ -z \"$${hash}\"\
+        \ ]; then\n  echo \"ERROR: docker_image_tag or git_hash output is empty in\
+        \ TF state\" >&2\n  exit 1\nfi\necho \"Planning against currently-deployed\
+        \ docker_image_tag=$${tag} git_hash=$${hash}\"\nterraform plan -parallelism=32\
+        \ -out=/workspace/$_VERSION_TAG-$_COMMIT_REF.tfplan -var=project_id=$_PROJECT_ID\
+        \ -var=docker_image_tag=$${tag} -var=git_hash=$${hash}"
     dir: /workspace/recidiviz/tools/deploy/terraform/
     id: Create Terraform plan
     wait_for:
       - Initialize Terraform backend
+    entrypoint: sh
     timeout: 900s
     allow_failure: true
   - name: hashicorp/terraform:1.11.4

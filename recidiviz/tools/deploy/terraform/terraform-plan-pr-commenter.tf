@@ -33,8 +33,14 @@ resource "google_cloudbuild_trigger" "terraform_plan_pr_commenter" {
   # Triggers that reference a 2nd-gen repository resource (see source_to_build
   # below) must live in the same region as the repository connection; they
   # cannot be created in the default "global" region.
-  location        = "us-west1"
-  description     = "Generates and comments Terraform plans on Github Pull Requests"
+  location    = "us-west1"
+  description = "Generates and comments Terraform plans on Github Pull Requests"
+  # This service account is hand-created in the GCP console; it is not
+  # declared in Terraform. It must also hold a Google Workspace admin role
+  # granting "Groups > Read" (assigned at admin.google.com → Admin roles), so
+  # that `terraform plan`'s refresh of `google_cloud_identity_group_membership`
+  # resources can read Workspace-backed groups — that authorization lives in
+  # Workspace, not GCP IAM.
   service_account = "projects/${var.project_id}/serviceAccounts/terraform-plan-pr-commenter@${var.project_id}.iam.gserviceaccount.com"
 
   webhook_config {

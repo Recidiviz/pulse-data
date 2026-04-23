@@ -60,6 +60,10 @@ locals {
   ))
 }
 
+# Note: the PR-commenter SA (terraform-plan-pr-commenter@…) also needs read
+# access to these groups so its `terraform plan` can refresh them. That's
+# granted via a Workspace admin role on the SA, not via TF — see
+# terraform-plan-pr-commenter.tf.
 resource "google_cloud_identity_group_membership" "ci_cd_sa_data_access_group_manager" {
   for_each = local.all_data_access_group_resource_names
 

@@ -74,6 +74,33 @@ TERRAFORM_CLI_ARGS_ENV = "TF_CLI_ARGS=-input=false -no-color -compact-warnings"
 
 STEP_SHOW_TERRAFORM_PLAN = "Show Terraform plan contents"
 
+# Per-step timeout for terraform init/plan. Apply has no step timeout — see the
+# note at its BuildStep below.
+TERRAFORM_STEP_TIMEOUT = "900s"  # 15 min
+
+# Prepended to the plan command in the PR-commenter flow. Reads the
+# currently-deployed docker_image_tag and git_hash from state (loaded by the
+# preceding `terraform init`) into shell vars, so the plan step can pass them
+# as `-var=docker_image_tag=${tag}` and `-var=git_hash=${hash}` instead of
+# hardcoded/PR-commit values. This keeps the PR plan focused on TF-code
+# deltas: without it, every PR against a commit different from the deployed
+# one cascades Cloud Run `revision.metadata.name` diffs (case-triage-web et al.
+# name their revisions via `local.git_short_hash`). `$$` escapes through
+# Cloud Build's substitution pass so the shell sees plain `$`.
+# `TF_CLI_ARGS=` blanks out the step-level TF_CLI_ARGS for the two `terraform
+# output` calls — that env var sets flags like `-input=false` that `plan`
+# accepts but `output` rejects with "flag provided but not defined: -input".
+_PR_PLAN_SHELL_PREAMBLE = """\
+set -eu
+tag=$$(TF_CLI_ARGS= terraform output -raw docker_image_tag)
+hash=$$(TF_CLI_ARGS= terraform output -raw git_hash)
+if [ -z "$${tag}" ] || [ -z "$${hash}" ]; then
+  echo "ERROR: docker_image_tag or git_hash output is empty in TF state" >&2
+  exit 1
+fi
+echo "Planning against currently-deployed docker_image_tag=$${tag} git_hash=$${hash}"
+"""
+
 
 def _google_quota_project_env(deployment_context: DeploymentContext) -> str:
     # Certain APIs like cloudidentity.googleapis.com requires an explicit quota project.
@@ -103,30 +130,52 @@ def get_terraform_plan_step(
             `terraform show` (PR commenter).
         wait_for: IDs of prior steps that must complete before this step runs.
         for_pull_requests: True when this step is part of the PR-commenter
-            build. Enables error-log capture (TF_LOG=ERROR → a file the comment
-            step reads) and sets allow_failure=True so a failed plan still
-            runs the subsequent show + comment steps to post a failure comment.
+            build. The PR-commenter trigger doesn't know what docker_image_tag
+            is currently deployed, so this branch reads it from state (via
+            `terraform output`) at build time and passes that to `-var`;
+            otherwise every PR plan would propose flipping docker_image_tag
+            to "latest" and cascade diffs through every resource that
+            references it. Also enables error-log capture (TF_LOG=ERROR → a
+            file the comment step reads) and sets allow_failure=True so a
+            failed plan still runs the subsequent show + comment steps to
+            post a failure comment.
     """
+    env = [TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)]
+    if for_pull_requests:
+        env.extend(["TF_LOG=ERROR", f"TF_LOG_PATH={TERRAFORM_PLAN_ERROR_LOG_PATH}"])
+
     terraform_variables = {
         "project_id": deployment_context.project_id,
-        "docker_image_tag": deployment_context.version_tag,
-        "git_hash": deployment_context.commit_ref,
+        # PR flow: reference the shell vars that _PR_PLAN_SHELL_PREAMBLE sets
+        # from `terraform output` at build time. Deploy flow: the real values.
+        "docker_image_tag": (
+            "$${tag}" if for_pull_requests else deployment_context.version_tag
+        ),
+        "git_hash": (
+            "$${hash}" if for_pull_requests else deployment_context.commit_ref
+        ),
     }
     plan_args = [
         "plan",
         "-parallelism=32",
         f"-out={output_path}",
     ]
-
     for name, value in terraform_variables.items():
         plan_args.append(f"-var={name}={value}")
 
-    env = [TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)]
     if for_pull_requests:
-        # PR-commenter plans run with allow_failure=True so a failure doesn't
-        # block the comment step. Capture error logs here so the comment step
-        # can include them in the PR comment when the plan fails.
-        env.extend(["TF_LOG=ERROR", f"TF_LOG_PATH={TERRAFORM_PLAN_ERROR_LOG_PATH}"])
+        plan_script = _PR_PLAN_SHELL_PREAMBLE + "terraform " + " ".join(plan_args)
+        return BuildStep(
+            id="Create Terraform plan",
+            name=BUILDER_TERRAFORM,
+            dir_=TERRAFORM_WORKDIR,
+            entrypoint="sh",
+            args=["-c", plan_script],
+            env=env,
+            wait_for=wait_for,
+            timeout=TERRAFORM_STEP_TIMEOUT,
+            allow_failure=True,
+        )
 
     return BuildStep(
         id="Create Terraform plan",
@@ -135,8 +184,8 @@ def get_terraform_plan_step(
         args=plan_args,
         env=env,
         wait_for=wait_for,
-        timeout="900s",  # 15 min timeout
-        allow_failure=for_pull_requests,
+        timeout=TERRAFORM_STEP_TIMEOUT,
+        allow_failure=False,
     )
 
 
@@ -231,7 +280,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 "-reconfigure",
             ],
             env=[TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)],
-            timeout="900s",  # 15 min timeout
+            timeout=TERRAFORM_STEP_TIMEOUT,
         )
 
         terraform_plan = get_terraform_plan_step(
