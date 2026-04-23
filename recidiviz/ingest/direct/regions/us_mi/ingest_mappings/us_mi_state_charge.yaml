@@ -35,6 +35,7 @@ variables:
         ncic_code: ncic_code
         statute: offense_code
         offense_type: offense_type_description
+        description: description
         county_code: county
         attempted:
           $in:
