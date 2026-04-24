@@ -20,6 +20,7 @@ import { AllowedApp, Route, StateUserPermissionsResponse } from "../../types";
 import {
   ALLOWED_APPS_LABELS,
   CPA_PERMISSIONS_LABELS,
+  DIRECTOR_DASHBOARD_PERMISSIONS_LABELS,
   INSIGHTS_PERMISSIONS_LABELS,
   LANTERN_PERMISSIONS_LABELS,
   MEETINGS_PERMISSIONS_LABELS,
@@ -227,6 +228,13 @@ export const CustomPermissionsPanel = ({
     <h4>Lantern (Legacy) Pages:</h4>
     <RoutePermissionList
       labels={LANTERN_PERMISSIONS_LABELS}
+      hidePermissions={hidePermissions}
+      selectedUsers={selectedUsers}
+    />
+
+    <h4>Director Dashboard Pages:</h4>
+    <RoutePermissionList
+      labels={DIRECTOR_DASHBOARD_PERMISSIONS_LABELS}
       hidePermissions={hidePermissions}
       selectedUsers={selectedUsers}
     />

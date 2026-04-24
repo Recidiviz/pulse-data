@@ -67,6 +67,10 @@ export const LANTERN_PERMISSIONS_LABELS = {
   lantern: "Lantern (legacy)",
 };
 
+export const DIRECTOR_DASHBOARD_PERMISSIONS_LABELS = {
+  directorDashboardSupervision: "Director Dashboard (Supervision)",
+};
+
 export const ROUTES_PERMISSIONS_LABELS = {
   ...WORKFLOWS_PERMISSIONS_LABELS,
   ...VITALS_PERMISSIONS_LABELS,
@@ -77,6 +81,7 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...CPA_PERMISSIONS_LABELS,
   ...MEETINGS_PERMISSIONS_LABELS,
   ...LANTERN_PERMISSIONS_LABELS,
+  ...DIRECTOR_DASHBOARD_PERMISSIONS_LABELS,
 } satisfies Record<string, string>;
 
 export const ALLOWED_APPS_LABELS = {
