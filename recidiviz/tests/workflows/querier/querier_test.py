@@ -177,6 +177,7 @@ def make_add_config_arguments(
         "overdue_opportunity_callout_copy": "overdue for opportunity",
         "snooze_companion_opportunity_types": ["usNdOppType1", "usNdOppType2"],
         "case_notes_title": "Case notes title",
+        "skip_form_preview": False,
     }
 
 

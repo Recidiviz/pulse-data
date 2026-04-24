@@ -119,6 +119,8 @@ class OpportunityConfig:
 
     case_notes_title: Optional[str] = attr.ib()
 
+    skip_form_preview: bool = attr.ib()
+
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
 

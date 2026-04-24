@@ -139,6 +139,10 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         label: "Alert?",
         Edit: Checkbox,
       },
+      skipFormPreview: {
+        label: "Skip Form Preview?",
+        Edit: Checkbox,
+      },
       sidebarComponents: {
         multiple: true,
         Edit: SidebarComponentsEdit,

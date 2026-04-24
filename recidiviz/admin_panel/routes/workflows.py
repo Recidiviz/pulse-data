@@ -225,6 +225,7 @@ class OpportunityConfigurationsAPI(MethodView):
                 "snooze_companion_opportunity_types"
             ),
             case_notes_title=body_args.get("case_notes_title"),
+            skip_form_preview=body_args["skip_form_preview"],
         )
         return new_config_id
 

@@ -358,6 +358,7 @@ class WorkflowsQuerier:
         overdue_opportunity_callout_copy: Optional[str],
         snooze_companion_opportunity_types: Optional[list[str]],
         case_notes_title: Optional[str],
+        skip_form_preview: bool,
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
@@ -426,6 +427,7 @@ class WorkflowsQuerier:
                     overdue_opportunity_callout_copy=overdue_opportunity_callout_copy,
                     snooze_companion_opportunity_types=snooze_companion_opportunity_types,
                     case_notes_title=case_notes_title,
+                    skip_form_preview=skip_form_preview,
                 )
                 .returning(OpportunityConfiguration.id)
             )

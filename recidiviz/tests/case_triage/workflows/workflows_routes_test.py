@@ -2163,6 +2163,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             overdue_opportunity_callout_copy="overdue for opportunity",
             snooze_companion_opportunity_types=["usNdOppType1", "usNdOppType2"],
             case_notes_title=None,
+            skip_form_preview=False,
         )
 
         mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = {

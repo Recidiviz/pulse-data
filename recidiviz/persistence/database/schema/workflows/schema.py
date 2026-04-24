@@ -223,3 +223,6 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Optional label for case notes -- should be displayed in "other relevant information" section
     case_notes_title = Column(String, nullable=True)
+
+    # When true, clicking "Generate Paperwork" directly downloads the form rather than showing the preview screen
+    skip_form_preview = Column(Boolean, nullable=False, server_default="false")
