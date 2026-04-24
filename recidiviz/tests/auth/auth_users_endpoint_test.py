@@ -1793,6 +1793,50 @@ class AuthUsersEndpointTestCase(TestCase):
             # District should be updated from the CSV
             self.assertEqual(user["district"], "NEW DISTRICT")
 
+    def test_upload_roster_unblocks_user(self) -> None:
+        """Uploading a CSV should clear blocked_on for users present in the CSV."""
+        blocked_override = generate_fake_user_overrides(
+            email="leadership@testdomain.com",
+            region_code="US_XX",
+            roles=[LEADERSHIP_ROLE, SUPERVISION_STAFF],
+            external_id="3975",
+            blocked_on=datetime.now(tzlocal()) + timedelta(weeks=1),
+        )
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+            routes={"A": True},
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=SUPERVISION_STAFF,
+            routes={"B": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [blocked_override, leadership_default, supervision_staff_default],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(level="INFO"):
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            response = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+
+            response = self.client.get(self.users(), headers=self.headers)
+            result = json.loads(response.data)
+            self.assertEqual(len(result), 1)
+            self.assertIsNone(result[0]["blockedOn"])
+
     def test_upload_roster_multiple_roles(self) -> None:
         leadership_default = generate_fake_default_permissions(
             state="US_XX",

@@ -411,6 +411,21 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                     current_session, state_code, rows, UserOverride, expected_columns
                 )
 
+                emails = [
+                    row["email_address"] for row in rows if row.get("email_address")
+                ]
+                current_session.execute(
+                    update(UserOverride)
+                    .where(
+                        UserOverride.state_code == state_code.upper(),
+                        UserOverride.email_address.in_(emails),
+                        UserOverride.blocked_on.isnot(None),
+                    )
+                    .values(blocked_on=None),
+                    execution_options={"synchronize_session": False},
+                )
+                current_session.commit()
+
                 return f"{len(rows)} users added/updated to the roster"
             except IntegrityError as e:
                 if isinstance(e.orig, NotNullViolation):
