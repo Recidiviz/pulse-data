@@ -21,6 +21,13 @@ resource "google_project_service" "compute" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "certificatemanager" {
+  project            = var.project_id
+  service            = "certificatemanager.googleapis.com"
+  disable_on_destroy = false
+}
+
+
 resource "google_compute_global_network_endpoint" "public-pathways-endpoint" {
   global_network_endpoint_group = google_compute_global_network_endpoint_group.public-pathways-neg.name
   fqdn       = var.project_id == "public-pathways-production" ? "public-pathways-production.web.app" : "public-pathways-staging.web.app"
@@ -70,4 +77,13 @@ module "load_balancer" {
   ssl                             = true
   managed_ssl_certificate_domains = var.managed_ssl_certificate_domains
   https_redirect                  = true
+  random_certificate_suffix = true
+}
+
+resource "google_certificate_manager_dns_authorization" "default" {
+  name        = "public-pathways-dnsauth"
+  description = "The NY DNS Auth"
+  count = var.project_id == "public-pathways-production" ? 1 : 0
+  domain      = "dashboards.doccs.ny.gov"
+  depends_on = [google_project_service.certificatemanager]
 }
