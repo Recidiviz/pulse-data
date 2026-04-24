@@ -648,3 +648,13 @@ module "user-data-downloads" {
   name_suffix = "user-data-downloads"
   use_cmek    = true
 }
+
+module "us-tn-persistence-redirect" {
+  source = "./modules/cloud-storage-bucket"
+
+  count = var.project_id == "recidiviz-staging" ? 1 : 0
+
+  project_id  = var.project_id
+  name_suffix = "us-tn-persistence-archive"
+  use_cmek    = true
+}

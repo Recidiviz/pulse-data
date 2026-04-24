@@ -67,6 +67,36 @@ resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
   }
 }
 
+
+resource "google_cloud_scheduler_job" "us_tn_export_caf_scores_to_ingest" {
+  name             = "us-tn-export-caf-scores-to-ingest"
+  schedule         = "0 23 * * *" # 11pm Pacific -> 1 am Central
+  description      = "[US_TN] Export user-generated CAF data from postgres to ingest bucket"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes, but runs in a dozen seconds in practice
+
+  retry_config {
+    min_backoff_duration = "15s"
+    max_doublings        = 5
+  }
+
+  # When this cron job runs, execute the workflow "tennessee_transfer_caf_scores_to_ingest"
+  http_target {
+    http_method = "POST"
+    uri         = "https://workflowexecutions.googleapis.com/v1/projects/${var.project_id}/locations/${var.us_central_region}/workflows/${google_workflows_workflow.tennessee_transfer_caf_scores_to_ingest.name}/executions"
+
+    headers = {
+      "Content-Type" = "application/octet-stream"
+      "User-Agent"   = "Google-Cloud-Scheduler"
+    }
+
+    oauth_token {
+      service_account_email = google_service_account.admin_panel_cloud_run.email
+    }
+  }
+
+}
+
 locals {
   # Found at https://console.cloud.google.com/apis/credentials (IAP-admin-panel-load-balancer-backend-default)
   cloud_run_iap_client = local.is_production ? "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com" : "984160736970-4vg3gpqmskvpkhqim39b8kp8e4ommu94.apps.googleusercontent.com"

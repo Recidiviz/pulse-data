@@ -1,0 +1,25 @@
+main:
+  params: []
+  steps:
+    - init:
+        assign:
+          - project: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - instance: ${sys.get_env("DB_INSTANCE_NAME")}
+          - database_name: "postgres"
+          - file_uri: '${"gs://" + sys.get_env("OUTPUT_BUCKET_NAME") + "/front_end_classification_scores.csv" }'
+    - export_cloud_sql_to_csv:
+        call: googleapis.sqladmin.v1beta4.instances.export
+        args:
+          project: ${project}
+          instance: ${instance}
+          body:
+            exportContext:
+              fileType: "CSV"
+              uri: ${file_uri}
+              databases: ${database_name}
+              csvExportOptions:
+                selectQuery: >-
+                  SELECT "OFFENDERID", "ClassificationType", "ClassificationFormType", "LastClassificationDate", "AssessmentDate", "TrusteeFlag", "Question1", "Question1_notes", "Question2", "Question2_notes", "Question3", "Question3_notes", "Question4", "Question4_notes", "Question5", "Question5_notes", "Question6", "Question6_notes", "Question7", "Question7_notes", "DateOfApprovalAndEntry_CAF", "Trustee_Question1", "Trustee_Question2", "Trustee_Question3", "Trustee_Question4", "Trustee_Question5", "Trustee_Question6", "Trustee_Question7", "Trustee_Question8", "Trustee_Question9", "Trustee_Question10", "Trustee_Question11", "Trustee_Question12", "Trustee_Question13", "DateOfApprovalAndEntry_Trustee", "OverallScore", "ScoredCustodyLevel", "CounselorRecommendedOverride", "CounselorRecommendedCustodyLevel", "FinalOverrideCode", "FinalCustodyLevel", "TrusteeApprovedOrDenied", "TrusteeEligible", "TrusteeDenialReasons", "Warden_TrusteeSignaturesAcquired", "Warden_TrusteeSignaturesAcquiredDate", "ContractMonitor_TrusteeSignaturesAcquired", "ContractMonitor_TrusteeSignaturesAcquiredDate", "AC_TrusteeSignaturesAcquired", "AC_TrusteeSignaturesAcquiredDate", "ChiefCounselorFinalizingForm", "TrusteeChecklistComplete", "DateOfFinalApprovalAndEntry", "LastModifiedBy", "LastModifiedDate", "UpdatedFields", "SummaryTrusteeEverConvictedOfFirstDegreeMurder", "SummaryTrusteeServingLifeSentence", "SummaryTrusteeMoreThan10YearRemaining", "SummaryTrusteeAllNoTrusteeCompleted" FROM us_tn_caf_edits WHERE "LastModifiedDate" > NOW() - INTERVAL '3 DAY';
+        result: exportResponse
+    - finish:
+        return: ${exportResponse}

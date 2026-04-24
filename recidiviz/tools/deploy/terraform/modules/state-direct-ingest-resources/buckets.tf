@@ -35,6 +35,11 @@ resource "google_storage_bucket" "direct-ingest-bucket" {
   }
 }
 
+# expose the primary ingest bucket name
+output "primary_ingest_bucket_name" {
+  value = google_storage_bucket.direct-ingest-bucket.name
+}
+
 resource "google_storage_notification" "direct-ingest-bucket-notification" {
   bucket = google_storage_bucket.direct-ingest-bucket.name
   topic  = var.raw_data_storage_notification_topic_id

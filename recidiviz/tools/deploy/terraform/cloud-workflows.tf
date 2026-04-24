@@ -78,3 +78,18 @@ resource "google_eventarc_trigger" "utah_data_transfer_sync_cloud_run_connector_
     workflow = google_workflows_workflow.utah_data_transfer_sync_cloud_run_connector.id
   }
 }
+
+resource "google_workflows_workflow" "tennessee_transfer_caf_scores_to_ingest" {
+  name            = "tennessee-transfer-caf-scores-to-ingest"
+  description     = "Workflow that initiates the daily transfer of tennessee user data from the persistence database in postgres to the tennessee ingest bucket."
+  region          = var.us_central_region
+  service_account = google_service_account.cloud_workflows.id
+  call_log_level  = "LOG_ALL_CALLS"
+  user_env_vars = {
+    DB_INSTANCE_NAME = module.persistence_database_cmek.instance_name
+    # We redirect the output to a dedicated bucket in staging so we don't affect actual ingested data
+    # but can still test that this flow works and monitor its output when needed
+    OUTPUT_BUCKET_NAME = var.project_id == "recidiviz-123" ? module.state_direct_ingest_buckets_and_accounts["US_TN"].primary_ingest_bucket_name : module.us-tn-persistence-redirect[0].name
+  }
+  source_contents = file("${local.cloud_workflows_repo_path}/tennessee_transfer_caf_data_to_ingest.yaml")
+}
