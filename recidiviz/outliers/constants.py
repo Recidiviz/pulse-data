@@ -111,6 +111,15 @@ TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION = OutliersMetric(
     outcome_type=MetricOutcome.FAVORABLE,
 )
 
+TASK_COMPLETIONS_EARLY_DISCHARGE = OutliersMetric(
+    aggregated_metric=next(
+        metric
+        for metric in metric_config.TASK_COMPLETED_METRICS_SUPERVISION
+        if metric.name == "task_completions_early_discharge"
+    ),
+    outcome_type=MetricOutcome.FAVORABLE,
+)
+
 TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
     aggregated_metric=next(
         metric

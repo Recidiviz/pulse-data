@@ -20,6 +20,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
+    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
@@ -45,6 +48,11 @@ US_IA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
     },
     "INSIGHTS": {
+        SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
+            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
+                CLIENT_RECORD_VIEW_BUILDER.address,
+            },
+        },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 CLIENT_RECORD_VIEW_BUILDER.address,

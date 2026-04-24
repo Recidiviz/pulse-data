@@ -37,6 +37,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_NEW_CRIME_VIOLATION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+    TASK_COMPLETIONS_EARLY_DISCHARGE,
     TIMELY_CONTACT,
     TIMELY_CONTACT_DUE_DATE_BASED,
     TIMELY_F2F_CONTACT,
@@ -224,6 +225,7 @@ Denominator is the average probation caseload for the agent over the given time 
                 event_name="absconder warrants",
                 event_name_singular="absconder warrant",
                 event_name_past_tense="had an absconder warrant",
+                top_x_pct=10,
                 description_markdown="""All reported absconder warrants from supervision in the given time period as captured by the following supervision levels in OMNI and COMS: Probation Absconder Warrant Status,  Parole Absconder Warrant Status, Absconder Warrant Status. Additionally, we use the following movement reasons from OMNI: Absconder from Parole, Absconder from Probation, and the COMS modifier Absconded.
 
 <br />
@@ -264,6 +266,21 @@ Denominator is the average probation caseload for the agent over the given time 
                 rate_denominator="avg_population_probation",
                 feature_variant=_SPLIT_PAROLE_PROBATION_FV,
                 include_in_outcomes_condition="avg_population_probation BETWEEN 10 AND 150",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
+                metric=TASK_COMPLETIONS_EARLY_DISCHARGE,
+                title_display_name="Early Discharge Rate",
+                body_display_name="early discharge rate",
+                event_name="early discharges",
+                event_name_singular="early discharge",
+                event_name_past_tense="had an early discharge",
+                top_x_pct=10,
+                description_markdown="""All early discharges completed for clients under this agent in the given time period, as recorded by Workflows task completions.
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
+                list_table_text="""Clients will appear on this list multiple times if they have had more than one early discharge under this agent in the time period.""",
             ),
         ],
         client_events=[

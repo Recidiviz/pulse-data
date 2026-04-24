@@ -28,6 +28,7 @@ snapshots[
     "incarceration_starts_new_crime_violation",
     "early_discharge_requests",
     "task_completions_transfer_to_limited_supervision",
+    "task_completions_early_discharge",
     "task_completions_full_term_discharge",
     "treatment_starts",
     "violations_absconsion",
