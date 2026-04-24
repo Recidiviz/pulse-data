@@ -44,6 +44,6 @@ def metric_group_by_columns(
     given |unit_of_analysis|."""
     unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
     return [
-        *unit_of_analysis.primary_key_columns,
+        *unit_of_analysis.primary_key_column_names,
         *MetricTimePeriodConfig.query_output_columns(),
     ]

@@ -179,8 +179,18 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         self.assertEqual(
             col_info,
             [
-                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
-                ("officer_id", "STRING", "REQUIRED", "Primary key: officer_id"),
+                (
+                    "state_code",
+                    "STRING",
+                    "REQUIRED",
+                    "The U.S. state code for the unit being analyzed.",
+                ),
+                (
+                    "officer_id",
+                    "STRING",
+                    "REQUIRED",
+                    "The external id for the supervision officer being analyzed.",
+                ),
                 (
                     "start_date",
                     "DATE",
@@ -268,8 +278,18 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         self.assertEqual(
             col_info,
             [
-                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
-                ("officer_id", "STRING", "REQUIRED", "Primary key: officer_id"),
+                (
+                    "state_code",
+                    "STRING",
+                    "REQUIRED",
+                    "The U.S. state code for the unit being analyzed.",
+                ),
+                (
+                    "officer_id",
+                    "STRING",
+                    "REQUIRED",
+                    "The external id for the supervision officer being analyzed.",
+                ),
                 (
                     "start_date",
                     "DATE",
@@ -340,12 +360,17 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         self.assertEqual(
             col_info,
             [
-                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
+                (
+                    "state_code",
+                    "STRING",
+                    "REQUIRED",
+                    "The U.S. state code for the unit being analyzed.",
+                ),
                 (
                     "email_address",
                     "STRING",
                     "REQUIRED",
-                    "Primary key: email_address",
+                    "The email address for the Workflows provisioned user being analyzed.",
                 ),
                 (
                     "start_date",
@@ -399,12 +424,17 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         self.assertEqual(
             col_info,
             [
-                ("state_code", "STRING", "REQUIRED", "Primary key: state_code"),
+                (
+                    "state_code",
+                    "STRING",
+                    "REQUIRED",
+                    "The U.S. state code for the unit being analyzed.",
+                ),
                 (
                     "facility_counselor_id",
                     "INTEGER",
                     "REQUIRED",
-                    "Primary key: facility_counselor_id",
+                    "The Recidiviz internal staff id for the facility counselor being analyzed.",
                 ),
                 (
                     "start_date",

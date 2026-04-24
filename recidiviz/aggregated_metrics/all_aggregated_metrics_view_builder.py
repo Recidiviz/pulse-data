@@ -186,5 +186,5 @@ SELECT
         description=view_description,
         bq_description=view_description_header,
         should_materialize=True,
-        clustering_fields=unit_of_analysis.primary_key_columns,
+        clustering_fields=unit_of_analysis.primary_key_column_names,
     )

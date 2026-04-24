@@ -285,7 +285,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             for c in output_columns
             if c
             not in {
-                *unit_of_analysis.primary_key_columns,
+                *unit_of_analysis.primary_key_column_names,
                 *unit_of_observation.primary_key_column_names,
                 MetricTimePeriodConfig.METRIC_TIME_PERIOD_PERIOD_COLUMN,
             }
@@ -400,7 +400,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         columns = [*unit_of_observation.primary_key_column_names_ordered]
         # There may be overlap between unit_of_analysis and unit_of_observation PKs -
         # only add non-overlapping columns.
-        for column in unit_of_analysis.primary_key_columns:
+        for column in unit_of_analysis.primary_key_column_names:
             if column not in columns:
                 columns.append(column)
         columns.extend(MetricTimePeriodConfig.query_output_columns())

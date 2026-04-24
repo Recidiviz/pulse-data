@@ -125,7 +125,7 @@ def get_custom_aggregated_metrics_query_template(
 
     all_index_columns = MetricUnitOfAnalysis.for_type(
         unit_of_analysis_type
-    ).primary_key_columns
+    ).primary_key_column_names
     if disaggregate_by_observation_attributes:
         all_index_columns.extend(disaggregate_by_observation_attributes)
 

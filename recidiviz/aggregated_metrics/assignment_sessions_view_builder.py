@@ -1203,7 +1203,7 @@ for use in the {unit_of_analysis_name}_metrics table, based on {unit_of_observat
     child_primary_key_columns = [
         col
         for col in unit_of_observation.primary_key_column_names_ordered
-        if col not in unit_of_analysis.primary_key_columns
+        if col not in unit_of_analysis.primary_key_column_names
     ]
     child_primary_key_columns_query_string = (
         list_to_query_string(child_primary_key_columns) + ",\n"
@@ -1238,7 +1238,7 @@ sample AS (
         table_2_name="sample", 
         index_columns=unit_of_observation.primary_key_column_names_ordered,
         include_zero_day_intersections=True,
-        table_1_columns=[col for col in unit_of_analysis.primary_key_columns if col not in unit_of_observation.primary_key_column_names_ordered] + ["dummy"],
+        table_1_columns=[col for col in unit_of_analysis.primary_key_column_names if col not in unit_of_observation.primary_key_column_names_ordered] + ["dummy"],
         table_2_columns=[]
     )}
 )

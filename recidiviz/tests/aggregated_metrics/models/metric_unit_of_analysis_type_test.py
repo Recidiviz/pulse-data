@@ -23,6 +23,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
+from recidiviz.big_query.big_query_view_column import String
 
 
 class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
@@ -30,8 +31,8 @@ class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
     def test_index_columns_no_repeats(self) -> None:
         for unit_of_analysis_type in MetricUnitOfAnalysisType:
             unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
-            if len(unit_of_analysis.index_columns) != len(
-                set(unit_of_analysis.index_columns)
+            if len(unit_of_analysis.index_column_names) != len(
+                set(unit_of_analysis.index_column_names)
             ):
                 raise ValueError(
                     "MetricUnitOfAnalysisType `primary_key_columns` and `static_attribute_columns`"
@@ -48,11 +49,30 @@ class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
 
 
 class MetricUnitOfAnalysisTest(unittest.TestCase):
+    """Tests for the MetricUnitOfAnalysis class."""
+
     def test_get_index_columns_query_string(self) -> None:
         my_metric_aggregation_level = MetricUnitOfAnalysis(
             type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
-            primary_key_columns=["region_code", "my_officer_id"],
-            static_attribute_columns=["my_officer_attribute"],
+            primary_key_columns=[
+                String(
+                    name="region_code",
+                    description="Region code.",
+                    mode="NULLABLE",
+                ),
+                String(
+                    name="my_officer_id",
+                    description="Officer id.",
+                    mode="NULLABLE",
+                ),
+            ],
+            static_attribute_columns=[
+                String(
+                    name="my_officer_attribute",
+                    description="Officer attribute.",
+                    mode="NULLABLE",
+                ),
+            ],
         )
         query_string = my_metric_aggregation_level.get_index_columns_query_string(
             prefix="my_prefix"
@@ -63,3 +83,30 @@ class MetricUnitOfAnalysisTest(unittest.TestCase):
     def test_all_units_of_analysis_build(self) -> None:
         for unit_of_analysis_type in MetricUnitOfAnalysisType:
             _ = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
+
+    def test_primary_key_columns_are_typed(self) -> None:
+        officer = MetricUnitOfAnalysis.for_type(
+            MetricUnitOfAnalysisType.SUPERVISION_OFFICER
+        )
+        pk_info = [(c.name, type(c).__name__) for c in officer.primary_key_columns]
+        self.assertEqual(pk_info, [("state_code", "String"), ("officer_id", "String")])
+
+        attr_info = [
+            (c.name, type(c).__name__) for c in officer.static_attribute_columns
+        ]
+        self.assertEqual(
+            attr_info,
+            [
+                ("officer_name", "String"),
+                ("officer_email_address", "String"),
+                ("staff_id", "Integer"),
+            ],
+        )
+
+    def test_facility_counselor_pk_types(self) -> None:
+        fc = MetricUnitOfAnalysis.for_type(MetricUnitOfAnalysisType.FACILITY_COUNSELOR)
+        pk_info = [(c.name, type(c).__name__) for c in fc.primary_key_columns]
+        self.assertEqual(
+            pk_info,
+            [("state_code", "String"), ("facility_counselor_id", "Integer")],
+        )

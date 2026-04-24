@@ -122,18 +122,7 @@ def aggregated_metric_view_schema(
     """
     unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
 
-    columns: list[BigQueryViewColumn] = []
-
-    for pk_col in unit_of_analysis.primary_key_columns:
-        pk_type = unit_of_analysis.primary_key_column_type(pk_col)
-        pk_column_cls = bq_field_type_to_column_class(pk_type)
-        columns.append(
-            pk_column_cls(
-                name=pk_col,
-                description=f"Primary key: {pk_col}",
-                mode="REQUIRED",
-            )
-        )
+    columns: list[BigQueryViewColumn] = [*unit_of_analysis.primary_key_columns]
 
     columns.append(
         Date(
@@ -248,7 +237,7 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
     @property
     def output_columns(self) -> list[str]:
         return [
-            *self.unit_of_analysis.primary_key_columns,
+            *self.unit_of_analysis.primary_key_column_names,
             "start_date",
             "end_date",
             f"{MetricTimePeriodConfig.METRIC_TIME_PERIOD_PERIOD_COLUMN}",
@@ -286,7 +275,7 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         """Cluster the output on the unit of analysis primary keys, which are the most
         likely to be joined against in subsequent queries.
         """
-        return self.unit_of_analysis.primary_key_columns
+        return self.unit_of_analysis.primary_key_column_names
 
     @property
     def schema(self) -> list[BigQueryViewColumn]:

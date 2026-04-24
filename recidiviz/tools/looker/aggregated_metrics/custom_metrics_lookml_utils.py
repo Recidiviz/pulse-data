@@ -355,7 +355,7 @@ def _generate_assignment_query_fragment_for_unit_of_analysis(
     shared_columns = sorted(
         {
             *unit_of_observation.primary_key_column_names,
-            *unit_of_analysis.index_columns,
+            *unit_of_analysis.index_column_names,
         }
     )
     shared_columns_string = list_to_query_string(shared_columns)
@@ -457,7 +457,7 @@ def build_assignments_lookml_view(
             for (_, unit_of_analysis_type) in assignment_types_dict.values()
             for col in MetricUnitOfAnalysis.for_type(
                 unit_of_analysis_type
-            ).index_columns
+            ).index_column_names
         )
     )
     attribute_columns_conditional = "\nAND ".join(
@@ -822,7 +822,9 @@ def _get_index_columns_to_exclude_for_assignment_type(
             type=unit_of_observation_type
         ).primary_key_column_names_ordered
         if col
-        not in MetricUnitOfAnalysis.for_type(unit_of_analysis_type).primary_key_columns
+        not in MetricUnitOfAnalysis.for_type(
+            unit_of_analysis_type
+        ).primary_key_column_names
     ]
     # Add a comma if there is at least one column here, otherwise don't
     columns_to_exclude_query_fragment = (

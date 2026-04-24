@@ -158,7 +158,7 @@ def _build_time_periods_unioned_view_builder(
         bq_description=bq_description,
         parents=parents,
         parent_view_to_select_statement=_parent_view_to_select_statement,
-        clustering_fields=unit_of_analysis.primary_key_columns,
+        clustering_fields=unit_of_analysis.primary_key_column_names,
         schema=aggregated_metric_view_schema(
             unit_of_analysis_type=unit_of_analysis_type,
             metrics=parents[0].metrics,

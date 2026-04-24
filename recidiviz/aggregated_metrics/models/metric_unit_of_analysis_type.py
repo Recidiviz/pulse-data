@@ -16,12 +16,24 @@
 # =============================================================================
 """Constants related to a MetricUnitOfAnalysisType."""
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict
 
 import attr
-from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Bool,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.segment.product_type import ProductType
+
+_STATE_CODE_COLUMN = String(
+    name="state_code",
+    description="The U.S. state code for the unit being analyzed.",
+    mode="REQUIRED",
+)
 
 
 class MetricUnitOfAnalysisType(Enum):
@@ -76,49 +88,54 @@ class MetricUnitOfAnalysis:
     # The enum for the type of unit of analysis
     type: MetricUnitOfAnalysisType
 
-    # List of columns present in the assignment table that serve as the primary keys of the table
-    primary_key_columns: List[str]
+    # List of columns (with explicit types and descriptions) that serve as the
+    # primary keys of a table containing information about the unit of analysis.
+    primary_key_columns: list[BigQueryViewColumn]
 
-    # By default, primary key columns are assumed to be STRING, but here we can specify
-    # different column types for primary keys as needed.
-    primary_key_column_type_overrides: Dict[str, bigquery.SqlTypeNames] = attr.Factory(
-        dict
-    )
-
-    # List of columns that provide information about the unit of analysis which does not change over time
-    static_attribute_columns: List[str]
-
-    def primary_key_column_type(self, column: str) -> bigquery.SqlTypeNames:
-        """Returns the BigQuery type for the given primary key column."""
-        return self.primary_key_column_type_overrides.get(
-            column, bigquery.SqlTypeNames.STRING
-        )
+    # List of columns (with explicit types and descriptions) that provide
+    # information about the unit of analysis which does not change over time.
+    static_attribute_columns: list[BigQueryViewColumn]
 
     @property
-    def index_columns(self) -> List[str]:
-        """Returns concatenated list of primary key and static attribute columns"""
+    def primary_key_column_names(self) -> list[str]:
+        """Provides primary key column names in a stable order."""
+        return [c.name for c in self.primary_key_columns]
+
+    @property
+    def static_attribute_column_names(self) -> list[str]:
+        """Provides static attribute column names in a stable order."""
+        return [c.name for c in self.static_attribute_columns]
+
+    @property
+    def index_columns(self) -> list[BigQueryViewColumn]:
+        """Returns concatenated list of primary key and static attribute columns."""
         return self.primary_key_columns + self.static_attribute_columns
 
-    def get_primary_key_columns_query_string(self, prefix: Optional[str] = None) -> str:
+    @property
+    def index_column_names(self) -> list[str]:
+        """Returns concatenated list of primary key and static attribute column names."""
+        return self.primary_key_column_names + self.static_attribute_column_names
+
+    def get_primary_key_columns_query_string(self, prefix: str | None = None) -> str:
         """Returns string containing comma separated primary key column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(
-            f"{prefix_str}{column}" for column in sorted(self.primary_key_columns)
+            f"{prefix_str}{column}" for column in sorted(self.primary_key_column_names)
         )
 
     def get_static_attribute_columns_query_string(
-        self, prefix: Optional[str] = None
+        self, prefix: str | None = None
     ) -> str:
         """Returns string containing comma separated static attribute column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(
-            f"{prefix_str}{column}" for column in self.static_attribute_columns
+            f"{prefix_str}{column}" for column in self.static_attribute_column_names
         )
 
-    def get_index_columns_query_string(self, prefix: Optional[str] = None) -> str:
+    def get_index_columns_query_string(self, prefix: str | None = None) -> str:
         """Returns string containing comma separated index column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
-        return ", ".join(f"{prefix_str}{column}" for column in self.index_columns)
+        return ", ".join(f"{prefix_str}{column}" for column in self.index_column_names)
 
     @classmethod
     def for_type(
@@ -129,69 +146,169 @@ class MetricUnitOfAnalysis:
             case MetricUnitOfAnalysisType.FACILITY:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.FACILITY,
-                    primary_key_columns=["state_code", "facility"],
-                    static_attribute_columns=["facility_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="facility",
+                            description="The facility code for the facility being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
+                    static_attribute_columns=[
+                        String(
+                            name="facility_name",
+                            description="The display name of the facility.",
+                            mode="NULLABLE",
+                        ),
+                    ],
                 )
             case MetricUnitOfAnalysisType.FACILITY_COUNSELOR:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
-                    primary_key_columns=["state_code", "facility_counselor_id"],
-                    primary_key_column_type_overrides={
-                        "facility_counselor_id": bigquery.SqlTypeNames.INTEGER,
-                    },
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        Integer(
+                            name="facility_counselor_id",
+                            description="The Recidiviz internal staff id for the facility counselor being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[
-                        "facility_counselor_name",
-                        "facility_counselor_email_address",
+                        String(
+                            name="facility_counselor_name",
+                            description="The name of the facility counselor.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="facility_counselor_email_address",
+                            description="The email address of the facility counselor.",
+                            mode="NULLABLE",
+                        ),
                     ],
                 )
             case MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
                     primary_key_columns=[
-                        "state_code",
-                        "caseload_category",
-                        "category_type",
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="caseload_category",
+                            description="The Insights caseload category being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                        String(
+                            name="category_type",
+                            description="The type of the Insights caseload category.",
+                            mode="REQUIRED",
+                        ),
                     ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.STATE_CODE:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.STATE_CODE,
-                    primary_key_columns=["state_code"],
+                    primary_key_columns=[_STATE_CODE_COLUMN],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.SUPERVISION_DISTRICT:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-                    primary_key_columns=["state_code", "district"],
-                    static_attribute_columns=["district_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="district",
+                            description="The supervision district code for the district being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
+                    static_attribute_columns=[
+                        String(
+                            name="district_name",
+                            description="The display name of the supervision district.",
+                            mode="NULLABLE",
+                        ),
+                    ],
                 )
             case MetricUnitOfAnalysisType.SUPERVISION_OFFICE:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-                    primary_key_columns=["state_code", "district", "office"],
-                    static_attribute_columns=["district_name", "office_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="district",
+                            description="The supervision district code for the office being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                        String(
+                            name="office",
+                            description="The supervision office code for the office being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
+                    static_attribute_columns=[
+                        String(
+                            name="district_name",
+                            description="The display name of the supervision district.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="office_name",
+                            description="The display name of the supervision office.",
+                            mode="NULLABLE",
+                        ),
+                    ],
                 )
             case MetricUnitOfAnalysisType.SUPERVISION_UNIT:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-                    primary_key_columns=["state_code", "unit_supervisor"],
-                    primary_key_column_type_overrides={
-                        "unit_supervisor": bigquery.SqlTypeNames.INTEGER,
-                    },
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        Integer(
+                            name="unit_supervisor",
+                            description="The Recidiviz internal staff id for the unit supervisor being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[
-                        "unit_supervisor_name",
-                        "unit_supervisor_email_address",
+                        String(
+                            name="unit_supervisor_name",
+                            description="The name of the unit supervisor.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="unit_supervisor_email_address",
+                            description="The email address of the unit supervisor.",
+                            mode="NULLABLE",
+                        ),
                     ],
                 )
             case MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-                    primary_key_columns=["state_code", "officer_id"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="officer_id",
+                            description="The external id for the supervision officer being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[
-                        "officer_name",
-                        "officer_email_address",
-                        "staff_id",
+                        String(
+                            name="officer_name",
+                            description="The name of the supervision officer.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="officer_email_address",
+                            description="The email address of the supervision officer.",
+                            mode="NULLABLE",
+                        ),
+                        Integer(
+                            name="staff_id",
+                            description="The Recidiviz internal staff id for the supervision officer.",
+                            mode="NULLABLE",
+                        ),
                     ],
                 )
             case (
@@ -199,95 +316,238 @@ class MetricUnitOfAnalysis:
             ):
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
-                    primary_key_columns=["state_code", "officer_id"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="officer_id",
+                            description="The external id for the supervision officer being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[
-                        "officer_name",
-                        "officer_email_address",
-                        "staff_id",
+                        String(
+                            name="officer_name",
+                            description="The name of the supervision officer.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="officer_email_address",
+                            description="The email address of the supervision officer.",
+                            mode="NULLABLE",
+                        ),
+                        Integer(
+                            name="staff_id",
+                            description="The Recidiviz internal staff id for the supervision officer.",
+                            mode="NULLABLE",
+                        ),
                     ],
                 )
             case MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-                    primary_key_columns=["state_code", "caseload_id"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="caseload_id",
+                            description="The id for the Workflows caseload being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.LOCATION_DETAIL:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.LOCATION_DETAIL,
-                    primary_key_columns=["state_code", "location_detail_id"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="location_detail_id",
+                            description="The id for the location detail being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.LOCATION:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.LOCATION,
-                    primary_key_columns=["state_code", "location_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="location_name",
+                            description="The name of the location being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.PERSON_ID:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.PERSON_ID,
-                    primary_key_columns=["state_code", "person_id"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        Integer(
+                            name="person_id",
+                            description="The Recidiviz internal person id for the person being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.ALL_STATES:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.ALL_STATES,
-                    primary_key_columns=["in_signed_state"],
+                    primary_key_columns=[
+                        Bool(
+                            name="in_signed_state",
+                            description="Whether the entity is in a signed state.",
+                            mode="REQUIRED",
+                        ),
+                    ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.EXPERIMENT_VARIANT:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
                     primary_key_columns=[
-                        "state_code",
-                        "experiment_id",
-                        "variant_id",
-                        "variant_date",
-                        "is_treated",
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="experiment_id",
+                            description="The id for the experiment.",
+                            mode="REQUIRED",
+                        ),
+                        String(
+                            name="variant_id",
+                            description="The id for the experiment variant.",
+                            mode="REQUIRED",
+                        ),
+                        Date(
+                            name="variant_date",
+                            description="The date of the experiment variant.",
+                            mode="REQUIRED",
+                        ),
+                        Bool(
+                            name="is_treated",
+                            description="Whether the variant is treated.",
+                            mode="REQUIRED",
+                        ),
                     ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
-                    primary_key_columns=["state_code", "email_address"],
-                    static_attribute_columns=["staff_id", "user_full_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="email_address",
+                            description="The email address for the Workflows provisioned user being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
+                    static_attribute_columns=[
+                        Integer(
+                            name="staff_id",
+                            description="The Recidiviz internal staff id for the provisioned user.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="user_full_name",
+                            description="The full name of the provisioned user.",
+                            mode="NULLABLE",
+                        ),
+                    ],
                 )
             case MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
-                    primary_key_columns=["state_code", "email_address"],
-                    static_attribute_columns=["staff_id", "user_full_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="email_address",
+                            description="The email address for the Insights provisioned user being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
+                    static_attribute_columns=[
+                        Integer(
+                            name="staff_id",
+                            description="The Recidiviz internal staff id for the provisioned user.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="user_full_name",
+                            description="The full name of the provisioned user.",
+                            mode="NULLABLE",
+                        ),
+                    ],
                 )
             case MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT,
                     primary_key_columns=[
-                        "state_code",
-                        "cohort_month_end_date",
-                        "metric_id",
-                        "outlier_usage_cohort",
+                        _STATE_CODE_COLUMN,
+                        Date(
+                            name="cohort_month_end_date",
+                            description="The end date of the cohort month.",
+                            mode="REQUIRED",
+                        ),
+                        String(
+                            name="metric_id",
+                            description="The id of the metric for the outlier usage cohort.",
+                            mode="REQUIRED",
+                        ),
+                        String(
+                            name="outlier_usage_cohort",
+                            description="The outlier usage cohort designation.",
+                            mode="REQUIRED",
+                        ),
                     ],
                     static_attribute_columns=[],
                 )
             case MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.GLOBAL_PROVISIONED_USER,
-                    primary_key_columns=["state_code", "email_address"],
-                    static_attribute_columns=["staff_id", "user_full_name"],
+                    primary_key_columns=[
+                        _STATE_CODE_COLUMN,
+                        String(
+                            name="email_address",
+                            description="The email address for the globally provisioned user being analyzed.",
+                            mode="REQUIRED",
+                        ),
+                    ],
+                    static_attribute_columns=[
+                        Integer(
+                            name="staff_id",
+                            description="The Recidiviz internal staff id for the provisioned user.",
+                            mode="NULLABLE",
+                        ),
+                        String(
+                            name="user_full_name",
+                            description="The full name of the provisioned user.",
+                            mode="NULLABLE",
+                        ),
+                    ],
                 )
             case MetricUnitOfAnalysisType.PRODUCT_ACCESS:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.PRODUCT_ACCESS,
                     primary_key_columns=[
-                        "state_code",
+                        _STATE_CODE_COLUMN,
                         *[
-                            f"is_provisioned_{product_type.pretty_name}"
+                            Bool(
+                                name=f"is_provisioned_{product_type.pretty_name}",
+                                description=f"Whether the user is provisioned for {product_type.display_name}.",
+                                mode="REQUIRED",
+                            )
                             for product_type in ProductType
                         ],
                         *[
-                            f"is_primary_user_{product_type.pretty_name}"
+                            Bool(
+                                name=f"is_primary_user_{product_type.pretty_name}",
+                                description=f"Whether the user is a primary user of {product_type.display_name}.",
+                                mode="REQUIRED",
+                            )
                             for product_type in ProductType
                         ],
                     ],
@@ -405,8 +665,8 @@ FROM
 
 def get_static_attributes_query_for_unit_of_analysis(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
-    bq_view: Optional[bool] = True,
-) -> Optional[str]:
+    bq_view: bool | None = True,
+) -> str | None:
     """
     Returns the query that associates a unit of analysis with its static attribute columns.
     If bq_view is True, includes the `{project_id}` prefix in all view addresses; otherwise,
