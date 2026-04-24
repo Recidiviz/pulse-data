@@ -829,11 +829,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
     StateCode.US_TX: {
         "Charges": ["OFF_SENT_BEG_DATE", "OFF_SENT_DATE"],
         "Phases": ["OFFC_REGION", "PLM_TYPE_ID", "PLS_STATUS_DATE"],
-        "ProgramReferral": [
-            "PREF_CREATION_DATE",
-            "PREF_PROG_TYPE_ID",
-            "PREF_UPDATE_DATE",
-        ],
     },
     StateCode.US_UT: {
         "addr": ["end_dt", "geocode_dt", "updt_dt", "usps_vrfy_dt"],
@@ -1466,6 +1461,11 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
     },
     StateCode.US_TX: {
         "Assessment": ["ASSESSMENT_DATE"],
+        "ProgramReferral": [
+            "PREF_CREATION_DATE",
+            "PREF_PROG_TYPE_ID",
+            "PREF_UPDATE_DATE",
+        ],
     },
     StateCode.US_NC: {
         "APPT7AA1": ["CDCLBRTH", "DTOFUPDT"],
