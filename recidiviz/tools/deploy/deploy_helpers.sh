@@ -208,21 +208,19 @@ function pre_deploy_configure_infrastructure {
       --apply
 
     verify_hash "$COMMIT_HASH"
-    echo "Running migrations asynchronously"
+    echo "Running migrations"
     run_cmd uv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
       --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
-      --stage "RunMigrations" \
-      --execute-async
+      --stage "RunMigrations"
 
-    echo "Building Cloud Functions asynchronously"
+    echo "Building Cloud Functions"
     run_cmd uv run python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
       --project-id "${PROJECT}" \
       --version-tag "${GIT_VERSION_TAG}" \
       --commit-ref "${COMMIT_HASH}" \
-      --stage "BuildCloudFunctions" \
-      --execute-async
+      --stage "BuildCloudFunctions"
 }
 
 function copy_docker_image_to_repository {
