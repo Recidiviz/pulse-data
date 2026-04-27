@@ -17,6 +17,9 @@
 """Tests for assignment_sessions_view_collector.py"""
 import unittest
 
+from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
+    metric_assignment_sessions_schema,
+)
 from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     collect_assignment_sessions_view_builders,
     get_standard_population_selector_for_unit_of_observation,
@@ -24,9 +27,14 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class AssignmentSessionsViewCollectorTest(unittest.TestCase):
@@ -64,3 +72,33 @@ class AssignmentSessionsViewCollectorTest(unittest.TestCase):
                     f"with address [{view_builder.address}]"
                 )
             seen_addresses.add(view_builder.address)
+
+    def test_all_view_builders_have_schema(self) -> None:
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            for view_builder in collect_assignment_sessions_view_builders():
+                view = view_builder.build()
+                self.assertIsNotNone(
+                    view.schema,
+                    f"Expected schema to be set for assignment sessions view "
+                    f"[{view_builder.address}]",
+                )
+
+    def test_metric_assignment_sessions_schema_anchor(self) -> None:
+        schema = metric_assignment_sessions_schema(
+            unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+        )
+        col_info = [(c.name, c.field_type.value, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("person_id", "INTEGER", "NULLABLE"),
+                ("state_code", "STRING", "NULLABLE"),
+                ("district", "STRING", "REQUIRED"),
+                ("office", "STRING", "REQUIRED"),
+                ("assignment_date", "DATE", "REQUIRED"),
+                ("end_date", "DATE", "NULLABLE"),
+                ("end_date_exclusive", "DATE", "NULLABLE"),
+                ("assignment_is_first_day_in_population", "BOOLEAN", "REQUIRED"),
+            ],
+        )

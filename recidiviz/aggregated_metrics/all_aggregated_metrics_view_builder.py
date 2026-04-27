@@ -38,10 +38,86 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     get_static_attributes_query_for_unit_of_analysis,
 )
+from recidiviz.aggregated_metrics.query_building.build_aggregated_metric_query import (
+    metric_output_column_bq_field_type,
+)
+from recidiviz.big_query.big_query_schema_utils import bq_field_type_to_column_class
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Date, String
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+
+
+def all_aggregated_metrics_view_schema(
+    unit_of_analysis: MetricUnitOfAnalysis,
+    metrics: List[AggregatedMetric],
+    disaggregate_by_observation_attributes: list[str] | None,
+) -> list[BigQueryViewColumn]:
+    """Returns the BigQuery schema for a view produced by
+    generate_all_aggregated_metrics_view_builder().
+
+    Column layout matches the final SELECT of that builder:
+    1. Unit of analysis primary key columns (REQUIRED)
+    2. Unit of analysis static attribute columns (NULLABLE)
+    3. Disaggregation attributes (NULLABLE STRING)
+    4. start_date (DATE REQUIRED)
+    5. end_date (DATE REQUIRED)
+    6. period (STRING REQUIRED)
+    7. Metric columns in the order passed in (INTEGER or FLOAT NULLABLE)
+    """
+    columns: list[BigQueryViewColumn] = [
+        *unit_of_analysis.primary_key_columns,
+        *unit_of_analysis.static_attribute_columns,
+    ]
+
+    for disagg_attr in disaggregate_by_observation_attributes or []:
+        columns.append(
+            String(
+                name=disagg_attr,
+                description=f"Disaggregation attribute: {disagg_attr}",
+                mode="NULLABLE",
+            )
+        )
+
+    columns.extend(
+        [
+            Date(
+                name="start_date",
+                description="Analysis period start date (inclusive).",
+                mode="REQUIRED",
+            ),
+            Date(
+                name="end_date",
+                description="Analysis period end date (exclusive).",
+                mode="REQUIRED",
+            ),
+            String(
+                name="period",
+                description=(
+                    "A string descriptor for the analysis period length. One of: "
+                    "'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'."
+                ),
+                mode="REQUIRED",
+            ),
+        ]
+    )
+
+    for metric in metrics:
+        field_type = metric_output_column_bq_field_type(metric)
+        column_cls = bq_field_type_to_column_class(field_type)
+        columns.append(
+            column_cls(
+                name=metric.name,
+                description=(
+                    f"{metric.display_name}: {metric.description} "
+                    f"(Observation Type: {metric.observation_type.value})"
+                ),
+                mode="NULLABLE",
+            )
+        )
+
+    return columns
 
 
 def generate_all_aggregated_metrics_view_builder(
@@ -56,6 +132,8 @@ def generate_all_aggregated_metrics_view_builder(
     Returns a SimpleBigQueryViewBuilder that joins together all metric views for
     individual metric class types into a single materialized view for the specified unit
     of analysis and population.
+
+    The returned builder has a declared schema — see all_aggregated_metrics_view_schema().
     """
     unit_of_analysis_name = unit_of_analysis.type.short_name
     population_name = population_type.population_name_short
@@ -187,4 +265,9 @@ SELECT
         bq_description=view_description_header,
         should_materialize=True,
         clustering_fields=unit_of_analysis.primary_key_column_names,
+        schema=all_aggregated_metrics_view_schema(
+            unit_of_analysis=unit_of_analysis,
+            metrics=metrics,
+            disaggregate_by_observation_attributes=disaggregate_by_observation_attributes,
+        ),
     )

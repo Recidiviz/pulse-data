@@ -594,3 +594,89 @@ ON
     metric_period_start_date <= assignment_start_date AND metric_period_end_date_exclusive > assignment_start_date"""
 
         self.assertEqual(expected_query, builder.build(sandbox_context=None).view_query)
+
+    def test_schema__assignment(self) -> None:
+        schema = AssignmentsByTimePeriodViewBuilder.output_schema(
+            unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.ASSIGNMENT,
+        )
+        col_info = [(c.name, c.field_type.value, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("person_id", "INTEGER", "NULLABLE"),
+                ("state_code", "STRING", "NULLABLE"),
+                ("district", "STRING", "REQUIRED"),
+                ("office", "STRING", "REQUIRED"),
+                ("metric_period_start_date", "DATE", "REQUIRED"),
+                ("metric_period_end_date_exclusive", "DATE", "REQUIRED"),
+                ("period", "STRING", "REQUIRED"),
+                ("assignment_start_date", "DATE", "REQUIRED"),
+                ("assignment_end_date_exclusive_nonnull", "DATE", "REQUIRED"),
+            ],
+        )
+
+    def test_schema__intersection(self) -> None:
+        schema = AssignmentsByTimePeriodViewBuilder.output_schema(
+            unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION,
+        )
+        col_info = [(c.name, c.field_type.value, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("person_id", "INTEGER", "NULLABLE"),
+                ("state_code", "STRING", "NULLABLE"),
+                ("facility", "STRING", "REQUIRED"),
+                ("metric_period_start_date", "DATE", "REQUIRED"),
+                ("metric_period_end_date_exclusive", "DATE", "REQUIRED"),
+                ("period", "STRING", "REQUIRED"),
+                ("assignment_start_date", "DATE", "REQUIRED"),
+                ("assignment_end_date_exclusive_nonnull", "DATE", "REQUIRED"),
+                ("intersection_start_date", "DATE", "REQUIRED"),
+                ("intersection_end_date_exclusive_nonnull", "DATE", "REQUIRED"),
+            ],
+        )
+
+    def test_schema__intersection_event_attribution(self) -> None:
+        schema = AssignmentsByTimePeriodViewBuilder.output_schema(
+            unit_of_observation_type=MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.STATE_CODE,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION,
+        )
+        col_info = [(c.name, c.field_type.value, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("email_address", "STRING", "NULLABLE"),
+                ("state_code", "STRING", "NULLABLE"),
+                ("metric_period_start_date", "DATE", "REQUIRED"),
+                ("metric_period_end_date_exclusive", "DATE", "REQUIRED"),
+                ("period", "STRING", "REQUIRED"),
+                ("assignment_start_date", "DATE", "REQUIRED"),
+                ("assignment_end_date_exclusive_nonnull", "DATE", "REQUIRED"),
+                (
+                    "intersection_event_attribution_start_date",
+                    "DATE",
+                    "REQUIRED",
+                ),
+                (
+                    "intersection_event_attribution_end_date_exclusive_nonnull",
+                    "DATE",
+                    "REQUIRED",
+                ),
+                ("assignment_is_first_day_in_population", "BOOLEAN", "REQUIRED"),
+            ],
+        )
+
+    def test_builder_has_schema(self) -> None:
+        builder = AssignmentsByTimePeriodViewBuilder(
+            population_type=MetricPopulationType.INCARCERATION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
+            unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
+            time_period=self.two_months_time_period_config,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION,
+        )
+        self.assertIsNotNone(builder.build(sandbox_context=None).schema)

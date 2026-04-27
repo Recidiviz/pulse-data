@@ -20,6 +20,7 @@ import re
 import unittest
 
 from recidiviz.aggregated_metrics.all_aggregated_metrics_view_builder import (
+    all_aggregated_metrics_view_schema,
     generate_all_aggregated_metrics_view_builder,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
@@ -30,6 +31,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
+    MY_AVG_DAILY_POPULATION,
     MY_LOGINS_BY_PRIMARY_WORKFLOWS,
 )
 
@@ -80,3 +82,68 @@ class GenerateAggregatedAllMetricsViewBuilderTest(unittest.TestCase):
         else:
             selected_columns_str = select_statement.group(1)
             self.assertIn("task_type", selected_columns_str)
+
+    def test_all_aggregated_metrics_view_schema_anchor(self) -> None:
+        """Anchor check: SUPERVISION_OFFICER exercises the INTEGER static-attribute
+        override (staff_id) alongside string static attributes.
+        """
+        schema = all_aggregated_metrics_view_schema(
+            unit_of_analysis=MetricUnitOfAnalysis.for_type(
+                MetricUnitOfAnalysisType.SUPERVISION_OFFICER
+            ),
+            metrics=[MY_AVG_DAILY_POPULATION, MY_LOGINS_BY_PRIMARY_WORKFLOWS],
+            disaggregate_by_observation_attributes=None,
+        )
+        col_info = [(c.name, c.field_type.value, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED"),
+                ("officer_id", "STRING", "REQUIRED"),
+                ("officer_name", "STRING", "NULLABLE"),
+                ("officer_email_address", "STRING", "NULLABLE"),
+                ("staff_id", "INTEGER", "NULLABLE"),
+                ("start_date", "DATE", "REQUIRED"),
+                ("end_date", "DATE", "REQUIRED"),
+                ("period", "STRING", "REQUIRED"),
+                ("my_avg_daily_population", "FLOAT", "NULLABLE"),
+                ("my_logins_primary_workflows_user", "INTEGER", "NULLABLE"),
+            ],
+        )
+
+    def test_all_aggregated_metrics_view_schema_with_disaggregation(self) -> None:
+        schema = all_aggregated_metrics_view_schema(
+            unit_of_analysis=MetricUnitOfAnalysis.for_type(
+                MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER
+            ),
+            metrics=[MY_LOGINS_BY_PRIMARY_WORKFLOWS],
+            disaggregate_by_observation_attributes=["task_type"],
+        )
+        col_info = [(c.name, c.field_type.value, c.mode) for c in schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("state_code", "STRING", "REQUIRED"),
+                ("email_address", "STRING", "REQUIRED"),
+                ("staff_id", "INTEGER", "NULLABLE"),
+                ("user_full_name", "STRING", "NULLABLE"),
+                ("task_type", "STRING", "NULLABLE"),
+                ("start_date", "DATE", "REQUIRED"),
+                ("end_date", "DATE", "REQUIRED"),
+                ("period", "STRING", "REQUIRED"),
+                ("my_logins_primary_workflows_user", "INTEGER", "NULLABLE"),
+            ],
+        )
+
+    def test_builder_has_schema(self) -> None:
+        builder = generate_all_aggregated_metrics_view_builder(
+            unit_of_analysis=MetricUnitOfAnalysis.for_type(
+                MetricUnitOfAnalysisType.STATE_CODE
+            ),
+            population_type=MetricPopulationType.JUSTICE_INVOLVED,
+            metrics=[MY_LOGINS_BY_PRIMARY_WORKFLOWS],
+            dataset_id_override=None,
+            collection_tag=None,
+            disaggregate_by_observation_attributes=None,
+        )
+        self.assertIsNotNone(builder.schema)

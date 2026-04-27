@@ -28,6 +28,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Bool, Date
 from recidiviz.calculator.query.bq_utils import (
     MAGIC_START_DATE,
     nonnull_end_date_clause,
@@ -1170,6 +1171,77 @@ def get_metric_assignment_sessions_materialized_table_address(
     )
 
 
+def metric_assignment_sessions_schema(
+    unit_of_observation_type: MetricUnitOfObservationType,
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+) -> list[BigQueryViewColumn]:
+    """Returns the schema for a metric assignment sessions view.
+
+    Column layout matches the final SELECT of
+    generate_metric_assignment_sessions_view_builder:
+    1. Unit of observation primary key columns (in observation order).
+       These are also the view's clustering fields.
+    2. Unit of analysis primary key columns not already in observation PKs
+       (REQUIRED, sorted by name — matches get_primary_key_columns_query_string).
+    3. assignment_date (DATE REQUIRED)
+    4. end_date (DATE NULLABLE — null for currently-active assignments)
+    5. end_date_exclusive (DATE NULLABLE — null for currently-active assignments)
+    6. assignment_is_first_day_in_population (BOOL REQUIRED)
+    """
+    unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
+    unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
+    observation_pk_names = unit_of_observation.primary_key_column_names
+
+    columns: list[BigQueryViewColumn] = []
+
+    columns.extend(unit_of_observation.primary_key_columns)
+
+    columns.extend(
+        pk_col
+        for pk_col in sorted(unit_of_analysis.primary_key_columns, key=lambda c: c.name)
+        if pk_col.name not in observation_pk_names
+    )
+
+    columns.extend(
+        [
+            Date(
+                name="assignment_date",
+                description=(
+                    "Date the unit of observation was assigned to the unit of "
+                    "analysis."
+                ),
+                mode="REQUIRED",
+            ),
+            Date(
+                name="end_date",
+                description=(
+                    "Exclusive end date of the assignment span. NULL for "
+                    "currently-active assignments."
+                ),
+                mode="NULLABLE",
+            ),
+            Date(
+                name="end_date_exclusive",
+                description=(
+                    "Exclusive end date of the assignment span. NULL for "
+                    "currently-active assignments."
+                ),
+                mode="NULLABLE",
+            ),
+            Bool(
+                name="assignment_is_first_day_in_population",
+                description=(
+                    "True if the assignment_date is the first day the unit of "
+                    "observation entered the population."
+                ),
+                mode="REQUIRED",
+            ),
+        ]
+    )
+
+    return columns
+
+
 def generate_metric_assignment_sessions_view_builder(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     unit_of_observation_type: MetricUnitOfObservationType,
@@ -1317,4 +1389,8 @@ USING
         description=view_description,
         clustering_fields=unit_of_observation.primary_key_column_names_ordered,
         should_materialize=True,
+        schema=metric_assignment_sessions_schema(
+            unit_of_observation_type=unit_of_observation_type,
+            unit_of_analysis_type=unit_of_analysis_type,
+        ),
     )

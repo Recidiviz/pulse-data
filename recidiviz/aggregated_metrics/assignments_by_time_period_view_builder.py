@@ -43,6 +43,12 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Bool,
+    Date,
+    String,
+)
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -347,7 +353,143 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
             sandbox_context=sandbox_context,
+            schema=self.output_schema(
+                unit_of_observation_type=self.unit_of_observation_type,
+                unit_of_analysis_type=self.unit_of_analysis_type,
+                metric_time_period_to_assignment_join_type=self.metric_time_period_to_assignment_join_type,
+            ),
         )
+
+    @classmethod
+    def output_schema(
+        cls,
+        *,
+        unit_of_observation_type: MetricUnitOfObservationType,
+        unit_of_analysis_type: MetricUnitOfAnalysisType,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
+    ) -> list[BigQueryViewColumn]:
+        """Returns the BigQuery schema for this view.
+
+        Column layout matches get_output_columns():
+        1. Unit of observation primary key columns (REQUIRED)
+        2. Unit of analysis primary key columns not in observation PKs
+           (REQUIRED, in analysis-list order)
+        3. metric_period_start_date (DATE REQUIRED)
+        4. metric_period_end_date_exclusive (DATE REQUIRED)
+        5. period (STRING REQUIRED)
+        6. assignment_start_date (DATE REQUIRED)
+        7. assignment_end_date_exclusive_nonnull (DATE REQUIRED)
+        8. Join-type-specific columns (DATE REQUIRED, plus BOOL REQUIRED for
+           intersection_event_attribution's assignment_is_first_day_in_population)
+        """
+        unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
+        unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
+        observation_pk_names = unit_of_observation.primary_key_column_names
+
+        columns: list[BigQueryViewColumn] = []
+
+        columns.extend(unit_of_observation.primary_key_columns)
+
+        columns.extend(
+            pk_col
+            for pk_col in unit_of_analysis.primary_key_columns
+            if pk_col.name not in observation_pk_names
+        )
+
+        descriptions = cls.docstring_output_columns_to_descriptions()
+
+        columns.extend(
+            [
+                Date(
+                    name=MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN,
+                    description=descriptions[
+                        MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN
+                    ],
+                    mode="REQUIRED",
+                ),
+                Date(
+                    name=MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN,
+                    description=descriptions[
+                        MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN
+                    ],
+                    mode="REQUIRED",
+                ),
+                String(
+                    name=MetricTimePeriodConfig.METRIC_TIME_PERIOD_PERIOD_COLUMN,
+                    description=(
+                        "A string descriptor for the analysis period length. One "
+                        "of: 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR' or 'CUSTOM'."
+                    ),
+                    mode="REQUIRED",
+                ),
+                Date(
+                    name=cls.ASSIGNMENT_START_DATE_COLUMN_NAME,
+                    description=descriptions[cls.ASSIGNMENT_START_DATE_COLUMN_NAME],
+                    mode="REQUIRED",
+                ),
+                Date(
+                    name=cls.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME,
+                    description=descriptions[
+                        cls.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME
+                    ],
+                    mode="REQUIRED",
+                ),
+            ]
+        )
+
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION
+        ):
+            columns.extend(
+                [
+                    Date(
+                        name=cls.INTERSECTION_START_DATE_COLUMN_NAME,
+                        description=descriptions[
+                            cls.INTERSECTION_START_DATE_COLUMN_NAME
+                        ],
+                        mode="REQUIRED",
+                    ),
+                    Date(
+                        name=cls.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
+                        description=descriptions[
+                            cls.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME
+                        ],
+                        mode="REQUIRED",
+                    ),
+                ]
+            )
+        elif (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EVENT_ATTRIBUTION
+        ):
+            columns.extend(
+                [
+                    Date(
+                        name=cls.INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME,
+                        description=descriptions[
+                            cls.INTERSECTION_EVENT_ATTRIBUTION_START_DATE_COLUMN_NAME
+                        ],
+                        mode="REQUIRED",
+                    ),
+                    Date(
+                        name=cls.INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
+                        description=descriptions[
+                            cls.INTERSECTION_EVENT_ATTRIBUTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME
+                        ],
+                        mode="REQUIRED",
+                    ),
+                    Bool(
+                        name=cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME,
+                        description=descriptions[
+                            cls.ASSIGNMENT_IS_FIRST_DAY_IN_POPULATION_COLUMN_NAME
+                        ],
+                        mode="REQUIRED",
+                    ),
+                ]
+            )
+
+        return columns
 
     @classmethod
     def additional_output_columns_for_join_type(
