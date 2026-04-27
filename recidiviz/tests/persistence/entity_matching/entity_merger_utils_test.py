@@ -73,6 +73,6 @@ class TestEntityMergerUtils(unittest.TestCase):
         person_race = make_person_race(race=StateRace.BLACK, race_raw_text="B")
 
         self.assertEqual(
-            "StatePersonRace##StateRace.BLACK|B",
+            "StatePersonRace##Race.BLACK|B",
             enum_entity_key(person_race),
         )

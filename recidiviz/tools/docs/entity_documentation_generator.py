@@ -38,10 +38,8 @@ from recidiviz.common.attr_mixins import (
     CachedClassAttributeReference,
     attribute_field_type_reference_for_class,
 )
-from recidiviz.common.constants.state.enum_canonical_strings import (
-    SHARED_ENUM_VALUE_DESCRIPTIONS,
-)
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
+from recidiviz.common.entity_enum_strings import SHARED_ENUM_VALUE_DESCRIPTIONS
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,

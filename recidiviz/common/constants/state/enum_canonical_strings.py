@@ -28,30 +28,37 @@ them by their values here allows us to structure the application layer code any 
 database to be updated when an enum value is created or removed.
 """
 
-from typing import Dict
+# Re-exported for backwards compatibility, as these names are used by callers of this module.
+# pylint: disable=unused-import
+from recidiviz.common.demographics_strings import (
+    ethnicity_hispanic as state_ethnicity_hispanic,
+)
+from recidiviz.common.demographics_strings import (
+    ethnicity_not_hispanic as state_ethnicity_not_hispanic,
+)
+from recidiviz.common.demographics_strings import gender_female as state_gender_female
+from recidiviz.common.demographics_strings import gender_male as state_gender_male
+from recidiviz.common.demographics_strings import (
+    gender_non_binary as state_gender_non_binary,
+)
+from recidiviz.common.demographics_strings import (
+    race_american_indian as state_race_american_indian,
+)
+from recidiviz.common.demographics_strings import race_asian as state_race_asian
+from recidiviz.common.demographics_strings import race_black as state_race_black
+from recidiviz.common.demographics_strings import race_hawaiian as state_race_hawaiian
+from recidiviz.common.demographics_strings import race_other as state_race_other
+from recidiviz.common.demographics_strings import race_white as state_race_white
+from recidiviz.common.demographics_strings import sex_female as state_sex_female
+from recidiviz.common.demographics_strings import sex_male as state_sex_male
+from recidiviz.common.demographics_strings import sex_other as state_sex_other
+from recidiviz.common.entity_enum_strings import (
+    external_unknown,
+    internal_unknown,
+    present_without_info,
+)
 
-# Shared
-
-# This value should be used ONLY in cases where the external data source
-# explicitly specifies a value as "unknown". It should NOT be treated as a
-# default value for enums that are not provided (which should be represented
-# with None/NULL).
-external_unknown = "EXTERNAL_UNKNOWN"
-# This value is used by status enums to denote that no status for an entity was
-# provided by the source, but the entity itself was found in the source.
-present_without_info = "PRESENT_WITHOUT_INFO"
-# This value is used when the external data source specifies a known value for
-# an enum field, but we internally don't have an enum value that it should map
-# to. This should NOT be treated as a default value for enums fields that are
-# not provided.
-internal_unknown = "INTERNAL_UNKNOWN"
-
-
-SHARED_ENUM_VALUE_DESCRIPTIONS: Dict[str, str] = {
-    internal_unknown: """This value is used when the external data source specifies a known value for an enum field, but we internally don't have an enum value that it should map to. This should NOT be treated as a default value for enums fields that are not provided.""",
-    external_unknown: """This value is used ONLY in cases where the external data source explicitly specifies a value as "unknown". It should NOT be treated as a default value for enums that are not provided (which should be represented with None/NULL).""",
-    present_without_info: """This value is used by status enums to denote that no status for an entity was provided by the source, but the entity itself was found in the source.""",
-}
+# pylint: enable=unused-import
 
 # state_assessment.py
 state_assessment_class_education = "EDUCATION"
@@ -317,23 +324,6 @@ state_person_alias_alias_type_given_name = "GIVEN_NAME"
 state_person_alias_alias_type_maiden_name = "MAIDEN_NAME"
 state_person_alias_alias_type_nickname = "NICKNAME"
 
-state_sex_female = "FEMALE"
-state_sex_male = "MALE"
-state_sex_other = "OTHER"
-
-state_gender_female = "FEMALE"
-state_gender_male = "MALE"
-state_gender_non_binary = "NON_BINARY"
-
-state_race_american_indian = "AMERICAN_INDIAN_ALASKAN_NATIVE"
-state_race_asian = "ASIAN"
-state_race_black = "BLACK"
-state_race_hawaiian = "NATIVE_HAWAIIAN_PACIFIC_ISLANDER"
-state_race_other = "OTHER"
-state_race_white = "WHITE"
-
-state_ethnicity_hispanic = "HISPANIC"
-state_ethnicity_not_hispanic = "NOT_HISPANIC"
 
 state_residency_status_homeless = "HOMELESS"
 state_residency_status_permanent = "PERMANENT"

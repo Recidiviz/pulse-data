@@ -20,105 +20,14 @@ from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
+from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 
-
-class StateSex(StateEntityEnum):
-    FEMALE = state_enum_strings.state_sex_female
-    MALE = state_enum_strings.state_sex_male
-    OTHER = state_enum_strings.state_sex_other
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The sex of record of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_SEX_VALUE_DESCRIPTIONS
-
-
-_STATE_SEX_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateSex.FEMALE: "Female",
-    StateSex.MALE: "Male",
-    StateSex.OTHER: "Other",
-}
-
-
-class StateGender(StateEntityEnum):
-    FEMALE = state_enum_strings.state_gender_female
-    MALE = state_enum_strings.state_gender_male
-    NON_BINARY = state_enum_strings.state_gender_non_binary
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The gender of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_GENDER_VALUE_DESCRIPTIONS
-
-
-_STATE_GENDER_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateGender.FEMALE: "Female",
-    StateGender.MALE: "Male",
-    StateGender.NON_BINARY: "Non-binary",
-}
-
-
-class StateRace(StateEntityEnum):
-    AMERICAN_INDIAN_ALASKAN_NATIVE = state_enum_strings.state_race_american_indian
-    ASIAN = state_enum_strings.state_race_asian
-    BLACK = state_enum_strings.state_race_black
-    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = state_enum_strings.state_race_hawaiian
-    OTHER = state_enum_strings.state_race_other
-    WHITE = state_enum_strings.state_race_white
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "A racial identity of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_RACE_VALUE_DESCRIPTIONS
-
-
-_STATE_RACE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian Alaskan Native",
-    StateRace.ASIAN: "Asian",
-    StateRace.BLACK: "Black",
-    StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "Native Hawaiian Pacific Islander",
-    StateRace.OTHER: "Used when the state data explicitly indicates that the person’s "
-    "race is “Other”. If there is a race value that does not map to one of our "
-    "`StateRace` enum values, then `INTERNAL_UNKNOWN` should be used.",
-    StateRace.WHITE: "White",
-}
-
-
-class StateEthnicity(StateEntityEnum):
-    HISPANIC = state_enum_strings.state_ethnicity_hispanic
-    NOT_HISPANIC = state_enum_strings.state_ethnicity_not_hispanic
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The ethnicity of the person."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_ETHNICITY_VALUE_DESCRIPTIONS
-
-
-_STATE_ETHNICITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateEthnicity.HISPANIC: "Used when a person is Hispanic.",
-    StateEthnicity.NOT_HISPANIC: "Used when a person is not Hispanic.",
-}
+# Backwards-compatible aliases (new code should import from
+# recidiviz.common.demographics directly).
+StateEthnicity = Ethnicity
+StateGender = Gender
+StateRace = Race
+StateSex = Sex
 
 
 class StateResidencyStatus(StateEntityEnum):

@@ -19,6 +19,7 @@ logic from the IngestViewManifestCompiler.
 """
 
 import abc
+import inspect
 import os
 from enum import Enum
 from types import ModuleType
@@ -203,13 +204,23 @@ class StateSchemaIngestViewManifestCompilerDelegate(
                 submodule_name_prefix_filter=self._get_enum_submodule_prefix_filter(),
             )
             for enum_module in enum_file_modules:
-                for enum_cls in get_all_enum_classes_in_module(enum_module):
+                enum_classes = get_all_enum_classes_in_module(enum_module)
+                for enum_cls in enum_classes:
                     if enum_cls.__name__ in self.enum_cls_cache:
                         raise ValueError(
                             f"Found duplicate enum already added to the cache: "
                             f"[{enum_cls.__name__}]"
                         )
                     self.enum_cls_cache[enum_cls.__name__] = enum_cls
+                # Also register any module-level alias names (e.g. StateGender = Gender)
+                # so that YAML mappings referencing the alias name still resolve.
+                for attr_name, attr_val in vars(enum_module).items():
+                    if (
+                        inspect.isclass(attr_val)
+                        and attr_val in enum_classes
+                        and attr_name != attr_val.__name__
+                    ):
+                        self.enum_cls_cache.setdefault(attr_name, attr_val)
 
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         region_code = self.region.region_code.lower()

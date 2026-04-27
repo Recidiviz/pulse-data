@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,10 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains logic related to StateEntityEnums for the state schema."""
+"""Base enum class that enforces documentation requirements."""
 
-from recidiviz.common.entity_enum import EntityEnum
+from enum import Enum
+from typing import Dict
 
-# Backwards-compatible alias (new code should import EntityEnum from
-# recidiviz.common.entity_enum directly).
-StateEntityEnum = EntityEnum
+
+class EntityEnum(Enum):
+    """Enum class that enforces documentation and is used across entity schemas."""
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["EntityEnum", str]:
+        raise NotImplementedError
