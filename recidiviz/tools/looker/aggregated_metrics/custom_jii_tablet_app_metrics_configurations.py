@@ -44,6 +44,35 @@ JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES = {
     ),
 }
 
+# TODO(#73748) create CreditType enum to replace this brittle hardcoded list
+JII_TABLET_APP_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[str, list[str]] = {
+    "is_after_full_state_launch": ["True", "False"],
+    "credit_type": [
+        # US_CO
+        "Achievement",
+        "Earned Time",
+        "Good Time",
+        "Other",
+        # US_MA
+        "Boost",
+        "Completion",
+        "Earned Good Time",
+        # US_NE
+        "Behavior",
+        # US_TN
+        "60 Day Ed Credit",
+        "60 Day Treatment",
+        "Bonus Behavior",
+        "Bonus Program",
+        "Drug Alcohol",
+        "Ged",
+        "Good Conduct",
+        "Literacy",
+        "Program",
+        "Removal",
+    ],
+}
+
 
 JII_TABLET_APP_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.AVG_DAILY_POPULATION,

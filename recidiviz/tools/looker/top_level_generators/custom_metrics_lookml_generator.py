@@ -58,6 +58,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configura
 from recidiviz.tools.looker.aggregated_metrics.custom_jii_tablet_app_metrics_configurations import (
     JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
     JII_TABLET_APP_IMPACT_LOOKER_METRICS,
+    JII_TABLET_APP_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_jii_texts_metrics_configurations import (
     JII_TEXTS_ASSIGNMENT_NAMES_TO_TYPES,
@@ -222,9 +223,7 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
             output_directory=output_subdir,
             metrics=JII_TABLET_APP_IMPACT_LOOKER_METRICS,
             assignment_types_dict=JII_TABLET_APP_ASSIGNMENT_NAMES_TO_TYPES,
-            json_field_filters_with_suggestions={
-                "is_after_full_state_launch": ["True", "False"],
-            },
+            json_field_filters_with_suggestions=JII_TABLET_APP_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
         )
 
         # CPA
