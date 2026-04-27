@@ -109,6 +109,7 @@ output:
                         - "L10 // Offender Died - Received Death Certificate"
                         - "L11 // Discharged"
                         - "L12 // Earned Discharge"
+                        - "L12 // Early Parole Discharge" # Code L12 was updated to this description on 2026-04-27
                         - "L16 // Closed ISC Interest"
                         - "S01 // Changed Supervision Status"
                         - "S02 // Changed Type Of Supervision"
@@ -155,6 +156,7 @@ output:
                             StateSupervisionPeriodTerminationReason.DISCHARGE:
                               - "L11 // Discharged"
                               - "L12 // Earned Discharge"
+                              - "L12 // Early Parole Discharge" # Code L12 was updated to this description on 2026-04-27
                             StateSupervisionPeriodTerminationReason.REVOCATION:
                               - "L06 // Revoked"
                             StateSupervisionPeriodTerminationReason.SUSPENSION:
