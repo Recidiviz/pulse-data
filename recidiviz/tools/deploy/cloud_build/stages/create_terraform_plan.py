@@ -102,14 +102,6 @@ echo "Planning against currently-deployed docker_image_tag=$${tag} git_hash=$${h
 """
 
 
-def _google_quota_project_env(deployment_context: DeploymentContext) -> str:
-    # Certain APIs like cloudidentity.googleapis.com requires an explicit quota project.
-    # Without it, operations like google_cloud_identity_group_membership Read fail
-    # silently during refresh and the plan proposes recreating resources that already
-    # exist.
-    return f"GOOGLE_CLOUD_QUOTA_PROJECT={deployment_context.project_id}"
-
-
 def plan_file_name_for_deployment(deployment_context: DeploymentContext) -> str:
     return f"{deployment_context.app_engine_tag}-{deployment_context.commit_ref}.tfplan"
 
@@ -140,7 +132,7 @@ def get_terraform_plan_step(
             failed plan still runs the subsequent show + comment steps to
             post a failure comment.
     """
-    env = [TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)]
+    env = [TERRAFORM_CLI_ARGS_ENV]
     if for_pull_requests:
         env.extend(["TF_LOG=ERROR", f"TF_LOG_PATH={TERRAFORM_PLAN_ERROR_LOG_PATH}"])
 
@@ -279,7 +271,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 f"bucket={deployment_context.project_id}-tf-state",
                 "-reconfigure",
             ],
-            env=[TERRAFORM_CLI_ARGS_ENV, _google_quota_project_env(deployment_context)],
+            env=[TERRAFORM_CLI_ARGS_ENV],
             timeout=TERRAFORM_STEP_TIMEOUT,
         )
 
@@ -312,10 +304,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
                         name=BUILDER_TERRAFORM,
                         dir_=TERRAFORM_WORKDIR,
                         args=["apply", "-parallelism=32", plan_path],
-                        env=[
-                            TERRAFORM_CLI_ARGS_ENV,
-                            _google_quota_project_env(deployment_context),
-                        ],
+                        env=[TERRAFORM_CLI_ARGS_ENV],
                         wait_for=[terraform_plan.id],
                         # No timeout for this step - this could take a long time for certain
                         # upgrades, e.g. upgrades to Cloud Composer versions.

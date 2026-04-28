@@ -35,6 +35,11 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.us_central_region
+  # Ensures API quota is attributed to our project, not the caller's ADC
+  # project. Without this, local runs with user credentials 403 on APIs like
+  # cloudidentity.googleapis.com. No-op for service account credentials.
+  user_project_override = true
+  billing_project       = var.project_id
   default_labels = {
     terraform_managed = "true"
   }
@@ -43,6 +48,9 @@ provider "google" {
 provider "google-beta" {
   project = var.project_id
   region  = var.us_central_region
+  # See comment on the google provider above.
+  user_project_override = true
+  billing_project       = var.project_id
   default_labels = {
     terraform_managed = "true"
   }

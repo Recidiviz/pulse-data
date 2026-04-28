@@ -40,7 +40,6 @@ steps:
   - name: hashicorp/terraform:1.11.4
     env:
       - TF_CLI_ARGS=-input=false -no-color -compact-warnings
-      - GOOGLE_CLOUD_QUOTA_PROJECT=$_PROJECT_ID
     args:
       - init
       - -backend-config
@@ -52,7 +51,6 @@ steps:
   - name: hashicorp/terraform:1.11.4
     env:
       - TF_CLI_ARGS=-input=false -no-color -compact-warnings
-      - GOOGLE_CLOUD_QUOTA_PROJECT=$_PROJECT_ID
       - TF_LOG=ERROR
       - TF_LOG_PATH=/workspace/terraform-plan-error.txt
     args:
