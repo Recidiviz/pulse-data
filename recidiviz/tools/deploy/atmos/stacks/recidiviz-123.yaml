@@ -14,8 +14,21 @@ vars:
 
 components:
   terraform:
+    vendor/cloud-storage-bucket:
+      vars:
+        location: us-central1
+        prefix: "{{ .settings.context.project_id }}"
+        names:
+          # Shared bucket for files that other components upload via Terraform and
+          # mount into Cloud Run / GKE workloads (scripts, config blobs, etc.).
+          # New buckets get appended to this list as further use cases land.
+          - mounted-source-files
+        versioning:
+          mounted-source-files: true
+
     dag-triggering:
       vars:
+        source_files_bucket_name: !terraform.state vendor/cloud-storage-bucket ".names[""mounted-source-files""]"
         time_zone: America/Los_Angeles
 
         composer:
@@ -25,33 +38,35 @@ components:
         dags:
           hourly_monitoring_dag:
             schedule:
-              - 0 * * * *
+              hourly: "0 * * * *"
 
           # On weekdays, we want to run the calc DAG twice: once at 6am EST to have data fresh for
           # the start of the east coast work day (9 am EST) and once at 7 am PST for the start of
           # the west coast work day (10 am PST, to account for when files actually arrive)
           calculation_dag:
             schedule:
-              - 0 3,7 * * 1-5
+              weekday-3am-pt: "0 3 * * 1-5"
+              weekday-7am-pt: "0 7 * * 1-5"
               # On weekends, run it once at 6am EST
-              - 0 3 * * 6,7
+              weekend-3am-pt: "0 3 * * 6,7"
 
           # SFTP runs every hour at the 45th minute
           sftp_dag:
             schedule:
-              - 45 * * * *
+              hourly: "45 * * * *"
 
           # On weekdays, we want to run the raw data import DAG three times:
-          #   - at 5 am EST to have data fresh for the start of the "east coast work day" calc DAG (6 am EST)
+          #   - at 5 am EST (2 am PST) to have data fresh for the start of the "east coast work day" calc DAG (6 am EST)
           #   - at 6 am PST to have data fresh for the "west coast work day" calc DAG" (7 am PST)
           #   - at 6:40 am PST to include the last fledglings of raw data that come in after 6 am PST, specifically
-          #     utah that can be imported very fast as it does not require pre-import normalization
+          #      Utah that can be imported very fast as it does not require pre-import normalization
           raw_data_import_dag:
             schedule:
-              - 0 2,6 * * 1-5
-              - 40 6 * * 1-5
-              # On weekends run it once at 5am EST
-              - 0 2 * * 6,7
+              weekday-2am-pt: "0 2 * * 1-5"
+              weekday-6am-pt: "0 6 * * 1-5"
+              weekday-640am-pt: "40 6 * * 1-5"
+              # On weekends run it once at 5am EST (2 am PST)
+              weekend-2am-pt: "0 2 * * 6,7"
             config:
               ingest_instance: PRIMARY
 

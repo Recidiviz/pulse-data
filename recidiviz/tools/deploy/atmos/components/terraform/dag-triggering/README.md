@@ -35,7 +35,7 @@ Configuration for the Composer environment:
 
 - **`dags`** _(map(object))_:
 Definitions for the DAGs to be triggered:
-    - `schedule` _(list(string))_: A list of CRON expressions defining the trigger schedules.
+    - `schedule` _(map(string))_: A map of `schedule_id -> CRON expression`. Each schedule ID is a human-readable identifier (e.g., `weekday-3am-pt`) used to construct stable Airflow DAG run IDs for duplicate detection.
     - `config` _(map(string), optional)_: (Optional) A JSON object containing additional configurations for the DAG when triggered.
 
 ### Example Input
@@ -51,8 +51,10 @@ module "airflow_dag_trigger" {
   
   dags = {
     example_dag_1 = {
-      schedule = ["0 12 * * *"]  # Trigger at 12 PM daily
-      config   = {param1 = "value1"}  # Optional params for the DAG
+      schedule = {
+        daily-noon-pt = "0 12 * * *"  # Trigger at 12 PM daily
+      }
+      config = {param1 = "value1"}  # Optional params for the DAG
     }
   }
 }

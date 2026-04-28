@@ -14,8 +14,21 @@ vars:
 
 components:
   terraform:
+    vendor/cloud-storage-bucket:
+      vars:
+        location: us-central1
+        prefix: "{{ .settings.context.project_id }}"
+        names:
+          # Shared bucket for files that other components upload via Terraform and
+          # mount into Cloud Run / GKE workloads (scripts, config blobs, etc.).
+          # New buckets get appended to this list as further use cases land.
+          - mounted-source-files
+        versioning:
+          mounted-source-files: true
+
     dag-triggering:
       vars:
+        source_files_bucket_name: !terraform.state vendor/cloud-storage-bucket ".names[""mounted-source-files""]"
         time_zone: America/Los_Angeles
         composer:
           environment: orchestration-v2
@@ -25,21 +38,21 @@ components:
           # Monitoring runs hourly
           hourly_monitoring_dag:
             schedule:
-              - 0 * * * *
+              hourly: "0 * * * *"
 
           # Calculation runs daily in staging at 6am EST
           calculation_dag:
             schedule:
-              - 0 3 * * *
+              daily-3am-pt: "0 3 * * *"
 
           # SFTP runs every hour at the 45th minute
           sftp_dag:
             schedule:
-              - 45 * * * *
+              hourly: "45 * * * *"
 
           # Raw data runs at 5 am EST
           raw_data_import_dag:
             config:
               ingest_instance: PRIMARY
             schedule:
-              - 0 2 * * *
+              daily-2am-pt: "0 2 * * *"

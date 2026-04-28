@@ -246,8 +246,13 @@ rules:
         recidiviz_dir = package_dir.parent.parent  # Go to recidiviz/ directory
         stack_path = recidiviz_dir / "tools/deploy/atmos/stacks/recidiviz-123.yaml"
 
+        # Stack files contain atmos's custom local YAML tags (e.g.
+        # `!terraform.state ...`) for cross-component references. SafeLoader
+        # rejects them; BaseLoader passes them through as plain strings, which
+        # is fine here since we only read the untagged `pagerduty_services`
+        # list.
         with open(stack_path, "r", encoding="utf-8") as f:
-            stack_data = yaml.safe_load(f)
+            stack_data = yaml.load(f, Loader=yaml.BaseLoader)
 
         # Extract pagerduty_services from stack
         pagerduty_services = (
