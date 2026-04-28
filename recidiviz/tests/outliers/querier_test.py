@@ -550,6 +550,56 @@ class TestOutliersQuerier(InsightsDbTestCase):
         self.assertIsNotNone(actual)
         self.assertFalse(actual.include_in_outcomes)  # type: ignore
 
+    def test_get_supervision_officer_entity_has_consistent_login_activity_true(
+        self,
+    ) -> None:
+        actual = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        ).get_supervision_officer_entity(
+            # officer fixture where has_consistent_login_activity=1.0
+            pseudonymized_officer_id="officerhash4",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNotNone(actual)
+        self.assertTrue(actual.has_consistent_login_activity)  # type: ignore
+
+    def test_get_supervision_officer_entity_has_consistent_login_activity_false(
+        self,
+    ) -> None:
+        actual = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        ).get_supervision_officer_entity(
+            # officer fixture where has_consistent_login_activity=0.0
+            pseudonymized_officer_id="officerhash12",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNotNone(actual)
+        self.assertIs(actual.has_consistent_login_activity, False)  # type: ignore
+
+    def test_get_supervision_officer_entity_has_consistent_login_activity_missing(
+        self,
+    ) -> None:
+        actual = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        ).get_supervision_officer_entity(
+            # officer fixture with no has_consistent_login_activity row in
+            # supervision_officer_metrics — the LEFT JOIN should leave the
+            # field None rather than dropping the officer.
+            pseudonymized_officer_id="officerhash13",
+            category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNotNone(actual)
+        self.assertIsNone(actual.has_consistent_login_activity)  # type: ignore
+
     def test_get_supervision_officer_entity_no_match(self) -> None:
         # Return None because none found
         actual = OutliersQuerier(

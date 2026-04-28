@@ -939,6 +939,26 @@ class OutliersQuerier:
             .subquery()
         )
 
+    def _login_consistency_subquery(self, session: Session) -> Any:
+        """
+        Returns a subquery for pulling the current has_consistent_login_activity
+        values for all supervision officers.
+        """
+        return (
+            session.query(
+                SupervisionOfficerMetric.officer_id,
+                SupervisionOfficerMetric.metric_value.label(
+                    "has_consistent_login_activity"
+                ),
+            )
+            .filter(
+                SupervisionOfficerMetric.end_date
+                == self._get_latest_period_end_date(session),
+                SupervisionOfficerMetric.metric_id == "has_consistent_login_activity",
+            )
+            .subquery()
+        )
+
     def get_all_supervision_officers_required_info_only(
         self,
     ) -> List[SupervisionOfficerEntity]:
@@ -951,11 +971,17 @@ class OutliersQuerier:
         """
         with self.insights_database_session() as session:
             include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
+            login_consistency_subquery = self._login_consistency_subquery(session)
             officers = (
                 session.query(SupervisionOfficer)
                 .join(
                     include_in_outcomes_subquery,
                     include_in_outcomes_subquery.c.officer_id
+                    == SupervisionOfficer.external_id,
+                )
+                .outerjoin(
+                    login_consistency_subquery,
+                    login_consistency_subquery.c.officer_id
                     == SupervisionOfficer.external_id,
                 )
                 .with_entities(
@@ -966,6 +992,7 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     include_in_outcomes_subquery.c.include_in_outcomes,
+                    login_consistency_subquery.c.has_consistent_login_activity,
                     SupervisionOfficer.email,
                     SupervisionOfficer.latest_login_date,
                 )
@@ -980,6 +1007,11 @@ class OutliersQuerier:
                     supervisor_external_ids=officer.supervisor_external_ids,
                     district=officer.supervision_district,
                     include_in_outcomes=bool(officer.include_in_outcomes),
+                    has_consistent_login_activity=(
+                        bool(officer.has_consistent_login_activity)
+                        if officer.has_consistent_login_activity is not None
+                        else None
+                    ),
                     email=officer.email,
                 )
                 for officer in officers
@@ -1424,6 +1456,7 @@ class OutliersQuerier:
         )
 
         include_in_outcomes_subquery = self._include_in_outcomes_subquery(session)
+        login_consistency_subquery = self._login_consistency_subquery(session)
 
         # The entities we'll be selecting from our query
         query_entities = [
@@ -1438,6 +1471,7 @@ class OutliersQuerier:
             SupervisionOfficer.latest_login_date,
             avgs_subquery.c.avg_daily_population,
             include_in_outcomes_subquery.c.include_in_outcomes,
+            login_consistency_subquery.c.has_consistent_login_activity,
         ]
 
         officer_status_query = (
@@ -1449,6 +1483,11 @@ class OutliersQuerier:
             .join(
                 include_in_outcomes_subquery,
                 include_in_outcomes_subquery.c.officer_id
+                == SupervisionOfficer.external_id,
+            )
+            .outerjoin(
+                login_consistency_subquery,
+                login_consistency_subquery.c.officer_id
                 == SupervisionOfficer.external_id,
             )
             .filter(
@@ -1466,6 +1505,7 @@ class OutliersQuerier:
                 SupervisionOfficer.latest_login_date,
                 avgs_subquery.c.avg_daily_population,
                 include_in_outcomes_subquery.c.include_in_outcomes,
+                login_consistency_subquery.c.has_consistent_login_activity,
             )
             .with_entities(*query_entities)
         )
@@ -1573,6 +1613,11 @@ class OutliersQuerier:
                     else None
                 ),
                 include_in_outcomes=bool(record.include_in_outcomes),
+                has_consistent_login_activity=(
+                    bool(record.has_consistent_login_activity)
+                    if record.has_consistent_login_activity is not None
+                    else None
+                ),
                 latest_login_date=record.latest_login_date,
             )
 

@@ -510,6 +510,11 @@ class SupervisionOfficerEntity:
     zero_grant_opportunities: Optional[List[str]] = attr.ib(default=None)
     # The date of the officer's last login
     latest_login_date: Optional[date] = attr.ib(default=None)
+    # Whether the officer has logged in at least once in each of the past 12
+    # calendar months. Sourced from the supervision_officer_metrics view via
+    # the same pattern as include_in_outcomes.
+    # TODO(#72216): Make this required once the metric has deployed and backfilled.
+    has_consistent_login_activity: Optional[bool] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
         result = cattrs.unstructure(self)
