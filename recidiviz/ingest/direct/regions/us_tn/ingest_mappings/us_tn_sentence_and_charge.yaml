@@ -12,9 +12,12 @@ input_columns:
 
   # StateSentence information
   SentenceImposedDate: DATE
+  OriginalSentenceImposedDate: DATE
   SuspendedToProbation: STRING
   SplitConfinementBalanceType: STRING
   lifetime_flag: STRING
+  LifePrisonFlag: STRING
+  CslFlag: STRING
   ConditionsText: STRING
   earliest_known_sentence_status: STRING
   earliest_known_sentenced_to: STRING
@@ -71,6 +74,21 @@ output:
           county_code: ConvictionCounty
           sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
           conditions: ConditionsText
+          # Tag JOCharge sentences with SENTENCE_SOURCE so downstream
+          # consumers can distinguish them from other TN sentence types.
+          # SENTENCE_IMPOSED_DATE preserves the original
+          # JOCharge.SentenceImposedDate, since imposed_date may fall
+          # back to AlternateSentenceImposeDate above. CSL_FLAG and
+          # Life_Prison_Flag capture TN-specific concepts not represented
+          # by other StateSentence fields. CASE_NUMBER is stored for
+          # consumers that read it directly from sentence_metadata.
+          sentence_metadata:
+            $normalized_values_json_dict:
+              SENTENCE_SOURCE: $literal("SENTENCE")
+              SENTENCE_IMPOSED_DATE: OriginalSentenceImposedDate
+              CSL_FLAG: CslFlag
+              Life_Prison_Flag: LifePrisonFlag
+              CASE_NUMBER: CaseNumber
           is_life:
             $in:
               $value: lifetime_flag

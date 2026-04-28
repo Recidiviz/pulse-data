@@ -62,6 +62,17 @@ output:
           imposed_date: SentenceImposedDate
           # All of these sentences are from other US states or Puerto Rico.
           sentencing_authority: $literal_enum(StateSentencingAuthority.OTHER_STATE)
+          # Tag ISC sentences with SENTENCE_SOURCE so downstream consumers
+          # can distinguish them from other TN sentence types.
+          # SENTENCE_IMPOSED_DATE stores the original imposed date for
+          # consumers that read it directly from sentence_metadata rather
+          # than the imposed_date field. CASE_NUMBER is also stored here
+          # for consumers that read it directly from sentence_metadata.
+          sentence_metadata:
+            $normalized_values_json_dict:
+              SENTENCE_SOURCE: $literal("ISC")
+              SENTENCE_IMPOSED_DATE: SentenceImposedDate
+              CASE_NUMBER: CaseNumber
           # We have very little information about charges for ISC sentences,
           # as all other charge information is found from judgement orders.
           charges:

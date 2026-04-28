@@ -52,6 +52,16 @@ output:
           imposed_date: DiversionGrantedDate
           county_code: ConvictionCounty
           sentencing_authority: $literal_enum(StateSentencingAuthority.COUNTY)
+          # Tag diversion sentences with SENTENCE_SOURCE so downstream
+          # consumers can distinguish them from other TN sentence types —
+          # diversion sentences otherwise share sentence_type and
+          # sentencing_authority with regular probation sentences.
+          # CASE_NUMBER is also stored here for consumers that read it
+          # directly from sentence_metadata.
+          sentence_metadata:
+            $normalized_values_json_dict:
+              SENTENCE_SOURCE: $literal("DIVERSION")
+              CASE_NUMBER: CaseNumber
           charges:
             # TODO(#7424) Update classification when we've documented FelonyClass, etc.
             - StateChargeV2:
