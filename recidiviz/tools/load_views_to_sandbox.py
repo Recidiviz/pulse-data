@@ -172,7 +172,8 @@ from recidiviz.big_query.view_update_manager_utils import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
-from recidiviz.common.constants.states import StateCode, find_state_codes_in_str
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states_utils import find_state_codes_in_str
 from recidiviz.common.git import (
     get_hash_of_data_platform_version,
     is_commit_in_current_branch,

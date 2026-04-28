@@ -27,7 +27,6 @@ from recidiviz.common.constants.states import (
     StateCode,
     _FakeStateCode,
     _RealStateCode,
-    find_state_codes_in_str,
 )
 
 
@@ -157,39 +156,3 @@ class TestStates(unittest.TestCase):
         self.assertEqual("#us-idaho", StateCode.US_IX.slack_channel_name())
         self.assertEqual("#us-oz", StateCode.US_OZ.slack_channel_name())
         self.assertEqual("#us-test-state", StateCode.US_XX.slack_channel_name())
-
-
-class TestFindStateCodesInStr(unittest.TestCase):
-    """Tests for find_state_codes_in_str()."""
-
-    def test_no_state_code(self) -> None:
-        self.assertEqual(set(), find_state_codes_in_str("my_dataset"))
-        self.assertEqual(set(), find_state_codes_in_str("prefix_us_states"))
-        self.assertEqual(set(), find_state_codes_in_str(""))
-
-    def test_state_code_at_start(self) -> None:
-        self.assertEqual({StateCode.US_XX}, find_state_codes_in_str("us_xx_raw_data"))
-
-    def test_state_code_in_middle(self) -> None:
-        self.assertEqual(
-            {StateCode.US_XX}, find_state_codes_in_str("prefix_us_xx_raw_data")
-        )
-
-    def test_state_code_at_end(self) -> None:
-        self.assertEqual({StateCode.US_XX}, find_state_codes_in_str("my_dataset_us_xx"))
-
-    def test_multiple_state_codes(self) -> None:
-        self.assertEqual(
-            {StateCode.US_XX, StateCode.US_YY},
-            find_state_codes_in_str("us_xx_something_us_yy"),
-        )
-        self.assertEqual(
-            {StateCode.US_XX, StateCode.US_YY},
-            find_state_codes_in_str("something_us_xx_something_us_yy_something"),
-        )
-
-    def test_case_insensitive(self) -> None:
-        self.assertEqual({StateCode.US_XX}, find_state_codes_in_str("US_XX_raw_data"))
-
-    def test_invalid_state_code_ignored(self) -> None:
-        self.assertEqual(set(), find_state_codes_in_str("us_zz_raw_data"))

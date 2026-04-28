@@ -35,7 +35,8 @@ from recidiviz.cloud_resources.platform_resource_labels import (
 )
 from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode, find_state_codes_in_str
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states_utils import find_state_codes_in_str
 from recidiviz.common.google_cloud.utils import format_resource_label
 
 
