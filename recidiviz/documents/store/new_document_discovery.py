@@ -33,41 +33,15 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_collection_query_builder import (
     DocumentCollectionDiffQueryBuilder,
 )
-from recidiviz.documents.store.document_upload_status_table import (
-    DocumentUploadStatusTable,
+from recidiviz.documents.store.document_metadata_updates_query_builder import (
+    DocumentMetadataUpdatesQueryBuilder,
+)
+from recidiviz.documents.store.document_store_types import (
+    DocumentBatchRange,
+    SingleCollectionDocumentDiscoveryResult,
 )
 
 DEFAULT_NUM_BATCHES = 10
-
-
-@attr.define(frozen=True, kw_only=True)
-class DocumentBatchRange:
-    """A range of documents within a temp table to process. The table at
-    |temp_new_document_contents_table_address| is expected to have both document_contents_id and
-    sequence_num columns."""
-
-    collection_name: str = attr.ib(validator=attr_validators.is_str)
-    temp_new_document_contents_table_address: ProjectSpecificBigQueryAddress = attr.ib(
-        validator=attr.validators.instance_of(ProjectSpecificBigQueryAddress)
-    )
-    start_sequence_num_inclusive: int = attr.ib(validator=attr_validators.is_int)
-    end_sequence_num_exclusive: int = attr.ib(validator=attr_validators.is_int)
-
-
-@attr.define(frozen=True)
-class SingleCollectionDocumentDiscoveryResult:
-    """Result of running document discovery for a single collection."""
-
-    config: DocumentCollectionConfig = attr.ib(
-        validator=attr.validators.instance_of(DocumentCollectionConfig)
-    )
-    temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress = attr.ib(
-        validator=attr.validators.instance_of(ProjectSpecificBigQueryAddress)
-    )
-    temp_new_document_contents_address: ProjectSpecificBigQueryAddress = attr.ib(
-        validator=attr.validators.instance_of(ProjectSpecificBigQueryAddress)
-    )
-    num_new_document_contents_rows: int = attr.ib(validator=attr_validators.is_int)
 
 
 @attr.define(frozen=True)
@@ -75,16 +49,13 @@ class DocumentDiscoveryResult:
     """Result of running document discovery for a state.
 
     Attributes:
-        document_batches: Nested list of DocumentBatchRanges to process.
-        temp_document_metadata_updates_addresses: A mapping from collection name
-            to the address of the temp document metadata updates table containing
-            diff results for that collection. The table contains all rows where
-            there were any changes to document_contents_id or another metadata
-            column compared to the latest metadata table state.
+        document_batches: Nested list of DocumentBatchRanges to process. Includes collections with new document contents only.
+        collection_results: Discovery results for each collection. Includes collections with new document contents and
+            collections with new metadata rows but no new documents.
     """
 
     document_batches: list[list[DocumentBatchRange]]
-    temp_document_metadata_updates_addresses: dict[str, ProjectSpecificBigQueryAddress]
+    collection_results: list[SingleCollectionDocumentDiscoveryResult]
 
 
 def build_collection_new_document_batches(
@@ -118,7 +89,8 @@ def build_document_batches(
     num_batches: int,
 ) -> list[list[DocumentBatchRange]]:
     """Divides each collection's new document contents rows into |num_batches|
-    even ranges, then groups ranges across collections by batch index."""
+    even ranges, then groups ranges across collections by batch index. Discards
+    collections with zero new document contents rows."""
     batches: list[list[DocumentBatchRange]] = [[] for _ in range(num_batches)]
 
     for result in collection_results:
@@ -184,9 +156,6 @@ class NewDocumentDiscoverer:
         configs = collect_document_collection_configs(self.state_code)
 
         collection_results: list[SingleCollectionDocumentDiscoveryResult] = []
-        temp_document_metadata_updates_addresses: dict[
-            str, ProjectSpecificBigQueryAddress
-        ] = {}
 
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
@@ -202,18 +171,19 @@ class NewDocumentDiscoverer:
                 for config in configs.values()
             ]
             for future in futures.as_completed(document_discovery_futures):
-                result = future.result()
-                temp_document_metadata_updates_addresses[
-                    result.config.name
-                ] = result.temp_document_metadata_updates_address
-                if result.num_new_document_contents_rows > 0:
-                    collection_results.append(result)
+                collection_results.append(future.result())
+
+        collections_with_new_metadata_rows = [
+            result
+            for result in collection_results
+            if result.num_document_metadata_updates_rows > 0
+        ]
 
         return DocumentDiscoveryResult(
             document_batches=build_document_batches(
-                collection_results, self.num_batches
+                collections_with_new_metadata_rows, self.num_batches
             ),
-            temp_document_metadata_updates_addresses=temp_document_metadata_updates_addresses,
+            collection_results=collections_with_new_metadata_rows,
         )
 
     def _discover_for_collection(
@@ -232,7 +202,7 @@ class NewDocumentDiscoverer:
             config.name,
             temp_metadata_address.to_str(),
         )
-        self.big_query_client.create_table_from_query(
+        metadata_row_iterator = self.big_query_client.create_table_from_query(
             address=temp_metadata_address.to_project_agnostic_address(),
             query=diff_query,
             use_query_cache=False,
@@ -242,13 +212,10 @@ class NewDocumentDiscoverer:
         temp_document_address = config.temp_new_document_contents_table_address(
             self.project_id, self.job_id
         )
-        new_documents_query = (
-            DocumentCollectionDiffQueryBuilder.build_new_documents_query(
-                temp_document_metadata_updates_address=temp_metadata_address,
-                upload_status_address=DocumentUploadStatusTable.get_table_address(
-                    project_id=self.project_id, state_code=config.state_code
-                ),
-            )
+        new_documents_query = DocumentMetadataUpdatesQueryBuilder(
+            project_id=self.project_id, state_code=config.state_code
+        ).build_new_documents_query(
+            temp_document_metadata_updates_address=temp_metadata_address,
         )
 
         logging.info(
@@ -268,4 +235,5 @@ class NewDocumentDiscoverer:
             temp_document_metadata_updates_address=temp_metadata_address,
             temp_new_document_contents_address=temp_document_address,
             num_new_document_contents_rows=row_iterator.total_rows,
+            num_document_metadata_updates_rows=metadata_row_iterator.total_rows,
         )

@@ -159,6 +159,14 @@ class DocumentCollectionConfig:
         """Returns the BigQuery table ID for this document collection's metadata table."""
         return self.name
 
+    def metadata_table_address(self, project_id: str) -> ProjectSpecificBigQueryAddress:
+        """Returns the BigQuery address for this collection's metadata table."""
+        return ProjectSpecificBigQueryAddress(
+            project_id=project_id,
+            dataset_id=document_store_metadata_dataset_for_region(self.state_code),
+            table_id=self.metadata_table_id,
+        )
+
     @property
     def primary_key_column_names(self) -> list[str]:
         """Returns the list of primary key column names for this document collection."""

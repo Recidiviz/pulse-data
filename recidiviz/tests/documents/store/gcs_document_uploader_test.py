@@ -35,12 +35,12 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_task_output,
 )
+from recidiviz.documents.store.document_store_types import DocumentBatchRange
 from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_UPLOAD_FAILURE,
     DOCUMENT_UPLOAD_SUCCESS,
 )
 from recidiviz.documents.store.gcs_document_uploader import GcsDocumentUploader
-from recidiviz.documents.store.new_document_discovery import DocumentBatchRange
 
 
 def _make_row(document_contents_id: str, document_text: str) -> bigquery.table.Row:

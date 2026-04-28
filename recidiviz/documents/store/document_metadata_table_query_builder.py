@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builds queries related to document collection metadata tables."""
+
 import attr
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common import attr_validators
 from recidiviz.documents.store.document_collection_config import (
@@ -26,9 +26,6 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     ROW_CREATE_DATETIME_COLUMN_NAME,
-)
-from recidiviz.ingest.direct.dataset_config import (
-    document_store_metadata_dataset_for_region,
 )
 
 
@@ -51,11 +48,7 @@ class DocumentCollectionMetadataTableQueryBuilder:
         null document_contents_id indicates that the document has been deleted in
         the source data.
         """
-        address = ProjectSpecificBigQueryAddress(
-            project_id=self.project_id,
-            dataset_id=document_store_metadata_dataset_for_region(config.state_code),
-            table_id=config.metadata_table_id,
-        )
+        address = config.metadata_table_address(self.project_id)
 
         output_columns = [
             *config.primary_key_column_names,

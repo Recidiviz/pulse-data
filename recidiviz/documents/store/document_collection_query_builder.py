@@ -19,7 +19,6 @@
 import attr
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
     list_to_query_string,
@@ -36,10 +35,6 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
     DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
-    SEQUENCE_NUM_COLUMN_NAME,
-)
-from recidiviz.documents.store.document_upload_status_table import (
-    DOCUMENT_UPLOAD_SUCCESS,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -157,30 +152,3 @@ deleted AS (
 SELECT {output_columns} FROM added_or_updated
 UNION ALL
 SELECT {output_columns} FROM deleted"""
-
-    @staticmethod
-    def build_new_documents_query(
-        temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
-        upload_status_address: ProjectSpecificBigQueryAddress,
-    ) -> str:
-        """Builds a query that selects distinct (document_contents_id, document_text)
-        pairs from the temp metadata diff table that have not already been
-        successfully uploaded in the state, and assigns each a 0-indexed sequence_num.
-        """
-        return f"""
-SELECT
-    {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
-    {DOCUMENT_TEXT_COLUMN_NAME},
-    ROW_NUMBER() OVER (ORDER BY {DOCUMENT_CONTENTS_ID_COLUMN_NAME}) - 1 AS {SEQUENCE_NUM_COLUMN_NAME}
-FROM (
-    SELECT DISTINCT
-        {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
-        {DOCUMENT_TEXT_COLUMN_NAME}
-    FROM {temp_document_metadata_updates_address.format_address_for_query()}
-    WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} IS NOT NULL
-)
-WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
-    SELECT {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
-    FROM {upload_status_address.format_address_for_query()}
-    WHERE status = '{DOCUMENT_UPLOAD_SUCCESS}'
-)"""

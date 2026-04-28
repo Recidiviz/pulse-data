@@ -1,0 +1,6 @@
+person_external_id,person_external_id_type,note_id,note_type,document_contents_id,document_text,document_update_datetime
+P001,US_XX_DOC,NOTE_1,GENERAL,success_aaa,some text a,2026-01-01 10:00:00
+P001,US_XX_DOC,NOTE_2,CONTACT,failed_bbb,some text b,2026-02-01 10:00:00
+P002,US_XX_DOC,NOTE_3,GENERAL,,deleted text,2026-03-01 10:00:00
+P002,US_XX_DOC,NOTE_4,CONTACT,no_status_ddd,some text d,2026-03-15 12:00:00
+P003,US_XX_DOC,NOTE_5,GENERAL,success_eee,some text e,2026-04-01 10:00:00

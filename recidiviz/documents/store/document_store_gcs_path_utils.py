@@ -47,6 +47,17 @@ def gcs_path_for_document(
     )
 
 
+def gcs_directory_for_task_output(
+    project_id: str,
+    state_code: StateCode,
+    job_id: str,
+) -> GcsfsDirectoryPath:
+    return GcsfsDirectoryPath.from_bucket_and_blob_name(
+        bucket_name=temp_document_store_output_bucket_name(project_id, state_code),
+        blob_name=job_id,
+    )
+
+
 def gcs_path_for_task_output(
     project_id: str,
     state_code: StateCode,
@@ -56,9 +67,6 @@ def gcs_path_for_task_output(
 ) -> GcsfsFilePath:
     """Returns the GCS path for a CSV output file produced by a document upload task."""
     return GcsfsFilePath.from_directory_and_file_name(
-        dir_path=GcsfsDirectoryPath.from_bucket_and_blob_name(
-            bucket_name=temp_document_store_output_bucket_name(project_id, state_code),
-            blob_name=job_id,
-        ),
+        dir_path=gcs_directory_for_task_output(project_id, state_code, job_id),
         file_name=f"task_{task_index}_{batch_index}.csv",
     )

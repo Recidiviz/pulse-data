@@ -41,12 +41,12 @@ from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
     gcs_path_for_task_output,
 )
+from recidiviz.documents.store.document_store_types import DocumentBatchRange
 from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_UPLOAD_FAILURE,
     DOCUMENT_UPLOAD_SUCCESS,
     DocumentUploadStatusTable,
 )
-from recidiviz.documents.store.new_document_discovery import DocumentBatchRange
 
 MAX_UPLOAD_WORKERS = int(GCSFS_POOL_MAXSIZE / 2)
 # TODO(#73430) Compute a more precise timeout

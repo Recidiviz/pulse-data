@@ -19,7 +19,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
@@ -27,9 +26,6 @@ from recidiviz.documents.store.document_collection_config import (
 )
 from recidiviz.documents.store.document_metadata_table_query_builder import (
     DocumentCollectionMetadataTableQueryBuilder,
-)
-from recidiviz.ingest.direct.dataset_config import (
-    document_store_metadata_dataset_for_region,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -47,9 +43,8 @@ class TestDocumentCollectionMetadataTableQueryBuilder(BigQueryEmulatorTestCase):
         self.config = get_document_collection_config(
             StateCode.US_XX, "fake_case_notes", fake_regions
         )
-        self.metadata_address = BigQueryAddress(
-            dataset_id=document_store_metadata_dataset_for_region(StateCode.US_XX),
-            table_id=self.config.metadata_table_id,
+        self.metadata_address = self.config.metadata_table_address(
+            self.project_id,
         )
         self.query_builder = DocumentCollectionMetadataTableQueryBuilder(
             project_id=self.project_id,
@@ -62,10 +57,12 @@ class TestDocumentCollectionMetadataTableQueryBuilder(BigQueryEmulatorTestCase):
         self, config: DocumentCollectionConfig, data: pd.DataFrame
     ) -> None:
         self.create_mock_table(
-            self.metadata_address,
+            self.metadata_address.to_project_agnostic_address(),
             schema=config.build_bq_metadata_schema(),
         )
-        self.load_rows_into_table(self.metadata_address, data.to_dict("records"))
+        self.load_rows_into_table(
+            self.metadata_address.to_project_agnostic_address(), data.to_dict("records")
+        )
 
     def test_latest_documents(self) -> None:
         """Tests that the latest documents query correctly deduplicates to one

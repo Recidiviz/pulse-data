@@ -24,11 +24,12 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     collect_document_collection_configs,
 )
-from recidiviz.documents.store.new_document_discovery import (
-    DEFAULT_NUM_BATCHES,
+from recidiviz.documents.store.document_store_types import (
     DocumentBatchRange,
-    NewDocumentDiscoverer,
     SingleCollectionDocumentDiscoveryResult,
+)
+from recidiviz.documents.store.new_document_discovery import (
+    NewDocumentDiscoverer,
     build_collection_new_document_batches,
     build_document_batches,
 )
@@ -51,6 +52,19 @@ class TestBuildBatches(unittest.TestCase):
             temp_new_document_contents_table_address=self.addr,
             start_sequence_num_inclusive=start,
             end_sequence_num_exclusive=end,
+        )
+
+    def _make_collection_doc_discovery_result(
+        self,
+        config: DocumentCollectionConfig,
+        num_new_document_contents_rows: int,
+    ) -> SingleCollectionDocumentDiscoveryResult:
+        return SingleCollectionDocumentDiscoveryResult(
+            config=config,
+            temp_document_metadata_updates_address=self.addr,
+            temp_new_document_contents_address=self.addr,
+            num_new_document_contents_rows=num_new_document_contents_rows,
+            num_document_metadata_updates_rows=num_new_document_contents_rows,
         )
 
     def test_build_collection_new_document_batches(self) -> None:
@@ -81,23 +95,22 @@ class TestBuildBatches(unittest.TestCase):
         name3 = config_list[2 % len(config_list)].name
 
         collection_results = [
-            SingleCollectionDocumentDiscoveryResult(
+            self._make_collection_doc_discovery_result(
                 config=config_list[0],
-                temp_document_metadata_updates_address=self.addr,
-                temp_new_document_contents_address=self.addr,
                 num_new_document_contents_rows=897587,
             ),
-            SingleCollectionDocumentDiscoveryResult(
+            self._make_collection_doc_discovery_result(
                 config=config_list[1 % len(config_list)],
-                temp_document_metadata_updates_address=self.addr,
-                temp_new_document_contents_address=self.addr,
                 num_new_document_contents_rows=105923,
             ),
-            SingleCollectionDocumentDiscoveryResult(
+            self._make_collection_doc_discovery_result(
                 config=config_list[2 % len(config_list)],
-                temp_document_metadata_updates_address=self.addr,
-                temp_new_document_contents_address=self.addr,
                 num_new_document_contents_rows=9768899,
+            ),
+            # Should be ignored since it has zero new document contents rows.
+            self._make_collection_doc_discovery_result(
+                config=config_list[3 % len(config_list)],
+                num_new_document_contents_rows=0,
             ),
         ]
 
@@ -174,18 +187,16 @@ class TestNewDocumentDiscovery(unittest.TestCase):
             side_effect=mock_collect_document_collection_configs,
         )
         self.collect_configs_mock = self.document_collection_patcher.start()
-        self.num_collections = len(
-            collect_document_collection_configs(
-                StateCode.US_XX, region_module=fake_regions
-            )
+
+        self.configs = collect_document_collection_configs(
+            StateCode.US_XX, region_module=fake_regions
         )
+        self.config_names = list(self.configs.keys())
 
     def tearDown(self) -> None:
         self.document_collection_patcher.stop()
 
-    def test_all_collections_empty_returns_empty_batches(
-        self,
-    ) -> None:
+    def test_all_collections_empty_returns_empty_batches(self) -> None:
         mock_row_iterator = MagicMock()
         mock_row_iterator.total_rows = 0
         self.bq_client.create_table_from_query.return_value = mock_row_iterator
@@ -193,57 +204,68 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         result = self.discovery.run()
 
         self.assertEqual(result.document_batches, [[], [], []])
-        self.assertEqual(
-            len(result.temp_document_metadata_updates_addresses), self.num_collections
-        )
+        # Don't include collections with zero new metadata rows in collection_results
+        self.assertEqual(result.collection_results, [])
         # 2 create_table_from_query calls per collection (metadata + document)
         self.assertEqual(
             self.bq_client.create_table_from_query.call_count,
-            2 * self.num_collections,
+            2 * len(self.configs),
         )
 
-    def test_creates_temp_tables_and_batches(
-        self,
-    ) -> None:
-        configs = collect_document_collection_configs(
-            StateCode.US_XX, region_module=fake_regions
-        )
-        config_names = list(configs.keys())
-        empty_collection_name = config_names[0]
+    def test_creates_temp_tables_and_batches(self) -> None:
+        """Tests three categories of collections:
+        - no_changes: 0 metadata updates → excluded from collection_results entirely
+        - metadata_only: metadata updates but 0 new document contents → included
+            in collection_results but produces no document batches
+        - has_new_docs (remaining): metadata updates AND new documents → included
+            in collection_results and produces document batches
+        """
+        no_changes_collection = self.config_names[0]
+        metadata_only_collection = self.config_names[1]
 
         def create_table_side_effect(
             address: ProjectSpecificBigQueryAddress, **_kwargs: object
         ) -> MagicMock:
             mock = MagicMock()
-            # The "new document contents" temp tables contain the row count
-            # that determines batching; metadata tables are ignored.
-            if "temp_new_document_contents" in address.table_id:
-                if empty_collection_name in address.table_id:
+            if no_changes_collection in address.table_id:
+                mock.total_rows = 0
+            elif "temp_new_document_contents" in address.table_id:
+                if metadata_only_collection in address.table_id:
                     mock.total_rows = 0
                 else:
                     mock.total_rows = 6
+            # Temp metadata updates table
             else:
-                mock.total_rows = 0
+                mock.total_rows = 10
             return mock
 
-        non_empty_table_count = self.num_collections - 1
         self.bq_client.create_table_from_query.side_effect = create_table_side_effect
 
         result = self.discovery.run()
 
         self.assertEqual(
             self.bq_client.create_table_from_query.call_count,
-            2 * self.num_collections,
+            2 * len(self.configs),
         )
 
-        num_batches = min(non_empty_table_count, DEFAULT_NUM_BATCHES)
-        self.assertEqual(len(result.document_batches), num_batches)
-        for batch in result.document_batches:
-            self.assertEqual(len(batch), non_empty_table_count)
+        collections_with_metadata_updates = len(self.configs) - 1
+        collections_with_new_docs = len(self.configs) - 2
 
         self.assertEqual(
-            len(result.temp_document_metadata_updates_addresses), self.num_collections
+            len(result.collection_results), collections_with_metadata_updates
         )
+        # The no_changes collection should be excluded
+        result_collection_names = {r.config.name for r in result.collection_results}
+        self.assertNotIn(no_changes_collection, result_collection_names)
+        self.assertIn(metadata_only_collection, result_collection_names)
+
+        self.assertEqual(len(result.document_batches), 3)
+        for batch in result.document_batches:
+            self.assertEqual(len(batch), collections_with_new_docs)
+            for batch_range in batch:
+                self.assertNotEqual(
+                    batch_range.collection_name, metadata_only_collection
+                )
 
         first_batch = result.document_batches[0]
         for batch_range in first_batch:
