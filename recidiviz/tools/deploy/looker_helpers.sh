@@ -99,25 +99,33 @@ function create_looker_release_branch {
 
   looker_git checkout -b "${NEW_RELEASE_BRANCH}"
 
-  # 1. Update manifest.lkml
-  run_cmd sed -i "" "s/value: \"$LOOKER_STAGING_MODEL_NAME\"/value: \"$LOOKER_PROD_MODEL_NAME\"/" "${TEMP_LOOKER_DIR}/manifest.lkml"
-  grep -q "value: \"$LOOKER_PROD_MODEL_NAME\"" "${TEMP_LOOKER_DIR}/manifest.lkml" || {
-    echo "Error: Failed to update manifest.lkml with prod project ID" >&2
-    exit 1
-  }
+  declare -A model_map=(
+    ["${LOOKER_STAGING_MODEL_NAME}"]="${LOOKER_PROD_MODEL_NAME}"
+    ["external_embed_${LOOKER_STAGING_MODEL_NAME}"]="external_embed_${LOOKER_PROD_MODEL_NAME}"
+  )
+  for staging_model in "${!model_map[@]}"; do
+    prod_model="${model_map[$staging_model]}"
 
-  # 2. Rename model file
-  run_cmd mv "${TEMP_LOOKER_DIR}/models/${LOOKER_STAGING_MODEL_NAME}.model.lkml" "${TEMP_LOOKER_DIR}/models/${LOOKER_PROD_MODEL_NAME}.model.lkml" || {
-    echo "Error: Failed to rename model file" >&2
-    exit 1
-  }
+    # 1. Update manifest.lkml
+    run_cmd sed -i "" "s/value: \"${staging_model}\"/value: \"${prod_model}\"/" "${TEMP_LOOKER_DIR}/manifest.lkml"
+    grep -q "value: \"${prod_model}\"" "${TEMP_LOOKER_DIR}/manifest.lkml" || {
+      echo "Error: Failed to update ${staging_model} to ${prod_model} in manifest.lkml" >&2
+      exit 1
+    }
 
-  # 3. Update connection name in the renamed model file
-  run_cmd sed -i "" "s/connection: \"${RECIDIVIZ_STAGING_PROJECT_ID}\"/connection: \"${RECIDIVIZ_123_PROJECT_ID}\"/" "${TEMP_LOOKER_DIR}/models/${LOOKER_PROD_MODEL_NAME}.model.lkml"
-  grep -q "connection: \"${RECIDIVIZ_123_PROJECT_ID}\"" "${TEMP_LOOKER_DIR}/models/${LOOKER_PROD_MODEL_NAME}.model.lkml" || {
-    echo "Error: Failed to update connection name in model file" >&2
-    exit 1
-  }
+    # 2. Rename model file
+    run_cmd mv "${TEMP_LOOKER_DIR}/models/${staging_model}.model.lkml" "${TEMP_LOOKER_DIR}/models/${prod_model}.model.lkml" || {
+      echo "Error: Failed to rename model file ${staging_model}.model.lkml" >&2
+      exit 1
+    }
+
+    # 3. Update connection name in the renamed model file
+    run_cmd sed -i "" "s/connection: \"${RECIDIVIZ_STAGING_PROJECT_ID}\"/connection: \"${RECIDIVIZ_123_PROJECT_ID}\"/" "${TEMP_LOOKER_DIR}/models/${prod_model}.model.lkml"
+    grep -q "connection: \"${RECIDIVIZ_123_PROJECT_ID}\"" "${TEMP_LOOKER_DIR}/models/${prod_model}.model.lkml" || {
+      echo "Error: Failed to update connection name in model file ${prod_model}.model.lkml" >&2
+      exit 1
+    }
+  done
 
   # 4. Update any dashboard links
   DASHBOARDS_DIR="${TEMP_LOOKER_DIR}/dashboards/"
