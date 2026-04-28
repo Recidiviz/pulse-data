@@ -67,6 +67,21 @@ resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
   }
 }
 
+# Create a new service account to execute scheduled jobs
+resource "google_service_account" "cloud_scheduler" {
+  account_id   = "cloud-scheduler-service-acct"
+  display_name = "Cloud Scheduler Service Account"
+  description  = <<EOT
+Service Account that acts as the identity for Cloud Scheduler jobs.
+The account and its IAM policies are managed in Terraform.
+EOT
+}
+
+resource "google_project_iam_member" "cloud_scheduler_iam" {
+  project = var.project_id
+  role    = "roles/workflows.invoker"
+  member  = "serviceAccount:${google_service_account.cloud_scheduler.email}"
+}
 
 resource "google_cloud_scheduler_job" "us_tn_export_caf_scores_to_ingest" {
   name             = "us-tn-export-caf-scores-to-ingest"
@@ -91,7 +106,7 @@ resource "google_cloud_scheduler_job" "us_tn_export_caf_scores_to_ingest" {
     }
 
     oauth_token {
-      service_account_email = google_service_account.admin_panel_cloud_run.email
+      service_account_email = google_service_account.cloud_scheduler.email
     }
   }
 
