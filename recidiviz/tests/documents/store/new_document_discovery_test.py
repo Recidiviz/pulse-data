@@ -38,16 +38,37 @@ from recidiviz.tests.ingest.direct import fake_regions
 class TestBuildBatches(unittest.TestCase):
     """Tests for the build_batches functions"""
 
-    def test_build_collection_new_document_batches(self) -> None:
-        addr = ProjectSpecificBigQueryAddress(
+    def setUp(self) -> None:
+        self.addr = ProjectSpecificBigQueryAddress(
             project_id="recidiviz-testing", dataset_id="ds", table_id="t1"
         )
-        batch_ranges = build_collection_new_document_batches(addr, 897587, 3)
+
+    def _make_batch_range(
+        self, start: int, end: int, name: str = "test_collection"
+    ) -> DocumentBatchRange:
+        return DocumentBatchRange(
+            collection_name=name,
+            temp_new_document_contents_table_address=self.addr,
+            start_sequence_num_inclusive=start,
+            end_sequence_num_exclusive=end,
+        )
+
+    def test_build_collection_new_document_batches(self) -> None:
+        batch_ranges = build_collection_new_document_batches(
+            collection_name="test_collection",
+            temp_new_documents_table_address=self.addr,
+            new_documents_table_row_count=897587,
+            num_batches=3,
+        )
 
         self.assertEqual(len(batch_ranges), 3)
-        self.assertEqual(batch_ranges[0], DocumentBatchRange(addr, 0, 299196))
-        self.assertEqual(batch_ranges[1], DocumentBatchRange(addr, 299196, 598392))
-        self.assertEqual(batch_ranges[2], DocumentBatchRange(addr, 598392, 897587))
+        self.assertEqual(batch_ranges[0], self._make_batch_range(start=0, end=299196))
+        self.assertEqual(
+            batch_ranges[1], self._make_batch_range(start=299196, end=598392)
+        )
+        self.assertEqual(
+            batch_ranges[2], self._make_batch_range(start=598392, end=897587)
+        )
 
     def test_build_document_batches(self) -> None:
         configs = collect_document_collection_configs(
@@ -55,33 +76,27 @@ class TestBuildBatches(unittest.TestCase):
         )
         config_list = list(configs.values())
 
-        addr1 = ProjectSpecificBigQueryAddress(
-            project_id="recidiviz-testing", dataset_id="ds", table_id="t1"
-        )
-        addr2 = ProjectSpecificBigQueryAddress(
-            project_id="recidiviz-testing", dataset_id="ds", table_id="t2"
-        )
-        addr3 = ProjectSpecificBigQueryAddress(
-            project_id="recidiviz-testing", dataset_id="ds", table_id="t3"
-        )
+        name1 = config_list[0].name
+        name2 = config_list[1 % len(config_list)].name
+        name3 = config_list[2 % len(config_list)].name
 
         collection_results = [
             SingleCollectionDocumentDiscoveryResult(
                 config=config_list[0],
-                temp_document_metadata_updates_address=addr1,
-                temp_new_document_contents_address=addr1,
+                temp_document_metadata_updates_address=self.addr,
+                temp_new_document_contents_address=self.addr,
                 num_new_document_contents_rows=897587,
             ),
             SingleCollectionDocumentDiscoveryResult(
                 config=config_list[1 % len(config_list)],
-                temp_document_metadata_updates_address=addr2,
-                temp_new_document_contents_address=addr2,
+                temp_document_metadata_updates_address=self.addr,
+                temp_new_document_contents_address=self.addr,
                 num_new_document_contents_rows=105923,
             ),
             SingleCollectionDocumentDiscoveryResult(
                 config=config_list[2 % len(config_list)],
-                temp_document_metadata_updates_address=addr3,
-                temp_new_document_contents_address=addr3,
+                temp_document_metadata_updates_address=self.addr,
+                temp_new_document_contents_address=self.addr,
                 num_new_document_contents_rows=9768899,
             ),
         ]
@@ -92,37 +107,39 @@ class TestBuildBatches(unittest.TestCase):
         self.assertEqual(
             batches[0],
             [
-                DocumentBatchRange(addr1, 0, 299196),
-                DocumentBatchRange(addr2, 0, 35308),
-                DocumentBatchRange(addr3, 0, 3256300),
+                self._make_batch_range(start=0, end=299196, name=name1),
+                self._make_batch_range(start=0, end=35308, name=name2),
+                self._make_batch_range(start=0, end=3256300, name=name3),
             ],
         )
         self.assertEqual(
             batches[1],
             [
-                DocumentBatchRange(addr1, 299196, 598392),
-                DocumentBatchRange(addr2, 35308, 70616),
-                DocumentBatchRange(addr3, 3256300, 6512600),
+                self._make_batch_range(start=299196, end=598392, name=name1),
+                self._make_batch_range(start=35308, end=70616, name=name2),
+                self._make_batch_range(start=3256300, end=6512600, name=name3),
             ],
         )
         self.assertEqual(
             batches[2],
             [
-                DocumentBatchRange(addr1, 598392, 897587),
-                DocumentBatchRange(addr2, 70616, 105923),
-                DocumentBatchRange(addr3, 6512600, 9768899),
+                self._make_batch_range(start=598392, end=897587, name=name1),
+                self._make_batch_range(start=70616, end=105923, name=name2),
+                self._make_batch_range(start=6512600, end=9768899, name=name3),
             ],
         )
 
     def test_fewer_rows_than_batches(self) -> None:
-        addr = ProjectSpecificBigQueryAddress(
-            project_id="recidiviz-testing", dataset_id="ds", table_id="t1"
+        batch_ranges = build_collection_new_document_batches(
+            collection_name="test_collection",
+            temp_new_documents_table_address=self.addr,
+            new_documents_table_row_count=2,
+            num_batches=5,
         )
-        batch_ranges = build_collection_new_document_batches(addr, 2, 5)
 
         self.assertEqual(len(batch_ranges), 2)
-        self.assertEqual(batch_ranges[0], DocumentBatchRange(addr, 0, 1))
-        self.assertEqual(batch_ranges[1], DocumentBatchRange(addr, 1, 2))
+        self.assertEqual(batch_ranges[0], self._make_batch_range(start=0, end=1))
+        self.assertEqual(batch_ranges[1], self._make_batch_range(start=1, end=2))
 
     def test_empty_list(self) -> None:
         batches = build_document_batches([], 3)

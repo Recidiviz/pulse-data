@@ -40,12 +40,13 @@ from recidiviz.documents.store.document_upload_status_table import (
 DEFAULT_NUM_BATCHES = 10
 
 
-@attr.define(frozen=True)
+@attr.define(frozen=True, kw_only=True)
 class DocumentBatchRange:
     """A range of documents within a temp table to process. The table at
     |temp_new_document_contents_table_address| is expected to have both document_contents_id and
     sequence_num columns."""
 
+    collection_name: str = attr.ib(validator=attr_validators.is_str)
     temp_new_document_contents_table_address: ProjectSpecificBigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(ProjectSpecificBigQueryAddress)
     )
@@ -87,6 +88,7 @@ class DocumentDiscoveryResult:
 
 
 def build_collection_new_document_batches(
+    collection_name: str,
     temp_new_documents_table_address: ProjectSpecificBigQueryAddress,
     new_documents_table_row_count: int,
     num_batches: int,
@@ -102,6 +104,7 @@ def build_collection_new_document_batches(
             break
         batch_ranges.append(
             DocumentBatchRange(
+                collection_name=collection_name,
                 temp_new_document_contents_table_address=temp_new_documents_table_address,
                 start_sequence_num_inclusive=start,
                 end_sequence_num_exclusive=end,
@@ -120,6 +123,7 @@ def build_document_batches(
 
     for result in collection_results:
         collection_batch_ranges = build_collection_new_document_batches(
+            collection_name=result.config.name,
             temp_new_documents_table_address=result.temp_new_document_contents_address,
             new_documents_table_row_count=result.num_new_document_contents_rows,
             num_batches=num_batches,
