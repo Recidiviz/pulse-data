@@ -58,12 +58,20 @@ def fixture_github_mocks() -> Generator[Mock, None, None]:
     env_mock.stop()
 
 
-def _create_issue(title: str, state: str = "open", issue_id: int = 12345) -> Mock:
+def _create_issue(
+    title: str,
+    state: str = "open",
+    issue_id: int = 12345,
+    created_at: datetime.datetime = datetime.datetime(
+        2026, 1, 1, tzinfo=datetime.timezone.utc
+    ),
+) -> Mock:
     """Helper function to create a mock issue."""
     m = Mock()
     m.title = title
     m.state = state
     m.number = issue_id
+    m.created_at = created_at
     return m
 
 
@@ -309,4 +317,61 @@ class TestStaleRawDataGitHubService:
 
         service.handle_incident(incident)
 
+        github_mocks.create_issue.assert_not_called()
+
+    def test_handle_incident_closes_duplicate_issues_keeps_oldest(
+        self,
+        github_mocks: Mock,
+    ) -> None:
+        service = StaleRawDataGitHubService.get_stale_raw_data_service_for_state_code(
+            project_id="recidiviz-staging", state_code=StateCode.US_XX
+        )
+
+        incident = StaleRawDataAlertingIncident(
+            state_code="US_XX",
+            file_tag="test_file",
+            hours_stale=48.5,
+            most_recent_import_date=datetime.datetime(2024, 1, 1),
+        )
+
+        title = "[US_XX] [Staging] Stale raw data: test_file, last import: 2024-01-01T00:00:00"
+        oldest = _create_issue(
+            title=title,
+            issue_id=111,
+            created_at=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+        )
+        oldest.get_comments.return_value = []
+        middle = _create_issue(
+            title=title,
+            issue_id=222,
+            created_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc),
+        )
+        newest = _create_issue(
+            title=title,
+            issue_id=333,
+            created_at=datetime.datetime(2026, 1, 3, tzinfo=datetime.timezone.utc),
+        )
+
+        # Return in non-chronological order to verify sorting
+        github_mocks.get_issues.return_value = [newest, oldest, middle]
+
+        service.handle_incident(incident)
+
+        # Duplicates should be closed
+        middle.create_comment.assert_called_once_with(
+            "Closing duplicate issue in favor of #111."
+        )
+        middle.edit.assert_called_once_with(state="closed", state_reason="completed")
+        newest.create_comment.assert_called_once_with(
+            "Closing duplicate issue in favor of #111."
+        )
+        newest.edit.assert_called_once_with(state="closed", state_reason="completed")
+
+        # Oldest should not be closed
+        oldest.edit.assert_not_called()
+        oldest.create_comment.assert_called_once_with(
+            "File is still stale: **48.5 hours** over threshold.\n\n**Last successful import:** `2024-01-01 00:00:00`"
+        )
+
+        # Should not open any new issue
         github_mocks.create_issue.assert_not_called()

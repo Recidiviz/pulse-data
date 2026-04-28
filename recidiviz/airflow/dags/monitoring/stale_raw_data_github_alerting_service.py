@@ -93,13 +93,12 @@ class StaleRawDataGitHubService(
     def _get_issue_title(self, incident: StaleRawDataAlertingIncident) -> str:
         return f"{self._get_issue_title_prefix()} {incident.unique_incident_id}"
 
-    def _search_for_existing_incident_issue(
+    def _search_for_existing_incident_issues(
         self, incident: StaleRawDataAlertingIncident
-    ) -> Issue | None:
-        """Searches for an existing issue for the incident."""
+    ) -> list[Issue]:
+        """Searches for existing issues for the incident."""
         title = self._get_issue_title(incident)
-        issues = [i for i in self.cached_gh_issues if i.title == title]
-        return one(issues) if issues else None
+        return [i for i in self.cached_gh_issues if i.title == title]
 
     def _search_for_open_issues_for_prefix(
         self, file_tag_incident_prefix: str
@@ -164,22 +163,30 @@ class StaleRawDataGitHubService(
             incident.file_tag,
         )
 
-    def _update_existing_stale_data_issue(
-        self, issue: Issue, incident: StaleRawDataAlertingIncident
+    def _update_existing_stale_data_issues(
+        self, existing_issues: list[Issue], incident: StaleRawDataAlertingIncident
     ) -> None:
-        """Updates an existing GitHub issue for an ongoing stale data incident.
+        """Updates an existing GitHub issue for an ongoing stale data incident. Closes duplicate issues if multiple exist.
 
         Edits the most recent helperbot comment if one exists, otherwise creates a new comment.
         This prevents comment spam since the monitoring runs hourly.
         """
-        comment_header = "File is still stale:"
-        full_comment = StrictStringFormatter().format(
-            "{comment_header} **{hours_stale:.1f} hours** over threshold.\n\n"
-            "**Last successful import:** `{most_recent_import_date}`",
-            comment_header=comment_header,
-            hours_stale=incident.hours_stale,
-            most_recent_import_date=incident.most_recent_import_date,
-        )
+        # The GitHub API is flaky and sometimes doesn't return an issue
+        # when queried, causing us to accidentally open duplicates.
+        # Keep the oldest and ensure any others are closed.
+        existing_issues.sort(key=lambda i: i.created_at)
+        issue = existing_issues[0]
+        for duplicate in existing_issues[1:]:
+            self.close_issue(
+                duplicate,
+                f"Closing duplicate issue in favor of #{issue.number}.",
+            )
+            logging.info(
+                "Closed duplicate issue [#%s] for [%s][%s]",
+                duplicate.number,
+                incident.state_code,
+                incident.file_tag,
+            )
 
         if issue.state == "closed":
             issue.edit(state="open")
@@ -189,6 +196,15 @@ class StaleRawDataGitHubService(
                 incident.state_code,
                 incident.file_tag,
             )
+
+        comment_header = "File is still stale:"
+        full_comment = StrictStringFormatter().format(
+            "{comment_header} **{hours_stale:.1f} hours** over threshold.\n\n"
+            "**Last successful import:** `{most_recent_import_date}`",
+            comment_header=comment_header,
+            hours_stale=incident.hours_stale,
+            most_recent_import_date=incident.most_recent_import_date,
+        )
 
         helperbot_comments = self.get_helperbot_comments(
             issue, comment_prefix=comment_header
@@ -225,8 +241,8 @@ class StaleRawDataGitHubService(
         if incident.is_resolved:
             self._handle_resolved_incident(incident)
         else:
-            existing_issue = self._search_for_existing_incident_issue(incident)
-            if not existing_issue:
+            existing_issues = self._search_for_existing_incident_issues(incident)
+            if not existing_issues:
                 self._create_new_stale_data_issue(incident)
             else:
-                self._update_existing_stale_data_issue(existing_issue, incident)
+                self._update_existing_stale_data_issues(existing_issues, incident)

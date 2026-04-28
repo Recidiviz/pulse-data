@@ -62,12 +62,20 @@ def fixture_github_mocks() -> Generator[Mock, None, None]:
     env_mock.stop()
 
 
-def _create_issue(title: str, state: str = "open", issue_id: int = 12345) -> Mock:
+def _create_issue(
+    title: str,
+    state: str = "open",
+    issue_id: int = 12345,
+    created_at: datetime.datetime = datetime.datetime(
+        2026, 1, 1, tzinfo=datetime.timezone.utc
+    ),
+) -> Mock:
     """Helper function to create a mock issue."""
     m = Mock()
     m.title = title
     m.state = state
     m.number = issue_id
+    m.created_at = created_at
     return m
 
 
@@ -130,7 +138,7 @@ class TestRecidivizGitHubService:
         # pylint: disable=protected-access
         result = service._search_past_issues_for_incident(mock_incident)
 
-        assert result is None
+        assert result == []
 
         github_mocks.get_issues.assert_called_with(
             sort="created",
@@ -169,12 +177,13 @@ class TestRecidivizGitHubService:
             since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.UTC),
         )
 
-        assert result is not None
+        assert len(result) == 1
         assert (
-            result.title == "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC"
+            result[0].title
+            == "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC"
         )
         # pylint: disable=protected-access
-        assert result.title == service._get_issue_title_from_incident(mock_incident)
+        assert result[0].title == service._get_issue_title_from_incident(mock_incident)
 
     def test_new_incident(self, github_mocks: Mock) -> None:
         service = AirflowGitHubService.raw_data_service_for_state_code(
@@ -748,3 +757,62 @@ class TestRecidivizGitHubService:
             caplog.records[0].message
             == "Ensuring issue for incident [Task Run: test_dag.a.job.id, started: 2024-01-01 00:00 UTC] is closed as the incident is resolved as a job run completed successfully on [2024-01-04T00:00:00+00:00]."
         )
+
+    def test_handle_incident_closes_duplicate_issues_keeps_oldest(
+        self, github_mocks: Mock
+    ) -> None:
+        service = AirflowGitHubService.raw_data_service_for_state_code(
+            project_id="recidiviz-staging", state_code=StateCode.US_XX
+        )
+
+        mock_incident = AirflowAlertingIncident(
+            dag_id="test_dag",
+            dag_run_config="{}",
+            job_id="a.job.id",
+            failed_execution_dates=[
+                datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+                datetime.datetime(2024, 1, 2, tzinfo=datetime.UTC),
+                datetime.datetime(2024, 1, 3, tzinfo=datetime.UTC),
+            ],
+            previous_success_date=datetime.datetime(2023, 12, 31, tzinfo=datetime.UTC),
+            incident_type="Task Run",
+        )
+
+        title = "[staging][US_XX] a.job.id, started: 2024-01-01 00:00 UTC"
+        oldest = _create_issue(
+            title=title,
+            issue_id=111,
+            created_at=datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+        )
+        oldest.body = "Failed run of [`a.job.id`] on the following dates: [ `2024-01-01T00:00:00+00:00` ]."
+        oldest.get_comments.return_value = []
+        middle = _create_issue(
+            title=title,
+            issue_id=222,
+            created_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc),
+        )
+        newest = _create_issue(
+            title=title,
+            issue_id=333,
+            created_at=datetime.datetime(2026, 1, 3, tzinfo=datetime.timezone.utc),
+        )
+
+        # Return in non-chronological order to verify sorting
+        github_mocks.get_issues.return_value = [newest, oldest, middle]
+
+        service.handle_incident(mock_incident)
+
+        # Duplicates should be closed
+        middle.create_comment.assert_called_once_with(
+            "Closing duplicate issue in favor of #111."
+        )
+        middle.edit.assert_called_once_with(state="closed", state_reason="completed")
+        newest.create_comment.assert_called_once_with(
+            "Closing duplicate issue in favor of #111."
+        )
+        newest.edit.assert_called_once_with(state="closed", state_reason="completed")
+
+        # Oldest should not be closed, should get the update comment
+        oldest.edit.assert_not_called()
+
+        github_mocks.create_issue.assert_not_called()

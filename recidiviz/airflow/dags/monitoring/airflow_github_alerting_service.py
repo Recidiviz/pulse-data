@@ -20,7 +20,6 @@ import logging
 
 import attr
 from github.Issue import Issue
-from more_itertools import one
 
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
@@ -96,8 +95,8 @@ class AirflowGitHubService(
 
     def _search_past_issues_for_incident(
         self, incident: AirflowAlertingIncident
-    ) -> Issue | None:
-        matching_issues = self.get_helperbot_issues_for_title(
+    ) -> list[Issue]:
+        return self.get_helperbot_issues_for_title(
             title=self._get_issue_title_from_incident(incident),
             labels=self.issue_labels,
             # if an incident has been open for longer than our lookback period, we will
@@ -106,17 +105,16 @@ class AirflowGitHubService(
             # incident started.
             since=incident.incident_start_date,
         )
-        return one(matching_issues) if matching_issues else None
 
-    def _ensure_issue_closed_for_resolved_incident(
-        self, issue: Issue | None, incident: AirflowAlertingIncident
+    def _ensure_issues_closed_for_resolved_incident(
+        self, issues: list[Issue], incident: AirflowAlertingIncident
     ) -> None:
         logging.info(
             "Ensuring issue for incident [%s] is closed as the incident is resolved as a job run completed successfully on [%s].",
             incident.unique_incident_id,
             assert_type(incident.next_success_date, datetime.datetime).isoformat(),
         )
-        if issue:
+        for issue in issues:
             self.close_issue(
                 issue,
                 comment_body=f"Successful job completion found on [`{assert_type(incident.next_success_date, datetime.datetime).isoformat()}`]; closing issue.",
@@ -200,12 +198,29 @@ class AirflowGitHubService(
     def _format_incident_issue_comment_header(incident: AirflowAlertingIncident) -> str:
         return f"Failure for [`{incident.job_id}`] on [ `{incident.most_recent_failure.isoformat()}` ]."
 
-    def _update_existing_issue_for_ongoing_incident(
-        self, issue: Issue, incident: AirflowAlertingIncident
+    def _update_existing_issues_for_ongoing_incident(
+        self, existing_issues: list[Issue], incident: AirflowAlertingIncident
     ) -> None:
-        """Determines if an update to |issue| is necessary by reconciling comments on
-        |issue| with failure dates on |incident|.
+        """Determines if an update to the oldest issue is necessary by reconciling
+        comments with failure dates on |incident|. Closes duplicate issues if
+        multiple exist.
         """
+        # The GitHub API is flaky and sometimes doesn't return an issue
+        # when queried, causing us to accidentally open duplicates.
+        # Keep the oldest and ensure any others are closed.
+        existing_issues.sort(key=lambda i: i.created_at)
+        issue = existing_issues[0]
+        for duplicate in existing_issues[1:]:
+            self.close_issue(
+                duplicate,
+                f"Closing duplicate issue in favor of #{issue.number}.",
+            )
+            logging.info(
+                "Closed duplicate issue [#%s] for [%s]",
+                duplicate.number,
+                incident.unique_incident_id,
+            )
+
         description_header = self._format_incident_issue_description_header(incident)
 
         incident_not_updated_since_creation = issue.body.startswith(description_header)
@@ -253,11 +268,11 @@ class AirflowGitHubService(
             issue.create_comment(body=body)
 
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
-        existing_issue = self._search_past_issues_for_incident(incident)
+        existing_issues = self._search_past_issues_for_incident(incident)
 
         if incident.is_resolved:
-            self._ensure_issue_closed_for_resolved_incident(existing_issue, incident)
-        elif not existing_issue:
+            self._ensure_issues_closed_for_resolved_incident(existing_issues, incident)
+        elif not existing_issues:
             self._open_new_issue(incident)
         else:
-            self._update_existing_issue_for_ongoing_incident(existing_issue, incident)
+            self._update_existing_issues_for_ongoing_incident(existing_issues, incident)
