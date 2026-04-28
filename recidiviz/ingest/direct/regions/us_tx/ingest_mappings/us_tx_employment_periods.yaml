@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_employment_periods`
+# to corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  EMPL_SID_NO: STRING
+  EMPL_ID: STRING
+  start_date: DATE
+  end_date: DATE
+  last_verified_date: DATE
+  employment_status: STRING
+  termination_reason: STRING
+  employer_name: STRING
+  employer_address: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: EMPL_SID_NO
+          id_type: $literal("US_TX_SID")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id: EMPL_ID
+          start_date: start_date
+          end_date: end_date
+          last_verified_date: last_verified_date
+          employer_name: employer_name
+          employer_address: employer_address
+          employment_status:
+            $enum_mapping:
+              $raw_text: employment_status
+              $mappings:
+                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
+                  - "Not employed"
+                  - "Currently not employed"
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT:
+                  - "Active"
+                  - "Verified"
+                  - "Proposed"
+                StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
+                  - "Failed"
+                  - "Cancelled"
+                  - "Terminated"
+          end_reason:
+            $enum_mapping:
+              $raw_text: termination_reason
+              $mappings:
+                StateEmploymentPeriodEndReason.QUIT:
+                  - "Quit"
+                  - "Family-related"
+                StateEmploymentPeriodEndReason.FIRED:
+                  - "Terminated with cause"
+                StateEmploymentPeriodEndReason.LAID_OFF:
+                  - "Terminated without cause"
+                StateEmploymentPeriodEndReason.MEDICAL:
+                  - "Medical"
+                StateEmploymentPeriodEndReason.NEW_JOB:
+                  - "Found other employment"
+                StateEmploymentPeriodEndReason.MOVED:
+                  - "Transferred"
+                StateEmploymentPeriodEndReason.INCARCERATED:
+                  - "Revoked"
+                  - "Arrest"
+                StateEmploymentPeriodEndReason.INTERNAL_UNKNOWN:
+                  - "Other"
+                  - "Death"
+                  - "School"
+                  - "Absconded"
+                  - "Case closed"
