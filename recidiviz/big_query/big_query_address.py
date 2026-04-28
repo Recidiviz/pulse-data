@@ -17,7 +17,6 @@
 """Defines a type that represents the (dataset_id, table_id) address of a BigQuery view
 or table.
 """
-import re
 from typing import Iterable
 
 import attr
@@ -36,7 +35,7 @@ from recidiviz.cloud_resources.platform_resource_labels import (
 )
 from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import StateCode, find_state_codes_in_str
 from recidiviz.common.google_cloud.utils import format_resource_label
 
 
@@ -94,19 +93,9 @@ class BigQueryAddress:
         """Returns the StateCode associated with this address if this is a
         state-specific address, otherwise returns None.
         """
-        found_state_codes = set()
+        found_state_codes: set[StateCode] = set()
         for s in [self.dataset_id, self.table_id]:
-            s_lower = s.lower()
-
-            # State code is at the beginning of the dataset_id/table_id
-            if match := re.match("^(?P<state>us_[a-z]{2})_.*$", s_lower):
-                found_state_codes.add(StateCode(match.group("state").upper()))
-            # State code is in the middle of the dataset_id/table_id
-            if match := re.match("^.*_(?P<state>us_[a-z]{2})_.*$", s_lower):
-                found_state_codes.add(StateCode(match.group("state").upper()))
-            # State code is at the end of the dataset_id/table_id
-            if match := re.match("^.*_(?P<state>us_[a-z]{2})$", s_lower):
-                found_state_codes.add(StateCode(match.group("state").upper()))
+            found_state_codes |= find_state_codes_in_str(s)
 
         if not found_state_codes:
             return None

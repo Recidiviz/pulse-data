@@ -32,6 +32,7 @@ from recidiviz.tools.load_views_to_sandbox import (
     load_collected_views_to_sandbox,
     parse_arguments,
     summary_for_auto_sandbox,
+    validate_sandbox_prefix_state_codes,
 )
 
 
@@ -828,3 +829,77 @@ class TestParseArguments(unittest.TestCase):
                 ],
             ):
                 parse_arguments()
+
+    def test_prefix_with_state_code_and_no_filter_errors(self) -> None:
+        with self.assertRaises(SystemExit):
+            with patch(
+                "sys.argv",
+                [
+                    "load_views_to_sandbox",
+                    "--sandbox_dataset_prefix",
+                    "mhilderbran_us_tn_classification",
+                    "auto",
+                    "--load_changed_views_only",
+                ],
+            ):
+                parse_arguments()
+
+    def test_prefix_with_state_code_and_matching_filter_passes(self) -> None:
+        with patch(
+            "sys.argv",
+            [
+                "load_views_to_sandbox",
+                "--sandbox_dataset_prefix",
+                "mhilderbran_us_tn_classification",
+                "--state_code_filter",
+                "US_TN",
+                "auto",
+                "--load_changed_views_only",
+            ],
+        ):
+            args = parse_arguments()
+        self.assertEqual(
+            args.sandbox_dataset_prefix, "mhilderbran_us_tn_classification"
+        )
+        self.assertEqual(args.state_code_filter, StateCode.US_TN)
+
+    def test_prefix_with_state_code_and_mismatched_filter_errors(self) -> None:
+        with self.assertRaises(SystemExit):
+            with patch(
+                "sys.argv",
+                [
+                    "load_views_to_sandbox",
+                    "--sandbox_dataset_prefix",
+                    "mhilderbran_us_tn_classification",
+                    "--state_code_filter",
+                    "US_ND",
+                    "auto",
+                    "--load_changed_views_only",
+                ],
+            ):
+                parse_arguments()
+
+
+class TestValidateSandboxPrefixStateCodes(unittest.TestCase):
+    """Tests for validate_sandbox_prefix_state_codes()."""
+
+    def test_no_state_code_in_prefix(self) -> None:
+        validate_sandbox_prefix_state_codes("my_prefix", None)
+        validate_sandbox_prefix_state_codes("my_prefix", StateCode.US_XX)
+
+    def test_state_code_with_no_filter_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"contains state code"):
+            validate_sandbox_prefix_state_codes("my_us_tn_prefix", None)
+
+    def test_state_code_with_matching_filter_passes(self) -> None:
+        validate_sandbox_prefix_state_codes("my_us_tn_prefix", StateCode.US_TN)
+
+    def test_state_code_with_mismatched_filter_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"doesn't match"):
+            validate_sandbox_prefix_state_codes("my_us_tn_prefix", StateCode.US_ND)
+
+    def test_multiple_state_codes_in_prefix_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"multiple state codes"):
+            validate_sandbox_prefix_state_codes(
+                "us_tn_something_us_nd", StateCode.US_TN
+            )

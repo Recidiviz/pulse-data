@@ -172,7 +172,7 @@ from recidiviz.big_query.view_update_manager_utils import (
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import StateCode, find_state_codes_in_str
 from recidiviz.common.git import (
     get_hash_of_data_platform_version,
     is_commit_in_current_branch,
@@ -202,6 +202,42 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 from recidiviz.view_registry.execute_update_all_managed_views import (
     PER_VIEW_UPDATE_STATS_TABLE_ADDRESS,
 )
+
+
+def validate_sandbox_prefix_state_codes(
+    sandbox_dataset_prefix: str,
+    state_code_filter: StateCode | None,
+) -> None:
+    """Raises ValueError if the prefix contains state codes that would cause
+    ambiguous state detection in sandboxed dataset names.
+    """
+    prefix_state_codes = find_state_codes_in_str(sandbox_dataset_prefix)
+    if not prefix_state_codes:
+        return
+
+    if len(prefix_state_codes) > 1:
+        raise ValueError(
+            f"Sandbox prefix {sandbox_dataset_prefix!r} contains multiple state "
+            f"codes {sorted(s.value for s in prefix_state_codes)}. Use a prefix "
+            f"with at most one state code."
+        )
+
+    if state_code_filter is None:
+        raise ValueError(
+            f"Sandbox prefix {sandbox_dataset_prefix!r} contains state code "
+            f"{one(prefix_state_codes).value}, which will cause errors when "
+            f"loading views for other states. Use --state_code_filter to restrict "
+            f"to a single state, or choose a prefix without a state code."
+        )
+
+    prefix_state_code = one(prefix_state_codes)
+    if prefix_state_code != state_code_filter:
+        raise ValueError(
+            f"Sandbox prefix {sandbox_dataset_prefix!r} contains state code "
+            f"{prefix_state_code.value} that doesn't match the "
+            f"--state_code_filter {state_code_filter.value}. Use a prefix without "
+            f"a state code, or set --state_code_filter to match the prefix."
+        )
 
 
 def load_all_views_to_sandbox(
@@ -1218,6 +1254,8 @@ def load_collected_views_to_sandbox(
         logging.warning("Did not find any views to load to the sandbox. Exiting.")
         return
 
+    validate_sandbox_prefix_state_codes(sandbox_dataset_prefix, state_code_filter)
+
     if schemas_only and state_code_filter:
         raise ValueError(
             "Cannot set both `schemas_only` and `state_code_filter` to true."
@@ -1547,7 +1585,16 @@ def parse_arguments() -> argparse.Namespace:
 
     subparsers.add_parser("all")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    try:
+        validate_sandbox_prefix_state_codes(
+            args.sandbox_dataset_prefix, args.state_code_filter
+        )
+    except ValueError as e:
+        parser.error(str(e))
+
+    return args
 
 
 def _parse_input_source_table_dataset_overrides(
