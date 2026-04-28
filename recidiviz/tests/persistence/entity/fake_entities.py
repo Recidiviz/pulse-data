@@ -22,9 +22,9 @@ import attr
 from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.base_entity import (
     Entity,
-    ExternalIdEntity,
     HasMultipleExternalIdsEntity,
     RootEntity,
+    StateExternalIdEntity,
 )
 
 
@@ -56,7 +56,7 @@ class FakePerson(
 
 
 @attr.define
-class FakePersonExternalId(ExternalIdEntity, Entity):
+class FakePersonExternalId(StateExternalIdEntity, Entity):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     fake_person_external_id_id: int | None = attr.ib(validator=attr_validators.is_int)

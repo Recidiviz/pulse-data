@@ -152,10 +152,10 @@ from recidiviz.common.state_exempted_attrs_validator import state_exempted_valid
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
-    ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
     RootEntity,
+    StateExternalIdEntity,
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
@@ -275,7 +275,7 @@ class IsNormalizedStaffBackedgeValidator(EntityBackedgeValidator):
 
 
 @attr.s(eq=False, kw_only=True)
-class NormalizedStatePersonExternalId(NormalizedStateEntity, ExternalIdEntity):
+class NormalizedStatePersonExternalId(NormalizedStateEntity, StateExternalIdEntity):
     """Models an external id associated with a particular StatePerson."""
 
     # Primary key
@@ -3633,7 +3633,7 @@ class NormalizedStatePerson(
 
 
 @attr.s(eq=False, kw_only=True)
-class NormalizedStateStaffExternalId(NormalizedStateEntity, ExternalIdEntity):
+class NormalizedStateStaffExternalId(NormalizedStateEntity, StateExternalIdEntity):
     """Models an external id associated with a particular StateStaff."""
 
     # Attributes

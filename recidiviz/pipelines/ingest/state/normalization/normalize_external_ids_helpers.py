@@ -19,14 +19,17 @@ import datetime
 
 from more_itertools import one
 
-from recidiviz.persistence.entity.base_entity import ExternalIdEntityT
+from recidiviz.persistence.entity.base_entity import (
+    ExternalIdEntityT,
+    StateExternalIdEntityT,
+)
 
 
 def select_most_recently_active_external_id(
-    external_ids: list[ExternalIdEntityT],
+    external_ids: list[StateExternalIdEntityT],
     enforce_nonnull_id_active_from: bool = True,
-) -> ExternalIdEntityT:
-    """Given a list of ExternalIdEntity all with the same id_type, returns the one that
+) -> StateExternalIdEntityT:
+    """Given a list of StateExternalIdEntity all with the same id_type, returns the one that
     was active most recently, using the (id_active_from_datetime and
     id_active_to_datetime) dates.
 
@@ -38,10 +41,10 @@ def select_most_recently_active_external_id(
 
 
 def select_least_recently_active_external_id(
-    external_ids: list[ExternalIdEntityT],
+    external_ids: list[StateExternalIdEntityT],
     enforce_nonnull_id_active_from: bool = True,
-) -> ExternalIdEntityT:
-    """Given a list of ExternalIdEntity all with the same id_type, returns the one that
+) -> StateExternalIdEntityT:
+    """Given a list of StateExternalIdEntity all with the same id_type, returns the one that
     was active least recently, using the (id_active_from_datetime and
     id_active_to_datetime) dates.
 
@@ -53,9 +56,9 @@ def select_least_recently_active_external_id(
 
 
 def _sort_external_ids_of_type_by_id_active_dates(
-    external_ids: list[ExternalIdEntityT], enforce_nonnull_id_active_from: bool
-) -> list[ExternalIdEntityT]:
-    """Given a list of ExternalIdEntity all with the same id_type, sorts the list from
+    external_ids: list[StateExternalIdEntityT], enforce_nonnull_id_active_from: bool
+) -> list[StateExternalIdEntityT]:
+    """Given a list of StateExternalIdEntity all with the same id_type, sorts the list from
     least recently to most recently active, using the (id_active_from_datetime and
     id_active_to_datetime) dates.
 
@@ -81,7 +84,7 @@ def _sort_external_ids_of_type_by_id_active_dates(
         found_external_ids.add(ei.external_id)
 
     def sort_key(
-        e: ExternalIdEntityT,
+        e: StateExternalIdEntityT,
     ) -> tuple[datetime.datetime, datetime.datetime | None, str]:
         if not enforce_nonnull_id_active_from and e.id_active_from_datetime is None:
             id_active_from_datetime = datetime.datetime.min
@@ -177,8 +180,8 @@ def _sort_external_ids_alphabetically(
 
 
 def select_single_external_id_with_is_current_display_id(
-    external_ids: list[ExternalIdEntityT],
-) -> ExternalIdEntityT:
+    external_ids: list[StateExternalIdEntityT],
+) -> StateExternalIdEntityT:
     """Given a list of ExternalIdEntity all with the same id_type, returns the single
     one with is_current_display_id_for_type=True.
 
@@ -250,8 +253,8 @@ def select_single_external_id_with_is_current_display_id(
 
 
 def select_single_external_id_with_is_stable_id(
-    external_ids: list[ExternalIdEntityT],
-) -> ExternalIdEntityT:
+    external_ids: list[StateExternalIdEntityT],
+) -> StateExternalIdEntityT:
     """Given a list of ExternalIdEntity all with the same id_type, returns the single
     one with is_stable_id_for_type=True.
 

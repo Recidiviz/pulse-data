@@ -185,12 +185,23 @@ class ExternalIdEntity(Entity):
     external_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     id_type: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
-    is_current_display_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
-    is_stable_id_for_type: bool | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_bool
-    )
+    # Consider ExternalIdEntity abstract and only allow instantiating subclasses
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
+        if cls is ExternalIdEntity:
+            raise NotImplementedError("Abstract class cannot be instantiated")
+        return super().__new__(cls)
+
+
+ExternalIdEntityT = TypeVar("ExternalIdEntityT", bound=ExternalIdEntity)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateExternalIdEntity(ExternalIdEntity):
+    """An ExternalIdEntity subclass for state ingest pipelines, carrying additional
+    fields that represent ingest-pipeline-specific normalization concepts (display
+    and stability flags used during ID normalization).
+    """
+
     id_active_from_datetime: datetime.datetime | None = attr.ib(
         default=None,
         validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
@@ -200,14 +211,21 @@ class ExternalIdEntity(Entity):
         validator=STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
     )
 
-    # Consider ExternalIdEntity abstract and only allow instantiating subclasses
+    is_current_display_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    is_stable_id_for_type: bool | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
+    # Consider StateExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls: Any, *_: Any, **__: Any) -> Any:
-        if cls is ExternalIdEntity:
+        if cls is StateExternalIdEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
 
-ExternalIdEntityT = TypeVar("ExternalIdEntityT", bound=ExternalIdEntity)
+StateExternalIdEntityT = TypeVar("StateExternalIdEntityT", bound=StateExternalIdEntity)
 
 
 @attr.s(eq=False, kw_only=True)

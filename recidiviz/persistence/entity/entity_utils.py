@@ -58,6 +58,7 @@ from recidiviz.persistence.entity.base_entity import (
     HasExternalIdEntityT,
     HasMultipleExternalIdsEntity,
     RootEntity,
+    StateExternalIdEntity,
 )
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
@@ -81,6 +82,7 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 Entity,
                 HasExternalIdEntity,
                 ExternalIdEntity,
+                StateExternalIdEntity,
                 HasMultipleExternalIdsEntity,
                 EnumEntity,
                 LedgerEntityMixin,

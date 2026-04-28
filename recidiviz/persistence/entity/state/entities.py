@@ -151,10 +151,10 @@ from recidiviz.common.state_exempted_attrs_validator import state_exempted_valid
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
-    ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
     RootEntity,
+    StateExternalIdEntity,
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.state.entity_field_validators import (
@@ -366,7 +366,7 @@ class StatePersonHousingStatusPeriod(
 
 @attr.s(eq=False, kw_only=True)
 class StatePersonExternalId(
-    StateEntityMixin, ExternalIdEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, StateExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """
     Each StatePersonExternalId holds a single external id provided by the source data system being
@@ -2740,7 +2740,7 @@ class StatePersonStaffRelationshipPeriod(
 
 @attr.s(eq=False, kw_only=True)
 class StateStaffExternalId(
-    StateEntityMixin, ExternalIdEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, StateExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """
     Each StateStaffExternalId holds a single external id for a given
