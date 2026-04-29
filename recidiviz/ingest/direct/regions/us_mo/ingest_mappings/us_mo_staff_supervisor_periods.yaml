@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `staff_supervisor_periods` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  badge_number: STRING
+  supervisor_badge_number: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: badge_number
+          id_type: $literal("US_MO_STAFF_BADGE_NUMBER")
+    supervisor_periods:
+      - StateStaffSupervisorPeriod:
+          external_id:
+            $concat:
+              $values:
+                - badge_number
+                - start_date
+          supervisor_staff_external_id: supervisor_badge_number
+          supervisor_staff_external_id_type: $literal("US_MO_STAFF_BADGE_NUMBER")
+          start_date: start_date
+          end_date: end_date

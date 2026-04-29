@@ -315,7 +315,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         "ViolationsAndSanctions": ["sanctions_groupings"],
     },
     StateCode.US_MO: {
-        "supervision_staff": ["APFX_ALL"],
         "tak158_tak026_incarceration_periods": [
             "all_sub_sub_cycle_critical_dates",
             "most_recent_status_updates",

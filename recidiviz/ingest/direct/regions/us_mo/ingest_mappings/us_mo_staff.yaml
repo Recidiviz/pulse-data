@@ -5,6 +5,7 @@ input_columns:
   FNAME: STRING
   MINTL: STRING
   LNAME: STRING
+  email: STRING
 unused_columns: []
 output:
   StateStaff:
@@ -20,4 +21,4 @@ output:
         $given_names: FNAME
         $middle_names: MINTL
         $surname: LNAME
-    # TODO(#21867): Ingest emails when we find a table linking badge numbers to email addresses
+    email: email
