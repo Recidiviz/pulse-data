@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_ORAS_prerelease_assessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  pkOrasScoreEntryId: STRING
+  inmateNumber: STRING
+  assessmentDate: STRING
+  assessmentType: STRING
+  totalScore: STRING
+  overallRiskLevel: STRING
+  unableToCompleteCode: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - pkOrasScoreEntryId
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: assessmentType
+              $mappings:
+                StateAssessmentType.ORAS_REENTRY:
+                  - ORAS-RT
+                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY:
+                  - ORAS-SRT
+          assessment_date: assessmentDate
+          assessment_score: totalScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text: overallRiskLevel
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - LOW
+                StateAssessmentLevel.MODERATE:
+                  - MOD
+                StateAssessmentLevel.HIGH:
+                  - HIGH
+          assessment_metadata:
+            $normalized_values_json_dict:
+              UNABLE_TO_COMPLETE_CODE: unableToCompleteCode
