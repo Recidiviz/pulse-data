@@ -129,8 +129,10 @@ output:
                   - OV2@@Office
                   - OV@@Agent-Visit-Office
                   - TCH@@Technician Contact at Parole Office
+                  - OF@@Office
                 StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
                   - EMP@@Agent-Visit-Employment
+                  - EM2@@Employment Visit
                 StateSupervisionContactLocation.JAIL:
                   - JV2@@County Jail Visit
                   - HW2@@CCC Visit
@@ -176,6 +178,14 @@ output:
                   - YDR@@Legacy Drive Request (CDOC_DRIVE_REQ)
                   - NR@@Non-Relative Resd.
                   - FM@@Family Member Resd.
+                  - SAS@@Sure and Swift Generated
+                  - DA@@District  Attorney
+                  - DT@@Drug Test
+                  - DT4@@Drug Test Missed
+                  - LSI@@LSI Generated
+                  - STP@@SOTP Referral
+                  - YPP@@Legacy Presumptive Parole (CDOC_PPD)
+                  - YSU@@Legacy Supervision Plans (CDOC_SUPERVISION)
                 StateSupervisionContactLocation.COURT:
                   - CT2@@Court Visit
                   - CT@@Agent-Visit-Court
