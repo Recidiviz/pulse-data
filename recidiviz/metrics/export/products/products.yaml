@@ -43,8 +43,6 @@ products:
         environment: production
       - state_code: US_IA
         environment: production
-      - state_code: US_IX
-        environment: production
       - state_code: US_ME
         environment: production
       - state_code: US_MO
@@ -67,6 +65,8 @@ products:
     exports:
       - INCARCERATION_AND_SUPERVISION_PRODUCT_USER_IMPORT
     states:
+      - state_code: US_IX
+        environment: production
       - state_code: US_MI
         environment: production
   - name: Public Dashboard
