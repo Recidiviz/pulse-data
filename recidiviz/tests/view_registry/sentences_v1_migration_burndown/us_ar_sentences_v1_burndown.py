@@ -20,12 +20,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     RESIDENT_RECORD_VIEW_BUILDER,
 )
@@ -41,11 +35,6 @@ US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     str, dict[BigQueryAddress, dict[BigQueryAddress, set[BigQueryAddress]]]
 ] = {
     "WORKFLOWS_FIRESTORE": {
-        CLIENT_RECORD_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_AR_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,

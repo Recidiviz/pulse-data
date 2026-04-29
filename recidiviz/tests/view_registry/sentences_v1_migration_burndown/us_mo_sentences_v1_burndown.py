@@ -26,12 +26,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closes
 from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
-)
 
 # For each US_MO metric export, for each product view in that export, a mapping of
 #   deprecated v1 sentences views that are a) referenced directly without going through
@@ -47,13 +41,6 @@ US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
             SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
                 LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "WORKFLOWS_FIRESTORE": {
-        CLIENT_RECORD_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
     },

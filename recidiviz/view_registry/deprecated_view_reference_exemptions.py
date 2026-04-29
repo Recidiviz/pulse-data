@@ -85,6 +85,9 @@ from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -105,6 +108,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentence_status
 )
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
+    state_specific_supervision_projected_completion_date_spans_address,
 )
 from recidiviz.calculator.query.state.views.shared_metric.single_day_incarceration_population_for_spotlight import (
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
@@ -910,10 +916,16 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address: (
             "TODO(#46255): Remove this reference as part of the v2 sentences migration"
         ),
-        CLIENT_RECORD_VIEW_BUILDER.address: (
-            "TODO(#33402): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
+        **{
+            state_specific_supervision_projected_completion_date_spans_address(
+                StateCode(state_code_str)
+            ): (
+                "TODO(#46252): State-specific wrapper around deprecated v1 view, "
+                "will be removed when the state associated with this view migrates to "
+                "v2 sentences"
+            )
+            for state_code_str in STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA
+        },
         SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"

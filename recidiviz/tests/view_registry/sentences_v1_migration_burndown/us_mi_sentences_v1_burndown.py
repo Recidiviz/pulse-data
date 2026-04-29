@@ -35,12 +35,16 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
+    state_specific_supervision_projected_completion_date_spans_address,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_discharge_early_from_supervision_request_record import (
     US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.criteria.general.serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state import (
     VIEW_BUILDER as SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER,
 )
@@ -55,7 +59,9 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "INSIGHTS": {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_MI
+                ),
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,
@@ -72,7 +78,9 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_MI
+                ),
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
@@ -83,14 +91,18 @@ US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_MI
+                ),
             },
         },
     },
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_MI
+                ),
             },
         },
         US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address: {

@@ -24,23 +24,8 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ar_sentenc
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_az_sentences_v1_burndown import (
     US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ca_sentences_v1_burndown import (
-    US_CA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_co_sentences_v1_burndown import (
-    US_CO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ia_sentences_v1_burndown import (
-    US_IA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ix_sentences_v1_burndown import (
     US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ma_sentences_v1_burndown import (
-    US_MA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_me_sentences_v1_burndown import (
-    US_ME_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mi_sentences_v1_burndown import (
     US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
@@ -48,14 +33,8 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mi_sentenc
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_mo_sentences_v1_burndown import (
     US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nc_sentences_v1_burndown import (
-    US_NC_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_nd_sentences_v1_burndown import (
     US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ne_sentences_v1_burndown import (
-    US_NE_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ny_sentences_v1_burndown import (
     US_NY_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
@@ -65,12 +44,6 @@ from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_pa_sentenc
 )
 from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_tn_sentences_v1_burndown import (
     US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_tx_sentences_v1_burndown import (
-    US_TX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-)
-from recidiviz.tests.view_registry.sentences_v1_migration_burndown.us_ut_sentences_v1_burndown import (
-    US_UT_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -89,22 +62,13 @@ _SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
 ] = {
     StateCode.US_AR: US_AR_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_AZ: US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_CA: US_CA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_CO: US_CO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_IA: US_IA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_IX: US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_MA: US_MA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_ME: US_ME_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MI: US_MI_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_MO: US_MO_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_NC: US_NC_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_ND: US_ND_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_NE: US_NE_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_NY: US_NY_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_PA: US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
     StateCode.US_TN: US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_TX: US_TX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
-    StateCode.US_UT: US_UT_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS,
 }
 
 

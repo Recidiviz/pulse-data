@@ -53,6 +53,9 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
+    state_specific_supervision_projected_completion_date_spans_address,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
@@ -108,7 +111,9 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_TN
+                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -140,7 +145,9 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_TN
+                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -172,7 +179,9 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_TN
+                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -201,7 +210,9 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_TN
+                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -257,7 +268,9 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "MEETINGS": {
         MEETINGS_CLIENTS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_TN
+                ),
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,

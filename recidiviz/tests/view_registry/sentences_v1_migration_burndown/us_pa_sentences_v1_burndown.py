@@ -62,6 +62,9 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
+    state_specific_supervision_projected_completion_date_spans_address,
+)
 from recidiviz.calculator.query.state.views.shared_metric.single_day_incarceration_population_for_spotlight import (
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
@@ -102,7 +105,9 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "INSIGHTS": {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_PA
+                ),
             },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 # TODO(#50859): migrate these usages to sentence_sessions
@@ -141,7 +146,9 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_PA
+                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
@@ -167,7 +174,9 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_PA
+                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_PA),
@@ -248,7 +257,9 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_PA
+                ),
             },
         },
         # TODO(#50859): migrate these usages to sentence_sessions

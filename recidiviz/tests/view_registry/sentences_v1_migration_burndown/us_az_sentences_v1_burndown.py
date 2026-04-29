@@ -47,12 +47,6 @@ from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     RESIDENT_RECORD_VIEW_BUILDER,
 )
@@ -146,9 +140,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
             },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
@@ -189,9 +180,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
             },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
@@ -231,9 +219,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER.address,
                 US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
     },
@@ -317,11 +302,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
             },
         },
-        CLIENT_RECORD_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
             CHARGES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_AZ_NO_ARSON_CONVICTION_VIEW_BUILDER.address,
@@ -370,9 +350,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             SENTENCES_PREPROCESSED_VIEW_BUILDER.address: {
                 US_AZ_NO_INELIGIBLE_OFFENSE_CONVICTION_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
         MEETINGS_RESIDENTS_VIEW_BUILDER.address: {
@@ -485,9 +462,6 @@ US_AZ_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_AZ_NOT_SERVING_FLAT_SENTENCE_VIEW_BUILDER.address,
                 US_AZ_NOT_SERVING_EXPANDED_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION_VIEW_BUILDER.address,
                 US_AZ_ONLY_DRUG_OFFENSE_CONVICTIONS_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
     },

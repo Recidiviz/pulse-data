@@ -83,6 +83,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_projected_compl
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sentences_preprocessed import (
     US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
+    state_specific_supervision_projected_completion_date_spans_address,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
@@ -132,7 +135,9 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "INSIGHTS": {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_IX
+                ),
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
@@ -173,7 +178,9 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_IX
+                ),
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
@@ -206,7 +213,9 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_IX
+                ),
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
@@ -243,7 +252,9 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "JII_TEXTING": {
         JII_TO_TEXT_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_IX
+                ),
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
@@ -293,7 +304,9 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_IX
+                ),
             },
         },
         RESIDENT_RECORD_VIEW_BUILDER.address: {
@@ -425,7 +438,9 @@ US_IX_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
                 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER.address,
                 US_IX_SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address,
-                CLIENT_RECORD_VIEW_BUILDER.address,
+                state_specific_supervision_projected_completion_date_spans_address(
+                    StateCode.US_IX
+                ),
                 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
                 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
             },
