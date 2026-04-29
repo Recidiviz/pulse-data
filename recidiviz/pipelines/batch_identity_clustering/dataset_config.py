@@ -16,7 +16,7 @@
 # =============================================================================
 """Helpers for getting batch identity clustering pipeline datasets."""
 
-# The BigQuery dataset where the Batch Identity Clustering DAG writes its
+# The BigQuery dataset where the batch identity clustering DAG writes its
 # clustering results (clusters, external_ids, names, dates_of_birth, etc.).
 # Consumed exclusively by the Identity Service's POST /import endpoint.
 BATCH_IDENTITY_CLUSTERING_DATASET = "batch_identity_clustering"

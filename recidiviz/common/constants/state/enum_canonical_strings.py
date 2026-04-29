@@ -317,12 +317,25 @@ state_person_housing_status_type_temporary_or_supportive_housing = (
 state_person_housing_status_type_permanent_residence = "PERMANENT_RESIDENCE"
 state_person_housing_status_type_facility = "FACILITY"
 
-# state_person_alias.py
-state_person_alias_alias_type_affiliation_name = "AFFILIATION_NAME"
-state_person_alias_alias_type_alias = "ALIAS"
-state_person_alias_alias_type_given_name = "GIVEN_NAME"
-state_person_alias_alias_type_maiden_name = "MAIDEN_NAME"
-state_person_alias_alias_type_nickname = "NICKNAME"
+# Re-exported for backwards compatibility, as these names are used by callers of this module.
+# pylint: disable=wrong-import-position,unused-import
+from recidiviz.common.alias_type_strings import (
+    alias_type_affiliation_name as state_person_alias_alias_type_affiliation_name,
+)
+from recidiviz.common.alias_type_strings import (
+    alias_type_alias as state_person_alias_alias_type_alias,
+)
+from recidiviz.common.alias_type_strings import (
+    alias_type_given_name as state_person_alias_alias_type_given_name,
+)
+from recidiviz.common.alias_type_strings import (
+    alias_type_maiden_name as state_person_alias_alias_type_maiden_name,
+)
+from recidiviz.common.alias_type_strings import (
+    alias_type_nickname as state_person_alias_alias_type_nickname,
+)
+
+# pylint: enable=wrong-import-position,unused-import
 
 
 state_residency_status_homeless = "HOMELESS"

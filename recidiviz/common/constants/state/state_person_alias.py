@@ -20,16 +20,17 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
+from recidiviz.common import alias_type_strings
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
 @unique
 class StatePersonAliasType(StateEntityEnum):
-    AFFILIATION_NAME = state_enum_strings.state_person_alias_alias_type_affiliation_name
-    ALIAS = state_enum_strings.state_person_alias_alias_type_alias
-    GIVEN_NAME = state_enum_strings.state_person_alias_alias_type_given_name
-    MAIDEN_NAME = state_enum_strings.state_person_alias_alias_type_maiden_name
-    NICKNAME = state_enum_strings.state_person_alias_alias_type_nickname
+    AFFILIATION_NAME = alias_type_strings.alias_type_affiliation_name
+    ALIAS = alias_type_strings.alias_type_alias
+    GIVEN_NAME = alias_type_strings.alias_type_given_name
+    MAIDEN_NAME = alias_type_strings.alias_type_maiden_name
+    NICKNAME = alias_type_strings.alias_type_nickname
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 

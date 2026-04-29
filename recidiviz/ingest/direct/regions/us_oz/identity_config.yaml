@@ -1,4 +1,4 @@
-# Per-person-type configuration for the Batch Identity Clustering pipeline for US_OZ.
+# Per-person-type configuration for the batch identity clustering pipeline for US_OZ.
 #
 # max_ids_per_type_overrides: The maximum number of external IDs of a given type a
 # person can have before that ID value is assumed to be a sentinel with no real ID

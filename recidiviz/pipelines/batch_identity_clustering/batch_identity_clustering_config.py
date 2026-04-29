@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Config loader for the Batch Identity Clustering pipeline."""
+"""Config loader for the batch identity clustering pipeline."""
 import glob
 import os
 
@@ -37,7 +37,7 @@ _DEFAULT_MAX_IDS_PER_TYPE = 1
 
 @attr.define(frozen=True)
 class BatchIdentityClusteringTenantConfig:
-    """Per-tenant, per-person-type configuration for the Batch Identity Clustering pipeline."""
+    """Per-tenant, per-person-type configuration for the batch identity clustering pipeline."""
 
     # Overrides for the maximum number of external IDs of a given type a person can
     # have before that ID value is assumed to be a sentinel with no real ID meaning.
@@ -55,7 +55,7 @@ class BatchIdentityClusteringTenantConfig:
 
 @attr.define(frozen=True)
 class BatchIdentityClusteringConfig:
-    """Top-level configuration for the Batch Identity Clustering pipeline, parsed from YAML."""
+    """Top-level configuration for the batch identity clustering pipeline, parsed from YAML."""
 
     default_config: BatchIdentityClusteringTenantConfig
     tenant_configs: dict[tuple[str, PersonType], BatchIdentityClusteringTenantConfig]

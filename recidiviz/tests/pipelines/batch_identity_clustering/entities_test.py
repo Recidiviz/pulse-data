@@ -19,126 +19,299 @@ import datetime
 import pickle
 import unittest
 
-from recidiviz.common.demographics import Gender, Race
+from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.pipelines.batch_identity_clustering.entities import (
+    IdentityAttributes,
+    IdentityEmail,
+    IdentityEthnicity,
+    IdentityExternalId,
     IdentityFragment,
-    IdentityFragmentEmail,
-    IdentityFragmentExternalId,
-    IdentityFragmentName,
-    IdentityFragmentPhoneNumber,
-    IdentityFragmentRace,
+    IdentityGender,
+    IdentityName,
+    IdentityPhoneNumber,
+    IdentityRace,
+    IdentitySex,
 )
 
-_EXTERNAL_ID = IdentityFragmentExternalId(
-    external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+_TENANT = "US_OZ"
+
+_EXTERNAL_ID = IdentityExternalId(
+    tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
 )
-_NAME = IdentityFragmentName(
-    given_name="John", surname="Doe", middle_name="Q", name_suffix="Jr"
+_NAME = IdentityName(
+    tenant=_TENANT, given_name="John", surname="Doe", middle_name="Q", name_suffix="Jr"
 )
-_RACE = IdentityFragmentRace(race=Race.WHITE)
-_PHONE = IdentityFragmentPhoneNumber(number="5550100001")
-_EMAIL = IdentityFragmentEmail(address="john@example.com")
+_GENDER = IdentityGender(tenant=_TENANT, gender=Gender.MALE)
+_SEX = IdentitySex(tenant=_TENANT, sex=Sex.MALE)
+_RACE = IdentityRace(tenant=_TENANT, race=Race.WHITE)
+_ETHNICITY = IdentityEthnicity(tenant=_TENANT, ethnicity=Ethnicity.HISPANIC)
+_PHONE = IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
+_EMAIL = IdentityEmail(tenant=_TENANT, address="john@example.com")
 
 
-class TestIdentityFragmentExternalId(unittest.TestCase):
-    """Tests the IdentityFragmentExternalId entity."""
+class TestIdentityExternalId(unittest.TestCase):
+    """Tests the IdentityExternalId entity."""
 
     def test_equality(self) -> None:
         self.assertEqual(
-            IdentityFragmentExternalId(external_id="EXT_001", id_type="US_OZ_ID_TYPE"),
-            IdentityFragmentExternalId(external_id="EXT_001", id_type="US_OZ_ID_TYPE"),
+            IdentityExternalId(
+                tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+            ),
+            IdentityExternalId(
+                tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+            ),
         )
 
     def test_inequality(self) -> None:
         self.assertNotEqual(
-            IdentityFragmentExternalId(external_id="EXT_001", id_type="US_OZ_ID_TYPE"),
-            IdentityFragmentExternalId(external_id="EXT_002", id_type="US_OZ_ID_TYPE"),
+            IdentityExternalId(
+                tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+            ),
+            IdentityExternalId(
+                tenant=_TENANT, external_id="EXT_002", id_type="US_OZ_ID_TYPE"
+            ),
         )
 
     def test_pickle_roundtrip(self) -> None:
         self.assertEqual(_EXTERNAL_ID, pickle.loads(pickle.dumps(_EXTERNAL_ID)))
 
 
-class TestIdentityFragmentRace(unittest.TestCase):
-    """Tests the IdentityFragmentRace entity."""
+class TestIdentityName(unittest.TestCase):
+    """Tests the IdentityName entity."""
 
     def test_equality(self) -> None:
         self.assertEqual(
-            IdentityFragmentRace(race=Race.WHITE),
-            IdentityFragmentRace(race=Race.WHITE),
+            IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
+            IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
         )
 
     def test_inequality(self) -> None:
         self.assertNotEqual(
-            IdentityFragmentRace(race=Race.WHITE),
-            IdentityFragmentRace(race=Race.BLACK),
+            IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
+            IdentityName(tenant=_TENANT, given_name="Jane", surname="Doe"),
+        )
+
+    def test_inequality_different_preferred_name(self) -> None:
+        self.assertNotEqual(
+            IdentityName(tenant=_TENANT, given_name="John", preferred_name="Johnny"),
+            IdentityName(tenant=_TENANT, given_name="John", preferred_name="JJ"),
+        )
+
+    def test_pickle_roundtrip(self) -> None:
+        self.assertEqual(_NAME, pickle.loads(pickle.dumps(_NAME)))
+
+
+class TestIdentityGender(unittest.TestCase):
+    """Tests the IdentityGender entity."""
+
+    def test_equality(self) -> None:
+        self.assertEqual(
+            IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+            IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+        )
+
+    def test_inequality(self) -> None:
+        self.assertNotEqual(
+            IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+            IdentityGender(tenant=_TENANT, gender=Gender.FEMALE),
         )
 
     def test_inequality_different_raw_text(self) -> None:
         self.assertNotEqual(
-            IdentityFragmentRace(race=Race.WHITE, race_raw_text="W"),
-            IdentityFragmentRace(race=Race.WHITE, race_raw_text="WHITE"),
+            IdentityGender(tenant=_TENANT, gender=Gender.MALE, gender_raw_text="M"),
+            IdentityGender(tenant=_TENANT, gender=Gender.MALE, gender_raw_text="MALE"),
+        )
+
+    def test_pickle_roundtrip(self) -> None:
+        self.assertEqual(_GENDER, pickle.loads(pickle.dumps(_GENDER)))
+
+
+class TestIdentitySex(unittest.TestCase):
+    """Tests the IdentitySex entity."""
+
+    def test_equality(self) -> None:
+        self.assertEqual(
+            IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+            IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+        )
+
+    def test_inequality(self) -> None:
+        self.assertNotEqual(
+            IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+            IdentitySex(tenant=_TENANT, sex=Sex.FEMALE),
+        )
+
+    def test_inequality_different_raw_text(self) -> None:
+        self.assertNotEqual(
+            IdentitySex(tenant=_TENANT, sex=Sex.MALE, sex_raw_text="M"),
+            IdentitySex(tenant=_TENANT, sex=Sex.MALE, sex_raw_text="MALE"),
+        )
+
+    def test_pickle_roundtrip(self) -> None:
+        self.assertEqual(_SEX, pickle.loads(pickle.dumps(_SEX)))
+
+
+class TestIdentityRace(unittest.TestCase):
+    """Tests the IdentityRace entity."""
+
+    def test_equality(self) -> None:
+        self.assertEqual(
+            IdentityRace(tenant=_TENANT, race=Race.WHITE),
+            IdentityRace(tenant=_TENANT, race=Race.WHITE),
+        )
+
+    def test_inequality(self) -> None:
+        self.assertNotEqual(
+            IdentityRace(tenant=_TENANT, race=Race.WHITE),
+            IdentityRace(tenant=_TENANT, race=Race.BLACK),
+        )
+
+    def test_inequality_different_raw_text(self) -> None:
+        self.assertNotEqual(
+            IdentityRace(tenant=_TENANT, race=Race.WHITE, race_raw_text="W"),
+            IdentityRace(tenant=_TENANT, race=Race.WHITE, race_raw_text="WHITE"),
         )
 
     def test_pickle_roundtrip(self) -> None:
         self.assertEqual(_RACE, pickle.loads(pickle.dumps(_RACE)))
 
 
-class TestIdentityFragmentPhoneNumber(unittest.TestCase):
-    """Tests the IdentityFragmentPhoneNumber entity."""
+class TestIdentityEthnicity(unittest.TestCase):
+    """Tests the IdentityEthnicity entity."""
 
     def test_equality(self) -> None:
         self.assertEqual(
-            IdentityFragmentPhoneNumber(number="5550100001"),
-            IdentityFragmentPhoneNumber(number="5550100001"),
+            IdentityEthnicity(tenant=_TENANT, ethnicity=Ethnicity.HISPANIC),
+            IdentityEthnicity(tenant=_TENANT, ethnicity=Ethnicity.HISPANIC),
         )
 
     def test_inequality(self) -> None:
         self.assertNotEqual(
-            IdentityFragmentPhoneNumber(number="5550100001"),
-            IdentityFragmentPhoneNumber(number="5550199999"),
+            IdentityEthnicity(tenant=_TENANT, ethnicity=Ethnicity.HISPANIC),
+            IdentityEthnicity(tenant=_TENANT, ethnicity=Ethnicity.NOT_HISPANIC),
+        )
+
+    def test_inequality_different_raw_text(self) -> None:
+        self.assertNotEqual(
+            IdentityEthnicity(
+                tenant=_TENANT, ethnicity=Ethnicity.HISPANIC, ethnicity_raw_text="H"
+            ),
+            IdentityEthnicity(
+                tenant=_TENANT,
+                ethnicity=Ethnicity.HISPANIC,
+                ethnicity_raw_text="HISPANIC",
+            ),
+        )
+
+    def test_pickle_roundtrip(self) -> None:
+        self.assertEqual(_ETHNICITY, pickle.loads(pickle.dumps(_ETHNICITY)))
+
+
+class TestIdentityPhoneNumber(unittest.TestCase):
+    """Tests the IdentityPhoneNumber entity."""
+
+    def test_equality(self) -> None:
+        self.assertEqual(
+            IdentityPhoneNumber(tenant=_TENANT, number="5550100001"),
+            IdentityPhoneNumber(tenant=_TENANT, number="5550100001"),
+        )
+
+    def test_inequality(self) -> None:
+        self.assertNotEqual(
+            IdentityPhoneNumber(tenant=_TENANT, number="5550100001"),
+            IdentityPhoneNumber(tenant=_TENANT, number="5550199999"),
         )
 
     def test_pickle_roundtrip(self) -> None:
         self.assertEqual(_PHONE, pickle.loads(pickle.dumps(_PHONE)))
 
 
-class TestIdentityFragmentEmail(unittest.TestCase):
-    """Tests the IdentityFragmentEmail entity."""
+class TestIdentityEmail(unittest.TestCase):
+    """Tests the IdentityEmail entity."""
 
     def test_equality(self) -> None:
         self.assertEqual(
-            IdentityFragmentEmail(address="a@b.com"),
-            IdentityFragmentEmail(address="a@b.com"),
+            IdentityEmail(tenant=_TENANT, address="a@b.com"),
+            IdentityEmail(tenant=_TENANT, address="a@b.com"),
         )
 
     def test_inequality(self) -> None:
         self.assertNotEqual(
-            IdentityFragmentEmail(address="a@b.com"),
-            IdentityFragmentEmail(address="c@b.com"),
+            IdentityEmail(tenant=_TENANT, address="a@b.com"),
+            IdentityEmail(tenant=_TENANT, address="c@b.com"),
         )
 
     def test_pickle_roundtrip(self) -> None:
         self.assertEqual(_EMAIL, pickle.loads(pickle.dumps(_EMAIL)))
 
 
-class TestIdentityFragmentName(unittest.TestCase):
-    """Tests the IdentityFragmentName entity."""
+class TestIdentityAttributes(unittest.TestCase):
+    """Tests the IdentityAttributes entity."""
 
     def test_equality(self) -> None:
         self.assertEqual(
-            IdentityFragmentName(given_name="John", surname="Doe"),
-            IdentityFragmentName(given_name="John", surname="Doe"),
+            IdentityAttributes(
+                tenant=_TENANT,
+                name=_NAME,
+                birthdate=datetime.date(1990, 1, 1),
+                gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+                sex=IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+                races=[IdentityRace(tenant=_TENANT, race=Race.WHITE)],
+                ethnicity=IdentityEthnicity(
+                    tenant=_TENANT, ethnicity=Ethnicity.HISPANIC
+                ),
+                phone_numbers=[
+                    IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
+                ],
+                emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+            ),
+            IdentityAttributes(
+                tenant=_TENANT,
+                name=_NAME,
+                birthdate=datetime.date(1990, 1, 1),
+                gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+                sex=IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+                races=[IdentityRace(tenant=_TENANT, race=Race.WHITE)],
+                ethnicity=IdentityEthnicity(
+                    tenant=_TENANT, ethnicity=Ethnicity.HISPANIC
+                ),
+                phone_numbers=[
+                    IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
+                ],
+                emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+            ),
         )
 
-    def test_inequality(self) -> None:
+    def test_inequality_different_birthdate(self) -> None:
         self.assertNotEqual(
-            IdentityFragmentName(given_name="John", surname="Doe"),
-            IdentityFragmentName(given_name="Jane", surname="Doe"),
+            IdentityAttributes(tenant=_TENANT, birthdate=datetime.date(1990, 1, 1)),
+            IdentityAttributes(tenant=_TENANT, birthdate=datetime.date(1991, 1, 1)),
         )
+
+    def test_defaults(self) -> None:
+        attrs = IdentityAttributes(tenant=_TENANT)
+        self.assertIsNone(attrs.name)
+        self.assertIsNone(attrs.birthdate)
+        self.assertIsNone(attrs.gender)
+        self.assertIsNone(attrs.sex)
+        self.assertEqual(attrs.races, [])
+        self.assertIsNone(attrs.ethnicity)
+        self.assertEqual(attrs.phone_numbers, [])
+        self.assertEqual(attrs.emails, [])
 
     def test_pickle_roundtrip(self) -> None:
-        self.assertEqual(_NAME, pickle.loads(pickle.dumps(_NAME)))
+        attrs = IdentityAttributes(
+            tenant=_TENANT,
+            name=_NAME,
+            birthdate=datetime.date(1990, 1, 1),
+            gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+            sex=IdentitySex(tenant=_TENANT, sex=Sex.MALE),
+            races=[IdentityRace(tenant=_TENANT, race=Race.WHITE)],
+            ethnicity=IdentityEthnicity(tenant=_TENANT, ethnicity=Ethnicity.HISPANIC),
+            phone_numbers=[IdentityPhoneNumber(tenant=_TENANT, number="5550100001")],
+            emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+        )
+        self.assertEqual(attrs, pickle.loads(pickle.dumps(attrs)))
 
 
 class TestIdentityFragment(unittest.TestCase):
@@ -147,56 +320,80 @@ class TestIdentityFragment(unittest.TestCase):
     def test_equality(self) -> None:
         self.assertEqual(
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=_TENANT,
                 external_ids=[
-                    IdentityFragmentExternalId(
-                        external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                    IdentityExternalId(
+                        tenant=_TENANT,
+                        external_id="EXT_001",
+                        id_type="US_OZ_ID_TYPE",
                     )
                 ],
-                name=_NAME,
-                birthdate=datetime.date(1990, 1, 1),
-                gender=Gender.MALE,
-                races=[
-                    IdentityFragmentRace(race=Race.WHITE),
-                    IdentityFragmentRace(race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE),
-                ],
-                phone_numbers=[IdentityFragmentPhoneNumber(number="5550100001")],
-                emails=[IdentityFragmentEmail(address="john@example.com")],
+                attributes=IdentityAttributes(
+                    tenant=_TENANT,
+                    name=_NAME,
+                    birthdate=datetime.date(1990, 1, 1),
+                    gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+                    races=[
+                        IdentityRace(tenant=_TENANT, race=Race.WHITE),
+                        IdentityRace(
+                            tenant=_TENANT,
+                            race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
+                        ),
+                    ],
+                    phone_numbers=[
+                        IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
+                    ],
+                    emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+                ),
             ),
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=_TENANT,
                 external_ids=[
-                    IdentityFragmentExternalId(
-                        external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                    IdentityExternalId(
+                        tenant=_TENANT,
+                        external_id="EXT_001",
+                        id_type="US_OZ_ID_TYPE",
                     )
                 ],
-                name=_NAME,
-                birthdate=datetime.date(1990, 1, 1),
-                gender=Gender.MALE,
-                races=[
-                    IdentityFragmentRace(race=Race.WHITE),
-                    IdentityFragmentRace(race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE),
-                ],
-                phone_numbers=[IdentityFragmentPhoneNumber(number="5550100001")],
-                emails=[IdentityFragmentEmail(address="john@example.com")],
+                attributes=IdentityAttributes(
+                    tenant=_TENANT,
+                    name=_NAME,
+                    birthdate=datetime.date(1990, 1, 1),
+                    gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+                    races=[
+                        IdentityRace(tenant=_TENANT, race=Race.WHITE),
+                        IdentityRace(
+                            tenant=_TENANT,
+                            race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
+                        ),
+                    ],
+                    phone_numbers=[
+                        IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
+                    ],
+                    emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+                ),
             ),
         )
 
     def test_inequality_different_external_id(self) -> None:
         self.assertNotEqual(
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=_TENANT,
                 external_ids=[
-                    IdentityFragmentExternalId(
-                        external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                    IdentityExternalId(
+                        tenant=_TENANT,
+                        external_id="EXT_001",
+                        id_type="US_OZ_ID_TYPE",
                     )
                 ],
             ),
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=_TENANT,
                 external_ids=[
-                    IdentityFragmentExternalId(
-                        external_id="EXT_002", id_type="US_OZ_ID_TYPE"
+                    IdentityExternalId(
+                        tenant=_TENANT,
+                        external_id="EXT_002",
+                        id_type="US_OZ_ID_TYPE",
                     )
                 ],
             ),
@@ -205,44 +402,58 @@ class TestIdentityFragment(unittest.TestCase):
     def test_inequality_different_name(self) -> None:
         self.assertNotEqual(
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=_TENANT,
                 external_ids=[_EXTERNAL_ID],
-                name=IdentityFragmentName(given_name="John", surname="Doe"),
+                attributes=IdentityAttributes(
+                    tenant=_TENANT,
+                    name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
+                ),
             ),
             IdentityFragment(
-                tenant="US_OZ",
+                tenant=_TENANT,
                 external_ids=[_EXTERNAL_ID],
-                name=IdentityFragmentName(given_name="Jane", surname="Doe"),
+                attributes=IdentityAttributes(
+                    tenant=_TENANT,
+                    name=IdentityName(tenant=_TENANT, given_name="Jane", surname="Doe"),
+                ),
             ),
         )
 
     def test_defaults(self) -> None:
-        fragment = IdentityFragment(tenant="US_OZ", external_ids=[_EXTERNAL_ID])
-        self.assertEqual(fragment.tenant, "US_OZ")
-        self.assertIsNone(fragment.name)
-        self.assertIsNone(fragment.birthdate)
-        self.assertIsNone(fragment.gender)
-        self.assertIsNone(fragment.gender_raw_text)
-        self.assertEqual(fragment.races, [])
-        self.assertEqual(fragment.phone_numbers, [])
-        self.assertEqual(fragment.emails, [])
+        fragment = IdentityFragment(tenant=_TENANT, external_ids=[_EXTERNAL_ID])
+        self.assertEqual(fragment.tenant, _TENANT)
+        self.assertIsNone(fragment.attributes.name)
+        self.assertIsNone(fragment.attributes.birthdate)
+        self.assertIsNone(fragment.attributes.gender)
+        self.assertIsNone(fragment.attributes.sex)
+        self.assertEqual(fragment.attributes.races, [])
+        self.assertIsNone(fragment.attributes.ethnicity)
+        self.assertEqual(fragment.attributes.phone_numbers, [])
+        self.assertEqual(fragment.attributes.emails, [])
 
     def test_pickle_roundtrip(self) -> None:
         fragment = IdentityFragment(
-            tenant="US_OZ",
+            tenant=_TENANT,
             external_ids=[
-                IdentityFragmentExternalId(
-                    external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                IdentityExternalId(
+                    tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
                 )
             ],
-            name=_NAME,
-            birthdate=datetime.date(1990, 1, 1),
-            gender=Gender.MALE,
-            races=[
-                IdentityFragmentRace(race=Race.WHITE),
-                IdentityFragmentRace(race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE),
-            ],
-            phone_numbers=[IdentityFragmentPhoneNumber(number="5550100001")],
-            emails=[IdentityFragmentEmail(address="john@example.com")],
+            attributes=IdentityAttributes(
+                tenant=_TENANT,
+                name=_NAME,
+                birthdate=datetime.date(1990, 1, 1),
+                gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
+                races=[
+                    IdentityRace(tenant=_TENANT, race=Race.WHITE),
+                    IdentityRace(
+                        tenant=_TENANT, race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE
+                    ),
+                ],
+                phone_numbers=[
+                    IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
+                ],
+                emails=[IdentityEmail(tenant=_TENANT, address="john@example.com")],
+            ),
         )
         self.assertEqual(fragment, pickle.loads(pickle.dumps(fragment)))

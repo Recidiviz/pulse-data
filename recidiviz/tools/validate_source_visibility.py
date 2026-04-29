@@ -480,6 +480,7 @@ def main() -> int:
         "recidiviz.big_query.row_access_policy_query_builder",
         "recidiviz.cloud_resources",
         "recidiviz.cloud_storage.gcsfs_path",
+        "recidiviz.common.alias_type_strings",
         "recidiviz.common.attr_converters",
         "recidiviz.common.attr_validators",
         "recidiviz.common.attr_utils",
