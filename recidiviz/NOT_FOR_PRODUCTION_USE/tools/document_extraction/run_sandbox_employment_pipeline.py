@@ -233,6 +233,7 @@ def run_phase(  # pylint: disable=too-many-positional-arguments
     max_llm_concurrency: int,
     max_llm_rps: float,
     force: bool = False,
+    person_ids: list[int] | None = None,
 ) -> None:
     """Runs a single employment pipeline phase."""
     phase_config = _get_phase_config(state_code)
@@ -253,6 +254,7 @@ def run_phase(  # pylint: disable=too-many-positional-arguments
             active_in_compartment=active_in_compartment,
             segment_index=segment_index,
             total_segments=total_segments,
+            person_ids=person_ids,
         )
         if upload_failures > 0 and not force:
             raise SystemExit(1)
@@ -335,6 +337,16 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--sample_entity_count", type=int, default=None)
     parser.add_argument("--lookback_days", type=int, default=None)
     parser.add_argument("--active_in_compartment", type=str, default=None)
+    parser.add_argument(
+        "--person_ids",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated list of person IDs to restrict documents to "
+            "(e.g., 12345,67890). Cannot be used with --active_in_compartment "
+            "or --sample_entity_count."
+        ),
+    )
     parser.add_argument("--max_llm_concurrency", type=int, default=200)
     parser.add_argument(
         "--max_llm_rps",
@@ -368,6 +380,10 @@ if __name__ == "__main__":
 
     parsed_state_code = args.state_code.upper()
 
+    person_id_list: list[int] | None = None
+    if args.person_ids:
+        person_id_list = [int(p.strip()) for p in args.person_ids.split(",")]
+
     with local_project_id_override(args.project_id):
         if args.phase is None:
             show_status(parsed_state_code, args.sandbox_dataset_prefix)
@@ -386,4 +402,5 @@ if __name__ == "__main__":
                 max_llm_concurrency=args.max_llm_concurrency,
                 max_llm_rps=args.max_llm_rps,
                 force=args.force,
+                person_ids=person_id_list,
             )

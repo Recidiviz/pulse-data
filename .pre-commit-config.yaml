@@ -30,7 +30,7 @@ repos:
         name: isort (pyi)
         types: [pyi]
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.8.0.4
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
         # Also validate any `source`d files

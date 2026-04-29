@@ -44,18 +44,11 @@ output_schema:
           type: STRING
           description: Name of the employer/organization.
 
-        - name: employer_org_type
-          type: ENUM
-          description: Type of employer organization.
-          values:
-            [
-              direct_employer,
-              staffing_agency,
-              agency_placement,
-              agency_permanent_placement,
-              self_employed,
-              other,
-            ]
+        - name: self_employed
+          type: BOOLEAN
+          description:
+            True if self-employed, false if employer_name is provided, omit if
+            unclear.
 
         - name: employment_type
           type: ENUM

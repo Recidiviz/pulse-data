@@ -46,12 +46,12 @@ Clarifications:
    standing at a labor corner, hired for a single day of work), and
    'cash_informal' for under-the-table or unreported work arrangements.
    Self-employment (e.g., owning a business, freelancing) also counts as
-   employed with employer_org_type='self_employed'.
+   employed with self_employed=True.
 4. Receiving disability benefits (SSI/SSDI) or retirement income does not make
    someone 'employed'. Use primary_status='other' when the person is not working
    but is receiving non-employment income.
 5. Work release, work crews, or prison/jail labor programs are not standard
-   employment. Use primary_status='other' and employer_org_type='other' for
+   employment. Use primary_status='other' for
    these arrangements.
 6. Volunteering is not employment. If volunteering is the only work-like
    activity mentioned, set primary_status to 'unemployed'. Only include the

@@ -233,6 +233,7 @@ def run_doc_upload(
     active_in_compartment: str | None,
     segment_index: int | None = None,
     total_segments: int | None = None,
+    person_ids: list[int] | None = None,
 ) -> int:
     """Runs the DOC_UPLOAD phase for an extractor.
 
@@ -274,6 +275,7 @@ def run_doc_upload(
         sample_entity_count=sample_entity_count,
         active_in_compartment=active_in_compartment,
         lookback_days=lookback_days,
+        person_ids=person_ids,
     )
 
     if num_failures > 0:
@@ -461,6 +463,16 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--sample_entity_count", type=int, default=None)
     parser.add_argument("--lookback_days", type=int, default=None)
     parser.add_argument("--active_in_compartment", type=str, default=None)
+    parser.add_argument(
+        "--person_ids",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated list of person IDs to restrict documents to "
+            "(e.g., 12345,67890). Cannot be used with --active_in_compartment "
+            "or --sample_entity_count."
+        ),
+    )
     parser.add_argument("--max_llm_concurrency", type=int, default=200)
     parser.add_argument(
         "--max_llm_rps",
@@ -492,6 +504,10 @@ if __name__ == "__main__":
             print(f"Error: --segment_index must be in [0, {args.total_segments - 1}]")
             sys.exit(1)
 
+    person_id_list: list[int] | None = None
+    if args.person_ids:
+        person_id_list = [int(p.strip()) for p in args.person_ids.split(",")]
+
     with local_project_id_override(args.project_id):
         if args.phase == Phase.DOC_UPLOAD.value:
             upload_failures = run_doc_upload(
@@ -503,6 +519,7 @@ if __name__ == "__main__":
                 active_in_compartment=args.active_in_compartment,
                 segment_index=args.segment_index,
                 total_segments=args.total_segments,
+                person_ids=person_id_list,
             )
             if upload_failures > 0 and not args.force:
                 sys.exit(1)
