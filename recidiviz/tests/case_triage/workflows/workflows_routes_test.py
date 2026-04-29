@@ -65,6 +65,7 @@ PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
 STAFF_EMAIL = "fake email address"
 USER_HASH = "xyz+&123_="
+CONTACT_NOTE_ID = "contact-note-id"
 
 
 class WorkflowsBlueprintTestCase(TestCase):
@@ -690,6 +691,58 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
             contact_note={1: ["Line 1", "Line 2"]},
             contact_type_codes=[UsTnContactTypeCode.TEPE],
+        )
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.assert_called_once_with(expected_data)
+        mock_interface.return_value.execute.assert_called_once()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsTnContactNoteWritebackExecutor",
+        autospec=True,
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.writeback.route_helpers.SingleCloudTaskQueueManager"
+    )
+    @freeze_time("2023-01-01 01:23:45")
+    def test_insert_contact_note_us_tn_reio_no_queue(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "stateCode": "US_TN",
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "personExternalIdType": "US_TN_DOC",
+            "staffId": STAFF_ID,
+            "staffIdType": "US_TN_STAFF_TOMIS",
+            "contactNoteDateTime": "2023-01-01T01:23:45",
+            "contactNote": {1: ["Line 1", "Line 2"]},
+            "contactTypeCodes": ["REIO"],
+            "contactNoteId": CONTACT_NOTE_ID,
+            "shouldQueueTask": False,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/insert_contact_note",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_data = UsTnContactNoteRequestData(
+            state_code="US_TN",
+            should_queue_task=False,
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
+            staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=datetime.datetime(2023, 1, 1, 1, 23, 45),
+            contact_note={1: ["Line 1", "Line 2"]},
+            contact_type_codes=[UsTnContactTypeCode.REIO],
+            contact_note_id=CONTACT_NOTE_ID,
         )
         mock_task_manager.return_value.create_task.assert_not_called()
         mock_interface.assert_called_once_with(expected_data)

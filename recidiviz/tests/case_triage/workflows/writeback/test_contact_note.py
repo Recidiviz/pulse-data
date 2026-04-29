@@ -54,6 +54,23 @@ class TestContactNoteDiscriminatedUnion(TestCase):
         self.assertIsInstance(data, UsTnContactNoteRequestData)
         self.assertEqual(data.state_code, "US_TN")
 
+    def test_dispatches_to_tn_non_tepe(self) -> None:
+        data = _contact_note_adapter.validate_python(
+            {
+                "stateCode": "US_TN",
+                "personExternalId": "123",
+                "personExternalIdType": "US_TN_DOC",
+                "staffId": "456",
+                "staffIdType": "US_TN_STAFF_TOMIS",
+                "contactNoteDateTime": "2026-01-15T10:00:00",
+                "contactTypeCodes": ["REIO"],
+                "contactNote": {"1": ["line 1"]},
+                "contactNoteId": "contact-note-id",
+            }
+        )
+        self.assertIsInstance(data, UsTnContactNoteRequestData)
+        self.assertEqual(data.contact_note_id, "contact-note-id")
+
     def test_dispatches_to_co(self) -> None:
         data = _contact_note_adapter.validate_python(
             {

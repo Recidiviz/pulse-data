@@ -16,11 +16,12 @@
 # =============================================================================
 """US_TN contact note writeback implementation."""
 import json
+import re
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.base import (
@@ -44,6 +45,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.secrets import get_secret
+
+COMPLIANT_REPORTING_STATUS_DOC_ID = "usTnCompliantReporting2025Policy"
+EXPIRATION_STATUS_DOC_ID = "usTnExpiration"
+CONTACT_NOTE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class UsTnContactTypeCode(Enum):
@@ -122,6 +127,9 @@ class UsTnContactNoteRequestData(ContactNoteRequestData):
     staff_id_type: Literal["US_TN_STAFF_TOMIS"]
     contact_note: dict[int, list[str]]
     contact_type_codes: List[UsTnContactTypeCode]
+    # Used only as a Firestore status-doc key for non-TEPE contact notes; not
+    # sent to TOMIS.
+    contact_note_id: str | None = None
 
     @field_validator("contact_type_codes")
     @classmethod
@@ -217,6 +225,23 @@ class UsTnContactNoteRequestData(ContactNoteRequestData):
 
         return v
 
+    @model_validator(mode="after")
+    def validate_contact_note_id(self) -> "UsTnContactNoteRequestData":
+        """Non-TEPE status tracking is keyed by FE-generated contact note id."""
+        if UsTnContactTypeCode.TEPE in self.contact_type_codes:
+            return self
+
+        if not self.contact_note_id:
+            raise ValueError("contactNoteId is required for non-TEPE contact notes.")
+
+        if not CONTACT_NOTE_ID_PATTERN.fullmatch(self.contact_note_id):
+            raise ValueError(
+                "contactNoteId may only contain letters, numbers, underscores, "
+                "and hyphens."
+            )
+
+        return self
+
 
 class TomisContactNoteRequest(BaseModel):
     """Models a single-page request body sent to TOMIS for contact note insertion."""
@@ -290,48 +315,64 @@ class UsTnContactNoteStatusTracker(WritebackStatusTracker):
         person_external_id: str,
         contact_note_date_time: datetime,
         contact_type_codes: List[UsTnContactTypeCode],
+        contact_note_id: str | None,
         firestore_client: FirestoreClientImpl,
     ) -> None:
         self.person_external_id = person_external_id
         self.contact_date_time = contact_note_date_time
         self.contact_type_codes = contact_type_codes
+        self.contact_note_id = contact_note_id
         self.firestore_client = firestore_client
+
+    def _is_tepe(self) -> bool:
+        return UsTnContactTypeCode.TEPE in self.contact_type_codes
 
     def _firestore_path(self) -> str:
         record_id = f"{StateCode.US_TN.value.lower()}_{self.person_external_id}"
 
-        # TODO(#70780): Add a proper idempotency key.
         contact_id = (
             # TODO(#70782): Differentiate when multiple expirations are entered
             # for the same person.
-            "usTnExpiration"
-            if UsTnContactTypeCode.TEPE in self.contact_type_codes
-            else f"usTnContactNote_{self.contact_date_time.isoformat()}"
+            EXPIRATION_STATUS_DOC_ID
+            if self._is_tepe()
+            else COMPLIANT_REPORTING_STATUS_DOC_ID
         )
         return f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/{contact_id}"
 
+    def _contact_note_update_metadata(self) -> dict[str, object]:
+        return {
+            "submitted": {"date": self.contact_date_time},
+            self.firestore_client.timestamp_key: datetime.now(timezone.utc),
+        }
+
+    def _contact_note_update(self, update: dict[str, object]) -> dict[str, object]:
+        contact_note_update = {
+            **self._contact_note_update_metadata(),
+            **update,
+        }
+
+        if self._is_tepe():
+            return {"contactNote": contact_note_update}
+
+        if self.contact_note_id is None:
+            raise ValueError("contact_note_id is required for non-TEPE contact notes.")
+
+        return {"contactNote": {self.contact_note_id: contact_note_update}}
+
     def set_status(self, status: ExternalSystemRequestStatus) -> None:
-        self.firestore_client.update_document(
+        self.firestore_client.set_document(
             self._firestore_path(),
-            {
-                "contactNote.status": status.value,
-                f"contactNote.{self.firestore_client.timestamp_key}": datetime.now(
-                    timezone.utc
-                ),
-            },
+            self._contact_note_update({"status": status.value}),
+            merge=True,
         )
 
     def set_page_status(
         self, page_number: int, status: ExternalSystemRequestStatus
     ) -> None:
-        self.firestore_client.update_document(
+        self.firestore_client.set_document(
             self._firestore_path(),
-            {
-                f"contactNote.noteStatus.{page_number}": status.value,
-                f"contactNote.{self.firestore_client.timestamp_key}": datetime.now(
-                    timezone.utc
-                ),
-            },
+            self._contact_note_update({"noteStatus": {str(page_number): status.value}}),
+            merge=True,
         )
 
 
@@ -346,6 +387,7 @@ class UsTnContactNoteWritebackExecutor(
             self.request.person_external_id,
             self.request.contact_note_date_time,
             self.request.contact_type_codes,
+            self.request.contact_note_id,
             FirestoreClientImpl(),
         )
 

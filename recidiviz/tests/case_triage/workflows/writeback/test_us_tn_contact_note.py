@@ -43,6 +43,7 @@ from recidiviz.common.constants.state.external_id_types import (
 
 PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
+CONTACT_NOTE_ID = "contact-note-id"
 CONTACT_NOTE_DATE_TIME = datetime.datetime(2026, 4, 10, 10, 20, 6, 563888)
 
 MODULE = "recidiviz.case_triage.workflows.writeback.us_tn_contact_note"
@@ -91,6 +92,28 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             },
         )
 
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_to_cloud_task_payload_includes_contact_note_id(
+        self, _mock_client: MagicMock
+    ) -> None:
+        request_data = UsTnContactNoteRequestData(
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
+            staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_codes=[UsTnContactTypeCode.REIO],
+            contact_note={1: ["line 1"]},
+            contact_note_id=CONTACT_NOTE_ID,
+            should_queue_task=True,
+        )
+        executor = UsTnContactNoteWritebackExecutor(request_data)
+
+        self.assertEqual(
+            executor.to_cloud_task_payload()["contact_note_id"],
+            CONTACT_NOTE_ID,
+        )
+
     @patch(f"{MODULE}.get_secret")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
@@ -117,9 +140,9 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             )
             writeback = UsTnContactNoteWritebackExecutor(request_data)
             writeback.execute()
-            # update_document called 4 times: page 1 in_progress, page 1 success,
+            # set_document called 4 times: page 1 in_progress, page 1 success,
             # page 2 in_progress, page 2 success
-            self.assertEqual(mock_client.update_document.call_count, 4)
+            self.assertEqual(mock_client.set_document.call_count, 4)
 
     @patch(f"{MODULE}.get_secret")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
@@ -148,12 +171,13 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                     UsTnContactTypeCode.DEIJ,
                 ],
                 contact_note={1: [], 2: [], 3: ["foo", "bar", "baz"]},
+                contact_note_id=CONTACT_NOTE_ID,
             )
             writeback = UsTnContactNoteWritebackExecutor(request_data)
             writeback.execute()
-            # update_document called 6 times: page 1 in_progress, page 1 success,
+            # set_document called 6 times: page 1 in_progress, page 1 success,
             # page 2 in_progress, page 2 success, page 3 in_progress, page 3 success
-            self.assertEqual(mock_client.update_document.call_count, 6)
+            self.assertEqual(mock_client.set_document.call_count, 6)
 
     @patch(f"{MODULE}.get_secret")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
@@ -182,7 +206,7 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
                 writeback = UsTnContactNoteWritebackExecutor(request_data)
                 writeback.execute()
             # page 1 in_progress, page 1 failure
-            self.assertEqual(mock_client.update_document.call_count, 2)
+            self.assertEqual(mock_client.set_document.call_count, 2)
 
     @patch("requests.put")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
@@ -241,7 +265,7 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             mock_get_secret.assert_any_call(
                 "workflows_us_tn_insert_contact_note_test_url"
             )
-            self.assertEqual(mock_client.update_document.call_count, 4)
+            self.assertEqual(mock_client.set_document.call_count, 4)
 
 
 class TestUsTnContactNoteRequestData(TestCase):
@@ -369,9 +393,40 @@ class TestUsTnContactNoteRequestData(TestCase):
                 "contactNoteDateTime": "2000-12-30T00:00:00",
                 "contactTypeCodes": ["DEIO"],
                 "contactNote": {"1": ["line 1"]},
+                "contactNoteId": CONTACT_NOTE_ID,
             }
         )
         self.assertEqual(data.contact_type_codes, [UsTnContactTypeCode.DEIO])
+        self.assertEqual(data.contact_note_id, CONTACT_NOTE_ID)
+
+    def test_non_tepe_contact_note_requires_contact_note_id(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
+                    "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCodes": ["REIO"],
+                    "contactNote": {"1": ["line 1"]},
+                }
+            )
+
+    def test_non_tepe_contact_note_rejects_unsafe_contact_note_id(self) -> None:
+        with self.assertRaises(ValidationError):
+            UsTnContactNoteRequestData.model_validate(
+                {
+                    "personExternalId": PERSON_EXTERNAL_ID,
+                    "personExternalIdType": "US_TN_DOC",
+                    "staffId": STAFF_ID,
+                    "staffIdType": "US_TN_STAFF_TOMIS",
+                    "contactNoteDateTime": "2000-12-30T00:00:00",
+                    "contactTypeCodes": ["REIO"],
+                    "contactNote": {"1": ["line 1"]},
+                    "contactNoteId": "bad.id",
+                }
+            )
 
     def test_missing_person_external_id_type_raises(self) -> None:
         with self.assertRaises(ValidationError):
@@ -448,6 +503,9 @@ class TestContactTypeCodeValidation(TestCase):
     def _make_request(
         self, contact_type_codes: list[UsTnContactTypeCode]
     ) -> UsTnContactNoteRequestData:
+        contact_note_id = (
+            None if UsTnContactTypeCode.TEPE in contact_type_codes else CONTACT_NOTE_ID
+        )
         return UsTnContactNoteRequestData(
             person_external_id=PERSON_EXTERNAL_ID,
             person_external_id_type=US_TN_DOC,
@@ -456,6 +514,7 @@ class TestContactTypeCodeValidation(TestCase):
             contact_note_date_time=CONTACT_NOTE_DATE_TIME,
             contact_type_codes=contact_type_codes,
             contact_note={1: ["line 1"]},
+            contact_note_id=contact_note_id,
         )
 
     # --- Valid combinations ---
@@ -720,20 +779,27 @@ class TestUsTnContactNoteStatusTracker(TestCase):
             "123",
             CONTACT_NOTE_DATE_TIME,
             [UsTnContactTypeCode.TEPE],
+            None,
             mock_firestore,
         )
         tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
 
-        mock_firestore.update_document.assert_called_once()
-        call_args = mock_firestore.update_document.call_args
+        mock_firestore.set_document.assert_called_once()
+        call_args = mock_firestore.set_document.call_args
         self.assertEqual(
             call_args[0][0],
             "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration",
         )
         self.assertEqual(
-            call_args[0][1]["contactNote.status"],
+            call_args[0][1]["contactNote"]["status"],
             ExternalSystemRequestStatus.IN_PROGRESS.value,
         )
+        self.assertEqual(
+            call_args[0][1]["contactNote"]["submitted"]["date"],
+            CONTACT_NOTE_DATE_TIME,
+        )
+        self.assertIn("serverTimestamp", call_args[0][1]["contactNote"])
+        self.assertTrue(call_args[1]["merge"])
 
     def test_set_status_updates_firestore_reio(self) -> None:
         mock_firestore = MagicMock()
@@ -742,20 +808,29 @@ class TestUsTnContactNoteStatusTracker(TestCase):
             "123",
             CONTACT_NOTE_DATE_TIME,
             [UsTnContactTypeCode.REIO],
+            CONTACT_NOTE_ID,
             mock_firestore,
         )
         tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)
 
-        mock_firestore.update_document.assert_called_once()
-        call_args = mock_firestore.update_document.call_args
+        mock_firestore.set_document.assert_called_once()
+        call_args = mock_firestore.set_document.call_args
         self.assertEqual(
             call_args[0][0],
-            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnContactNote_2026-04-10T10:20:06.563888",
+            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnCompliantReporting2025Policy",
         )
         self.assertEqual(
-            call_args[0][1]["contactNote.status"],
+            call_args[0][1]["contactNote"][CONTACT_NOTE_ID]["status"],
             ExternalSystemRequestStatus.IN_PROGRESS.value,
         )
+        self.assertEqual(
+            call_args[0][1]["contactNote"][CONTACT_NOTE_ID]["submitted"]["date"],
+            CONTACT_NOTE_DATE_TIME,
+        )
+        self.assertIn(
+            "serverTimestamp", call_args[0][1]["contactNote"][CONTACT_NOTE_ID]
+        )
+        self.assertTrue(call_args[1]["merge"])
 
     def test_set_page_status_updates_firestore(self) -> None:
         mock_firestore = MagicMock()
@@ -764,21 +839,28 @@ class TestUsTnContactNoteStatusTracker(TestCase):
             "123",
             CONTACT_NOTE_DATE_TIME,
             [UsTnContactTypeCode.TEPE],
+            None,
             mock_firestore,
         )
 
         tracker.set_page_status(1, ExternalSystemRequestStatus.SUCCESS)
 
-        mock_firestore.update_document.assert_called_once()
-        call_args = mock_firestore.update_document.call_args
+        mock_firestore.set_document.assert_called_once()
+        call_args = mock_firestore.set_document.call_args
         self.assertEqual(
             call_args[0][0],
             "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration",
         )
         self.assertEqual(
-            call_args[0][1]["contactNote.noteStatus.1"],
+            call_args[0][1]["contactNote"]["noteStatus"]["1"],
             ExternalSystemRequestStatus.SUCCESS.value,
         )
+        self.assertEqual(
+            call_args[0][1]["contactNote"]["submitted"]["date"],
+            CONTACT_NOTE_DATE_TIME,
+        )
+        self.assertIn("serverTimestamp", call_args[0][1]["contactNote"])
+        self.assertTrue(call_args[1]["merge"])
 
     def test_set_page_status_updates_firestore_reio(self) -> None:
         mock_firestore = MagicMock()
@@ -787,18 +869,27 @@ class TestUsTnContactNoteStatusTracker(TestCase):
             "123",
             CONTACT_NOTE_DATE_TIME,
             [UsTnContactTypeCode.REIO],
+            CONTACT_NOTE_ID,
             mock_firestore,
         )
 
         tracker.set_page_status(1, ExternalSystemRequestStatus.SUCCESS)
 
-        mock_firestore.update_document.assert_called_once()
-        call_args = mock_firestore.update_document.call_args
+        mock_firestore.set_document.assert_called_once()
+        call_args = mock_firestore.set_document.call_args
         self.assertEqual(
             call_args[0][0],
-            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnContactNote_2026-04-10T10:20:06.563888",
+            "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnCompliantReporting2025Policy",
         )
         self.assertEqual(
-            call_args[0][1]["contactNote.noteStatus.1"],
+            call_args[0][1]["contactNote"][CONTACT_NOTE_ID]["noteStatus"]["1"],
             ExternalSystemRequestStatus.SUCCESS.value,
         )
+        self.assertEqual(
+            call_args[0][1]["contactNote"][CONTACT_NOTE_ID]["submitted"]["date"],
+            CONTACT_NOTE_DATE_TIME,
+        )
+        self.assertIn(
+            "serverTimestamp", call_args[0][1]["contactNote"][CONTACT_NOTE_ID]
+        )
+        self.assertTrue(call_args[1]["merge"])

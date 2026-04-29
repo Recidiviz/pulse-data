@@ -52,7 +52,7 @@ class WritebackExecutorInterface(abc.ABC, Generic[RequestDataT]):
 
     def to_cloud_task_payload(self) -> dict[str, Any]:
         return self.request.model_copy(update={"should_queue_task": False}).model_dump(
-            mode="json"
+            mode="json", exclude_none=True
         )
 
     @abc.abstractmethod
