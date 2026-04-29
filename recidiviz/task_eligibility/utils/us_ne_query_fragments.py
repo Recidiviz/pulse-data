@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -322,6 +322,28 @@ def mr_reports_within_time_interval(
     )
 
 
+def good_time_restoration_cooldown_end_clause(
+    action_date_col: str = "action_date",
+    request_date_col: str = "request_date",
+) -> str:
+    """SQL expression for when the cooldown after a good time restoration ends.
+
+    Per NE policy a person is locked out of new restoration requests until
+    either the start of the calendar month after the request was initiated or
+    the day after the credit posts — whichever is later. The action_date floor
+    keeps the cooldown from briefly reopening when approval lag pushes the
+    credit past the calendar boundary.
+
+    Caller is responsible for supplying a `request_date_col` that already
+    falls back to `credit_date` for historical REINSTATEs predating the
+    GoodTimeRestoration data.
+    """
+    return f"""GREATEST(
+        DATE_ADD({action_date_col}, INTERVAL 1 DAY),
+        DATE_ADD(DATE_TRUNC({request_date_col}, MONTH), INTERVAL 1 MONTH)
+    )"""
+
+
 def good_time_restoration_denial_fragment() -> str:
     """Shared query fragment for joining good time restoration request reviews (from the
     GTR_Approval table) to the requests themselves (from the GoodTimeRestoration table).
@@ -383,28 +405,48 @@ def latest_good_time_restoration_or_denial_date_fragment() -> str:
         WHERE ARRAY_LENGTH(denials) > 0
         GROUP BY 1
     ),
+    -- For the most recent restoration (keyed on action_date — the day the
+    -- credit posted), carry the cooldown end. request_date falls back to
+    -- credit_date for pre-May-2025 REINSTATEs that predate GoodTimeRestoration.
     most_recent_restoration AS (
         SELECT
             person_id,
-            MAX(credit_date) as most_recent_restoration,
-        FROM `{{project_id}}.analyst_data.us_ne_earned_credit_activity_preprocessed_materialized`
-        WHERE 
-            state_code = 'US_NE'
-            AND credit_function = 'REINSTATE'
-            AND credit_date IS NOT NULL
-        GROUP BY 1
+            action_date AS most_recent_restoration,
+            {good_time_restoration_cooldown_end_clause()} AS most_recent_restoration_cooldown_end,
+        FROM (
+            SELECT
+                person_id,
+                action_date,
+                COALESCE(request_date, credit_date) AS request_date,
+            FROM `{{project_id}}.analyst_data.us_ne_earned_credit_activity_preprocessed_materialized`
+            WHERE
+                state_code = 'US_NE'
+                AND credit_function = 'REINSTATE'
+                AND credit_date IS NOT NULL
+        )
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY person_id
+            ORDER BY action_date DESC
+        ) = 1
     ),
     most_recent_restoration_or_denial AS (
-        SELECT 
+        SELECT
             person_id,
-            GREATEST(COALESCE(most_recent_denial, most_recent_restoration), COALESCE(most_recent_restoration, most_recent_denial)) as latest_good_time_restoration_or_denial_date
+            GREATEST(COALESCE(most_recent_denial, most_recent_restoration), COALESCE(most_recent_restoration, most_recent_denial)) as latest_good_time_restoration_or_denial_date,
+            most_recent_restoration_cooldown_end,
+            -- Denials don't have an action_date, so their cooldown is just
+            -- start_of_calendar_month_after_dateReviewed.
+            DATE_ADD(DATE_TRUNC(most_recent_denial, MONTH), INTERVAL 1 MONTH) AS most_recent_denial_cooldown_end,
         FROM most_recent_denial d
         FULL OUTER JOIN most_recent_restoration r
         USING(person_id)
     )
-    SELECT 
+    SELECT
         person_id,
         latest_good_time_restoration_or_denial_date,
-        DATE_ADD(DATE_TRUNC(latest_good_time_restoration_or_denial_date, MONTH), INTERVAL 1 MONTH) AS next_month_after_latest_good_time_restoration_or_denial_date
+        GREATEST(
+            COALESCE(most_recent_restoration_cooldown_end, most_recent_denial_cooldown_end),
+            COALESCE(most_recent_denial_cooldown_end, most_recent_restoration_cooldown_end)
+        ) AS next_month_after_latest_good_time_restoration_or_denial_date
     FROM most_recent_restoration_or_denial
     """
