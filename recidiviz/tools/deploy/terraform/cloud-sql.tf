@@ -44,7 +44,7 @@ module "operations_database_cmek" {
 
   project_id       = var.project_id
   instance_key     = "operations"
-  base_secret_name = "operations_v2"
+  base_secret_name = "operations"
   region           = var.us_east_region
   zone             = "us-east1-b"
   secondary_zone   = "us-east1-c"
