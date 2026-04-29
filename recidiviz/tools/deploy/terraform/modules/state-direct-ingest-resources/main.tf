@@ -22,7 +22,7 @@ resource "google_service_account" "service-account" {
 
 
 resource "google_storage_bucket_iam_member" "direct-ingest-buckets-member" {
-  bucket = google_storage_bucket.direct-ingest-bucket.name
+  bucket = module.direct-ingest-bucket.name
   role   = var.state_admin_role
   member = "serviceAccount:${google_service_account.service-account.email}"
 }
@@ -35,7 +35,7 @@ resource "google_storage_bucket_iam_member" "secondary-ingest-buckets-member" {
 
 resource "google_storage_bucket_iam_member" "prod-only-testing-direct-ingest-buckets-member" {
   count  = var.is_production ? 1 : 0
-  bucket = google_storage_bucket.prod-only-testing-direct-ingest-bucket[count.index].name
+  bucket = module.prod-only-testing-direct-ingest-bucket[count.index].name
   role   = var.state_admin_role
   member = "serviceAccount:${google_service_account.service-account.email}"
 }

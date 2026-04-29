@@ -43,6 +43,7 @@ module "state_direct_ingest_buckets_and_accounts" {
     ? local.state_data_access_group_resource_names[each.key]
     : local.default_state_data_group_resource_name
   )
+  use_cmek = true
 }
 
 # Add the CI/CD Cloud Build service account as a MANAGER of every state data

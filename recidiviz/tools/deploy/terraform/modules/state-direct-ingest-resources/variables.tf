@@ -58,6 +58,11 @@ variable "state_data_access_group_resource_name" {
   type = string
 }
 
+variable "use_cmek" {
+  type    = bool
+  default = false
+}
+
 locals {
   lower_state_code            = replace(lower(var.state_code), "_", "-")
   direct_ingest_formatted_str = "direct-ingest-state-${local.lower_state_code}"

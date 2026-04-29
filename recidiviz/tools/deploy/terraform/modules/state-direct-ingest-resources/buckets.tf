@@ -15,56 +15,48 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# TODO(#6052): Refactor to use ../cloud-storage-bucket
-resource "google_storage_bucket" "direct-ingest-bucket" {
-  name                        = "${var.project_id}-${local.direct_ingest_formatted_str}"
-  location                    = var.region
-  uniform_bucket_level_access = true
+module "direct-ingest-bucket" {
+  source = "../cloud-storage-bucket"
 
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      num_newer_versions = 3
-    }
-  }
+  project_id  = var.project_id
+  name_suffix = local.direct_ingest_formatted_str
+  location    = var.region
+  use_cmek    = var.use_cmek
+}
 
-  versioning {
-    enabled = true
-  }
+# Tells Terraform this bucket was previously a raw google_storage_bucket
+# and is now managed by the cloud-storage-bucket module. Without this,
+# Terraform would delete the old bucket and create a new one (data loss).
+moved {
+  from = google_storage_bucket.direct-ingest-bucket
+  to   = module.direct-ingest-bucket.google_storage_bucket.bucket
 }
 
 # expose the primary ingest bucket name
 output "primary_ingest_bucket_name" {
-  value = google_storage_bucket.direct-ingest-bucket.name
+  value = module.direct-ingest-bucket.name
 }
 
 resource "google_storage_notification" "direct-ingest-bucket-notification" {
-  bucket = google_storage_bucket.direct-ingest-bucket.name
-  topic  = var.raw_data_storage_notification_topic_id
-  event_types = ["OBJECT_FINALIZE"]
+  bucket         = module.direct-ingest-bucket.name
+  topic          = var.raw_data_storage_notification_topic_id
+  event_types    = ["OBJECT_FINALIZE"]
   payload_format = "JSON_API_V1"
 }
 
-resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
-  count                       = var.is_production ? 1 : 0
-  name                        = "recidiviz-123-${local.direct_ingest_formatted_str}-upload-testing"
-  location                    = var.region
-  uniform_bucket_level_access = true
+module "prod-only-testing-direct-ingest-bucket" {
+  count  = var.is_production ? 1 : 0
+  source = "../cloud-storage-bucket"
 
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      num_newer_versions = 3
-    }
-  }
+  project_id  = var.project_id
+  name_suffix = "${local.direct_ingest_formatted_str}-upload-testing"
+  location    = var.region
+  use_cmek    = var.use_cmek
+}
 
-  versioning {
-    enabled = true
-  }
+moved {
+  from = google_storage_bucket.prod-only-testing-direct-ingest-bucket
+  to   = module.prod-only-testing-direct-ingest-bucket.google_storage_bucket.bucket
 }
 
 module "secondary-direct-ingest-bucket" {
@@ -73,12 +65,13 @@ module "secondary-direct-ingest-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.direct_ingest_formatted_str}-secondary"
   location    = var.region
+  use_cmek    = var.use_cmek
 }
 
 resource "google_storage_notification" "secondary-direct-ingest-bucket-notification" {
-  bucket = module.secondary-direct-ingest-bucket.name
-  topic  = var.raw_data_storage_notification_topic_id
-  event_types = ["OBJECT_FINALIZE"]
+  bucket         = module.secondary-direct-ingest-bucket.name
+  topic          = var.raw_data_storage_notification_topic_id
+  event_types    = ["OBJECT_FINALIZE"]
   payload_format = "JSON_API_V1"
 }
 
@@ -90,4 +83,5 @@ module "supplemental-data-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.direct_ingest_formatted_str}-supplemental"
   location    = var.region
+  use_cmek    = var.use_cmek
 }
