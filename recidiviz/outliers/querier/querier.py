@@ -1842,7 +1842,9 @@ class OutliersQuerier:
                         [
                             {
                                 "metric_id": record.metric_id,
-                                "top_x_pct": record.statuses_over_time,
+                                "top_x_pct": record.is_top_x_pct_over_time[0][
+                                    "top_x_pct"
+                                ],
                             }
                         ]
                         if is_top_x_pct

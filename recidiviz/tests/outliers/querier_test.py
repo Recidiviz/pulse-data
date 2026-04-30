@@ -653,6 +653,30 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.snapshot.assert_match(actual, name="test_get_officer_outcomes_found_match_not_top_x_pct")  # type: ignore[attr-defined]
 
+    def test_get_officer_outcomes_top_x_pct_only_no_outlier(self) -> None:
+        # Regression: top_x_pct must be a scalar int when an officer is
+        # is_top_x_pct=True but never status='FAR' (new-entity branch).
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            session.query(SupervisionOfficerOutlierStatus).filter(
+                SupervisionOfficerOutlierStatus.officer_id == "OFFICER9",
+                SupervisionOfficerOutlierStatus.end_date == "2023-05-01",
+                SupervisionOfficerOutlierStatus.category_type == "ALL",
+            ).update({"is_top_x_pct": True})
+
+        actual = OutliersQuerier(
+            StateCode.US_XX, self.test_user_context.feature_variants
+        ).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash9",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNotNone(actual)
+        self.assertEqual(
+            actual.top_x_pct_metrics,  # type: ignore[union-attr]
+            [{"metric_id": "absconsions_bench_warrants", "top_x_pct": 10}],
+        )
+
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
