@@ -48,6 +48,9 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
                 self.project_id, "test_job_id"
             )
         )
+        self.metadata_table_address = self.config.metadata_table_address(
+            self.project_id
+        )
         self.upload_status_address = DocumentUploadStatusTable.get_table_address(
             project_id=self.project_id, state_code=StateCode.US_XX
         )
@@ -120,6 +123,17 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         results = self.query(query)
         self.assertEqual(len(results), 0)
 
+    def _create_metadata_table(self) -> None:
+        self.create_mock_table(
+            self.metadata_table_address.to_project_agnostic_address(),
+            schema=self.config.build_bq_metadata_schema(),
+        )
+
+    def _query_metadata_table(self) -> list[dict[str, str]]:
+        return self.query(
+            f"SELECT * FROM {self.metadata_table_address.format_address_for_query()}"
+        )
+
     def test_successful_uploads_metadata_insert(self) -> None:
         """Fixture covers:
         - NOTE_1: successfully uploaded, included in results
@@ -129,13 +143,16 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         - NOTE_5: successfully uploaded in previous job run, included in results
         """
         self._load_temp_metadata_and_upload_status("successful_uploads")
+        self._create_metadata_table()
 
         query = self.query_builder.build_successful_uploads_metadata_insert_query(
             config=self.config,
+            metadata_table_address=self.metadata_table_address,
             temp_document_metadata_updates_address=self.temp_metadata_address,
             row_create_datetime=datetime(2026, 3, 15, 12, 0, 0),
         )
-        results = self.query(query)
+        self.query(query)
+        results = self._query_metadata_table()
 
         self.compare_results_to_fixture(
             results=results,
@@ -149,11 +166,14 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
 
     def test_successful_uploads_metadata_insert_empty_temp_metadata(self) -> None:
         self._create_empty_temp_metadata_and_upload_status()
+        self._create_metadata_table()
 
         query = self.query_builder.build_successful_uploads_metadata_insert_query(
             config=self.config,
+            metadata_table_address=self.metadata_table_address,
             temp_document_metadata_updates_address=self.temp_metadata_address,
             row_create_datetime=datetime(2026, 3, 15, 12, 0, 0),
         )
-        results = self.query(query)
+        self.query(query)
+        results = self._query_metadata_table()
         self.assertEqual(len(results), 0)

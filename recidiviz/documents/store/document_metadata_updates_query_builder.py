@@ -81,12 +81,13 @@ WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
     def build_successful_uploads_metadata_insert_query(
         self,
         config: DocumentCollectionConfig,
+        metadata_table_address: ProjectSpecificBigQueryAddress,
         temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
         row_create_datetime: datetime,
     ) -> str:
-        """Builds a query that selects rows from the temp metadata updates table
-        to insert into the collection metadata table. Includes rows where
-        document_contents_id is NULL (deleted documents) and rows whose
+        """Builds a DML INSERT INTO query that inserts rows from the temp
+        metadata updates table into the collection metadata table. Includes rows
+        where document_contents_id is NULL (deleted documents) and rows whose
         document_contents_id has a SUCCESS entry in the upload status table."""
         temp_metadata_columns_select = [
             col.name
@@ -95,6 +96,7 @@ WHERE {DOCUMENT_CONTENTS_ID_COLUMN_NAME} NOT IN (
         ]
 
         return f"""
+INSERT INTO {metadata_table_address.format_address_for_query()}
 SELECT
     {list_to_query_string(temp_metadata_columns_select, table_prefix="temp")},
     TIMESTAMP('{row_create_datetime.isoformat()}') AS {ROW_CREATE_DATETIME_COLUMN_NAME}
