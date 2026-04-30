@@ -52,14 +52,18 @@ def generate_scc_review_eligibility_fan_out_cte(
     input_cte_name: str,
     upcoming_start_days: int,
     due_start_days: int,
-    overdue_start_days: int,
+    overdue_start_n: int,
+    overdue_start_unit_of_time: str,
     extra_columns: list[str],
     include_not_due: bool = True,
 ) -> str:
     """Generates the ``all_spans AS (...)`` SQL for SCC review eligibility windows.
 
     Fans a normalized input CTE into NOT_DUE / UPCOMING / DUE / OVERDUE time
-    windows. All window boundaries are calendar day offsets from ``period_start``.
+    windows. upcoming_start_days and due_start_days are always calendar day offsets
+    from period_start. The OVERDUE boundary uses overdue_start_n and
+    overdue_start_unit_of_time so callers can express exact month/year intervals
+    (e.g. INTERVAL 6 MONTH) instead of day approximations.
 
     The input CTE must expose:
         state_code, person_id
@@ -70,17 +74,20 @@ def generate_scc_review_eligibility_fan_out_cte(
     Window layout (offsets from period_start):
         NOT_DUE  (if include_not_due): [0,                    upcoming_start_days)
         UPCOMING:                      [upcoming_start_days,   due_start_days)
-        DUE:                           [due_start_days,        overdue_start_days)
-        OVERDUE:                       [overdue_start_days,    period_end)
+        DUE:                           [due_start_days,        overdue_threshold)
+        OVERDUE:                       [overdue_threshold,     period_end)
+
+    where overdue_threshold = DATE_ADD(period_start, INTERVAL overdue_start_n overdue_start_unit_of_time)
 
     All windows except OVERDUE are capped by period_end via LEAST/IFNULL.
-    next_scc_due_date is auto-computed as the last day before OVERDUE:
-        DATE_ADD(period_start, INTERVAL overdue_start_days - 1 DAY)
+    next_scc_due_date is auto-computed as the day before the OVERDUE threshold:
+        DATE_SUB(DATE_ADD(period_start, INTERVAL overdue_start_n overdue_start_unit_of_time), INTERVAL 1 DAY)
     """
     extra_cols_sql = (
         "\n        " + ",\n        ".join(extra_columns) + "," if extra_columns else ""
     )
-    due_date_expr = f"DATE_ADD(period_start, INTERVAL {overdue_start_days - 1} DAY)"
+    overdue_threshold_expr = f"DATE_ADD(period_start, INTERVAL {overdue_start_n} {overdue_start_unit_of_time})"
+    due_date_expr = f"DATE_SUB({overdue_threshold_expr}, INTERVAL 1 DAY)"
 
     arms = []
 
@@ -116,14 +123,14 @@ def generate_scc_review_eligibility_fan_out_cte(
     )
 
     arms.append(
-        f"""    -- DUE: review due (days {due_start_days}-{overdue_start_days - 1} after period start)
+        f"""    -- DUE: review due (days {due_start_days}+ after period start, until overdue threshold)
     SELECT
         state_code,
         person_id,
         DATE_ADD(period_start, INTERVAL {due_start_days} DAY) AS start_date,
         LEAST(
-            DATE_ADD(period_start, INTERVAL {overdue_start_days} DAY),
-            IFNULL(period_end, DATE_ADD(period_start, INTERVAL {overdue_start_days} DAY))
+            {overdue_threshold_expr},
+            IFNULL(period_end, {overdue_threshold_expr})
         ) AS end_date,
         'DUE' AS eligibility_type,
         {due_date_expr} AS next_scc_due_date,{extra_cols_sql}
@@ -131,11 +138,11 @@ def generate_scc_review_eligibility_fan_out_cte(
     )
 
     arms.append(
-        f"""    -- OVERDUE: review not completed by day {overdue_start_days}+ after period start
+        f"""    -- OVERDUE: review not completed by overdue threshold ({overdue_start_n} {overdue_start_unit_of_time} after period start)
     SELECT
         state_code,
         person_id,
-        DATE_ADD(period_start, INTERVAL {overdue_start_days} DAY) AS start_date,
+        {overdue_threshold_expr} AS start_date,
         period_end AS end_date,
         'OVERDUE' AS eligibility_type,
         {due_date_expr} AS next_scc_due_date,{extra_cols_sql}
