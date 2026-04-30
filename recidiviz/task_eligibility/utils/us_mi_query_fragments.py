@@ -22,6 +22,7 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
@@ -405,6 +406,7 @@ stg_information AS (
     INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
         ON Offender_Number = pei.external_id 
             AND id_type = 'US_MI_DOC'
+    WHERE Security_Threat_Group_Status = 'ACTIVE'
     -- there are a small number of times where a single person appears wih two distinct STG levels in the table
     -- in those cases, let's pick the STG level that was most recently entered
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(Start_Date AS DATETIME) DESC, STG_LEVEL DESC) = 1
@@ -710,15 +712,26 @@ For bondable codes, the resident can remain in their current cell.
 For nonbondable code, the resident must be moved to segregation until ticket is heard. */
     SELECT
         person_id,
-        CONCAT('(',
-            STRING_AGG(CONCAT(bondable_offense, ', ', STRING(incident_date)), '), (' ORDER BY incident_date DESC, bondable_offense),
-        ')') AS bondable_offenses_within_6_months,
-        CONCAT('(',
-            STRING_AGG(CONCAT(nonbondable_offense, ', ', STRING(incident_date)), '), (' ORDER BY incident_date DESC, nonbondable_offense),
-        ')') AS nonbondable_offenses_within_1_year
+        STRING_AGG(
+            CONCAT(bondable_offenses_within_6_months_by_date, ", ", FORMAT_DATE('%m/%y', incident_month)),
+            '; ' ORDER BY incident_month
+        ) AS bondable_offenses_within_6_months,
+        STRING_AGG(
+            CONCAT(nonbondable_offenses_within_1_year_by_date, ", ", FORMAT_DATE('%m/%y', incident_month)),
+            '; ' ORDER BY incident_month
+        ) AS nonbondable_offenses_within_1_year
     FROM (
-        SELECT DISTINCT person_id, bondable_offense, nonbondable_offense, incident_date
+        SELECT
+            person_id,
+            DATE_TRUNC(DATE(incident_date), MONTH) AS incident_month,
+            CONCAT('(',
+                STRING_AGG(bondable_offense, ' & ' ORDER BY bondable_offense),
+            ')') AS bondable_offenses_within_6_months_by_date,
+            CONCAT('(',
+                STRING_AGG(nonbondable_offense, ' & ' ORDER BY nonbondable_offense),
+            ')') AS nonbondable_offenses_within_1_year_by_date
         FROM all_offenses_unnested
+        GROUP BY person_id, DATE_TRUNC(DATE(incident_date), MONTH)
     )
     GROUP BY person_id
 ),
@@ -875,6 +888,7 @@ stg_information AS (
     INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
         ON Offender_Number = pei.external_id
             AND id_type = 'US_MI_DOC'
+    WHERE Security_Threat_Group_Status = 'ACTIVE'
     -- there are a small number of times where a single person appears wih two distinct STG levels in the table
     -- in those cases, let's pick the STG level that was most recently entered
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(Start_Date AS DATETIME) DESC, STG_LEVEL DESC) = 1
@@ -950,6 +964,21 @@ programming_meta AS (
     LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
     WHERE Program NOT IN ('Birth Certificate', 'Social Security Card', 'Identification Card')
     GROUP BY person_id
+),
+misconduct_reports_since_latest_review AS (
+/* Calculates the number of misconduct incident reports since the latest scc review  */
+    SELECT
+        person_id,
+        count(*) AS form_n_misconduct_reports_since_latest_review
+    FROM `{{project_id}}.us_mi_normalized_state.state_incarceration_incident`
+    LEFT JOIN reasons_for_eligibility USING(person_id)
+    WHERE
+        state_code = "US_MI"
+        -- it's not a incarceration incident we ingested via restriction (which don't count as a misconduct report)
+        AND external_id NOT LIKE "RESTRICTION%"
+        -- it occurred after the latest scc
+        AND DATE(incident_date) >= DATE(latest_scc_review_date)
+    GROUP BY 1
 )
 SELECT
     tes.person_id,
@@ -981,6 +1010,8 @@ SELECT
     m.nonbondable_offenses_within_1_year AS form_information_nonbondable_offenses_within_1_year,
     pf.form_ad_seg_stays_and_reasons_within_3_yrs AS form_information_ad_seg_stays_and_reasons_within_3_yrs,
     (COALESCE(smi.MMD, "No") = "Yes") AS form_information_SMI,
+    si.start_date AS form_information_lock_date,
+    COALESCE(mr.form_n_misconduct_reports_since_latest_review, 0) AS form_information_n_misconduct_reports_since_latest_review,
     --metadata
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
     DATE(sgt.person_projected_full_term_release_date_max) AS metadata_max_release_date,
@@ -1002,7 +1033,7 @@ SELECT
     e.next_scc_due_date AS metadata_next_scc_date,
     e.eligibility_type AS metadata_tab_name,
     a.case_notes,
-    pm.programming_history AS metadata_programming
+    pm.programming_history AS metadata_programming,
 FROM eligibles tes
 LEFT JOIN `{{project_id}}.us_mi_normalized_state.state_person` sp
     USING (state_code, person_id)
@@ -1023,12 +1054,19 @@ LEFT JOIN (
 USING
     (state_code, person_id)
 LEFT JOIN (
-    SELECT state_code, person_id, facility, housing_unit
-    FROM `{{project_id}}.us_mi_normalized_state.state_incarceration_period`
-    WHERE CURRENT_DATE('US/Eastern') BETWEEN admission_date AND {nonnull_end_date_clause('release_date')}
+    SELECT state_code, person_id, facility, housing_unit, start_date
+    FROM (
+        {aggregate_adjacent_spans(
+            table_name="`{project_id}.sessions.housing_unit_sessions_materialized`",
+            index_columns=['state_code', 'person_id'],
+            attribute=['facility', 'housing_unit'],
+            end_date_field_name="end_date_exclusive",
+        )}
+    )
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_clause('end_date_exclusive')}
         -- When a period ends and a new one starts on the same day, both satisfy the
         -- BETWEEN condition. Keep only the most recent period to avoid duplicate rows.
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY admission_date DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY start_date DESC) = 1
 ) si
 USING (state_code, person_id)
 LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.current_person_prison_projected_dates_materialized` sgt
@@ -1056,6 +1094,8 @@ LEFT JOIN array_case_notes_cte a
 LEFT JOIN seg_span_dates ssd
     USING (person_id)
 LEFT JOIN programming_meta pm
+    USING (person_id)
+LEFT JOIN misconduct_reports_since_latest_review mr
     USING (person_id)
 
     """
