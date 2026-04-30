@@ -60,14 +60,37 @@ class PopulationSpanMetric(
     # Required characteristics
     metric_type_cls = PopulationSpanMetricType
 
-    # The type of PopulationSpanMetric
-    metric_type: PopulationSpanMetricType = attr.ib(default=None)
+    metric_type: PopulationSpanMetricType = attr.ib(
+        default=None, metadata={"description": "The type of PopulationSpanMetric"}
+    )
 
-    start_date_inclusive: Optional[datetime.date] = attr.ib(default=None)
-    end_date_exclusive: Optional[datetime.date] = attr.ib(default=None)
+    start_date_inclusive: Optional[datetime.date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Date the span began, inclusive (attributes are valid on this day)"
+            )
+        },
+    )
+    end_date_exclusive: Optional[datetime.date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Date the span ended, exclusive (attributes are valid through "
+                "the prior day)"
+            )
+        },
+    )
 
-    # Whether the period corresponding to the metric is counted in the state's population
-    included_in_state_population: bool = attr.ib(default=True)
+    included_in_state_population: bool = attr.ib(
+        default=True,
+        metadata={
+            "description": (
+                "Whether the period corresponding to the metric is counted "
+                "in the state's population"
+            )
+        },
+    )
 
     @classmethod
     @abc.abstractmethod
@@ -93,55 +116,101 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
 
     # Required characteristics
 
-    # The type of PopulationSpanMetric
     metric_type: PopulationSpanMetricType = attr.ib(
-        init=False, default=PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN
+        init=False,
+        default=PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+        metadata={"description": "The type of PopulationSpanMetric"},
     )
 
     # Optional characteristics
 
-    # Incarceration type
     incarceration_type: Optional[StateIncarcerationType] = attr.ib(
-        default=None, validator=is_opt(StateIncarcerationType)
+        default=None,
+        validator=is_opt(StateIncarcerationType),
+        metadata={"description": "Incarceration type"},
     )
 
-    # Facility
-    facility: Optional[str] = attr.ib(default=None)
+    facility: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Facility"}
+    )
 
-    # Purpose for incarceration
     purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
-    ] = attr.ib(default=None)
+    ] = attr.ib(default=None, metadata={"description": "Purpose for incarceration"})
 
-    # Custodial authority
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
-
-    # The level of staff supervision and security employed for a person held in custody
-    custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = attr.ib(
-        default=None
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
+        default=None, metadata={"description": "Custodial authority"}
     )
 
-    # The raw text value of the incarceration period custody level
-    custody_level_raw_text: Optional[str] = attr.ib(default=None)
+    custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The level of staff supervision and security employed for a "
+                "person held in custody"
+            )
+        },
+    )
 
-    # The housing unit within the facility in which the person currently resides
-    housing_unit: Optional[str] = attr.ib(default=None)
+    custody_level_raw_text: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The raw text value of the incarceration period custody level"
+            )
+        },
+    )
 
-    # The type of housing unit within the facility in which the person currently resides
+    housing_unit: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The housing unit within the facility in which the person "
+                "currently resides"
+            )
+        },
+    )
+
     housing_unit_category: Optional[
         StateIncarcerationPeriodHousingUnitCategory
-    ] = attr.ib(default=None)
-
-    # The raw text value of the incarceration period housing unit category
-    housing_unit_category_raw_text: Optional[str] = attr.ib(default=None)
-
-    # Where the person is currently being housed regardless of technical assignment/custody level
-    housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
-        default=None
+    ] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The type of housing unit within the facility in which the "
+                "person currently resides"
+            )
+        },
     )
 
-    # The raw text value of the incarceration period housing unit type
-    housing_unit_type_raw_text: Optional[str] = attr.ib(default=None)
+    housing_unit_category_raw_text: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The raw text value of the incarceration period housing unit "
+                "category"
+            )
+        },
+    )
+
+    housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Where the person is currently being housed regardless of "
+                "technical assignment/custody level"
+            )
+        },
+    )
+
+    housing_unit_type_raw_text: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The raw text value of the incarceration period housing unit " "type"
+            )
+        },
+    )
 
 
 @attr.s
@@ -162,32 +231,44 @@ This metric is derived from the `StateSupervisionPeriod` entities, which store i
 
     # Required characteristics
 
-    # The type of PopulationSpanMetric
     metric_type: PopulationSpanMetricType = attr.ib(
-        init=False, default=PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN
+        init=False,
+        default=PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
+        metadata={"description": "The type of PopulationSpanMetric"},
     )
 
     # Optional characteristics
 
-    # Supervision Type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
-        default=None
+        default=None, metadata={"description": "Supervision Type"}
     )
 
-    # Supervision Level
-    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(
+        default=None, metadata={"description": "Supervision Level"}
+    )
 
-    # Supervision Level Raw Text
-    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+    supervision_level_raw_text: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Supervision Level Raw Text"}
+    )
 
-    # Case Type
-    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(
+        default=None, metadata={"description": "Case Type"}
+    )
 
-    # Case Type Raw Text
-    case_type_raw_text: Optional[str] = attr.ib(default=None)
+    case_type_raw_text: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Case Type Raw Text"}
+    )
 
-    # Custodial Authority
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
+        default=None, metadata={"description": "Custodial Authority"}
+    )
 
-    # StateStaff id of officer who was supervising the person described by this metric
-    supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
+    supervising_officer_staff_id: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "StateStaff id of officer who was supervising the person "
+                "described by this metric"
+            )
+        },
+    )

@@ -22,12 +22,16 @@ from typing import Literal, get_args
 import attrs
 from google.cloud import bigquery
 
-from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.big_query.constants import (
+    BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
+    BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT,
+)
 from recidiviz.common import attr_validators
 from recidiviz.utils.string import is_meaningful_docstring
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
-COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT = "<no description provided>"
+# Re-exported for backwards compatibility with existing call sites.
+COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT = BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT
 
 SqlFieldMode = Literal["NULLABLE", "REQUIRED", "REPEATED"]
 
@@ -53,7 +57,7 @@ class BigQueryViewColumn(abc.ABC):
         fit within BigQuery's 1024-char column description limit, or the empty string for
         undocumented columns.
         """
-        if self.description == COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT:
+        if self.description == BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT:
             return ""
         return truncate_string_if_necessary(
             self.description, max_length=BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH

@@ -66,22 +66,29 @@ class IncarcerationMetric(
     # Required characteristics
     metric_type_cls = IncarcerationMetricType
 
-    # The type of IncarcerationMetric
-    metric_type: IncarcerationMetricType = attr.ib(default=None)
+    metric_type: IncarcerationMetricType = attr.ib(
+        default=None, metadata={"description": "The type of IncarcerationMetric"}
+    )
 
-    # Year
-    year: int = attr.ib(default=None)
+    year: int = attr.ib(default=None, metadata={"description": "Year"})
 
-    # Month
-    month: int = attr.ib(default=None)
+    month: int = attr.ib(default=None, metadata={"description": "Month"})
 
-    # Whether the period corresponding to the metric is counted in the state's population
-    included_in_state_population: bool = attr.ib(default=True)
+    included_in_state_population: bool = attr.ib(
+        default=True,
+        metadata={
+            "description": (
+                "Whether the period corresponding to the metric is counted in "
+                "the state's population"
+            )
+        },
+    )
 
     # Optional characteristics
 
-    # Facility
-    facility: Optional[str] = attr.ib(default=None)
+    facility: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Facility"}
+    )
 
     @classmethod
     @abc.abstractmethod
@@ -104,40 +111,56 @@ With this metric, we can answer questions like:
 - What percent of admissions to prison in 2017 were due to parole revocations?
 - Of all admissions to prison due to a new court sentence in August 2014, what percent were by people who are Black?
 
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. 
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility.
 
 If a person was admitted to Facility X on 2021-01-01, was transferred out of Facility X and into Facility Z on 2021-03-31, and is still being held in Facility Z, then there will be a single `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X. Transfer admissions are not included in this metric.
 """
 
     # Required characteristics
 
-    # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(
-        init=False, default=IncarcerationMetricType.INCARCERATION_ADMISSION
+        init=False,
+        default=IncarcerationMetricType.INCARCERATION_ADMISSION,
+        metadata={"description": "The type of IncarcerationMetric"},
     )
 
-    # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
-    # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
-    # subsequent admission period, if present.
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "Most relevant admission reason for a continuous stay in prison. "
+                "For example, in some states, if the initial incarceration "
+                "period has an admission reason of TEMPORARY_CUSTODY, the "
+                "admission reason is drawn from the subsequent admission "
+                "period, if present."
+            )
+        },
     )
 
-    # Admission reason raw text
-    admission_reason_raw_text: Optional[str] = attr.ib(default=None)
+    admission_reason_raw_text: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Admission reason raw text"}
+    )
 
     # TODO(#3275): Rename to purpose_for_incarceration
-    # Specialized purpose for incarceration
     specialized_purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
-    ] = attr.ib(default=None)
+    ] = attr.ib(
+        default=None,
+        metadata={"description": "Specialized purpose for incarceration"},
+    )
 
-    # Admission date
-    admission_date: date = attr.ib(default=None)
+    admission_date: date = attr.ib(
+        default=None, metadata={"description": "Admission date"}
+    )
 
-    # Type of supervision the person was committed from if the admission was a commitment from supervision
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "Type of supervision the person was committed from if the "
+                "admission was a commitment from supervision"
+            )
+        },
     )
 
 
@@ -169,61 +192,100 @@ With this metric, we can answer questions like:
 - How have the admissions for treatment mandated by the parole board changed over time for individuals with an `ALCOHOL_DRUG` supervision case type?
 - What was the distribution of supervision levels for all of the people admitted to prison due to a probation revocation in 2020?
 
-This metric is a subset of the `IncarcerationAdmissionMetric`. This means that every admission in the `IncarcerationAdmissionMetric` output that qualifies as a commitment from supervision admission has a corresponding entry in the `IncarcerationCommitmentFromSupervisionMetrics`. This metric is used to track information about the supervision that preceded the admission to incarceration, as well as other information related to the type of commitment from supervision the admission represents. 
+This metric is a subset of the `IncarcerationAdmissionMetric`. This means that every admission in the `IncarcerationAdmissionMetric` output that qualifies as a commitment from supervision admission has a corresponding entry in the `IncarcerationCommitmentFromSupervisionMetrics`. This metric is used to track information about the supervision that preceded the admission to incarceration, as well as other information related to the type of commitment from supervision the admission represents.
 
 If a person was admitted to Facility X on 2021-01-01 for a `REVOCATION` from parole, then there will be an `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X and an associated `IncarcerationCommitmentFromSupervisionMetric` for this person on 2021-01-01 that stores all of the supervision information related to this commitment from supervision admission. If a person enters a parole board hold in Facility X on 2021-01-01, and then has their parole revoked by the parole board on 2021-02-13, then there will be an `IncarcerationAdmissionMetric` for the admission to the `PAROLE_BOARD_HOLD` in Facility X on 2021-01-01, another `IncarcerationAdmissionMetric` for the `REVOCATION` admission to Facility X on 2021-02-13, and an associated `IncarcerationCommitmentFromSupervisionMetric` for the `REVOCATION` on 2021-02-13 that stores all of the supervision information related to this commitment from supervision admission. The `supervision_type` for all of these metrics would be `PAROLE`.
 """
 
-    # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(
         init=False,
         default=IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
+        metadata={"description": "The type of IncarcerationMetric"},
     )
 
-    # A string subtype to capture more information about the
-    # specialized_purpose_for_incarceration, e.g. the length of stay for a
-    # SHOCK_INCARCERATION admission
-    purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
+    purpose_for_incarceration_subtype: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "A string subtype to capture more information about the "
+                "specialized_purpose_for_incarceration, e.g. the length of "
+                "stay for a SHOCK_INCARCERATION admission"
+            )
+        },
+    )
 
-    # Type of supervision the person was committed from
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
-        default=None
+        default=None,
+        metadata={"description": "Type of supervision the person was committed from"},
     )
 
-    # The type of supervision case
-    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(
+        default=None, metadata={"description": "The type of supervision case"}
+    )
 
-    # Raw text of the case_type
-    case_type_raw_text: Optional[str] = attr.ib(default=None)
+    case_type_raw_text: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Raw text of the case_type"}
+    )
 
-    # Level of supervision
-    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(
+        default=None, metadata={"description": "Level of supervision"}
+    )
 
-    # Raw text of the level of supervision
-    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+    supervision_level_raw_text: Optional[str] = attr.ib(
+        default=None,
+        metadata={"description": "Raw text of the level of supervision"},
+    )
 
-    # StateStaff id of officer who was supervising the person described by this metric
-    supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
+    supervising_officer_staff_id: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "StateStaff id of officer who was supervising the person "
+                "described by this metric"
+            )
+        },
+    )
 
-    # A string representation of the violations recorded in the period leading up to the
-    # commitment to incarceration, which is the number of each of the represented types
-    # separated by a semicolon
-    violation_history_description: Optional[str] = attr.ib(default=None)
+    violation_history_description: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "A string representation of the violations recorded in the "
+                "period leading up to the commitment to incarceration, which "
+                "is the number of each of the represented types separated by "
+                "a semicolon"
+            )
+        },
+    )
 
-    # A list of a list of strings for each violation type and subtype recorded during
-    # the period leading up to the commitment admission. The elements of the outer list
-    # represent every StateSupervisionViolation that was reported in the period leading
-    # up to the admission. Each inner list represents all of the violation types and
-    # conditions that were listed on the given violation. For example, 3 violations may
-    # be represented as: [['FELONY', 'TECHNICAL'], ['MISDEMEANOR'],
-    # ['ABSCONDED', 'MUNICIPAL']]
-    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
+    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "A list of a list of strings for each violation type and "
+                "subtype recorded during the period leading up to the "
+                "commitment admission. The elements of the outer list "
+                "represent every StateSupervisionViolation that was reported "
+                "in the period leading up to the admission. Each inner list "
+                "represents all of the violation types and conditions that "
+                "were listed on the given violation. For example, 3 "
+                "violations may be represented as: [['FELONY', 'TECHNICAL'], "
+                "['MISDEMEANOR'], ['ABSCONDED', 'MUNICIPAL']]"
+            )
+        },
+    )
 
-    # The most severe decision on the most recent response leading up to the commitment
-    # admission
     most_recent_response_decision: Optional[
         StateSupervisionViolationResponseDecision
-    ] = attr.ib(default=None)
+    ] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The most severe decision on the most recent response leading "
+                "up to the commitment admission"
+            )
+        },
+    )
 
 
 @attr.s
@@ -241,50 +303,71 @@ With this metric, we can answer questions like:
 - For all individuals released from Facility X in 2015, what was the average number of days each person spent incarcerated prior to their release?
 - How did the number of releases per month change after the state implemented a new release policy?
 
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility.  
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility.
 
 If a person was admitted to Facility X on 2021-01-01, was transferred out of Facility X and into Facility Z on 2021-03-31, and then was released from Facility Z on 2021-06-09, then there will be a single `IncarcerationReleaseMetric` for this person on 2021-06-09 from Facility Z. Transfer releases are not included in this metric.
 """
 
     # Required characteristics
 
-    # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(
-        init=False, default=IncarcerationMetricType.INCARCERATION_RELEASE
+        init=False,
+        default=IncarcerationMetricType.INCARCERATION_RELEASE,
+        metadata={"description": "The type of IncarcerationMetric"},
     )
 
-    # Release date
-    release_date: date = attr.ib(default=None)
+    release_date: date = attr.ib(default=None, metadata={"description": "Release date"})
 
-    # Release reason
     release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(
-        default=None
+        default=None, metadata={"description": "Release reason"}
     )
 
-    # Release reason raw text
-    release_reason_raw_text: Optional[str] = attr.ib(default=None)
+    release_reason_raw_text: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Release reason raw text"}
+    )
 
-    # Type of incarceration the release was from
     purpose_for_incarceration: Optional[
         StateSpecializedPurposeForIncarceration
-    ] = attr.ib(default=None)
-
-    # Supervision type at the time of release, if any.
-    supervision_type_at_release: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = attr.ib(default=None)
-
-    # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
-    # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
-    # subsequent admission period, if present.
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
-        default=None
+    ] = attr.ib(
+        default=None,
+        metadata={"description": "Type of incarceration the release was from"},
     )
 
-    # The length, in days, of the continuous stay in prison.
-    total_days_incarcerated: Optional[int] = attr.ib(default=None)
+    supervision_type_at_release: Optional[
+        StateSupervisionPeriodSupervisionType
+    ] = attr.ib(
+        default=None,
+        metadata={"description": "Supervision type at the time of release, if any."},
+    )
 
-    # Supervision type at the time of commitment from supervision to incarceration prior to release, if applicable.
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Most relevant admission reason for a continuous stay in prison. "
+                "For example, in some states, if the initial incarceration "
+                "period has an admission reason of TEMPORARY_CUSTODY, the "
+                "admission reason is drawn from the subsequent admission "
+                "period, if present."
+            )
+        },
+    )
+
+    total_days_incarcerated: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": ("The length, in days, of the continuous stay in prison.")
+        },
+    )
+
     commitment_from_supervision_supervision_type: Optional[
         StateSupervisionPeriodSupervisionType
-    ] = attr.ib(default=None)
+    ] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Supervision type at the time of commitment from supervision "
+                "to incarceration prior to release, if applicable."
+            )
+        },
+    )

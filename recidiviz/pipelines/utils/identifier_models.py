@@ -37,8 +37,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 class IdentifierResult(BuildableAttr):
     """Base class for results created by the identifier step of each pipeline."""
 
-    # The state where the event took place
-    state_code: str = attr.ib()
+    state_code: str = attr.ib(
+        metadata={"description": "The state where the event took place"}
+    )
 
 
 @attr.s
@@ -49,8 +50,7 @@ class Event(IdentifierResult):
     event has an event_date, although other dates may be present.
     """
 
-    # Date of the event
-    event_date: datetime.date = attr.ib()
+    event_date: datetime.date = attr.ib(metadata={"description": "Date of the event"})
 
 
 @attr.s(frozen=True)
@@ -61,101 +61,206 @@ class Span(IdentifierResult):
     time covered by the span.
     """
 
-    # Date the span began, inclusive (attributes are valid on this day)
-    start_date_inclusive: datetime.date = attr.ib()
+    start_date_inclusive: datetime.date = attr.ib(
+        metadata={
+            "description": (
+                "Date the span began, inclusive (attributes are valid on this day)"
+            )
+        }
+    )
 
-    # Date the span ended, exclusive (attributes are valid through the prior day)
-    end_date_exclusive: Optional[datetime.date] = attr.ib()
+    end_date_exclusive: Optional[datetime.date] = attr.ib(
+        metadata={
+            "description": (
+                "Date the span ended, exclusive (attributes are valid through "
+                "the prior day)"
+            )
+        }
+    )
 
 
 @attr.s(frozen=True)
 class ViolationHistoryMixin(BuildableAttr):
     """Set of attributes to store information about violation and response history."""
 
-    # The most severe violation type leading up to the date of and event
     most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "The most severe violation type leading up to the date of and event"
+            )
+        },
     )
 
-    # A string subtype that provides further insight into the
-    # most_severe_violation_type above.
-    most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
+    most_severe_violation_type_subtype: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "A string subtype that provides further insight into the "
+                "most_severe_violation_type."
+            )
+        },
+    )
 
-    # Id of violation attached to most_severe_violation_type
-    most_severe_violation_id: Optional[int] = attr.ib(default=None)
+    most_severe_violation_id: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": "Id of violation attached to most_severe_violation_type"
+        },
+    )
 
-    # Comma-separated list of violation ids considered when calculating any of these violation history fields
-    violation_history_id_array: Optional[str] = attr.ib(default=None)
+    violation_history_id_array: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Comma-separated list of violation ids considered when "
+                "calculating any of these violation history fields"
+            )
+        },
+    )
 
-    # The number of responses that were included in determining the most severe
-    # type/subtype
-    response_count: Optional[int] = attr.ib(default=0)
+    response_count: Optional[int] = attr.ib(
+        default=0,
+        metadata={
+            "description": (
+                "The number of responses that were included in determining the "
+                "most severe type/subtype"
+            )
+        },
+    )
 
-    # The most severe decision on the responses that were included in determining the
-    # most severe type/subtype
     most_severe_response_decision: Optional[
         StateSupervisionViolationResponseDecision
-    ] = attr.ib(default=None)
+    ] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The most severe decision on the responses that were included "
+                "in determining the most severe type/subtype"
+            )
+        },
+    )
 
 
 @attr.s(frozen=True)
 class ViolationResponseMixin(BuildableAttr):
     """Set of attributes to store information about a violation and response at a point in time."""
 
-    # Violation type
-    violation_type: StateSupervisionViolationType = attr.ib(default=None)
+    violation_type: StateSupervisionViolationType = attr.ib(
+        default=None, metadata={"description": "Violation type"}
+    )
 
-    # A string subtype that provides further insight into the violation_type above.
-    violation_type_subtype: Optional[str] = attr.ib(default=None)
+    violation_type_subtype: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "A string subtype that provides further insight into the "
+                "violation_type above."
+            )
+        },
+    )
 
-    # Whether the violation_type recorded on this metric is the most severe out of all violation types that share the same supervision_violation_id
-    is_most_severe_violation_type: Optional[bool] = attr.ib(default=None)
+    is_most_severe_violation_type: Optional[bool] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Whether the violation_type recorded on this metric is the "
+                "most severe out of all violation types that share the same "
+                "supervision_violation_id"
+            )
+        },
+    )
 
-    # Violation date - the date the violating behavior occurred, if recorded
-    violation_date: Optional[datetime.date] = attr.ib(default=None)
+    violation_date: Optional[datetime.date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Violation date - the date the violating behavior occurred, "
+                "if recorded"
+            )
+        },
+    )
 
-    # Whether the violation was violent in nature
-    is_violent: Optional[bool] = attr.ib(default=None)
+    is_violent: Optional[bool] = attr.ib(
+        default=None,
+        metadata={"description": "Whether the violation was violent in nature"},
+    )
 
-    # Whether the violation was a sex offense
-    is_sex_offense: Optional[bool] = attr.ib(default=None)
+    is_sex_offense: Optional[bool] = attr.ib(
+        default=None,
+        metadata={"description": "Whether the violation was a sex offense"},
+    )
 
-    # The most severe decision on the response to the associated StateSupervisionViolation
     most_severe_response_decision: Optional[
         StateSupervisionViolationResponseDecision
-    ] = attr.ib(default=None)
+    ] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The most severe decision on the response to the associated "
+                "StateSupervisionViolation"
+            )
+        },
+    )
 
-    # Whether the violation type is the most severe type of all violations on a given response date
     is_most_severe_violation_type_of_all_violations: Optional[bool] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "Whether the violation type is the most severe type of all "
+                "violations on a given response date"
+            )
+        },
     )
 
-    # Whether the violation response decision is the most severe of all violations on a given response date
     is_most_severe_response_decision_of_all_violations: Optional[bool] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "Whether the violation response decision is the most severe "
+                "of all violations on a given response date"
+            )
+        },
     )
 
-    # The raw text that determines the violation_type_subtype.
-    violation_type_subtype_raw_text: Optional[str] = attr.ib(default=None)
+    violation_type_subtype_raw_text: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": "The raw text that determines the violation_type_subtype."
+        },
+    )
 
 
 @attr.s
 class SupervisionLocationMixin(BuildableAttr):
     """Set of attributes to store supervision location information."""
 
-    # External ID of the lowest-level sub-geography (e.g. an individual office with a
-    # street address) of the officer that was supervising the person described by this
-    # object.
-    level_1_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+    level_1_supervision_location_external_id: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "External ID of the lowest-level sub-geography (e.g. an "
+                "individual office with a street address) of the officer that "
+                "was supervising the person described by this object."
+            )
+        },
+    )
 
-    # For states with a hierachical structure of supervision locations, this is the
-    # external ID the next-lowest-level sub-geography after
-    # level_1_supervision_sub_geography_external_id. For example, in PA this is a
-    # "district" where level 1 is an office.
     # TODO(#19343): This value is null for all states except PA and overwritten downstream
     #  by logic in BQ views. Once we update PA to hydrate supervision_site properly, we
     #  can remove this metrics field entirely.
-    level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+    level_2_supervision_location_external_id: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "For states with a hierachical structure of supervision "
+                "locations, this is the external ID the next-lowest-level "
+                "sub-geography after level_1_supervision_sub_geography_external_id. "
+                'For example, in PA this is a "district" where level 1 is '
+                "an office."
+            )
+        },
+    )
 
 
 @attr.s
@@ -163,19 +268,40 @@ class InPopulationMixin:
     """Set of attributes marking whether a person was in the supervision and/or
     incarceration populations on a given date."""
 
-    # Whether or not the person was counted in the incarcerated population on this date
-    in_incarceration_population_on_date: bool = attr.ib(default=False)
+    in_incarceration_population_on_date: bool = attr.ib(
+        default=False,
+        metadata={
+            "description": (
+                "Whether or not the person was counted in the incarcerated "
+                "population on this date"
+            )
+        },
+    )
 
-    # Whether or not the person was counted in the supervised population on this date
-    in_supervision_population_on_date: bool = attr.ib(default=False)
+    in_supervision_population_on_date: bool = attr.ib(
+        default=False,
+        metadata={
+            "description": (
+                "Whether or not the person was counted in the supervised "
+                "population on this date"
+            )
+        },
+    )
 
 
 @attr.s
 class IncludedInStateMixin:
     """Mixin with an attribute to marking whether a person is counted towards the state's population"""
 
-    # Whether the identified period is counted as part of the state's population
-    included_in_state_population: bool = attr.ib(default=True)
+    included_in_state_population: bool = attr.ib(
+        default=True,
+        metadata={
+            "description": (
+                "Whether the identified period is counted as part of the "
+                "state's population"
+            )
+        },
+    )
 
 
 @attr.s
@@ -183,14 +309,24 @@ class AssessmentEventMixin:
     """Set of attributes that store information about assessments, and enables an event
     to be able to calculate the score bucket from assessment information."""
 
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+    assessment_type: Optional[StateAssessmentType] = attr.ib(
+        default=None, metadata={"description": "Assessment type"}
+    )
 
-    # Most recent assessment score at the time of referral
-    assessment_score: Optional[int] = attr.ib(default=None)
+    assessment_score: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": "Most recent assessment score at the time of referral"
+        },
+    )
 
-    # Most recent assessment level
-    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None)
+    assessment_level: Optional[StateAssessmentLevel] = attr.ib(
+        default=None, metadata={"description": "Most recent assessment level"}
+    )
 
-    # The assessment score bucket that applies to measurement
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+    assessment_score_bucket: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": "The assessment score bucket that applies to measurement"
+        },
+    )

@@ -49,19 +49,17 @@ class ProgramMetric(RecidivizMetric[ProgramMetricType], PersonLevelMetric):
     # Required characteristics
     metric_type_cls = ProgramMetricType
 
-    # The type of ProgramMetric
-    metric_type: ProgramMetricType = attr.ib(default=None)
+    metric_type: ProgramMetricType = attr.ib(
+        default=None, metadata={"description": "The type of ProgramMetric"}
+    )
 
-    # Year
-    year: int = attr.ib(default=None)
+    year: int = attr.ib(default=None, metadata={"description": "Year"})
 
     # Optional characteristics
 
-    # Month
-    month: Optional[int] = attr.ib(default=None)
+    month: Optional[int] = attr.ib(default=None, metadata={"description": "Month"})
 
-    # Program ID
-    program_id: str = attr.ib(default=None)
+    program_id: str = attr.ib(default=None, metadata={"description": "Program ID"})
 
     @classmethod
     @abc.abstractmethod
@@ -94,23 +92,32 @@ If a person is participating in a program while they are on supervision, then th
 
     # Required characteristics
 
-    # The type of ProgramMetric
     metric_type: ProgramMetricType = attr.ib(
-        init=False, default=ProgramMetricType.PROGRAM_PARTICIPATION
+        init=False,
+        default=ProgramMetricType.PROGRAM_PARTICIPATION,
+        metadata={"description": "The type of ProgramMetric"},
     )
 
-    # Date of active participation
-    date_of_participation: date = attr.ib(default=None)
+    date_of_participation: date = attr.ib(
+        default=None, metadata={"description": "Date of active participation"}
+    )
 
-    # Whether the date_of_participation was the first day the person participated in the program
-    is_first_day_in_program: Optional[bool] = attr.ib(default=None)
+    is_first_day_in_program: Optional[bool] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Whether the date_of_participation was the first day the "
+                "person participated in the program"
+            )
+        },
+    )
 
     # Optional characteristics
 
-    # Program location ID
-    program_location_id: Optional[str] = attr.ib(default=None)
+    program_location_id: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Program location ID"}
+    )
 
-    # Supervision Type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
-        default=None
+        default=None, metadata={"description": "Supervision Type"}
     )

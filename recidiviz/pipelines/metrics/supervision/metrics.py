@@ -65,39 +65,56 @@ class SupervisionMetric(
     # Required characteristics
     metric_type_cls = SupervisionMetricType
 
-    # The type of SupervisionMetric
-    metric_type: SupervisionMetricType = attr.ib(default=None)
+    metric_type: SupervisionMetricType = attr.ib(
+        default=None, metadata={"description": "The type of SupervisionMetric"}
+    )
 
-    # Year
-    year: int = attr.ib(default=None)
+    year: int = attr.ib(default=None, metadata={"description": "Year"})
 
-    # Month
-    month: int = attr.ib(default=None)
+    month: int = attr.ib(default=None, metadata={"description": "Month"})
 
     # Optional characteristics
 
-    # Supervision Type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
-        default=None
+        default=None, metadata={"description": "Supervision Type"}
     )
 
-    # The type of supervision case
-    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(
+        default=None, metadata={"description": "The type of supervision case"}
+    )
 
-    # Raw text of the case_type
-    case_type_raw_text: Optional[str] = attr.ib(default=None)
+    case_type_raw_text: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Raw text of the case_type"}
+    )
 
-    # Level of supervision
-    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(
+        default=None, metadata={"description": "Level of supervision"}
+    )
 
-    # Raw text of the level of supervision
-    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+    supervision_level_raw_text: Optional[str] = attr.ib(
+        default=None,
+        metadata={"description": "Raw text of the level of supervision"},
+    )
 
-    # StateStaff id of officer who was supervising the person described by this metric
-    supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
+    supervising_officer_staff_id: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "StateStaff id of officer who was supervising the person "
+                "described by this metric"
+            )
+        },
+    )
 
-    # The type of government entity that has responsibility for this period of supervision
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The type of government entity that has responsibility for "
+                "this period of supervision"
+            )
+        },
+    )
 
     @classmethod
     @abc.abstractmethod
@@ -124,18 +141,21 @@ With this metric, we can answer questions like:
 
 This metric is derived from the `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised. All population metrics are end date exclusive, meaning a person is not counted in the supervision population on the day that their supervision is terminated. The population metrics are start date inclusive, meaning that a person is counted in the population on the date that they start supervision.
 
-A person is excluded from the supervision population on any days that they are also incarcerated, unless that incarceration is under the custodial authority of the supervision authority in the state. For example, say a person is incarcerated on 2021-01-01, where the custodial authority of the incarceration is the `STATE_PRISON`. If this person is simultaneously serving a probation term while they are incarcerated, they will not be counted in the supervision population because they are in prison under the state prison custodial authority. However, if instead the custodial authority of this incarceration is the `SUPERVISION_AUTHORITY` of the state, then this incarceration will not exclude the person from being counted in the supervision population on this day. 
+A person is excluded from the supervision population on any days that they are also incarcerated, unless that incarceration is under the custodial authority of the supervision authority in the state. For example, say a person is incarcerated on 2021-01-01, where the custodial authority of the incarceration is the `STATE_PRISON`. If this person is simultaneously serving a probation term while they are incarcerated, they will not be counted in the supervision population because they are in prison under the state prison custodial authority. However, if instead the custodial authority of this incarceration is the `SUPERVISION_AUTHORITY` of the state, then this incarceration will not exclude the person from being counted in the supervision population on this day.
 """
 
     # Required characteristics
 
-    # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_POPULATION
+        init=False,
+        default=SupervisionMetricType.SUPERVISION_POPULATION,
+        metadata={"description": "The type of SupervisionMetric"},
     )
 
-    # Date of the supervision population count
-    date_of_supervision: date = attr.ib(default=None)
+    date_of_supervision: date = attr.ib(
+        default=None,
+        metadata={"description": "Date of the supervision population count"},
+    )
 
 
 @attr.s
@@ -146,7 +166,7 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
     @classmethod
     def get_description(cls) -> str:
         return """
-The `SupervisionOutOfStatePopulationMetric` stores information about a single day that an individual spent on supervision, where the person is serving their supervision in another state. This metric tracks each day on which an individual was counted in the state’s “out of state” supervision population, and includes information related to the period of supervision. 
+The `SupervisionOutOfStatePopulationMetric` stores information about a single day that an individual spent on supervision, where the person is serving their supervision in another state. This metric tracks each day on which an individual was counted in the state’s “out of state” supervision population, and includes information related to the period of supervision.
 
 With this metric, we can answer questions like:
 
@@ -158,14 +178,15 @@ This metric is mutually exclusive from the `SupervisionPopulationMetric`. If a p
 
 This metric is derived from the `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised. All population metrics are end date exclusive, meaning a person is not counted in the supervision population on the day that their supervision is terminated. The population metrics are start date inclusive, meaning that a person is counted in the population on the date that they start supervision.
 
-A person is excluded from the out of state supervision population on any days that they are also incarcerated, unless that incarceration is under the custodial authority of the supervision authority in the state. For example, say a person is incarcerated on 2021-01-01, where the custodial authority of the incarceration is the `STATE_PRISON`. If this person is simultaneously serving a probation term (that they have been serving while out of the state) while they are incarcerated, they will not be counted in the out of state supervision population because they are in prison under the state prison custodial authority. However, if instead the custodial authority of this incarceration is the `SUPERVISION_AUTHORITY` of the state, then this incarceration will not exclude the person from being counted in the out of state supervision population on this day. 
+A person is excluded from the out of state supervision population on any days that they are also incarcerated, unless that incarceration is under the custodial authority of the supervision authority in the state. For example, say a person is incarcerated on 2021-01-01, where the custodial authority of the incarceration is the `STATE_PRISON`. If this person is simultaneously serving a probation term (that they have been serving while out of the state) while they are incarcerated, they will not be counted in the out of state supervision population because they are in prison under the state prison custodial authority. However, if instead the custodial authority of this incarceration is the `SUPERVISION_AUTHORITY` of the state, then this incarceration will not exclude the person from being counted in the out of state supervision population on this day.
 """
 
     # Required characteristics
 
-    # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+        init=False,
+        default=SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+        metadata={"description": "The type of SupervisionMetric"},
     )
 
 
@@ -192,33 +213,43 @@ With this metric, we can answer questions like:
 
 This metric is derived from the `termination_date` on `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised. A `SupervisionTerminationMetric` is created for the day that a person ended a supervision period, even if the person was incarcerated on the date the supervision ended. There are two attributes (`in_incarceration_population_on_date` and `in_supervision_population_on_date`) on this metric that indicate whether the person was counted in the incarceration and/or supervision population on the date that the supervision ended.
 
-The presence of this metric does not mean that a person has fully completed their supervision. There is a `SupervisionTerminationMetric` for all terminations of supervision, regardless of the `termination_reason` on the period (for example, there are many terminations with a `termination_reason` of `TRANSFER_WITHIN_STATE` that mark when a person is being transferred from one supervising officer to another). 
+The presence of this metric does not mean that a person has fully completed their supervision. There is a `SupervisionTerminationMetric` for all terminations of supervision, regardless of the `termination_reason` on the period (for example, there are many terminations with a `termination_reason` of `TRANSFER_WITHIN_STATE` that mark when a person is being transferred from one supervising officer to another).
 
-If a person has a supervision period with a `termination_date` of 2017-10-18, then there will be a `SupervisionTerminationMetric` with a `termination_date` of 2017-10-18 that include all details of the supervision that was started. 
+If a person has a supervision period with a `termination_date` of 2017-10-18, then there will be a `SupervisionTerminationMetric` with a `termination_date` of 2017-10-18 that include all details of the supervision that was started.
 """
 
     # Required characteristics
 
-    # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_TERMINATION
+        init=False,
+        default=SupervisionMetricType.SUPERVISION_TERMINATION,
+        metadata={"description": "The type of SupervisionMetric"},
     )
 
     # Optional characteristics
 
     # TODO(#16605): This is no-longer used after the Core dashboard deprecation - delete it.
-    # Change in scores between the assessment right before termination and first
-    # reliable assessment while on supervision. The first "reliable" assessment is
-    # determined by state-specific logic.
-    assessment_score_change: float = attr.ib(default=None)
-
-    # The reason the supervision was terminated
-    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(
-        default=None
+    assessment_score_change: float = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Change in scores between the assessment right before "
+                "termination and first reliable assessment while on "
+                'supervision. The first "reliable" assessment is determined '
+                "by state-specific logic."
+            )
+        },
     )
 
-    # The date the supervision was terminated
-    termination_date: date = attr.ib(default=None)
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(
+        default=None,
+        metadata={"description": "The reason the supervision was terminated"},
+    )
+
+    termination_date: date = attr.ib(
+        default=None,
+        metadata={"description": "The date the supervision was terminated"},
+    )
 
 
 @attr.s
@@ -239,30 +270,34 @@ With this metric, we can answer questions like:
 
 This metric is derived from the `start_date` on `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised. A `SupervisionStartMetric` is created for the day that a person started a supervision period, even if the person was incarcerated on the date the supervision started. There are two attributes (`in_incarceration_population_on_date` and `in_supervision_population_on_date`) on this metric that indicate whether the person was counted in the incarceration and/or supervision population on the date that the supervision started.
 
-The presence of this metric does not mean that a person is starting to serve a new sentence of supervision. There is a `SupervisionStartMetric` for all starts of supervision, regardless of the  `admission_reason` on the period (for example, there are many starts with a `admission_reason` of `TRANSFER_WITHIN_STATE` that mark when a person is being transferred from one supervising officer to another). 
+The presence of this metric does not mean that a person is starting to serve a new sentence of supervision. There is a `SupervisionStartMetric` for all starts of supervision, regardless of the  `admission_reason` on the period (for example, there are many starts with a `admission_reason` of `TRANSFER_WITHIN_STATE` that mark when a person is being transferred from one supervising officer to another).
 
-If a person has a supervision period with a `start_date` of 2017-10-18, then there will be a `SupervisionStartMetric` with a `start_date` of 2017-10-18 that include all details of the supervision that was started. 
+If a person has a supervision period with a `start_date` of 2017-10-18, then there will be a `SupervisionStartMetric` with a `start_date` of 2017-10-18 that include all details of the supervision that was started.
 """
 
     # Required characteristics
 
-    # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_START
+        init=False,
+        default=SupervisionMetricType.SUPERVISION_START,
+        metadata={"description": "The type of SupervisionMetric"},
     )
 
     # Optional characteristics
 
-    # The reason the supervision was started
-    is_official_supervision_admission: bool = attr.ib(default=False)
-
-    # The reason the supervision began
-    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(
-        default=None
+    is_official_supervision_admission: bool = attr.ib(
+        default=False,
+        metadata={"description": "The reason the supervision was started"},
     )
 
-    # The date the supervision was started
-    start_date: date = attr.ib(default=None)
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(
+        default=None,
+        metadata={"description": "The reason the supervision began"},
+    )
+
+    start_date: date = attr.ib(
+        default=None, metadata={"description": "The date the supervision was started"}
+    )
 
 
 @attr.s
@@ -282,78 +317,178 @@ With this metric, we can answer questions like:
 - At the end of last month how many people were overdue on having an assessment done on them?
 - What proportion of individuals on Officer X’s caseload are actively eligible for a supervision downgrade?
 
-This metric is derived from the `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised, the `StateAssessment` entities, which store instances of when a person was assessed, and `StateSupervisionContact` entities, which store information about when a supervision officer makes contact with a person on supervision (or with someone in the person’s community). 
+This metric is derived from the `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised, the `StateAssessment` entities, which store instances of when a person was assessed, and `StateSupervisionContact` entities, which store information about when a supervision officer makes contact with a person on supervision (or with someone in the person’s community).
 
 The calculation of the attributes of this metric relies entirely on the state-specific implementation of the `StateSupervisionCaseComplianceManager`. All compliance guidelines are state-specific, and the details of these state-specific calculations can be found in the file with the `StateSupervisionCaseComplianceManager` implementation for each state.
 """
 
     # Required characteristics
 
-    # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_COMPLIANCE
+        init=False,
+        default=SupervisionMetricType.SUPERVISION_COMPLIANCE,
+        metadata={"description": "The type of SupervisionMetric"},
     )
 
-    # The date on which the case's compliance was evaluated
-    date_of_evaluation: date = attr.ib(default=None)
+    date_of_evaluation: date = attr.ib(
+        default=None,
+        metadata={
+            "description": "The date on which the case's compliance was evaluated"
+        },
+    )
 
-    # The number of risk assessments conducted on this person on the date_of_evaluation
-    assessment_count: int = attr.ib(default=None)
+    assessment_count: int = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The number of risk assessments conducted on this person on "
+                "the date_of_evaluation"
+            )
+        },
+    )
 
-    # The number of face-to-face contacts with this person on the date_of_evaluation
-    face_to_face_count: int = attr.ib(default=None)
+    face_to_face_count: int = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The number of face-to-face contacts with this person on the "
+                "date_of_evaluation"
+            )
+        },
+    )
 
-    # The number of home visits conducted on this person on the date_of_evaluation
-    home_visit_count: int = attr.ib(default=None)
+    home_visit_count: int = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The number of home visits conducted on this person on the "
+                "date_of_evaluation"
+            )
+        },
+    )
 
     # Optional characteristics
 
-    # The date that the last assessment happened. If no assessment has yet happened, this is None.
-    most_recent_assessment_date: Optional[date] = attr.ib(default=None)
+    most_recent_assessment_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The date that the last assessment happened. If no assessment "
+                "has yet happened, this is None."
+            )
+        },
+    )
 
-    # If this value is set, then this is the next recommended assessment date
-    # according to department policy. If this value is in the past, this implies that the
-    # assessment is overdue.
-    next_recommended_assessment_date: Optional[date] = attr.ib(default=None)
+    next_recommended_assessment_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "If this value is set, then this is the next recommended "
+                "assessment date according to department policy. If this "
+                "value is in the past, this implies that the assessment is "
+                "overdue."
+            )
+        },
+    )
 
-    # The date that the last face-to-face contact happened. If no meetings have yet happened, this is None.
-    most_recent_face_to_face_date: Optional[date] = attr.ib(default=None)
+    most_recent_face_to_face_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The date that the last face-to-face contact happened. If no "
+                "meetings have yet happened, this is None."
+            )
+        },
+    )
 
-    # When the next recommended face-to-face contact should happen according to compliance standards.
-    # Should be unset if we do not know the compliance standards for this person, or no further contact is required.
-    next_recommended_face_to_face_date: Optional[date] = attr.ib(default=None)
+    next_recommended_face_to_face_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "When the next recommended face-to-face contact should happen "
+                "according to compliance standards. Should be unset if we do "
+                "not know the compliance standards for this person, or no "
+                "further contact is required."
+            )
+        },
+    )
 
-    # The date that the last home visit contact happened. If no meetings have yet happened, this is None.
-    most_recent_home_visit_date: Optional[date] = attr.ib(default=None)
+    most_recent_home_visit_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The date that the last home visit contact happened. If no "
+                "meetings have yet happened, this is None."
+            )
+        },
+    )
 
-    # When the next recommended home visit should happen according to compliance standards.
-    # SHould be unset if we do not know the compliance standards for this person, or no further contact is required.
-    next_recommended_home_visit_date: Optional[date] = attr.ib(default=None)
+    next_recommended_home_visit_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "When the next recommended home visit should happen according "
+                "to compliance standards. SHould be unset if we do not know "
+                "the compliance standards for this person, or no further "
+                "contact is required."
+            )
+        },
+    )
 
-    # The date that the last collateral contact happened with a treatment provider. If no meetings have yet happened, this is None.
     most_recent_treatment_collateral_contact_date: Optional[date] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "The date that the last collateral contact happened with a "
+                "treatment provider. If no meetings have yet happened, this "
+                "is None."
+            )
+        },
     )
 
-    # When the next recommended treatment provider collateral contact should happen according to compliance standards.
-    # Should be unset if we do not know the compliance standards for this person or no further contact is required.
     next_recommended_treatment_collateral_contact_date: Optional[date] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "When the next recommended treatment provider collateral "
+                "contact should happen according to compliance standards. "
+                "Should be unset if we do not know the compliance standards "
+                "for this person or no further contact is required."
+            )
+        },
     )
 
-    # If the person on supervision is eligible for a downgrade, the level they should be
-    # downgraded to.
-    # This value is set to None if we do not know how to calculate recommended
-    # supervision level status for this person.
     recommended_supervision_downgrade_level: Optional[StateSupervisionLevel] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "If the person on supervision is eligible for a downgrade, "
+                "the level they should be downgraded to. This value is set "
+                "to None if we do not know how to calculate recommended "
+                "supervision level status for this person."
+            )
+        },
     )
 
-    # The date that the last employment verification happened.  If no employment verifications have yet happened, this is None.
-    most_recent_employment_verification_date: Optional[date] = attr.ib(default=None)
+    most_recent_employment_verification_date: Optional[date] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The date that the last employment verification happened.  "
+                "If no employment verifications have yet happened, this is "
+                "None."
+            )
+        },
+    )
 
-    # When the next recommended employment verification should happen according to compliance standards.
-    # Should be unset if we do not know the compliance standards for this person or no further contact is required.
     next_recommended_employment_verification_date: Optional[date] = attr.ib(
-        default=None
+        default=None,
+        metadata={
+            "description": (
+                "When the next recommended employment verification should "
+                "happen according to compliance standards. Should be unset "
+                "if we do not know the compliance standards for this person "
+                "or no further contact is required."
+            )
+        },
     )

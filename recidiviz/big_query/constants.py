@@ -25,6 +25,10 @@ BQ_TABLE_COLUMN_NAME_MAX_LENGTH = 300
 # Maximum length for any column description on any column.
 BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
 
+# Placeholder description used for columns that do not yet have meaningful
+# documentation.
+BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT = "<no description provided>"
+
 # Maximum length for any view query, including comments and whitespace. See
 # https://cloud.google.com/bigquery/quotas#standard_view_limits.
 BQ_VIEW_QUERY_MAX_LENGTH = 256000

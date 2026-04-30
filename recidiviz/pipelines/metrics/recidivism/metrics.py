@@ -44,17 +44,27 @@ class ReincarcerationRecidivismMetric(
     # Required characteristics
     metric_type_cls = ReincarcerationRecidivismMetricType
 
-    # The type of ReincarcerationRecidivismMetric
-    metric_type: ReincarcerationRecidivismMetricType = attr.ib(default=None)
+    metric_type: ReincarcerationRecidivismMetricType = attr.ib(
+        default=None,
+        metadata={"description": "The type of ReincarcerationRecidivismMetric"},
+    )
 
     # Optional characteristics
 
-    # The bucket string of the persons' incarceration stay length (in months), e.g.,
-    # '<12' or '36-48'
-    stay_length_bucket: Optional[str] = attr.ib(default=None)
+    stay_length_bucket: Optional[str] = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The bucket string of the persons' incarceration stay length "
+                "(in months), e.g., '<12' or '36-48'"
+            )
+        },
+    )
 
-    # The facility the person was released from
-    release_facility: Optional[str] = attr.ib(default=None)
+    release_facility: Optional[str] = attr.ib(
+        default=None,
+        metadata={"description": "The facility the person was released from"},
+    )
 
     @classmethod
     @abc.abstractmethod
@@ -144,23 +154,41 @@ Say a person was released to liberty on 2008-01-03 from a state prison, where th
 
     # Required characteristics
 
-    # The type of ReincarcerationRecidivismMetric
     metric_type: ReincarcerationRecidivismMetricType = attr.ib(
-        init=False, default=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE
+        init=False,
+        default=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
+        metadata={"description": "The type of ReincarcerationRecidivismMetric"},
     )
 
-    # The integer year during which the persons were released
-    release_cohort: int = attr.ib(default=None)  # non-nullable
+    release_cohort: int = attr.ib(
+        default=None,
+        metadata={
+            "description": "The integer year during which the persons were released"
+        },
+    )  # non-nullable
 
-    # The integer number of years after date of release during which recidivism was
-    # measured
-    follow_up_period: int = attr.ib(default=None)  # non-nullable
+    follow_up_period: int = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "The integer number of years after date of release during "
+                "which recidivism was measured"
+            )
+        },
+    )  # non-nullable
 
     # Required metric values
 
-    # Whether or not the person recidivated within the follow_up_period number of
-    # years following the release
-    did_recidivate: bool = attr.ib(default=None)  # non-nullable
+    did_recidivate: bool = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Whether or not the person recidivated within the "
+                "follow_up_period number of years following the release"
+            )
+        },
+    )  # non-nullable
 
-    # Date of release
-    release_date: date = attr.ib(default=None)  # non-nullable
+    release_date: date = attr.ib(
+        default=None, metadata={"description": "Date of release"}
+    )  # non-nullable

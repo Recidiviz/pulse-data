@@ -46,19 +46,19 @@ class ViolationMetric(RecidivizMetric[ViolationMetricType], PersonLevelMetric):
     # Required characteristics
     metric_type_cls = ViolationMetricType
 
-    # The type of ViolationMetric
-    metric_type: ViolationMetricType = attr.ib(default=None)
+    metric_type: ViolationMetricType = attr.ib(
+        default=None, metadata={"description": "The type of ViolationMetric"}
+    )
 
-    # Year
-    year: int = attr.ib(default=None)
+    year: int = attr.ib(default=None, metadata={"description": "Year"})
 
     # Optional characteristics
 
-    # Month
-    month: int = attr.ib(default=None)
+    month: int = attr.ib(default=None, metadata={"description": "Month"})
 
-    # Violation Id
-    supervision_violation_id: int = attr.ib(default=None)
+    supervision_violation_id: int = attr.ib(
+        default=None, metadata={"description": "Violation Id"}
+    )
 
     @classmethod
     @abc.abstractmethod
@@ -91,8 +91,16 @@ If a probation officer in US_PA submitted a violation report on 2019-11-19 descr
 """
 
     metric_type: ViolationMetricType = attr.ib(
-        init=False, default=ViolationMetricType.VIOLATION
+        init=False,
+        default=ViolationMetricType.VIOLATION,
+        metadata={"description": "The type of ViolationMetric"},
     )
 
-    # Earliest response date associated with the supervision_violation_id
-    response_date: datetime.date = attr.ib(default=None)
+    response_date: datetime.date = attr.ib(
+        default=None,
+        metadata={
+            "description": (
+                "Earliest response date associated with the " "supervision_violation_id"
+            )
+        },
+    )

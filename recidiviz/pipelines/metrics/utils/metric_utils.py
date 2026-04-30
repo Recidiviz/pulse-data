@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base class for metrics we calculate."""
+
 import abc
 from datetime import date
 from enum import Enum
@@ -24,6 +25,7 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
+from recidiviz.big_query.constants import BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
@@ -41,7 +43,8 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
 
     Contains all of the identifying characteristics of the metric, including
     required characteristics for normalization as well as optional
-    characteristics for slicing the data.
+    characteristics for slicing the data. Field description metadata in metrics and
+    mixins is used to document the field in BigQuery views.
     """
 
     # Required characteristics
@@ -49,31 +52,50 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
     # The type of metric described
     metric_type_cls: Type[RecidivizMetricTypeT]
 
-    metric_type: RecidivizMetricTypeT = attr.ib()
+    metric_type: RecidivizMetricTypeT = attr.ib(
+        metadata={"description": "The type of metric described"}
+    )
 
-    # The string id of the calculation pipeline job that produced this metric.
-    job_id: str = attr.ib()  # non-nullable
+    job_id: str = attr.ib(
+        metadata={
+            "description": (
+                "The string id of the calculation pipeline job that produced "
+                "this metric."
+            )
+        }
+    )  # non-nullable
 
-    # The state code of the metric this describes
-    state_code: str = attr.ib()
+    state_code: str = attr.ib(
+        metadata={"description": "The state code of the metric this describes"}
+    )
 
     # Optional characteristics
 
-    # The age of the person the metric describes
-    age: Optional[int] = attr.ib(default=None)
+    age: Optional[int] = attr.ib(
+        default=None,
+        metadata={"description": "The age of the person the metric describes"},
+    )
 
     # Record keeping fields
 
-    # A date for when this metric was created
-    created_on: Optional[date] = attr.ib(default=None)
+    created_on: Optional[date] = attr.ib(
+        default=None,
+        metadata={"description": "A date for when this metric was created"},
+    )
 
     @classmethod
     def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
         """Returns the necessary BigQuery schema for the RecidivizMetric, which is a
-        list of SchemaField objects containing the column name and value type for
+        list of SchemaField objects containing the column name, type and description for
         each attribute on the RecidivizMetric."""
         return [
-            schema_field_for_attribute(field_name=field, attribute=attribute)
+            schema_field_for_attribute(
+                field_name=field,
+                attribute=attribute,
+                description=attribute.metadata.get(
+                    "description", BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT
+                ),
+            )
             for field, attribute in attr.fields_dict(cls).items()
         ]
 
@@ -88,19 +110,25 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
 class PersonLevelMetric(BuildableAttr):
     """Base class for modeling a person-level metric."""
 
-    # The external_id of StatePerson for person-specific metrics
-    person_id: Optional[int] = attr.ib(default=None)
+    person_id: Optional[int] = attr.ib(
+        default=None,
+        metadata={
+            "description": "The external_id of StatePerson for person-specific metrics"
+        },
+    )
 
 
 @attr.s
 class AssessmentMetricMixin(BuildableAttr):
     """Set of attributes to store information about assessments on a metric."""
 
-    # Assessment score
-    assessment_score_bucket: Optional[str] = attr.ib(default=None)
+    assessment_score_bucket: Optional[str] = attr.ib(
+        default=None, metadata={"description": "Assessment score"}
+    )
 
-    # Assessment type
-    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
+    assessment_type: Optional[StateAssessmentType] = attr.ib(
+        default=None, metadata={"description": "Assessment type"}
+    )
 
 
 def json_serializable_list_value_handler(key: str, values: List[Any]) -> str:

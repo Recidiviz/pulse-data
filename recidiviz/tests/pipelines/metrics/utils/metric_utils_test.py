@@ -57,18 +57,61 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
         schema_fields = IncarcerationMetric.bq_schema_for_metric_table()
 
         expected_output = [
-            SchemaField("metric_type", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("job_id", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("age", bigquery.enums.SqlTypeNames.INTEGER.value),
-            SchemaField("created_on", bigquery.enums.SqlTypeNames.DATE.value),
-            SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
-            SchemaField("year", bigquery.enums.SqlTypeNames.INTEGER.value),
-            SchemaField("month", bigquery.enums.SqlTypeNames.INTEGER.value),
-            SchemaField("facility", bigquery.enums.SqlTypeNames.STRING.value),
+            SchemaField(
+                "metric_type",
+                bigquery.enums.SqlTypeNames.STRING.value,
+                description="The type of IncarcerationMetric",
+            ),
+            SchemaField(
+                "job_id",
+                bigquery.enums.SqlTypeNames.STRING.value,
+                description=(
+                    "The string id of the calculation pipeline job that "
+                    "produced this metric."
+                ),
+            ),
+            SchemaField(
+                "state_code",
+                bigquery.enums.SqlTypeNames.STRING.value,
+                description="The state code of the metric this describes",
+            ),
+            SchemaField(
+                "age",
+                bigquery.enums.SqlTypeNames.INTEGER.value,
+                description="The age of the person the metric describes",
+            ),
+            SchemaField(
+                "created_on",
+                bigquery.enums.SqlTypeNames.DATE.value,
+                description="A date for when this metric was created",
+            ),
+            SchemaField(
+                "person_id",
+                bigquery.enums.SqlTypeNames.INTEGER.value,
+                description="The external_id of StatePerson for person-specific metrics",
+            ),
+            SchemaField(
+                "year",
+                bigquery.enums.SqlTypeNames.INTEGER.value,
+                description="Year",
+            ),
+            SchemaField(
+                "month",
+                bigquery.enums.SqlTypeNames.INTEGER.value,
+                description="Month",
+            ),
+            SchemaField(
+                "facility",
+                bigquery.enums.SqlTypeNames.STRING.value,
+                description="Facility",
+            ),
             SchemaField(
                 "included_in_state_population",
                 bigquery.enums.SqlTypeNames.BOOLEAN.value,
+                description=(
+                    "Whether the period corresponding to the metric is counted "
+                    "in the state's population"
+                ),
             ),
         ]
 
