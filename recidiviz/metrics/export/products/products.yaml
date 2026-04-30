@@ -303,3 +303,10 @@ products:
         environment: staging
       - state_code: US_ND
         environment: staging
+  - name: JII Tablet App Postgres exports
+    description: Views to be loaded into the JII Tablet app Postgres database
+    exports:
+      - JII_TABLET
+    states:
+      - state_code: US_NC
+        environment: production

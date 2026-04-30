@@ -35,6 +35,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.jii.jii_views import JII_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
     JII_TEXTING_VIEWS_TO_EXPORT,
 )
@@ -283,6 +284,7 @@ JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-texting-etl-data
 REENTRY_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-reentry-etl-data"
 MEETINGS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-meetings-etl-data"
 CPA_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-cpa-etl-data"
+JII_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-etl-data"
 USER_DATA_DOWNLOADS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-user-data-downloads"
 PUBLIC_PATHWAYS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-pathways-data"
 
@@ -522,6 +524,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
             GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
         },
+        publish_success_pubsub_message=True,
+    ),
+    # JII tablet app views
+    ExportViewCollectionConfig(
+        view_builders_to_export=JII_VIEW_BUILDERS,
+        output_directory_uri_template=JII_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="JII_TABLET",
+        allow_empty=True,
         publish_success_pubsub_message=True,
     ),
 ]

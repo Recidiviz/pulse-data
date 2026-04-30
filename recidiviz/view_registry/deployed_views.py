@@ -137,6 +137,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "impact_dashboard",
     "impact_reports",
     "ingest_metadata",
+    "jii_views",
     "justice_counts",
     "justice_counts_corrections",
     "justice_counts_dashboard",
