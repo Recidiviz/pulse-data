@@ -99,12 +99,11 @@ function create_looker_release_branch {
 
   looker_git checkout -b "${NEW_RELEASE_BRANCH}"
 
-  declare -A model_map=(
-    ["${LOOKER_STAGING_MODEL_NAME}"]="${LOOKER_PROD_MODEL_NAME}"
-    ["external_embed_${LOOKER_STAGING_MODEL_NAME}"]="external_embed_${LOOKER_PROD_MODEL_NAME}"
-  )
-  for staging_model in "${!model_map[@]}"; do
-    prod_model="${model_map[$staging_model]}"
+  local staging_models=("${LOOKER_STAGING_MODEL_NAME}" "external_embed_${LOOKER_STAGING_MODEL_NAME}")
+  local prod_models=("${LOOKER_PROD_MODEL_NAME}" "external_embed_${LOOKER_PROD_MODEL_NAME}")
+  for i in "${!staging_models[@]}"; do
+    staging_model="${staging_models[$i]}"
+    prod_model="${prod_models[$i]}"
 
     # 1. Update manifest.lkml
     run_cmd sed -i "" "s/value: \"${staging_model}\"/value: \"${prod_model}\"/" "${TEMP_LOOKER_DIR}/manifest.lkml"
