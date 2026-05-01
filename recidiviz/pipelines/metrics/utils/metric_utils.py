@@ -92,6 +92,7 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
             schema_field_for_attribute(
                 field_name=field,
                 attribute=attribute,
+                # TODO(#54941) remove fallback when descriptions are required
                 description=attribute.metadata.get(
                     "description", BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT
                 ),

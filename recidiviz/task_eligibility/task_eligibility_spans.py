@@ -27,10 +27,14 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
 )
 from recidiviz.task_eligibility.collapsed_task_eligibility_spans import (
     build_collapsed_task_eligibility_spans_view_for_tes_builder,
+    collapsed_task_eligibility_span_schema,
 )
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_DATASET_ID,
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
+    single_task_eligibility_span_schema,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
@@ -188,6 +192,7 @@ def _get_eligibility_spans_unioned_view_builders() -> Sequence[BigQueryViewBuild
     b) one view that unions all the data from the state-specific 'all_tasks' views
     into one place.
     """
+    all_tasks_schema = single_task_eligibility_span_schema()
     clustering_fields = ["state_code", "task_name"]
 
     state_specific_unioned_view_builders = []
@@ -214,6 +219,7 @@ def _get_eligibility_spans_unioned_view_builders() -> Sequence[BigQueryViewBuild
                 ),
                 parents=task_view_builders,
                 clustering_fields=clustering_fields,
+                schema=all_tasks_schema,
             )
         )
 
@@ -229,6 +235,7 @@ def _get_eligibility_spans_unioned_view_builders() -> Sequence[BigQueryViewBuild
             description=ALL_TASKS_ALL_STATES_DESCRIPTION,
             parents=state_specific_unioned_view_builders,
             clustering_fields=clustering_fields,
+            schema=all_tasks_schema,
         ),
     ]
 
@@ -242,6 +249,7 @@ def _get_collapsed_eligibility_spans_unioned_view_builders() -> Sequence[
     b) one view that unions all the data from the state-specific 'all_tasks__collapsed'
     views into one place.
     """
+    all_tasks_collapsed_schema = collapsed_task_eligibility_span_schema()
     clustering_fields = ["state_code", "task_name"]
 
     state_specific_unioned_view_builders = []
@@ -269,6 +277,7 @@ def _get_collapsed_eligibility_spans_unioned_view_builders() -> Sequence[
                     for tes_builder in task_view_builders
                 ],
                 clustering_fields=clustering_fields,
+                schema=all_tasks_collapsed_schema,
             )
         )
 
@@ -284,6 +293,7 @@ def _get_collapsed_eligibility_spans_unioned_view_builders() -> Sequence[
             description=ALL_TASKS_COLLAPSED_ALL_STATES_DESCRIPTION,
             parents=state_specific_unioned_view_builders,
             clustering_fields=clustering_fields,
+            schema=all_tasks_collapsed_schema,
         ),
     ]
 

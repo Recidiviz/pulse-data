@@ -19,11 +19,13 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, String
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
+    compliance_task_eligibility_span_schema,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_collector import (
     ComplianceTaskEligibilitySpansBigQueryViewCollector,
@@ -48,6 +50,30 @@ results of all single-state `all_compliance_task_eligibility_spans` views (e.g. 
 ALL_COMPLIANCE_TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = (
     "all_compliance_task_eligibility_spans"
 )
+
+
+def all_compliance_task_eligibility_spans_schema() -> list[BigQueryViewColumn]:
+    """Schema for the all_compliance_task_eligibility_spans union views."""
+    base = {col.name: col for col in compliance_task_eligibility_span_schema()}
+    return [
+        base["state_code"],
+        base["person_id"],
+        String(
+            name="task_name",
+            description="The name of the task.",
+            mode="REQUIRED",
+        ),
+        base["start_date"],
+        base["end_date"],
+        base["is_eligible"],
+        base["is_overdue"],
+        base["reasons"],
+        base["reasons_v2"],
+        base["ineligible_criteria"],
+        base["due_date"],
+        base["display_due_date"],
+        base["last_task_completed_date"],
+    ]
 
 
 def get_compliance_eligibility_spans_unioned_view_builders() -> Sequence[
@@ -93,6 +119,7 @@ def get_compliance_eligibility_spans_unioned_view_builders() -> Sequence[
                 parents=task_view_builders,
                 clustering_fields=clustering_fields,
                 parent_view_to_select_statement=get_criteria_select_statement,
+                schema=all_compliance_task_eligibility_spans_schema(),
             )
         )
 
@@ -108,5 +135,6 @@ def get_compliance_eligibility_spans_unioned_view_builders() -> Sequence[
             description=ALL_COMPLIANCE_TASK_ELIGIBILITY_SPANS_ALL_STATES_DESCRIPTION,
             parents=state_specific_unioned_view_builders,
             clustering_fields=clustering_fields,
+            schema=all_compliance_task_eligibility_spans_schema(),
         ),
     ]

@@ -52,6 +52,7 @@ class WithMetadataQueryBigQueryView(BigQueryView):
             materialized_address=delegate.materialized_address,
             sandbox_context=sandbox_context,
             clustering_fields=delegate.clustering_fields,
+            schema=delegate.schema,
             **delegate.query_format_kwargs,
         )
 

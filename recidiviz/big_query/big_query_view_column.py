@@ -57,7 +57,7 @@ class BigQueryViewColumn(abc.ABC):
         fit within BigQuery's 1024-char column description limit, or the empty string for
         undocumented columns.
         """
-        if self.description == BQ_TABLE_UNDOCUMENTED_PLACEHOLDER_TEXT:
+        if self.description == COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT:
             return ""
         return truncate_string_if_necessary(
             self.description, max_length=BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH

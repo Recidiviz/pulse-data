@@ -26,6 +26,7 @@ from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn, Float, String
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
@@ -161,6 +162,36 @@ class SamenessDataValidationCheck(DataValidationCheck):
         if self.validation_name_suffix is not None:
             view_id += f"_{self.validation_name_suffix}"
 
+        parent_schema = self.view_builder.schema
+        error_schema: list[BigQueryViewColumn] | None
+        # TODO(#54941): Remove after view schemas are required
+        if parent_schema is None:
+            error_schema = None
+        elif self.sameness_check_type == SamenessDataValidationCheckType.PER_ROW:
+            error_schema = [
+                *parent_schema,
+                Float(
+                    name="error_rate",
+                    description=(
+                        "Fractional difference between comparison column "
+                        "values for this row, calculated as (max - min) / "
+                        "max. 1.0 if any comparison column is NULL."
+                    ),
+                    mode="NULLABLE",
+                ),
+                String(
+                    name="error_type",
+                    description=(
+                        "Severity of the row's error: 'soft' if error_rate "
+                        "exceeds the soft threshold, 'hard' if it exceeds "
+                        "the hard threshold."
+                    ),
+                    mode="NULLABLE",
+                ),
+            ]
+        else:
+            error_schema = list(parent_schema)
+
         return SimpleBigQueryViewBuilder(
             dataset_id=self.view_builder.dataset_id,
             view_id=f"{view_id}_errors",
@@ -172,6 +203,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
             description=self.view_builder.description,
             should_materialize=True,
             projects_to_deploy=self.view_builder.projects_to_deploy,
+            schema=error_schema,
         )
 
     def updated_for_region(

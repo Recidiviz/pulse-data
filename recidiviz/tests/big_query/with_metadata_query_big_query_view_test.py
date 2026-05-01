@@ -21,6 +21,7 @@ from mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import Integer, String
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -44,6 +45,18 @@ class WithMetadataBigQueryViewTest(unittest.TestCase):
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
+            schema=[
+                String(
+                    name="state_code",
+                    description="The state code.",
+                    mode="REQUIRED",
+                ),
+                Integer(
+                    name="person_id",
+                    description="The person ID.",
+                    mode="NULLABLE",
+                ),
+            ],
         )
 
     def tearDown(self) -> None:
@@ -58,6 +71,14 @@ class WithMetadataBigQueryViewTest(unittest.TestCase):
         ).build()
 
         self.assertEqual(view.metadata_query, "SELECT val as col, US_XX as state_code")
+        assert view.schema is not None
+        self.assertEqual(
+            [(c.name, c.field_type, c.mode) for c in view.schema],
+            [
+                ("state_code", "STRING", "REQUIRED"),
+                ("person_id", "INTEGER", "NULLABLE"),
+            ],
+        )
 
     def test_metadata_query_with_overrides(self) -> None:
         address_overrides = (

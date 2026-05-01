@@ -17,10 +17,11 @@
 
 """An extension of BigQueryView with extra functionality related to metric views specifically."""
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -41,6 +42,8 @@ class MetricBigQueryView(BigQueryView):
         materialized_address: BigQueryAddress,
         sandbox_context: BigQueryViewSandboxContext | None,
         clustering_fields: Optional[List[str]] = None,
+        # TODO(#54941): Make this required after schemas are required for all views.
+        schema: Sequence[BigQueryViewColumn] | None = None,
         **query_format_kwargs: str,
     ):
         super().__init__(
@@ -53,7 +56,7 @@ class MetricBigQueryView(BigQueryView):
             sandbox_context=sandbox_context,
             clustering_fields=clustering_fields,
             time_partitioning=None,
-            schema=None,
+            schema=schema,
             **query_format_kwargs,
         )
         self.dimensions = dimensions
@@ -82,6 +85,8 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         dimensions: Tuple[str, ...],
         materialized_address_override: Optional[BigQueryAddress] = None,
         clustering_fields: Optional[List[str]] = None,
+        # TODO(#54941): Make this required after schemas are required for all views.
+        schema: Sequence[BigQueryViewColumn] | None = None,
         # All keyword args must have string values
         **query_format_kwargs: str,
     ):
@@ -102,6 +107,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
             BigQueryAddress,
         )
         self.clustering_fields = clustering_fields
+        self.schema = schema
         self.query_format_kwargs = query_format_kwargs
 
     def _build(
@@ -117,6 +123,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
             dimensions=self.dimensions,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
+            schema=self.schema,
             sandbox_context=sandbox_context,
             **self.query_format_kwargs,
         )
