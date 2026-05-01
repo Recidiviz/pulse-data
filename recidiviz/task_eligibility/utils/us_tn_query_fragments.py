@@ -748,6 +748,7 @@ def classification_v2_incidents() -> str:
 def incident_based_caf_score_query_template(
     score_definitions: dict,
     incident_filter_condition: str,
+    max_total_score: int | None = None,
 ) -> str:
     """
     Generates a SQL query for calculating CAF (Classification Assessment Form)
@@ -777,6 +778,8 @@ def incident_based_caf_score_query_template(
             are included in the scoring. This should reference columns available in
             the `us_tn_incarceration_incidents_preprocessed` table
             (e.g., "incident_class IN ('A', 'B') AND NOT is_violent").
+        max_total_score: If set, caps total_score at this value using LEAST(). Useful
+            when individual window scores can sum beyond the policy maximum.
     """
 
     def create_case_when_clause(score_mapping: dict, column_name: str) -> str:
@@ -917,6 +920,8 @@ def incident_based_caf_score_query_template(
             for (start, end) in score_definitions.keys()
         ]
     )
+    if max_total_score is not None:
+        aggregate_score_clause = f"LEAST({max_total_score}, {aggregate_score_clause})"
 
     return f"""
     -- Get all state prison spans to link incidents to specific stays
