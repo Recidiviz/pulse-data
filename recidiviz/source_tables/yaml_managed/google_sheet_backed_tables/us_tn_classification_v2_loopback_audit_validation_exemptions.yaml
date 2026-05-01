@@ -1,0 +1,41 @@
+address:
+  dataset_id: google_sheet_backed_tables
+  table_id: us_tn_classification_v2_loopback_audit_validation_exemptions
+description: |-
+  Rows that we know to be failing validation checks as a part of the classification v2 monitoring system. 
+  As a part of classification v2 pilot, we are being the system of record for certain fields.In order to store historical classifications, we are writing 
+  form updates that are made in our frontend from Firestore back to a persistence layer hosted as a Cloud SQL db that we are, in turn, syncing back to the
+  ingest bucket to integrate into our usual batch processing pipeline. This table contains a set of exemptions for the suite of data integrity validations we 
+  have written where we know either TOMIS or our data to be either missing or incorrect.
+schema:
+  - name: validation_view_name
+    type: STRING
+    mode: NULLABLE
+    description: the name of the validation view that this row is being exempted from
+  - name: offenderid
+    type: STRING
+    mode: NULLABLE
+    description: TN-assigned id number associated with the JII
+  - name: cafdate
+    type: DATE
+    mode: NULLABLE
+    description: the date in the TOMIS system that this CAF occurred
+  - name: exemption_reason
+    type: STRING
+    mode: NULLABLE
+    description: the reason we are exempting this row
+  - name: added_by
+    type: STRING
+    mode: NULLABLE
+    description: the recidiviz staff member that added this exemption
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - https://docs.google.com/spreadsheets/d/1lpR57uY_LkTWJUt0yNgrfBEq1C9GVJEvEIPND_VN2Ls/edit?usp=sharing
+  sourceFormat: GOOGLE_SHEETS
+  autodetect: false
+  # Google Sheets external tables don't honor ignoreUnknownValues: false, so we explicitly set this to true for clarity.
+  ignoreUnknownValues: true
+  googleSheetsOptions:
+    skipLeadingRows: "1"
+    range: caf-exemptions
