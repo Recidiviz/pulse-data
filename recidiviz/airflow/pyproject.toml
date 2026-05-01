@@ -444,7 +444,8 @@ dev = [
     "types-cffi",
     "types-colorama",
     "types-croniter",
-    "types-dateparser",
+    # TODO(#60465): Un-pin when airflow environment is upgraded to a compatible version
+    "types-dateparser==1.2.2.20250809",
     "types-decorator",
     "types-Deprecated",
     "types-docutils",
@@ -487,3 +488,4 @@ packages = ["dags"]
 
 [tool.uv]
 index-url = "https://pypi.org/simple"
+exclude-newer = "3 days"
