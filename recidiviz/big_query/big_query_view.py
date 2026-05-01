@@ -205,6 +205,23 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         return self._view_query_signature
 
     @property
+    def schema_signature(self) -> str | None:
+        """Returns a SHA256 hash of this view's declared schema.
+
+        Can be used to determine if a view's declared schema has changed across
+        view update runs. Column descriptions are not included in the signature.
+        """
+        # TODO(#54941): Remove this None case once schema is non-optional on
+        # BigQueryView.
+        if self.schema is None:
+            return None
+        payload = json.dumps(
+            [(c.name, c.field_type.name, c.mode) for c in self.schema],
+            sort_keys=False,
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    @property
     def view_query_template(self) -> str:
         return self._view_query_template
 

@@ -31,7 +31,11 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     SimpleBigQueryViewBuilder,
 )
-from recidiviz.big_query.big_query_view_column import Integer, String
+from recidiviz.big_query.big_query_view_column import (
+    BigQueryViewColumn,
+    Integer,
+    String,
+)
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -735,6 +739,70 @@ class BigQueryViewTest(unittest.TestCase):
                 ),
             ],
         )
+
+    def test_schema_signature(self) -> None:
+        def signature_for(schema: list[BigQueryViewColumn] | None) -> str | None:
+            return (
+                SimpleBigQueryViewBuilder(
+                    dataset_id="view_dataset",
+                    view_id="my_view",
+                    description="my_view description",
+                    view_query_template=(
+                        "SELECT * FROM `{project_id}.some_dataset.table`"
+                    ),
+                    schema=schema,
+                )
+                .build()
+                .schema_signature
+            )
+
+        base_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            Integer(name="col2", description="Column 2", mode="REQUIRED"),
+        ]
+        base_sig = signature_for(base_schema)
+
+        self.assertIsNone(signature_for(None))
+        self.assertIsNotNone(base_sig)
+
+        # Description-only change -> same signature (description is not part of
+        # the structural schema we care about for change detection).
+        same_signature_cases: dict[str, list[BigQueryViewColumn]] = {
+            "identical": base_schema,
+            "description_only_change": [
+                String(name="col1", description="different desc", mode="NULLABLE"),
+                Integer(name="col2", description="Column 2", mode="REQUIRED"),
+            ],
+        }
+        for case_name, schema in same_signature_cases.items():
+            with self.subTest(case=case_name):
+                self.assertEqual(base_sig, signature_for(schema))
+
+        different_signature_cases: dict[str, list[BigQueryViewColumn]] = {
+            "mode_change": [
+                String(name="col1", description="Column 1", mode="REQUIRED"),
+                Integer(name="col2", description="Column 2", mode="REQUIRED"),
+            ],
+            "name_change": [
+                String(name="col1_renamed", description="Column 1", mode="NULLABLE"),
+                Integer(name="col2", description="Column 2", mode="REQUIRED"),
+            ],
+            "type_change": [
+                Integer(name="col1", description="Column 1", mode="NULLABLE"),
+                Integer(name="col2", description="Column 2", mode="REQUIRED"),
+            ],
+            "order_change": [
+                Integer(name="col2", description="Column 2", mode="REQUIRED"),
+                String(name="col1", description="Column 1", mode="NULLABLE"),
+            ],
+            "added_column": [
+                *base_schema,
+                String(name="col3", description="Column 3", mode="NULLABLE"),
+            ],
+        }
+        for case_name, schema in different_signature_cases.items():
+            with self.subTest(case=case_name):
+                self.assertNotEqual(base_sig, signature_for(schema))
 
     def test_schema_summary(self) -> None:
         # Test with no schema

@@ -406,6 +406,7 @@ class DeployedViewSignature:
         validator=attr.validators.instance_of(BigQueryAddress)
     )
     view_query_signature: str = attr.ib(validator=attr_validators.is_str)
+    schema_signature: str | None = attr.ib(validator=attr_validators.is_opt_str)
     clustering_fields_string: str | None = attr.ib(validator=attr_validators.is_opt_str)
     time_partitioning_string: str | None = attr.ib(validator=attr_validators.is_opt_str)
 
@@ -418,6 +419,7 @@ class DeployedViewSignature:
 
         return (
             local_view.view_query_signature == self.view_query_signature
+            and local_view.schema_signature == self.schema_signature
             and local_view.clustering_fields_string == self.clustering_fields_string
             and local_view.time_partitioning_string == self.time_partitioning_string
         )
@@ -443,6 +445,7 @@ def _get_deployed_view_signatures_by_address() -> (
         dataset_id,
         table_id,
         view_query_signature,
+        schema_signature,
         clustering_fields_string,
         time_partitioning_string
     FROM {update_stats_address.format_address_for_query()}
@@ -467,6 +470,7 @@ def _get_deployed_view_signatures_by_address() -> (
         deployed_view_signatures_by_address[address] = DeployedViewSignature(
             view_address=address,
             view_query_signature=row["view_query_signature"],
+            schema_signature=row["schema_signature"],
             clustering_fields_string=row["clustering_fields_string"],
             time_partitioning_string=row["time_partitioning_string"],
         )

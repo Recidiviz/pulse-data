@@ -93,6 +93,10 @@ class PerViewUpdateStats:
         return self.create_or_update_result.view.view_query_signature
 
     @property
+    def schema_signature(self) -> str | None:
+        return self.create_or_update_result.view.schema_signature
+
+    @property
     def clustering_fields_string(self) -> str | None:
         return self.create_or_update_result.view.clustering_fields_string
 
@@ -203,6 +207,7 @@ class PerViewUpdateStats:
             "was_materialized": self.was_materialized,
             "update_runtime_sec": self.update_runtime_sec,
             "view_query_signature": self.view_query_signature,
+            "schema_signature": self.schema_signature,
             "clustering_fields_string": self.clustering_fields_string,
             "time_partitioning_string": self.time_partitioning_string,
             "materialized_table_num_rows": self.materialized_table_num_rows,

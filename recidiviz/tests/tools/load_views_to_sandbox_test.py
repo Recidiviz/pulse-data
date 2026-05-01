@@ -22,11 +22,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_address_formatter import (
     LimitZeroBigQueryAddressFormatterProvider,
 )
+from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.big_query.big_query_view_update_sandbox_context import (
     BigQueryViewUpdateSandboxContext,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tools.load_views_to_sandbox import (
+    DeployedViewSignature,
     SandboxChangedAddresses,
     ViewChangeType,
     load_collected_views_to_sandbox,
@@ -34,6 +37,69 @@ from recidiviz.tools.load_views_to_sandbox import (
     summary_for_auto_sandbox,
     validate_sandbox_prefix_state_codes,
 )
+
+
+class TestDeployedViewSignatureMatchesLocalView(unittest.TestCase):
+    """Tests for DeployedViewSignature.matches_local_view."""
+
+    PROJECT_ID = "recidiviz-project-id"
+
+    def setUp(self) -> None:
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = self.PROJECT_ID
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    @staticmethod
+    def _build_view(
+        schema: list | None,
+    ) -> BigQueryView:
+        return SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=schema,
+        ).build()
+
+    def _signature_for(
+        self,
+        view: BigQueryView,
+        *,
+        schema_signature: str | None,
+    ) -> DeployedViewSignature:
+        return DeployedViewSignature(
+            view_address=view.address,
+            view_query_signature=view.view_query_signature,
+            schema_signature=schema_signature,
+            clustering_fields_string=view.clustering_fields_string,
+            time_partitioning_string=view.time_partitioning_string,
+        )
+
+    def test_matches_when_schemas_match(self) -> None:
+        schema = [String(name="col1", description="Column 1", mode="NULLABLE")]
+        view = self._build_view(schema=schema)
+        signature = self._signature_for(view, schema_signature=view.schema_signature)
+        self.assertTrue(signature.matches_local_view(view))
+
+    def test_does_not_match_when_schema_changed(self) -> None:
+        deployed_view = self._build_view(
+            schema=[String(name="col1", description="Column 1", mode="REQUIRED")]
+        )
+        local_view = self._build_view(
+            schema=[String(name="col1", description="Column 1", mode="NULLABLE")]
+        )
+        signature = self._signature_for(
+            deployed_view, schema_signature=deployed_view.schema_signature
+        )
+        self.assertFalse(signature.matches_local_view(local_view))
+
+    def test_no_local_schema_no_deployed_signature(self) -> None:
+        local_view = self._build_view(schema=None)
+        signature = self._signature_for(local_view, schema_signature=None)
+        self.assertTrue(signature.matches_local_view(local_view))
 
 
 class TestSandboxChangedAddresses(unittest.TestCase):

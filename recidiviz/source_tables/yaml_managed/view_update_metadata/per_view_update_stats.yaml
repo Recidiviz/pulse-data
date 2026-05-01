@@ -39,6 +39,13 @@ schema:
       A hash of the view query used for this view update. This value can be used to tell if a view has changed between
       deploys or if a local version of a view has changed since the last deploy. This value is not hydrated for older
       rows but should always be nonnull for more recent runs.
+  - name: schema_signature
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      A hash of the view's declared schema (column name, field type, and mode, in declared order). This value can be
+      used to tell if a view's declared schema has changed between deploys. Null when the view has no declared schema,
+      or for older rows from before this column was populated.
   - name: clustering_fields_string
     type: STRING
     mode: NULLABLE
