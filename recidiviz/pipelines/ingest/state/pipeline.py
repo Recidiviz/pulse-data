@@ -50,9 +50,6 @@ from recidiviz.pipelines.ingest.state.associate_with_primary_keys import (
     PRIMARY_KEYS,
     AssociateRootEntitiesWithPrimaryKeys,
 )
-from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
-    ClusterRootExternalIds,
-)
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
 from recidiviz.pipelines.ingest.state.expected_output_helpers import (
     get_entity_table_ids_to_clear,
@@ -61,9 +58,6 @@ from recidiviz.pipelines.ingest.state.expected_output_helpers import (
     get_expected_output_table_ids,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import string_representation
-from recidiviz.pipelines.ingest.state.get_root_external_ids import (
-    GetRootExternalIdClusterEdges,
-)
 from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
 )
@@ -76,6 +70,12 @@ from recidiviz.pipelines.ingest.state.process_all_ingest_views import (
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
+)
+from recidiviz.pipelines.transforms.cluster_root_external_ids import (
+    ClusterRootExternalIds,
+)
+from recidiviz.pipelines.transforms.get_root_external_ids import (
+    GetRootExternalIdClusterEdges,
 )
 from recidiviz.pipelines.utils.beam_utils.clear_bq_table import ClearBQTable
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (

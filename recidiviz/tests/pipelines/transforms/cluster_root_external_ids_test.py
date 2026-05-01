@@ -15,19 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Testing the ClusterRootExternalIds PTransform."""
+import unittest
 from itertools import permutations
 
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
-from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.tests.big_query.big_query_emulator_test_case import (
-    BigQueryEmulatorTestCase,
+from recidiviz.pipelines.transforms.cluster_root_external_ids import (
+    ClusterRootExternalIds,
 )
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
 
-class TestClusterExternalIds(BigQueryEmulatorTestCase):
+class TestClusterExternalIds(unittest.TestCase):
     """Tests the ClusterRootExternalIds PTransform."""
 
     def setUp(self) -> None:
@@ -116,7 +116,7 @@ class TestClusterExternalIds(BigQueryEmulatorTestCase):
                     (self.external_id_9, None),
                 ]
             )
-            | pipeline.ClusterRootExternalIds()
+            | ClusterRootExternalIds()
         )
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
@@ -148,7 +148,7 @@ class TestClusterExternalIds(BigQueryEmulatorTestCase):
             output = (
                 self.test_pipeline
                 | f"Create with permutation {i}" >> beam.Create(ordered_input_ids)
-                | f"Cluster with permutation {i}" >> pipeline.ClusterRootExternalIds()
+                | f"Cluster with permutation {i}" >> ClusterRootExternalIds()
             )
 
             assert_that(
@@ -205,11 +205,7 @@ class TestClusterExternalIds(BigQueryEmulatorTestCase):
             (self.external_id_11, all_ids_set),
         ]
 
-        output = (
-            self.test_pipeline
-            | beam.Create(input_ids)
-            | pipeline.ClusterRootExternalIds()
-        )
+        output = self.test_pipeline | beam.Create(input_ids) | ClusterRootExternalIds()
 
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()

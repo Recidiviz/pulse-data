@@ -57,5 +57,23 @@ class BatchIdentityClusteringPipeline(
         return {}
 
     def run_pipeline(self, p: Pipeline) -> None:
-        # TODO(#71769): Implement clustering pipeline steps
+        # TODO(#71769): Implement clustering pipeline steps.
+        #
+        # Pipeline stages implemented so far (in order):
+        #
+        # 1. GenerateIdentityFragments
+        #    Read ingest view results from BQ
+        #    → PCollection[(UpperBoundDate, IdentityFragment)]
+        #
+        # 2. MergeIngestViewIdentityFragments
+        #    Merge fragments sharing an external ID key and date within a single ingest view
+        #    → PCollection[(ExternalIdKey, (UpperBoundDate, IngestViewName, IdentityFragment))]
+        #
+        # 3. GetRootExternalIdClusterEdges
+        #    Extract co-occurrence edges from merged fragments
+        #    → PCollection[(ExternalIdKey, ExternalIdKey | None)]
+        #
+        # 4. ClusterRootExternalIds
+        #    Compute connected components from edges
+        #    → PCollection[(ExternalIdKey, set[ExternalIdKey])]
         pass

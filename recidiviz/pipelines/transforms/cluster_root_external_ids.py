@@ -20,7 +20,7 @@ from typing import Dict, Generator, List, Set
 
 import apache_beam as beam
 
-from recidiviz.pipelines.ingest.state.constants import (
+from recidiviz.pipelines.transforms.types import (
     ExternalIdCluster,
     ExternalIdClusterEdge,
     ExternalIdKey,

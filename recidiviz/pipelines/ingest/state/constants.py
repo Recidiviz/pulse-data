@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants for the ingest pipeline."""
-from typing import Optional, Set, Tuple
+from typing import Tuple
 
 from google.cloud import bigquery
 
@@ -24,6 +24,11 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
+from recidiviz.pipelines.transforms.types import (  # pylint: disable=unused-import
+    ExternalIdCluster,
+    ExternalIdClusterEdge,
+    ExternalIdKey,
+)
 
 # Beam does not have a standard datetime coder that it uses to decode/encode between steps
 # for datetime objects, therefore we will use UTC timestamps for any keys that require
@@ -34,9 +39,6 @@ IngestViewName = str
 
 ExternalId = str
 ExternalIdType = str
-ExternalIdKey = Tuple[str, str]
-ExternalIdClusterEdge = Tuple[ExternalIdKey, Optional[ExternalIdKey]]
-ExternalIdCluster = Tuple[ExternalIdKey, Set[ExternalIdKey]]
 
 EntityClassName = str
 EntityKey = Tuple[PrimaryKey, EntityClassName]

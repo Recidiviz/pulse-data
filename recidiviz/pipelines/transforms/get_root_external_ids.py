@@ -24,10 +24,7 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.pipelines.ingest.state.constants import (
-    ExternalIdClusterEdge,
-    ExternalIdKey,
-)
+from recidiviz.pipelines.transforms.types import ExternalIdClusterEdge, ExternalIdKey
 
 
 # pylint: disable=arguments-differ,abstract-method
