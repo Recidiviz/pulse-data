@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_drug_screen`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  CDDORNUM: STRING
+  TESTDATE: DATE
+  POSITIVE: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: CDDORNUM
+          id_type: $literal("US_NC_OPUS")
+    drug_screens:
+      - StateDrugScreen:
+          external_id:
+            $concat:
+              $values:
+                - CDDORNUM
+                - TESTDATE
+          drug_screen_date: TESTDATE
+          drug_screen_result:
+            $enum_mapping:
+              $raw_text: POSITIVE
+              $mappings:
+                StateDrugScreenResult.POSITIVE: "Y"
+                StateDrugScreenResult.NEGATIVE: "N"

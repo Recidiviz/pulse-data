@@ -1190,6 +1190,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mo_state.state_supervision_violation_response_decision_entry",
     "us_mo_state.state_supervision_violation_type_entry",
     "us_mo_state.state_task_deadline",
+    "us_nc_ingest_view_results.drug_screen",
     "us_nc_ingest_view_results.ed_emp_period",
     "us_nc_ingest_view_results.incarceration_period",
     "us_nc_ingest_view_results.person",
