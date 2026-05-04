@@ -77,6 +77,8 @@ def _make_schema(
 
 
 def _envelope(value: object, confidence: float = 0.9) -> dict:
+    """Minimal field envelope with no citation — use for tests that don't
+    exercise citation validation. Use _wrap_value for tests that need citations."""
     return {
         "value": value,
         "confidence_score": confidence,
@@ -148,9 +150,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_valid_result_passes(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(True),
-                "employer_name": _envelope("Walmart"),
-                "employment_status": _envelope("EMPLOYED"),
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value("Walmart"),
+                "employment_status": _wrap_value("EMPLOYED"),
             }
         )
         self.assertIsNotNone(result.validated_result_json)
@@ -159,9 +161,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_not_relevant_excluded(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(False),
-                "employer_name": _envelope("Walmart"),
-                "employment_status": _envelope("EMPLOYED"),
+                "is_relevant": _wrap_value(False),
+                "employer_name": _wrap_value("Walmart"),
+                "employment_status": _wrap_value("EMPLOYED"),
             }
         )
         self.assertIsNone(result.validated_result_json)
@@ -173,9 +175,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_low_confidence_field_excluded(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(True),
-                "employer_name": _envelope("Walmart", confidence=0.5),
-                "employment_status": _envelope("EMPLOYED"),
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value("Walmart", confidence=0.5),
+                "employment_status": _wrap_value("EMPLOYED"),
             }
         )
         self.assertIsNone(result.validated_result_json)
@@ -191,9 +193,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_multiple_low_confidence_fields_all_recorded(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(True),
-                "employer_name": _envelope("Walmart", confidence=0.5),
-                "employment_status": _envelope("EMPLOYED", confidence=0.3),
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value("Walmart", confidence=0.5),
+                "employment_status": _wrap_value("EMPLOYED", confidence=0.3),
             }
         )
         self.assertIsNone(result.validated_result_json)
@@ -208,9 +210,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_not_relevant_and_low_confidence_both_recorded(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(False),
-                "employer_name": _envelope("Walmart", confidence=0.5),
-                "employment_status": _envelope("EMPLOYED"),
+                "is_relevant": _wrap_value(False),
+                "employer_name": _wrap_value("Walmart", confidence=0.5),
+                "employment_status": _wrap_value("EMPLOYED"),
             }
         )
         self.assertIsNone(result.validated_result_json)
@@ -221,9 +223,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_is_relevant_stripped_from_validated_result(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(True),
-                "employer_name": _envelope("Walmart"),
-                "employment_status": _envelope("EMPLOYED"),
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value("Walmart"),
+                "employment_status": _wrap_value("EMPLOYED"),
             }
         )
         assert result.validated_result_json is not None
@@ -233,9 +235,9 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
     def test_envelopes_preserved_in_validated_result(self) -> None:
         result = self._validate(
             {
-                "is_relevant": _envelope(True),
-                "employer_name": _envelope("Walmart", confidence=0.95),
-                "employment_status": _envelope("EMPLOYED", confidence=0.88),
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value("Walmart", confidence=0.95),
+                "employment_status": _wrap_value("EMPLOYED", confidence=0.88),
             }
         )
         assert result.validated_result_json is not None
@@ -270,11 +272,11 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
             ]
         )
         result_data = {
-            "is_relevant": _envelope(True),
+            "is_relevant": _wrap_value(True),
             "employers": [
                 {
-                    "employer_name": _envelope("Walmart"),
-                    "pay_rate": _envelope(15.0, confidence=0.3),
+                    "employer_name": _wrap_value("Walmart"),
+                    "pay_rate": _wrap_value("15.0", confidence=0.3),
                 }
             ],
         }
@@ -830,10 +832,312 @@ class TestSemanticConsistencyAllowedValueCombinations(unittest.TestCase):
         self.assertIsNotNone(validation.validated_result_json)
 
 
+class TestCitationPresence(unittest.TestCase):
+    """Tests for NULL_CITATION_FOR_NONNULL_FIELD validation."""
+
+    def setUp(self) -> None:
+        self.schema = _make_schema(
+            [
+                ExtractionInferredField(
+                    name="employer_name",
+                    field_type=ExtractionFieldType.STRING,
+                    unaugmented_description="Employer name",
+                    required=False,
+                ),
+                ExtractionInferredField(
+                    name="employment_status",
+                    field_type=ExtractionFieldType.ENUM,
+                    unaugmented_description="Employment status",
+                    required=True,
+                    enum_values=("EMPLOYED", "UNEMPLOYED"),
+                ),
+            ]
+        )
+
+    def _validate(self, result_data: dict) -> ValidationResult:
+        return validate_extraction_result(
+            result=_make_result(result_data),
+            output_schema=self.schema,
+            confidence_threshold=_THRESHOLD,
+        )
+
+    def test_nonnull_field_with_citation_passes(self) -> None:
+        result = self._validate(
+            {
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value("Walmart"),
+                "employment_status": _wrap_value("EMPLOYED"),
+            }
+        )
+        self.assertIsNotNone(result.validated_result_json)
+        self.assertEqual(result.failures, [])
+
+    def test_nonnull_field_missing_citation_fails(self) -> None:
+        result = self._validate(
+            {
+                "is_relevant": _wrap_value(True),
+                "employer_name": _envelope("Walmart"),
+                "employment_status": _wrap_value("EMPLOYED"),
+            }
+        )
+        self.assertIsNone(result.validated_result_json)
+        citation_failures = [
+            f
+            for f in result.failures
+            if f.exclusion_type
+            == ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD
+        ]
+        self.assertEqual(len(citation_failures), 1)
+        details = _parse_failure_details(citation_failures[0])
+        self.assertEqual(details["field_name"], "employer_name")
+        self.assertEqual(details["value"], "Walmart")
+
+    def test_null_field_without_citation_passes(self) -> None:
+        result = self._validate(
+            {
+                "is_relevant": _wrap_value(True),
+                "employer_name": _wrap_value(None, null_reason="not_found"),
+                "employment_status": _wrap_value("EMPLOYED"),
+            }
+        )
+        self.assertIsNotNone(result.validated_result_json)
+
+    def test_multiple_fields_missing_citations_all_recorded(self) -> None:
+        result = self._validate(
+            {
+                "is_relevant": _wrap_value(True),
+                "employer_name": _envelope("Walmart"),
+                "employment_status": _envelope("EMPLOYED"),
+            }
+        )
+        self.assertIsNone(result.validated_result_json)
+        citation_failures = [
+            f
+            for f in result.failures
+            if f.exclusion_type
+            == ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD
+        ]
+        self.assertEqual(len(citation_failures), 2)
+        field_names = {
+            _parse_failure_details(f)["field_name"] for f in citation_failures
+        }
+        self.assertEqual(field_names, {"employer_name", "employment_status"})
+
+    def test_array_of_struct_subfield_missing_citation_fails(self) -> None:
+        schema = _make_schema(
+            [
+                ExtractionInferredField(
+                    name="employers",
+                    field_type=ExtractionFieldType.ARRAY_OF_STRUCT,
+                    unaugmented_description="Employers",
+                    required=False,
+                    struct_fields=(
+                        ExtractionInferredField(
+                            name="employer_name",
+                            field_type=ExtractionFieldType.STRING,
+                            unaugmented_description="Name",
+                            required=False,
+                        ),
+                    ),
+                ),
+            ]
+        )
+        result_data = {
+            "is_relevant": _wrap_value(True),
+            "employers": [
+                {"employer_name": _envelope("Acme Corp")},
+            ],
+        }
+        result = validate_extraction_result(
+            result=_make_result(result_data),
+            output_schema=schema,
+            confidence_threshold=_THRESHOLD,
+        )
+        self.assertIsNone(result.validated_result_json)
+        citation_failures = [
+            f
+            for f in result.failures
+            if f.exclusion_type
+            == ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD
+        ]
+        self.assertEqual(len(citation_failures), 1)
+        details = _parse_failure_details(citation_failures[0])
+        self.assertEqual(details["field_name"], "employers[0].employer_name")
+
+    def test_array_of_struct_null_subfield_passes(self) -> None:
+        schema = _make_schema(
+            [
+                ExtractionInferredField(
+                    name="employers",
+                    field_type=ExtractionFieldType.ARRAY_OF_STRUCT,
+                    unaugmented_description="Employers",
+                    required=False,
+                    struct_fields=(
+                        ExtractionInferredField(
+                            name="job_title",
+                            field_type=ExtractionFieldType.STRING,
+                            unaugmented_description="Job title",
+                            required=False,
+                        ),
+                    ),
+                ),
+            ]
+        )
+        result_data = {
+            "is_relevant": _wrap_value(True),
+            "employers": [
+                {"job_title": _wrap_value(None, null_reason="not_found")},
+            ],
+        }
+        result = validate_extraction_result(
+            result=_make_result(result_data),
+            output_schema=schema,
+            confidence_threshold=_THRESHOLD,
+        )
+        self.assertIsNotNone(result.validated_result_json)
+
+
+class TestCitationTextMatches(unittest.TestCase):
+    """Tests for the citation text verification check."""
+
+    def setUp(self) -> None:
+        self.schema = _make_schema(
+            [
+                ExtractionInferredField(
+                    name="employer_name",
+                    field_type=ExtractionFieldType.STRING,
+                    unaugmented_description="Employer name",
+                    required=False,
+                ),
+            ]
+        )
+        self.document_text = "Client is employed at Walmart as a cashier."
+
+    def _validate(
+        self, result_data: dict, document_text: str | None
+    ) -> ValidationResult:
+        return validate_extraction_result(
+            result=_make_result(result_data),
+            output_schema=self.schema,
+            confidence_threshold=_THRESHOLD,
+            document_text=document_text,
+        )
+
+    def _result_data(self, citation_text: str) -> dict:
+        return {
+            "is_relevant": _wrap_value(True),
+            "employer_name": {
+                "value": "Walmart",
+                "confidence_score": 0.95,
+                "null_reason": None,
+                "citations": [{"text": citation_text, "start": 22, "end": 29}],
+            },
+        }
+
+    def test_citation_text_in_document_passes(self) -> None:
+        result = self._validate(
+            self._result_data("employed at Walmart"),
+            self.document_text,
+        )
+        self.assertIsNotNone(result.validated_result_json)
+        self.assertEqual(result.failures, [])
+
+    def test_citation_text_not_in_document_fails(self) -> None:
+        result = self._validate(
+            self._result_data("works at Target"),
+            self.document_text,
+        )
+        self.assertIsNone(result.validated_result_json)
+        mismatch_failures = [
+            f
+            for f in result.failures
+            if f.exclusion_type == ExtractionExclusionType.CITATION_TEXT_MISMATCH
+        ]
+        self.assertEqual(len(mismatch_failures), 1)
+        details = _parse_failure_details(mismatch_failures[0])
+        self.assertEqual(details["field_name"], "employer_name")
+        self.assertEqual(details["citation_text"], "works at Target")
+
+    def test_no_document_text_skips_check(self) -> None:
+        result = self._validate(
+            self._result_data("works at Target"),
+            document_text=None,
+        )
+        self.assertIsNotNone(result.validated_result_json)
+        self.assertEqual(result.failures, [])
+
+    def test_whitespace_normalization(self) -> None:
+        document_with_newlines = "Client is employed\nat Walmart\nas a cashier."
+        result = self._validate(
+            self._result_data("employed at Walmart as"),
+            document_with_newlines,
+        )
+        self.assertIsNotNone(result.validated_result_json)
+        self.assertEqual(result.failures, [])
+
+    def test_array_of_struct_citation_mismatch_fails(self) -> None:
+        schema = _make_schema(
+            [
+                ExtractionInferredField(
+                    name="employers",
+                    field_type=ExtractionFieldType.ARRAY_OF_STRUCT,
+                    unaugmented_description="Employers",
+                    required=False,
+                    struct_fields=(
+                        ExtractionInferredField(
+                            name="employer_name",
+                            field_type=ExtractionFieldType.STRING,
+                            unaugmented_description="Employer name",
+                            required=False,
+                        ),
+                    ),
+                ),
+            ]
+        )
+        result_data = {
+            "is_relevant": _wrap_value(True),
+            "employers": [
+                {
+                    "employer_name": {
+                        "value": "Walmart",
+                        "confidence_score": 0.95,
+                        "null_reason": None,
+                        "citations": [
+                            {"text": "hallucinated text", "start": 0, "end": 10}
+                        ],
+                    }
+                }
+            ],
+        }
+        result = validate_extraction_result(
+            result=_make_result(result_data),
+            output_schema=schema,
+            confidence_threshold=_THRESHOLD,
+            document_text=self.document_text,
+        )
+        self.assertIsNone(result.validated_result_json)
+        mismatch_failures = [
+            f
+            for f in result.failures
+            if f.exclusion_type == ExtractionExclusionType.CITATION_TEXT_MISMATCH
+        ]
+        self.assertEqual(len(mismatch_failures), 1)
+        details = _parse_failure_details(mismatch_failures[0])
+        self.assertEqual(details["field_name"], "employers[0].employer_name")
+
+
 class TestExtractionExclusionTypeIsLlmError(unittest.TestCase):
-    """Tests that SEMANTIC_CONSISTENCY_FAILURE is not an LLM error."""
+    """Tests that validation failures are not LLM errors."""
 
     def test_semantic_consistency_failure_is_not_llm_error(self) -> None:
         self.assertFalse(
             ExtractionExclusionType.SEMANTIC_CONSISTENCY_FAILURE.is_llm_error
         )
+
+    def test_null_citation_for_nonnull_field_is_not_llm_error(self) -> None:
+        self.assertFalse(
+            ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD.is_llm_error
+        )
+
+    def test_citation_text_mismatch_is_not_llm_error(self) -> None:
+        self.assertFalse(ExtractionExclusionType.CITATION_TEXT_MISMATCH.is_llm_error)

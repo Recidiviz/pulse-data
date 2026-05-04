@@ -16,7 +16,7 @@ set -e
 
 PROJECT_ID="recidiviz-staging"
 STATE_CODE="US_IX"
-SANDBOX_PREFIX="anna_small_test_6"
+SANDBOX_PREFIX="simrann_sample"
 SANDBOX_BUCKET="recidiviz-staging-anna-scratch"
 
 SAMPLE_ENTITY_COUNT="10"

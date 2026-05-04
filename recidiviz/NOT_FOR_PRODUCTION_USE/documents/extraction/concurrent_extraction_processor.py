@@ -404,6 +404,7 @@ class ConcurrentExtractionProcessor:
         results: list[LLMExtractionResult],
         bq_client: BigQueryClient,
         quiet: bool = False,
+        document_contents: dict[str, str] | None = None,
     ) -> tuple[int, int]:
         """Writes a batch of results to BQ raw, exclusions, and validated tables.
 
@@ -483,6 +484,9 @@ class ConcurrentExtractionProcessor:
                     result=result,
                     output_schema=self._collection.output_schema,
                     confidence_threshold=self._collection.confidence_threshold,
+                    document_text=document_contents.get(result.document_id)
+                    if document_contents
+                    else None,
                 )
 
                 if validation.validated_result_json is not None:
@@ -639,7 +643,11 @@ class ConcurrentExtractionProcessor:
 
             if len(results_buffer) >= self._bq_write_batch_size:
                 batch_success, batch_failed = self._flush_results_to_bq(
-                    job_id, results_buffer, bq_client, quiet=True
+                    job_id,
+                    results_buffer,
+                    bq_client,
+                    quiet=True,
+                    document_contents=document_contents,
                 )
                 total_success += batch_success
                 total_failed += batch_failed
@@ -650,7 +658,10 @@ class ConcurrentExtractionProcessor:
         # Flush remaining results
         if results_buffer:
             batch_success, batch_failed = self._flush_results_to_bq(
-                job_id, results_buffer, bq_client
+                job_id,
+                results_buffer,
+                bq_client,
+                document_contents=document_contents,
             )
             total_success += batch_success
             total_failed += batch_failed

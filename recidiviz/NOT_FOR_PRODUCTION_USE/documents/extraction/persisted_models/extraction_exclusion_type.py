@@ -49,6 +49,8 @@ class ExtractionExclusionType(enum.Enum):
     NOT_RELEVANT = "NOT_RELEVANT"
     LOW_CONFIDENCE = "LOW_CONFIDENCE"
     SEMANTIC_CONSISTENCY_FAILURE = "SEMANTIC_CONSISTENCY_FAILURE"
+    NULL_CITATION_FOR_NONNULL_FIELD = "NULL_CITATION_FOR_NONNULL_FIELD"
+    CITATION_TEXT_MISMATCH = "CITATION_TEXT_MISMATCH"
 
     @property
     def is_llm_error(self) -> bool:
@@ -58,4 +60,6 @@ class ExtractionExclusionType(enum.Enum):
             ExtractionExclusionType.NOT_RELEVANT,
             ExtractionExclusionType.LOW_CONFIDENCE,
             ExtractionExclusionType.SEMANTIC_CONSISTENCY_FAILURE,
+            ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD,
+            ExtractionExclusionType.CITATION_TEXT_MISMATCH,
         )

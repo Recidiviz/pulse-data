@@ -21,6 +21,7 @@ confidence threshold. Produces DocumentResultExclusionMetadata for excluded
 results and validated output for passing results.
 """
 import json
+import re
 
 import attr
 
@@ -190,6 +191,180 @@ def _check_array_of_struct_confidence(
                         ),
                     )
                 )
+    return failures
+
+
+def _check_citation_presence(
+    result_data: dict,
+    field: ExtractionInferredField,
+    result: DocumentExtractionResultMetadata,
+) -> list[DocumentResultExclusionMetadata]:
+    """Returns NULL_CITATION_FOR_NONNULL_FIELD failures for fields that have
+    a value but no citation."""
+    if field.field_mode == ExtractionFieldMode.STRUCTURAL:
+        return []
+
+    if field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
+        return _check_array_of_struct_citation_presence(result_data, field, result)
+
+    field_wrapper = result_data.get(field.name, {})
+    value = field_wrapper.get("value")
+    citations = field_wrapper.get("citations")
+
+    if value is not None and not citations:
+        return [
+            DocumentResultExclusionMetadata(
+                job_id=result.job_id,
+                document_id=result.document_id,
+                extractor_id=result.extractor_id,
+                extractor_version_id=result.extractor_version_id,
+                extraction_datetime=result.extraction_datetime,
+                exclusion_type=ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD,
+                exclusion_details_json=json.dumps(
+                    {"field_name": field.name, "value": value}
+                ),
+            )
+        ]
+    return []
+
+
+def _check_array_of_struct_citation_presence(
+    result_data: dict,
+    field: ExtractionInferredField,
+    result: DocumentExtractionResultMetadata,
+) -> list[DocumentResultExclusionMetadata]:
+    """Checks citation presence for each sub-field in each element of an
+    ARRAY_OF_STRUCT field."""
+    array_data = result_data.get(field.name)
+    if not array_data or not field.struct_fields:
+        return []
+
+    failures: list[DocumentResultExclusionMetadata] = []
+    for element_index, element in enumerate(array_data):
+        for sf in field.struct_fields:
+            if sf.field_mode == ExtractionFieldMode.STRUCTURAL:
+                continue
+            sf_wrapper = element.get(sf.name, {})
+            value = sf_wrapper.get("value")
+            citations = sf_wrapper.get("citations")
+            if value is not None and not citations:
+                failures.append(
+                    DocumentResultExclusionMetadata(
+                        job_id=result.job_id,
+                        document_id=result.document_id,
+                        extractor_id=result.extractor_id,
+                        extractor_version_id=result.extractor_version_id,
+                        extraction_datetime=result.extraction_datetime,
+                        exclusion_type=ExtractionExclusionType.NULL_CITATION_FOR_NONNULL_FIELD,
+                        exclusion_details_json=json.dumps(
+                            {
+                                "field_name": f"{field.name}[{element_index}].{sf.name}",
+                                "value": value,
+                            }
+                        ),
+                    )
+                )
+    return failures
+
+
+def _normalize_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _check_citation_text_matches(
+    result_data: dict,
+    field: ExtractionInferredField,
+    result: DocumentExtractionResultMetadata,
+    document_text: str,
+) -> list[DocumentResultExclusionMetadata]:
+    """Returns CITATION_TEXT_MISMATCH failures for citations whose text is not
+    found in the source document.
+
+    Only checked when document_text is provided. Skipped for STRUCTURAL fields.
+    Uses whitespace-normalized substring matching to tolerate line-break
+    differences between what the LLM saw and what is stored in GCS.
+    """
+    if field.field_mode == ExtractionFieldMode.STRUCTURAL:
+        return []
+
+    if field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
+        return _check_array_of_struct_citation_text_matches(
+            result_data, field, result, document_text
+        )
+
+    field_wrapper = result_data.get(field.name, {})
+    citations = field_wrapper.get("citations") or []
+    normalized_doc = _normalize_whitespace(document_text)
+
+    failures: list[DocumentResultExclusionMetadata] = []
+    for citation in citations:
+        citation_text = citation.get("text", "")
+        if citation_text and _normalize_whitespace(citation_text) not in normalized_doc:
+            failures.append(
+                DocumentResultExclusionMetadata(
+                    job_id=result.job_id,
+                    document_id=result.document_id,
+                    extractor_id=result.extractor_id,
+                    extractor_version_id=result.extractor_version_id,
+                    extraction_datetime=result.extraction_datetime,
+                    exclusion_type=ExtractionExclusionType.CITATION_TEXT_MISMATCH,
+                    exclusion_details_json=json.dumps(
+                        {
+                            "field_name": field.name,
+                            "citation_text": citation_text,
+                            "citation_start": citation.get("start"),
+                            "citation_end": citation.get("end"),
+                        }
+                    ),
+                )
+            )
+    return failures
+
+
+def _check_array_of_struct_citation_text_matches(
+    result_data: dict,
+    field: ExtractionInferredField,
+    result: DocumentExtractionResultMetadata,
+    document_text: str,
+) -> list[DocumentResultExclusionMetadata]:
+    """Checks citation text matches for each sub-field in each element of an
+    ARRAY_OF_STRUCT field."""
+    array_data = result_data.get(field.name)
+    if not array_data or not field.struct_fields:
+        return []
+
+    normalized_doc = _normalize_whitespace(document_text)
+    failures: list[DocumentResultExclusionMetadata] = []
+    for element_index, element in enumerate(array_data):
+        for sf in field.struct_fields:
+            if sf.field_mode == ExtractionFieldMode.STRUCTURAL:
+                continue
+            sf_wrapper = element.get(sf.name, {})
+            citations = sf_wrapper.get("citations") or []
+            for citation in citations:
+                citation_text = citation.get("text", "")
+                if (
+                    citation_text
+                    and _normalize_whitespace(citation_text) not in normalized_doc
+                ):
+                    failures.append(
+                        DocumentResultExclusionMetadata(
+                            job_id=result.job_id,
+                            document_id=result.document_id,
+                            extractor_id=result.extractor_id,
+                            extractor_version_id=result.extractor_version_id,
+                            extraction_datetime=result.extraction_datetime,
+                            exclusion_type=ExtractionExclusionType.CITATION_TEXT_MISMATCH,
+                            exclusion_details_json=json.dumps(
+                                {
+                                    "field_name": f"{field.name}[{element_index}].{sf.name}",
+                                    "citation_text": citation_text,
+                                    "citation_start": citation.get("start"),
+                                    "citation_end": citation.get("end"),
+                                }
+                            ),
+                        )
+                    )
     return failures
 
 
@@ -432,6 +607,7 @@ def validate_extraction_result(
     result: DocumentExtractionResultMetadata,
     output_schema: ExtractionOutputSchema,
     confidence_threshold: float,
+    document_text: str | None = None,
 ) -> ValidationResult:
     """Validates a successful extraction result against the schema and threshold.
 
@@ -439,8 +615,11 @@ def validate_extraction_result(
     1. is_relevant must be True
     2. All fields must have confidence_score >= threshold (including
        sub-fields within ARRAY_OF_STRUCT elements)
-    3. Semantic consistency: allowed_if_nonnull, allowed_if_value, and
+    3. All non-null fields must have a citation
+    4. Semantic consistency: allowed_if_nonnull, allowed_if_value, and
        allowed_value_combinations constraints must be satisfied
+    5. Citation text must appear in the source document (only when
+       document_text is provided)
 
     Returns a ValidationResult with validated_result_json set if all checks
     pass, or failures populated otherwise.
@@ -463,9 +642,28 @@ def validate_extraction_result(
         )
         failures.extend(confidence_failures)
 
-    # Check 3: semantic consistency constraints
+    # Check 3: citation presence for non-null fields
+    for field in output_schema.inferred_fields:
+        if field.name == RESERVED_FIELD_NAME_IS_RELEVANT:
+            continue
+        failures.extend(_check_citation_presence(result_data, field, result))
+
+    # Check 4: semantic consistency constraints
     semantic_failures = _check_semantic_consistency(result_data, output_schema, result)
     failures.extend(semantic_failures)
+
+    # Check 5: citation text must appear in the source document
+    # TODO(#76788): Log a warning when document_text is None but the result has
+    # non-null citations — this happens when running the "batch" path where document
+    # contents are not available at result-processing time, and silently skips citation
+    # text validation.
+    if document_text is not None:
+        for field in output_schema.inferred_fields:
+            if field.name == RESERVED_FIELD_NAME_IS_RELEVANT:
+                continue
+            failures.extend(
+                _check_citation_text_matches(result_data, field, result, document_text)
+            )
 
     if failures:
         return ValidationResult(failures=failures, validated_result_json=None)
