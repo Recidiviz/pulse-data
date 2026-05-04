@@ -58,11 +58,12 @@ custom:
   US_AR:
     file_tags:
       CASEMANAGEMENTPLAN:
-        tolerance_override:
-          percent_change_tolerance: 0.2
-          reason:
-            "The way this table is used has changed following the PROTECT Act's implementation,
-            so it's not unusual for its size to increase more steeply than the default threshold allows."
+        date_range_exclusions:
+          - datetime_start_inclusive: "2026-02-10T00:00:00Z"
+            datetime_end_exclusive: "2026-04-01T00:00:00Z"
+            reason:
+              "This table's median row count is driven down by some early versions of the table
+              that were much smaller. The table size should be relatively stable from April 2026 onwards."
 
   US_MI:
     file_tags:
