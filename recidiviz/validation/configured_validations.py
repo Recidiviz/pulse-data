@@ -270,6 +270,9 @@ from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_s
 from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
     SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentences.us_mo_sentencing_time_served_preprocessed_data_issues import (
+    US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions.mismatched_supervision_staff_attribute_sessions_locations import (
     MISMATCHED_SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_LOCATION_VIEW_BUILDER,
 )
@@ -554,6 +557,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=SENTENCES_CASE_INSIGHTS_CHARGE_COMPARISON_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             hard_num_allowed_rows=5,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
