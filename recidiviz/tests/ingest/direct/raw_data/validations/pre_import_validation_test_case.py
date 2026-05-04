@@ -30,18 +30,18 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 
 
-class RawDataImportBlockingValidationTestCase(BigQueryEmulatorTestCase):
-    """Common test cases for import blocking validations that test column-by-column
+class RawDataPreImportValidationTestCase(BigQueryEmulatorTestCase):
+    """Common test cases for pre-import validations that test column-by-column
     invariants rather than whole-file invariants."""
 
     def setUp(self) -> None:
@@ -91,7 +91,7 @@ class RawDataImportBlockingValidationTestCase(BigQueryEmulatorTestCase):
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
-        self.context = RawDataImportBlockingValidationContext(
+        self.context = RawDataPreImportValidationContext(
             state_code=self.state_code,
             file_tag=self.file_tag,
             project_id=self.project_id,
@@ -113,9 +113,9 @@ class RawDataImportBlockingValidationTestCase(BigQueryEmulatorTestCase):
 
     def validation_failure_test(
         self,
-        validation: BaseRawDataImportBlockingValidation,
+        validation: BaseRawDataPreImportValidation,
         test_data: list[dict[str, Optional[str]]],
-        expected_error: RawDataImportBlockingValidationFailure,
+        expected_error: RawDataPreImportValidationFailure,
     ) -> None:
         self._load_data(test_data)
 
@@ -131,7 +131,7 @@ class RawDataImportBlockingValidationTestCase(BigQueryEmulatorTestCase):
 
     def validation_success_test(
         self,
-        validation: BaseRawDataImportBlockingValidation,
+        validation: BaseRawDataPreImportValidation,
         test_data: list[dict[str, Optional[str]]],
     ) -> None:
         self._load_data(test_data)

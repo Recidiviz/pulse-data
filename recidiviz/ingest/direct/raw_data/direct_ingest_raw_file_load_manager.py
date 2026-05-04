@@ -273,7 +273,7 @@ class DirectIngestRawFileLoadManager:
         *,
         temp_table_prefix: str,
         skip_raw_data_migrations: bool = False,
-        skip_blocking_validations: bool = False,
+        skip_pre_import_validations: bool = False,
         persist_intermediary_tables: bool = False,
     ) -> AppendReadyFile:
         """Loads and transforms a raw data file into a temp table, in the order of:
@@ -337,7 +337,7 @@ class DirectIngestRawFileLoadManager:
             )
 
         # TODO(#34610) Skip import entirely if there are no rows in an incremental file
-        if not skip_blocking_validations and (
+        if not skip_pre_import_validations and (
             raw_rows_count != 0
             or self.region_raw_file_config.raw_file_configs[
                 file.file_tag

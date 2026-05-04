@@ -18,8 +18,8 @@
 from enum import Enum
 
 
-class RawDataImportBlockingValidationType(Enum):
-    """Types of import-blocking validations to be run on raw data after it has been loaded to a temporary table
+class RawDataPreImportValidationType(Enum):
+    """Types of pre-import validations to be run on raw data after it has been loaded to a temporary table
     and before appending to the raw data table"""
 
     # checks that a column contains at least one nonnull value

@@ -40,14 +40,14 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawDataPruningStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationError,
-)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendSummary,
     ImportReadyFile,
     RawFileBigQueryLoadConfig,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationError,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -323,7 +323,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             ),
         )
         append_ready_file = self.manager.load_and_prep_paths(
-            irf, temp_table_prefix="test", skip_blocking_validations=True
+            irf, temp_table_prefix="test", skip_pre_import_validations=True
         )
 
         assert append_ready_file.import_ready_file == irf
@@ -372,7 +372,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             ),
         )
         append_ready_file = self.manager.load_and_prep_paths(
-            irf, temp_table_prefix="test", skip_blocking_validations=True
+            irf, temp_table_prefix="test", skip_pre_import_validations=True
         )
 
         assert append_ready_file.import_ready_file == irf
@@ -920,9 +920,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         with patch(
             "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.DirectIngestRawTablePreImportValidator.run_raw_data_temp_table_validations",
-            side_effect=RawDataImportBlockingValidationError(file_tag, failures=[]),
+            side_effect=RawDataPreImportValidationError(file_tag, failures=[]),
         ):
-            with self.assertRaises(RawDataImportBlockingValidationError):
+            with self.assertRaises(RawDataPreImportValidationError):
                 _ = self.manager.load_and_prep_paths(
                     ImportReadyFile(
                         file_id=1,

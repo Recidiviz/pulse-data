@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Collects all applicable import-blocking validations for a given file_tag."""
+"""Collects all applicable pre-import validations for a given file_tag."""
 import datetime
 from typing import Type
 
@@ -42,29 +42,29 @@ from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_cou
     StableHistoricalRawDataCountsValidation,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
-    RawDataImportBlockingValidationContext,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
+    RawDataPreImportValidationContext,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 
 VALIDATION_TYPE_TO_CLASS: dict[
-    RawDataImportBlockingValidationType, Type[BaseRawDataImportBlockingValidation]
+    RawDataPreImportValidationType, Type[BaseRawDataPreImportValidation]
 ] = {
-    RawDataImportBlockingValidationType.DATETIME_PARSERS: DatetimeParsersValidation,
-    RawDataImportBlockingValidationType.EXPECTED_TYPE: ExpectedTypeValidation,
-    RawDataImportBlockingValidationType.KNOWN_VALUES: KnownValuesValidation,
-    RawDataImportBlockingValidationType.NONNULL_VALUES: NonNullValuesValidation,
-    RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS: DistinctPrimaryKeyValidation,
-    RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS: StableHistoricalRawDataCountsValidation,
+    RawDataPreImportValidationType.DATETIME_PARSERS: DatetimeParsersValidation,
+    RawDataPreImportValidationType.EXPECTED_TYPE: ExpectedTypeValidation,
+    RawDataPreImportValidationType.KNOWN_VALUES: KnownValuesValidation,
+    RawDataPreImportValidationType.NONNULL_VALUES: NonNullValuesValidation,
+    RawDataPreImportValidationType.DISTINCT_PRIMARY_KEYS: DistinctPrimaryKeyValidation,
+    RawDataPreImportValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS: StableHistoricalRawDataCountsValidation,
 }
 
 
 @attr.define
-class RawDataImportBlockingValidationCollector:
-    """Collect applicable import-blocking validations for a given file_tag."""
+class RawDataPreImportValidationCollector:
+    """Collect applicable pre-import validations for a given file_tag."""
 
     @staticmethod
     def collect_validations_for_file(
@@ -76,11 +76,11 @@ class RawDataImportBlockingValidationCollector:
         raw_file_config: DirectIngestRawFileConfig,
         raw_data_instance: DirectIngestInstance,
         file_update_datetime: datetime.datetime,
-    ) -> list[BaseRawDataImportBlockingValidation]:
-        """Collects and creates instances of all applicable raw data import blocking validations
+    ) -> list[BaseRawDataPreImportValidation]:
+        """Collects and creates instances of all applicable raw data pre-import validations
         for a given file tag based on its configuration and the current file update datetime.
         """
-        validation_context = RawDataImportBlockingValidationContext(
+        validation_context = RawDataPreImportValidationContext(
             state_code=state_code,
             file_tag=file_tag,
             project_id=project_id,
@@ -91,7 +91,7 @@ class RawDataImportBlockingValidationCollector:
         )
 
         validations = []
-        for validation_type in RawDataImportBlockingValidationType:
+        for validation_type in RawDataPreImportValidationType:
             if validation_type not in VALIDATION_TYPE_TO_CLASS:
                 raise ValueError(f"Unsupported validation type: [{validation_type}]")
             validation_cls = VALIDATION_TYPE_TO_CLASS[validation_type]

@@ -25,12 +25,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
@@ -62,15 +62,15 @@ WHERE ARRAY_LENGTH(failed_values) > 0
 
 @attr.define
 class KnownValuesValidation(
-    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+    BaseRawDataPreImportValidation, RawDataColumnValidationMixin
 ):
     """Validation that checks if any columns in a given file tag have values that are not one of the known_values supplied in their column config.
     Validation runs on all columns with supplied `known_values` unless explicitly exempt.
     """
 
     VALIDATION_TYPE: ClassVar[
-        RawDataImportBlockingValidationType
-    ] = RawDataImportBlockingValidationType.KNOWN_VALUES
+        RawDataPreImportValidationType
+    ] = RawDataPreImportValidationType.KNOWN_VALUES
     column_name_to_columns: dict[str, RawTableColumnInfo]
 
     def __attrs_post_init__(self) -> None:
@@ -97,7 +97,7 @@ class KnownValuesValidation(
 
     @classmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> "KnownValuesValidation":
         columns_to_validate = cls._get_columns_to_validate(
             context.raw_file_config, file_update_datetime=context.file_update_datetime
@@ -122,7 +122,7 @@ class KnownValuesValidation(
 
     @classmethod
     def validation_applies_to_file(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> bool:
         """Returns True if the file is not exempt from the validation and there is at least one column with
         configured known_values that is not exempt from the validation for the given file config
@@ -227,7 +227,7 @@ class KnownValuesValidation(
     def get_error_from_results(
         self,
         results: list[dict[str, Any]],
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         if not results:
             return None
 
@@ -252,7 +252,7 @@ class KnownValuesValidation(
                 f"\n{relevancy_error_msg}\n"
             )
 
-        return RawDataImportBlockingValidationFailure(
+        return RawDataPreImportValidationFailure(
             validation_type=self.VALIDATION_TYPE,
             validation_query=self.build_query(),
             error_msg=error_msg,

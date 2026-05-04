@@ -43,11 +43,11 @@ from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_cou
     TEMP_TABLE_ROW_COUNT_KEY,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationError,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationError,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 
@@ -233,12 +233,12 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         expected_error_msg = (
             f"1 pre-import validation(s) failed for file [{self.file_tag}]."
             f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
-            " please add the validation_type and exemption_reason to import_blocking_validation_exemptions"
-            " for a table-wide exemption or to import_blocking_column_validation_exemptions"
+            " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
+            " for a table-wide exemption or to pre_import_column_validation_exemptions"
             " for a column-specific exemption in the raw file config."
             f"\nError: Found column(s) on raw file [{self.file_tag}] with only null values."
             f"\nColumn name: [{self.column_name}]"
-            f"\nValidation type: {RawDataImportBlockingValidationType.NONNULL_VALUES.value}"
+            f"\nValidation type: {RawDataPreImportValidationType.NONNULL_VALUES.value}"
             "\nValidation query: "
             "\nSELECT"
             "\n    column_name,"
@@ -255,7 +255,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         )
 
         with self.assertRaises(
-            RawDataImportBlockingValidationError,
+            RawDataPreImportValidationError,
         ) as context:
             validator.run_raw_data_temp_table_validations(
                 self.file_tag, self.file_update_datetime, self.temp_table_address

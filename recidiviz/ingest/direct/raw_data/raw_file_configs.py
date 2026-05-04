@@ -61,8 +61,8 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.utils.string import is_meaningful_docstring
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -101,17 +101,17 @@ class ColumnEnumValueInfo:
 
 
 @attr.define
-class ImportBlockingValidationExemption:
-    validation_type: RawDataImportBlockingValidationType = attr.ib(
-        validator=attr.validators.instance_of(RawDataImportBlockingValidationType),
+class RawDataPreImportValidationExemption:
+    validation_type: RawDataPreImportValidationType = attr.ib(
+        validator=attr.validators.instance_of(RawDataPreImportValidationType),
         metadata={LIST_ITEM_IDENTIFIER_TAG: True},
     )
     exemption_reason: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     @staticmethod
     def list_includes_exemption_type(
-        exemption_list: Optional[List["ImportBlockingValidationExemption"]],
-        exemption_type: RawDataImportBlockingValidationType,
+        exemption_list: Optional[List["RawDataPreImportValidationExemption"]],
+        exemption_type: RawDataPreImportValidationType,
     ) -> bool:
         if not exemption_list:
             return False
@@ -241,9 +241,9 @@ class RawTableColumnInfo:
     is_primary_for_external_id_type: bool = attr.ib(
         default=DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE
     )
-    # Column-level import-blocking validation exemptions
-    import_blocking_column_validation_exemptions: Optional[
-        List[ImportBlockingValidationExemption]
+    # Column-level pre-import validation exemptions
+    pre_import_column_validation_exemptions: Optional[
+        List[RawDataPreImportValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
     # Stores a list of updates made to the column, sorted by datetime
     update_history: Optional[List[ColumnUpdateInfo]] = attr.ib(
@@ -504,11 +504,11 @@ class DirectIngestRawFileDefaultConfig:
         default=None,
         validator=attr_validators.is_opt_str,
     )
-    # Import-blocking validation exemptions that are applied to all tables in this region
+    # Pre-import validation exemptions that are applied to all tables in this region.
     # Can include table-level validation exemptions and/or column-level exemptions to apply
-    # to all relevant columns in the region
-    default_import_blocking_validation_exemptions: Optional[
-        List[ImportBlockingValidationExemption]
+    # to all relevant columns in the region.
+    default_pre_import_validation_exemptions: Optional[
+        List[RawDataPreImportValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
     # The default override for the maximum number of hours before a raw data file is
     # considered stale. If set, overrides the value computed from update_cadence for all
@@ -653,9 +653,9 @@ class DirectIngestRawFileConfig:
 
     # Can include table-level validation exemptions and/or column-level exemptions to apply
     # to all relevant columns in this table.
-    # Values are applied in addition to any default_import_blocking_validation_exemptions
-    import_blocking_validation_exemptions: Optional[
-        List[ImportBlockingValidationExemption]
+    # Values are applied in addition to any default_pre_import_validation_exemptions
+    pre_import_validation_exemptions: Optional[
+        List[RawDataPreImportValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
 
     def __hash__(self) -> int:
@@ -924,29 +924,29 @@ class DirectIngestRawFileConfig:
         return self.get_update_interval_in_days() * 24 + 12
 
     def file_is_exempt_from_validation(
-        self, validation_type: RawDataImportBlockingValidationType
+        self, validation_type: RawDataPreImportValidationType
     ) -> bool:
-        """Returns True if the validation_type is found in the file_tag's import_blocking_validation_exemptions
-        or the default_import_blocking_validation_exemptions for the file_tag's region.
+        """Returns True if the validation_type is found in the file_tag's pre_import_validation_exemptions
+        or the default_pre_import_validation_exemptions for the file_tag's region.
         """
-        return ImportBlockingValidationExemption.list_includes_exemption_type(
-            self.import_blocking_validation_exemptions,
+        return RawDataPreImportValidationExemption.list_includes_exemption_type(
+            self.pre_import_validation_exemptions,
             validation_type,
         )
 
     def column_is_exempt_from_validation(
         self,
         column_name: str,
-        validation_type: RawDataImportBlockingValidationType,
+        validation_type: RawDataPreImportValidationType,
     ) -> bool:
-        """Returns True if the validation_type is found in the column's import_blocking_column_validation_exemptions
-        or the file_tag's import_blocking_validation_exemptions
-        or the default_import_blocking_validation_exemptions for the file_tag's region.
+        """Returns True if the validation_type is found in the column's pre_import_column_validation_exemptions
+        or the file_tag's pre_import_validation_exemptions
+        or the default_pre_import_validation_exemptions for the file_tag's region.
         """
         column_info = self.get_column_info(column_name)
 
-        return ImportBlockingValidationExemption.list_includes_exemption_type(
-            column_info.import_blocking_column_validation_exemptions, validation_type
+        return RawDataPreImportValidationExemption.list_includes_exemption_type(
+            column_info.pre_import_column_validation_exemptions, validation_type
         ) or self.file_is_exempt_from_validation(validation_type)
 
     def get_pruning_status(
@@ -1059,8 +1059,8 @@ class DirectIngestRawFileConfig:
         default_no_valid_primary_keys: bool,
         default_infer_columns_from_config: bool,
         default_max_hours_before_stale: int | None,
-        default_import_blocking_validation_exemptions: Optional[
-            List[ImportBlockingValidationExemption]
+        default_pre_import_validation_exemptions: Optional[
+            List[RawDataPreImportValidationExemption]
         ],
         file_config_dict: YAMLDict,
     ) -> "DirectIngestRawFileConfig":
@@ -1069,27 +1069,27 @@ class DirectIngestRawFileConfig:
         file_description = file_config_dict.pop("file_description", str)
         update_cadence = file_config_dict.pop_optional("update_cadence", str)
         data_class = file_config_dict.pop("data_classification", str)
-        import_blocking_validation_exemptions = None
+        pre_import_validation_exemptions = None
         if (
-            import_blocking_table_validation_exemptions_yaml := file_config_dict.pop_dicts_optional(
-                "import_blocking_validation_exemptions"
+            pre_import_table_validation_exemptions_yaml := file_config_dict.pop_dicts_optional(
+                "pre_import_validation_exemptions"
             )
         ) is not None:
-            import_blocking_validation_exemptions = [
-                ImportBlockingValidationExemption(
-                    validation_type=RawDataImportBlockingValidationType(
+            pre_import_validation_exemptions = [
+                RawDataPreImportValidationExemption(
+                    validation_type=RawDataPreImportValidationType(
                         exemption.pop("validation_type", str)
                     ),
                     exemption_reason=exemption.pop("exemption_reason", str),
                 )
-                for exemption in import_blocking_table_validation_exemptions_yaml
+                for exemption in pre_import_table_validation_exemptions_yaml
             ]
-            if default_import_blocking_validation_exemptions is not None:
-                import_blocking_validation_exemptions.extend(
+            if default_pre_import_validation_exemptions is not None:
+                pre_import_validation_exemptions.extend(
                     exemption
-                    for exemption in default_import_blocking_validation_exemptions
-                    if not ImportBlockingValidationExemption.list_includes_exemption_type(
-                        import_blocking_validation_exemptions, exemption.validation_type
+                    for exemption in default_pre_import_validation_exemptions
+                    if not RawDataPreImportValidationExemption.list_includes_exemption_type(
+                        pre_import_validation_exemptions, exemption.validation_type
                     )
                 )
 
@@ -1114,20 +1114,20 @@ class DirectIngestRawFileConfig:
                             f"[{column_name}] known_value [{known_value_value}] in "
                             f"[{file_tag}]: {repr(known_value.get())}"
                         )
-            import_blocking_column_validation_exemptions = None
+            pre_import_column_validation_exemptions = None
             if (
-                import_blocking_column_validation_exemptions_yaml := column.pop_dicts_optional(
-                    "import_blocking_column_validation_exemptions"
+                pre_import_column_validation_exemptions_yaml := column.pop_dicts_optional(
+                    "pre_import_column_validation_exemptions"
                 )
             ) is not None:
-                import_blocking_column_validation_exemptions = [
-                    ImportBlockingValidationExemption(
-                        validation_type=RawDataImportBlockingValidationType(
+                pre_import_column_validation_exemptions = [
+                    RawDataPreImportValidationExemption(
+                        validation_type=RawDataPreImportValidationType(
                             exemption.pop("validation_type", str)
                         ),
                         exemption_reason=exemption.pop("exemption_reason", str),
                     )
-                    for exemption in import_blocking_column_validation_exemptions_yaml
+                    for exemption in pre_import_column_validation_exemptions_yaml
                 ]
             update_history = None
             if (
@@ -1174,7 +1174,7 @@ class DirectIngestRawFileConfig:
                         is not None
                         else DEFAULT_IS_PRIMARY_FOR_EXTERNAL_ID_TYPE_VALUE
                     ),
-                    import_blocking_column_validation_exemptions=import_blocking_column_validation_exemptions,
+                    pre_import_column_validation_exemptions=pre_import_column_validation_exemptions,
                     update_history=update_history,
                     null_values=column.pop_list_optional("null_values", str),
                 )
@@ -1294,10 +1294,10 @@ class DirectIngestRawFileConfig:
             is_primary_person_table=is_primary_person_table,
             is_code_file=is_code_file,
             is_chunked_file=is_chunked_file,
-            import_blocking_validation_exemptions=(
-                import_blocking_validation_exemptions
-                if import_blocking_validation_exemptions is not None
-                else default_import_blocking_validation_exemptions
+            pre_import_validation_exemptions=(
+                pre_import_validation_exemptions
+                if pre_import_validation_exemptions is not None
+                else default_pre_import_validation_exemptions
             ),
             max_num_unparseable_bytes_per_chunk=max_num_unparseable_bytes_per_chunk,
             max_hours_before_stale_override=(
@@ -1408,20 +1408,20 @@ class DirectIngestRegionRawFileConfig:
         default_max_hours_before_stale = default_contents.pop_optional(
             "default_max_hours_before_stale", int
         )
-        default_import_blocking_validation_exemptions = None
+        default_pre_import_validation_exemptions = None
         if (
-            import_blocking_validation_exemptions_yaml := default_contents.pop_dicts_optional(
-                "default_import_blocking_validation_exemptions"
+            pre_import_validation_exemptions_yaml := default_contents.pop_dicts_optional(
+                "default_pre_import_validation_exemptions"
             )
         ) is not None:
-            default_import_blocking_validation_exemptions = [
-                ImportBlockingValidationExemption(
-                    validation_type=RawDataImportBlockingValidationType(
+            default_pre_import_validation_exemptions = [
+                RawDataPreImportValidationExemption(
+                    validation_type=RawDataPreImportValidationType(
                         exemption.pop("validation_type", str)
                     ),
                     exemption_reason=exemption.pop("exemption_reason", str),
                 )
-                for exemption in import_blocking_validation_exemptions_yaml
+                for exemption in pre_import_validation_exemptions_yaml
             ]
 
         return DirectIngestRawFileDefaultConfig(
@@ -1434,7 +1434,7 @@ class DirectIngestRegionRawFileConfig:
             default_export_lookback_window=default_export_lookback_window,
             default_no_valid_primary_keys=default_no_valid_primary_keys,
             default_update_cadence=default_update_cadence,
-            default_import_blocking_validation_exemptions=default_import_blocking_validation_exemptions,
+            default_pre_import_validation_exemptions=default_pre_import_validation_exemptions,
             default_max_hours_before_stale=default_max_hours_before_stale,
         )
 
@@ -1538,7 +1538,7 @@ class DirectIngestRegionRawFileConfig:
                 default_no_valid_primary_keys=default_config.default_no_valid_primary_keys,
                 default_infer_columns_from_config=default_config.default_infer_columns_from_config,
                 default_max_hours_before_stale=default_config.default_max_hours_before_stale,
-                default_import_blocking_validation_exemptions=default_config.default_import_blocking_validation_exemptions,
+                default_pre_import_validation_exemptions=default_config.default_pre_import_validation_exemptions,
                 file_config_dict=yaml_contents,
             )
         return raw_data_configs

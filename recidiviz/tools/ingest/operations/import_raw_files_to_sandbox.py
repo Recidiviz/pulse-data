@@ -35,7 +35,7 @@ python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
     [--end-datetime-exclusive "2024-06-01"] \
     [--allow-incomplete-configs False]
     [--infer-schema-from-csv] \
-    [--skip-blocking-validations] \
+    [--skip-pre-import-validations] \
     [--skip-raw-data-migrations] \
     [--persist-intermediary-tables] \
     [--allow-incomplete-chunked-files] \
@@ -229,7 +229,7 @@ def do_sandbox_raw_file_import(
     source_bucket: GcsfsBucketPath,
     file_tag_filter_regex: Optional[str],
     infer_schema_from_csv: bool,
-    skip_blocking_validations: bool,
+    skip_pre_import_validations: bool,
     skip_raw_data_migrations: bool,
     persist_intermediary_tables: bool,
     allow_incomplete_chunked_files: bool,
@@ -316,7 +316,7 @@ def do_sandbox_raw_file_import(
         fs=fs,
         region_config=region_raw_file_config,
         infer_schema_from_csv=infer_schema_from_csv,
-        skip_blocking_validations=skip_blocking_validations,
+        skip_pre_import_validations=skip_pre_import_validations,
         skip_raw_data_migrations=skip_raw_data_migrations,
         persist_intermediary_tables=persist_intermediary_tables,
         allow_incomplete_chunked_files=allow_incomplete_chunked_files,
@@ -401,10 +401,10 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--skip-blocking-validations",
+        "--skip-pre-import-validations",
         help=(
-            "Skips import blocking validations during the big query load step. These "
-            "validations validate things like columns types, datetime parsers and "
+            "Skips pre-import validations during the big query load step. These "
+            "validations validate things like column types, datetime parsers and "
             "historical file counts."
         ),
         action="store_true",
@@ -459,7 +459,7 @@ def main() -> None:
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
             infer_schema_from_csv=known_args.infer_schema_from_csv,
-            skip_blocking_validations=known_args.skip_blocking_validations,
+            skip_pre_import_validations=known_args.skip_pre_import_validations,
             skip_raw_data_migrations=known_args.skip_raw_data_migrations,
             persist_intermediary_tables=known_args.persist_intermediary_tables,
             allow_incomplete_chunked_files=known_args.allow_incomplete_chunked_files,

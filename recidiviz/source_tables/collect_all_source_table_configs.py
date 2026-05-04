@@ -119,8 +119,8 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             update_config=SourceTableCollectionUpdateConfig.protected(),
             # TODO(#30687) consider raising this if we think that there are
             # certain temp tables we would want to keep around for longer
-            # by default (i.e. those that have a import-blocking validation)
-            # failure we'd like to be able to inspect
+            # by default (i.e. those that have a pre-import validation
+            # failure we'd like to be able to inspect)
             default_table_expiration_ms=ONE_DAY_MS,
             description=(
                 "Contains intermediate results of the raw data import process that "

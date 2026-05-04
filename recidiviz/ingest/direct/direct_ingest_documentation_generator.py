@@ -29,7 +29,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
-    ImportBlockingValidationExemption,
+    RawDataPreImportValidationExemption,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -155,16 +155,16 @@ class DirectIngestDocumentationGenerator:
             )
             return list_contents
 
-        def _get_column_import_blocking_validation_exemption_list(
-            import_blocking_validation_exemptions: Optional[
-                List[ImportBlockingValidationExemption]
+        def _get_column_pre_import_validation_exemption_list(
+            pre_import_validation_exemptions: Optional[
+                List[RawDataPreImportValidationExemption]
             ],
         ) -> str:
-            if not import_blocking_validation_exemptions:
+            if not pre_import_validation_exemptions:
                 return "N/A"
             list_contents = "".join(
                 f"<li>{exemption.validation_type.value}</li>"
-                for exemption in import_blocking_validation_exemptions
+                for exemption in pre_import_validation_exemptions
             )
             return f"<ul>{list_contents}</ul>"
 
@@ -191,14 +191,12 @@ class DirectIngestDocumentationGenerator:
 
             return section_contents
 
-        def _get_table_import_blocking_exemptions(
+        def _get_table_pre_import_exemptions(
             raw_file_config: DirectIngestRawFileConfig,
         ) -> str:
-            if not raw_file_config.import_blocking_validation_exemptions:
+            if not raw_file_config.pre_import_validation_exemptions:
                 return ""
-            section_contents = (
-                "\n\n### Table-Wide Import-Blocking Validation Exemptions\n\n"
-            )
+            section_contents = "\n\n### Table-Wide Pre-Import Validation Exemptions\n\n"
             section_contents += markdown_table(
                 headers=["Validation Type", "Exemption Reason"],
                 value_matrix=[
@@ -206,7 +204,7 @@ class DirectIngestDocumentationGenerator:
                         exemption.validation_type.value,
                         exemption.exemption_reason,
                     ]
-                    for exemption in raw_file_config.import_blocking_validation_exemptions
+                    for exemption in raw_file_config.pre_import_validation_exemptions
                 ],
             )
 
@@ -224,8 +222,8 @@ class DirectIngestDocumentationGenerator:
             ]
             if has_exemptions:
                 row_values.append(
-                    _get_column_import_blocking_validation_exemption_list(
-                        column.import_blocking_column_validation_exemptions
+                    _get_column_pre_import_validation_exemption_list(
+                        column.pre_import_column_validation_exemptions
                     )
                 )
             return row_values
@@ -235,7 +233,7 @@ class DirectIngestDocumentationGenerator:
         )
 
         has_exemptions = any(
-            column.import_blocking_column_validation_exemptions
+            column.pre_import_column_validation_exemptions
             for column in raw_file_config.current_columns
         )
 
@@ -251,7 +249,7 @@ class DirectIngestDocumentationGenerator:
             "Is PII?",
         ]
         if has_exemptions:
-            headers.append("Import-Blocking Validation Exemptions")
+            headers.append("Pre-Import Validation Exemptions")
 
         documentation += markdown_table(
             headers=headers,
@@ -260,7 +258,7 @@ class DirectIngestDocumentationGenerator:
 
         documentation += _get_table_relationship_info(raw_file_config)
 
-        documentation += _get_table_import_blocking_exemptions(raw_file_config)
+        documentation += _get_table_pre_import_exemptions(raw_file_config)
 
         return documentation
 

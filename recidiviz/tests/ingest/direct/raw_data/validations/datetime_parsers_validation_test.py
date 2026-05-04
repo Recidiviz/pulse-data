@@ -23,16 +23,16 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnFiel
 from recidiviz.ingest.direct.raw_data.validations.datetime_parsers_validation import (
     DatetimeParsersValidation,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
-from recidiviz.tests.ingest.direct.raw_data.validations.import_blocking_validation_test_case import (
-    RawDataImportBlockingValidationTestCase,
+from recidiviz.tests.ingest.direct.raw_data.validations.pre_import_validation_test_case import (
+    RawDataPreImportValidationTestCase,
 )
 
 
-class TestDatetimeParsersValidation(RawDataImportBlockingValidationTestCase):
+class TestDatetimeParsersValidation(RawDataPreImportValidationTestCase):
     """Unit tests for DatetimeParsersValidation"""
 
     def setUp(self) -> None:
@@ -99,8 +99,8 @@ class TestDatetimeParsersValidation(RawDataImportBlockingValidationTestCase):
             {self.happy_col_name: "01/03/2022", self.sad_col_name: "5E"},
             {self.happy_col_name: "0000", self.sad_col_name: "02/01/2022"},
         ]
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.DATETIME_PARSERS,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.DATETIME_PARSERS,
             validation_query=self.validation.build_query(),
             error_msg="""Found column(s) on raw file [test_file_tag] not matching any of the datetime_sql_parsers defined in its configuration YAML.
 Column name: [sad_col]

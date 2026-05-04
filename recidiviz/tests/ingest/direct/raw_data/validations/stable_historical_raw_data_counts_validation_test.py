@@ -35,11 +35,11 @@ from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_cou
     StableHistoricalRawDataCountsValidationConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationFailure,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationFailure,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -382,8 +382,8 @@ class TestStableHistoricalRawDataCountsValidation(BigQueryEmulatorTestCase):
 
     def test_validation_failure(self) -> None:
         row_count = 1
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             validation_query=self.validation.build_query(),
             error_msg=f"Median historical raw rows count [{self.expected_median}] is more than [{self.validation.row_count_percent_change_tolerance}]"
             f" different than the current count [{row_count}] for file [{self.file_tag}]."

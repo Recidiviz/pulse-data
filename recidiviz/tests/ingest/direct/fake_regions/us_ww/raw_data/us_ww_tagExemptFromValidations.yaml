@@ -1,6 +1,6 @@
 file_tag: tagExemptFromValidations
 file_description: |-
-  tag with import-blocking validation exemptions
+  tag with pre-import validation exemptions
 data_classification: source
 primary_key_cols:
   - COL1
@@ -11,9 +11,9 @@ columns:
   - name: COL2
     description: |-
       COL2 description
-    import_blocking_column_validation_exemptions:
+    pre_import_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: reason
-import_blocking_validation_exemptions:
+pre_import_validation_exemptions:
   - validation_type: STABLE_HISTORICAL_RAW_DATA_COUNTS
     exemption_reason: reason

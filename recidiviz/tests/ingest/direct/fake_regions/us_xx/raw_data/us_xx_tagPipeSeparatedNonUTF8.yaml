@@ -20,6 +20,6 @@ update_cadence: DAILY
 is_code_file: True
 is_chunked_file: True
 max_hours_before_stale: 48
-import_blocking_validation_exemptions:
+pre_import_validation_exemptions:
   - validation_type: NONNULL_VALUES
     exemption_reason: reason

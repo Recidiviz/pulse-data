@@ -25,16 +25,16 @@ from recidiviz.ingest.direct.raw_data.validations.expected_type_validation impor
     COLUMN_TYPE_TO_BIG_QUERY_TYPE,
     ExpectedTypeValidation,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
-from recidiviz.tests.ingest.direct.raw_data.validations.import_blocking_validation_test_case import (
-    RawDataImportBlockingValidationTestCase,
+from recidiviz.tests.ingest.direct.raw_data.validations.pre_import_validation_test_case import (
+    RawDataPreImportValidationTestCase,
 )
 
 
-class TestExpectedTypeValidation(RawDataImportBlockingValidationTestCase):
+class TestExpectedTypeValidation(RawDataPreImportValidationTestCase):
     """Unit tests for ExpectedTypeValidation"""
 
     def setUp(self) -> None:
@@ -93,8 +93,8 @@ class TestExpectedTypeValidation(RawDataImportBlockingValidationTestCase):
             {self.happy_col_name: "4", self.sad_col_name: "5E"},
             {self.happy_col_name: "N/A", self.sad_col_name: "50"},
         ]
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.EXPECTED_TYPE,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.EXPECTED_TYPE,
             validation_query=self.validation.build_query(),
             error_msg=f"Found column(s) on raw file [{self.file_tag}]"
             f" not matching the field_type defined in its configuration YAML."
@@ -119,8 +119,8 @@ class TestExpectedTypeValidation(RawDataImportBlockingValidationTestCase):
             {self.happy_col_name: "5", self.sad_col_name: "5F"},
         ]
 
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.EXPECTED_TYPE,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.EXPECTED_TYPE,
             validation_query=self.validation.build_query(),
             error_msg=f"Found column(s) on raw file [{self.file_tag}]"
             f" not matching the field_type defined in its configuration YAML."

@@ -57,9 +57,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager import
     DirectIngestRawFileLoadManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationError,
-)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendReadyFileBatch,
@@ -68,6 +65,9 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawDataAppendImportError,
     RawDataImportError,
     RawFileLoadAndPrepError,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationError,
 )
 from recidiviz.utils.airflow_types import (
     BatchedTaskInstanceOutput,
@@ -141,7 +141,7 @@ def load_and_prep_paths_for_batch(
         for future in concurrent.futures.as_completed(future_to_metadata):
             try:
                 succeeded_loads.append(future.result())
-            except RawDataImportBlockingValidationError as e:
+            except RawDataPreImportValidationError as e:
                 failed_loads.append(
                     RawFileLoadAndPrepError(
                         file_id=future_to_metadata[future].file_id,

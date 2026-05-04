@@ -29,16 +29,16 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 
 
 @attr.define
-class RawDataImportBlockingValidationFailure:
-    """Represents a failure encountered while running a RawDataTableImportBlockingValidation"""
+class RawDataPreImportValidationFailure:
+    """Represents a failure encountered while running a RawDataPreImportValidation"""
 
-    validation_type: RawDataImportBlockingValidationType
+    validation_type: RawDataPreImportValidationType
     validation_query: str
     error_msg: str
 
@@ -51,7 +51,7 @@ class RawDataImportBlockingValidationFailure:
 
 
 @attr.dataclass
-class RawDataImportBlockingValidationContext:
+class RawDataPreImportValidationContext:
     state_code: StateCode
     file_tag: str
     project_id: str
@@ -62,10 +62,10 @@ class RawDataImportBlockingValidationContext:
 
 
 @attr.define
-class BaseRawDataImportBlockingValidation:
+class BaseRawDataPreImportValidation:
     """Interface for a validation to be run on raw data after it has been loaded to a temporary table"""
 
-    VALIDATION_TYPE: ClassVar[RawDataImportBlockingValidationType | None] = None
+    VALIDATION_TYPE: ClassVar[RawDataPreImportValidationType | None] = None
     state_code: StateCode
     file_tag: str
     project_id: str
@@ -74,7 +74,7 @@ class BaseRawDataImportBlockingValidation:
     @abc.abstractmethod
     def get_error_from_results(
         self, results: list[dict[str, Any]]
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         """Implemented by subclasses to determine if the query results should produce
         an error.
         """
@@ -87,28 +87,28 @@ class BaseRawDataImportBlockingValidation:
     @abc.abstractmethod
     def validation_applies_to_file(
         cls,
-        context: RawDataImportBlockingValidationContext,
+        context: RawDataPreImportValidationContext,
     ) -> bool:
         """Implemented by subclasses to determine if the validation applies to the provided raw data file."""
 
     @classmethod
     @abc.abstractmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
-    ) -> "BaseRawDataImportBlockingValidation":
+        cls, context: RawDataPreImportValidationContext
+    ) -> "BaseRawDataPreImportValidation":
         """Creates validation class instance."""
 
 
 @attr.define
 class RawDataColumnValidationMixin:
     """
-    Mixin class providing common utility methods for raw data import blocking validations
+    Mixin class providing common utility methods for raw data pre-import validations
     that operate on individual columns.
     """
 
     @staticmethod
     def get_columns_relevant_for_validation(
-        validation_type: RawDataImportBlockingValidationType,
+        validation_type: RawDataPreImportValidationType,
         raw_file_config: DirectIngestRawFileConfig,
         file_update_datetime: datetime.datetime,
     ) -> list[RawTableColumnInfo]:
@@ -146,11 +146,11 @@ class RawDataColumnValidationMixin:
         return f"AND {column_name} NOT IN ({null_values_str})"
 
 
-class RawDataImportBlockingValidationError(Exception):
+class RawDataPreImportValidationError(Exception):
     """Raised when one or more pre-import validations fail for a given file tag."""
 
     def __init__(
-        self, file_tag: str, failures: list[RawDataImportBlockingValidationFailure]
+        self, file_tag: str, failures: list[RawDataPreImportValidationFailure]
     ):
         self.file_tag = file_tag
         self.failures = failures
@@ -159,8 +159,8 @@ class RawDataImportBlockingValidationError(Exception):
         return (
             f"{len(self.failures)} pre-import validation(s) failed for file [{self.file_tag}]."
             f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
-            " please add the validation_type and exemption_reason to import_blocking_validation_exemptions"
-            " for a table-wide exemption or to import_blocking_column_validation_exemptions"
+            " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
+            " for a table-wide exemption or to pre_import_column_validation_exemptions"
             " for a column-specific exemption in the raw file config."
             f"\n{self._get_failure_messages()}"
         )

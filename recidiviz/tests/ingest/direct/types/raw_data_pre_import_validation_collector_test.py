@@ -27,17 +27,17 @@ from recidiviz.ingest.direct.raw_data.raw_file_config_enums import (
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_collector import (
-    RawDataImportBlockingValidationCollector,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_collector import (
+    RawDataPreImportValidationCollector,
 )
 
 
-class TestRawDataImportBlockingValidationCollector(unittest.TestCase):
-    """Unit tests for RawDataImportBlockingValidationCollector"""
+class TestRawDataPreImportValidationCollector(unittest.TestCase):
+    """Unit tests for RawDataPreImportValidationCollector"""
 
     def test_collect_validations(self) -> None:
-        #  Test that we can collect validations for all RawDataImportBlockingValidationTypes
-        result = RawDataImportBlockingValidationCollector.collect_validations_for_file(
+        #  Test that we can collect validations for all RawDataPreImportValidationTypes
+        result = RawDataPreImportValidationCollector.collect_validations_for_file(
             state_code=StateCode.US_XX,
             file_tag="test_file",
             project_id="test_project",

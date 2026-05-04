@@ -25,16 +25,16 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.raw_data.validations.nonnull_values_validation import (
     NonNullValuesValidation,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
-from recidiviz.tests.ingest.direct.raw_data.validations.import_blocking_validation_test_case import (
-    RawDataImportBlockingValidationTestCase,
+from recidiviz.tests.ingest.direct.raw_data.validations.pre_import_validation_test_case import (
+    RawDataPreImportValidationTestCase,
 )
 
 
-class TestNonNullValuesValidation(RawDataImportBlockingValidationTestCase):
+class TestNonNullValuesValidation(RawDataPreImportValidationTestCase):
     """Unit tests for NonNullValuesValidation"""
 
     def setUp(self) -> None:
@@ -49,8 +49,8 @@ class TestNonNullValuesValidation(RawDataImportBlockingValidationTestCase):
         self.validation_success_test(validation=self.validation, test_data=valid_data)
 
     def test_validation_failure(self) -> None:
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.NONNULL_VALUES,
             validation_query=self.validation.build_query(),
             error_msg=f"Found column(s) on raw file [{self.file_tag}] with only null values.\nColumn name: [{self.sad_col_name}]",
         )

@@ -26,12 +26,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -71,15 +71,15 @@ COLUMN_TYPE_TO_BIG_QUERY_TYPE = {
 
 @attr.define
 class ExpectedTypeValidation(
-    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+    BaseRawDataPreImportValidation, RawDataColumnValidationMixin
 ):
     """Validation that checks if any columns in a given file tag have values that can't be cast to their expected type.
     Validation runs on all columns with a field_type other than string unless explicitly exempt.
     """
 
     VALIDATION_TYPE: ClassVar[
-        RawDataImportBlockingValidationType
-    ] = RawDataImportBlockingValidationType.EXPECTED_TYPE
+        RawDataPreImportValidationType
+    ] = RawDataPreImportValidationType.EXPECTED_TYPE
     column_name_to_columns: dict[str, RawTableColumnInfo]
 
     @classmethod
@@ -99,7 +99,7 @@ class ExpectedTypeValidation(
 
     @classmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> "ExpectedTypeValidation":
         columns_to_validate = cls._get_columns_to_validate(
             context.raw_file_config,
@@ -125,7 +125,7 @@ class ExpectedTypeValidation(
 
     @classmethod
     def validation_applies_to_file(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> bool:
         """Returns True if the file is not exempt from the validation and there is at least one column
         with `field_type: integer` that is not exempt from the validation for the given file config
@@ -198,7 +198,7 @@ class ExpectedTypeValidation(
 
     def get_error_from_results(
         self, results: list[dict[str, Any]]
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         if not results:
             return None
 
@@ -222,7 +222,7 @@ class ExpectedTypeValidation(
                 f"\n{non_matching_prefix} values that do not parse: [{', '.join(non_matching_types)}].\n"
             )
 
-        return RawDataImportBlockingValidationFailure(
+        return RawDataPreImportValidationFailure(
             validation_type=self.VALIDATION_TYPE,
             validation_query=self.build_query(),
             error_msg=error_msg,

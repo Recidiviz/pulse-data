@@ -19,14 +19,14 @@ from typing import Any, ClassVar
 
 from attrs import define
 
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -41,18 +41,18 @@ LIMIT 1
 
 @define
 class DistinctPrimaryKeyValidation(
-    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+    BaseRawDataPreImportValidation, RawDataColumnValidationMixin
 ):
     """Validation that checks that all primary keys in a file are distinct (case insensitive)."""
 
     VALIDATION_TYPE: ClassVar[
-        RawDataImportBlockingValidationType
-    ] = RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
+        RawDataPreImportValidationType
+    ] = RawDataPreImportValidationType.DISTINCT_PRIMARY_KEYS
     primary_key_cols: list[str]
 
     @classmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> "DistinctPrimaryKeyValidation":
 
         return cls(
@@ -68,7 +68,7 @@ class DistinctPrimaryKeyValidation(
     @classmethod
     def validation_applies_to_file(
         cls,
-        context: RawDataImportBlockingValidationContext,
+        context: RawDataPreImportValidationContext,
     ) -> bool:
         return len(
             context.raw_file_config.primary_key_cols_at_datetime(
@@ -89,11 +89,11 @@ class DistinctPrimaryKeyValidation(
 
     def get_error_from_results(
         self, results: list[dict[str, Any]]
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         if not results:
             return None
 
-        return RawDataImportBlockingValidationFailure(
+        return RawDataPreImportValidationFailure(
             validation_type=self.VALIDATION_TYPE,
             validation_query=self.build_query(),
             error_msg=(

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Run import-blocking validations on a raw data temp table in BigQuery."""
+"""Run pre-import validations on a raw data temp table in BigQuery."""
 from concurrent import futures
 from datetime import datetime
 
@@ -32,13 +32,13 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
-    RawDataImportBlockingValidationError,
-    RawDataImportBlockingValidationFailure,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
+    RawDataPreImportValidationError,
+    RawDataPreImportValidationFailure,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_collector import (
-    RawDataImportBlockingValidationCollector,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_collector import (
+    RawDataPreImportValidationCollector,
 )
 
 MAX_THREADS = 8
@@ -48,7 +48,7 @@ DEFAULT_TOTAL_TIMEOUT = 60.0 * 8  # 8 minutes, in seconds
 
 
 class DirectIngestRawTablePreImportValidator:
-    """Validator class responsible for executing import-blocking validations on raw data
+    """Validator class responsible for executing pre-import validations on raw data
     loaded into temporary BigQuery tables."""
 
     def __init__(
@@ -66,8 +66,8 @@ class DirectIngestRawTablePreImportValidator:
         self.big_query_client = big_query_client
 
     def _execute_validation_queries_concurrently(
-        self, validations_to_run: list[BaseRawDataImportBlockingValidation]
-    ) -> list[RawDataImportBlockingValidationFailure]:
+        self, validations_to_run: list[BaseRawDataPreImportValidation]
+    ) -> list[RawDataPreImportValidationFailure]:
         """Executes |validations_to_run| concurrently, returning any errors we encounter."""
         job_to_validation = {
             self.big_query_client.run_query_async(
@@ -96,7 +96,7 @@ class DirectIngestRawTablePreImportValidator:
                 for job, validation_info in job_to_validation.items()
             }
             for f in futures.as_completed(job_futures):
-                validation_info: BaseRawDataImportBlockingValidation = job_futures[f]
+                validation_info: BaseRawDataPreImportValidation = job_futures[f]
 
                 error = validation_info.get_error_from_results(
                     bq_query_job_result_to_list_of_row_dicts(f.result())
@@ -112,12 +112,12 @@ class DirectIngestRawTablePreImportValidator:
         temp_table_address: BigQueryAddress,
     ) -> None:
         """Run all applicable validation queries against the temp raw table in BigQuery and
-        raise a RawDataImportBlockingValidationError if any validations don't meet the success criteria.
+        raise a RawDataPreImportValidationError if any validations don't meet the success criteria.
         """
 
         validations_to_run: list[
-            BaseRawDataImportBlockingValidation
-        ] = RawDataImportBlockingValidationCollector.collect_validations_for_file(
+            BaseRawDataPreImportValidation
+        ] = RawDataPreImportValidationCollector.collect_validations_for_file(
             state_code=StateCode(self.region_code.upper()),
             file_tag=file_tag,
             project_id=self.project_id,
@@ -130,4 +130,4 @@ class DirectIngestRawTablePreImportValidator:
         failures = self._execute_validation_queries_concurrently(validations_to_run)
 
         if failures:
-            raise RawDataImportBlockingValidationError(file_tag, failures)
+            raise RawDataPreImportValidationError(file_tag, failures)

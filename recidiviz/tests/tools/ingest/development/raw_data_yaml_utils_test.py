@@ -64,7 +64,7 @@ class TestYamlFilter(unittest.TestCase):
                 "name",
                 "description",
                 "known_values",
-                "import_blocking_column_validation_exemptions",
+                "pre_import_column_validation_exemptions",
             },
             {"name", "description"},
             {"name"},

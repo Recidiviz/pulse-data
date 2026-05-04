@@ -24,17 +24,17 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import ColumnEnumValueInf
 from recidiviz.ingest.direct.raw_data.validations.known_values_validation import (
     KnownValuesValidation,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.raw_data.validations.import_blocking_validation_test_case import (
-    RawDataImportBlockingValidationTestCase,
+from recidiviz.tests.ingest.direct.raw_data.validations.pre_import_validation_test_case import (
+    RawDataPreImportValidationTestCase,
 )
 
 
-class TestKnownValuesValidation(RawDataImportBlockingValidationTestCase):
+class TestKnownValuesValidation(RawDataPreImportValidationTestCase):
     """Unit tests for KnownValuesValidation"""
 
     maxDiff = None
@@ -118,8 +118,8 @@ class TestKnownValuesValidation(RawDataImportBlockingValidationTestCase):
         context = attr.evolve(self.context, file_tag=file_tag)
         validation = KnownValuesValidation.create_validation(context=context)
         quoted_known_values = [f'"{v}"' for v in self.known_values]
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.KNOWN_VALUES,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.KNOWN_VALUES,
             validation_query=validation.build_query(),
             error_msg=f"Found column(s) on raw file [{file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."
@@ -148,8 +148,8 @@ class TestKnownValuesValidation(RawDataImportBlockingValidationTestCase):
             {self.happy_col_name: "b", self.sad_col_name: "z"},
             {self.happy_col_name: "0000", self.sad_col_name: "y"},
         ]
-        expected_error = RawDataImportBlockingValidationFailure(
-            validation_type=RawDataImportBlockingValidationType.KNOWN_VALUES,
+        expected_error = RawDataPreImportValidationFailure(
+            validation_type=RawDataPreImportValidationType.KNOWN_VALUES,
             validation_query=self.validation.build_query(),
             error_msg=f"Found column(s) on raw file [{self.file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."

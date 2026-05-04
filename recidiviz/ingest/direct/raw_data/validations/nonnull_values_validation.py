@@ -24,12 +24,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -52,14 +52,14 @@ WHERE all_values_null = True
 
 @attr.define
 class NonNullValuesValidation(
-    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+    BaseRawDataPreImportValidation, RawDataColumnValidationMixin
 ):
     """Validation to check if a column has only null values, runs on all primary key columns
     and all columns in a historical file unless explicitly exempt."""
 
     VALIDATION_TYPE: ClassVar[
-        RawDataImportBlockingValidationType
-    ] = RawDataImportBlockingValidationType.NONNULL_VALUES
+        RawDataPreImportValidationType
+    ] = RawDataPreImportValidationType.NONNULL_VALUES
     column_name_to_columns: dict[str, RawTableColumnInfo]
 
     @classmethod
@@ -80,7 +80,7 @@ class NonNullValuesValidation(
 
     @classmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> "NonNullValuesValidation":
         columns_to_validate = cls._get_columns_to_validate(
             context.raw_file_config, file_update_datetime=context.file_update_datetime
@@ -105,7 +105,7 @@ class NonNullValuesValidation(
 
     @classmethod
     def validation_applies_to_file(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> bool:
         """Returns True if the file is not exempt from the validation, is always historical
         or if there is at least one primary key column that is not exempt from the validation
@@ -138,7 +138,7 @@ class NonNullValuesValidation(
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         if not results:
             return None
 
@@ -152,7 +152,7 @@ class NonNullValuesValidation(
             if nonnull_value:
                 error_msg += f"\nColumn name: [{column_name}]"
 
-        return RawDataImportBlockingValidationFailure(
+        return RawDataPreImportValidationFailure(
             validation_type=self.VALIDATION_TYPE,
             validation_query=self.build_query(),
             error_msg=error_msg,

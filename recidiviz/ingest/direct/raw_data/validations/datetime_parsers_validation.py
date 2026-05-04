@@ -24,12 +24,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
-    RawDataImportBlockingValidationType,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
+    RawDataPreImportValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -61,15 +61,15 @@ WHERE ARRAY_LENGTH(failed_values) > 0
 
 @attr.define
 class DatetimeParsersValidation(
-    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+    BaseRawDataPreImportValidation, RawDataColumnValidationMixin
 ):
     """Validation that checks if any datetime columns in a given file tag have values that don't match any of
     their datetime parsers. Validation runs on all columns with datetime_sql_parsers unless explicitly exempt.
     """
 
     VALIDATION_TYPE: ClassVar[
-        RawDataImportBlockingValidationType
-    ] = RawDataImportBlockingValidationType.DATETIME_PARSERS
+        RawDataPreImportValidationType
+    ] = RawDataPreImportValidationType.DATETIME_PARSERS
     column_name_to_columns: dict[str, RawTableColumnInfo]
 
     def __attrs_post_init__(self) -> None:
@@ -98,7 +98,7 @@ class DatetimeParsersValidation(
 
     @classmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> "DatetimeParsersValidation":
         columns_to_validate = cls._get_columns_to_validate(
             context.raw_file_config, file_update_datetime=context.file_update_datetime
@@ -123,7 +123,7 @@ class DatetimeParsersValidation(
 
     @classmethod
     def validation_applies_to_file(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> bool:
         """Returns True if the file is not exempt from the validation and there is at least one column with
         configured datetime_sql_parsers that is not exempt from the validation for the given file config
@@ -192,7 +192,7 @@ class DatetimeParsersValidation(
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         if not results:
             # All datetime values parsed
             return None
@@ -217,7 +217,7 @@ class DatetimeParsersValidation(
                 f"\n{unparseable_prefix} values that do not parse: [{', '.join(unparseable_datetimes)}].\n"
             )
 
-        return RawDataImportBlockingValidationFailure(
+        return RawDataPreImportValidationFailure(
             validation_type=self.VALIDATION_TYPE,
             validation_query=self.build_query(),
             error_msg=error_msg,

@@ -167,9 +167,9 @@ class TestYamlHelpers(unittest.TestCase):
     def test_get_raw_file_config_attribute_to_list_item_identifier_map(self) -> None:
         expected_dict = {
             "known_values": "value",
-            "import_blocking_column_validation_exemptions": "validation_type",
+            "pre_import_column_validation_exemptions": "validation_type",
             "update_history": "update_datetime",
-            "import_blocking_validation_exemptions": "validation_type",
+            "pre_import_validation_exemptions": "validation_type",
             "columns": "name",
         }
 

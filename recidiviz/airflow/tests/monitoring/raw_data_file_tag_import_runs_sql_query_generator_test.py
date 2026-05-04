@@ -428,7 +428,7 @@ google.api_core.exceptions.BadRequest: 400 Syntax error: Unclosed identifier lit
                 error_message="""
 FAILED_VALIDATION_STEP for [tagBasic] for [recidiviz-staging-direct-ingest-state-testing/unprocessed_2022-03-23T12:00:17:064931_raw_tagBasic.csv] failed with:
 
-1 pre-import validation(s) failed for file [tagBasic]. If you wish [tagBasic] to be permanently excluded from any validation,  please add the validation_type and exemption_reason to import_blocking_validation_exemptions for a table-wide exemption or to import_blocking_column_validation_exemptions for a column-specific exemption in the raw file config.
+1 pre-import validation(s) failed for file [tagBasic]. If you wish [tagBasic] to be permanently excluded from any validation,  please add the validation_type and exemption_reason to pre_import_validation_exemptions for a table-wide exemption or to pre_import_column_validation_exemptions for a column-specific exemption in the raw file config.
 Error: Found column [COL1] on raw file [tagBasic] with only null values.
 Validation type: NONNULL_VALUES
 Validation query: 

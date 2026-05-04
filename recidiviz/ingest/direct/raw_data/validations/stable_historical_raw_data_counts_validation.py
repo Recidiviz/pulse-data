@@ -28,14 +28,14 @@ from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_cou
     StableHistoricalRawDataCountsValidationConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    BaseRawDataImportBlockingValidation,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    BaseRawDataPreImportValidation,
     RawDataColumnValidationMixin,
-    RawDataImportBlockingValidationContext,
-    RawDataImportBlockingValidationFailure,
+    RawDataPreImportValidationContext,
+    RawDataPreImportValidationFailure,
 )
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -79,13 +79,13 @@ _DATE_EXCLUSION_TEMPLATE = " AND update_datetime NOT BETWEEN PARSE_TIMESTAMP('%F
 
 @attr.define
 class StableHistoricalRawDataCountsValidation(
-    BaseRawDataImportBlockingValidation, RawDataColumnValidationMixin
+    BaseRawDataPreImportValidation, RawDataColumnValidationMixin
 ):
     """Verify that the current raw data row count is within an acceptable range of the historical median for that file tag."""
 
     VALIDATION_TYPE: ClassVar[
-        RawDataImportBlockingValidationType
-    ] = RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
+        RawDataPreImportValidationType
+    ] = RawDataPreImportValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS
     raw_data_instance: DirectIngestInstance
     file_update_datetime: datetime.datetime
     validation_config: StableHistoricalRawDataCountsValidationConfig = attr.ib(
@@ -94,7 +94,7 @@ class StableHistoricalRawDataCountsValidation(
 
     @classmethod
     def create_validation(
-        cls, context: RawDataImportBlockingValidationContext
+        cls, context: RawDataPreImportValidationContext
     ) -> "StableHistoricalRawDataCountsValidation":
         """Factory method to create a StableHistoricalRawDataCountsValidation."""
         return cls(
@@ -125,7 +125,7 @@ class StableHistoricalRawDataCountsValidation(
     @classmethod
     def validation_applies_to_file(
         cls,
-        context: RawDataImportBlockingValidationContext,
+        context: RawDataPreImportValidationContext,
     ) -> bool:
         """Returns True if always_historical_export is True for the file tag,
         is_code_file is False for the file tag, and file's update_datetime doesn't fall
@@ -189,7 +189,7 @@ class StableHistoricalRawDataCountsValidation(
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
-    ) -> RawDataImportBlockingValidationFailure | None:
+    ) -> RawDataPreImportValidationFailure | None:
         if not results:
             raise RuntimeError(
                 "No results found for stable historical counts validation."
@@ -213,7 +213,7 @@ class StableHistoricalRawDataCountsValidation(
             abs(median - temp_table_row_count) / float(median)
             > self.row_count_percent_change_tolerance
         ):
-            return RawDataImportBlockingValidationFailure(
+            return RawDataPreImportValidationFailure(
                 validation_type=self.VALIDATION_TYPE,
                 validation_query=self.build_query(),
                 error_msg=(

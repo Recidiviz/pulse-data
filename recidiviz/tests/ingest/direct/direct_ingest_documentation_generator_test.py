@@ -184,15 +184,15 @@ tagColumnsMissing file description
 """
         expected_tag_exempt_from_validations = """## tagExemptFromValidations
 
-tag with import-blocking validation exemptions
+tag with pre-import validation exemptions
 
-|Column|Column Description|Part of Primary Key?|Distinct Values|Is PII?|Import-Blocking Validation Exemptions|
-|------|------------------|--------------------|---------------|-------|-------------------------------------|
-|COL1  |COL1 description  |YES                 |N/A            |False  |N/A                                  |
-|COL2  |COL2 description  |                    |N/A            |False  |<ul><li>NONNULL_VALUES</li></ul>     |
+|Column|Column Description|Part of Primary Key?|Distinct Values|Is PII?|Pre-Import Validation Exemptions|
+|------|------------------|--------------------|---------------|-------|--------------------------------|
+|COL1  |COL1 description  |YES                 |N/A            |False  |N/A                             |
+|COL2  |COL2 description  |                    |N/A            |False  |<ul><li>NONNULL_VALUES</li></ul>|
 
 
-### Table-Wide Import-Blocking Validation Exemptions
+### Table-Wide Pre-Import Validation Exemptions
 
 |         Validation Type         |Exemption Reason|
 |---------------------------------|----------------|

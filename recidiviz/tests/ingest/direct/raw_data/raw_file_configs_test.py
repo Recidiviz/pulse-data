@@ -33,10 +33,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnUpdateOperation,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
-    ImportBlockingValidationExemption,
     RawDataClassification,
     RawDataExportLookbackWindow,
     RawDataFileUpdateCadence,
+    RawDataPreImportValidationExemption,
     RawDataPruningStatus,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -51,8 +51,8 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationType,
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
     RAW_DATA_ALL_VIEW_ID_SUFFIX,
@@ -321,8 +321,8 @@ class TestRawTableColumnInfo(unittest.TestCase):
             )
 
     def test_nonnull_value_validation_exemption(self) -> None:
-        exemption = ImportBlockingValidationExemption(
-            validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
+        exemption = RawDataPreImportValidationExemption(
+            validation_type=RawDataPreImportValidationType.NONNULL_VALUES,
             exemption_reason="reason",
         )
         exempt_column = RawTableColumnInfo(
@@ -333,13 +333,13 @@ class TestRawTableColumnInfo(unittest.TestCase):
             is_pii=False,
             description=None,
             known_values=None,
-            import_blocking_column_validation_exemptions=[exemption],
+            pre_import_column_validation_exemptions=[exemption],
         )
-        self.assertIsNotNone(exempt_column.import_blocking_column_validation_exemptions)
+        self.assertIsNotNone(exempt_column.pre_import_column_validation_exemptions)
         self.assertTrue(
-            ImportBlockingValidationExemption.list_includes_exemption_type(
-                exempt_column.import_blocking_column_validation_exemptions,
-                RawDataImportBlockingValidationType.NONNULL_VALUES,
+            RawDataPreImportValidationExemption.list_includes_exemption_type(
+                exempt_column.pre_import_column_validation_exemptions,
+                RawDataPreImportValidationType.NONNULL_VALUES,
             )
         )
 
@@ -353,8 +353,8 @@ class TestRawTableColumnInfo(unittest.TestCase):
             description=None,
             known_values=None,
         )
-        exemption = ImportBlockingValidationExemption(
-            validation_type=RawDataImportBlockingValidationType.DATETIME_PARSERS,
+        exemption = RawDataPreImportValidationExemption(
+            validation_type=RawDataPreImportValidationType.DATETIME_PARSERS,
             exemption_reason="reason",
         )
         non_exempt_column = RawTableColumnInfo(
@@ -365,20 +365,18 @@ class TestRawTableColumnInfo(unittest.TestCase):
             is_pii=False,
             description=None,
             known_values=None,
-            import_blocking_column_validation_exemptions=[exemption],
+            pre_import_column_validation_exemptions=[exemption],
         )
 
         self.assertIsNone(
-            non_exempt_column_default.import_blocking_column_validation_exemptions
+            non_exempt_column_default.pre_import_column_validation_exemptions
         )
-        self.assertIsNotNone(
-            non_exempt_column.import_blocking_column_validation_exemptions
-        )
+        self.assertIsNotNone(non_exempt_column.pre_import_column_validation_exemptions)
 
         self.assertFalse(
-            ImportBlockingValidationExemption.list_includes_exemption_type(
-                non_exempt_column.import_blocking_column_validation_exemptions,
-                RawDataImportBlockingValidationType.NONNULL_VALUES,
+            RawDataPreImportValidationExemption.list_includes_exemption_type(
+                non_exempt_column.pre_import_column_validation_exemptions,
+                RawDataPreImportValidationType.NONNULL_VALUES,
             )
         )
 
@@ -1652,9 +1650,9 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     ColumnEnumValueInfo(value="A", description="A description"),
                     ColumnEnumValueInfo(value="B", description=None),
                 ],
-                import_blocking_column_validation_exemptions=[
-                    ImportBlockingValidationExemption(
-                        validation_type=RawDataImportBlockingValidationType.NONNULL_VALUES,
+                pre_import_column_validation_exemptions=[
+                    RawDataPreImportValidationExemption(
+                        validation_type=RawDataPreImportValidationType.NONNULL_VALUES,
                         exemption_reason="reason",
                     )
                 ],
@@ -1862,9 +1860,9 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual("‡\n", default_config.default_custom_line_terminator)
         self.assertEqual(False, default_config.default_no_valid_primary_keys)
         self.assertTrue(
-            ImportBlockingValidationExemption.list_includes_exemption_type(
-                default_config.default_import_blocking_validation_exemptions,
-                RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+            RawDataPreImportValidationExemption.list_includes_exemption_type(
+                default_config.default_pre_import_validation_exemptions,
+                RawDataPreImportValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
         self.assertIsNone(default_config.default_max_hours_before_stale)
@@ -1896,9 +1894,9 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertFalse(simple_file_config.is_code_file)
         self.assertFalse(simple_file_config.is_chunked_file)
         self.assertTrue(
-            ImportBlockingValidationExemption.list_includes_exemption_type(
-                default_config.default_import_blocking_validation_exemptions,
-                RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+            RawDataPreImportValidationExemption.list_includes_exemption_type(
+                default_config.default_pre_import_validation_exemptions,
+                RawDataPreImportValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
         self.assertIsNone(simple_file_config.max_hours_before_stale_override)
@@ -1910,7 +1908,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         default_config = self.us_xx_region_config.default_config()
 
         # This file has a custom line terminator / encoding / separator
-        # and contains import-blocking validation exemption
+        # and contains pre-import validation exemption
         file_config = self.us_xx_region_config.raw_file_configs[
             "tagPipeSeparatedNonUTF8"
         ]
@@ -1929,17 +1927,17 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual(RawDataFileUpdateCadence.DAILY, file_config.update_cadence)
         self.assertTrue(file_config.is_code_file)
         self.assertTrue(file_config.is_chunked_file)
-        # import_blocking_validation_exemptions should be appended to the default_import_blocking_validation_exemptions
+        # pre_import_validation_exemptions should be appended to the default_pre_import_validation_exemptions
         self.assertTrue(
-            ImportBlockingValidationExemption.list_includes_exemption_type(
-                file_config.import_blocking_validation_exemptions,
-                RawDataImportBlockingValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
+            RawDataPreImportValidationExemption.list_includes_exemption_type(
+                file_config.pre_import_validation_exemptions,
+                RawDataPreImportValidationType.STABLE_HISTORICAL_RAW_DATA_COUNTS,
             )
         )
         self.assertTrue(
-            ImportBlockingValidationExemption.list_includes_exemption_type(
-                file_config.import_blocking_validation_exemptions,
-                RawDataImportBlockingValidationType.NONNULL_VALUES,
+            RawDataPreImportValidationExemption.list_includes_exemption_type(
+                file_config.pre_import_validation_exemptions,
+                RawDataPreImportValidationType.NONNULL_VALUES,
             )
         )
         self.assertEqual(48, file_config.max_hours_before_stale_override)
@@ -2341,17 +2339,13 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_is_exempt_from_validation(self) -> None:
         column_name = "Col1"
-        table_validation_exemption_type = (
-            RawDataImportBlockingValidationType.NONNULL_VALUES
-        )
-        column_validation_exemption_type = (
-            RawDataImportBlockingValidationType.EXPECTED_TYPE
-        )
+        table_validation_exemption_type = RawDataPreImportValidationType.NONNULL_VALUES
+        column_validation_exemption_type = RawDataPreImportValidationType.EXPECTED_TYPE
 
         exempt_config = attr.evolve(
             self.sparse_config,
-            import_blocking_validation_exemptions=[
-                ImportBlockingValidationExemption(
+            pre_import_validation_exemptions=[
+                RawDataPreImportValidationExemption(
                     validation_type=table_validation_exemption_type,
                     exemption_reason="reason",
                 )
@@ -2364,8 +2358,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.INTEGER,
-                    import_blocking_column_validation_exemptions=[
-                        ImportBlockingValidationExemption(
+                    pre_import_column_validation_exemptions=[
+                        RawDataPreImportValidationExemption(
                             validation_type=column_validation_exemption_type,
                             exemption_reason="reason",
                         )
@@ -2403,7 +2397,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             rf"Expected to find exactly one entry for column \[{column_name}\], found: \[\]",
         ):
             self.sparse_config.column_is_exempt_from_validation(
-                column_name, RawDataImportBlockingValidationType.NONNULL_VALUES
+                column_name, RawDataPreImportValidationType.NONNULL_VALUES
             )
 
 
@@ -2446,7 +2440,7 @@ def test_automatic_raw_data_pruning_files_not_exempt_from_distinct_pk_validation
             if config.get_pruning_status(
                 DirectIngestInstance.PRIMARY
             ) == RawDataPruningStatus.AUTOMATIC and config.file_is_exempt_from_validation(
-                RawDataImportBlockingValidationType.DISTINCT_PRIMARY_KEYS
+                RawDataPreImportValidationType.DISTINCT_PRIMARY_KEYS
             ):
                 raise ValueError(
                     f"[{state_code.value}][{file_tag}]: Cannot be exempt from DISTINCT_PRIMARY_KEYS pre-import validation "
