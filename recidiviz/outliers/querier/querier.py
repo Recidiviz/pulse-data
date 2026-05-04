@@ -1188,7 +1188,9 @@ class OutliersQuerier:
                 contact_type=row.contact_type,
                 contact_due_date=row.contact_due_date,
                 contact_completed=row.contact_completed,
-                contact_completed_date=row.contact_completed_date,
+                contact_completed_date=date.fromisoformat(row.contact_completed_date)
+                if row.contact_completed_date
+                else None,
             )
             for row in rows
         ]

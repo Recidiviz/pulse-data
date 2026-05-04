@@ -5774,7 +5774,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 contact_type="needs_scheduled_home_contact",
                 contact_due_date=date(2026, 2, 28),
                 contact_completed=True,
-                contact_completed_date="2026-03-11",
+                contact_completed_date=date(2026, 3, 11),
             ),
             SupervisionContactsDrilldownEntity(
                 full_name="Shalya Quin",
@@ -5785,7 +5785,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 contact_type="needs_type_agnostic_contact",
                 contact_due_date=date(2026, 1, 12),
                 contact_completed=False,
-                contact_completed_date="None",
+                contact_completed_date=None,
             ),
         ]
 

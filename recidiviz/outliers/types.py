@@ -580,10 +580,17 @@ class SupervisionContactsDrilldownEntity:
     contact_type: str
     contact_due_date: date
     contact_completed: bool
-    contact_completed_date: Optional[str]
+    contact_completed_date: Optional[date]
 
     def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
+        result = cattrs.unstructure(self)
+        if result.get("contact_due_date"):
+            result["contact_due_date"] = result["contact_due_date"].isoformat()
+        if result.get("contact_completed_date"):
+            result["contact_completed_date"] = result[
+                "contact_completed_date"
+            ].isoformat()
+        return result
 
 
 @attr.s(auto_attribs=True, frozen=True, order=True)
