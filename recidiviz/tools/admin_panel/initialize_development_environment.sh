@@ -11,11 +11,11 @@ function write_to_file {
 run_cmd mkdir -p recidiviz/local/gsm/
 
 # Database secrets
-write_to_file 'operations' recidiviz/local/gsm/operations_v2_cloudsql_instance_id
-write_to_file 'localhost' recidiviz/local/gsm/operations_v2_db_host
-write_to_file 'operations_user' recidiviz/local/gsm/operations_v2_db_user
-write_to_file 'example' recidiviz/local/gsm/operations_v2_db_password
-write_to_file '5432' recidiviz/local/gsm/operations_v2_db_port
+write_to_file 'operations' recidiviz/local/gsm/operations_cloudsql_instance_id
+write_to_file 'localhost' recidiviz/local/gsm/operations_db_host
+write_to_file 'operations_user' recidiviz/local/gsm/operations_db_user
+write_to_file 'example' recidiviz/local/gsm/operations_db_password
+write_to_file '5432' recidiviz/local/gsm/operations_db_port
 write_to_file 'redis' recidiviz/local/gsm/admin_panel_redis_host
 write_to_file '6379' recidiviz/local/gsm/admin_panel_redis_port
 
