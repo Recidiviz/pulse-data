@@ -271,6 +271,7 @@ force-exclude = '''
 '''
 
 [tool.uv]
+required-version = ">=0.11.8"
 index-url = "https://pypi.org/simple"
 exclude-newer = "3 days"
 # Pin setuptools < 82 for Apache Beam 2.65.0 compatibility (pkg_resources removed in 82.0.0).

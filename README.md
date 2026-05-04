@@ -49,7 +49,7 @@ dependencies.
 On a Mac with [Homebrew](https://brew.sh/):
 
 ```bash
-brew install uv
+brew install uv  # requires version >= 0.11.8; upgrade with: brew upgrade uv
 # or curl -LsSf https://astral.sh/uv/install.sh | sh
 brew install xz postgresql@18 openssl
 # Add postgres to your $PATH

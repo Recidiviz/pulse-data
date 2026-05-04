@@ -1,14 +1,23 @@
 #!/usr/bin/env bash
 
-# Verify uv is installed
+# Verify uv is installed and meets minimum version
+MIN_UV_VERSION="0.11.8"
 if ! command -v uv &> /dev/null; then
   echo "ERROR: uv is not installed."
-  echo "Install uv: pip install uv"
+  echo "Install uv: brew install uv"
   echo "  or: curl -LsSf https://astral.sh/uv/install.sh | sh"
   exit 1
 fi
 
-echo "Found uv, using uv for dependency management."
+CURRENT_UV_VERSION=$(uv --version | awk '{print $2}')
+if [ "$(printf '%s\n' "$MIN_UV_VERSION" "$CURRENT_UV_VERSION" | sort -V | head -n1)" != "$MIN_UV_VERSION" ]; then
+  echo "ERROR: uv version $CURRENT_UV_VERSION is too old. Minimum required: $MIN_UV_VERSION"
+  echo "Upgrade with: uv self update"
+  echo "  or: brew upgrade uv"
+  exit 1
+fi
+
+echo "Found uv $CURRENT_UV_VERSION, using uv for dependency management."
 
 # The Debian VMs on GCP already have cmake and
 # MacOS openssl is fussy, so we only run this
