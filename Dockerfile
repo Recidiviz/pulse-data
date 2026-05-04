@@ -38,7 +38,7 @@ RUN adduser recidiviz && mkdir /app && chown recidiviz /app/
 USER recidiviz
 RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
 ENV PATH=/home/recidiviz/.local/bin:$PATH
-RUN pip install uv --user
+RUN pip install "uv>=0.11.8" --user
 WORKDIR /app
 
 FROM recidiviz-init AS recidiviz-dev
