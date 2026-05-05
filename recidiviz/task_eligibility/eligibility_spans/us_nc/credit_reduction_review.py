@@ -19,7 +19,6 @@ Shows the spans of time during which someone in NC is eligible for a Credit Redu
 Review (CRR).
 """
 
-from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     community_confinement_supervision_population,
@@ -30,6 +29,9 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_nc import (
 from recidiviz.task_eligibility.criteria.general import (
     continuous_employment_for_90_days,
     continuous_student_for_90_days,
+    latest_drug_test_is_negative,
+    most_recent_drug_test_is_within_30_days,
+    not_most_recent_drug_test_is_within_30_days,
     supervision_case_type_is_not_sex_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
@@ -41,11 +43,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
     reporting_as_directed,
     supervision_within_30_months_of_full_term_completion_date,
 )
-from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder,
     StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
     TaskCriteriaGroupLogicType,
 )
@@ -81,7 +83,6 @@ _SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_VIEW_BUILDER = StateSpecificTaskCrit
     },
 )
 
-# Extract the criteria group so we can reference it in the almost eligible condition
 _90_CONSECUTIVE_DAYS_POSITIVE_BEHAVIOR_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
     logic_type=TaskCriteriaGroupLogicType.OR,
     criteria_name="US_NC_90_CONSECUTIVE_DAYS_OF_POSITIVE_BEHAVIOR_FOR_CRR",
@@ -100,6 +101,33 @@ _90_CONSECUTIVE_DAYS_POSITIVE_BEHAVIOR_VIEW_BUILDER = StateSpecificTaskCriteriaG
     reasons_aggregate_function_override={"eligible_date": "MIN"},
 )
 
+_NEGATIVE_DRUG_SCREEN_WITHIN_30_DAYS_VIEW_BUILDER = (
+    StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+        logic_type=TaskCriteriaGroupLogicType.AND,
+        criteria_name="NEGATIVE_DRUG_SCREEN_WITHIN_30_DAYS",
+        sub_criteria_list=[
+            latest_drug_test_is_negative.VIEW_BUILDER,
+            most_recent_drug_test_is_within_30_days.VIEW_BUILDER,
+        ],
+    )
+)
+
+_DRUG_SCREEN_OK_FOR_CRR_VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="DRUG_SCREEN_OK_FOR_CRR",
+    sub_criteria_list=[
+        _NEGATIVE_DRUG_SCREEN_WITHIN_30_DAYS_VIEW_BUILDER,
+        not_most_recent_drug_test_is_within_30_days.VIEW_BUILDER,
+    ],
+    # this key is provided by the most_recent_drug_test_is_within_30_days criteria,
+    # which is used in the _NEGATIVE_DRUG_SCREEN_WITHIN_30_DAYS_VIEW_BUILDER and
+    # used (with it's logic inverted) in the
+    # _not_most_recent_drug_test_is_within_30_days. The value is the same in both
+    # cases, we can take either
+    allowed_duplicate_reasons_keys=["most_recent_positive_test_date"],
+    reasons_aggregate_function_override={"most_recent_positive_test_date": "ANY_VALUE"},
+)
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_NC,
     task_name="CREDIT_REDUCTION_REVIEW",
@@ -112,16 +140,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         reporting_as_directed.VIEW_BUILDER,
         # Only Non-SO clients and (SO with completed treatment or within 2.5 years of release)
         _SEX_OFFENDER_TREATMENT_OR_WITHIN_30_MONTHS_VIEW_BUILDER,
+        _DRUG_SCREEN_OK_FOR_CRR_VIEW_BUILDER,
     ],
     # TODO(#54787): Hydrate completion event
     completion_event_builder=granted_supervision_sentence_reduction.VIEW_BUILDER,
-    almost_eligible_condition=TimeDependentCriteriaCondition(
-        criteria=_90_CONSECUTIVE_DAYS_POSITIVE_BEHAVIOR_VIEW_BUILDER,
-        reasons_date_field="eligible_date",
-        interval_length=30,
-        interval_date_part=BigQueryDateInterval.DAY,
-        description="Within 30 days of 90 consecutive days of positive behavior",
-    ),
 )
 
 if __name__ == "__main__":
