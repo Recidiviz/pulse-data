@@ -32,10 +32,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -73,6 +70,32 @@ MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE = f"""
     AND (facility != 'DWCRC' OR REGEXP_CONTAINS(housing_unit, r'HVN'))"""
 
 
+def initial_review_dates_query() -> str:
+    """
+    Return a SQL query that retrieves initial review dates for North Dakota sentences.
+    On this date, DOCR and Parole Board staff set Parole Review Dates.
+    This generally only occurs if a sentence is greater than 3 years.
+    This is not the date the Parole Board hears the case.
+    """
+    return """
+        SELECT 
+            peid.state_code,
+            peid.person_id,
+            SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) AS initial_review_date,
+        FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+            ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+            AND peid.state_code = 'US_ND'
+            AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
+            AND ms.SCREEN_REASON_CODE = 'INITIAL'
+            AND (ms.TEMP_UNIT_CODE IS NULL OR TEMP_UNIT_CODE = 'IRA')
+        -- The earliest initial review date that is in the future, including reassessments.
+        QUALIFY SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) > CURRENT_DATE
+            AND ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE)) = 1
+    """
+
+
 def parole_review_dates_query() -> str:
     """
     Returns a SQL query that retrieves the parole review dates for North Dakota.
@@ -82,16 +105,14 @@ def parole_review_dates_query() -> str:
         SELECT 
             peid.state_code,
             peid.person_id,
-            IFNULL(
-                SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE),
-                SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S%p', ms.MEDICAL_DATE) AS DATE)
-            ) AS parole_review_date,
-        FROM `{project_id}.{raw_data_dataset}.elite_offender_medical_screenings_6i` ms
+            SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) AS parole_review_date,
+        FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
         LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
             ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
             AND peid.state_code = 'US_ND'
             AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
+            AND ms.SCREEN_REASON_CODE = 'MISC'
 """
 
 
@@ -158,7 +179,7 @@ def incarceration_within_parole_review_date_criteria_builder(
         description=description,
         state_code=StateCode.US_ND,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        raw_data_dataset=raw_tables_dataset_for_region(
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,

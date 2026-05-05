@@ -52,22 +52,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.us_nd.resident_metadata import (
-    US_ND_RESIDENT_METADATA_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.criteria.state_specific.us_nd.incarceration_past_parole_review_date_plus_one_month import (
-    VIEW_BUILDER as US_ND_INCARCERATION_PAST_PAROLE_REVIEW_DATE_PLUS_ONE_MONTH_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_nd.incarceration_within_5_or_more_months_of_parole_review_date import (
-    VIEW_BUILDER as US_ND_INCARCERATION_WITHIN_5_OR_MORE_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_nd.incarceration_within_6_months_of_parole_review_date import (
-    VIEW_BUILDER as US_ND_INCARCERATION_WITHIN_6_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_nd.incarceration_within_12_months_of_parole_review_date import (
-    VIEW_BUILDER as US_ND_INCARCERATION_WITHIN_12_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_nd.not_in_active_revocation_status import (
     VIEW_BUILDER as US_ND_NOT_IN_ACTIVE_REVOCATION_STATUS_VIEW_BUILDER,
 )
@@ -105,12 +90,7 @@ RAW_DATA_TABLE_REFERENCE_EXEMPTIONS: Dict[StateCode, Dict[BigQueryAddress, str]]
         RESIDENT_RECORD_VIEW_BUILDER.address: "TODO(#51181) Update to use raw data _all view",
     },
     StateCode.US_ND: {
-        US_ND_INCARCERATION_WITHIN_5_OR_MORE_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
-        US_ND_RESIDENT_METADATA_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
         US_ND_NOT_IN_ACTIVE_REVOCATION_STATUS_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
-        US_ND_INCARCERATION_WITHIN_6_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
-        US_ND_INCARCERATION_PAST_PAROLE_REVIEW_DATE_PLUS_ONE_MONTH_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
-        US_ND_INCARCERATION_WITHIN_12_MONTHS_OF_PAROLE_REVIEW_DATE_VIEW_BUILDER.address: "TODO(#51183) Update to use raw data _all view",
     },
     StateCode.US_NY: {
         US_NY_LOCATION_METADATA_VIEW_BUILDER.address: "TODO(#51185) Update to use raw data _all view"
