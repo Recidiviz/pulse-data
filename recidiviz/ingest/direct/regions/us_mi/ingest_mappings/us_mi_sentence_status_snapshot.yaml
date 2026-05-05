@@ -7,7 +7,6 @@ input_columns:
   offender_sentence_id: STRING
   effective_date: DATE
   closing_date: DATE
-  closing_reason_code: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -19,19 +18,13 @@ output:
       - StateSentence:
           external_id: offender_sentence_id
           sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: $literal("1")
+                status_update_datetime: effective_date
+                status: $literal_enum(StateSentenceStatus.SERVING)
             - $conditional:
                 - $if:
-                    $not_null: effective_date
-                  $then:
-                    StateSentenceStatusSnapshot:
-                      sequence_num: $literal("1")
-                      status_update_datetime: effective_date
-                      status: $literal_enum(StateSentenceStatus.SERVING)
-              # TODO(#46842) - handle cases where effective_date > closing_date
-
-            - $conditional:
-                - $if:
-                    $not_null: closing_reason_code
+                    $not_null: closing_date
                   $then:
                     StateSentenceStatusSnapshot:
                       sequence_num: $literal("2")
