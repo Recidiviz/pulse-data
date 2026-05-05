@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,4 +35,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with local_project_id_override(args.project_id):
-        write_case_insights_data_to_bq(project_id=args.project_id)
+        write_case_insights_data_to_bq(
+            project_id=args.project_id,
+        )

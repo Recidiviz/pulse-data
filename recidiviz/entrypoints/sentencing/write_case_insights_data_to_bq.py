@@ -42,7 +42,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 # TODO(#40901): Move these constant variables to a config
 
 # Comma-delimited strings of supported states
-SUPPORTED_STATES_STR = "'US_IX','US_ND'"
+SUPPORTED_STATES_STR = "'US_IX','US_ND','US_MO'"
 STATES_TO_ADD_MISSING_OFFENSES = ["US_IX"]
 UNKNOWN_ATTRIBUTE = "UNKNOWN"
 
@@ -70,12 +70,7 @@ ROLLUP_ATTRIBUTES = {
             "most_severe_ncic_category_uniform",
         ],
         # NCIC category + gender
-        [
-            "state_code",
-            "cohort_group",
-            "most_severe_ncic_category_uniform",
-            "gender",
-        ],
+        ["state_code", "cohort_group", "most_severe_ncic_category_uniform", "gender"],
         # Combined offense category + gender
         ["state_code", "cohort_group", "combined_offense_category", "gender"],
         # Combined offense category
@@ -115,6 +110,38 @@ ROLLUP_ATTRIBUTES = {
         # All offenses
         ["state_code", "cohort_group"],
     ],
+    "US_MO": [
+        # Specific charge + ORAS score bucket
+        [
+            "state_code",
+            "cohort_group",
+            "gender",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
+            "most_severe_description",
+        ],
+        # Specific charge + gender
+        ["state_code", "cohort_group", "most_severe_description", "gender"],
+        # NCIC category + ORAS score bucket
+        [
+            "state_code",
+            "cohort_group",
+            "gender",
+            "assessment_score_bucket_start",
+            "assessment_score_bucket_end",
+            "most_severe_ncic_category_uniform",
+        ],
+        # NCIC category + gender
+        ["state_code", "cohort_group", "most_severe_ncic_category_uniform", "gender"],
+        # Combined offense category + gender
+        ["state_code", "cohort_group", "combined_offense_category", "gender"],
+        # Combined offense category
+        ["state_code", "cohort_group", "combined_offense_category"],
+        # Violent/non-violent
+        ["state_code", "cohort_group", "any_is_violent"],
+        # All offenses
+        ["state_code", "cohort_group"],
+    ],
 }
 
 # NOTE: All keys in ATTRIBUTE_MAPPING must be in the first level of ROLLUP_ATTRIBUTES
@@ -127,12 +154,34 @@ ATTRIBUTE_MAPPING = {
 }
 RECIDIVISM_MONTHS = [0, 3, 6, 9, 12, 18, 24, 30, 36]
 # If the CI size for any disposition is above this threshold, roll up to a higher level
-ROLLUP_CI_THRESHOLDS = {"US_IX": 0.2, "US_ND": 0.3}
+ROLLUP_CI_THRESHOLDS = {"US_IX": 0.2, "US_ND": 0.3, "US_MO": 0.3}
 # Which disposition's CI to apply the threshold to (currently only "largest" and "2nd smallest" are supported)
-ROLLUP_CRITERIA = {"US_IX": "largest", "US_ND": "2nd smallest"}
+ROLLUP_CRITERIA = {"US_IX": "largest", "US_ND": "2nd smallest", "US_MO": "2nd smallest"}
 # After rollup, if any disposition has a CI above this threshold, don't include it; on the front end, we will indicate
 # that there is insufficient data for that disposition and no recidivism rate will be shown for it
-INCLUSION_CI_THRESHOLDS = {"US_IX": 0.2, "US_ND": 0.6}
+INCLUSION_CI_THRESHOLDS = {"US_IX": 0.2, "US_ND": 0.6, "US_MO": 0.6}
+# Gender-specific ORAS level cutoffs per instrument. Scores are mapped to 3 Recidiviz
+# tiers: 0=Low, 1=Moderate (merges Low/Moderate + Moderate), 2=High (merges High + Very High).
+# Each list entry is (low_end_inclusive, high_end_inclusive) for the three tiers in order.
+ORAS_LEVEL_CUTOFFS: Dict[str, Dict[str, List[Tuple[int, int]]]] = {
+    "ORAS_COMMUNITY_SUPERVISION": {
+        "MALE": [(0, 14), (15, 23), (24, 49)],
+        "FEMALE": [(0, 14), (15, 28), (29, 49)],
+    },
+    "ORAS_SUPPLEMENTAL_REENTRY": {
+        "MALE": [(0, 14), (15, 20), (21, 45)],
+        "FEMALE": [(0, 13), (14, 21), (22, 45)],
+    },
+    "ORAS_PRISON_INTAKE": {
+        "MALE": [(0, 8), (9, 16), (17, 40)],
+        "FEMALE": [(0, 12), (13, 18), (19, 40)],
+    },
+    "ORAS_REENTRY": {
+        "MALE": [(0, 9), (10, 15), (16, 28)],
+        "FEMALE": [(0, 10), (11, 14), (15, 28)],
+    },
+}
+
 RECIDIVISM_SERIES_COLUMN_REGEX = r"recidivism_(.*)_series"
 DISPOSITION_PERCENTAGE_COLUMN_REGEX = r"disposition_(.*)_pc"
 
@@ -156,27 +205,57 @@ class WriteRecidivismRatesToBQEntrypoint(EntrypointInterface):
 
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
-        write_case_insights_data_to_bq(project_id=args.project_id)
+        write_case_insights_data_to_bq(
+            project_id=args.project_id,
+        )
 
 
 def get_assessment_score_bucket_range(
     cohort_df_row: pd.Series,
 ) -> Tuple[int, int]:
-    """Get the risk bucket range associated with the given gender and LSI-R assessment score.
+    """Get the risk bucket range associated with the given gender and assessment score.
 
-    These buckets were defined in an Idaho-specific memo:
+    For US_IX and US_ND, these buckets were defined in an Idaho-specific memo:
     https://drive.google.com/file/d/1o7vWvQ507SUvCPShyyOZFXQq53wT2D0J/view.
+
+    For US_MO, the raw ORAS score is mapped to one of three Recidiviz risk tiers
+    using gender-specific per-instrument cutoff tables: Low→(0,0), Moderate→(1,1),
+    High→(2,2). Low/Moderate and Moderate are merged into tier 1; High and Very High
+    are merged into tier 2.
 
     This returns an assessment_score_bucket_start and assessment_score_bucket_end, which are inclusive endpoints of the
     bucket range. If the bucket has no upper limit (e.g. "29+") then assessment_score_bucket_end is -1. If the
     input assessment_score is invalid, both return values are -1. If the gender is not FEMALE or MALE, the return values
     are (0, -1), which is treated on the front end as matching all assessment scores.
-
-    TODO(#31126): Revisit these buckets if we start working with other states that call for different buckets.
     """
+    state_code = cohort_df_row.get("state_code", "")
+
+    if state_code == "US_MO":
+        assessment_score = cohort_df_row.get("assessment_score")
+        assessment_type = cohort_df_row.get("assessment_type")
+        gender = cohort_df_row.get("gender")
+        if (
+            pd.isnull(assessment_score)
+            or pd.isnull(assessment_type)
+            or pd.isnull(gender)
+        ):
+            return -1, -1
+        instrument_cutoffs = ORAS_LEVEL_CUTOFFS.get(assessment_type)
+        if instrument_cutoffs is None:
+            return -1, -1
+        cutoffs = instrument_cutoffs.get(gender)
+        if cutoffs is None:
+            return -1, -1
+        for tier_id, (_, high) in enumerate(cutoffs):
+            if assessment_score <= high:
+                return tier_id, tier_id
+        return len(cutoffs) - 1, len(cutoffs) - 1
+
     assessment_score = cohort_df_row["assessment_score"]
     if pd.isnull(assessment_score) or assessment_score < 0:
         return -1, -1
+
+    # US_IX and US_ND use gendered LSI-R score buckets
     if cohort_df_row["gender"] == "MALE":
         if assessment_score <= 20:
             return 0, 20
@@ -285,7 +364,9 @@ def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
     return cohort_df
 
 
-def get_cohort_df(project_id: str) -> pd.DataFrame:
+def get_cohort_df(
+    project_id: str,
+) -> pd.DataFrame:
     cohort_query = f"""
     SELECT *,
         -- Rename to gender to maintain consistency with the front end
@@ -366,6 +447,8 @@ def add_placeholder_cohort_rows(cohort_df: pd.DataFrame) -> pd.DataFrame:
         state_codes,
         ["INTERNAL_UNKNOWN"],
         [-1],
+        [float("nan")],
+        [float("nan")],
         ["PROBATION"],
         [pd.to_datetime("1970-01-01").date()],
         ["[PLACEHOLDER] NCIC CATEGORY"],
@@ -377,6 +460,8 @@ def add_placeholder_cohort_rows(cohort_df: pd.DataFrame) -> pd.DataFrame:
         "state_code",
         "gender",
         "assessment_score",
+        "assessment_level",
+        "assessment_type",
         "cohort_group",
         "cohort_start_date",
         "most_severe_ncic_category_uniform",
@@ -408,6 +493,9 @@ def add_missing_offenses(
         ~charge_df.charge.isin(cohort_df.most_severe_description.unique())
     ].copy()
 
+    if missing_offenses_df.empty:
+        return cohort_df
+
     cols = [
         "state_code",
         "person_id",
@@ -424,6 +512,8 @@ def add_missing_offenses(
     ]
     missing_offenses_df.loc[:, "gender"] = "INTERNAL_UNKNOWN"
     missing_offenses_df.loc[:, "assessment_score"] = -1
+    missing_offenses_df.loc[:, "assessment_level"] = float("nan")
+    missing_offenses_df.loc[:, "assessment_type"] = float("nan")
     missing_offenses_df.loc[:, "cohort_group"] = "PROBATION"
     missing_offenses_df.loc[:, "cohort_start_date"] = pd.to_datetime(
         "1970-01-01"
@@ -1049,7 +1139,8 @@ def create_table_for_state(
     # Trim out any cohort start dates in the future, which can apparently happen
     # TODO(#41003): Filter these out in sentence_cohort instead
     cohort_df_for_state = cohort_df_for_state[
-        cohort_df_for_state.cohort_start_date <= datetime.date.today()
+        cohort_df_for_state.cohort_start_date.isna()
+        | (cohort_df_for_state.cohort_start_date <= datetime.date.today())
     ]
     if state_code in STATES_TO_ADD_MISSING_OFFENSES:
         cohort_df_for_state = add_missing_offenses(
@@ -1062,8 +1153,15 @@ def create_table_for_state(
         disposition_df_for_state, state_code
     )
 
+    # Exclude null cohort_start_date rows from recidivism calculation — those are
+    # still-incarcerated individuals who haven't yet been released, so they have no
+    # meaningful recidivism observation window and would be incorrectly counted as
+    # non-recidivating
+    cohort_df_for_recidivism = cohort_df_for_state[
+        cohort_df_for_state.cohort_start_date.notna()
+    ]
     recidivism_df_for_state = gen_cohort_time_to_first_event(
-        cohort_df=cohort_df_for_state,
+        cohort_df=cohort_df_for_recidivism,
         event_df=event_df_for_state,
         cohort_date_field="cohort_start_date",
         event_date_field="recidivism_date",
@@ -1139,7 +1237,9 @@ def expand_offense_categories_to_offenses(
     return pd.DataFrame(expanded_rows)
 
 
-def write_case_insights_data_to_bq(project_id: str) -> None:
+def write_case_insights_data_to_bq(
+    project_id: str,
+) -> None:
     """Write case insights data to BigQuery.
 
     The final table has a row for every state_code, gender, assessment_score_bucket_start, assessment_score_bucket_end,
@@ -1182,17 +1282,27 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
         return
 
     # TODO(#40788): Temporary stop-gap until we deprecate these columns
-    if "disposition_probation_pc" in final_table.columns:
-        final_table.disposition_probation_pc = (
-            final_table.disposition_probation_pc.fillna(0.0)
-        )
-    if "disposition_rider_pc" in final_table.columns:
-        final_table.disposition_rider_pc = final_table.disposition_rider_pc.fillna(0.0)
-    if "disposition_term_pc" in final_table.columns:
-        final_table.disposition_term_pc = final_table.disposition_term_pc.fillna(0.0)
+    # Ensure legacy columns exist even for states that don't have RIDER/TERM cohort groups
+    for col in [
+        "disposition_probation_pc",
+        "disposition_rider_pc",
+        "disposition_term_pc",
+    ]:
+        if col not in final_table.columns:
+            final_table[col] = 0.0
+        else:
+            final_table[col] = final_table[col].fillna(0.0)
+    for col in [
+        "recidivism_probation_series",
+        "recidivism_rider_series",
+        "recidivism_term_series",
+    ]:
+        if col not in final_table.columns:
+            final_table[col] = None
 
     schema_cols = list(map(lambda x: x["name"], CASE_INSIGHTS_RATES_SCHEMA))
     final_table = final_table[schema_cols]
+
     final_table.to_gbq(
         destination_table=CASE_INSIGHTS_RATES_ADDRESS.to_str(),
         project_id=project_id,

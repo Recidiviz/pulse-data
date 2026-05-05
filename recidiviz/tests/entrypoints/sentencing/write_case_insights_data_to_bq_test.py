@@ -197,6 +197,167 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         self.assertEqual(0, score_bucket_start)
         self.assertEqual(-1, score_bucket_end)
 
+    def test_get_assessment_score_bucket_range_us_mo(self) -> None:
+        # Male CST score 5 -> Low (0-14) -> tier 0
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 5,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(0, start)
+        self.assertEqual(0, end)
+
+        # Male CST score 20 -> Moderate (15-23) -> tier 1
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 20,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(1, start)
+        self.assertEqual(1, end)
+
+        # Male CST score 40 -> High+VeryHigh (24+) -> tier 2
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 40,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(2, start)
+        self.assertEqual(2, end)
+
+        # Female CST score 18 -> LowMod+Moderate (15-28) -> tier 1
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 18,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": "FEMALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(1, start)
+        self.assertEqual(1, end)
+
+        # Female CST score 30 -> High (29+) -> tier 2
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 30,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": "FEMALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(2, start)
+        self.assertEqual(2, end)
+
+        # Male RT score 5 -> Low (0-9) -> tier 0
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 5,
+                "assessment_type": "ORAS_REENTRY",
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(0, start)
+        self.assertEqual(0, end)
+
+        # Male RT score 20 -> High (16+) -> tier 2
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 20,
+                "assessment_type": "ORAS_REENTRY",
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(2, start)
+        self.assertEqual(2, end)
+
+        # Null assessment_score -> (-1, -1)
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": None,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(-1, start)
+        self.assertEqual(-1, end)
+
+        # Null assessment_type -> (-1, -1)
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 10,
+                "assessment_type": None,
+                "gender": "MALE",
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(-1, start)
+        self.assertEqual(-1, end)
+
+        # Null gender -> (-1, -1)
+        input_row = pd.Series(
+            {
+                "state_code": "US_MO",
+                "assessment_score": 10,
+                "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                "gender": None,
+            }
+        )
+        (
+            start,
+            end,
+        ) = write_case_insights_data_to_bq.get_assessment_score_bucket_range(input_row)
+        self.assertEqual(-1, start)
+        self.assertEqual(-1, end)
+
     def test_adjust_any_is_sex_offense(self) -> None:
         # any_is_sex_offense should override to True for three categories
         input_row = pd.Series(
@@ -675,6 +836,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     True,
                     False,
                 ],
+                "assessment_level": [float("nan")] * 9,
+                "assessment_type": [float("nan")] * 9,
             }
         )
 
@@ -947,6 +1110,8 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     True,
                     False,
                 ],
+                "assessment_level": [float("nan")] * 19,
+                "assessment_type": [float("nan")] * 19,
             }
         )
 
