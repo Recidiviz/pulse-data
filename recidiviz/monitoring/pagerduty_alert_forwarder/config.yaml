@@ -105,6 +105,13 @@ rules:
       severity: warning
       title_transform: "BigQuery Deployed View Too Expensive"
 
+  - name: "Unmapped Enum Values"
+    match:
+      incident.policy_name: "Unmapped Enum Values in Ingest Pipeline"
+    actions:
+      severity: warning
+      title_transform: "[{incident.metric.labels.region}] Unmapped enum: {incident.metric.labels.enum_type}.{incident.metric.labels.enum_field_name}"
+
   - name: "Suppress Preview Cloud Run Job Failures"
     match:
       incident.resource.labels.project_id: "recidiviz-dashboard-staging"

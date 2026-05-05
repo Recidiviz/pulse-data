@@ -1522,6 +1522,57 @@ resource "google_monitoring_alert_policy" "data_validation_failures_to_run" {
   project               = var.project_id
 }
 
+resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeline" {
+  alert_strategy {
+    # Auto-close after 7 days if we have not seen any data
+    auto_close = "604800s"
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_threshold {
+      aggregations {
+        alignment_period     = "3600s"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["metric.label.region", "metric.label.enum_field_name", "metric.label.enum_type"]
+        per_series_aligner   = "ALIGN_RATE"
+      }
+
+      comparison      = "COMPARISON_GT"
+      duration        = "0s"
+      filter          = <<-EOT
+        resource.type = "generic_node" AND metric.type = "custom.googleapis.com/opencensus/ingest.unmapped_enum_value"
+      EOT
+      threshold_value = "0"
+
+      # Dataflow workers are ephemeral — metric data stops when a pipeline ends.
+      # This setting keeps open incidents open when data is missing for a time window.
+      # Resolution comes from heartbeat data points emitted by clean pipeline runs.
+      # https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.alertPolicies#evaluationmissingdata
+      evaluation_missing_data = "EVALUATION_MISSING_DATA_NO_OP"
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "OpenCensus/ingest.unmapped_enum_value"
+  }
+
+  display_name = "Unmapped Enum Values in Ingest Pipeline"
+
+  documentation {
+    content   = "An ingest pipeline encountered a raw text value with no enum mapping and fell back to INTERNAL_UNKNOWN. To find the specific raw text value, search Cloud Logging with: `severity=WARNING AND textPayload=~\"Unmapped enum value\"` and filter by the state code and field name from the alert. Then update the enum mapping in the corresponding ingest mapping YAML in `recidiviz/ingest/direct/regions/`."
+    mime_type = "text/markdown"
+  }
+
+  enabled               = "true"
+  notification_channels = [google_monitoring_notification_channel.alerts.id]
+  project               = var.project_id
+}
+
 resource "google_monitoring_alert_policy" "uptime_check_url_down_marketing_website" {
   alert_strategy {
     auto_close           = "604800s"

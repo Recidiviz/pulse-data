@@ -65,6 +65,8 @@ class CounterInstrumentKey(InstrumentEnum):
         "persistence.database.sqlalchemy_engine_initialization_failure"
     )
 
+    INGEST_UNMAPPED_ENUM_VALUE = "ingest.unmapped_enum_value"
+
 
 class AttributeKey:
     """Scope to hold key constants for attributes added to our traces / metrics"""
@@ -74,6 +76,9 @@ class AttributeKey:
     # Ingest related attributes
     INGEST_INSTANCE = "ingest_instance"
     INGEST_VIEW_MATERIALIZATION_TAG = "ingest_view_materialization_tag"
+    INGEST_VIEW_NAME = "ingest_view_name"
+    ENUM_TYPE = "enum_type"
+    ENUM_FIELD_NAME = "enum_field_name"
 
     # Bigquery related attributes
     VALIDATION_CHECK_TYPE = "validation_check_type"

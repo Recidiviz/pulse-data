@@ -86,6 +86,15 @@ instruments:
       - attributes:
           - REGION
 
+  - instrument_key: ingest.unmapped_enum_value
+    description: Counted when an enum field encounters a raw text value with no mapping and falls back to INTERNAL_UNKNOWN
+    views:
+      - attributes:
+          - REGION
+          - ENUM_TYPE
+          - ENUM_FIELD_NAME
+          - INGEST_VIEW_NAME
+
   - instrument_key: function_duration
     description: The distribution of function durations
     unit: s
