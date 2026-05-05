@@ -55,8 +55,8 @@ module "prod-only-testing-direct-ingest-bucket" {
 }
 
 moved {
-  from = google_storage_bucket.prod-only-testing-direct-ingest-bucket
-  to   = module.prod-only-testing-direct-ingest-bucket.google_storage_bucket.bucket
+  from = google_storage_bucket.prod-only-testing-direct-ingest-bucket[0]
+  to   = module.prod-only-testing-direct-ingest-bucket[0].google_storage_bucket.bucket
 }
 
 module "secondary-direct-ingest-bucket" {
