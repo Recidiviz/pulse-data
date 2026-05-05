@@ -25,6 +25,7 @@ class EnumParsingError(Exception):
     def __init__(self, cls: type, string_to_parse: str):
         msg = f"Could not parse {string_to_parse} when building {cls}"
         self.entity_type = cls
+        self.string_to_parse = string_to_parse
         super().__init__(msg)
 
 

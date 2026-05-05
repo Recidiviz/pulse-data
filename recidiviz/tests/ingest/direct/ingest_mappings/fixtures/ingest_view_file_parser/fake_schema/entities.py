@@ -33,12 +33,14 @@ class FakeGender(Enum):
     FEMALE = "FEMALE_ENUM_VALUE"
     MALE = "MALE_ENUM_VALUE"
     UNKNOWN = "UNKNOWN"
+    INTERNAL_UNKNOWN = "INTERNAL_UNKNOWN"
 
 
 class FakeRace(Enum):
     ASIAN = "ASIAN_VALUE"
     BLACK = "BLACK_VALUE"
     WHITE = "WHITE_VALUE"
+    INTERNAL_UNKNOWN = "INTERNAL_UNKNOWN"
 
 
 @attr.s(eq=False)

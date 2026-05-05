@@ -40,6 +40,7 @@ from typing import (
 import attr
 from more_itertools import one
 
+from recidiviz.common import entity_enum_strings
 from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
     attr_field_attribute_for_field_name,
@@ -47,7 +48,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
-from recidiviz.common.constants.enum_parser import EnumParser, EnumT
+from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError, EnumT
 from recidiviz.common.str_field_utils import (
     NormalizedSerializableJSON,
     SerializableJSON,
@@ -235,7 +236,13 @@ class EntityTreeManifest(ManifestNode[EntityT]):
         args: Dict[str, DeserializableEntityFieldValue] = self.common_args.copy()
 
         for field_name, field_manifest in self.field_manifests.items():
-            field_value = field_manifest.build_from_row(row, context)
+            try:
+                field_value = field_manifest.build_from_row(row, context)
+            except EnumParsingError:  # pylint: disable=try-except-raise
+                # TODO(#71013): Suppress errors in prod and fire an alert
+                # once alerting functionality from #76819 is available.
+                raise
+
             if field_value is None and field_name == self.filter_if_null_field:
                 # If there is a null value in this field, filter out the whole entity.
                 return None
@@ -1087,6 +1094,14 @@ class EnumMappingManifest(ManifestNode[EnumT]):
             )
             enum_parser = EnumParser(enum_cls=enum_cls)
             enum_parser.add_mapper_fn(fn)
+
+        try:
+            enum_parser.enum_cls[entity_enum_strings.internal_unknown]
+        except KeyError as e:
+            raise ValueError(
+                f"Enum class [{enum_parser.enum_cls.__name__}] must have an "
+                f"INTERNAL_UNKNOWN member to be used in ingest mappings."
+            ) from e
 
         if ignores_list is not None:
             if not ignores_list:
