@@ -506,3 +506,18 @@ class NormalizedSerializableJSON(SerializableJSON):
             normalized_values_dict[k] = normalized_value or ""
 
         return json.dumps(normalized_values_dict, sort_keys=True)
+
+
+def to_string_value_converter(field_name: str, value: Any) -> str:
+    """Converts a Python value to its string representation."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (bool, int)):
+        return str(value)
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.isoformat()
+    raise ValueError(
+        f"Unexpected value type [{type(value)}] for field [{field_name}]: {value}"
+    )

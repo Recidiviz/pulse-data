@@ -20,7 +20,9 @@ import unittest
 import apache_beam as beam
 from apache_beam.testing.util import assert_that, equal_to
 
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.pipelines.batch_identity_clustering.entities import (
+    IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,
 )
@@ -44,6 +46,7 @@ def _make_fragment(*id_pairs: tuple[str, str]) -> IdentityFragment:
             )
             for ext_id, id_type in id_pairs
         ],
+        attributes=IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII),
     )
 
 

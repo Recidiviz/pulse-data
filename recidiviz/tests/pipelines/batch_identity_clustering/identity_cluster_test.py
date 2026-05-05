@@ -20,6 +20,7 @@ import unittest
 
 import attr
 
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.pipelines.batch_identity_clustering.entities import (
     IdentityAttributes,
     IdentityExternalId,
@@ -35,7 +36,9 @@ _EXTERNAL_ID = IdentityExternalId(
     tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
 )
 _ATTRIBUTES = IdentityAttributes(
-    tenant=_TENANT, name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe")
+    tenant=_TENANT,
+    person_type=PersonType.JII,
+    name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
 )
 
 

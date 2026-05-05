@@ -19,6 +19,7 @@ import datetime
 import pickle
 import unittest
 
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.pipelines.batch_identity_clustering.entities import (
     IdentityAttributes,
@@ -252,6 +253,7 @@ class TestIdentityAttributes(unittest.TestCase):
         self.assertEqual(
             IdentityAttributes(
                 tenant=_TENANT,
+                person_type=PersonType.JII,
                 name=_NAME,
                 birthdate=datetime.date(1990, 1, 1),
                 gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -267,6 +269,7 @@ class TestIdentityAttributes(unittest.TestCase):
             ),
             IdentityAttributes(
                 tenant=_TENANT,
+                person_type=PersonType.JII,
                 name=_NAME,
                 birthdate=datetime.date(1990, 1, 1),
                 gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -284,12 +287,20 @@ class TestIdentityAttributes(unittest.TestCase):
 
     def test_inequality_different_birthdate(self) -> None:
         self.assertNotEqual(
-            IdentityAttributes(tenant=_TENANT, birthdate=datetime.date(1990, 1, 1)),
-            IdentityAttributes(tenant=_TENANT, birthdate=datetime.date(1991, 1, 1)),
+            IdentityAttributes(
+                tenant=_TENANT,
+                person_type=PersonType.JII,
+                birthdate=datetime.date(1990, 1, 1),
+            ),
+            IdentityAttributes(
+                tenant=_TENANT,
+                person_type=PersonType.JII,
+                birthdate=datetime.date(1991, 1, 1),
+            ),
         )
 
     def test_defaults(self) -> None:
-        attrs = IdentityAttributes(tenant=_TENANT)
+        attrs = IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII)
         self.assertIsNone(attrs.name)
         self.assertIsNone(attrs.birthdate)
         self.assertIsNone(attrs.gender)
@@ -302,6 +313,7 @@ class TestIdentityAttributes(unittest.TestCase):
     def test_pickle_roundtrip(self) -> None:
         attrs = IdentityAttributes(
             tenant=_TENANT,
+            person_type=PersonType.JII,
             name=_NAME,
             birthdate=datetime.date(1990, 1, 1),
             gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -330,6 +342,7 @@ class TestIdentityFragment(unittest.TestCase):
                 ],
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
+                    person_type=PersonType.JII,
                     name=_NAME,
                     birthdate=datetime.date(1990, 1, 1),
                     gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -357,6 +370,7 @@ class TestIdentityFragment(unittest.TestCase):
                 ],
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
+                    person_type=PersonType.JII,
                     name=_NAME,
                     birthdate=datetime.date(1990, 1, 1),
                     gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),
@@ -386,6 +400,9 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_OZ_ID_TYPE",
                     )
                 ],
+                attributes=IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII
+                ),
             ),
             IdentityFragment(
                 tenant=_TENANT,
@@ -396,6 +413,9 @@ class TestIdentityFragment(unittest.TestCase):
                         id_type="US_OZ_ID_TYPE",
                     )
                 ],
+                attributes=IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII
+                ),
             ),
         )
 
@@ -406,6 +426,7 @@ class TestIdentityFragment(unittest.TestCase):
                 external_ids=[_EXTERNAL_ID],
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
+                    person_type=PersonType.JII,
                     name=IdentityName(tenant=_TENANT, given_name="John", surname="Doe"),
                 ),
             ),
@@ -414,13 +435,18 @@ class TestIdentityFragment(unittest.TestCase):
                 external_ids=[_EXTERNAL_ID],
                 attributes=IdentityAttributes(
                     tenant=_TENANT,
+                    person_type=PersonType.JII,
                     name=IdentityName(tenant=_TENANT, given_name="Jane", surname="Doe"),
                 ),
             ),
         )
 
     def test_defaults(self) -> None:
-        fragment = IdentityFragment(tenant=_TENANT, external_ids=[_EXTERNAL_ID])
+        fragment = IdentityFragment(
+            tenant=_TENANT,
+            external_ids=[_EXTERNAL_ID],
+            attributes=IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII),
+        )
         self.assertEqual(fragment.tenant, _TENANT)
         self.assertIsNone(fragment.attributes.name)
         self.assertIsNone(fragment.attributes.birthdate)
@@ -441,6 +467,7 @@ class TestIdentityFragment(unittest.TestCase):
             ],
             attributes=IdentityAttributes(
                 tenant=_TENANT,
+                person_type=PersonType.JII,
                 name=_NAME,
                 birthdate=datetime.date(1990, 1, 1),
                 gender=IdentityGender(tenant=_TENANT, gender=Gender.MALE),

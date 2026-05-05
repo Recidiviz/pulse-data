@@ -34,8 +34,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
+    StateStaff,
 )
-from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
+from recidiviz.pipelines.transforms.generate_entities import GenerateEntities
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -115,6 +116,7 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
             | GenerateEntities(
                 ingest_view_manifest=ingest_view_manifest,
                 ingest_view_context=IngestViewContentsContext.build_for_tests(),
+                expected_root_entity_types=(StatePerson, StateStaff),
             )
         )
         assert_that(output, equal_to(expected_output))

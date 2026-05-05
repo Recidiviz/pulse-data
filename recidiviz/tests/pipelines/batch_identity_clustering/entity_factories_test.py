@@ -18,6 +18,7 @@
 import unittest
 from typing import Set
 
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
@@ -195,20 +196,26 @@ class TestEntityFactories(unittest.TestCase):
     def test_deserialize_IdentityAttributes(self) -> None:
         result = entity_factories.IdentityAttributesFactory.deserialize(
             tenant=_TENANT,
+            person_type=PersonType.JII,
         )
 
-        expected = entities.IdentityAttributes(tenant=_TENANT)
-
+        expected = entities.IdentityAttributes(
+            tenant=_TENANT, person_type=PersonType.JII
+        )
         self.assertEqual(expected, result)
 
     def test_deserialize_IdentityFragment(self) -> None:
+        attributes = entities.IdentityAttributes(
+            tenant=_TENANT, person_type=PersonType.JII
+        )
         result = entity_factories.IdentityFragmentFactory.deserialize(
             tenant=_TENANT,
+            attributes=attributes,  # type: ignore[arg-type]
         )
 
         expected = entities.IdentityFragment(
             tenant=_TENANT,
             external_ids=[],
+            attributes=attributes,
         )
-
         self.assertEqual(expected, result)

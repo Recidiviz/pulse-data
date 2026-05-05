@@ -13,6 +13,10 @@ These apply to **every task** without exception:
 - **US_ID vs US_IX**: Idaho uses two state codes (`US_ID` and `US_IX`) that historically shared the same codebase and data infrastructure. If working in Idaho-related code, confirm with the user which state code applies before proceeding.
 - **GitHub CLI**: Use `gh` for all GitHub operations (PRs, issues, etc.) — it has authenticated access to the private repo.
 
+## Python Style
+
+- **Filesystem paths**: Derive paths from the nearest importable Python package (`os.path.dirname(module.__file__)`) rather than chaining relative `..` segments from `__file__`. For example, use `from recidiviz.ingest.direct import regions` and `os.path.dirname(regions.__file__)` instead of `os.path.join(os.path.dirname(__file__), "..", "..", "ingest", "direct", "regions")`.
+
 ## Development Commands
 
 ### Environment Setup

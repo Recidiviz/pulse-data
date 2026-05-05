@@ -33,6 +33,7 @@ from recidiviz.common.attr_validators import (
     is_valid_email,
     is_valid_phone_number,
 )
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -117,6 +118,9 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
     (as the attributes field on IdentityFragment) or with a cluster's chosen
     best-known attributes (as the chosen_attributes field on IdentityCluster)."""
 
+    person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))
+    person_type_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
+
     name: "IdentityName | None" = attr.ib(default=None, validator=is_opt(IdentityName))
 
     birthdate: datetime.date | None = attr.ib(
@@ -163,9 +167,6 @@ class IdentityFragment(
     )
 
     attributes: "IdentityAttributes" = attr.ib(
-        default=attr.Factory(
-            lambda self: IdentityAttributes(tenant=self.tenant), takes_self=True
-        ),
         validator=attr.validators.instance_of(IdentityAttributes),
     )
 

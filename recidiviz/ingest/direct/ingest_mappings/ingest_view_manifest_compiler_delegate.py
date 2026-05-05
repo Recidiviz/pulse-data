@@ -100,6 +100,21 @@ class IngestViewManifestCompilerDelegate:
         delegate, this function should be updated to return True for that field.
         """
 
+    @staticmethod
+    def get_ingest_view_names_from_mappings_dir(
+        mappings_dir: str, region_or_tenant: str
+    ) -> List[str]:
+        """Returns sorted ingest view names by scanning a mappings directory for
+        YAML files matching the {region_or_tenant}_{view_name}.yaml pattern."""
+        if not os.path.isdir(mappings_dir):
+            return []
+        prefix = f"{region_or_tenant.lower()}_"
+        return sorted(
+            filename[len(prefix) : -len(".yaml")]
+            for filename in os.listdir(mappings_dir)
+            if filename.startswith(prefix) and filename.endswith(".yaml")
+        )
+
 
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 

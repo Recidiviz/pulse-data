@@ -20,7 +20,7 @@
 import datetime
 import inspect
 from enum import Enum
-from typing import Any, ForwardRef, Optional, Type, get_args, get_origin
+from typing import Any, ForwardRef, Optional, Type, Union, get_args, get_origin
 
 import attr
 from more_itertools import one
@@ -220,12 +220,25 @@ def get_non_flat_attribute_class_name(attribute: attr.Attribute) -> Optional[str
     return get_referenced_class_name_from_type(attribute.type)
 
 
-def get_referenced_class_name_from_type(attr_type: Type) -> Optional[str]:
-    """Returns the the inner class name for a type that is either List[<type>] or
-    Optional[<type>], or None if the attribute type does not match either format.
+def _extract_class_name_from_forward_ref(type_str: str) -> str:
+    """Extracts a class name from a forward reference string that may use
+    modern union syntax (e.g. "ClassName | None" -> "ClassName").
+    """
+    parts = [p.strip() for p in type_str.split("|")]
+    non_none_parts = [p for p in parts if p != "None"]
+    if len(non_none_parts) == 1:
+        return non_none_parts[0]
+    raise ValueError(f"Unexpected forward reference type: '{type_str}'")
 
-    If something is a nested List or Optional type, returns the innermost type if it
-    is an object reference type.
+
+def get_referenced_class_name_from_type(
+    attr_type: Union[Type, ForwardRef, str],
+) -> Optional[str]:
+    """Returns the referenced class name from a type annotation, or None if the
+    type does not reference an entity class.
+
+    Handles ForwardRef, str, List, and Optional types, unwrapping nested
+    containers to find the innermost class reference.
 
     Examples:
         List[str] -> None
@@ -233,14 +246,17 @@ def get_referenced_class_name_from_type(attr_type: Type) -> Optional[str]:
         List["StatePerson"] -> "StatePerson"
         Optional[List["StatePerson"]] -> "StatePerson"
         Optional["StatePerson"] -> "StatePerson"
+        ForwardRef("StatePerson | None") -> "StatePerson"
+        "StatePerson | None" -> "StatePerson"
+        "StatePerson" -> "StatePerson"
     """
     while True:
         if isinstance(attr_type, ForwardRef):
-            return attr_type.__forward_arg__
+            return _extract_class_name_from_forward_ref(attr_type.__forward_arg__)
         if isinstance(attr_type, str):
-            # For some forward references the inner type will just be the string class
-            # name.
-            return attr_type
+            # For some forward references the inner type will just be the string
+            # class name.
+            return _extract_class_name_from_forward_ref(attr_type)
         if is_list_type(attr_type):
             attr_type = get_inner_type_from_list_type(attr_type)
             continue

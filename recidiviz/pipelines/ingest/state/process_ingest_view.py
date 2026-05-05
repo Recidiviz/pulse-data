@@ -33,18 +33,19 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
     IngestViewName,
     UpperBoundDate,
 )
-from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )
+from recidiviz.pipelines.transforms.generate_entities import GenerateEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
@@ -119,6 +120,7 @@ class ProcessIngestView(beam.PTransform):
             >> GenerateEntities(
                 ingest_view_manifest=self.ingest_view_manifest,
                 ingest_view_context=self.ingest_view_context,
+                expected_root_entity_types=(StatePerson, StateStaff),
             )
             | f"Merge {self.ingest_view_name} entities"
             >> MergeIngestViewRootEntityTrees(

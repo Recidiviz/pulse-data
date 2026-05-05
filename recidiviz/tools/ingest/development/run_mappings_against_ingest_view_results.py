@@ -44,6 +44,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.common.constants import states
+from recidiviz.common.str_field_utils import to_string_value_converter
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
@@ -68,7 +69,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.pipelines.ingest.state.generate_entities import to_string_value_converter
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

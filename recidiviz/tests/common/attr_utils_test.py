@@ -27,6 +27,7 @@ from recidiviz.common.attr_utils import (
     get_enum_cls,
     get_non_flat_attribute_class_name,
     get_non_optional_type,
+    get_referenced_class_name_from_type,
     is_date,
     is_datetime,
     is_enum,
@@ -319,6 +320,26 @@ class AttrUtilsTest(unittest.TestCase):
 
         for attribute in fields_dict.values():
             self._check_no_utils_crash(attribute)
+
+    def test_forward_ref_and_str_class_name_extraction(self) -> None:
+        """Tests that get_referenced_class_name_from_type correctly extracts the
+        class name from ForwardRef and str inputs, including 'X | None' syntax."""
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(ForwardRef("MyClass | None")),
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type(ForwardRef("MyClass")),
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type("MyClass | None"),
+        )
+        self.assertEqual(
+            "MyClass",
+            get_referenced_class_name_from_type("MyClass"),
+        )
 
     def test_list_fields(self) -> None:
         @attr.define

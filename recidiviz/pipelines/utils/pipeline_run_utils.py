@@ -82,6 +82,7 @@ def collect_all_pipeline_modules() -> List[ModuleType]:
     return pipeline_file_modules
 
 
+# TODO(#75626): Add identity ingest pipeline to this list.
 _TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     supplemental_pipeline_top_level,
     metrics_pipeline_top_level,
