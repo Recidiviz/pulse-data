@@ -26,6 +26,7 @@ module "document-store-upload-results-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.lower_hyphened_state_code}-temp-document-store-output"
   location    = var.region
+  use_cmek    = true
 
   lifecycle_rules = [{
     action = {
@@ -44,4 +45,5 @@ module "document-blob-storage-bucket" {
   project_id  = var.project_id
   name_suffix = "${local.lower_hyphened_state_code}-document-blob-storage"
   location    = var.region
+  use_cmek    = true
 }

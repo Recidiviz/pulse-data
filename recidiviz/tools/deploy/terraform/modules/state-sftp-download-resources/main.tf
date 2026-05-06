@@ -20,6 +20,7 @@ module "sftp-storage-bucket" {
   project_id  = var.project_id
   name_suffix = local.direct_ingest_sftp_str
   location    = var.region
+  use_cmek    = true
 
   lifecycle_rules = [
     {
