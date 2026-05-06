@@ -288,6 +288,9 @@ from recidiviz.validation.views.state.sessions.sessions_persons_in_incarceration
 from recidiviz.validation.views.state.stable_counts.configured_validations import (
     get_all_stable_counts_validations,
 )
+from recidiviz.validation.views.state.stale_raw_data_based_on_sentinel_dates import (
+    STALE_RAW_DATA_BASED_ON_SENTINEL_DATES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import (
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -615,6 +618,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=STALE_RAW_DATA_BASED_ON_SENTINEL_DATES_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
         ),
         ExistenceDataValidationCheck(
             view_builder=OFFICER_MONTHLY_USAGE_REPORT_ACTIONS_WITHOUT_LOGINS_VIEW_BUILDER,

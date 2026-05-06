@@ -152,6 +152,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     StateCode.US_PA: {
         "dbo_Release": ["LastModifiedDate"],
         "dbo_vwCCISAllProgDtls": ["LstMod_Dt"],
+        "dbo_RelAgentHistory": ["LastModifiedDateTime"],
     },
     StateCode.US_TN: {
         "Classification": [
@@ -747,7 +748,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "recls_date",
             "sig_date",
         ],
-        "dbo_RelAgentHistory": ["LastModifiedDateTime"],
         "dbo_ReleaseInfo": ["RelMaxDate"],
         "dbo_Senrec": [
             "parole_status_dt",
