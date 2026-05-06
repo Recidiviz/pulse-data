@@ -3,8 +3,8 @@ manifest_language: 1.0.0
 input_columns:
   Staff_Omni_Employee_Id: STRING
   Supervisor_Omni_Employee_Id: STRING
-  Start_Date: STRING
-  End_Date: STRING
+  Start_Date: DATE
+  End_Date: DATE
   period_id: INTEGER
 unused_columns: []
 output:
