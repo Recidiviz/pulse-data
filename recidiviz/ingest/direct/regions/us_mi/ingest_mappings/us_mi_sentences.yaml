@@ -7,6 +7,7 @@ input_columns:
   offender_sentence_id: STRING
   sentence_type_id: STRING
   sentenced_date: DATE
+  effective_date: DATE
   order_type_id: STRING
   expiration_date: DATE
   county: STRING
@@ -90,6 +91,7 @@ output:
                       attempt: attempted_id
                       mcl: offense_code
           imposed_date: sentenced_date
+          current_state_provided_start_date: effective_date
           conditions: special_condition_id_list
           # TODO(#45846): Add PAROLE 'sentences' and other sentence types.
           # ADH_LEGAL_ORDER has a field "order_type_id" may be useful in hydrating this field.
