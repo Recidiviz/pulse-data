@@ -41,6 +41,9 @@ class DocumentExtractionResultMetadata:
     result_json: str | None
     error_message: str | None
     error_type: ExtractionExclusionType | None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    thinking_tokens: int | None = None
 
     def __attrs_post_init__(self) -> None:
         if self.status == "SUCCESS":
@@ -94,4 +97,7 @@ class DocumentExtractionResultMetadata:
             "result_json": self.result_json,
             "error_message": self.error_message,
             "error_type": self.error_type.value if self.error_type else None,
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+            "thinking_tokens": self.thinking_tokens,
         }

@@ -47,6 +47,11 @@ schema:
     mode: REQUIRED
     description: LLM model identifier (e.g., gemini-2.5-flash)
 
+  - name: thinking_budget
+    type: INTEGER
+    mode: NULLABLE
+    description: Thinking token budget (null=provider default, 0=disabled, -1=dynamic, N>0=explicit)
+
   - name: instructions_prompt
     type: STRING
     mode: REQUIRED

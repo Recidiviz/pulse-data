@@ -81,6 +81,10 @@ class LLMExtractionRequest:
         return self.extractor.model
 
     @property
+    def thinking_budget(self) -> int | None:
+        return self.extractor.thinking_budget
+
+    @property
     def output_schema(self) -> ExtractionOutputSchema:
         return get_extractor_collection(self.extractor.collection_name).output_schema
 
@@ -126,6 +130,11 @@ class LLMExtractionResult:
 
     # Structured error type if status is not SUCCESS
     error_type: ExtractionExclusionType | None
+
+    # Token usage from the LLM response. None if unavailable (e.g. hard failures).
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    thinking_tokens: int | None = None
 
     def __attrs_post_init__(self) -> None:
         if self.status == LLMExtractionStatus.SUCCESS:

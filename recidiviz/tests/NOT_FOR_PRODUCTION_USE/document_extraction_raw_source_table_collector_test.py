@@ -51,6 +51,9 @@ class TestDocumentExtractionRawSourceTableCollector(unittest.TestCase):
             "result_json",
             "error_message",
             "error_type",
+            "input_tokens",
+            "output_tokens",
+            "thinking_tokens",
         }
         for table in collection.source_tables:
             actual_columns = {f.name for f in table.schema_fields}

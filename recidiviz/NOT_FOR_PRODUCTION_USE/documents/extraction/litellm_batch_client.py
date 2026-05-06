@@ -116,6 +116,19 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
             "max_tokens": self._max_output_tokens,
             "temperature": self._temperature,
         }
+        if request.thinking_budget is not None:
+            if self._provider_delegate.custom_llm_provider == "vertex_ai":
+                # Vertex AI batch JSONL body uses camelCase REST field names.
+                body["generationConfig"] = {
+                    "thinkingConfig": {"thinkingBudget": request.thinking_budget}
+                }
+            elif request.thinking_budget == 0:
+                body["thinking"] = {"type": "disabled"}
+            else:
+                body["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": request.thinking_budget,
+                }
 
         # Add response format for structured output
         schema = request.output_schema.to_llm_json_schema()
@@ -211,8 +224,15 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                     break
                 doc_id = document_ids[idx]
 
-            # Extract text via the provider delegate
+            # Extract text and token usage via the provider delegate
             content_text = self._provider_delegate.extract_text_from_batch_result_line(
+                entry
+            )
+            (
+                input_tokens,
+                output_tokens,
+                thinking_tokens,
+            ) = self._provider_delegate.extract_token_usage_from_batch_result_line(
                 entry
             )
 
@@ -227,6 +247,9 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                                 extracted_data=None,
                                 error_message=f"Expected dict response, got {type(extracted).__name__}. Raw: {content_text[:500]}",
                                 error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
+                                input_tokens=input_tokens,
+                                output_tokens=output_tokens,
+                                thinking_tokens=thinking_tokens,
                             )
                         )
                         continue
@@ -238,6 +261,9 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                             extracted_data=extracted,
                             error_message=None,
                             error_type=None,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            thinking_tokens=thinking_tokens,
                         )
                     )
                 except json.JSONDecodeError as e:
@@ -248,6 +274,9 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                             extracted_data=None,
                             error_message=f"Failed to parse JSON: {e}. Raw: {content_text[:500]}",
                             error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            thinking_tokens=thinking_tokens,
                         )
                     )
             else:
@@ -258,6 +287,9 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                         extracted_data=None,
                         error_message="No text content in response",
                         error_type=ExtractionExclusionType.LLM_EMPTY_RESPONSE,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        thinking_tokens=thinking_tokens,
                     )
                 )
 

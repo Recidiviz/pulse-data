@@ -64,6 +64,15 @@ class LLMProviderDelegate(abc.ABC):
         (e.g., Vertex AI), meaning positional correlation should be used.
         """
 
+    @abc.abstractmethod
+    def extract_token_usage_from_batch_result_line(
+        self, entry: dict[str, Any]
+    ) -> tuple[int | None, int | None, int | None]:
+        """Extract (input_tokens, output_tokens, thinking_tokens) from a result entry.
+
+        Returns (None, None, None) if token usage is unavailable.
+        """
+
 
 @attr.define
 class VertexAIProviderDelegate(LLMProviderDelegate):
@@ -108,6 +117,16 @@ class VertexAIProviderDelegate(LLMProviderDelegate):
         self, entry: dict[str, Any]
     ) -> str | None:
         return None
+
+    def extract_token_usage_from_batch_result_line(
+        self, entry: dict[str, Any]
+    ) -> tuple[int | None, int | None, int | None]:
+        usage = entry.get("response", {}).get("usageMetadata", {})
+        return (
+            usage.get("promptTokenCount"),
+            usage.get("candidatesTokenCount"),
+            usage.get("thoughtsTokenCount"),
+        )
 
 
 def get_llm_provider_delegate(llm_provider: str, **kwargs: Any) -> LLMProviderDelegate:

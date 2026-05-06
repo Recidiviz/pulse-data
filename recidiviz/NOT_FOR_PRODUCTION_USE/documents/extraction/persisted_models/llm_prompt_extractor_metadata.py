@@ -66,6 +66,10 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
     # The model that should be used (e.g., "gemini-2.5-flash")
     model: str
 
+    # Thinking token budget passed to the model.
+    # None = use provider default; 0 = disabled; -1 = dynamic; N > 0 = explicit budget.
+    thinking_budget: int | None = None
+
     def __attrs_post_init__(self) -> None:
         if self.llm_provider not in SUPPORTED_LLM_PROVIDERS:
             raise ValueError(
@@ -85,7 +89,12 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
         """ID unique to this extractor which will change if the prompt or model
         changes.
         """
-        return f"{self.extractor_id}_{self.llm_provider}_{self.model.replace('-', '_')}_{self.instructions_prompt_hash()}"
+        thinking_suffix = (
+            f"_thinking{self.thinking_budget}"
+            if self.thinking_budget is not None
+            else ""
+        )
+        return f"{self.extractor_id}_{self.llm_provider}_{self.model.replace('-', '_')}_{self.instructions_prompt_hash()}{thinking_suffix}"
 
     @classmethod
     def metadata_table_address(
@@ -112,6 +121,7 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
             "input_document_collection_name": self.input_document_collection_name,
             "llm_provider": self.llm_provider,
             "model": self.model,
+            "thinking_budget": self.thinking_budget,
             "instructions_prompt": self.instructions_prompt,
             "instructions_prompt_hash": self.instructions_prompt_hash(),
             "update_datetime": datetime.datetime.now(tz=pytz.UTC),
@@ -129,6 +139,7 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
             instructions_prompt=row["instructions_prompt"],
             llm_provider=row["llm_provider"],
             model=row["model"],
+            thinking_budget=row.get("thinking_budget"),
         )
 
     @classmethod
@@ -210,4 +221,5 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
             instructions_prompt=instructions_prompt,
             llm_provider=yaml_dict.pop("llm_provider", str),
             model=yaml_dict.pop("model", str),
+            thinking_budget=yaml_dict.pop_optional("thinking_budget", int),
         )

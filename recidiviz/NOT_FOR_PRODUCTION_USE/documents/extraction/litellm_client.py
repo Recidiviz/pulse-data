@@ -130,6 +130,9 @@ class LiteLLMClient(LLMClient, LLMResultReader):
             "extracted_data": result.extracted_data,
             "error_message": result.error_message,
             "error_type": result.error_type.value if result.error_type else None,
+            "input_tokens": result.input_tokens,
+            "output_tokens": result.output_tokens,
+            "thinking_tokens": result.thinking_tokens,
         }
 
     def _deserialize_result(self, data: dict[str, Any]) -> LLMExtractionResult:
@@ -151,6 +154,9 @@ class LiteLLMClient(LLMClient, LLMResultReader):
             extracted_data=data.get("extracted_data"),
             error_message=data.get("error_message"),
             error_type=error_type,
+            input_tokens=data.get("input_tokens"),
+            output_tokens=data.get("output_tokens"),
+            thinking_tokens=data.get("thinking_tokens"),
         )
 
     # GCS read/write helpers
@@ -205,10 +211,35 @@ class LiteLLMClient(LLMClient, LLMResultReader):
             "top_p": self._top_p,
             "response_format": response_format,
         }
+        if request.thinking_budget is not None:
+            if request.llm_provider == "vertex_ai":
+                # Vertex AI REST API uses camelCase; extra_body is passed through
+                # as-is so we must use camelCase here rather than snake_case.
+                completion_kwargs["extra_body"] = {
+                    "generationConfig": {
+                        "thinkingConfig": {"thinkingBudget": request.thinking_budget}
+                    }
+                }
+            elif request.thinking_budget == 0:
+                completion_kwargs["thinking"] = {"type": "disabled"}
+            else:
+                completion_kwargs["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": request.thinking_budget,
+                }
 
         try:
             response = await acompletion(**completion_kwargs)
             response_text = response.choices[0].message.content
+
+            usage = getattr(response, "usage", None)
+            input_tokens: int | None = getattr(usage, "prompt_tokens", None)
+            output_tokens: int | None = getattr(usage, "completion_tokens", None)
+            thinking_tokens: int | None = None
+            if usage is not None:
+                details = getattr(usage, "completion_tokens_details", None)
+                if details is not None:
+                    thinking_tokens = getattr(details, "reasoning_tokens", None)
 
             try:
                 response_data = json.loads(response_text)
@@ -219,6 +250,9 @@ class LiteLLMClient(LLMClient, LLMResultReader):
                     extracted_data=None,
                     error_message=f"Failed to parse JSON response: {e}. Raw response: {response_text[:500]}",
                     error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    thinking_tokens=thinking_tokens,
                 )
 
             # The schema returns a single object (one result per document).
@@ -229,6 +263,9 @@ class LiteLLMClient(LLMClient, LLMResultReader):
                     extracted_data=response_data,
                     error_message=None,
                     error_type=None,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    thinking_tokens=thinking_tokens,
                 )
 
             return LLMExtractionResult(
@@ -237,6 +274,9 @@ class LiteLLMClient(LLMClient, LLMResultReader):
                 extracted_data=None,
                 error_message=f"Unexpected response format from LLM. Got type: {type(response_data).__name__}. Raw: {response_text[:500]}",
                 error_type=ExtractionExclusionType.LLM_MALFORMED_RESPONSE,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                thinking_tokens=thinking_tokens,
             )
 
         except Exception as e:

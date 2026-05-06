@@ -43,6 +43,9 @@ _RAW_RESULT_SCHEMA: list[SchemaField] = [
     SchemaField(name="result_json", field_type="STRING", mode="NULLABLE"),
     SchemaField(name="error_message", field_type="STRING", mode="NULLABLE"),
     SchemaField(name="error_type", field_type="STRING", mode="NULLABLE"),
+    SchemaField(name="input_tokens", field_type="INTEGER", mode="NULLABLE"),
+    SchemaField(name="output_tokens", field_type="INTEGER", mode="NULLABLE"),
+    SchemaField(name="thinking_tokens", field_type="INTEGER", mode="NULLABLE"),
 ]
 
 

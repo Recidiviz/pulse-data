@@ -251,6 +251,9 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
                 result_json=None,
                 error_type=ExtractionExclusionType.JOB_LEVEL_FAILURE,
                 error_message=doc_error_message,
+                input_tokens=None,
+                output_tokens=None,
+                thinking_tokens=None,
             )
             for doc in submitted_docs
         ]
@@ -335,6 +338,9 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
                         result_json=json.dumps(result_data),
                         error_message=None,
                         error_type=None,
+                        input_tokens=llm_result.input_tokens,
+                        output_tokens=llm_result.output_tokens,
+                        thinking_tokens=llm_result.thinking_tokens,
                     )
                 )
             else:
@@ -355,6 +361,9 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
                         result_json=None,
                         error_message=llm_result.error_message,
                         error_type=llm_result.error_type,
+                        input_tokens=llm_result.input_tokens,
+                        output_tokens=llm_result.output_tokens,
+                        thinking_tokens=llm_result.thinking_tokens,
                     )
                 )
 
