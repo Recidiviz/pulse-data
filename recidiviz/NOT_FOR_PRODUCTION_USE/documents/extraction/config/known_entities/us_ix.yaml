@@ -1,0 +1,317 @@
+# Known entities for Idaho (US_IX) supervision clients.
+#
+# Each entry provides the LLM with prior knowledge about a proper noun so it can
+# classify it correctly without needing to infer entity type from context alone.
+#
+# Supported entity_type values and their effects on extraction prompts:
+#   nonresidential_program   - NOT a housing location; NOT an employer
+#                              (covers drug courts, supervision programs, definitively outpatient treatment)
+#   community_corrections    - primary_status: in_custody (DOC-supervised facility); NOT an employer
+#   residential_treatment    - may be residential or outpatient; NOT an employer
+#                              (LLM uses context to determine if person is living there or attending outpatient)
+#   sober_living             - temporary_housing / sober_living; NOT an employer
+#   halfway_house            - temporary_housing / transitional_program; NOT an employer
+#   shelter                  - temporary_housing / shelter; NOT an employer
+#   hotel_motel              - temporary_housing / hotel_motel; NOT an employer
+#   staffing_agency          - NOT a housing location; employment_type: temp_agency
+#   employer                 - NOT a housing location; no classification hint
+#
+# Optional fields:
+#   notes: human-readable note explaining the classification (not injected into prompt)
+#
+# The LLM handles minor spelling variations and abbreviations of the name listed.
+# Only add aliases when a name looks nothing like the canonical form (opaque acronyms).
+#
+# Data source: bootstrapped from entity resolution results (housing and employer
+# entity resolution tables, filtered to names appearing for >= 3 distinct persons),
+# with additional entities inferred from case note context. Entity types were
+# annotated by hand.
+
+known_entities:
+  # --- COMMUNITY CORRECTIONS ---
+  # GEO Group operates Idaho's CRCs under IDOC contract. Person is in DOC custody.
+
+  - name: "Nampa Community Reentry Center"
+    aliases: ["Nampa CRC", "NCRC"]
+    entity_type: community_corrections
+
+  - name: "East Boise Community Reentry Center"
+    aliases: ["East Boise CRC", "EBCRC"]
+    entity_type: community_corrections
+
+  - name: "Idaho Falls Community Reentry Center"
+    aliases: ["Idaho Falls CRC", "IFCRC", "IF CRC"]
+    entity_type: community_corrections
+
+  - name: "Twin Falls Community Reentry Center"
+    aliases: ["Twin Falls CRC", "TFCRC", "TF CRC"]
+    entity_type: community_corrections
+
+  - name: "Treasure Valley Community Reentry Center"
+    aliases:
+      [
+        "Treasure Valley CRC",
+        "TVCRC",
+        "TV CRC",
+        "Treasure Valley Community Re-Entry Center",
+      ]
+    entity_type: community_corrections
+
+  - name: "D4 CRC"
+    entity_type: community_corrections
+
+  - name: "ECRC"
+    entity_type: community_corrections
+
+  - name: "GEO"
+    entity_type: community_corrections
+    notes:
+      "GEO Group; private company operating Idaho's community reentry centers
+      under IDOC contract"
+
+  - name: "SICI"
+    entity_type: community_corrections
+    notes: "South Idaho Correctional Institution"
+
+  - name: "St. Anthony Work Camp"
+    aliases: ["SAWC"]
+    entity_type: community_corrections
+    notes:
+      "400-bed minimum/community custody work camp in St. Anthony, ID; paid work
+      placements are part of the program but person remains in DOC custody"
+
+  # --- OUTPATIENT PROGRAMS (drug courts, treatment, supervision) ---
+
+  - name: "Wood Court"
+    entity_type: nonresidential_program
+    notes:
+      "Ada County specialty/drug court; a supervision condition, not housing or
+      employment"
+
+  - name: "Trivium"
+    aliases: ["Trivium Life Services"]
+    entity_type: nonresidential_program
+    notes:
+      "Outpatient substance abuse treatment provider; clients attend sessions
+      but do not live there"
+
+  # --- RESIDENTIAL TREATMENT ---
+  # Treatment organizations that may be residential or outpatient.
+  # The LLM uses note context to determine whether the person is living there
+  # (→ temporary_housing) or attending outpatient sessions only (not housing).
+
+  - name: "Renaissance Ranch"
+    entity_type: residential_treatment
+    notes: "Well-known residential addiction treatment program in Idaho"
+
+  - name: "Walker Center"
+    aliases: ["The Walker Center"]
+    entity_type: residential_treatment
+    notes: "Residential addiction treatment center in Gooding, ID"
+
+  - name: "Intermountain Hospital"
+    entity_type: residential_treatment
+    notes: "Behavioral health hospital in Boise"
+
+  - name: "Tamarack Treatment Center"
+    entity_type: residential_treatment
+
+  - name: "Allumbaugh House"
+    entity_type: residential_treatment
+    notes: "Ada County behavioral health crisis stabilization unit in Boise"
+
+  - name: "Northpoint Recovery"
+    entity_type: residential_treatment
+
+  - name: "Chrysalis House"
+    aliases: ["Chrysalis"]
+    entity_type: residential_treatment
+
+  - name: "Caldwell Recovery Center"
+    entity_type: residential_treatment
+
+  - name: "Moonlight Mountain Recovery"
+    aliases: ["Moonlight Mountain", "Moonlight Recovery", "Moonlight"]
+    entity_type: residential_treatment
+    notes:
+      "Offers both residential and outpatient addiction treatment programs in
+      Idaho"
+
+  # --- SOBER LIVING ---
+
+  - name: "Rising Sun Sober Living"
+    aliases: ["Rising Sun"]
+    entity_type: sober_living
+
+  - name: "Oxford House"
+    entity_type: sober_living
+    notes: "National network of peer-run sober living homes"
+
+  - name: "Stewards of Recovery"
+    entity_type: sober_living
+
+  - name: "Recovery 4 Life"
+    entity_type: sober_living
+
+  - name: "River Sober Living"
+    entity_type: sober_living
+
+  - name: "Brick House Recovery"
+    aliases: ["Brick House", "Brickhouse Recovery"]
+    entity_type: sober_living
+
+  # --- HALFWAY HOUSE / TRANSITIONAL HOUSING ---
+
+  - name: "Grace House"
+    entity_type: halfway_house
+
+  - name: "Harbor House"
+    entity_type: halfway_house
+
+  - name: "Phoenix House"
+    entity_type: halfway_house
+
+  - name: "Lazarus House"
+    entity_type: halfway_house
+
+  - name: "Felony Friendly 208"
+    aliases: ["Felony Friendly", "Felony Friendly 208 LLC"]
+    entity_type: halfway_house
+    notes: "Idaho housing provider for people with felony records"
+
+  - name: "Mountain Top Transitional Housing"
+    aliases: ["Mountain Top", "Mountain Top Transitional House"]
+    entity_type: halfway_house
+
+  - name: "Safe Release"
+    aliases: ["Safe Release House"]
+    entity_type: halfway_house
+
+  - name: "The Way Home"
+    aliases: ["The Way Home CDA"]
+    entity_type: halfway_house
+
+  - name: "Community Transition Center"
+    aliases: ["CTC"]
+    entity_type: halfway_house
+
+  - name: "Pivot Pad"
+    entity_type: halfway_house
+
+  # --- SHELTERS ---
+
+  - name: "Boise Rescue Mission"
+    entity_type: shelter
+
+  - name: "Interfaith Sanctuary"
+    entity_type: shelter
+    notes: "Major homeless shelter in Boise"
+
+  - name: "River of Life Rescue Mission"
+    aliases:
+      [
+        "River Of Life",
+        "River Of Life Men's Shelter",
+        "River of Life Men's Shelter",
+      ]
+    entity_type: shelter
+
+  - name: "Union Gospel Mission"
+    aliases: ["UGM"]
+    entity_type: shelter
+
+  - name: "St. Vincent de Paul"
+    entity_type: shelter
+    notes: "Provides social services and emergency shelter in Idaho"
+
+  # --- HOTELS / MOTELS ---
+
+  - name: "Motel 6"
+    entity_type: hotel_motel
+
+  - name: "Extended Stay"
+    entity_type: hotel_motel
+
+  - name: "Best Western"
+    entity_type: hotel_motel
+
+  - name: "Quality Inn"
+    entity_type: hotel_motel
+
+  - name: "Super 8"
+    entity_type: hotel_motel
+
+  - name: "Canyon Inn"
+    entity_type: hotel_motel
+
+  - name: "Old Towne Lodge"
+    aliases: ["Old Town Lodge"]
+    entity_type: hotel_motel
+
+  # --- STAFFING AGENCIES ---
+
+  - name: "BBSI Staffing"
+    aliases: ["BBSI"]
+    entity_type: staffing_agency
+    notes: "Professional employer organization (PEO)"
+
+  - name: "Elwood Staffing"
+    entity_type: staffing_agency
+
+  - name: "Gem State Staffing"
+    entity_type: staffing_agency
+
+  - name: "Express Employment"
+    aliases: ["Express Staffing"]
+    entity_type: staffing_agency
+    notes: "Express Employment Professionals, national staffing agency"
+
+  - name: "Personnel Plus"
+    entity_type: staffing_agency
+
+  - name: "People Ready"
+    entity_type: staffing_agency
+
+  - name: "American Staffing"
+    entity_type: staffing_agency
+
+  - name: "Labor Max"
+    entity_type: staffing_agency
+
+  - name: "Ascend Staffing"
+    entity_type: staffing_agency
+
+  - name: "Riverside Staffing"
+    entity_type: staffing_agency
+
+  - name: "Wood Court Staffing"
+    entity_type: staffing_agency
+    notes:
+      "Staffing agency affiliated with Wood Court drug court; distinct from the
+      drug court itself"
+
+  # --- EMPLOYERS (prison work / vocational programs that pay wages) ---
+
+  - name: "Correctional Industries"
+    entity_type: employer
+    notes: "IDOC prison work program; person is paid wages, counts as employment"
+
+  - name: "Vocational Work Projects"
+    aliases: ["VWP"]
+    entity_type: employer
+    notes: "Prison vocational work program; person is paid wages, counts as
+      employment"
+
+  # --- EMPLOYERS ---
+  # Included where the name could be misread as a non-employer (charity, generic term).
+
+  - name: "Goodwill"
+    entity_type: employer
+    notes: "Retail/thrift chain; an employer despite its charitable name"
+
+  - name: "Deseret Industries"
+    aliases: ["DI"]
+    entity_type: employer
+    notes:
+      "LDS-affiliated thrift store chain; an employer despite its charitable
+      affiliation"

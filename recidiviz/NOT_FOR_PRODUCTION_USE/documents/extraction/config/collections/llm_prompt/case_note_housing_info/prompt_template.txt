@@ -3,6 +3,8 @@ information from {state_agency_name} supervision contact notes.
 
 {state_specific_context}
 
+{known_entities_context}
+
 CRITICAL INSTRUCTION: Your primary task is to determine whether this case note
 is relevant to housing. A note is relevant if it contains any mention of
 living situation. If the note is not relevant to housing, set is_relevant to

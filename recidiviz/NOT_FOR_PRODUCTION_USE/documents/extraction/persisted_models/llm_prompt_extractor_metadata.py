@@ -31,6 +31,11 @@ import pytz
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.known_entities_loader import (
+    load_known_entities,
+    render_employment_known_entities_context,
+    render_housing_known_entities_context,
+)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.dataset_config import (
     EXTRACTION_METADATA_DATASET_ID,
 )
@@ -42,6 +47,13 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.docu
 )
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
+
+_HOUSING_COLLECTIONS = frozenset(
+    {"CASE_NOTE_HOUSING_INFO", "CASE_NOTE_HOUSING_ENTITY_RESOLUTION"}
+)
+_EMPLOYMENT_COLLECTIONS = frozenset(
+    {"CASE_NOTE_EMPLOYMENT_INFO", "CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION"}
+)
 
 # Providers supported by the LiteLLM Batch API
 SUPPORTED_LLM_PROVIDERS = frozenset(
@@ -196,6 +208,21 @@ class LLMPromptExtractorMetadata(DocumentExtractorMetadata):
 
         prompt_vars = yaml_dict.pop_optional("prompt_vars", dict) or {}
         prompt_vars = {k: (v if v is not None else "") for k, v in prompt_vars.items()}
+
+        # Auto-inject known_entities_context from the per-state known entities YAML.
+        # setdefault means an extractor YAML can still override by setting
+        # known_entities_context explicitly in its prompt_vars.
+        entities = load_known_entities(state_code)
+        if collection_name in _HOUSING_COLLECTIONS:
+            prompt_vars.setdefault(
+                "known_entities_context",
+                render_housing_known_entities_context(entities),
+            )
+        elif collection_name in _EMPLOYMENT_COLLECTIONS:
+            prompt_vars.setdefault(
+                "known_entities_context",
+                render_employment_known_entities_context(entities),
+            )
 
         # Load the collection's output schema to render output_format_instructions
         collection_yaml_path = os.path.join(collection_dir, "collection.yaml")

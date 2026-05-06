@@ -1,0 +1,229 @@
+# Known entities for Tennessee (US_TN) supervision clients.
+#
+# Each entry provides the LLM with prior knowledge about a proper noun so it can
+# classify it correctly without needing to infer entity type from context alone.
+#
+# Supported entity_type values and their effects on extraction prompts:
+#   nonresidential_program   - NOT a housing location; NOT an employer
+#                              (covers drug courts, supervision programs, and definitively outpatient-only treatment)
+#   community_corrections    - primary_status: in_custody (DOC-supervised facility); NOT an employer
+#   residential_treatment    - may be residential or outpatient; NOT an employer
+#                              (LLM uses context to determine if person is living there or attending outpatient)
+#   sober_living             - temporary_housing / sober_living; NOT an employer
+#   halfway_house            - temporary_housing / transitional_program; NOT an employer
+#   shelter                  - temporary_housing / shelter; NOT an employer
+#   hotel_motel              - temporary_housing / hotel_motel; NOT an employer
+#   staffing_agency          - NOT a housing location; employment_type: temp_agency
+#   employer                 - NOT a housing location; no classification hint
+#
+# Optional fields:
+#   notes: human-readable note explaining the classification (not injected into prompt)
+#
+# The LLM handles minor spelling variations and abbreviations of the name listed.
+# Only add aliases when a name looks nothing like the canonical form (opaque acronyms).
+#
+# Data source: derived from regex extraction over a 30k-note sample of TN supervision
+# contact notes (ContactNoteComment_latest, 2023–2025).
+
+known_entities:
+  # --- COMMUNITY CORRECTIONS ---
+  # TDOC-operated day reporting centers. Person is in DOC custody / community supervision
+  # under DOC-controlled programming; not a civilian housing location.
+
+  - name: "Nashville Day Reporting Center"
+    aliases: ["Nashville DRC"]
+    entity_type: community_corrections
+    notes: "TDOC day reporting center in Nashville"
+
+  - name: "Knoxville Day Reporting Center"
+    aliases: ["Knoxville DRC"]
+    entity_type: community_corrections
+    notes: "TDOC day reporting center in Knoxville"
+
+  - name: "Johnson City Day Reporting Center"
+    aliases: ["Johnson City DRC"]
+    entity_type: community_corrections
+    notes: "TDOC day reporting center in Johnson City"
+
+  - name: "Jackson Day Reporting Center"
+    aliases: ["Jackson DRC"]
+    entity_type: community_corrections
+    notes: "TDOC day reporting center in Jackson"
+
+  - name: "Memphis Day Reporting Center"
+    aliases: ["Memphis DRC"]
+    entity_type: community_corrections
+    notes: "TDOC day reporting center in Memphis"
+
+  # --- NONRESIDENTIAL PROGRAMS ---
+  # Supervision conditions, outpatient-only treatment, and employment programs.
+  # Person attends but does not live there; not counted as employment.
+
+  - name: "CBIP"
+    entity_type: nonresidential_program
+    notes:
+      "Cognitive Behavioral Intervention Program; TDOC-administered cognitive
+      behavioral program"
+
+  - name: "Celebrate Recovery"
+    entity_type: nonresidential_program
+    notes:
+      "Faith-based 12-step recovery program; clients attend meetings but do not
+      live there"
+
+  - name: "Mental Health Cooperative"
+    entity_type: nonresidential_program
+    notes: "Nashville-based outpatient mental health services"
+
+  - name: "Seedco"
+    entity_type: nonresidential_program
+    notes: "Workforce development nonprofit operating in TN; job training and
+      employment services, not a housing location or employer"
+
+  - name: "Center for Employment Opportunities"
+    aliases: ["CEO"]
+    entity_type: nonresidential_program
+    notes: "Transitional employment nonprofit"
+
+  - name: "American Job Center"
+    entity_type: nonresidential_program
+    notes: "Federally funded workforce services; job training and placement, not
+      employment itself"
+
+  - name: "Persevere"
+    entity_type: nonresidential_program
+    notes: "Reentry employment/vocational program operating in TN prisons and
+      communities"
+
+  - name: "TRAP"
+    entity_type: nonresidential_program
+    notes: "Transitional Re-entry Adult Program; reentry services and employment
+      readiness"
+
+  # --- RESIDENTIAL TREATMENT ---
+  # Treatment organizations that may be residential or outpatient.
+  # The LLM uses note context to determine whether the person is living there
+  # (→ temporary_housing) or attending outpatient sessions only (not housing).
+
+  - name: "Centerstone"
+    entity_type: residential_treatment
+    notes: "Large behavioral health nonprofit in TN; offers both residential and
+      outpatient mental health and substance abuse services"
+
+  - name: "Pathways"
+    entity_type: residential_treatment
+    notes: "Pathways of Tennessee; community mental health organization with
+      crisis residential beds in addition to outpatient services"
+
+  - name: "Frontier Health"
+    entity_type: residential_treatment
+    notes: "Comprehensive behavioral health organization in northeast TN; offers
+      both residential and outpatient programs"
+
+  - name: "Aspell Recovery"
+    entity_type: residential_treatment
+    notes: "Memphis-based residential addiction treatment center"
+
+  - name: "Freeman Recovery"
+    entity_type: residential_treatment
+    notes: "Residential addiction treatment"
+
+  - name: "Threshold Recovery"
+    entity_type: residential_treatment
+    notes: "Nashville-area residential recovery program"
+
+  - name: "Irongate Recovery"
+    entity_type: residential_treatment
+    notes: "Residential recovery program in TN"
+
+  - name: "Next Door"
+    entity_type: residential_treatment
+    notes: "Next Door women's residential treatment program in Nashville"
+
+  # --- SOBER LIVING ---
+
+  - name: "Oxford House"
+    entity_type: sober_living
+    notes: "National network of peer-run sober living homes"
+
+  - name: "Recovery Soldiers"
+    entity_type: sober_living
+    notes: "Sober living home in Elizabethton, TN"
+
+  # --- HALFWAY HOUSE / TRANSITIONAL HOUSING ---
+
+  - name: "Dismas House"
+    entity_type: halfway_house
+    notes:
+      "Catholic transitional housing for people returning from incarceration;
+      Nashville chapter"
+
+  - name: "Aphesis House"
+    entity_type: halfway_house
+    notes: "Transitional housing in TN"
+
+  - name: "Lazarus House"
+    entity_type: halfway_house
+    notes: "Transitional housing in TN"
+
+  - name: "Living for Christ Restoration House"
+    aliases: ["Living for Christ"]
+    entity_type: halfway_house
+    notes: "Faith-based transitional housing"
+
+  - name: "My Father's House"
+    entity_type: halfway_house
+    notes: "Transitional housing; Nashville area (seen as 'MY FATHERS HOUSE' in
+      notes)"
+
+  # --- SHELTERS ---
+
+  - name: "Nashville Rescue Mission"
+    entity_type: shelter
+    notes: "Major homeless shelter and recovery services in Nashville"
+
+  - name: "Hope Center Ministries"
+    entity_type: shelter
+    notes: "Faith-based shelter and services in TN"
+
+  - name: "Rockhouse Ministries"
+    entity_type: shelter
+    notes: "Faith-based shelter and outreach in TN"
+
+  - name: "Room in the Inn"
+    entity_type: shelter
+    notes: "Nashville shelter network"
+
+  - name: "Salvation Army"
+    entity_type: shelter
+    notes: "National organization with shelters throughout TN"
+
+  # --- STAFFING AGENCIES ---
+
+  - name: "Staffmark"
+    entity_type: staffing_agency
+    notes: "TN-headquartered staffing agency"
+
+  - name: "Express Employment"
+    aliases: ["Express Staffing"]
+    entity_type: staffing_agency
+    notes: "Express Employment Professionals; national staffing agency"
+
+  - name: "Kelly Services"
+    entity_type: staffing_agency
+    notes: "National staffing agency"
+
+  - name: "Manpower"
+    entity_type: staffing_agency
+    notes: "National staffing agency"
+
+  # --- EMPLOYERS ---
+  # Included where the name could be misread as a non-employer.
+
+  - name: "Waffle House"
+    entity_type: employer
+    notes: "Restaurant chain; an employer despite 'House' in the name"
+
+  - name: "Dollar General"
+    entity_type: employer
+    notes: "Retail chain; an employer"

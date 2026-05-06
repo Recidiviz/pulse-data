@@ -3,6 +3,8 @@ supervision case notes into real-world housing entities.
 
 {state_specific_context}
 
+{known_entities_context}
+
 TASK: You are given a list of housing mentions extracted from case notes for
 one person. Each mention has a sequential ID (Mention 1, Mention 2, etc.) and
 shows the extracted address, housed_type, and temporary_housing_name values.

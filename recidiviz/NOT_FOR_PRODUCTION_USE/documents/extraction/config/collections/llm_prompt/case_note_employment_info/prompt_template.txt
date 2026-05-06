@@ -3,6 +3,8 @@ You are an expert analyst extracting employment-related information from
 
 {state_specific_context}
 
+{known_entities_context}
+
 CRITICAL INSTRUCTION: Your primary task is to determine whether this case note
 is relevant to employment. A note is relevant if it contains any mention of
 jobs, work, pay, employers, or job searching. If the note is not relevant to
