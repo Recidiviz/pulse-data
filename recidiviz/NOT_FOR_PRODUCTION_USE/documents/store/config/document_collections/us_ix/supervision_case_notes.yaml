@@ -63,5 +63,6 @@ document_generation_query: |
       USING(NoteTypeId)
     WHERE notes.Details IS NOT NULL
       AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(noteInfo.NoteDate, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+      AND COALESCE(refNoteType.NoteTypeDesc, '') != 'PSI'  -- PSI copies: pre-sentence investigation documents, not supervision notes
     GROUP BY 1, 2, 3, 4, 5
   )

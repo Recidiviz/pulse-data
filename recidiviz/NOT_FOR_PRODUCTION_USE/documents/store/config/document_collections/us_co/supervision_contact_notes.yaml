@@ -44,3 +44,12 @@ document_generation_query: |
   WHERE CONTACTCOMMENTS IS NOT NULL
     AND TRIM(CONTACTCOMMENTS) != ''
     AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CONTACTDATE, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND CONTACTTYPE NOT IN (
+      'AT',   -- automated earned time credit entries (system-generated)
+      'AET',  -- automated IJP credit entries (system-generated)
+      'RA1',  -- automated note generated when risk assessment was completed (system-generated)
+      'HRF',  -- automated note generated for hold and release form (system-generated)
+      'TCJ',  -- entries related to electronic monitoring installation
+      'TCK',  -- entries related to electronic monitoring installation
+      'PRO'   -- warrant and supervision conditions information
+    )

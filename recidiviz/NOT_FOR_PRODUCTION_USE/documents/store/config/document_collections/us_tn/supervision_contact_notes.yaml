@@ -35,4 +35,29 @@ document_generation_query: |
   WHERE comments.Comment IS NOT NULL
     AND TRIM(comments.Comment) != ''
     AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(comments.ContactNoteDateTime, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND (
+      -- Keep notes with no type records (unclassified)
+      NOT EXISTS (
+        SELECT 1 FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest` excl_t
+        WHERE excl_t.OffenderID = comments.OffenderID
+          AND excl_t.ContactNoteDateTime = comments.ContactNoteDateTime
+      )
+      OR
+      -- Keep notes that have at least one substantive (non-noise) type
+      EXISTS (
+        SELECT 1 FROM `{project_id}.us_tn_raw_data_up_to_date_views.ContactNoteType_latest` incl_t
+        WHERE incl_t.OffenderID = comments.OffenderID
+          AND incl_t.ContactNoteDateTime = comments.ContactNoteDateTime
+          AND incl_t.ContactNoteType NOT IN (
+            'IOTI', 'IOTO',  -- boilerplate semi-structured checkins (officer admin only)
+            'ITFB', 'ITSS',  -- short notes that record delivery of reentry resources to residents of a facility (e.g., timesheets, balances) 
+            'KITI',          -- short notes that record delivery of kits to residents of a facility (e.g., hygiene kits, COVID test kits)
+            'ZZZZ', 'ZZZA', 'ZZZI', 'ZZZC',  -- notes related to case file closure
+            'SCRN',          -- in facility notes related to screenings (e.g., PREA)
+            'ELEA',          -- measures attendance for in-facility electives
+            'ZTVR',          -- violation reports
+            'BBNN'           -- NCIC checks
+          )
+      )
+    )
   GROUP BY comments.OffenderID, comments.ContactNoteDateTime, comments.Comment

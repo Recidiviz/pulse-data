@@ -36,3 +36,4 @@ document_generation_query: |
   WHERE contactNotes IS NOT NULL
     AND TRIM(contactNotes) != ''
     AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(dateOfContact, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND NOT (contactType = '410008' AND contactLocation = '409006' AND LENGTH(contactNotes) <= 50)  -- exclude EM kiosk check-ins with short notes
