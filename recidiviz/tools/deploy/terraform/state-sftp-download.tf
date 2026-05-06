@@ -22,3 +22,11 @@ module "state_direct_ingest_sftp_resources" {
   project_id = var.project_id
   region     = var.direct_ingest_region
 }
+
+# Import CMEK keys that were created by the oneoff script (PR #74881) before
+# Terraform knew about them. Remove these blocks after the first successful apply.
+import {
+  for_each = toset(local.sftp_state_alpha_codes)
+  id       = "projects/cmek-82ade411-5705-4461-b2cb-9/locations/us-east1/keyRings/gcs-cmek/cryptoKeys/${var.project_id}-direct-ingest-state-${replace(lower(each.value), "_", "-")}-sftp"
+  to       = module.state_direct_ingest_sftp_resources[each.value].module.sftp-storage-bucket.google_kms_crypto_key.gcs_cmek[0]
+}

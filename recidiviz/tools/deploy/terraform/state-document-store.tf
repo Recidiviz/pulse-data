@@ -23,3 +23,17 @@ module "state_document_store_resources" {
   project_id = var.project_id
   region     = var.direct_ingest_region
 }
+
+# Import CMEK keys that were created by the oneoff script (PR #74881) before
+# Terraform knew about them. Remove these blocks after the first successful apply.
+import {
+  for_each = local.document_collection_states
+  id       = "projects/cmek-82ade411-5705-4461-b2cb-9/locations/us-east1/keyRings/gcs-cmek/cryptoKeys/${var.project_id}-${replace(lower(each.value), "_", "-")}-temp-document-store-output"
+  to       = module.state_document_store_resources[each.value].module.document-store-upload-results-bucket.google_kms_crypto_key.gcs_cmek[0]
+}
+
+import {
+  for_each = local.document_collection_states
+  id       = "projects/cmek-82ade411-5705-4461-b2cb-9/locations/us-east1/keyRings/gcs-cmek/cryptoKeys/${var.project_id}-${replace(lower(each.value), "_", "-")}-document-blob-storage"
+  to       = module.state_document_store_resources[each.value].module.document-blob-storage-bucket.google_kms_crypto_key.gcs_cmek[0]
+}
