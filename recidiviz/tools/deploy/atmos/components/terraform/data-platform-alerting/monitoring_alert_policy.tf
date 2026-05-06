@@ -1522,7 +1522,41 @@ resource "google_monitoring_alert_policy" "data_validation_failures_to_run" {
   project               = var.project_id
 }
 
+resource "google_monitoring_metric_descriptor" "ingest_unmapped_enum_value" {
+  project      = var.project_id
+  description  = "Count of ingest enum fields that encountered an unmapped raw text value."
+  display_name = "Ingest Unmapped Enum Value"
+  type         = "custom.googleapis.com/opencensus/ingest.unmapped_enum_value"
+  metric_kind  = "CUMULATIVE"
+  value_type   = "INT64"
+
+  labels {
+    key         = "region"
+    value_type  = "STRING"
+    description = "State code region"
+  }
+
+  labels {
+    key         = "enum_type"
+    value_type  = "STRING"
+    description = "Enum class name"
+  }
+
+  labels {
+    key         = "enum_field_name"
+    value_type  = "STRING"
+    description = "Field name in the ingest view"
+  }
+
+  labels {
+    key         = "ingest_view_name"
+    value_type  = "STRING"
+    description = "Name of the ingest view"
+  }
+}
+
 resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeline" {
+  depends_on = [google_monitoring_metric_descriptor.ingest_unmapped_enum_value]
   alert_strategy {
     # Auto-close after 7 days if we have not seen any data
     auto_close = "604800s"
@@ -1540,7 +1574,9 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
       }
 
       comparison      = "COMPARISON_GT"
-      duration        = "0s"
+      # How long the threshold must be continuously violated before firing.
+      # Must be non-zero when evaluation_missing_data is set (GCP API requirement).
+      duration        = "60s"
       filter          = <<-EOT
         resource.type = "generic_node" AND metric.type = "custom.googleapis.com/opencensus/ingest.unmapped_enum_value"
       EOT
