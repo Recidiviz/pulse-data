@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_schema_utils import (
     diff_declared_schema_to_bq_schema,
     format_schema_diffs,
     schema_field_to_view_column,
+    strip_pseudocolumns_from_schema,
     truncate_column_description_for_big_query,
 )
 from recidiviz.big_query.big_query_view_column import (
@@ -380,3 +381,28 @@ class SchemaFieldToViewColumnTest(unittest.TestCase):
             schema_field_to_view_column(
                 bigquery.SchemaField("x", "RECORD", description="d")
             )
+
+
+class StripPseudocolumnsFromSchemaTest(unittest.TestCase):
+    """Tests for strip_pseudocolumns_from_schema"""
+
+    def test_strips_all_pseudocolumns(self) -> None:
+        schema = [
+            bigquery.SchemaField("_FILE_NAME", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("_PARTITIONTIME", "TIMESTAMP", mode="NULLABLE"),
+            bigquery.SchemaField("_PARTITIONDATE", "DATE", mode="NULLABLE"),
+            bigquery.SchemaField("real_column", "STRING", mode="NULLABLE"),
+        ]
+        result = strip_pseudocolumns_from_schema(schema)
+        self.assertEqual(["real_column"], [f.name for f in result])
+
+    def test_no_pseudocolumns_unchanged(self) -> None:
+        schema = [
+            bigquery.SchemaField("col1", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("col2", "INTEGER", mode="REQUIRED"),
+        ]
+        result = strip_pseudocolumns_from_schema(schema)
+        self.assertEqual(["col1", "col2"], [f.name for f in result])
+
+    def test_empty_schema(self) -> None:
+        self.assertEqual([], strip_pseudocolumns_from_schema([]))

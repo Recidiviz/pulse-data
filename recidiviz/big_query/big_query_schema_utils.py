@@ -37,8 +37,39 @@ from recidiviz.big_query.big_query_view_column import (
     Time,
     Timestamp,
 )
-from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.big_query.constants import (
+    BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
+    EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
+    PARTITION_DATE_PSEUDOCOLUMN,
+    PARTITION_TIME_PSEUDOCOLUMN,
+)
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
+
+# Pseudocolumns that real BigQuery exposes but does not include in
+# a table's schema. The BQ emulator (when seeded by our test fixtures)
+# returns these as real schema fields, which produces false schema mismatches
+# when comparing emulator-returned schemas against real BigQuery.
+_BQ_PSEUDOCOLUMN_NAMES = frozenset(
+    {
+        EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
+        PARTITION_TIME_PSEUDOCOLUMN,
+        PARTITION_DATE_PSEUDOCOLUMN,
+    }
+)
+
+
+def strip_pseudocolumns_from_schema(
+    schema: Sequence[bigquery.SchemaField],
+) -> list[bigquery.SchemaField]:
+    """Returns |schema| with any BigQuery pseudocolumn fields removed.
+
+    Real BigQuery does not include pseudocolumns (`_FILE_NAME`, `_PARTITIONTIME`,
+    `_PARTITIONDATE`) in a table's schema, but our emulator source-table fixtures
+    seed these fields explicitly. Stripping them lets emulator-derived schemas
+    match real BigQuery.
+    """
+    return [field for field in schema if field.name not in _BQ_PSEUDOCOLUMN_NAMES]
+
 
 _FIELD_TYPE_TO_COLUMN_CLASS: dict[str, ConcreteBigQueryColumnType] = {
     "STRING": String,

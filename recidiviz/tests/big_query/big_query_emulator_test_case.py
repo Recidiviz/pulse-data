@@ -50,6 +50,7 @@ from recidiviz.big_query.big_query_client import (
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
+from recidiviz.big_query.big_query_schema_utils import strip_pseudocolumns_from_schema
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_input_schema_json import (
     write_emulator_source_tables_json,
@@ -177,6 +178,23 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         )
         self.bqstorage_patcher.start()
 
+        # Patch get_table to remove pseudocolumns added by big_query_emulator_input_schema_json.py.
+        original_get_table = BigQueryClientImpl.get_table
+
+        def _get_table_without_pseudocolumns(
+            client_self: BigQueryClientImpl, address: BigQueryAddress
+        ) -> bigquery.Table:
+            table = original_get_table(client_self, address)
+            table.schema = strip_pseudocolumns_from_schema(table.schema)
+            return table
+
+        self.get_table_patcher = patch.object(
+            BigQueryClientImpl,
+            "get_table",
+            _get_table_without_pseudocolumns,
+        )
+        self.get_table_patcher.start()
+
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         if self.wipe_emulator_data_on_teardown:
@@ -185,6 +203,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         self.read_gbq_patcher.stop()
         self.to_gbq_patcher.stop()
         self.bqstorage_patcher.stop()
+        self.get_table_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

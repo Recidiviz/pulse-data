@@ -291,6 +291,9 @@ class SourceTableConfig:
         """Returns a list of pseudocolumns that are available for query on this table.
         These are columns that will not be returned by a SELECT * query on this table,
         but can be explicitly queried.
+
+        When a pseudocolumn is added here, it should also be added to
+        big_query_schema_utils.strip_pseudocolumns_from_schema().
         """
         psuedocolumns = []
 
