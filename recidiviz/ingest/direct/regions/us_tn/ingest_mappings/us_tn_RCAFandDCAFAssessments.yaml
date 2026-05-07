@@ -46,6 +46,7 @@ input_columns:
   DateOfFinalApprovalAndEntry: STRING
   LastClassificationDate: STRING
   firstFormEdit: DATE
+  lastFormEdit: DATE
   CAFDate: DATE
   CAFSiteID: STRING
   CAF_ID: INTEGER
@@ -130,6 +131,7 @@ output:
               ClassificationFormType: ClassificationFormType
               LastClassificationDate: LastClassificationDate
               firstFormEdit: firstFormEdit
+              lastFormEdit: lastFormEdit
               CAFDate: CAFDate
               RecommendedCustody: RecommendedCustody
               CAFSiteID: CAFSiteID
