@@ -391,6 +391,7 @@ output:
                         - K9
                         - FTTD
                         - JUVENILE LIFER/VICTIM WRAPAROUND
+                        - INTELLIGENCE AGENT
                       StateStaffCaseloadType.GENERAL:
                         - GENERAL
     supervisor_periods:
