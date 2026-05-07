@@ -32,6 +32,192 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
+
+
+def us_ne_so_supervision_start_spans_query() -> str:
+    """SQL for NE sex-offender supervision spans, aggregated across adjacent
+    supervision-level changes so each row is one continuous SO supervision
+    episode. Used as the contact-period-spans base for the initial STABLE
+    assessment trigger: every SO episode start opens a fresh 30-day window
+    in which an initial STABLE assessment must occur.
+    """
+    return f"""
+    WITH supervision_so AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+        FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized`
+        WHERE state_code = 'US_NE'
+            AND case_type = 'SEX_OFFENSE'
+    )
+    {aggregate_adjacent_spans(table_name='supervision_so')}
+    """
+
+
+def us_ne_recurring_assessment_criteria_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    assessment_type: str,
+    assessment_display_name: str,
+    reassessment_cadence_months: int,
+    supervision_spans_query: str,
+    assessment_date_lookback_days: int = 0,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Build a US_NE recurring-assessment "is missing reassessment" criterion.
+
+    Produces spans where a client has had at least one prior assessment of the
+    given type within their current supervision episode but is now overdue for
+    the next one (the last day of the Nth month after the most recent
+    assessment). Spans before any assessment fall through to
+    `meets_criteria_default=False` so the companion
+    `meets_initial_*_assessment_trigger` criterion handles them via the
+    OR-group in the compliance task.
+
+    Args:
+        criteria_name: Name of the criterion view (e.g.
+            US_NE_IS_MISSING_ANNUAL_STABLE_ASSESSMENT).
+        description: Description of the criterion view.
+        assessment_type: Value of `state_assessment.assessment_type` to filter
+            on (e.g. 'STABLE', 'ORAS_COMMUNITY_SUPERVISION_SCREENING').
+        assessment_display_name: Short label for the assessment (e.g. 'STABLE',
+            'ORAS') used in reasons-field descriptions.
+        reassessment_cadence_months: Number of months after a prior assessment
+            until the next one is due (snapped to the last day of the month).
+        supervision_spans_query: SQL returning state_code, person_id,
+            start_date, and (exclusive) end_date for one row per continuous
+            supervision episode. Must already be filtered to US_NE.
+        assessment_date_lookback_days: Number of days before each supervision
+            episode start during which a prior assessment still counts as the
+            episode's "first" assessment. Set to 0 to require assessments
+            within the episode itself.
+    """
+    query_template = f"""
+WITH supervision_spans AS (
+    {supervision_spans_query}
+),
+
+assessments AS (
+    SELECT
+        a.state_code,
+        a.person_id,
+        a.assessment_date,
+        ss.start_date AS supervision_start_date,
+        ss.end_date AS supervision_end_date,
+        -- Pre-start assessments anchor to the supervision episode start so
+        -- they collapse to the same span start when there are several.
+        IF(a.assessment_date < ss.start_date, ss.start_date, a.assessment_date)
+            AS span_start,
+    FROM `{{project_id}}.us_ne_normalized_state.state_assessment` a
+    INNER JOIN supervision_spans ss
+        ON ss.state_code = a.state_code
+            AND ss.person_id = a.person_id
+            AND a.assessment_date BETWEEN
+                DATE_SUB(ss.start_date, INTERVAL {assessment_date_lookback_days} DAY)
+                AND {nonnull_end_date_exclusive_clause('ss.end_date')}
+    WHERE a.state_code = 'US_NE'
+        AND a.assessment_type = '{assessment_type}'
+    -- Within a single day, keep the latest assessment by sequence_num
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY a.person_id, a.assessment_date
+        ORDER BY a.sequence_num DESC
+    ) = 1
+),
+
+-- For multiple pre-start assessments mapping to the same supervision episode,
+-- keep only the latest one (it supersedes earlier pre-start assessments).
+-- No-op when assessment_date_lookback_days = 0.
+assessments_dedup AS (
+    SELECT *
+    FROM assessments
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY person_id, supervision_start_date, span_start
+        ORDER BY assessment_date DESC
+    ) = 1
+),
+
+critical_date_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        span_start AS start_datetime,
+        -- Span ends at the next assessment within this supervision episode,
+        -- or at the supervision episode end if no further assessment occurs.
+        IFNULL(
+            LEAD(span_start) OVER (
+                PARTITION BY person_id, supervision_start_date
+                ORDER BY span_start ASC
+            ),
+            supervision_end_date
+        ) AS end_datetime,
+        LAST_DAY(DATE_ADD(
+            assessment_date,
+            INTERVAL {reassessment_cadence_months} MONTH
+        )) AS critical_date,
+        assessment_date AS most_recent_assessment_date,
+    FROM assessments_dedup
+),
+
+{critical_date_has_passed_spans_cte(attributes=['most_recent_assessment_date'])}
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(
+        critical_date AS assessment_due_date,
+        most_recent_assessment_date,
+        FALSE AS is_first_assessment
+    )) AS reason,
+    critical_date AS assessment_due_date,
+    most_recent_assessment_date,
+    FALSE AS is_first_assessment,
+FROM critical_date_has_passed_spans
+"""
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        state_code=StateCode.US_NE,
+        description=description,
+        criteria_spans_query_template=query_template,
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="assessment_due_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=(
+                    f"Date by which the next {assessment_display_name} "
+                    f"reassessment is due (last day of "
+                    f"{reassessment_cadence_months} months after the prior "
+                    f"assessment)."
+                ),
+            ),
+            ReasonsField(
+                name="most_recent_assessment_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=f"Date of the most recent {assessment_display_name} "
+                "assessment.",
+            ),
+            ReasonsField(
+                name="is_first_assessment",
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description=(
+                    f"Indicator for first {assessment_display_name} assessment "
+                    "of supervision period. Always False for this reassessment "
+                    "criterion; the initial trigger criterion does not emit "
+                    "this field, so consumers should treat NULL/absent as True "
+                    "(initial assessment due)."
+                ),
+            ),
+        ],
+    )
 
 
 def supervision_oras_overrides_completion_event_query_template(
