@@ -4,7 +4,6 @@
 
 These apply to **every task** without exception:
 
-- **Python types**: Add type information to every function definition. Use modern types (`str | None` not `Optional[str]`). Avoid `Any` where reasonable.
 - **License headers**: Use the current year (e.g., `Copyright (C) 2026 Recidiviz, Inc.`) in new Python file headers. Look at recently created files for the correct format.
 - **No test imports in production**: Never import from `recidiviz/tests/` outside of `recidiviz/tests/`. Test utilities and constants must stay in test code.
 - **No obvious comments**: Don't add inline comments that explain things obvious from reading the code, or that are only meaningful in the current conversation context.
@@ -13,9 +12,17 @@ These apply to **every task** without exception:
 - **US_ID vs US_IX**: Idaho uses two state codes (`US_ID` and `US_IX`) that historically shared the same codebase and data infrastructure. If working in Idaho-related code, confirm with the user which state code applies before proceeding.
 - **GitHub CLI**: Use `gh` for all GitHub operations (PRs, issues, etc.) — it has authenticated access to the private repo.
 
-## Python Style
+### Python Style
 
+- **Python types**:
+  - Add type information to every function definition. Use modern types (`str | None` not `Optional[str]`). Avoid `Any` where reasonable.
+  - Do not give parameters or attributes nullable types (e.g. `str | None`) unless there is a legitimate, non-test use case to do so. If we always expect the non-test code to have a nonnull value, the type should be nonnull.
+  - Do not give parameters or attributes default values (e.g. `my_var: str | None = None` or `my_var: str | None = attr.ib(default=None)`) unless there is a legitimate, non-test use case to do so. Avoiding verbose test updates is an ANTI GOAL.
+- **Avoiding complexity**:
+  - If the type of a variable suggests it could have multiple values but you are certain it can only have a subset, do not add branches to handle the impossible cases. Instead, make your assumptions explicit with a runtime check: use `assert_type()` from `recidiviz.utils.types` (not `typing.assert_type`) for type narrowing, or raise a `ValueError` for other invariants. `assert_type()` returns the narrowed value, so you can chain directly (e.g. `assert_type(var, str).lower()` instead of adding a None-handling branch before accessing `var`).
+  - When accessing values in dictionaries, always use `[]` (e.g. `my_dict[key]`) instead of `.get()` unless there is a known, good reason why the key might not exist.
 - **Filesystem paths**: Derive paths from the nearest importable Python package (`os.path.dirname(module.__file__)`) rather than chaining relative `..` segments from `__file__`. For example, use `from recidiviz.ingest.direct import regions` and `os.path.dirname(regions.__file__)` instead of `os.path.join(os.path.dirname(__file__), "..", "..", "ingest", "direct", "regions")`.
+- **Imports**: Imports outside of top-level should be avoided unless absolutely necessary. If you feel the need to add one, ask the user and explain why. "Avoiding circular imports" is not a good reason - consider instead how you could restructure the code to avoid the circular import. Hiding an import inside a function to avoid updating the `validate_source_visibility` entrypoint allowlists is also not a good reason — update the allowlists to reflect the real dependency instead.
 
 ## Development Commands
 
