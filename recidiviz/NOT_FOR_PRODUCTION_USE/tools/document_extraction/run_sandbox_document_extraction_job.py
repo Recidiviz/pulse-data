@@ -573,6 +573,7 @@ def main(
     person_ids: list[int] | None = None,
     deploy_views: bool = True,
     deploy_views_only: bool = False,
+    label: tuple[str, str] | None = None,
 ) -> None:
     """Runs a document extraction job using sandbox datasets."""
 
@@ -605,6 +606,16 @@ def main(
             "  LLM job artifact GCS bucket: %s", sandbox_llm_job_artifact_bucket
         )
 
+    labels: dict[str, str] = {
+        "state_code": extractor.state_code.value.lower(),
+        "extractor_id": extractor.extractor_id.lower(),
+        "requester": os.environ.get("USER", "unknown"),
+    }
+    if label is not None:
+        labels[label[0]] = label[
+            1
+        ]  # merge optional --label KEY=VALUE alongside state_code
+
     # Initialize clients
     bq_client = BigQueryClientImpl()
     llm_client: FakeLLMClient | LiteLLMClient | LiteLLMBatchClient
@@ -615,6 +626,7 @@ def main(
         logging.info("Using LiteLLMClient for local concurrent processing")
         llm_client = LiteLLMClient(
             batches_gcs_bucket=sandbox_documents_bucket,
+            labels=labels,
         )
     elif mode == "batch":
         assert sandbox_llm_job_artifact_bucket is not None
@@ -624,7 +636,10 @@ def main(
             gcs_bucket=sandbox_llm_job_artifact_bucket,
             project=project_id(),
         )
-        llm_client = LiteLLMBatchClient(provider_delegate=provider_delegate)
+        llm_client = LiteLLMBatchClient(
+            provider_delegate=provider_delegate,
+            labels=labels,
+        )
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
@@ -813,6 +828,18 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
             "Useful for picking up view SQL changes without re-running the LLM."
         ),
     )
+    parser.add_argument(
+        "--label",
+        dest="label",
+        type=str,
+        default=None,
+        metavar="KEY=VALUE",
+        help=(
+            "Optional Vertex AI label in KEY=VALUE format added to each LLM "
+            "request so per-task costs are visible in the GCP billing export "
+            "(e.g., --label variant=flash-lite-thinking-off)."
+        ),
+    )
 
     # Subparsers for modes
     subparsers = parser.add_subparsers(
@@ -891,6 +918,14 @@ if __name__ == "__main__":
             sys.exit(1)
         person_id_list = [int(pid.strip()) for pid in known_args.person_ids.split(",")]
 
+    parsed_label: tuple[str, str] | None = None
+    if known_args.label:
+        if "=" not in known_args.label:
+            print("Error: --label must be in KEY=VALUE format")
+            sys.exit(1)
+        key, _, value = known_args.label.partition("=")
+        parsed_label = (key, value)
+
     with local_project_id_override(known_args.project_id):
         main(
             extractor_id=known_args.extractor_id,
@@ -906,4 +941,5 @@ if __name__ == "__main__":
             lookback_days=known_args.lookback_days,
             person_ids=person_id_list,
             deploy_views_only=known_args.deploy_views_only,
+            label=parsed_label,
         )

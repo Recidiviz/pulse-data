@@ -80,6 +80,7 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
         provider_delegate: LLMProviderDelegate,
         temperature: float = 0.001,
         max_output_tokens: int = 8192,
+        labels: dict[str, str] | None = None,
     ) -> None:
         """Initialize the LiteLLM Batch client.
 
@@ -88,10 +89,13 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                 (env vars, response parsing, file ID processing).
             temperature: Sampling temperature (0.0 = deterministic, 2.0 = random).
             max_output_tokens: Maximum number of tokens to generate per request.
+            labels: Optional Vertex AI labels added to each request so costs
+                appear in the GCP billing export.
         """
         self._provider_delegate = provider_delegate
         self._temperature = temperature
         self._max_output_tokens = max_output_tokens
+        self._labels = labels
 
         # Configure environment variables via the provider delegate
         for key, value in provider_delegate.get_env_vars().items():
@@ -129,6 +133,8 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
                     "type": "enabled",
                     "budget_tokens": request.thinking_budget,
                 }
+        if self._labels and self._provider_delegate.custom_llm_provider == "vertex_ai":
+            body["labels"] = self._labels
 
         # Add response format for structured output
         schema = request.output_schema.to_llm_json_schema()

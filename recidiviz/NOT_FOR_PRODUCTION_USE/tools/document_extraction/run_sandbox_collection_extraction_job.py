@@ -227,6 +227,7 @@ def main(
     active_in_compartment: str | None = None,
     lookback_days: int | None = None,
     person_ids: list[int] | None = None,
+    label: tuple[str, str] | None = None,
 ) -> None:
     """Runs extraction jobs for all extractors in a collection."""
     # Discover extractors for this collection
@@ -299,6 +300,7 @@ def main(
             lookback_days=lookback_days,
             person_ids=person_ids,
             deploy_views=False,
+            label=label,
         )
 
     # Step 3: Deploy all views at the end with a custom union
@@ -389,6 +391,18 @@ def parse_arguments(argv: list[str]) -> argparse.Namespace:
             "--sample_size, or --sample_entity_count_per_state."
         ),
     )
+    parser.add_argument(
+        "--label",
+        dest="label",
+        type=str,
+        default=None,
+        metavar="KEY=VALUE",
+        help=(
+            "Optional Vertex AI label in KEY=VALUE format added to each LLM "
+            "request so per-task costs are visible in the GCP billing export "
+            "(e.g., --label variant=flash-lite-thinking-off)."
+        ),
+    )
 
     # Subparsers for modes
     subparsers = parser.add_subparsers(
@@ -445,6 +459,14 @@ if __name__ == "__main__":
             sys.exit(1)
         person_id_list = [int(pid.strip()) for pid in known_args.person_ids.split(",")]
 
+    parsed_label: tuple[str, str] | None = None
+    if known_args.label:
+        if "=" not in known_args.label:
+            print("Error: --label must be in KEY=VALUE format")
+            sys.exit(1)
+        key, _, value = known_args.label.partition("=")
+        parsed_label = (key, value)
+
     with local_project_id_override(known_args.project_id):
         main(
             collection_name=known_args.collection_name,
@@ -460,4 +482,5 @@ if __name__ == "__main__":
             active_in_compartment=known_args.active_in_compartment,
             lookback_days=known_args.lookback_days,
             person_ids=person_id_list,
+            label=parsed_label,
         )

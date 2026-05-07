@@ -85,6 +85,7 @@ class LiteLLMClient(LLMClient, LLMResultReader):
         max_output_tokens: int = 8192,
         top_p: float = 1.0,
         batch_size: int = 10,
+        labels: dict[str, str] | None = None,
     ) -> None:
         """Initialize the LiteLLM client.
 
@@ -95,6 +96,8 @@ class LiteLLMClient(LLMClient, LLMResultReader):
             max_output_tokens: Maximum number of tokens to generate.
             top_p: Nucleus sampling parameter.
             batch_size: Number of concurrent async requests to process at once.
+            labels: Optional Vertex AI labels added to each request so costs
+                appear in the GCP billing export.
         """
         self._batches_gcs_bucket = batches_gcs_bucket
         self._batches_gcs_prefix = batches_gcs_prefix
@@ -102,6 +105,7 @@ class LiteLLMClient(LLMClient, LLMResultReader):
         self._max_output_tokens = max_output_tokens
         self._top_p = top_p
         self._batch_size = batch_size
+        self._labels = labels
         self._storage_client: storage.Client | None = None
         # Reuse the same event loop to avoid LiteLLM's logging queue issues
         self._event_loop: asyncio.AbstractEventLoop | None = None
@@ -227,6 +231,11 @@ class LiteLLMClient(LLMClient, LLMResultReader):
                     "type": "enabled",
                     "budget_tokens": request.thinking_budget,
                 }
+        if request.llm_provider == "vertex_ai":
+            labels = {**(self._labels or {}), "model": request.model}
+            if request.thinking_budget is not None:
+                labels["thinking_budget"] = str(request.thinking_budget)
+            completion_kwargs["labels"] = labels
 
         try:
             response = await acompletion(**completion_kwargs)
@@ -353,6 +362,7 @@ class LiteLLMClient(LLMClient, LLMResultReader):
         """
         # requests are not used here - they are reconstructed from
         # submitted_documents at result retrieval time.
+        self._labels = {**(self._labels or {}), "num_documents": str(len(requests))}
         _ = requests
         job_id = str(uuid.uuid4())
 
