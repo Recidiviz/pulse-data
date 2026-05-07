@@ -20,7 +20,7 @@ from typing import Optional, cast
 
 from opentelemetry.exporter.cloud_monitoring import CloudMonitoringMetricsExporter
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.metrics import get_meter_provider
+from opentelemetry.metrics import get_meter_provider, set_meter_provider
 from opentelemetry.resourcedetector.gcp_resource_detector import (
     GoogleCloudResourceDetector,
 )
@@ -59,10 +59,24 @@ def get_global_tracer_provider() -> TracerProvider:
 def get_global_meter_provider() -> MeterProvider:
     """Returns the globally-configured provider object that can be used to generate OpenTelemetry
     Meter objects (see https://opentelemetry-python.readthedocs.io/en/latest/api/metrics.html#module-opentelemetry.metrics)
+
+    If no SDK MeterProvider has been set, this lazily creates and sets one so
+    that metrics are exported rather than silently dropped.
     """
-    # A ProxyMeterProvider is returned when a global meter provider is not configured.
-    # It maintains the same interface, so cast it
-    return cast(MeterProvider, get_meter_provider())
+    provider = get_meter_provider()
+
+    # When a MeterProvider is not already set, get_meter_provider() returns a no-op
+    # _ProxyMeterProvider. The _ProxyMeterProvider is not an instance of the SDK
+    # MeterProvider class (opentelemetry.sdk.metrics.MeterProvider), which is distinct
+    # from the API MeterProvider type (opentelemetry.metrics.MeterProvider). Since we
+    # are checking for the SDK class in the isinstance check, we're properly identifying
+    # when we haven't yet initialized a meter provider.
+    # See test_default_meter_provider_is_not_sdk_type for a regression test guarding
+    # this assumption about the _ProxyMeterProvider.
+    if not isinstance(provider, MeterProvider):
+        provider = create_monitoring_meter_provider()
+        set_meter_provider(provider)
+    return provider
 
 
 def detect_resource() -> Resource:

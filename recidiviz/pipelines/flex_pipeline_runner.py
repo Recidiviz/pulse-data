@@ -22,9 +22,6 @@ import logging
 import sys
 from typing import List, Type
 
-from opentelemetry.metrics import set_meter_provider
-
-from recidiviz.monitoring.providers import create_monitoring_meter_provider
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 
@@ -57,10 +54,6 @@ def run_flex_pipeline(pipeline_name: str, argv: List[str]) -> None:
 # supplemental, ingest) to avoid needing to dynamically collect to use one
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-
-    # Enables opentelemetry metrics (e.g. unmapped enum counters) to be exported from
-    # Dataflow workers to Cloud Monitoring.
-    set_meter_provider(create_monitoring_meter_provider())
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
