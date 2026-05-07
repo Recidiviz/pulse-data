@@ -24,6 +24,9 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
+from recidiviz.calculator.query.sentence_sessions_query_fragments import (
+    metadata_date_expr,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -70,24 +73,6 @@ def _cap_span_end_at_date_expiration(
         f"LEAST({nonnull_end_date_clause(end_date_expr)}, "
         f"IFNULL(DATE_ADD({date_field}, INTERVAL {expiration_days} DAY), "
         f"{nonnull_end_date_clause(end_date_expr)}))"
-    )
-
-
-# TODO(#64715): Move this helper to a general location (e.g. bq_utils.py or
-# sentence_group_query_fragments.py) so other states can use it when migrating
-# to person_projected_date_sessions.
-def metadata_date_expr(field_name: str) -> str:
-    """Extracts a date from person_projected_date_sessions sentence_group_length_metadata JSON.
-
-    The metadata stores dates as DATETIME strings (e.g., '2026-09-23 12:00:00'),
-    so we need a double cast: DATETIME -> DATE.
-
-    Args:
-        field_name: The metadata key (e.g., 'tpr', 'ercd', 'csbd')
-    """
-    return (
-        f"SAFE_CAST(SAFE_CAST(JSON_VALUE(sentence_group_length_metadata, "
-        f"'$.state_specific_dates__{field_name}') AS DATETIME) AS DATE)"
     )
 
 

@@ -123,6 +123,13 @@ output:
                         # recorded. PRESENT_WITHOUT_INFO is the best fit: the
                         # charge exists but no meaningful status was provided.
                         - UNKN # Unknown (Conversion)
+                        # GU appears on a small number of rows that all have
+                        # NULL SENTENCEFINDINGDATE. Likely "Guilty" shorthand
+                        # (cf. FFGY = Guilty), but semantics unconfirmed;
+                        # bucketed with UNKN until clarified.
+                        # TODO(#75845): Confirm GU semantics with CO and
+                        # reclassify as CONVICTED if appropriate.
+                        - GU
                       StateChargeV2Status.INTERNAL_UNKNOWN:
                         - FFGI # NOT GUILTY INSANITY  # excluding from view since needs CONVICTED for pipeline
                         - NPRV # NOT PROVEN  # excluding from view since needs CONVICTED for pipeline
