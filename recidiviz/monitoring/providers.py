@@ -42,7 +42,7 @@ from opentelemetry.trace import get_tracer_provider
 
 from recidiviz.monitoring.keys import InstrumentEnum
 from recidiviz.monitoring.views import build_monitoring_views
-from recidiviz.utils.environment import in_development, in_test
+from recidiviz.utils.environment import in_ci, in_development, in_test
 
 CUSTOM_METRIC_NAMESPACE = "custom.googleapis.com/opencensus"
 
@@ -115,7 +115,7 @@ def create_monitoring_meter_provider(
             +-- instruments...
     """
     metric_reader: MetricReader
-    if in_development() or in_test():
+    if in_development() or in_test() or in_ci():
         if in_test():
             logging.warning(
                 "This tracer provider configuration is not suited for tests; Use OTLMock"
@@ -159,7 +159,7 @@ def create_monitoring_tracer_provider(
         - Span is the API to trace an operation.
     """
     span_exporter: SpanExporter
-    if in_development() or in_test():
+    if in_development() or in_test() or in_ci():
         if in_test():
             logging.warning(
                 "This meter provider configuration is not suited for tests; Use OTLMock"
