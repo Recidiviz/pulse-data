@@ -104,7 +104,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=33, col_offset=0
+                            filepath="r/utils/environment.py", lineno=32, col_offset=0
                         )
                     ],
                 },
@@ -283,13 +283,6 @@ class FileDependenciesTest(unittest.TestCase):
                         ),
                     ]
                 },
-                "importlib": {
-                    "recidiviz.utils.environment": [
-                        Callsite(
-                            filepath="r/utils/environment.py", lineno=30, col_offset=0
-                        )
-                    ]
-                },
                 "json": {
                     "recidiviz.utils.metadata": [
                         Callsite(
@@ -392,7 +385,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=31, col_offset=0
+                            filepath="r/utils/environment.py", lineno=30, col_offset=0
                         )
                     ],
                     "recidiviz.utils.metadata": [
@@ -491,7 +484,7 @@ class FileDependenciesTest(unittest.TestCase):
             "recidiviz.tests.tools.fixtures.example_dependency_entrypoint"
         )
         assert deps.sample_call_chain_for_module("recidiviz") == [
-            ("recidiviz.utils.environment", Callsite("r/utils/environment.py", 33, 0)),
+            ("recidiviz.utils.environment", Callsite("r/utils/environment.py", 32, 0)),
             ("recidiviz.utils.secrets", Callsite("r/utils/secrets.py", 28, 0)),
             (
                 "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",

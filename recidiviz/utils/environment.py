@@ -27,7 +27,6 @@ import os
 import sys
 from enum import Enum
 from functools import wraps
-from importlib.metadata import PackageNotFoundError, metadata
 from typing import Any, Callable, Optional
 
 import recidiviz
@@ -95,13 +94,14 @@ def in_cloud_run() -> bool:
 
 
 def in_dataflow_worker() -> bool:
-    """If the `pulse-dataflow-pipelines` package is installed,
-    we assume that the code is running in the Dataflow worker"""
-    try:
-        metadata("pulse-dataflow-pipelines")
-        return True
-    except PackageNotFoundError:
-        return False
+    """Returns True when running on a Dataflow worker.
+
+    The Apache Beam SDK harness creates a virtualenv whose path contains
+    "beam-venv" on every worker. A build-time assertion in
+    Dockerfile.pipelines validates that this check passes inside the
+    pipeline Docker image.
+    """
+    return "beam-venv" in os.environ.get("VIRTUAL_ENV", "")
 
 
 def in_airflow_kubernetes_pod() -> bool:
