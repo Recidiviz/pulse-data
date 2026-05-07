@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Run pre-import validations on a raw data temp table in BigQuery."""
+
 from concurrent import futures
 from datetime import datetime
 
@@ -34,17 +35,29 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
     BaseRawDataPreImportValidation,
+    RawDataBlockingValidationFailure,
+    RawDataNonBlockingValidationFailure,
     RawDataPreImportValidationError,
     RawDataPreImportValidationFailure,
 )
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation_collector import (
     RawDataPreImportValidationCollector,
 )
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
+)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 MAX_THREADS = 8
 DEFAULT_INITIAL_DELAY = 15.0  # 15 seconds
 DEFAULT_MAXIMUM_DELAY = 60.0 * 2  # 2 minutes, in seconds
 DEFAULT_TOTAL_TIMEOUT = 60.0 * 8  # 8 minutes, in seconds
+
+NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT: dict[
+    str, set[RawDataPreImportValidationType]
+] = {
+    GCP_PROJECT_PRODUCTION: set()  # TODO(#71014) Add RawDataPreImportValidationType.KNOWN_VALUES
+}
 
 
 class DirectIngestRawTablePreImportValidator:
@@ -110,9 +123,10 @@ class DirectIngestRawTablePreImportValidator:
         file_tag: str,
         file_update_datetime: datetime,
         temp_table_address: BigQueryAddress,
-    ) -> None:
-        """Run all applicable validation queries against the temp raw table in BigQuery and
-        raise a RawDataPreImportValidationError if any validations don't meet the success criteria.
+    ) -> list[RawDataNonBlockingValidationFailure]:
+        """Run all applicable validation queries against the temp raw table in BigQuery.
+        Raises a RawDataPreImportValidationError if any blocking validation failures are found;
+        otherwise returns a list of non-blocking validation failures.
         """
 
         validations_to_run: list[
@@ -129,5 +143,21 @@ class DirectIngestRawTablePreImportValidator:
 
         failures = self._execute_validation_queries_concurrently(validations_to_run)
 
-        if failures:
-            raise RawDataPreImportValidationError(file_tag, failures)
+        blocking_failures: list[RawDataBlockingValidationFailure] = []
+        non_blocking_failures: list[RawDataNonBlockingValidationFailure] = []
+        for failure in failures:
+            if (
+                self.project_id in NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT
+                and failure.validation_type
+                in NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT[self.project_id]
+            ):
+                non_blocking_failures.append(failure.to_non_blocking_failure())
+            else:
+                blocking_failures.append(failure.to_blocking_failure())
+
+        if blocking_failures:
+            raise RawDataPreImportValidationError(
+                file_tag, failures=blocking_failures, warnings=non_blocking_failures
+            )
+
+        return non_blocking_failures

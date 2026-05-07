@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Classes for raw table validations."""
+
 import abc
 import datetime
 from typing import Any, ClassVar, Optional
@@ -23,6 +24,7 @@ import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import escape_backslashes_for_query
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -36,11 +38,13 @@ from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
 
 @attr.define
 class RawDataPreImportValidationFailure:
-    """Represents a failure encountered while running a RawDataPreImportValidation"""
+    """Represents a failure encountered while running a RawDataPreImportValidation."""
 
-    validation_type: RawDataPreImportValidationType
-    validation_query: str
-    error_msg: str
+    validation_type: RawDataPreImportValidationType = attr.ib(
+        validator=attr.validators.in_(RawDataPreImportValidationType)
+    )
+    validation_query: str = attr.ib(validator=attr_validators.is_str)
+    error_msg: str = attr.ib(validator=attr_validators.is_str)
 
     def __str__(self) -> str:
         return (
@@ -48,6 +52,45 @@ class RawDataPreImportValidationFailure:
             f"\nValidation type: {self.validation_type.value}"
             f"\nValidation query: {self.validation_query}"
         )
+
+    def to_blocking_failure(self) -> "RawDataBlockingValidationFailure":
+        return RawDataBlockingValidationFailure(
+            validation_type=self.validation_type,
+            validation_query=self.validation_query,
+            error_msg=self.error_msg,
+        )
+
+    def to_non_blocking_failure(self) -> "RawDataNonBlockingValidationFailure":
+        return RawDataNonBlockingValidationFailure(
+            validation_type=self.validation_type,
+            validation_query=self.validation_query,
+            error_msg=self.error_msg,
+        )
+
+    def to_json(self) -> dict[str, str]:
+        return {
+            "validation_type": self.validation_type.value,
+            "validation_query": self.validation_query,
+            "error_msg": self.error_msg,
+        }
+
+    @classmethod
+    def from_json(cls, data: dict[str, str]) -> "RawDataPreImportValidationFailure":
+        return cls(
+            validation_type=RawDataPreImportValidationType(data["validation_type"]),
+            validation_query=data["validation_query"],
+            error_msg=data["error_msg"],
+        )
+
+
+@attr.define
+class RawDataBlockingValidationFailure(RawDataPreImportValidationFailure):
+    """Validation failure that should block the file import."""
+
+
+@attr.define
+class RawDataNonBlockingValidationFailure(RawDataPreImportValidationFailure):
+    """Validation failure that should not block the file import, but should be surfaced to monitoring."""
 
 
 @attr.dataclass
@@ -76,7 +119,7 @@ class BaseRawDataPreImportValidation:
         self, results: list[dict[str, Any]]
     ) -> RawDataPreImportValidationFailure | None:
         """Implemented by subclasses to determine if the query results should produce
-        an error.
+        a validation failure.
         """
 
     @abc.abstractmethod
@@ -94,7 +137,8 @@ class BaseRawDataPreImportValidation:
     @classmethod
     @abc.abstractmethod
     def create_validation(
-        cls, context: RawDataPreImportValidationContext
+        cls,
+        context: RawDataPreImportValidationContext,
     ) -> "BaseRawDataPreImportValidation":
         """Creates validation class instance."""
 
@@ -146,24 +190,32 @@ class RawDataColumnValidationMixin:
         return f"AND {column_name} NOT IN ({null_values_str})"
 
 
+@attr.define
 class RawDataPreImportValidationError(Exception):
-    """Raised when one or more pre-import validations fail for a given file tag."""
+    """Raised when one or more blocking pre-import validations fail for a given file tag."""
 
-    def __init__(
-        self, file_tag: str, failures: list[RawDataPreImportValidationFailure]
-    ):
-        self.file_tag = file_tag
-        self.failures = failures
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    # Validation failures that should block the file import.
+    failures: list[RawDataBlockingValidationFailure] = attr.ib(
+        validator=attr_validators.is_non_empty_list
+    )
+    # Validation warnings that should not block the file import but should be surfaced to monitoring.
+    warnings: list[RawDataNonBlockingValidationFailure] | None = attr.ib(
+        validator=attr_validators.is_opt_list, default=None
+    )
 
-    def __str__(self) -> str:
+    @property
+    def error_message(self) -> str:
+        # Warnings are surfaced separately from errors, so we only include blocking failures in the error message.
+        failure_messages = "\n\n".join([str(failure) for failure in self.failures])
         return (
             f"{len(self.failures)} pre-import validation(s) failed for file [{self.file_tag}]."
             f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
             " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
             " for a table-wide exemption or to pre_import_column_validation_exemptions"
             " for a column-specific exemption in the raw file config."
-            f"\n{self._get_failure_messages()}"
+            f"\n{failure_messages}"
         )
 
-    def _get_failure_messages(self) -> str:
-        return "\n\n".join([str(failure) for failure in self.failures])
+    def __str__(self) -> str:
+        return self.error_message

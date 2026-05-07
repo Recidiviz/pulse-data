@@ -47,7 +47,11 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawFileBigQueryLoadConfig,
 )
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataBlockingValidationFailure,
     RawDataPreImportValidationError,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -920,7 +924,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         with patch(
             "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.DirectIngestRawTablePreImportValidator.run_raw_data_temp_table_validations",
-            side_effect=RawDataPreImportValidationError(file_tag, failures=[]),
+            side_effect=RawDataPreImportValidationError(
+                file_tag,
+                failures=[
+                    RawDataBlockingValidationFailure(
+                        validation_type=RawDataPreImportValidationType.NONNULL_VALUES,
+                        validation_query="SELECT 1",
+                        error_msg="error",
+                    )
+                ],
+            ),
         ):
             with self.assertRaises(RawDataPreImportValidationError):
                 _ = self.manager.load_and_prep_paths(

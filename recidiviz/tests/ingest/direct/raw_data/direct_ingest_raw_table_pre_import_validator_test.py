@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for direct_ingest_raw_table_pre_import_validator.py."""
+
 import textwrap
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import attr
 
@@ -28,6 +29,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validat
     DirectIngestRawTablePreImportValidator,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnEnumValueInfo,
     ColumnUpdateInfo,
     ColumnUpdateOperation,
     DirectIngestRawFileConfig,
@@ -38,18 +40,23 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.raw_data.validations.known_values_validation import (
+    KnownValuesValidation,
+)
 from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_validation import (
     RAW_ROWS_MEDIAN_KEY,
     TEMP_TABLE_ROW_COUNT_KEY,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataNonBlockingValidationFailure,
     RawDataPreImportValidationError,
 )
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
     RawDataPreImportValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 
 class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
@@ -80,6 +87,10 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
+                    known_values=[
+                        ColumnEnumValueInfo(value="A", description="a"),
+                        ColumnEnumValueInfo(value="B", description="b"),
+                    ],
                 ),
                 # We should not run validations on columns that have since been deleted
                 # because we don't want to block import for issues with data that is no longer being used
@@ -139,10 +150,12 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         ]
         self.distinct_pks_job = MagicMock()
         self.nonnull_values_job = MagicMock()
+        self.known_values_job = MagicMock()
 
     def test_run_raw_table_validations_success(self) -> None:
         self.big_query_client.run_query_async.side_effect = [
             self.nonnull_values_job,
+            self.known_values_job,
             self.stable_counts_job,
             self.distinct_pks_job,
         ]
@@ -159,8 +172,8 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             self.file_tag, self.file_update_datetime, self.temp_table_address
         )
 
-        # should be called for distinct primary keys, historical stable counts and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 3)
+        # should be called for distinct primary keys, historical stable counts, non-null and known_values validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 4)
 
     def test_run_raw_table_validations_renamed_col(self) -> None:
         self.big_query_client.run_query_async.side_effect = [
@@ -220,6 +233,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         ]
         self.big_query_client.run_query_async.side_effect = [
             nonnull_values_job,
+            self.known_values_job,
             self.stable_counts_job,
             self.distinct_pks_job,
         ]
@@ -261,6 +275,50 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 self.file_tag, self.file_update_datetime, self.temp_table_address
             )
 
-        self.assertEqual(textwrap.dedent(str(context.exception)), expected_error_msg)
-        # should be called for distinct primary keys, historical stable counts and non-null validation for Col1
-        self.assertEqual(self.big_query_client.run_query_async.call_count, 3)
+        self.assertEqual(
+            textwrap.dedent(context.exception.error_message), expected_error_msg
+        )
+        # should be called for distinct primary keys, historical stable counts, non-null and known_values validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 4)
+
+    def test_run_raw_table_validations_returns_warnings_in_prod(self) -> None:
+        # In prod, known_values failures are non-blocking and get returned as warnings
+        # instead of raised.
+        known_values_failure_job = MagicMock()
+        known_values_failure_job.result.return_value = [
+            {"column_name": "Col1", "failed_values": ["UNEXPECTED"]}
+        ]
+        self.big_query_client.run_query_async.side_effect = [
+            self.nonnull_values_job,
+            known_values_failure_job,
+            self.stable_counts_job,
+            self.distinct_pks_job,
+        ]
+        validator = DirectIngestRawTablePreImportValidator(
+            project_id=GCP_PROJECT_PRODUCTION,
+            region_raw_file_config=self.region_raw_file_config,
+            region_code=self.region_code,
+            raw_data_instance=self.raw_data_instance,
+            big_query_client=self.big_query_client,
+        )
+
+        with patch.object(
+            KnownValuesValidation, "_get_relevancy_error_message", return_value=""
+        ), patch.dict(
+            # TODO(#71014) Remove this patch once KNOWN_VALUES is added to
+            # NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT for prod.
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator."
+            "NON_IMPORT_BLOCKING_VALIDATIONS_BY_PROJECT",
+            {GCP_PROJECT_PRODUCTION: {RawDataPreImportValidationType.KNOWN_VALUES}},
+        ):
+            warnings = validator.run_raw_data_temp_table_validations(
+                self.file_tag, self.file_update_datetime, self.temp_table_address
+            )
+
+        self.assertEqual(len(warnings), 1)
+        self.assertIsInstance(warnings[0], RawDataNonBlockingValidationFailure)
+        self.assertEqual(
+            warnings[0].validation_type, RawDataPreImportValidationType.KNOWN_VALUES
+        )
+        # should be called for distinct primary keys, historical stable counts, non-null and known_values validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 4)
