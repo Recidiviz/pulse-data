@@ -1612,6 +1612,45 @@ INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRA
     ),
 )
 
+INCARCERATION_ENDS = EventCountMetric(
+    name="incarceration_ends",
+    display_name="Incarceration Ends",
+    description="Incarceration ends",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_ENDS,
+        event_conditions_dict={},
+    ),
+)
+
+
+INCARCERATION_ENDS_OFFICIAL_RELEASES_NOT_DEATH = EventCountMetric(
+    name="incarceration_ends_official_releases_not_death",
+    display_name="Incarceration Ends (Official Releases, Not Death)",
+    description="Incarceration ends that are official releases and did not end in death",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_ENDS,
+        event_conditions_dict={
+            "is_official_release": ["true"],
+            "ended_in_death": ["false"],
+        },
+    ),
+)
+
+INCARCERATION_LENGTH_OF_STAY_BY_END = EventValueMetric(
+    name="incarceration_length_of_stay_by_end",
+    display_name="Incarceration Length of Stay by End",
+    description="Length of incarceration session ending in official release and not death, by end date",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_ENDS,
+        event_conditions_dict={
+            "is_official_release": ["true"],
+            "ended_in_death": ["false"],
+        },
+    ),
+    event_value_numeric="session_length_days",
+    event_count_metric=INCARCERATION_ENDS_OFFICIAL_RELEASES_NOT_DEATH,
+)
+
 INCARCERATIONS_TEMPORARY = EventCountMetric(
     name="incarceration_starts_temporary",
     display_name="Incarceration Starts, Temporary",
