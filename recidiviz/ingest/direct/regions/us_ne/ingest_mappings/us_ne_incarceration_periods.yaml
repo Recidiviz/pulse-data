@@ -111,6 +111,7 @@ output:
                 StateIncarcerationPeriodAdmissionReason.REVOCATION:
                   - PAROLE VIOLATOR
                   - RETURN FROM PRS # Post Release Supervision Return
+                  - PAROLE # only one instance of this from 1990
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
                   - CUSTODY CHANGE
                   - OUT OF STATE TRANSFER
