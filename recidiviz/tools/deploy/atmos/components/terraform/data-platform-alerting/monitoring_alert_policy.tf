@@ -1553,6 +1553,12 @@ resource "google_monitoring_metric_descriptor" "ingest_unmapped_enum_value" {
     value_type  = "STRING"
     description = "Name of the ingest view"
   }
+
+  labels {
+    key         = "opentelemetry_id"
+    value_type  = "STRING"
+    description = "Unique identifier added by CloudMonitoringMetricsExporter to avoid write rate limits"
+  }
 }
 
 resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeline" {
@@ -1569,7 +1575,7 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
       aggregations {
         alignment_period     = "3600s"
         cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["metric.label.region", "metric.label.enum_field_name", "metric.label.enum_type"]
+        group_by_fields      = ["resource.label.project_id", "metric.label.region", "metric.label.enum_field_name", "metric.label.enum_type"]
         per_series_aligner   = "ALIGN_RATE"
       }
 
@@ -1577,8 +1583,9 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
       # How long the threshold must be continuously violated before firing.
       # Must be non-zero when evaluation_missing_data is set (GCP API requirement).
       duration        = "60s"
+      # This alert fires within Dataflow workers which use resource.type = "gce_instance"
       filter          = <<-EOT
-        resource.type = "generic_node" AND metric.type = "custom.googleapis.com/opencensus/ingest.unmapped_enum_value"
+        resource.type = "gce_instance" AND metric.type = "custom.googleapis.com/opencensus/ingest.unmapped_enum_value"
       EOT
       threshold_value = "0"
 
@@ -1605,7 +1612,10 @@ resource "google_monitoring_alert_policy" "unmapped_enum_values_in_ingest_pipeli
   }
 
   enabled               = "true"
-  notification_channels = [google_monitoring_notification_channel.alerts.id]
+  notification_channels = [
+    google_monitoring_notification_channel.alerts.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
   project               = var.project_id
 }
 
