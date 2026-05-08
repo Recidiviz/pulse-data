@@ -90,9 +90,16 @@ def initial_review_dates_query() -> str:
             AND ms.MEDICAL_QUESTIONAIRE_CODE = 'PAR'
             AND ms.SCREEN_REASON_CODE = 'INITIAL'
             AND (ms.TEMP_UNIT_CODE IS NULL OR TEMP_UNIT_CODE = 'IRA')
-        -- The earliest initial review date that is in the future, including reassessments.
-        QUALIFY SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE) > CURRENT_DATE
-            AND ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE)) = 1
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY person_id
+            ORDER BY
+                -- Prefer future dates where they exist [1 (TRUE) > 0 (FALSE)]
+                (initial_review_date > CURRENT_DATE) DESC,
+                -- Among multiple future dates, pick the earliest
+                IF(initial_review_date > CURRENT_DATE, initial_review_date, NULL) ASC NULLS LAST,
+                -- Among multiple past dates, pick the latest
+                initial_review_date DESC
+        ) = 1
     """
 
 
