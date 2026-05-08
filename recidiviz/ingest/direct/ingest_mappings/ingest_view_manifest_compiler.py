@@ -230,6 +230,8 @@ class IngestViewManifestCompiler:
         and other info that will help us parse the result rows from this ingest view
         into entities.
         """
+        self.delegate.ingest_view_name = ingest_view_name
+
         manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
         manifest_dict = YAMLDict.from_path(manifest_path)
 

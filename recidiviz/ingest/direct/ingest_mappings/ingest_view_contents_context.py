@@ -35,10 +35,19 @@ class IngestViewContentsContext:
     TODO(#37799) Update the use of this to only work with `should_launch`, rather than generally.
     """
 
-    def __init__(self, is_local: bool, is_staging: bool, is_production: bool) -> None:
+    def __init__(
+        self,
+        is_local: bool,
+        is_staging: bool,
+        is_production: bool,
+        is_sandbox: bool,
+        state_code: str | None = None,
+    ) -> None:
         self.is_local = is_local
         self.is_staging = is_staging
         self.is_production = is_production
+        self.is_sandbox = is_sandbox
+        self.state_code = state_code
 
     def get_env_property(self, property_name: str) -> bool:
         """
@@ -65,10 +74,16 @@ class IngestViewContentsContext:
             # We run all views gated to staging in tests
             is_staging=True,
             is_production=False,
+            is_sandbox=False,
         )
 
     @classmethod
-    def build_for_project(cls, project_id: str) -> "IngestViewContentsContext":
+    def build_for_project(
+        cls,
+        project_id: str,
+        is_sandbox: bool,
+        state_code: str | None = None,
+    ) -> "IngestViewContentsContext":
         """Creates context for an ingest view that will be processed in an ingest
         pipeline running in the given project.
         """
@@ -76,4 +91,6 @@ class IngestViewContentsContext:
             is_local=False,
             is_staging=project_id == GCP_PROJECT_STAGING,
             is_production=project_id == GCP_PROJECT_PRODUCTION,
+            is_sandbox=is_sandbox,
+            state_code=state_code,
         )

@@ -39,7 +39,7 @@ from recidiviz.pipelines.transforms.generate_entities import GenerateEntities
 from recidiviz.tests.ingest.direct import fake_regions
 
 _CONTEXT = IngestViewContentsContext(
-    is_local=True, is_staging=False, is_production=False
+    is_local=True, is_staging=False, is_production=False, is_sandbox=False
 )
 
 _UPPER_BOUND = "2024-01-15T00:00:00"

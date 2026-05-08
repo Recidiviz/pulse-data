@@ -51,6 +51,10 @@ class IngestViewManifestCompilerDelegate:
     IngestViewManifestCompiler.
     """
 
+    # Set by IngestViewManifestCompiler.compile_manifest() so downstream code
+    # (e.g. EntityTreeManifest.build_from_row) can identify the current view.
+    ingest_view_name: str | None = None
+
     @abc.abstractmethod
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         """Returns the path to the ingest view manifest for a given ingest name."""

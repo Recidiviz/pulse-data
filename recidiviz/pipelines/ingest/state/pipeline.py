@@ -140,7 +140,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
         )
         ingest_view_context = IngestViewContentsContext.build_for_project(
-            project_id=self.pipeline_parameters.project
+            project_id=self.pipeline_parameters.project,
+            is_sandbox=self.pipeline_parameters.is_sandbox_pipeline,
+            state_code=state_code.value,
         )
         all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
             ingest_view_context

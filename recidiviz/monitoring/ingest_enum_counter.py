@@ -59,3 +59,31 @@ def log_unmapped_enum(
             AttributeKey.INGEST_VIEW_NAME: ingest_view_name,
         },
     )
+
+
+def emit_enum_mapping_heartbeat(
+    *,
+    state_code: str,
+    enum_cls: type,
+    field_name: str,
+    ingest_view_name: str,
+) -> None:
+    """Emits a counter.add(0) heartbeat for a single enum field.
+
+    This creates a rate=0 data point in Cloud Monitoring so the alert policy
+    evaluates to "no errors" for fields that had no unmapped values, instead
+    of seeing absent data (which with the default NO_OP missing-data policy
+    would leave any existing alert open).  For fields that *did* encounter
+    unmapped enums in the same run, the counter already incremented, so the
+    cumulative rate is still > 0 and the 0-add is harmless.
+    """
+    counter = get_monitoring_instrument(CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE)
+    counter.add(
+        0,
+        attributes={
+            AttributeKey.REGION: state_code,
+            AttributeKey.ENUM_TYPE: enum_cls.__name__,
+            AttributeKey.ENUM_FIELD_NAME: field_name,
+            AttributeKey.INGEST_VIEW_NAME: ingest_view_name,
+        },
+    )

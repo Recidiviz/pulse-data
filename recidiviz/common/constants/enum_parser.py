@@ -22,9 +22,9 @@ from typing import Callable, Dict, Generic, Optional, Set, Type, TypeVar
 class EnumParsingError(Exception):
     """Raised if an enum can't be built from the provided string."""
 
-    def __init__(self, cls: type, string_to_parse: str):
+    def __init__(self, cls: type[Enum], string_to_parse: str):
         msg = f"Could not parse {string_to_parse} when building {cls}"
-        self.entity_type = cls
+        self.entity_type: type[Enum] = cls
         self.string_to_parse = string_to_parse
         super().__init__(msg)
 

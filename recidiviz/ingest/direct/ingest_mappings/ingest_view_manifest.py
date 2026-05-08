@@ -212,6 +212,10 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # ignored by the mappings, the entire enum entity will be filtered out.
     filter_if_null_field: Optional[str] = attr.ib(default=None)
 
+    # The name of the ingest view that produced this manifest, used for alerting
+    # context when an enum field encounters an unmapped raw text value.
+    ingest_view_name: str | None = attr.ib(default=None)
+
     def __attrs_post_init__(self) -> None:
         common_args_defined_in_manifest = set(self.common_args).intersection(
             set(self.field_manifests)
@@ -238,10 +242,8 @@ class EntityTreeManifest(ManifestNode[EntityT]):
         for field_name, field_manifest in self.field_manifests.items():
             try:
                 field_value = field_manifest.build_from_row(row, context)
-            except EnumParsingError:  # pylint: disable=try-except-raise
-                # TODO(#71013): Suppress errors in prod and fire an alert
-                # once alerting functionality from #76819 is available.
-                raise
+            except EnumParsingError as e:
+                field_value = self._handle_enum_parsing_error(e, field_name, context)
 
             if field_value is None and field_name == self.filter_if_null_field:
                 # If there is a null value in this field, filter out the whole entity.
@@ -256,6 +258,43 @@ class EntityTreeManifest(ManifestNode[EntityT]):
             raise ValueError(f"Unexpected type for entity: [{type(entity)}]")
 
         return entity
+
+    def _handle_enum_parsing_error(
+        self,
+        error: EnumParsingError,
+        field_name: str,
+        context: IngestViewContentsContext,
+    ) -> Optional[Enum]:
+        """Attempts to fall back to INTERNAL_UNKNOWN for an unmapped enum value.
+
+        In production, falls back to INTERNAL_UNKNOWN and fires an alert via
+        log_unmapped_enum() so the team is notified about the missing mapping.
+        In staging and local environments, re-raises so unmapped values are
+        caught before they accumulate.
+        """
+        if context.is_production:
+            fallback = error.entity_type[entity_enum_strings.internal_unknown]
+            if not context.is_sandbox:
+                # TODO(#77262) Remove these asserts once state_code and
+                # ingest_view_name types are made non-optional.
+                assert context.state_code is not None
+                assert self.ingest_view_name is not None
+                # TODO(#77261) Move to top-level once the Airflow DAG import
+                # chain no longer pulls in this module.
+                from recidiviz.monitoring.ingest_enum_counter import (  # pylint: disable=import-outside-toplevel
+                    log_unmapped_enum,
+                )
+
+                log_unmapped_enum(
+                    state_code=context.state_code,
+                    enum_cls=error.entity_type,
+                    field_name=field_name,
+                    ingest_view_name=self.ingest_view_name,
+                    raw_text=error.string_to_parse,
+                )
+            return fallback
+
+        raise error
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return list(self.field_manifests.values())
@@ -441,6 +480,7 @@ class EntityTreeManifestFactory:
             filter_if_null_field=cls._get_filter_if_null_field(
                 entity_cls=entity_cls, delegate=delegate
             ),
+            ingest_view_name=delegate.ingest_view_name,
         )
 
     @staticmethod

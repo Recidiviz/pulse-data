@@ -56,7 +56,9 @@ class TestExemptions(unittest.TestCase):
                 )
                 all_launchable_views = (
                     ingest_manifest_collector.launchable_ingest_views(
-                        IngestViewContentsContext.build_for_project(project_id)
+                        IngestViewContentsContext.build_for_project(
+                            project_id, is_sandbox=False
+                        )
                     )
                 )
                 state_code_to_launchable_views[state_code].update(

@@ -22,6 +22,7 @@ import re
 import unittest
 from enum import Enum
 from typing import Dict, List, Optional, Type
+from unittest.mock import patch
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
@@ -236,6 +237,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         is_production: bool = False,
         is_staging: bool = False,
         is_local: bool = False,
+        is_sandbox: bool = False,
     ) -> List[Entity]:
         """Runs a single parsing test for a fixture ingest view with the given name,
         returning the parsed entities.
@@ -255,9 +257,11 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         ).parse_contents(
             contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
             context=IngestViewContentsContext(
-                is_production=is_production,
-                is_staging=is_staging,
                 is_local=is_local,
+                is_staging=is_staging,
+                is_production=is_production,
+                is_sandbox=is_sandbox,
+                state_code="US_XX",
             ),
         )
 
@@ -867,14 +871,104 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         ):
             _ = self._run_parse_for_ingest_view("enums_ignores_caps_mismatch")
 
+    def test_enum_parsing_ignores_caps_mismatch_prod_fallback(self) -> None:
+        # In production, unmapped enum values fall back to INTERNAL_UNKNOWN
+        # instead of crashing the pipeline.
+        parsed_output = self._run_parse_for_ingest_view(
+            "enums_ignores_caps_mismatch", is_production=True
+        )
+        self.assertEqual(
+            [
+                FakePerson(
+                    fake_state_code="US_XX",
+                    external_ids=[
+                        FakePersonExternalId(
+                            fake_state_code="US_XX",
+                            external_id="1",
+                            id_type="ID_TYPE",
+                        )
+                    ],
+                    gender=FakeGender.INTERNAL_UNKNOWN,
+                    gender_raw_text="X",
+                ),
+            ],
+            parsed_output,
+        )
+
     def test_enum_parsing_mappings_caps_mismatch(self) -> None:
         # Act
         with self.assertRaisesRegex(
-            # The expected FakeGender value is 'Male' and case must match
             EnumParsingError,
             "Could not parse MALE when building <enum 'FakeGender'>",
         ):
             _ = self._run_parse_for_ingest_view("enums_mappings_caps_mismatch")
+
+    def test_enum_parsing_mappings_caps_mismatch_prod_fallback(self) -> None:
+        # In production, unmapped enum values fall back to INTERNAL_UNKNOWN
+        # instead of crashing the pipeline.
+        parsed_output = self._run_parse_for_ingest_view(
+            "enums_mappings_caps_mismatch", is_production=True
+        )
+        self.assertEqual(
+            [
+                FakePerson(
+                    fake_state_code="US_XX",
+                    external_ids=[
+                        FakePersonExternalId(
+                            fake_state_code="US_XX",
+                            external_id="1",
+                            id_type="ID_TYPE",
+                        )
+                    ],
+                    gender=FakeGender.INTERNAL_UNKNOWN,
+                    gender_raw_text="MALE",
+                ),
+            ],
+            parsed_output,
+        )
+
+    @patch("recidiviz.monitoring.ingest_enum_counter.log_unmapped_enum")
+    def test_prod_fallback_calls_log_unmapped_enum(
+        self, mock_log: unittest.mock.MagicMock
+    ) -> None:
+        self._run_parse_for_ingest_view(
+            "enums_mappings_caps_mismatch", is_production=True
+        )
+        mock_log.assert_called_once_with(
+            state_code="US_XX",
+            enum_cls=FakeGender,
+            field_name="gender",
+            ingest_view_name="enums_mappings_caps_mismatch",
+            raw_text="MALE",
+        )
+
+    @patch("recidiviz.monitoring.ingest_enum_counter.log_unmapped_enum")
+    def test_sandbox_prod_fallback_skips_log_unmapped_enum(
+        self, mock_log: unittest.mock.MagicMock
+    ) -> None:
+        """Sandbox pipelines on prod should still fall back to INTERNAL_UNKNOWN
+        but should NOT emit metrics that could interfere with production alerts."""
+        parsed_output = self._run_parse_for_ingest_view(
+            "enums_mappings_caps_mismatch", is_production=True, is_sandbox=True
+        )
+        self.assertEqual(
+            [
+                FakePerson(
+                    fake_state_code="US_XX",
+                    external_ids=[
+                        FakePersonExternalId(
+                            fake_state_code="US_XX",
+                            external_id="1",
+                            id_type="ID_TYPE",
+                        )
+                    ],
+                    gender=FakeGender.INTERNAL_UNKNOWN,
+                    gender_raw_text="MALE",
+                ),
+            ],
+            parsed_output,
+        )
+        mock_log.assert_not_called()
 
     def test_simple_enum_entity_parsing(self) -> None:
         expected_output = [

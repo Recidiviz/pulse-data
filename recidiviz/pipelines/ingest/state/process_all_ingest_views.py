@@ -27,8 +27,15 @@ from recidiviz.ingest.direct.gating import RAW_DATA_TABLES_ALLOWED_EMPTY_BY_INGE
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
+    EntityTreeManifest,
+    EnumMappingManifest,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifest,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
@@ -40,6 +47,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.monitoring.ingest_enum_counter import emit_enum_mapping_heartbeat
+from recidiviz.monitoring.providers import get_global_meter_provider
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.state.constants import (
@@ -74,7 +83,9 @@ class ProcessAllIngestViews(beam.PTransform):
         state_code = StateCode(self.pipeline_parameters.state_code.upper())
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
         ingest_view_context = IngestViewContentsContext.build_for_project(
-            project_id=self.pipeline_parameters.project
+            project_id=self.pipeline_parameters.project,
+            is_sandbox=self.pipeline_parameters.is_sandbox_pipeline,
+            state_code=state_code.value,
         )
 
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -195,7 +206,55 @@ class ProcessAllIngestViews(beam.PTransform):
         merged_root_entities_with_dates: beam.PCollection[
             Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
         ] = (merged_root_entities_with_dates_per_ingest_view.values() | beam.Flatten())
+
+        # Emit counter.add(0) heartbeats for all enum fields so that the alert
+        # policy sees rate=0 for fields with no unmapped values (rather than
+        # absent data, which would leave existing alerts open). Chained after
+        # the merged_root_entities_with_dates result so it runs at the very end
+        # with a beam.combiners.Count.Globally that makes sure the
+        # merged_root_entities_with_dates is completely hydrated before we fire
+        # the heartbeats. Otherwise a zero-count flush could prematurely
+        # resolve an active alert.
+        if not self.pipeline_parameters.is_sandbox_pipeline:
+            manifests_for_views_to_run = {
+                name: ingest_manifest_collector.ingest_view_to_manifest[name]
+                for name in ingest_views_to_run
+            }
+            _ = (
+                merged_root_entities_with_dates
+                | "Wait for all parsing to complete" >> beam.combiners.Count.Globally()
+                | "Emit enum mapping heartbeats"
+                >> beam.Map(
+                    lambda _, sc=state_code.value, m=manifests_for_views_to_run: _emit_heartbeats_and_flush(
+                        sc, m
+                    ),
+                )
+            )
+
         return merged_root_entities_with_dates
+
+
+def _emit_heartbeats_and_flush(
+    state_code: str,
+    manifests_for_views_to_run: dict[str, IngestViewManifest],
+) -> None:
+    """Emits counter.add(0) heartbeats for all enum fields, then flushes the
+    meter provider to ensure metrics are exported before the worker shuts down."""
+    for ingest_view_name, manifest in manifests_for_views_to_run.items():
+        for entity_node in manifest.output.all_nodes_referenced_with_type(
+            EntityTreeManifest
+        ):
+            for field_name, field_manifest in entity_node.field_manifests.items():
+                for enum_manifest in field_manifest.all_nodes_referenced_with_type(
+                    EnumMappingManifest
+                ):
+                    emit_enum_mapping_heartbeat(
+                        state_code=state_code,
+                        enum_cls=enum_manifest.result_type,
+                        field_name=field_name,
+                        ingest_view_name=ingest_view_name,
+                    )
+    get_global_meter_provider().force_flush()
 
 
 class _ClearAllSkippedIngestViews(beam.PTransform):

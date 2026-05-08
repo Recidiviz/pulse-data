@@ -68,9 +68,10 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
     def test_launchable_ingest_views(self) -> None:
         result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
             IngestViewContentsContext(
-                is_production=False,
-                is_staging=True,
                 is_local=False,
+                is_staging=True,
+                is_production=False,
+                is_sandbox=False,
             )
         )
         self.assertListEqual(
@@ -79,9 +80,10 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
         )
         result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
             IngestViewContentsContext(
-                is_production=True,
-                is_staging=False,
                 is_local=False,
+                is_staging=False,
+                is_production=True,
+                is_sandbox=False,
             )
         )
         self.assertListEqual(
@@ -91,9 +93,10 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
 
         result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
             IngestViewContentsContext(
-                is_production=False,
-                is_staging=True,
                 is_local=False,
+                is_staging=True,
+                is_production=False,
+                is_sandbox=False,
             )
         )
         self.assertListEqual(

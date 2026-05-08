@@ -282,7 +282,9 @@ def verify_ingest_view_determinism(
     launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
         # Since this is a script run locally, we use the context for the specified
         # project so that we don't include local-only views.
-        IngestViewContentsContext.build_for_project(project_id=metadata.project_id()),
+        IngestViewContentsContext.build_for_project(
+            project_id=metadata.project_id(), is_sandbox=False
+        ),
     )
 
     view_query_builders = DirectIngestViewQueryBuilderCollector(

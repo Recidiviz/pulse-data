@@ -179,7 +179,9 @@ def parse_results(
         ).parse_contents(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
-            context=IngestViewContentsContext.build_for_project(metadata.project_id()),
+            context=IngestViewContentsContext.build_for_project(
+                metadata.project_id(), is_sandbox=False
+            ),
         )
 
         progress.close()

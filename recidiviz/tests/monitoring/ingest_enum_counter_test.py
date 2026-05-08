@@ -22,7 +22,10 @@ from typing import cast
 from more_itertools import one
 from opentelemetry.sdk.metrics.export import NumberDataPoint, Sum
 
-from recidiviz.monitoring.ingest_enum_counter import log_unmapped_enum
+from recidiviz.monitoring.ingest_enum_counter import (
+    emit_enum_mapping_heartbeat,
+    log_unmapped_enum,
+)
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 
@@ -130,3 +133,66 @@ class LogUnmappedEnumTest(unittest.TestCase):
             points_by_region["US_YY"].attributes[AttributeKey.ENUM_FIELD_NAME],
             "field_b",
         )
+
+
+class EmitEnumMappingHeartbeatTest(unittest.TestCase):
+    """Tests for emit_enum_mapping_heartbeat()."""
+
+    def setUp(self) -> None:
+        self.otl_mock = OTLMock()
+        self.otl_mock.set_up()
+
+    def tearDown(self) -> None:
+        self.otl_mock.tear_down()
+
+    def test_emits_zero_with_correct_attributes(self) -> None:
+        emit_enum_mapping_heartbeat(
+            state_code="US_XX",
+            enum_cls=_FakeEnum,
+            field_name="my_enum_field",
+            ingest_view_name="my_ingest_view",
+        )
+
+        metric_data = cast(
+            Sum,
+            self.otl_mock.get_metric_data(
+                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+            ),
+        )
+        data_point: NumberDataPoint = one(metric_data.data_points)
+
+        self.assertEqual(data_point.value, 0)
+        self.assertEqual(
+            data_point.attributes,
+            {
+                AttributeKey.REGION: "US_XX",
+                AttributeKey.ENUM_TYPE: "_FakeEnum",
+                AttributeKey.ENUM_FIELD_NAME: "my_enum_field",
+                AttributeKey.INGEST_VIEW_NAME: "my_ingest_view",
+            },
+        )
+
+    def test_heartbeat_does_not_overwrite_real_counter(self) -> None:
+        log_unmapped_enum(
+            state_code="US_XX",
+            enum_cls=_FakeEnum,
+            field_name="my_field",
+            ingest_view_name="my_view",
+            raw_text="BAD_VALUE",
+        )
+
+        emit_enum_mapping_heartbeat(
+            state_code="US_XX",
+            enum_cls=_FakeEnum,
+            field_name="my_field",
+            ingest_view_name="my_view",
+        )
+
+        metric_data = cast(
+            Sum,
+            self.otl_mock.get_metric_data(
+                metric_name=CounterInstrumentKey.INGEST_UNMAPPED_ENUM_VALUE
+            ),
+        )
+        data_point: NumberDataPoint = one(metric_data.data_points)
+        self.assertEqual(data_point.value, 1)

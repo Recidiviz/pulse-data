@@ -286,6 +286,7 @@ def main() -> int:
                     "recidiviz.calculator.query.bq_utils",
                     "recidiviz.ingest",
                     "recidiviz.metrics.metric_big_query_view",
+                    "recidiviz.monitoring",
                     "recidiviz.persistence",
                 }
             )
@@ -312,6 +313,9 @@ def main() -> int:
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",
+        # TODO(#77261) Remove once lazy import in ingest_view_manifest.py is
+        # moved to top-level.
+        "recidiviz.monitoring",
         "recidiviz.persistence.database",
         "recidiviz.persistence.entity",
         "recidiviz.persistence.entity.state.state_entity_utils",
