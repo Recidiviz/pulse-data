@@ -429,6 +429,7 @@ output:
                         - Federal Custody
                       StateSupervisionLevel.LIMITED:
                         - Limited Supervision
+                        - Limited Supervision - Est
                       StateSupervisionLevel.MINIMUM:
                         - Level 1
                         - Low
@@ -466,6 +467,7 @@ output:
                         - ICE Detainer
                         - Federal Custody
                         - Limited Supervision
+                        - Limited Supervision - Est
                         - Level 1
                         - Low
                         - Minimum
