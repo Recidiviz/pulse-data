@@ -140,6 +140,7 @@ output:
           StateResidencyStatus.TRANSIENT:
             - "Temporary"
             - "Shelter Transient"
+            - "Submitted Residence Transient"
           StateResidencyStatus.INTERNAL_UNKNOWN:
             - "Local Jail"
             - "Federal Custody"
