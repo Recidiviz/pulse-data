@@ -73,6 +73,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                 {
                     "address": "123 Fake st., Faketown, TN 12345",
                     "allEligibleOpportunities": ["compliantReporting"],
+                    "allIneligibleOpportunities": ["usTnExpiration"],
                     "currentBalance": 45.1,
                     "expirationDate": "2022-02-28",
                     "lastPaymentAmount": 10.25,
@@ -205,6 +206,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
                     "allEligibleOpportunities": ["supervisionLevelDowngrade"],
+                    "allIneligibleOpportunities": ["usTnExpiration"],
                     "milestones": [
                         {
                             "type": "MONTHS_WITHOUT_VIOLATION",

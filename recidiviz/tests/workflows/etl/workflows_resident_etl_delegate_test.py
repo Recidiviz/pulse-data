@@ -106,6 +106,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                     "allEligibleOpportunities": [
                         "usMoOverdueRestrictiveHousingReviewHearing"
                     ],
+                    "allIneligibleOpportunities": ["usMoWorkRelease"],
                     "usTnFacilityAdmissionDate": None,
                     "usMePortionNeededEligibleDate": None,
                 },
@@ -147,6 +148,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                         "usMeWorkRelease",
                         "usMeFurloughRelease",
                     ],
+                    "allIneligibleOpportunities": None,
                     "usTnFacilityAdmissionDate": None,
                 },
                 row,
@@ -186,6 +188,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                         "usMeWorkRelease",
                         "usMeFurloughRelease",
                     ],
+                    "allIneligibleOpportunities": None,
                     "usTnFacilityAdmissionDate": None,
                 },
                 row,
@@ -223,6 +226,9 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                     },
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
+                    "allIneligibleOpportunities": [
+                        "usTnAnnualReclassification2026Policy"
+                    ],
                     "usTnFacilityAdmissionDate": None,
                     "usMePortionNeededEligibleDate": None,
                 },
@@ -264,6 +270,10 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": [
                         "usMoOverdueRestrictiveHousingReviewHearing"
+                    ],
+                    "allIneligibleOpportunities": [
+                        "usMoWorkRelease",
+                        "usMoOutsideClearance",
                     ],
                     "usTnFacilityAdmissionDate": None,
                     "usMePortionNeededEligibleDate": None,
