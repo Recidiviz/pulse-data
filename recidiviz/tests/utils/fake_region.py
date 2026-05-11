@@ -17,8 +17,7 @@
 """Helpers for creating fake regions for use in tests."""
 from types import ModuleType
 from typing import Optional
-
-from mock import create_autospec
+from unittest.mock import create_autospec
 
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 
@@ -29,6 +28,8 @@ def fake_region(
     environment: str = "local",
     region_module: Optional[ModuleType] = None,
     playground: bool = False,
+    has_launchable_ingest_views_in_staging: bool = True,
+    has_launchable_ingest_views_in_production: bool = True,
 ) -> DirectIngestRegion:
     """Fake Region Object"""
     region = create_autospec(DirectIngestRegion)
@@ -36,11 +37,22 @@ def fake_region(
     region.environment = environment
     region.region_module = region_module
     region.playground = playground
+    region.has_launchable_ingest_views_in_staging = (
+        has_launchable_ingest_views_in_staging
+    )
+    region.has_launchable_ingest_views_in_production = (
+        has_launchable_ingest_views_in_production
+    )
 
     def fake_is_launched_in_env() -> bool:
         return DirectIngestRegion.is_ingest_launched_in_env(region)
 
     region.is_ingest_launched_in_env = fake_is_launched_in_env
+
+    def fake_has_launchable_ingest_views(project_id: str) -> bool:
+        return DirectIngestRegion.has_launchable_ingest_views(region, project_id)
+
+    region.has_launchable_ingest_views = fake_has_launchable_ingest_views
 
     return region
 

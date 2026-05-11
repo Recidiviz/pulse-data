@@ -560,15 +560,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             return_value=_PROJECT_ID,
         )
         self.metadata_patcher.start()
-        self.manifest_collector_patcher = patch(
-            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.IngestViewManifestCollector",
-            autospec=True,
-        )
-        self.mock_manifest_collector = self.manifest_collector_patcher.start()
-        self.mock_manifest_collector.return_value.launchable_ingest_views.return_value = [
-            MagicMock()
-        ]
-
         self.found_pipelines_to_fail: list[tuple[StateCode, str]] = []
 
     def tearDown(self) -> None:
@@ -586,7 +577,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.product_configs_patcher.stop()
         self.direct_ingest_regions_patcher.stop()
         self.metadata_patcher.stop()
-        self.manifest_collector_patcher.stop()
 
     def _mock_fail_dataflow_pipeline(
         self, state_code: StateCode, pipeline_name: str

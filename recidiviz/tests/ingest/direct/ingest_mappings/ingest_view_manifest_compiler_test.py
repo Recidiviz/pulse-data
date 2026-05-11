@@ -927,7 +927,9 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             parsed_output,
         )
 
-    @patch("recidiviz.monitoring.ingest_enum_counter.log_unmapped_enum")
+    @patch(
+        "recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest.log_unmapped_enum"
+    )
     def test_prod_fallback_calls_log_unmapped_enum(
         self, mock_log: unittest.mock.MagicMock
     ) -> None:
@@ -942,7 +944,9 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             raw_text="MALE",
         )
 
-    @patch("recidiviz.monitoring.ingest_enum_counter.log_unmapped_enum")
+    @patch(
+        "recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest.log_unmapped_enum"
+    )
     def test_sandbox_prod_fallback_skips_log_unmapped_enum(
         self, mock_log: unittest.mock.MagicMock
     ) -> None:

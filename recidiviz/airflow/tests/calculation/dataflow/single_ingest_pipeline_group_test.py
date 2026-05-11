@@ -52,6 +52,7 @@ from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.types import assert_type
 
@@ -285,13 +286,14 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(test_dag, session)
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    @patch(
-        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.IngestViewManifestCollector",
-    )
-    def test_ingest_pipeline_should_run_in_dag_false(
-        self, mock_manifest_collector: MagicMock
-    ) -> None:
-        mock_manifest_collector.return_value.launchable_ingest_views.return_value = []
+    def test_ingest_pipeline_should_run_in_dag_false(self) -> None:
+        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+            lambda region_code: fake_region(
+                region_code=region_code,
+                has_launchable_ingest_views_in_staging=False,
+                has_launchable_ingest_views_in_production=False,
+            )
+        )
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(

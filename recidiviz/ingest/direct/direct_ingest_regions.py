@@ -54,6 +54,8 @@ class DirectIngestRegion:
 
     region_code: str = attr.ib(converter=str_to_lowercase_str)
     agency_name: str = attr.ib()
+    has_launchable_ingest_views_in_staging: bool = attr.ib()
+    has_launchable_ingest_views_in_production: bool = attr.ib()
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
     playground: Optional[bool] = attr.ib(default=False)
@@ -80,6 +82,14 @@ class DirectIngestRegion:
             )
             or not self.playground
         )
+
+    def has_launchable_ingest_views(self, project_id: str) -> bool:
+        """Returns whether this region has any ingest views that are launchable
+        in the given project (staging or production).
+        """
+        if project_id == GCP_PROJECT_PRODUCTION:
+            return self.has_launchable_ingest_views_in_production
+        return self.has_launchable_ingest_views_in_staging
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current

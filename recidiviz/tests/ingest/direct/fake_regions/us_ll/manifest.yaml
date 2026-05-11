@@ -1,3 +1,5 @@
 agency_name: unknown
 environment: production
 playground: False
+has_launchable_ingest_views_in_staging: true
+has_launchable_ingest_views_in_production: true

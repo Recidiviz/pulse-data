@@ -1,2 +1,4 @@
 agency_name: California Department of Corrections and Rehabilitation
 environment: production
+has_launchable_ingest_views_in_staging: true
+has_launchable_ingest_views_in_production: true

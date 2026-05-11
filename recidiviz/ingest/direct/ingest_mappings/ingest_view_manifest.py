@@ -59,6 +59,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegate,
 )
+from recidiviz.monitoring.ingest_enum_counter import log_unmapped_enum
 from recidiviz.persistence.entity.base_entity import Entity, EntityT, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
@@ -275,12 +276,6 @@ class EntityTreeManifest(ManifestNode[EntityT]):
         if context.is_production:
             fallback = error.entity_type[entity_enum_strings.internal_unknown]
             if not context.is_sandbox:
-                # TODO(#77261) Move to top-level once the Airflow DAG import
-                # chain no longer pulls in this module.
-                from recidiviz.monitoring.ingest_enum_counter import (  # pylint: disable=import-outside-toplevel
-                    log_unmapped_enum,
-                )
-
                 log_unmapped_enum(
                     state_code=context.state_code.value,
                     enum_cls=error.entity_type,

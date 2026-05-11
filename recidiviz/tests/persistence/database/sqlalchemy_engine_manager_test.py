@@ -95,7 +95,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Pretend all secret values are just the key suffixed with '_value'
         mock_get_secret.side_effect = lambda key: f"{key}_value"
         mock_get_region.side_effect = lambda key: DirectIngestRegion(
-            region_code=key, agency_name=key
+            region_code=key,
+            agency_name=key,
+            has_launchable_ingest_views_in_staging=True,
+            has_launchable_ingest_views_in_production=True,
         )
 
         # Act

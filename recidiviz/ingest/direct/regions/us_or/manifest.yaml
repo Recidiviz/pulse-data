@@ -1,2 +1,4 @@
 agency_name: ODOC
 environment: staging
+has_launchable_ingest_views_in_staging: false
+has_launchable_ingest_views_in_production: false
