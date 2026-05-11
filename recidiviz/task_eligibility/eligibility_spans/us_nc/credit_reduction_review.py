@@ -119,13 +119,19 @@ _DRUG_SCREEN_OK_FOR_CRR_VIEW_BUILDER = StateAgnosticTaskCriteriaGroupBigQueryVie
         _NEGATIVE_DRUG_SCREEN_WITHIN_30_DAYS_VIEW_BUILDER,
         not_most_recent_drug_test_is_within_30_days.VIEW_BUILDER,
     ],
-    # this key is provided by the most_recent_drug_test_is_within_30_days criteria,
+    # these keys are provided by the most_recent_drug_test_is_within_30_days criteria,
     # which is used in the _NEGATIVE_DRUG_SCREEN_WITHIN_30_DAYS_VIEW_BUILDER and
     # used (with it's logic inverted) in the
-    # _not_most_recent_drug_test_is_within_30_days. The value is the same in both
-    # cases, we can take either
-    allowed_duplicate_reasons_keys=["most_recent_positive_test_date"],
-    reasons_aggregate_function_override={"most_recent_positive_test_date": "ANY_VALUE"},
+    # _not_most_recent_drug_test_is_within_30_days. The values in the reasons blob are
+    # the same in both cases, we can take either.
+    allowed_duplicate_reasons_keys=[
+        "most_recent_positive_test_date",
+        "at_least_30_days_since_drug_screen",
+    ],
+    reasons_aggregate_function_override={
+        "most_recent_positive_test_date": "ANY_VALUE",
+        "at_least_30_days_since_drug_screen": "ANY_VALUE",
+    },
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(

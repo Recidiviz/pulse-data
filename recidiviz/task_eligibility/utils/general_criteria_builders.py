@@ -114,6 +114,7 @@ def at_least_X_time_since_drug_screen(
         StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder object for the criteria view
     """
 
+    reasons_key = f"at_least_{date_interval}_{date_part.lower()}s_since_drug_screen"
     query_template = f"""WITH drug_test_sessions_cte AS
     (
         SELECT
@@ -169,8 +170,14 @@ def at_least_X_time_since_drug_screen(
         -- Note, this criteria builder actually works for any specified relevant test - positive or negative - 
         -- so this reason name is not 100% accurate. 
         -- TODO(#39094): update reasons blob and ensure downstream references don't break
-        TO_JSON(STRUCT(latest_drug_screen_date AS most_recent_positive_test_date)) AS reason,
+        TO_JSON(
+            STRUCT(
+                latest_drug_screen_date AS most_recent_positive_test_date, 
+                meets_criteria AS {reasons_key}
+            )
+        ) AS reason,
         latest_drug_screen_date AS most_recent_positive_test_date,
+        meets_criteria AS {reasons_key}
     FROM sessionized_cte
     """
 
@@ -185,7 +192,12 @@ def at_least_X_time_since_drug_screen(
                 name="most_recent_positive_test_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date of most recent positive drug test",
-            )
+            ),
+            ReasonsField(
+                name=reasons_key,
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="If this criteria is true or false.",
+            ),
         ],
     )
 
