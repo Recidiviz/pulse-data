@@ -19,6 +19,12 @@ month that we have validation data.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_spans import (
     VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
@@ -37,6 +43,24 @@ VALIDATION_DISTINCT_HARD_FAILURES_DESCRIPTION = (
     "Computes number of distinct hard failures for each month. If a hard failure spans "
     "multiple months, it will be added once to each month that is is failing."
 )
+
+VALIDATION_DISTINCT_HARD_FAILURES_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    Date(
+        name="failure_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="distinct_failures",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = """
 WITH 
@@ -100,6 +124,7 @@ VALIDATION_DISTINCT_HARD_FAILURES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=VALIDATION_DISTINCT_HARD_FAILURES_VIEW_ID,
     description=VALIDATION_DISTINCT_HARD_FAILURES_DESCRIPTION,
+    schema=VALIDATION_DISTINCT_HARD_FAILURES_SCHEMA,
     validation_results_dataset=VALIDATION_RESULTS_DATASET_ID,
     validations_completion_tracker_table_id=VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS.table_id,
     platform_kpis_dataset=PLATFORM_KPIS_DATASET,

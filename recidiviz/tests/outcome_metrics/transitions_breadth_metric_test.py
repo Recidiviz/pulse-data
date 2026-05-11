@@ -66,6 +66,22 @@ class TransitionsBreadthMetricForYearTest(SimpleBigQueryViewBuilderTestCase):
             ],
         }
 
+    def test_schema(self) -> None:
+        view = self.view_builder.build()
+        assert view.schema is not None
+        col_info = [(c.name, c.field_type, c.mode) for c in view.schema]
+        self.assertEqual(
+            col_info,
+            [
+                ("metric_month", "DATE", "NULLABLE"),
+                ("system_type", "STRING", "NULLABLE"),
+                ("weight_factor", "STRING", "NULLABLE"),
+                ("delta_direction_factor", "STRING", "NULLABLE"),
+                ("transitions", "INTEGER", "NULLABLE"),
+                ("new_transitions_added_via_launch", "INTEGER", "NULLABLE"),
+            ],
+        )
+
     def test_breadth_for_tool_launched_prior_to_metric_year(self) -> None:
         impact_transition_observations = [
             {

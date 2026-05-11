@@ -24,6 +24,12 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Integer,
+    Record,
+    String,
+)
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.attr_utils import is_optional_type
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
@@ -56,6 +62,46 @@ NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_DESCRIPTION = (
     "as of the last view update. To see an archival version of this view, see "
     "`hydration_archive.normalized_state_hydration_archive`."
 )
+
+NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    String(
+        name="table_name",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="entity_count",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Record(
+        name="column_hydration_counts",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REPEATED",
+        fields=[
+            String(
+                name="column_name",
+                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                mode="NULLABLE",
+            ),
+            Integer(
+                name="hydrated_count",
+                description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+                mode="NULLABLE",
+            ),
+        ],
+    ),
+    Integer(
+        name="column_hydration_score",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 SINGLE_COLUMN_COUNT_TEMPLATE = """          STRUCT('{column_name}' AS column_name, COUNTIF({column_name} IS NOT NULL) AS hydrated_count)"""
 COLUMN_HYDRATION_SCORE_TEMPLATE = """1 + (SELECT COUNTIF(col.column_name in ({column_hydration_to_count}) and col.hydrated_count > 0) FROM UNNEST(column_hydration_counts) as col)"""
@@ -199,6 +245,7 @@ def get_normalized_state_hydration_live_snapshot_view_builder() -> BigQueryViewB
         dataset_id=PLATFORM_KPIS_DATASET,
         view_id=NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_VIEW_ID,
         description=NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_DESCRIPTION,
+        schema=NORMALIZED_STATE_HYDRATION_LIVE_SNAPSHOT_SCHEMA,
         normalized_state_dataset_id=NORMALIZED_STATE_DATASET,
         # this table is just a pass through for the bq schedule query, but is quite large.
         # since deploys can happen more than once per day, we shouldn't materialize this

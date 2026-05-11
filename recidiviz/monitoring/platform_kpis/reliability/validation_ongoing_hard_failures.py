@@ -20,6 +20,12 @@ validations.
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_spans import (
     VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
@@ -32,6 +38,24 @@ VALIDATION_ONGOING_HARD_FAILURES_VIEW_ID = "validation_ongoing_hard_failures"
 VALIDATION_ONGOING_HARD_FAILURES_DESCRIPTION = (
     "Groups ongoing failure start dates by month."
 )
+
+VALIDATION_ONGOING_HARD_FAILURES_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    Date(
+        name="failure_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="num_ongoing_failures_started",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = """
 WITH 
@@ -75,6 +99,7 @@ VALIDATION_ONGOING_HARD_FAILURES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=VALIDATION_ONGOING_HARD_FAILURES_VIEW_ID,
     description=VALIDATION_ONGOING_HARD_FAILURES_DESCRIPTION,
+    schema=VALIDATION_ONGOING_HARD_FAILURES_SCHEMA,
     platform_kpis_dataset=PLATFORM_KPIS_DATASET,
     validation_hard_failure_spans_table_id=assert_type(
         VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER.materialized_address, BigQueryAddress

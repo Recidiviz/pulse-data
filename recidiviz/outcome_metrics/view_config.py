@@ -30,6 +30,7 @@ from recidiviz.outcome_metrics.impact_transitions_view_builder import (
 from recidiviz.outcome_metrics.impact_transitions_view_collector import (
     ImpactTransitionsBigQueryViewCollector,
 )
+from recidiviz.outcome_metrics.transitions_schemas import all_impact_transitions_schema
 from recidiviz.outcome_metrics.views.all_full_state_launch_dates import (
     ALL_FULL_STATE_LAUNCH_DATES_VIEW_BUILDER,
 )
@@ -51,6 +52,7 @@ def get_unioned_transitions_view_builder() -> UnionAllBigQueryViewBuilder:
         parents=ImpactTransitionsBigQueryViewCollector().collect_view_builders(),
         clustering_fields=["state_code"],
         parent_view_to_select_statement=_parent_view_to_select_statement,
+        schema=all_impact_transitions_schema(),
     )
 
 

@@ -18,6 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import TRANSITIONS_DATASET_ID
 from recidiviz.outcome_metrics.product_transition_type import ProductTransitionType
+from recidiviz.outcome_metrics.transitions_schemas import impact_transitions_base_schema
 
 
 class ImpactTransitionsBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -59,6 +60,8 @@ class ImpactTransitionsBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         if weight_factor <= 0:
             raise ValueError("`weight_factor` param must be strictly positive")
 
+        schema = impact_transitions_base_schema()
+
         query_template_with_select_columns = f"""
 SELECT
     person_id,
@@ -75,7 +78,7 @@ SELECT
         AND DATE_SUB(DATE_TRUNC(full_state_launch_date, MONTH), INTERVAL 1 DAY)
     AS is_within_one_year_before_full_state_launch_month,
     full_state_launch_date AS full_state_launch_date,
-    {weight_factor} AS weight_factor,
+    CAST({weight_factor} AS FLOAT) AS weight_factor,
     {delta_direction_factor} AS delta_direction_factor,
 FROM ({query_template})
         """
@@ -88,6 +91,7 @@ FROM ({query_template})
             materialized_address_override=None,
             projects_to_deploy=None,
             clustering_fields=None,
+            schema=schema,
         )
         self.weight_factor = weight_factor
         self.delta_direction_factor = delta_direction_factor

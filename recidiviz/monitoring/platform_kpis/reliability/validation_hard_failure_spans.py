@@ -18,6 +18,11 @@
 in a state of hard failure.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    DateTime,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.source_tables.externally_managed.datasets import (
     VALIDATION_RESULTS_DATASET_ID,
@@ -40,6 +45,39 @@ VALIDATION_HARD_FAILURE_SPANS_DESCRIPTION = (
     "take into account whether the resolution was a threshold bump or a fixing of the "
     "underlying issue."
 )
+
+VALIDATION_HARD_FAILURE_SPANS_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    String(
+        name="validation_name",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="validation_failure_status",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    DateTime(
+        name="failure_datetime",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="validation_resolution_status",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    DateTime(
+        name="resolution_datetime",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = f"""
 WITH 
@@ -175,6 +213,7 @@ VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=VALIDATION_HARD_FAILURE_SPANS_VIEW_ID,
     description=VALIDATION_HARD_FAILURE_SPANS_DESCRIPTION,
+    schema=VALIDATION_HARD_FAILURE_SPANS_SCHEMA,
     validation_results_dataset=VALIDATION_RESULTS_DATASET_ID,
     validation_results_table_id=VALIDATION_RESULTS_BIGQUERY_ADDRESS.table_id,
     validation_tracker_table_id=VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS.table_id,

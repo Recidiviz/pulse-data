@@ -17,6 +17,12 @@
 """Logic for building time windows when metric exports were stale, grouped by state."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    String,
+    Timestamp,
+)
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
@@ -30,6 +36,29 @@ STALE_METRIC_EXPORT_SPANS_BY_STATE_DESCRIPTION = (
     "Metrics that are currently stale are not included in this view."
 )
 HOUR_GAP_BEFORE_STALE = 24
+
+STALE_METRIC_EXPORT_SPANS_BY_STATE_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    Date(
+        name="export_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Timestamp(
+        name="start_date",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Timestamp(
+        name="end_date",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = f"""
 WITH 
@@ -137,6 +166,7 @@ STALE_METRIC_EXPORT_SPANS_BY_STATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=STALE_METRIC_EXPORT_SPANS_BY_STATE_VIEW_ID,
     description=STALE_METRIC_EXPORT_SPANS_BY_STATE_DESCRIPTION,
+    schema=STALE_METRIC_EXPORT_SPANS_BY_STATE_SCHEMA,
     view_update_metadata_dataset=VIEW_UPDATE_METADATA_DATASET,
     should_materialize=True,
 )

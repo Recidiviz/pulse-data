@@ -16,6 +16,12 @@
 # =============================================================================
 """Logic to calculates the total number of hours each state had stale metric exports"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -26,6 +32,24 @@ STALE_METRIC_EXPORTS_BY_STATE_DESCRIPTION = (
     "metric was stale across a month boundary, it will be attributed to the month that "
     "it resolved in."
 )
+
+STALE_METRIC_EXPORTS_BY_STATE_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    Date(
+        name="export_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="hours_stale",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = """
 WITH 
@@ -63,6 +87,7 @@ STALE_METRIC_EXPORTS_BY_STATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=STALE_METRIC_EXPORTS_BY_STATE_VIEW_ID,
     description=STALE_METRIC_EXPORTS_BY_STATE_DESCRIPTION,
+    schema=STALE_METRIC_EXPORTS_BY_STATE_SCHEMA,
     platform_kpis_dataset=PLATFORM_KPIS_DATASET,
     should_materialize=True,
 )

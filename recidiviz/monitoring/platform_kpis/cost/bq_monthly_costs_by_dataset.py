@@ -17,6 +17,12 @@
 """Logic for calculating big query storage costs by dataset"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Float,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.source_tables.externally_managed.datasets import ALL_BILLING_DATA_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -46,11 +52,35 @@ GROUP BY gcp_project, invoice_month, dataset_id
 ORDER BY total_cost_in_dollars DESC
 """
 
+BQ_MONTHLY_COSTS_BY_DATASET_SCHEMA = [
+    String(
+        name="gcp_project",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Date(
+        name="invoice_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="dataset_id",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Float(
+        name="total_cost_in_dollars",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
+
 BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=VIEW_QUERY,
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=BQ_MONTHLY_COSTS_BY_DATASET,
     description=BQ_MONTHLY_COSTS_BY_DATASET_DESCRIPTION,
+    schema=BQ_MONTHLY_COSTS_BY_DATASET_SCHEMA,
     all_billing_data=ALL_BILLING_DATA_DATASET,
     detailed_export_table_id=DETAILED_EXPORT_TABLE_ID,
     projects_to_deploy={GCP_PROJECT_PRODUCTION},

@@ -18,6 +18,7 @@
 Helper SQL queries for Michigan
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
@@ -159,6 +160,7 @@ def generate_sccp_form_opportunity_record_view_builder(
     tes_view_builder: SingleTaskEligibilitySpansBigQueryViewBuilder,
     latest_scc_review_date_criteria_builder: TaskCriteriaBigQueryViewBuilder,
     latest_scc_review_date_reasons_field: str,
+    schema: list[BigQueryViewColumn],
     spans_subset_type: TaskEligibilitySpansSubsetType = TaskEligibilitySpansSubsetType.ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY,
 ) -> SimpleBigQueryViewBuilder:
     """
@@ -177,6 +179,7 @@ def generate_sccp_form_opportunity_record_view_builder(
         latest_scc_review_date_reasons_field (str): The name of the field in the reasons
             blob for latest_scc_review_date_criteria_builder that we should use to pull
             the latest_scc_review_date value.
+        schema (list[BigQueryViewColumn]): The declared schema for the resulting view.
         spans_subset_type (TaskEligibilitySpansSubsetType): The subset type for task
             eligibility spans. Defaults to ELIGIBLE_AND_ALMOST_ELIGIBLE_ONLY.
 
@@ -606,6 +609,7 @@ LEFT JOIN array_case_notes_cte a
             state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
         ),
         should_materialize=True,
+        schema=schema,
     )
 
 
@@ -615,6 +619,7 @@ def generate_sccp_form_opportunity_record_view_builder_v2(
     tes_view_builder: SingleTaskEligibilitySpansBigQueryViewBuilder
     | list[SingleTaskEligibilitySpansBigQueryViewBuilder],
     latest_scc_review_date_reasons_field: str,
+    schema: list[BigQueryViewColumn],
     spans_subset_type: TaskEligibilitySpansSubsetType = TaskEligibilitySpansSubsetType.ELIGIBLE_ONLY,
 ) -> SimpleBigQueryViewBuilder:
     """
@@ -637,6 +642,7 @@ def generate_sccp_form_opportunity_record_view_builder_v2(
         latest_scc_review_date_reasons_field (str): The name of the field in the reasons
             blob that contains the latest SCC review date. Used to identify the relevant
             criteria row by checking for a non-null value in that field.
+        schema (list[BigQueryViewColumn]): The declared schema for the resulting view.
         spans_subset_type (TaskEligibilitySpansSubsetType): The subset type for task
             eligibility spans. Defaults to ELIGIBLE_ONLY.
 
@@ -1110,6 +1116,7 @@ LEFT JOIN misconduct_reports_since_latest_review mr
             state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
         ),
         should_materialize=True,
+        schema=schema,
     )
 
 

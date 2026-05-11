@@ -16,6 +16,11 @@
 # =============================================================================
 """Logic to calculate the total hours when any metric export was stale."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Integer,
+)
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -26,6 +31,19 @@ STALE_METRIC_EXPORTS_DESCRIPTION = (
     "Calculates the total hours when any metric export was stale. If a metric was stale "
     "across a month boundary, it will be attributed to the month that it resolved in."
 )
+
+STALE_METRIC_EXPORTS_SCHEMA = [
+    Date(
+        name="export_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="hours_stale",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = f"""
 WITH 
@@ -115,6 +133,7 @@ STALE_METRIC_EXPORTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=STALE_METRIC_EXPORTS_VIEW_ID,
     description=STALE_METRIC_EXPORTS_DESCRIPTION,
+    schema=STALE_METRIC_EXPORTS_SCHEMA,
     platform_kpis_dataset=PLATFORM_KPIS_DATASET,
     should_materialize=True,
 )

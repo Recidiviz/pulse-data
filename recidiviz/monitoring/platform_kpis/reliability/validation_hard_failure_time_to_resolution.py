@@ -19,6 +19,12 @@ validations.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_spans import (
     VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
@@ -36,6 +42,49 @@ VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_DESCRIPTION = (
     "when they were resolved. If a hard failure has not yet been resolved, it will not "
     "be included (as it has not yet been resolved)."
 )
+
+VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_SCHEMA = [
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    Date(
+        name="failure_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="total_time_to_resolution",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="percentile_100",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="percentile_75",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="percentile_50",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="percentile_25",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="percentile_0",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = """
 WITH 
@@ -70,6 +119,7 @@ VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_VIEW_BUILDER = SimpleBigQueryViewBuil
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_VIEW_ID,
     description=VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_DESCRIPTION,
+    schema=VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_SCHEMA,
     platform_kpis_dataset=PLATFORM_KPIS_DATASET,
     validation_hard_failure_spans_table_id=VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER.table_for_query.table_id,
     should_materialize=True,

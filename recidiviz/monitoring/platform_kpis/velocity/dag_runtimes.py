@@ -19,6 +19,13 @@
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Bool,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.source_tables.yaml_managed.datasets import AIRFLOW_OPERATIONS
 
@@ -27,6 +34,34 @@ DAG_RUN_METADATA_TABLE_ADDRESS = BigQueryAddress(
 )
 DAG_RUNTIMES_VIEW_ID = "dag_runtimes"
 DAG_RUNTIMES_DESCRIPTION = "A view that calculates the end-to-end time of each DAG run."
+
+DAG_RUNTIMES_SCHEMA = [
+    String(
+        name="dag_id",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Date(
+        name="start_month",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Bool(
+        name="has_retried_tasks",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    Integer(
+        name="runtime_in_minutes",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="run_type",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 
 VIEW_QUERY = """
@@ -75,6 +110,7 @@ DAG_RUNTIMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=DAG_RUNTIMES_VIEW_ID,
     description=DAG_RUNTIMES_DESCRIPTION,
+    schema=DAG_RUNTIMES_SCHEMA,
     airflow_operations_dataset_id=DAG_RUN_METADATA_TABLE_ADDRESS.dataset_id,
     dag_run_metadata_table_id=DAG_RUN_METADATA_TABLE_ADDRESS.table_id,
     should_materialize=True,

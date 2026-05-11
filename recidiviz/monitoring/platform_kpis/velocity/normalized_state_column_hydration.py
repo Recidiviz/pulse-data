@@ -19,6 +19,12 @@ normalized state dataset.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    Date,
+    Integer,
+    String,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.monitoring.platform_kpis.velocity.normalized_state_table_hydration import (
     NORMALIZED_STATE_HYDRATION_ARCHIVE_VIEW,
@@ -28,6 +34,24 @@ from recidiviz.utils.metadata import local_project_id_override
 
 NORMALIZED_STATE_COLUMN_HYDRATION_VIEW_ID = "normalized_state_column_hydration"
 NORMALIZED_STATE_COLUMN_HYDRATION_DESCRIPTION = "A historical view of column-level hydration counts for the normalized state dataset."
+
+NORMALIZED_STATE_COLUMN_HYDRATION_SCHEMA = [
+    Date(
+        name="hydration_date",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+    String(
+        name="state_code",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="REQUIRED",
+    ),
+    Integer(
+        name="column_hydration_score",
+        description=COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+        mode="NULLABLE",
+    ),
+]
 
 VIEW_QUERY = """
 WITH 
@@ -60,6 +84,7 @@ NORMALIZED_STATE_COLUMN_HYDRATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=PLATFORM_KPIS_DATASET,
     view_id=NORMALIZED_STATE_COLUMN_HYDRATION_VIEW_ID,
     description=NORMALIZED_STATE_COLUMN_HYDRATION_DESCRIPTION,
+    schema=NORMALIZED_STATE_COLUMN_HYDRATION_SCHEMA,
     hydration_archive_dataset_id=NORMALIZED_STATE_HYDRATION_ARCHIVE_VIEW.dataset_id,
     normalized_state_hydration_archive_table_id=NORMALIZED_STATE_HYDRATION_ARCHIVE_VIEW.table_id,
     should_materialize=True,

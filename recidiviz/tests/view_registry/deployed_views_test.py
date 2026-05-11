@@ -995,6 +995,59 @@ The following views have less restrictive projects_to_deploy than their parents:
                 raise ValueError(f"Unexpected parent type [{type(parent)}]")
 
 
+class ViewSchemaTest(unittest.TestCase):
+    """Tests that enforce rules about declared view schemas."""
+
+    all_deployed_views_by_address: Dict[BigQueryAddress, BigQueryView]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            cls.all_deployed_views_by_address = {
+                vb.address: vb.build() for vb in all_deployed_view_builders()
+            }
+
+    def _run_schema_test(
+        self,
+        view_check_fn: Callable[[BigQueryView], Sequence[Exception]],
+    ) -> None:
+        """Runs a schema check, raising all errors at once in a single
+        ExceptionGroup.
+        """
+        view_level_exceptions = []
+
+        for address in sorted(
+            self.all_deployed_views_by_address, key=lambda a: a.to_str()
+        ):
+            view = self.all_deployed_views_by_address[address]
+            exceptions = view_check_fn(view)
+            if exceptions:
+                view_level_exceptions.append(
+                    ExceptionGroup(
+                        f"Found schema errors for view [{address.to_str()}]",
+                        exceptions,
+                    )
+                )
+
+        if view_level_exceptions:
+            raise ExceptionGroup("Found view schema errors", view_level_exceptions)
+
+    def test_all_view_builders_declare_schema(self) -> None:
+        """Every deployed view builder must declare a schema."""
+
+        def _get_view_errors(view: BigQueryView) -> list[ValueError]:
+            if view.schema is None:
+                return [
+                    ValueError(
+                        f"View [{view.address.to_str()}] is missing a `schema=` "
+                        f"declaration."
+                    )
+                ]
+            return []
+
+        self._run_schema_test(_get_view_errors)
+
+
 class ViewQueryFormatTest(unittest.TestCase):
     """Tests that use the query syntax tree to enforce certain rules about view query
     format / correctness.
