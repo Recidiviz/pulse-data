@@ -27,7 +27,6 @@ The available AMIs are preconfigured with commonly used software:
 | AMI Templates              | Platforms | Description                                                                        |
 |----------------------------|-----------|------------------------------------------------------------------------------------|
 | `python311-postgres18` | arm64, x64 | Python 3.11 and PostgreSQL 18 installed, optimized for self-hosted GitHub runners. |
-| `python311-postgres13` | arm64, x64 | (Legacy) Python 3.11 and PostgreSQL 13. |
 
 ---
 
