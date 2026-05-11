@@ -102,7 +102,11 @@ def parse_supervision_level(
         status,
         assessment_level,
         special_conditions,
+        is_in_rrc,
     ) = raw_text.split("@@")
+
+    if is_in_rrc == "TRUE":
+        return StateSupervisionLevel.RESIDENTIAL_PROGRAM
 
     if status in WARRANT_STATUSES:
         return StateSupervisionLevel.WARRANT

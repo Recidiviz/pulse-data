@@ -12,6 +12,7 @@ input_columns:
   status: STRING
   STH_STATUS_REAS: STRING
   active_special_conditions: STRING
+  is_in_rrc: BOOLEAN
   supervision_site: STRING
   WTSK_USER_ID: STRING
   RMF_RELEASE_TYPE: STRING
@@ -139,6 +140,7 @@ output:
                     - status
                     - SLH_SUP_LEVEL
                     - active_special_conditions
+                    - is_in_rrc
               $custom_parser: us_tx_custom_enum_parsers.parse_supervision_level
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
