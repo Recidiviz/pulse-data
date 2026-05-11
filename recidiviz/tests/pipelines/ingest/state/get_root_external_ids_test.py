@@ -72,7 +72,9 @@ class TestGetRootExternalIdClusterEdges(
             .ingest_view_to_manifest[ingest_view_name]
             .parse_contents(
                 contents_iterator=df.to_dict("records"),
-                context=IngestViewContentsContext.build_for_tests(),
+                context=IngestViewContentsContext.build_for_tests(
+                    state_code=StateCode.US_XX
+                ),
             )
         )
 

@@ -119,5 +119,7 @@ class EnumManifestParsingTestCase(BaseStateIngestTestCase):
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(
                 row,
-                context=IngestViewContentsContext.build_for_tests(),
+                context=IngestViewContentsContext.build_for_tests(
+                    state_code=self.state_code()
+                ),
             )

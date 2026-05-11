@@ -18,6 +18,7 @@
 logic from the IngestViewManifest. This class may contain context that differs
 between rows in the ingest view results.
 """
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IS_LOCAL_PROPERTY_NAME,
     IS_PRODUCTION_PROPERTY_NAME,
@@ -41,7 +42,7 @@ class IngestViewContentsContext:
         is_staging: bool,
         is_production: bool,
         is_sandbox: bool,
-        state_code: str | None = None,
+        state_code: StateCode,
     ) -> None:
         self.is_local = is_local
         self.is_staging = is_staging
@@ -66,7 +67,7 @@ class IngestViewContentsContext:
 
     @classmethod
     @environment.test_only
-    def build_for_tests(cls) -> "IngestViewContentsContext":
+    def build_for_tests(cls, state_code: StateCode) -> "IngestViewContentsContext":
         """Creates a context for use in tests. Ingest views gated with `is_local: True`
         will be run with this context"""
         return IngestViewContentsContext(
@@ -75,6 +76,7 @@ class IngestViewContentsContext:
             is_staging=True,
             is_production=False,
             is_sandbox=False,
+            state_code=state_code,
         )
 
     @classmethod
@@ -82,7 +84,7 @@ class IngestViewContentsContext:
         cls,
         project_id: str,
         is_sandbox: bool,
-        state_code: str | None = None,
+        state_code: StateCode,
     ) -> "IngestViewContentsContext":
         """Creates context for an ingest view that will be processed in an ingest
         pipeline running in the given project.

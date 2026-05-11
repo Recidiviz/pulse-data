@@ -261,7 +261,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                 is_staging=is_staging,
                 is_production=is_production,
                 is_sandbox=is_sandbox,
-                state_code="US_XX",
+                state_code=StateCode.US_XX,
             ),
         )
 

@@ -85,7 +85,7 @@ class ProcessAllIngestViews(beam.PTransform):
         ingest_view_context = IngestViewContentsContext.build_for_project(
             project_id=self.pipeline_parameters.project,
             is_sandbox=self.pipeline_parameters.is_sandbox_pipeline,
-            state_code=state_code.value,
+            state_code=state_code,
         )
 
         region = direct_ingest_regions.get_direct_ingest_region(

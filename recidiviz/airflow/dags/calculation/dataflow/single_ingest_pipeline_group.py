@@ -87,7 +87,9 @@ def _has_launchable_ingest_views(state_code: StateCode) -> bool:
         len(
             ingest_manifest_collector.launchable_ingest_views(
                 IngestViewContentsContext.build_for_project(
-                    project_id=metadata.project_id(), is_sandbox=False
+                    project_id=metadata.project_id(),
+                    is_sandbox=False,
+                    state_code=state_code,
                 )
             )
         )

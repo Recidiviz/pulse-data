@@ -396,7 +396,9 @@ class StateIngestViewAndMappingTestCase(
 
         parsed_ingest_view_results = manifest.parse_contents(
             contents_iterator=ingest_view_results,
-            context=IngestViewContentsContext.build_for_tests(),
+            context=IngestViewContentsContext.build_for_tests(
+                state_code=self.state_code()
+            ),
         )
 
         # Build expected entity trees by loading the representation from a fixture

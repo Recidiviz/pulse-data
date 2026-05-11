@@ -283,7 +283,9 @@ def verify_ingest_view_determinism(
         # Since this is a script run locally, we use the context for the specified
         # project so that we don't include local-only views.
         IngestViewContentsContext.build_for_project(
-            project_id=metadata.project_id(), is_sandbox=False
+            project_id=metadata.project_id(),
+            is_sandbox=False,
+            state_code=state_code,
         ),
     )
 

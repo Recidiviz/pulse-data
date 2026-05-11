@@ -80,7 +80,9 @@ class TestMergeIngestViewRootEntityTrees(
         provided |ingest_view_name| and |test_name|, then parses the rows into root
         entity trees, returning those along with their associated upper bound date.
         """
-        parser_context = IngestViewContentsContext.build_for_tests()
+        parser_context = IngestViewContentsContext.build_for_tests(
+            state_code=StateCode.US_XX
+        )
         df = read_ingest_view_results_fixture(
             self.state_code(), ingest_view_name, file_name_w_suffix, False
         )

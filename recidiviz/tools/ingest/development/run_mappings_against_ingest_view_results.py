@@ -132,6 +132,7 @@ def parse_results(
     ingest_view_name: str,
     contents_handle: BigQueryResultsContentsHandle,
     write_results: bool,
+    state_code: states.StateCode,
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
     entities_module_context = entities_module_context_for_module(state_entities)
@@ -180,7 +181,9 @@ def parse_results(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
             context=IngestViewContentsContext.build_for_project(
-                metadata.project_id(), is_sandbox=False
+                metadata.project_id(),
+                is_sandbox=False,
+                state_code=state_code,
             ),
         )
 
@@ -245,7 +248,7 @@ def main(
         state_code, ingest_view_name, contents_handle.query_job
     )
 
-    parse_results(region, ingest_view_name, contents_handle, write_results)
+    parse_results(region, ingest_view_name, contents_handle, write_results, state_code)
 
 
 if __name__ == "__main__":

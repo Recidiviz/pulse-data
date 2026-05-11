@@ -230,8 +230,6 @@ class IngestViewManifestCompiler:
         and other info that will help us parse the result rows from this ingest view
         into entities.
         """
-        self.delegate.ingest_view_name = ingest_view_name
-
         manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
         manifest_dict = YAMLDict.from_path(manifest_path)
 
@@ -262,6 +260,7 @@ class IngestViewManifestCompiler:
                         delegate=self.delegate,
                         variable_manifests=variable_manifests,
                         expected_result_type=object,
+                        ingest_view_name=ingest_view_name,
                     ),
                 )
                 variable_manifests[variable_name] = variable_manifest
@@ -273,6 +272,7 @@ class IngestViewManifestCompiler:
                 delegate=self.delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=bool,
+                ingest_view_name=ingest_view_name,
             )
         else:
             should_launch_manifest = BooleanLiteralManifest(value=True)
@@ -285,6 +285,7 @@ class IngestViewManifestCompiler:
             delegate=self.delegate,
             variable_manifests=variable_manifests,
             entity_cls=entity_cls,
+            ingest_view_name=ingest_view_name,
         )
 
         if len(manifest_dict):

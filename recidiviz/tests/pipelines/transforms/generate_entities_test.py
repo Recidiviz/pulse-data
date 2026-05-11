@@ -19,6 +19,7 @@
 import datetime
 import unittest
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
@@ -39,7 +40,11 @@ from recidiviz.pipelines.transforms.generate_entities import GenerateEntities
 from recidiviz.tests.ingest.direct import fake_regions
 
 _CONTEXT = IngestViewContentsContext(
-    is_local=True, is_staging=False, is_production=False, is_sandbox=False
+    is_local=True,
+    is_staging=False,
+    is_production=False,
+    is_sandbox=False,
+    state_code=StateCode.US_XX,
 )
 
 _UPPER_BOUND = "2024-01-15T00:00:00"

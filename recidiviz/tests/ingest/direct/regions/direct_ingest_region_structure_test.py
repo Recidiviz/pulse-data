@@ -635,7 +635,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     ingest_view_names
                 )
                 contents_context = IngestViewContentsContext.build_for_project(
-                    project, is_sandbox=False
+                    project,
+                    is_sandbox=False,
+                    state_code=region_code,
                 )
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[

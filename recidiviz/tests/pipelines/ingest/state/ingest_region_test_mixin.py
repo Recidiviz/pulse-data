@@ -89,7 +89,7 @@ class IngestRegionTestMixin(abc.ABC):
     @classmethod
     def launchable_ingest_views(cls) -> list[str]:
         return cls.ingest_view_manifest_collector().launchable_ingest_views(
-            IngestViewContentsContext.build_for_tests()
+            IngestViewContentsContext.build_for_tests(state_code=cls.state_code())
         )
 
     @classmethod

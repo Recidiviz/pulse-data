@@ -106,7 +106,9 @@ class TestStateSpecificNormalizationDelegate(unittest.TestCase):
             )
             for project_id in DATA_PLATFORM_GCP_PROJECTS:
                 ingest_view_context = IngestViewContentsContext.build_for_project(
-                    project_id=project_id, is_sandbox=False
+                    project_id=project_id,
+                    is_sandbox=False,
+                    state_code=state_code,
                 )
                 # These are the entity types that are output from ingest mappings
                 normalization_input_types = get_expected_output_pre_normalization_entity_classes(

@@ -115,7 +115,9 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
             )
             | GenerateEntities(
                 ingest_view_manifest=ingest_view_manifest,
-                ingest_view_context=IngestViewContentsContext.build_for_tests(),
+                ingest_view_context=IngestViewContentsContext.build_for_tests(
+                    state_code=StateCode.US_XX
+                ),
                 expected_root_entity_types=(StatePerson, StateStaff),
             )
         )

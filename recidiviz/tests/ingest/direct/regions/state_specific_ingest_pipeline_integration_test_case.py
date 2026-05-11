@@ -87,7 +87,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         )
         self.context_patcher_fn = self.context_patcher.start()
         self.context_patcher_fn.return_value = (
-            IngestViewContentsContext.build_for_tests()
+            IngestViewContentsContext.build_for_tests(state_code=self.state_code())
         )
 
     def tearDown(self) -> None:

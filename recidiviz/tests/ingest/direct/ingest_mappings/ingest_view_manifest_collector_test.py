@@ -17,6 +17,7 @@
 """Tests for ingest_view_manifest_collector.py."""
 import unittest
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -72,6 +73,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 is_staging=True,
                 is_production=False,
                 is_sandbox=False,
+                state_code=StateCode.US_XX,
             )
         )
         self.assertListEqual(
@@ -84,6 +86,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 is_staging=False,
                 is_production=True,
                 is_sandbox=False,
+                state_code=StateCode.US_YY,
             )
         )
         self.assertListEqual(
@@ -97,6 +100,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 is_staging=True,
                 is_production=False,
                 is_sandbox=False,
+                state_code=StateCode.US_YY,
             )
         )
         self.assertListEqual(

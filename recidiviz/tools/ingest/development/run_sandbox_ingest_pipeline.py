@@ -158,7 +158,9 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
         # corresponds to the local environment so that we don't identify local-only
         # views as launchable here.
         IngestViewContentsContext.build_for_project(
-            project_id=project_id, is_sandbox=False
+            project_id=project_id,
+            is_sandbox=False,
+            state_code=state_code,
         ),
     )
     view_collector = DirectIngestViewQueryBuilderCollector(

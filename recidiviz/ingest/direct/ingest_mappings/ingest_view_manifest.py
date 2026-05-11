@@ -204,6 +204,10 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # A map of arguments that should be applied to all parsed entities.
     common_args: Dict[str, DeserializableEntityFieldValue] = attr.ib()
 
+    # The name of the ingest view that produced this manifest, used for alerting
+    # context when an enum field encounters an unmapped raw text value.
+    ingest_view_name: str = attr.ib()
+
     # If any of the fields in this set has a null value, build_for_row() will return
     # null instead of this entity, and this entity (and any children entities) will
     # be excluded entirely from the result.
@@ -211,10 +215,6 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # Currently, this is primarily used for enum entities. If the enum value is null or
     # ignored by the mappings, the entire enum entity will be filtered out.
     filter_if_null_field: Optional[str] = attr.ib(default=None)
-
-    # The name of the ingest view that produced this manifest, used for alerting
-    # context when an enum field encounters an unmapped raw text value.
-    ingest_view_name: str | None = attr.ib(default=None)
 
     def __attrs_post_init__(self) -> None:
         common_args_defined_in_manifest = set(self.common_args).intersection(
@@ -275,10 +275,6 @@ class EntityTreeManifest(ManifestNode[EntityT]):
         if context.is_production:
             fallback = error.entity_type[entity_enum_strings.internal_unknown]
             if not context.is_sandbox:
-                # TODO(#77262) Remove these asserts once state_code and
-                # ingest_view_name types are made non-optional.
-                assert context.state_code is not None
-                assert self.ingest_view_name is not None
                 # TODO(#77261) Move to top-level once the Airflow DAG import
                 # chain no longer pulls in this module.
                 from recidiviz.monitoring.ingest_enum_counter import (  # pylint: disable=import-outside-toplevel
@@ -286,7 +282,7 @@ class EntityTreeManifest(ManifestNode[EntityT]):
                 )
 
                 log_unmapped_enum(
-                    state_code=context.state_code,
+                    state_code=context.state_code.value,
                     enum_cls=error.entity_type,
                     field_name=field_name,
                     ingest_view_name=self.ingest_view_name,
@@ -311,6 +307,7 @@ class EntityTreeManifestFactory:
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         entity_cls: Type[EntityT],
+        ingest_view_name: str,
     ) -> "EntityTreeManifest":
         """Returns a single, recursively hydrated entity tree manifest, which can be
         used to translate a single input row into an entity tree.
@@ -353,6 +350,7 @@ class EntityTreeManifestFactory:
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=child_expected_result_type,
+                    ingest_view_name=ingest_view_name,
                 ):
                     if isinstance(
                         child_manifest, ExpandableListItemManifest
@@ -377,6 +375,7 @@ class EntityTreeManifestFactory:
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=delegate.get_entity_cls(child_entity_cls_name),
+                    ingest_view_name=ingest_view_name,
                 )
             elif field_type is BuildableAttrFieldType.ENUM:
                 expected_enum_cls = attr_field_enum_cls_for_field_name(
@@ -395,6 +394,7 @@ class EntityTreeManifestFactory:
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=expected_enum_cls,
+                    ingest_view_name=ingest_view_name,
                 )
 
             elif field_type in (
@@ -424,6 +424,7 @@ class EntityTreeManifestFactory:
                     delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=expected_result_type,
+                    ingest_view_name=ingest_view_name,
                 )
             elif field_type is BuildableAttrFieldType.BOOLEAN:
                 field_manifest = build_manifest_from_raw_typed(
@@ -433,6 +434,7 @@ class EntityTreeManifestFactory:
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=bool,
+                    ingest_view_name=ingest_view_name,
                 )
             else:
                 raise ValueError(
@@ -477,10 +479,10 @@ class EntityTreeManifestFactory:
             entity_factory_cls=entity_factory_cls,
             common_args=delegate.get_common_args(),
             field_manifests=field_manifests,
+            ingest_view_name=ingest_view_name,
             filter_if_null_field=cls._get_filter_if_null_field(
                 entity_cls=entity_cls, delegate=delegate
             ),
-            ingest_view_name=delegate.ingest_view_name,
         )
 
     @staticmethod
@@ -687,6 +689,7 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "ExpandableListItemManifest":
         return ExpandableListItemManifest(
             values_manifest=build_iterable_manifest_from_raw(
@@ -703,6 +706,7 @@ class ExpandableListItemManifest(ManifestNode[List[Entity]]):
                 variable_manifests=variable_manifests,
                 delegate=delegate,
                 expected_result_type=Entity,
+                ingest_view_name=ingest_view_name,
             ),
         )
 
@@ -989,6 +993,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
         field_enum_mappings_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "EnumMappingManifest":
         """Factory method for building an enum field manifest."""
 
@@ -998,6 +1003,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
             ),
             delegate,
             variable_manifests=variable_manifests,
+            ingest_view_name=ingest_view_name,
         )
 
         enum_parser = cls._build_field_enum_parser(
@@ -1200,6 +1206,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeResultT]):
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         expected_return_type: Type[ManifestNodeResultT],
+        ingest_view_name: str,
     ) -> "CustomFunctionManifest[ManifestNodeResultT]":
         """Builds a CustomParserManifest node from the provide raw manifest. Verifies
         that the function signature matches what is expected from the provided args.
@@ -1219,6 +1226,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeResultT]):
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=object,
+                    ingest_view_name=ingest_view_name,
                 )
             elif isinstance(raw_manifest, dict):
                 kwarg_manifests[arg] = build_manifest_from_raw(
@@ -1226,6 +1234,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeResultT]):
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=object,
+                    ingest_view_name=ingest_view_name,
                 )
             else:
                 raise ValueError(
@@ -1337,6 +1346,7 @@ class JSONExtractKeyManifest(ManifestNode[str]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "JSONExtractKeyManifest":
         return JSONExtractKeyManifest(
             json_manifest=build_str_manifest_from_raw(
@@ -1345,6 +1355,7 @@ class JSONExtractKeyManifest(ManifestNode[str]):
                 ),
                 delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
             json_key=raw_function_manifest.pop(cls.JSON_KEY_ARG_KEY, str),
         )
@@ -1419,6 +1430,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "ConcatenatedStringsManifest":
         value_manifests = build_manifests_list_from_raw(
             raw_function_manifest,
@@ -1426,6 +1438,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
             delegate,
             variable_manifests=variable_manifests,
             expected_result_type=str,
+            ingest_view_name=ingest_view_name,
         )
         separator = raw_function_manifest.pop_optional(cls.SEPARATOR_ARG_KEY, str)
         include_nulls = raw_function_manifest.pop_optional(
@@ -1506,6 +1519,7 @@ class PhysicalAddressManifest(ManifestNode[str]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "PhysicalAddressManifest":
         raw_address_2_manifest = pop_raw_flat_field_manifest_optional(
             cls.ADDRESS_2_KEY, raw_function_manifest
@@ -1515,12 +1529,14 @@ class PhysicalAddressManifest(ManifestNode[str]):
                 pop_raw_flat_field_manifest(cls.ADDRESS_1_KEY, raw_function_manifest),
                 delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
             address_2_manifest=(
                 build_str_manifest_from_raw(
                     raw_address_2_manifest,
                     delegate,
                     variable_manifests=variable_manifests,
+                    ingest_view_name=ingest_view_name,
                 )
                 if raw_address_2_manifest
                 else StringLiteralFieldManifest(literal_value="")
@@ -1529,16 +1545,19 @@ class PhysicalAddressManifest(ManifestNode[str]):
                 pop_raw_flat_field_manifest(cls.CITY_KEY, raw_function_manifest),
                 delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
             state_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.STATE_KEY, raw_function_manifest),
                 delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
             zip_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.ZIP_KEY, raw_function_manifest),
                 delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
         )
 
@@ -1602,6 +1621,7 @@ class PersonNameManifest(ManifestNode[SerializableJSON]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "PersonNameManifest":
         "Builds a valid PersonNameManifest from the raw manifest given."
         name_parts_to_manifest: Dict[str, ManifestNode[str]] = {}
@@ -1631,6 +1651,7 @@ class PersonNameManifest(ManifestNode[SerializableJSON]):
                 variable_manifests,
                 cls.FULL_NAME_MANIFEST_KEY,
                 is_required=True,
+                ingest_view_name=ingest_view_name,
             )
         else:
             for manifest_key, is_required in cls.NAME_MANIFEST_KEYS.items():
@@ -1642,6 +1663,7 @@ class PersonNameManifest(ManifestNode[SerializableJSON]):
                     variable_manifests,
                     manifest_key,
                     is_required,
+                    ingest_view_name=ingest_view_name,
                 )
 
         return PersonNameManifest(
@@ -1659,6 +1681,7 @@ class PersonNameManifest(ManifestNode[SerializableJSON]):
         variable_manifests: Dict[str, VariableManifestNode],
         manifest_key: str,
         is_required: bool,
+        ingest_view_name: str,
     ) -> ManifestNode[str]:
         """Builds a string manifest for a portion of the personname."""
         raw_manifest = pop_raw_flat_field_manifest_optional(
@@ -1670,7 +1693,10 @@ class PersonNameManifest(ManifestNode[SerializableJSON]):
 
         return (
             build_str_manifest_from_raw(
-                raw_manifest, delegate, variable_manifests=variable_manifests
+                raw_manifest,
+                delegate,
+                variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
             if raw_manifest
             else StringLiteralFieldManifest(literal_value="")
@@ -1719,18 +1745,21 @@ class ContainsConditionManifest(ManifestNode[bool]):
         raw_function_manifest: YAMLDict,
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "ContainsConditionManifest":
         return ContainsConditionManifest(
             value_manifest=build_str_manifest_from_raw(
                 pop_raw_flat_field_manifest(cls.VALUE_ARG_KEY, raw_function_manifest),
                 delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
             options_manifests=[
                 build_str_manifest_from_raw(
                     raw_manifest,
                     delegate,
                     variable_manifests=variable_manifests,
+                    ingest_view_name=ingest_view_name,
                 )
                 for raw_manifest in raw_function_manifest.pop(cls.OPTIONS_ARG_KEY, list)
             ],
@@ -1770,10 +1799,14 @@ class IsNullConditionManifest(ManifestNode[bool]):
         raw_function_manifest: Union[str, YAMLDict],
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
+        ingest_view_name: str,
     ) -> "IsNullConditionManifest":
         return IsNullConditionManifest(
             value_manifest=build_str_manifest_from_raw(
-                raw_function_manifest, delegate, variable_manifests=variable_manifests
+                raw_function_manifest,
+                delegate,
+                variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             ),
         )
 
@@ -2051,6 +2084,7 @@ class BooleanConditionManifestFactory:
         delegate: IngestViewManifestCompilerDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
         expected_result_type: Type[ManifestNodeResultT],
+        ingest_view_name: str,
     ) -> "BooleanConditionManifest[ManifestNodeResultT]":
         """Builds a BooleanConditionManifest from the provided raw manifest."""
 
@@ -2082,6 +2116,7 @@ class BooleanConditionManifestFactory:
                     delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=expected_result_type,
+                    ingest_view_name=ingest_view_name,
                 )
                 continue
 
@@ -2101,6 +2136,7 @@ class BooleanConditionManifestFactory:
                 delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=bool,
+                ingest_view_name=ingest_view_name,
             )
 
             then_manifest = build_manifest_from_raw_typed(
@@ -2110,6 +2146,7 @@ class BooleanConditionManifestFactory:
                 delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=expected_result_type,
+                ingest_view_name=ingest_view_name,
             )
             highest_level_boolean_manifest = BooleanConditionManifest(
                 condition_manifest=condition_manifest,
@@ -2158,6 +2195,7 @@ def build_str_manifest_from_raw(
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
+    ingest_view_name: str,
 ) -> ManifestNode[str]:
     """Builds a ManifestNode[str] from the provided raw manifest."""
     return build_manifest_from_raw_typed(
@@ -2165,6 +2203,7 @@ def build_str_manifest_from_raw(
         delegate,
         variable_manifests=variable_manifests,
         expected_result_type=str,
+        ingest_view_name=ingest_view_name,
     )
 
 
@@ -2196,6 +2235,7 @@ def build_manifests_list_from_raw(
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeResultT],
+    ingest_view_name: str,
 ) -> List[ManifestNode[ManifestNodeResultT]]:
     manifests = []
     for list_item in parent_raw_manifest.pop(list_field_name, list):
@@ -2214,6 +2254,7 @@ def build_manifests_list_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=expected_result_type,
+                ingest_view_name=ingest_view_name,
             )
         )
     return manifests
@@ -2224,12 +2265,14 @@ def build_manifest_from_raw_typed(
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeResultT],
+    ingest_view_name: str,
 ) -> ManifestNode[ManifestNodeResultT]:
     manifest = build_manifest_from_raw(
         raw_field_manifest=raw_field_manifest,
         delegate=delegate,
         variable_manifests=variable_manifests,
         expected_result_type=expected_result_type,
+        ingest_view_name=ingest_view_name,
     )
 
     if not issubclass(manifest.result_type, expected_result_type):
@@ -2249,6 +2292,7 @@ def build_manifest_from_raw(
     delegate: IngestViewManifestCompilerDelegate,
     variable_manifests: Dict[str, VariableManifestNode],
     expected_result_type: Type[ManifestNodeResultT],
+    ingest_view_name: str,
 ) -> ManifestNode:
     """Builds a ManifestNode from the provided raw manifest."""
     if isinstance(raw_field_manifest, str):
@@ -2296,6 +2340,7 @@ def build_manifest_from_raw(
                 ),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
 
         if (
@@ -2309,6 +2354,7 @@ def build_manifest_from_raw(
                         pop_raw_flat_field_manifest(key, function_arguments),
                         delegate=delegate,
                         variable_manifests=variable_manifests,
+                        ingest_view_name=ingest_view_name,
                     )
                     for key in function_arguments.keys()
                 },
@@ -2326,6 +2372,7 @@ def build_manifest_from_raw(
                         variable_manifests=variable_manifests,
                         # Allow json values of any type
                         expected_result_type=object,
+                        ingest_view_name=ingest_view_name,
                     )
                     for key in function_arguments.keys()
                 },
@@ -2336,24 +2383,28 @@ def build_manifest_from_raw(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
             return ConcatenatedStringsManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == PersonNameManifest.PERSON_NAME_KEY:
             return PersonNameManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == PhysicalAddressManifest.PHYSICAL_ADDRESS_KEY:
             return PhysicalAddressManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == BooleanConditionManifest.BOOLEAN_CONDITION_KEY:
             return BooleanConditionManifestFactory.from_raw_manifest(
@@ -2363,6 +2414,7 @@ def build_manifest_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=expected_result_type,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == CustomFunctionManifest.CUSTOM_FUNCTION_KEY:
             return CustomFunctionManifest.from_raw_manifest(
@@ -2370,6 +2422,7 @@ def build_manifest_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
                 expected_return_type=expected_result_type,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == InvertConditionManifest.NOT_CONDITION_KEY:
             return InvertConditionManifest(
@@ -2378,6 +2431,7 @@ def build_manifest_from_raw(
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=bool,
+                    ingest_view_name=ingest_view_name,
                 )
             )
         if manifest_node_name == ContainsConditionManifest.IN_CONDITION_KEY:
@@ -2385,6 +2439,7 @@ def build_manifest_from_raw(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == InvertConditionManifest.NOT_IN_CONDITION_KEY:
             return InvertConditionManifest(
@@ -2394,6 +2449,7 @@ def build_manifest_from_raw(
                     ),
                     delegate=delegate,
                     variable_manifests=variable_manifests,
+                    ingest_view_name=ingest_view_name,
                 )
             )
         if manifest_node_name == IsNullConditionManifest.IS_NULL_CONDITION_KEY:
@@ -2403,6 +2459,7 @@ def build_manifest_from_raw(
                 ),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
         if manifest_node_name == InvertConditionManifest.NOT_NULL_CONDITION_KEY:
             return InvertConditionManifest(
@@ -2412,6 +2469,7 @@ def build_manifest_from_raw(
                     ),
                     delegate=delegate,
                     variable_manifests=variable_manifests,
+                    ingest_view_name=ingest_view_name,
                 )
             )
         if manifest_node_name == AndConditionManifest.AND_CONDITION_KEY:
@@ -2422,6 +2480,7 @@ def build_manifest_from_raw(
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=bool,
+                    ingest_view_name=ingest_view_name,
                 ),
             )
         if manifest_node_name == OrConditionManifest.OR_CONDITION_KEY:
@@ -2432,6 +2491,7 @@ def build_manifest_from_raw(
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=bool,
+                    ingest_view_name=ingest_view_name,
                 ),
             )
         if manifest_node_name == EqualsConditionManifest.EQUALS_CONDITION_KEY:
@@ -2442,6 +2502,7 @@ def build_manifest_from_raw(
                     delegate=delegate,
                     variable_manifests=variable_manifests,
                     expected_result_type=object,
+                    ingest_view_name=ingest_view_name,
                 ),
             )
         if manifest_node_name == EnvPropertyManifest.ENV_PROPERTY_KEY:
@@ -2461,6 +2522,7 @@ def build_manifest_from_raw(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
                 delegate=delegate,
                 variable_manifests=variable_manifests,
+                ingest_view_name=ingest_view_name,
             )
 
         # At this point we expect the manifest node name to be an entity class name
@@ -2476,6 +2538,7 @@ def build_manifest_from_raw(
             delegate=delegate,
             variable_manifests=variable_manifests,
             entity_cls=entity_cls,
+            ingest_view_name=ingest_view_name,
         )
 
     raise ValueError(
