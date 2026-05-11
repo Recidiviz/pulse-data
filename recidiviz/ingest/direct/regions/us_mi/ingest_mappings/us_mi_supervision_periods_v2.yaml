@@ -858,6 +858,20 @@ output:
                           - specialties
                         $separator: "##"
                     $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
+              # If the destination location type is a county jail (2146) and it's not named "Not In Custody", map to IN_CUSTODY
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - dest_location_type_id
+                        - $literal("2146")
+                    - $not_in:
+                        $value: dest_name
+                        $options:
+                          - $literal("Not In Custody")
+                $then:
+                  $enum_mapping:
+                    $raw_text: $literal("DEST_LOCATION_TYPE_2146")
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
               # if this period is an OTHER_STATE period, supervision level is null, and
               # we wouldn't be imputing it based on most recent supervision level, then
               # let's parse it as INTERSTATE_COMPACT
