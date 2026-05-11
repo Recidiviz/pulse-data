@@ -123,6 +123,26 @@ def parole_review_dates_query() -> str:
 """
 
 
+def latest_import_date_for_elite_dates_query() -> str:
+    """
+    Returns a SQL query that retrieves the most recent file import datetime for Elite
+    source tables that are used to populate date fields in the Opportunities app.
+    """
+    return """
+        SELECT CAST(MAX(update_datetime) AS DATE) AS last_updated_date
+            FROM (
+                SELECT MAX(CAST(update_datetime AS DATETIME)) AS update_datetime
+                FROM `{project_id}.{raw_data_all_views_dataset}.elite_offendersentenceaggs_all`
+                UNION ALL
+                SELECT MAX(CAST(update_datetime AS DATETIME)) AS update_datetime
+                FROM `{project_id}.{raw_data_all_views_dataset}.elite_offendersentences_all`
+                UNION ALL
+                SELECT MAX(CAST(update_datetime AS DATETIME)) AS update_datetime
+                FROM `{project_id}.{raw_data_all_views_dataset}.elite_offender_medical_screenings_6i_all`
+            )
+    """
+
+
 def incarceration_within_parole_review_date_criteria_builder(
     criteria_name: str,
     description: str,
