@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_limited_supervision_2025_policy,
 )
+from recidiviz.task_eligibility.criteria.general import supervision_level_is_not_limited
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_ineligible_cr_offense_2025_policy,
     supervision_type_is_misdemeanor_probationer,
@@ -65,6 +66,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         no_ineligible_cr_offense_2025_policy.VIEW_BUILDER,
         supervision_type_is_misdemeanor_probationer.VIEW_BUILDER,
+        # filter out clients already on CR
+        supervision_level_is_not_limited.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision_2025_policy.VIEW_BUILDER,
 )
