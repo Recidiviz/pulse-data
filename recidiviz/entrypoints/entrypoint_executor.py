@@ -92,6 +92,7 @@ from recidiviz.monitoring.providers import (
     create_monitoring_tracer_provider,
 )
 from recidiviz.monitoring.trace import TRACER_NAME
+from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import set_development_project_id_override
 
@@ -187,7 +188,7 @@ if __name__ == "__main__":
 
     instrument_common_libraries()
 
-    logging.basicConfig(level=logging.INFO)
+    structured_logging.setup_k8s()
     atexit.register(quit_kubernetes_cloud_sql_proxy)
 
     args, unknown_args = parse_arguments(sys.argv[1:])

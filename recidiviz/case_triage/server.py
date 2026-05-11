@@ -98,7 +98,7 @@ if not in_development():
 
 # Logging setup
 if in_gcp():
-    structured_logging.setup()
+    structured_logging.setup_gunicorn()
 else:
     # Python logs at the warning level by default
     logging.basicConfig(level=logging.INFO)

@@ -89,7 +89,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
         set_development_project_id_override(GCP_PROJECT_STAGING)
 
     if in_gcp():
-        structured_logging.setup()
+        structured_logging.setup_gunicorn()
         # pylint: disable=abstract-class-instantiated
         sentry_sdk.init(
             dsn=JUSTICE_COUNTS_SENTRY_DSN,

@@ -106,7 +106,7 @@ app = Flask(__name__)
 
 
 if in_gcp():
-    structured_logging.setup()
+    structured_logging.setup_gunicorn()
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
         CloudRunMetadata.Service.APPLICATION_DATA_IMPORT
     )

@@ -740,7 +740,7 @@ resource "google_monitoring_alert_policy" "bq_deployed_view_too_expensive" {
       filter = <<-EOT
         resource.type="k8s_container"
         resource.labels.container_name="base"
-        textPayload=~"BigQueryViewDagWalker Node Failure"
+        (textPayload=~"BigQueryViewDagWalker Node Failure" OR jsonPayload.message=~"BigQueryViewDagWalker Node Failure")
       EOT
     }
 

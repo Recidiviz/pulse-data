@@ -20,9 +20,10 @@ import logging
 import sys
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Optional, Tuple, Type, Union
 
 from google.cloud.logging import Client, Resource, handlers
+from google.cloud.logging_v2.handlers import StructuredLogHandler
 from google.cloud.logging_v2.handlers._monitored_resources import detect_resource
 from opentelemetry import context
 from opentelemetry.baggage import get_baggage
@@ -96,28 +97,12 @@ class ContextualLogRecord(logging.LogRecord):
 RECIDIVIZ_BEFORE_REQUEST_LOG = "before_request_log"
 
 
-def _labels_for_record(record: logging.LogRecord) -> Dict[str, str]:
-    labels = {
-        "func_name": record.funcName,
-        "module": record.module,
-        "thread": record.thread,
-        "thread_name": record.threadName,
-        "process_id": record.process,
-        "process_name": record.processName,
-    }
-
-    if isinstance(record, ContextualLogRecord):
-        labels["region"] = record.region
-        labels["ingest_instance"] = record.ingest_instance
-    return {k: str(v) for k, v in labels.items()}
-
-
-_GCE_DOMAIN = "compute.googleapis.com"
-
-
-def setup() -> None:
-    """Setup logging"""
-    # Set the region on log records.
+def setup_gunicorn() -> None:
+    """Setup logging for Flask/gunicorn web servers (admin panel, case triage,
+    etc.) running on Cloud Run. Sends logs to Cloud Logging via the API
+    (CloudLoggingHandler) so trace ids and structured payloads are preserved,
+    and mirrors them to stdout as a fallback if the API client stalls.
+    """
     logging.setLogRecordFactory(ContextualLogRecord)
     logger = logging.getLogger()
 
@@ -187,3 +172,21 @@ def setup() -> None:
     # go to Stackdriver in production.
     gunicorn_logger = logging.getLogger("gunicorn.error")
     gunicorn_logger.handlers = logger.handlers
+
+
+def setup_k8s() -> None:
+    """Setup logging for processes running inside a GKE pod -- e.g. entrypoints
+    launched by KubernetesPodOperator from Airflow DAGs.
+
+    Emits JSON-structured records to stdout via google-cloud-logging's
+    StructuredLogHandler. Without this, Python's default StreamHandler writes
+    to stderr and Cloud Logging tags every line as severity=ERROR.
+    """
+    logger = logging.getLogger()
+
+    if environment.in_gcp():
+        handler = StructuredLogHandler(stream=sys.stdout)
+        handlers.setup_logging(handler, log_level=logging.INFO)
+    else:
+        logging.basicConfig()
+    logger.setLevel(logging.INFO)

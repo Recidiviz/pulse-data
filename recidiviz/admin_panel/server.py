@@ -48,7 +48,7 @@ from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
 from recidiviz.utils.environment import in_gcp, in_gunicorn
 from recidiviz.utils.metadata import CloudRunMetadata
 
-structured_logging.setup()
+structured_logging.setup_gunicorn()
 
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
@@ -61,7 +61,7 @@ _STATIC_FOLDER = os.path.abspath(
 
 
 if in_gcp():
-    structured_logging.setup()
+    structured_logging.setup_gunicorn()
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
         CloudRunMetadata.Service.ADMIN_PANEL
     )
