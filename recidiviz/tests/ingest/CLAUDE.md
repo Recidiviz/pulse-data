@@ -57,7 +57,43 @@ Tests require three types of fixtures in
    - Expected entity tree output from the YAML mapping
    - Auto-generated when running tests with `create_expected_output=True`
 
-## Generating Fixtures
+## Generating Input Fixtures
+
+**Always use the `generate_ingest_view_fixtures_for_test` script to create raw
+data fixtures.** Do not craft them by hand — the script handles PII obfuscation
+and column alignment correctly. Only create fixtures manually if the test
+requires data that cannot exist in production (e.g., intentionally malformed
+records).
+
+Workflow:
+1. Use `bq` to find a real `external_id_value` that exhibits the behavior you
+   want to test.
+2. Confirm the specific example you find with the user. Explain why this is a
+   good entity to use for this test case.
+3. Run the script with `--skip_prompts` to generate fixtures non-interactively.
+4. After the script finishes, remind the user to add the entry to
+   [go/fixture-pii](https://go/fixture-pii).
+
+Example BQ query to find examples (adapt for your test):
+```
+select *
+from us_nc_raw_data.offenders
+qualify count(distinct POSITIVE) over (partition by CDDORNUM) > 1
+```
+
+Example script invocation:
+```
+uv run python -m recidiviz.tools.ingest.testing.ingest_fixture_creation.generate_ingest_view_fixtures_for_test \
+    --state_code US_NC --external_id_type US_NC_OPUS \
+    --external_id_values <REDACTED> --ingest_view_name drug_screen \
+    --test_characteristic changing_results --skip_pruning \
+    --skip_code_files --skip_prompts
+```
+
+This will pull actual examples from real raw data, obfuscating columns marked with
+`is_pii` in the raw data configs.
+
+## Generating Output Fixtures
 
 To auto-generate expected output fixtures:
 

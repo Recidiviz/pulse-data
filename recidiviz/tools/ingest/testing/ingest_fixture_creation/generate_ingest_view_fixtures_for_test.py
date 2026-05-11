@@ -162,6 +162,14 @@ def _parse_args() -> argparse.Namespace:
             "Please only use this as a last resort!"
         ),
     )
+    parser.add_argument(
+        "--skip_prompts",
+        action="store_true",
+        help=(
+            "If this flag is included, all confirmation prompts will be skipped and "
+            "auto-confirmed. Useful for non-interactive use (e.g. Claude Code)."
+        ),
+    )
     args = parser.parse_args()
     state_id_types = external_id_types_by_state_code()[args.state_code]
     if args.external_id_type not in state_id_types:
@@ -179,6 +187,7 @@ def _validate_and_preview_external_id(
     ingest_view_name: str,
     external_id_type: str,
     external_id_values: list[str],
+    skip_prompts: bool = False,
 ) -> DirectIngestViewQueryBuilder:
     """
     Checks if the external ID type is valid for the given ingest view and state code.
@@ -220,7 +229,8 @@ def _validate_and_preview_external_id(
         tablefmt="heavy_grid",
     )
     _ = prompt_for_confirmation(
-        f"\n\n{_grid}\n\nGenerate raw data fixtures for the following?\n"
+        f"\n\n{_grid}\n\nGenerate raw data fixtures for the following?\n",
+        skip_confirmation=skip_prompts,
     )
     return view_builder
 
@@ -230,6 +240,7 @@ def _validate_and_preview_file_paths(
     view_builder: DirectIngestViewQueryBuilder,
     test_characteristic: str,
     skip_code_files: bool,
+    skip_prompts: bool = False,
 ) -> dict[str, str]:
     """
     Checks if any code files need to be overwritten/skipped and prompts the user to
@@ -259,7 +270,8 @@ def _validate_and_preview_file_paths(
         maxcolwidths=[30, 100],
     )
     _ = prompt_for_confirmation(
-        f"\n\n{_grid}\n\nWrite fixtures to the following locations?\n"
+        f"\n\n{_grid}\n\nWrite fixtures to the following locations?\n",
+        skip_confirmation=skip_prompts,
     )
     return files_to_skip
 
@@ -271,6 +283,7 @@ def _validate_and_preview_queries(
     dataset: str,
     project_id: str,
     file_tags_to_skip_with_reason: dict[str, str],
+    skip_prompts: bool = False,
 ) -> dict[str, str]:
     """Builds and previews the queries for the raw data fixtures."""
     queries = build_root_entity_filtered_raw_data_queries(
@@ -291,7 +304,8 @@ def _validate_and_preview_queries(
         maxcolwidths=[30, 100],
     )
     _ = prompt_for_confirmation(
-        f"\n\n{_grid}\n\nGenerate raw data fixtures from these queries?\n"
+        f"\n\n{_grid}\n\nGenerate raw data fixtures from these queries?\n",
+        skip_confirmation=skip_prompts,
     )
     return queries
 
@@ -301,7 +315,8 @@ def main() -> None:
     args = _parse_args()
     if args.files_to_make_empty is not None:
         _ = prompt_for_confirmation(
-            f"\n\nThe following files will be made empty: {args.files_to_make_empty}. Are you sure!?!?"
+            f"\n\nThe following files will be made empty: {args.files_to_make_empty}. Are you sure!?!?",
+            skip_confirmation=args.skip_prompts,
         )
     view_builder = _validate_and_preview_external_id(
         args.project_id,
@@ -309,6 +324,7 @@ def main() -> None:
         args.ingest_view_name,
         args.external_id_type,
         args.external_id_values,
+        skip_prompts=args.skip_prompts,
     )
     dataset = raw_tables_dataset_for_region(
         args.state_code, DirectIngestInstance.PRIMARY
@@ -318,6 +334,7 @@ def main() -> None:
         view_builder,
         args.test_characteristic,
         args.skip_code_files,
+        skip_prompts=args.skip_prompts,
     )
     if args.files_to_make_empty is not None:
         for file_tag in args.files_to_make_empty:
@@ -329,10 +346,7 @@ def main() -> None:
         dataset,
         args.project_id,
         fixtures_to_skip_queries,
-    )
-    # TODO(#39686) No longer prompt when encrypted PII is in configs.
-    _ = prompt_for_confirmation(
-        "\n\nHave you recorded this information in our tracker here? ---> https://go/fixture-pii"
+        skip_prompts=args.skip_prompts,
     )
     bq_client = BigQueryClientImpl(args.project_id)
     for (
@@ -360,7 +374,8 @@ def main() -> None:
                     prompt_for_confirmation(
                         f"\n\nThe raw data table {dependency.file_tag} does not have a primary key. "
                         "This fixture will use ALL columns in the config to drop duplicate rows across file_ids. "
-                        "Are you sure you want to continue?"
+                        "Are you sure you want to continue?",
+                        skip_confirmation=args.skip_prompts,
                     )
                 pks = [c.name for c in dependency.raw_file_config.current_columns]
             if not args.skip_pruning:
@@ -369,6 +384,11 @@ def main() -> None:
                 df,
                 args.test_characteristic,
             )
+    # TODO(#39686) No longer prompt when encrypted PII is in configs.
+    _ = prompt_for_confirmation(
+        "\n\nHave you recorded this information in our tracker here? ---> https://go/fixture-pii",
+        skip_confirmation=args.skip_prompts,
+    )
 
 
 if __name__ == "__main__":
