@@ -25,7 +25,9 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_intersection_spans,
+    create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
     truncate_to_calendar_period,
@@ -671,3 +673,160 @@ def contact_compliance_builder_type_agnostic(
             ),
         ],
     )
+
+
+# TRAS types that count toward the SISP review schedule (CSST excluded).
+SISP_REVIEW_TRAS_TYPES = ("TX_CST", "TX_SRT", "TX_RT")
+
+# TRAS levels that get the 6-month SISP review cadence. HIGH gets 12 months.
+SISP_REVIEW_NON_HIGH_LEVELS = ("MODERATE", "LOW_MODERATE", "LOW")
+
+
+def sisp_review_contact_event_query(contact_type: str) -> str:
+    """Zero-row placeholder for SISP-review completion events.
+
+    TODO(#78423): replace with the real SISP-review completion source once
+    known.
+    """
+    return f"""
+    SELECT *
+    FROM (
+        SELECT
+            CAST(NULL AS STRING) AS state_code,
+            CAST(NULL AS INT64) AS person_id,
+            CAST(NULL AS STRING) AS contact_external_id,
+            CAST(NULL AS DATE) AS contact_date,
+            CAST('{contact_type}' AS STRING) AS contact_type,
+    )
+    WHERE FALSE
+    """
+
+
+def sisp_recurring_review_cadence_spans_query(
+    *,
+    contact_type: str,
+    cadence_months: int,
+    assessment_level_filter_sql: str,
+) -> str:
+    """Builds the cadence-spans query for a SISP recurring-review criterion.
+
+    Finds the time periods when a client is both on SISP and at a given TRAS
+    level, then chops each one into `cadence_months`-long review periods.
+    The result feeds `fixed_cadence_contact_compliance_builder` as its
+    `custom_contact_cadence_spans` input.
+
+    Args:
+        contact_type: label emitted on each cadence row.
+        cadence_months: months between reviews.
+        assessment_level_filter_sql: SQL fragment to keep only the TRAS
+            levels this criterion cares about (e.g.
+            `assessment_level = 'High'`).
+    """
+    return f"""
+    WITH
+    -- Stack SISP supervision spans and TRAS-level spans together so we can
+    -- find where they overlap in the next CTE.
+    sisp_and_tras_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            case_type,
+            CAST(NULL AS STRING) AS assessment_level,
+        FROM `{{project_id}}.tasks_views.us_tx_case_type_supervision_level_spans_materialized`
+        WHERE state_code = 'US_TX' AND case_type = 'INTENSE_SUPERVISION'
+
+        UNION ALL
+
+        SELECT
+            state_code,
+            person_id,
+            assessment_date AS start_date,
+            score_end_date_exclusive AS end_date,
+            CAST(NULL AS STRING) AS case_type,
+            assessment_level,
+        FROM `{{project_id}}.sessions.assessment_score_sessions_materialized`
+        WHERE state_code = 'US_TX'
+            AND assessment_type IN {SISP_REVIEW_TRAS_TYPES}
+            AND assessment_level IS NOT NULL
+            AND {assessment_level_filter_sql}
+    ),
+    {create_sub_sessions_with_attributes(
+        table_name='sisp_and_tras_spans',
+        end_date_field_name='end_date',
+    )},
+    -- Keep only the spans where the client is on SISP AND has a TRAS level.
+    sisp_level_spans_raw AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            MAX(case_type) AS case_type,
+            -- If multiple TRAS types (CST/SRT/RT) overlap, pick one
+            -- deterministically. Rare in practice.
+            MAX(assessment_level) AS assessment_level,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1, 2, 3, 4
+        HAVING case_type IS NOT NULL AND assessment_level IS NOT NULL
+    ),
+    sisp_level_spans AS (
+        {aggregate_adjacent_spans(
+            table_name='sisp_level_spans_raw',
+            attribute=['case_type', 'assessment_level'],
+            end_date_field_name='end_date',
+        )}
+    ),
+    cadence_per_span AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS cadence_start_date,
+            -- For open-ended spans, extend one cycle past today so we still
+            -- get a future cadence period to surface.
+            IFNULL(
+                end_date,
+                LAST_DAY(DATE_ADD(
+                    CURRENT_DATE('US/Eastern'),
+                    INTERVAL {cadence_months} MONTH
+                ))
+            ) AS cadence_end_date_exclusive,
+            -- Start of the next SISP-AND-level span for this person, if any.
+            -- Used to keep an extended last cadence period from overlapping
+            -- the next span's cadence.
+            LEAD(start_date) OVER (
+                PARTITION BY state_code, person_id ORDER BY start_date
+            ) AS next_span_start_date,
+        FROM sisp_level_spans
+    )
+
+    SELECT
+        state_code,
+        person_id,
+        CAST(NULL AS STRING) AS supervision_level,
+        CAST(NULL AS STRING) AS case_type,
+        '{contact_type}' AS contact_type,
+        1 AS quantity,
+        {cadence_months} AS frequency,
+        'MONTH' AS frequency_date_part,
+        cadence_start_date AS start_date,
+        cadence_end_date_exclusive AS end_date,
+        period_start AS contact_period_start,
+        -- Full cadence period, trimmed back if a later SISP-AND-level span
+        -- would overlap.
+        DATE_SUB(
+            LEAST(
+                DATE_ADD(period_start, INTERVAL {cadence_months} MONTH),
+                IFNULL(next_span_start_date, DATE '9999-12-31')
+            ),
+            INTERVAL 1 DAY
+        ) AS contact_period_end,
+    FROM cadence_per_span,
+    UNNEST(GENERATE_DATE_ARRAY(
+        cadence_start_date,
+        DATE_SUB(cadence_end_date_exclusive, INTERVAL 1 DAY),
+        INTERVAL {cadence_months} MONTH
+    )) AS period_start
+    WHERE cadence_start_date < cadence_end_date_exclusive
+    """

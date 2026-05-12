@@ -170,6 +170,7 @@ class TaskCompletionEventType(Enum):
     )
     GOOD_TIME_REINSTATED = "GOOD_TIME_REINSTATED"
     FACE_TO_FACE_CONTACT = "FACE_TO_FACE_CONTACT"
+    SUPERVISION_LEVEL_REVIEW = "SUPERVISION_LEVEL_REVIEW"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -225,6 +226,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_FROM_MEDIUM_OR_MINIMUM,
             TaskCompletionEventType.GRANTED_SUPERVISION_SENTENCE_REDUCTION,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
+            TaskCompletionEventType.SUPERVISION_LEVEL_REVIEW,
         ]:
             return WorkflowsSystemType.SUPERVISION
         raise ValueError(
@@ -266,6 +268,12 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
+            # TODO(#78423): A periodic supervision-level review is not by
+            # itself a downgrade — the review may or may not result in one.
+            # Once we have a real review-completion source, consider whether
+            # the actual downgrade (if any) should drive the completion event
+            # and let the review be used for other purposes instead.
+            TaskCompletionEventType.SUPERVISION_LEVEL_REVIEW,
         ]:
             return DecarceralImpactType.NO_DECARCERAL_IMPACT
         if self in [
@@ -396,6 +404,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
             TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
+            TaskCompletionEventType.SUPERVISION_LEVEL_REVIEW,
         ]:
             return False
         raise ValueError(
@@ -423,6 +432,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
+            TaskCompletionEventType.SUPERVISION_LEVEL_REVIEW,
         ]:
             return True
         if self in [

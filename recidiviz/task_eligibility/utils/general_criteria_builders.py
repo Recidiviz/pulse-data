@@ -2074,20 +2074,48 @@ def denial_reasons_criteria_builder(
     )
 
 
+# States that maintain their own case_type/supervision_level override view
+# (not included in the state-agnostic case_type_supervision_level_spans view).
+_STATES_WITH_CASE_TYPE_SUPERVISION_LEVEL_OVERRIDE_VIEW = {
+    StateCode.US_MO,
+    StateCode.US_TX,
+}
+
+
 def supervision_case_type_is_criteria_builder(
-    case_types: List[str], criteria_name: str, description: str
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    case_types: List[str],
+    criteria_name: str,
+    description: str,
+    state_code: Optional[StateCode] = None,
+) -> (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder
+    | StateSpecificTaskCriteriaBigQueryViewBuilder
+):
     """Returns a criteria view builder for spans when someone has a specific supervision case type.
 
     Args:
         case_types (List[str]): List of case types to include in the criteria.
         criteria_name (str): The name of the criterion.
         description (str): A brief description of the criterion.
+        state_code (Optional[StateCode]): If provided, returns a
+            StateSpecificTaskCriteriaBigQueryViewBuilder scoped to that state and
+            reads from the state-specific override view when one exists (e.g.,
+            us_tx_case_type_supervision_level_spans_materialized). If None,
+            returns a StateAgnosticTaskCriteriaBigQueryViewBuilder reading from
+            the state-agnostic view.
 
     Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: A builder for spans when someone
-            has one of the specified supervision case types.
+        StateAgnosticTaskCriteriaBigQueryViewBuilder |
+        StateSpecificTaskCriteriaBigQueryViewBuilder: A builder for spans when
+            someone has one of the specified supervision case types.
     """
+    if state_code in _STATES_WITH_CASE_TYPE_SUPERVISION_LEVEL_OVERRIDE_VIEW:
+        source_view = (
+            f"{state_code.value.lower()}_case_type_supervision_level_spans_materialized"
+        )
+    else:
+        source_view = "case_type_supervision_level_spans_materialized"
+
     query = f"""
     SELECT
         ctsl.state_code,
@@ -2100,20 +2128,29 @@ def supervision_case_type_is_criteria_builder(
                 ctsl.case_type AS case_type
         )) AS reason,
         ctsl.case_type
-    FROM `{{project_id}}.tasks_views.case_type_supervision_level_spans_materialized` ctsl
+    FROM `{{project_id}}.tasks_views.{source_view}` ctsl
         WHERE {f"ctsl.case_type IN ({list_to_query_string(case_types, quoted=True, single_quote=True)})" if case_types else "FALSE"}
 """
+    reasons_fields = [
+        ReasonsField(
+            name="case_type",
+            type=bigquery.enums.StandardSqlTypeNames.STRING,
+            description="The supervision case type.",
+        ),
+    ]
+    if state_code is not None:
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            state_code=state_code,
+            criteria_name=criteria_name,
+            criteria_spans_query_template=query,
+            description=description,
+            reasons_fields=reasons_fields,
+        )
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
         criteria_spans_query_template=query,
         description=description,
-        reasons_fields=[
-            ReasonsField(
-                name="case_type",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="The supervision case type.",
-            ),
-        ],
+        reasons_fields=reasons_fields,
     )
 
 

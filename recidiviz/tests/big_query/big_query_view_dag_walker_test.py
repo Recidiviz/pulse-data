@@ -1286,6 +1286,12 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="task_eligibility_completion_events_us_ix",
                 table_id="transfer_to_minimum_facility",
             ),
+            # TODO(#78423): zero-row placeholder until the real SISP-review
+            # completion source is wired up.
+            BigQueryAddress(
+                dataset_id="task_eligibility_completion_events_us_tx",
+                table_id="supervision_level_review",
+            ),
         }
         if node.view.address in known_empty_parent_view_addresss:
             return

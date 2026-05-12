@@ -26,13 +26,15 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 
 _CRITERIA_NAME = "SUPERVISION_CASE_TYPE_IS_SEX_OFFENSE"
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = assert_type(
     supervision_case_type_is_criteria_builder(
         case_types=["SEX_OFFENSE"], criteria_name=_CRITERIA_NAME, description=__doc__
-    )
+    ),
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
