@@ -14,14 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the MergeIngestViewRootEntityTrees PTransform."""
+"""Tests the MergeIngestViewRootEntityTrees PTransform with state ingest entities."""
 from datetime import date, datetime
 from types import ModuleType
 from typing import Iterable, Optional, Tuple
 
 import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
-from mock import patch
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -34,6 +33,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
     IngestViewContentsContext,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateIncarcerationPeriod,
@@ -41,7 +41,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
 )
-from recidiviz.pipelines.ingest.activity.state.merge_ingest_view_root_entity_trees import (
+from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -59,7 +59,7 @@ from recidiviz.tests.pipelines.ingest.activity.state.ingest_region_test_mixin im
 class TestMergeIngestViewRootEntityTrees(
     BigQueryEmulatorTestCase, IngestRegionTestMixin
 ):
-    """Tests the MergeIngestViewRootEntityTrees PTransform."""
+    """Tests the MergeIngestViewRootEntityTrees PTransform with state entities."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -161,17 +161,12 @@ class TestMergeIngestViewRootEntityTrees(
                 )
             )
             | MergeIngestViewRootEntityTrees(
-                "ingestMultipleChildren",
-                self.state_code(),
+                "ingestMultipleChildren", entities_module=state_entities
             )
         )
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
-    @patch(
-        "recidiviz.pipelines.ingest.activity.state.merge_ingest_view_root_entity_trees.INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS",
-        {StateCode.US_DD: {"test_ingest_view"}},
-    )
     def test_merge_entity_trees_passes_with_exemptions(self) -> None:
         expected_input = [
             (
@@ -230,16 +225,13 @@ class TestMergeIngestViewRootEntityTrees(
             | beam.Create(expected_input)
             | MergeIngestViewRootEntityTrees(
                 "test_ingest_view",
-                self.state_code(),
+                entities_module=state_entities,
+                should_throw_on_conflicts=False,
             )
         )
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
-    @patch(
-        "recidiviz.pipelines.ingest.activity.state.merge_ingest_view_root_entity_trees.INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS",
-        {StateCode.US_DD: {"test_ingest_view"}},
-    )
     def test_merge_entity_trees_passes_with_exemptions_deeper_in_tree(self) -> None:
         expected_input = [
             (
@@ -343,16 +335,13 @@ class TestMergeIngestViewRootEntityTrees(
             | beam.Create(expected_input)
             | MergeIngestViewRootEntityTrees(
                 "test_ingest_view",
-                self.state_code(),
+                entities_module=state_entities,
+                should_throw_on_conflicts=False,
             )
         )
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
 
-    @patch(
-        "recidiviz.pipelines.ingest.activity.state.merge_ingest_view_root_entity_trees.INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS",
-        {},
-    )
     def test_merge_entity_trees_fails_without_exemptions(self) -> None:
         expected_input = [
             (
@@ -387,7 +376,9 @@ class TestMergeIngestViewRootEntityTrees(
         _ = (
             self.test_pipeline
             | beam.Create(expected_input)
-            | MergeIngestViewRootEntityTrees("test_ingest_view", self.state_code())
+            | MergeIngestViewRootEntityTrees(
+                "test_ingest_view", entities_module=state_entities
+            )
         )
         with self.assertRaisesRegex(RuntimeError, r".*EntityMergingError.*"):
             self.test_pipeline.run()

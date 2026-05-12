@@ -14,15 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Type aliases shared across pipeline transforms."""
-
-from recidiviz.pipelines.ingest.types import ExternalIdKey
-
-ExternalIdClusterEdge = tuple[ExternalIdKey, ExternalIdKey | None]
-ExternalIdCluster = tuple[ExternalIdKey, set[ExternalIdKey]]
-
-# Beam does not have a standard datetime coder for datetime objects, so we use
-# UTC timestamps (floats) for any keys that require datetime objects.
-UpperBoundDate = float
-
-IngestViewName = str

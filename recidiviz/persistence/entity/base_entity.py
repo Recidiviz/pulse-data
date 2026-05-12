@@ -265,6 +265,11 @@ class HasMultipleExternalIdsEntity(Generic[ExternalIdEntityT], Entity):
         return super().__new__(cls)
 
 
+HasMultipleExternalIdsEntityT = TypeVar(
+    "HasMultipleExternalIdsEntityT", bound=HasMultipleExternalIdsEntity
+)
+
+
 class EnumEntity(Entity):
     """An entity that is a simple wrapper around an enum value and its associated raw
     text.

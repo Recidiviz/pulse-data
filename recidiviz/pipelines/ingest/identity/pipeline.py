@@ -63,7 +63,7 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         #    Read ingest view results from BQ
         #    → PCollection[(UpperBoundDate, IdentityFragment)]
         #
-        # 2. MergeIngestViewIdentityFragments
+        # 2. MergeIngestViewRootEntityTrees[IdentityFragment]
         #    Merge fragments sharing an external ID key and date within a single ingest view
         #    → PCollection[(ExternalIdKey, (UpperBoundDate, IngestViewName, IdentityFragment))]
         #

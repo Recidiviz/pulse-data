@@ -21,7 +21,7 @@ import unittest
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.pipelines.ingest.identity.entities import (
+from recidiviz.persistence.entity.batch_identity_clustering.entities import (
     IdentityAttributes,
     IdentityEmail,
     IdentityEthnicity,

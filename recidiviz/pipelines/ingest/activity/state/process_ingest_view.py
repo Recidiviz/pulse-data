@@ -33,14 +33,18 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
+from recidiviz.pipelines.ingest.activity.state.exemptions import (
+    INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
+)
 from recidiviz.pipelines.ingest.activity.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
-from recidiviz.pipelines.ingest.activity.state.merge_ingest_view_root_entity_trees import (
+from recidiviz.pipelines.ingest.transforms.generate_entities import GenerateEntities
+from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )
-from recidiviz.pipelines.ingest.transforms.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.types import (
     ExternalIdKey,
     IngestViewName,
@@ -125,6 +129,12 @@ class ProcessIngestView(beam.PTransform):
             | f"Merge {self.ingest_view_name} entities"
             >> MergeIngestViewRootEntityTrees(
                 ingest_view_name=self.ingest_view_name,
-                state_code=self.state_code,
+                entities_module=state_entities,
+                should_throw_on_conflicts=(
+                    self.ingest_view_name
+                    not in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(
+                        self.state_code, {}
+                    )
+                ),
             )
         )

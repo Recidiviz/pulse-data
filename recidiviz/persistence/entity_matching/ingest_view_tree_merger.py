@@ -20,20 +20,23 @@ on a single day* into as few trees as possible.
 import json
 import logging
 from collections import defaultdict
+from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from recidiviz.persistence.entity.base_entity import EntityT, ExternalIdEntity
+from recidiviz.persistence.entity.base_entity import (
+    EntityT,
+    ExternalIdEntity,
+    HasMultipleExternalIdsEntityT,
+)
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_deserialize import Entity
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import get_flat_fields_json_str
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     root_entity_external_id_keys,
 )
-from recidiviz.persistence.persistence_utils import RootEntityT
 
 
 class EntityMergingError(Exception):
@@ -49,19 +52,19 @@ class IngestViewTreeMerger:
     on a single day* into as few trees as possible.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, entities_module: ModuleType) -> None:
         self.entities_module_context = entities_module_context_for_module(
-            state_entities
+            entities_module
         )
         self.field_index = self.entities_module_context.field_index()
 
     def merge(
         self,
-        ingested_root_entities: List[RootEntityT],
+        ingested_root_entities: List[HasMultipleExternalIdsEntityT],
         # TODO(#24679): Delete this argument entirely once
         #  INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS is empty and deleted.
         should_throw_on_conflicts: bool = True,
-    ) -> List[RootEntityT]:
+    ) -> List[HasMultipleExternalIdsEntityT]:
         """Merges all ingested root entity trees that can be connected via external_id.
 
         Returns the list of unique root entities after this merging.
@@ -71,7 +74,7 @@ class IngestViewTreeMerger:
 
         buckets = self.bucket_ingested_root_entities(ingested_root_entities)
 
-        unique_root_entities: List[RootEntityT] = []
+        unique_root_entities: List[HasMultipleExternalIdsEntityT] = []
 
         # Merge each bucket into one entity
         for root_entities_to_merge in buckets:
@@ -86,17 +89,19 @@ class IngestViewTreeMerger:
     @classmethod
     def bucket_ingested_root_entities(
         cls,
-        ingested_root_entities: List[RootEntityT],
-    ) -> List[List[RootEntityT]]:
+        ingested_root_entities: List[HasMultipleExternalIdsEntityT],
+    ) -> List[List[HasMultipleExternalIdsEntityT]]:
         """Buckets the list of ingested root entities into groups that all should be
         merged into the same root entity, based on their external ids. Each inner list
         in the returned list should be merged into one root entity.
         """
 
-        result_buckets: List[List[RootEntityT]] = []
+        result_buckets: List[List[HasMultipleExternalIdsEntityT]] = []
 
         # First bucket all the root entities that should be merged
-        bucketed_root_entities_dict: Dict[str, List[RootEntityT]] = defaultdict(list)
+        bucketed_root_entities_dict: Dict[
+            str, List[HasMultipleExternalIdsEntityT]
+        ] = defaultdict(list)
         external_id_key_to_primary: Dict[str, str] = {}
         for root_entity in ingested_root_entities:
             external_id_keys = root_entity_external_id_keys(root_entity)
@@ -180,65 +185,121 @@ class IngestViewTreeMerger:
                 get_flat_fields_json_str(entity, self.entities_module_context)
             )
 
-        # Get the entity that will become the merged entity
         primary_entity = entity_group[0]
 
-        # Make sure all the root entities have the exact same flat field values (e.g.
-        # everything other than relationship fields) as the others so we are justified
-        # in merging.
-        if len(flat_field_reprs) > 1:
-            # If there is more than one string representation of the flat fields, then
-            # we have objects with conflicting info that we are trying to merge.
-            conflicting_fields = self._get_conflicting_fields(flat_field_reprs)
-
-            entity_type = primary_entity.__class__.__name__
-            fields_str = ", ".join(sorted(conflicting_fields))
-
-            error_message_parts = [
-                f"Found multiple different ingested entities of type [{entity_type}]",
-                f"with conflicting information in fields: {fields_str}",
-                "",
-                "Entities with conflicts:",
-            ]
-
-            for i, entity in enumerate(entity_group, 1):
-                error_message_parts.append(f"  Entity {i}: {entity.limited_pii_repr()}")
-
-            error_message = "\n".join(error_message_parts)
-
-            if should_throw_on_conflicts:
-                raise EntityMergingError(
-                    error_message,
-                    entity_name=primary_entity.get_entity_name(),
-                )
-            logging.error(error_message)
+        self._check_flat_field_conflicts(
+            entity_group, flat_field_reprs, should_throw_on_conflicts
+        )
 
         children_by_field = self._get_children_grouped_by_field(entity_group)
-
-        # Merge each child group into a set of merged children and attach to primary
-        # entity.
         for field, child_list in children_by_field.items():
-            groups = self._bucket_ingested_single_id_entities(child_list)
-            merged_children = []
-            for group in groups:
-                merged_child, group_seen_objects = self._merge_matched_tree_group(
-                    group, should_throw_on_conflicts
-                )
-
-                if seen_objects.intersection(group_seen_objects):
-                    # If we have made it here, there are multiple paths to one or more
-                    # objects so the input is not a tree.
-                    raise ValueError(
-                        f"Already have seen one of the objects in [{merged_child}] "
-                        f"- input is not a tree."
-                    )
-                seen_objects.update(group_seen_objects)
-
-                if merged_child:
-                    merged_children.append(merged_child)
-            primary_entity.set_field_from_list(field, merged_children)
+            self._merge_children_for_field(
+                primary_entity,
+                field,
+                child_list,
+                seen_objects,
+                should_throw_on_conflicts,
+            )
 
         return primary_entity, seen_objects
+
+    def _check_flat_field_conflicts(
+        self,
+        entity_group: List[EntityT],
+        flat_field_reprs: Set[str],
+        should_throw_on_conflicts: bool,
+    ) -> None:
+        """Raises EntityMergingError (or logs) if entities in the group have
+        conflicting flat field values.
+        """
+        if len(flat_field_reprs) <= 1:
+            return
+
+        primary_entity = entity_group[0]
+        conflicting_fields = self._get_conflicting_fields(flat_field_reprs)
+
+        entity_type = primary_entity.__class__.__name__
+        fields_str = ", ".join(sorted(conflicting_fields))
+
+        error_message_parts = [
+            f"Found multiple different ingested entities of type [{entity_type}]",
+            f"with conflicting information in fields: {fields_str}",
+            "",
+            "Entities with conflicts:",
+        ]
+
+        for i, entity in enumerate(entity_group, 1):
+            error_message_parts.append(f"  Entity {i}: {entity.limited_pii_repr()}")
+
+        error_message = "\n".join(error_message_parts)
+
+        if should_throw_on_conflicts:
+            raise EntityMergingError(
+                error_message,
+                entity_name=primary_entity.get_entity_name(),
+            )
+        logging.error(error_message)
+
+    def _merge_children_for_field(
+        self,
+        primary_entity: EntityT,
+        field: str,
+        child_list: List[EntityT],
+        seen_objects: Set[int],
+        should_throw_on_conflicts: bool,
+    ) -> None:
+        """Merges all children for a single forward-edge field and attaches them
+        to |primary_entity|. Mutates |seen_objects| to track visited entities.
+
+        For singular (non-list) forward edges, raises EntityMergingError if
+        merging produces multiple distinct children. This catches conflicts that
+        the flat-field check cannot see because the conflicting values live in
+        child entities, not in flat fields on the parent. For example, two
+        root entity rows that share an external ID but provide different values
+        for a singular child field::
+
+            Row 1 → Parent(child=Child(value="A"))
+            Row 2 → Parent(child=Child(value="B"))
+
+        Because ``child`` is a singular forward edge, the two Child objects are
+        bucketed separately and both survive merging — producing two children
+        for a field that can only hold one.
+        """
+        groups = self._bucket_ingested_single_id_entities(child_list)
+        merged_children: List[EntityT] = []
+        for group in groups:
+            merged_child, group_seen_objects = self._merge_matched_tree_group(
+                group, should_throw_on_conflicts
+            )
+
+            if seen_objects.intersection(group_seen_objects):
+                raise ValueError(
+                    f"Already have seen one of the objects in [{merged_child}] "
+                    f"- input is not a tree."
+                )
+            seen_objects.update(group_seen_objects)
+
+            if merged_child:
+                merged_children.append(merged_child)
+
+        if (
+            not isinstance(primary_entity.get_field(field), list)
+            and len(merged_children) > 1
+        ):
+            entity_type = primary_entity.__class__.__name__
+            child_type = merged_children[0].__class__.__name__
+            error_message = (
+                f"Found multiple different ingested [{child_type}] entities "
+                f"for singular field [{field}] on [{entity_type}]"
+            )
+            if should_throw_on_conflicts:
+                raise EntityMergingError(
+                    error_message, entity_name=primary_entity.get_entity_name()
+                )
+            logging.error(error_message)
+            merged_children = merged_children[:1]
+
+        primary_entity.set_field_from_list(field, merged_children)
 
     def _bucket_ingested_single_id_entities(
         self, entity_list: List[EntityT]

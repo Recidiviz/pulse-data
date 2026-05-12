@@ -21,7 +21,7 @@ import unittest
 import attr
 
 from recidiviz.common.constants.identity import PersonType
-from recidiviz.pipelines.ingest.identity.entities import (
+from recidiviz.persistence.entity.batch_identity_clustering.entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityName,

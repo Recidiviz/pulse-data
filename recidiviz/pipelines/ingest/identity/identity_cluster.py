@@ -21,7 +21,7 @@ from __future__ import annotations
 import attr
 
 from recidiviz.common.attr_validators import is_list_of, is_str
-from recidiviz.pipelines.ingest.identity.entities import (
+from recidiviz.persistence.entity.batch_identity_clustering.entities import (
     IdentityAttributes,
     IdentityExternalId,
 )

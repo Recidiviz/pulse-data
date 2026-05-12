@@ -23,9 +23,21 @@ from typing import List, Union
 import attr
 from more_itertools import one
 
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.persistence.entity.batch_identity_clustering import (
+    entities as identity_entities,
+)
+from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+    IdentityAttributes,
+    IdentityExternalId,
+    IdentityFragment,
+    IdentityName,
+    IdentityPhoneNumber,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     EntityMergingError,
@@ -64,7 +76,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_persons[0])
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -85,7 +97,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_staff[0])
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_staff)
 
@@ -112,7 +124,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_persons[0])
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -147,7 +159,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
         ]
         expected_staff = attr.evolve(ingested_staff[0])
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_staff)
 
@@ -184,7 +196,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -237,7 +249,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -283,7 +295,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -352,7 +364,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -376,7 +388,7 @@ class TestIngestViewTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = IngestViewTreeMerger()
+        tree_merger = IngestViewTreeMerger(state_entities)
 
         with self.assertRaises(EntityMergingError) as context:
             tree_merger.merge(ingested_staff)
@@ -391,6 +403,49 @@ Entities with conflicts:
   Entity 2: StateStaff(staff_id=None, external_ids=[StateStaffExternalId(external_id='ID_1', id_type='ID_TYPE_1', staff_external_id_id=None)])"""
 
         self.assertEqual(expected_error_message, error_message)
+
+    def test_merge_identity_fragments_unions_list_children(self) -> None:
+        """Two IdentityFragments sharing an external ID have their list-typed
+        children (phone_numbers) unioned, same as state entity list children."""
+        fragments = [
+            IdentityFragment(
+                tenant="US_OZ",
+                external_ids=[
+                    IdentityExternalId(
+                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                    )
+                ],
+                attributes=IdentityAttributes(
+                    tenant="US_OZ",
+                    person_type=PersonType.JII,
+                    phone_numbers=[
+                        IdentityPhoneNumber(tenant="US_OZ", number="5550100001"),
+                    ],
+                ),
+            ),
+            IdentityFragment(
+                tenant="US_OZ",
+                external_ids=[
+                    IdentityExternalId(
+                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                    )
+                ],
+                attributes=IdentityAttributes(
+                    tenant="US_OZ",
+                    person_type=PersonType.JII,
+                    phone_numbers=[
+                        IdentityPhoneNumber(tenant="US_OZ", number="5550100002"),
+                    ],
+                ),
+            ),
+        ]
+
+        tree_merger = IngestViewTreeMerger(identity_entities)
+        result = tree_merger.merge(fragments)
+
+        merged = one(result)
+        numbers = {p.number for p in merged.attributes.phone_numbers}
+        self.assertEqual({"5550100001", "5550100002"}, numbers)
 
 
 class TestBucketIngestedRootEntities(unittest.TestCase):
@@ -646,4 +701,95 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
         self.assertCountEqual(
             [[ingested_root_entities[0]], [ingested_root_entities[1]]],
             buckets,
+        )
+
+
+class TestSingularForwardEdgeConflicts(unittest.TestCase):
+    """Tests for conflict detection on singular (non-list) forward edges.
+
+    State entities use list-typed forward edges everywhere, so conflicts there
+    manifest as duplicates in a list and are handled by normal child merging.
+    Identity entities have singular forward edges (e.g. IdentityAttributes.name),
+    where two distinct children for the same field is a conflict that must be
+    detected separately.
+    """
+
+    def test_singular_forward_edge_conflict_raises(self) -> None:
+        """Two IdentityFragments sharing an external ID but with different names
+        should raise EntityMergingError because 'name' is a singular forward
+        edge on IdentityAttributes."""
+        fragments = [
+            IdentityFragment(
+                tenant="US_OZ",
+                external_ids=[
+                    IdentityExternalId(
+                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                    )
+                ],
+                attributes=IdentityAttributes(
+                    tenant="US_OZ",
+                    person_type=PersonType.JII,
+                    name=IdentityName(tenant="US_OZ", given_name="JOHN", surname="DOE"),
+                ),
+            ),
+            IdentityFragment(
+                tenant="US_OZ",
+                external_ids=[
+                    IdentityExternalId(
+                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                    )
+                ],
+                attributes=IdentityAttributes(
+                    tenant="US_OZ",
+                    person_type=PersonType.JII,
+                    name=IdentityName(tenant="US_OZ", given_name="JANE", surname="DOE"),
+                ),
+            ),
+        ]
+
+        tree_merger = IngestViewTreeMerger(identity_entities)
+        with self.assertRaises(EntityMergingError):
+            tree_merger.merge(fragments)
+
+    def test_singular_forward_edge_conflict_suppressed(self) -> None:
+        """When should_throw_on_conflicts is False, a singular forward edge
+        conflict should log instead of raising and keep the first child."""
+        fragments = [
+            IdentityFragment(
+                tenant="US_OZ",
+                external_ids=[
+                    IdentityExternalId(
+                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                    )
+                ],
+                attributes=IdentityAttributes(
+                    tenant="US_OZ",
+                    person_type=PersonType.JII,
+                    name=IdentityName(tenant="US_OZ", given_name="JOHN", surname="DOE"),
+                ),
+            ),
+            IdentityFragment(
+                tenant="US_OZ",
+                external_ids=[
+                    IdentityExternalId(
+                        tenant="US_OZ", external_id="P1", id_type="US_OZ_EG"
+                    )
+                ],
+                attributes=IdentityAttributes(
+                    tenant="US_OZ",
+                    person_type=PersonType.JII,
+                    name=IdentityName(tenant="US_OZ", given_name="JANE", surname="DOE"),
+                ),
+            ),
+        ]
+
+        tree_merger = IngestViewTreeMerger(identity_entities)
+        result = tree_merger.merge(fragments, should_throw_on_conflicts=False)
+
+        merged = one(result)
+        self.assertIsNotNone(merged.attributes.name)
+        assert merged.attributes.name is not None
+        self.assertIn(
+            merged.attributes.name.given_name,
+            ("JOHN", "JANE"),
         )

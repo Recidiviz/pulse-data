@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Pipeline-internal entity classes for the identity ingest pipeline.
+"""Entity classes for the batch identity clustering pipeline.
 
 These are lightweight representations used within the pipeline and are distinct
 from both the Identity Service's domain objects and the activity ingest pipeline's
