@@ -17,13 +17,34 @@
 """Contains US_AZ implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 from typing import List
 
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
+)
 from recidiviz.pipelines.utils.incarceration_period_utils import (
     legacy_standardize_purpose_for_incarceration_values,
 )
+from recidiviz.pipelines.utils.period_utils import (
+    find_last_terminated_period_on_or_before_date,
+)
+from recidiviz.pipelines.utils.shared_constants import (
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+)
+from recidiviz.pipelines.utils.supervision_period_utils import (
+    filter_out_supervision_period_types_excluded_from_pre_admission_search,
+)
+
+_NEW_CRIME_RECOMMITMENT_RAW_TEXTS = frozenset({"RECOMMITMENT", "NEW COMMITMENT"})
 
 
 class UsAzIncarcerationNormalizationDelegate(
@@ -42,3 +63,64 @@ class UsAzIncarcerationNormalizationDelegate(
         return legacy_standardize_purpose_for_incarceration_values(
             incarceration_periods
         )
+
+    def normalize_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+    ) -> StateIncarcerationPeriod:
+        """Reclassifies Recommitment/New Commitment periods as REVOCATION when
+        a new felony crime was committed during supervision and a recent supervision
+        period preceded the admission.
+        """
+        incarceration_period = sorted_incarceration_periods[
+            incarceration_period_list_index
+        ]
+
+        raw_text = incarceration_period.admission_reason_raw_text
+        if not raw_text or raw_text.upper() not in _NEW_CRIME_RECOMMITMENT_RAW_TEXTS:
+            return incarceration_period
+
+        if not incarceration_period.admission_date:
+            return incarceration_period
+
+        relevant_sps = (
+            filter_out_supervision_period_types_excluded_from_pre_admission_search(
+                supervision_period_index.sorted_supervision_periods
+            )
+        )
+
+        pre_commitment_sp = find_last_terminated_period_on_or_before_date(
+            upper_bound_date_inclusive=incarceration_period.admission_date,
+            periods=relevant_sps,
+            maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+        )
+
+        if not pre_commitment_sp:
+            return incarceration_period
+
+        return deep_entity_update(
+            incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+        )
+
+    def get_incarceration_admission_violation_type(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> StateSupervisionViolationType | None:
+        """Returns FELONY for new-crime recommitments during supervision (AZ DOC only
+        houses felons, so any new-crime recommitment is a felony violation).
+        """
+        raw_text = incarceration_period.admission_reason_raw_text
+        if (
+            raw_text
+            and raw_text.upper() in _NEW_CRIME_RECOMMITMENT_RAW_TEXTS
+            and (
+                incarceration_period.admission_reason
+                == StateIncarcerationPeriodAdmissionReason.REVOCATION
+            )
+        ):
+            return StateSupervisionViolationType.FELONY
+        return None
