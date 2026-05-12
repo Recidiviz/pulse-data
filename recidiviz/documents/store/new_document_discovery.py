@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Discovers new documents across all collections for a state and writes them
-to temporary BQ tables, returning batch ranges for downstream processing."""
+to temporary BQ tables, returning upload batches for downstream processing."""
+
 import logging
-import math
 from concurrent import futures
 
 import attr
 
-from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
@@ -36,12 +35,19 @@ from recidiviz.documents.store.document_collection_query_builder import (
 from recidiviz.documents.store.document_metadata_updates_query_builder import (
     DocumentMetadataUpdatesQueryBuilder,
 )
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
+)
 from recidiviz.documents.store.document_store_types import (
-    DocumentBatchRange,
+    DocumentUploadBatch,
     SingleCollectionDocumentDiscoveryResult,
 )
+from recidiviz.utils.string import StrictStringFormatter
 
-DEFAULT_NUM_BATCHES = 10
+# TODO(#75610) move this constant to DAG definition file once implemented
+UPLOAD_TASK_INSTANCE_COUNT = 10
+# TODO(#73430) Put some thought behind what the batch size should be
+DEFAULT_TARGET_UPLOAD_BATCH_BYTES = 1_000_000_000  # 1 GB
 
 
 @attr.define(frozen=True)
@@ -49,59 +55,52 @@ class DocumentDiscoveryResult:
     """Result of running document discovery for a state.
 
     Attributes:
-        document_batches: Nested list of DocumentBatchRanges to process. Includes collections with new document contents only.
+        document_batches: Nested list of DocumentUploadBatches to process. Includes collections with new document contents only.
         collection_results: Discovery results for each collection. Includes collections with new document contents and
             collections with new metadata rows but no new documents.
     """
 
-    document_batches: list[list[DocumentBatchRange]]
+    document_batches: list[list[DocumentUploadBatch]]
     collection_results: list[SingleCollectionDocumentDiscoveryResult]
-
-
-def build_collection_new_document_batches(
-    collection_name: str,
-    temp_new_documents_table_address: ProjectSpecificBigQueryAddress,
-    new_documents_table_row_count: int,
-    num_batches: int,
-) -> list[DocumentBatchRange]:
-    """Divides rows in the table at |temp_new_documents_table_address| into
-    |num_batches| even ranges. Ranges are 0-indexed."""
-    batch_ranges: list[DocumentBatchRange] = []
-    batch_size = math.ceil(new_documents_table_row_count / num_batches)
-    for i in range(num_batches):
-        start = i * batch_size
-        end = min((i + 1) * batch_size, new_documents_table_row_count)
-        if start >= new_documents_table_row_count:
-            break
-        batch_ranges.append(
-            DocumentBatchRange(
-                collection_name=collection_name,
-                temp_new_document_contents_table_address=temp_new_documents_table_address,
-                start_sequence_num_inclusive=start,
-                end_sequence_num_exclusive=end,
-            )
-        )
-    return batch_ranges
 
 
 def build_document_batches(
     collection_results: list[SingleCollectionDocumentDiscoveryResult],
-    num_batches: int,
-) -> list[list[DocumentBatchRange]]:
-    """Divides each collection's new document contents rows into |num_batches|
-    even ranges, then groups ranges across collections by batch index. Discards
-    collections with zero new document contents rows."""
-    batches: list[list[DocumentBatchRange]] = [[] for _ in range(num_batches)]
+    num_upload_task_instances: int,
+    big_query_client: BigQueryClient,
+) -> list[list[DocumentUploadBatch]]:
+    """Creates DocumentUploadBatches for each collection, then distributes all
+    ranges round-robin across |num_upload_task_instances| task instances."""
+    batch_numbers_query_template = f"""
+SELECT DISTINCT {DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME}
+FROM {{temp_new_document_contents_table_address}}"""
 
+    all_upload_batches: list[DocumentUploadBatch] = []
     for result in collection_results:
-        collection_batch_ranges = build_collection_new_document_batches(
-            collection_name=result.config.name,
-            temp_new_documents_table_address=result.temp_new_document_contents_address,
-            new_documents_table_row_count=result.num_new_document_contents_rows,
-            num_batches=num_batches,
+        if result.num_new_document_contents_rows == 0:
+            continue
+
+        batch_numbers_result = big_query_client.run_query_async(
+            query_str=StrictStringFormatter().format(
+                batch_numbers_query_template,
+                temp_new_document_contents_table_address=result.temp_new_document_contents_address.format_address_for_query(),
+            ),
+            use_query_cache=False,
         )
-        for i, batch_range in enumerate(collection_batch_ranges):
-            batches[i].append(batch_range)
+        all_upload_batches.extend(
+            DocumentUploadBatch(
+                collection_name=result.config.name,
+                temp_new_document_contents_table_address=result.temp_new_document_contents_address,
+                batch_number=row[DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME],
+            )
+            for row in batch_numbers_result.result()
+        )
+
+    batches: list[list[DocumentUploadBatch]] = [
+        [] for _ in range(num_upload_task_instances)
+    ]
+    for i, upload_batch in enumerate(all_upload_batches):
+        batches[i % num_upload_task_instances].append(upload_batch)
 
     return batches
 
@@ -115,7 +114,13 @@ class NewDocumentDiscoverer:
     project_id: str = attr.ib(validator=attr_validators.is_str)
     big_query_client: BigQueryClient = attr.ib()
     job_id: str = attr.ib(validator=attr_validators.is_str)
-    num_batches: int = attr.ib(validator=attr_validators.is_int)
+    upload_task_instance_count: int = attr.ib(
+        validator=attr_validators.is_positive_int, default=UPLOAD_TASK_INSTANCE_COUNT
+    )
+    target_upload_batch_bytes: int = attr.ib(
+        validator=attr_validators.is_positive_int,
+        default=DEFAULT_TARGET_UPLOAD_BATCH_BYTES,
+    )
     diff_query_builder: DocumentCollectionDiffQueryBuilder = attr.ib(
         init=False,
         validator=attr.validators.instance_of(DocumentCollectionDiffQueryBuilder),
@@ -141,15 +146,15 @@ class NewDocumentDiscoverer:
           3. From the temp document metadata updates table, selects distinct
              (document_contents_id, document_text) pairs whose
              document_contents_id does not already have a SUCCESS entry in the
-             document_upload_status table. Each row is assigned a sequence_num
-             and written to a temp new document contents table.
+             document_upload_status table. Each row is assigned a batch number
+             based on cumulative byte size and written to a temp new document
+             contents table.
 
-        The temp new document contents tables are then divided into |num_batches|
-        even ranges based on sequence_num, producing a list of batches where each
-        batch contains a DocumentBatchRange per collection with documents to
-        process.
+        The temp new document contents tables' batch numbers are then used to
+        create DocumentUploadBatches that are distributed round-robin across
+        upload task instances.
 
-        Returns a DocumentDiscoveryResult containing the batch ranges (used for
+        Returns a DocumentDiscoveryResult containing the upload batches (used for
         document upload to gcs) and the temp document metadata updates table
         addresses (used to update the collection metadata tables).
         """
@@ -181,7 +186,9 @@ class NewDocumentDiscoverer:
 
         return DocumentDiscoveryResult(
             document_batches=build_document_batches(
-                collections_with_new_metadata_rows, self.num_batches
+                collections_with_new_metadata_rows,
+                self.upload_task_instance_count,
+                self.big_query_client,
             ),
             collection_results=collections_with_new_metadata_rows,
         )
@@ -216,6 +223,7 @@ class NewDocumentDiscoverer:
             project_id=self.project_id, state_code=config.state_code
         ).build_new_documents_query(
             temp_document_metadata_updates_address=temp_metadata_address,
+            target_batch_bytes=self.target_upload_batch_bytes,
         )
 
         logging.info(

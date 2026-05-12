@@ -35,13 +35,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
-    SEQUENCE_NUM_COLUMN_NAME,
+    DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
     gcs_path_for_task_output,
 )
-from recidiviz.documents.store.document_store_types import DocumentBatchRange
+from recidiviz.documents.store.document_store_types import DocumentUploadBatch
 from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_UPLOAD_FAILURE,
     DOCUMENT_UPLOAD_SUCCESS,
@@ -90,8 +90,8 @@ class GcsDocumentUploader:
     # documents processed by this task.
     upload_datetime: datetime = attr.ib(validator=attr_validators.is_datetime)
 
-    def run(self, batch_ranges: list[DocumentBatchRange]) -> None:
-        """For each `DocumentBatchRange` specifying a range of documents within a `temp_new_document_contents_`
+    def run(self, upload_batches: list[DocumentUploadBatch]) -> None:
+        """For each `DocumentUploadBatch` specifying a batch of documents within a `temp_new_document_contents_`
         table to process:
          1. query the `document_contents_id`s and `document_text`s from BQ
          2. upload `document_text`s to GCS concurrently
@@ -99,16 +99,15 @@ class GcsDocumentUploader:
         """
         errors: list[str] = []
 
-        # TODO(#73430) Build subbatches within each DocumentBatchRange in new_document_discovery
-        for batch_index, batch_range in enumerate(batch_ranges):
+        for batch_index, upload_batch in enumerate(upload_batches):
             try:
                 self._process_batch(
-                    batch_range,
+                    upload_batch,
                     batch_index,
                     batch_timeout_seconds=BATCH_UPLOAD_TIMEOUT_SECONDS,
                 )
             except Exception as e:
-                errors.append(f"{self._log_prefix(batch_range.collection_name)} {e}")
+                errors.append(f"{self._log_prefix(upload_batch.collection_name)} {e}")
 
         if errors:
             raise RuntimeError(
@@ -121,14 +120,14 @@ class GcsDocumentUploader:
 
     def _process_batch(
         self,
-        batch_range: DocumentBatchRange,
+        upload_batch: DocumentUploadBatch,
         batch_index: int,
         batch_timeout_seconds: int,
     ) -> None:
-        document_contents_rows = self._query_documents(batch_range)
+        document_contents_rows = self._query_documents(upload_batch)
 
         results = self._upload_documents(
-            batch_range.collection_name,
+            upload_batch.collection_name,
             document_contents_rows,
             timeout_seconds=batch_timeout_seconds,
         )
@@ -138,7 +137,7 @@ class GcsDocumentUploader:
         failed_uploads = [r for r in results if r.error_message]
         logging.info(
             "%s successfully uploaded %d documents. %d documents failed to upload.",
-            self._log_prefix(batch_range.collection_name),
+            self._log_prefix(upload_batch.collection_name),
             len(results) - len(failed_uploads),
             len(failed_uploads),
         )
@@ -150,17 +149,17 @@ class GcsDocumentUploader:
 
     def _query_documents(
         self,
-        batch_range: DocumentBatchRange,
+        upload_batch: DocumentUploadBatch,
     ) -> list[NewDocumentContentsRow]:
         """Queries `document_contents_id` and `document_text` from the
-        `temp_new_document_contents_` table for the given sequence_num range."""
+        `temp_new_document_contents_` table for the given batch number."""
+        # TODO(#63822) Query document_length and output to status CSV to store in upload status table
         query = f"""
             SELECT
                 {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
                 {DOCUMENT_TEXT_COLUMN_NAME}
-            FROM `{batch_range.temp_new_document_contents_table_address.to_str()}`
-            WHERE {SEQUENCE_NUM_COLUMN_NAME} >= {batch_range.start_sequence_num_inclusive}
-              AND {SEQUENCE_NUM_COLUMN_NAME} < {batch_range.end_sequence_num_exclusive}
+            FROM `{upload_batch.temp_new_document_contents_table_address.to_str()}`
+            WHERE {DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME} = {upload_batch.batch_number}
         """
         query_job = self.big_query_client.run_query_async(
             query_str=query,

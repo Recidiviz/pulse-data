@@ -1,0 +1,6 @@
+person_external_id,person_external_id_type,note_id,note_type,document_contents_id,document_text,document_update_datetime
+P001,US_XX_DOC,NOTE_1,GENERAL,doc_aaa,abcde,2026-01-01 10:00:00
+P002,US_XX_DOC,NOTE_2,GENERAL,doc_bbb,bbbbbbbbbbbbbbb,2026-01-02 10:00:00
+P003,US_XX_DOC,NOTE_3,GENERAL,doc_ccc,cccccccccccccccccccccccccccccc,2026-01-03 10:00:00
+P004,US_XX_DOC,NOTE_4,GENERAL,doc_ddd,dddddddd,2026-01-04 10:00:00
+P005,US_XX_DOC,NOTE_5,GENERAL,doc_eee,eeeeeeeeee,2026-01-05 10:00:00

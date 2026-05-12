@@ -1,0 +1,6 @@
+document_contents_id,document_text,document_length_bytes,document_upload_batch_number
+doc_aaa,abcde,5,0
+doc_bbb,bbbbbbbbbbbbbbb,15,0
+doc_ccc,cccccccccccccccccccccccccccccc,30,1
+doc_ddd,dddddddd,8,2
+doc_eee,eeeeeeeeee,10,2

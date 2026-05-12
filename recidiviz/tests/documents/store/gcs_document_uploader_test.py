@@ -35,7 +35,7 @@ from recidiviz.documents.store.document_store_columns import (
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_task_output,
 )
-from recidiviz.documents.store.document_store_types import DocumentBatchRange
+from recidiviz.documents.store.document_store_types import DocumentUploadBatch
 from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_UPLOAD_FAILURE,
     DOCUMENT_UPLOAD_SUCCESS,
@@ -75,14 +75,13 @@ class TestGcsDocumentUploader(unittest.TestCase):
             upload_datetime=self.upload_datetime,
         )
 
-    def _make_batch_range(
-        self, start: int, end: int, collection_name: str = "test_collection"
-    ) -> DocumentBatchRange:
-        return DocumentBatchRange(
+    def _make_upload_batch(
+        self, batch_number: int, collection_name: str = "test_collection"
+    ) -> DocumentUploadBatch:
+        return DocumentUploadBatch(
             collection_name=collection_name,
             temp_new_document_contents_table_address=self.temp_table,
-            start_sequence_num_inclusive=start,
-            end_sequence_num_exclusive=end,
+            batch_number=batch_number,
         )
 
     def test_uploads_documents_success(self) -> None:
@@ -98,8 +97,8 @@ class TestGcsDocumentUploader(unittest.TestCase):
         self.bq_client.run_query_async.side_effect = [batch_1_job, batch_2_job]
 
         ranges = [
-            self._make_batch_range(0, 2),
-            self._make_batch_range(0, 1),
+            self._make_upload_batch(batch_number=0),
+            self._make_upload_batch(batch_number=1),
         ]
         self.uploader.run(ranges)
 
@@ -159,14 +158,14 @@ class TestGcsDocumentUploader(unittest.TestCase):
 
         self.fs.upload_from_string.side_effect = upload_side_effect
 
-        batch_range = self._make_batch_range(0, 3)
+        upload_batch = self._make_upload_batch(batch_number=0)
         with self.assertRaisesRegex(
             RuntimeError,
             r"Document upload completed with 1 error\(s\):\n"
             r"\[US_XX\] Collection \[test_collection\]: 1 documents failed to upload:\n"
             r"DocumentUploadResult\(document_contents_id='doc_fail', error_message='gcp upload error'\)",
         ):
-            self.uploader.run([batch_range])
+            self.uploader.run([upload_batch])
 
         upload_calls = [
             c
@@ -207,8 +206,10 @@ class TestGcsDocumentUploader(unittest.TestCase):
         self.bq_client.run_query_async.side_effect = [failing_job, ok_job]
 
         ranges = [
-            self._make_batch_range(0, 1, collection_name="failing_collection"),
-            self._make_batch_range(0, 1, collection_name="ok_collection"),
+            self._make_upload_batch(
+                batch_number=0, collection_name="failing_collection"
+            ),
+            self._make_upload_batch(batch_number=0, collection_name="ok_collection"),
         ]
         with self.assertRaisesRegex(
             RuntimeError,
@@ -250,8 +251,8 @@ class TestGcsDocumentUploader(unittest.TestCase):
         self.fs.upload_from_string.side_effect = upload_side_effect
 
         ranges = [
-            self._make_batch_range(0, 1),
-            self._make_batch_range(0, 1),
+            self._make_upload_batch(batch_number=0),
+            self._make_upload_batch(batch_number=1),
         ]
         with self.assertRaisesRegex(
             RuntimeError,
@@ -296,7 +297,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
 
         self.fs.upload_from_string.side_effect = upload_side_effect
 
-        batch_range = self._make_batch_range(0, 2)
+        upload_batch = self._make_upload_batch(batch_number=0)
         with self.assertRaisesRegex(
             RuntimeError,
             r"Document upload completed with 1 error\(s\):\n"
@@ -304,7 +305,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             r"DocumentUploadResult\(document_contents_id='doc_slow', "
             r"error_message='Batch timed out after 0\.1s'\)",
         ):
-            self.uploader.run([batch_range])
+            self.uploader.run([upload_batch])
         hang_event.set()
 
         csv_calls = [

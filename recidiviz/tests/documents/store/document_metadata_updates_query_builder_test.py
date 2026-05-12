@@ -96,11 +96,17 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         - NOTE_3: genuinely new document, included
         - NOTE_4: deletion (NULL document_contents_id), excluded
         - NOTE_6: previously failed upload, included
+
+        With batch_bytes=20 and documents ordered by document_contents_id:
+        - failed_upload_ddd (18 bytes): preceding sum = 0  -> batch 0
+        - new_contents_bbb  (10 bytes): preceding sum = 18 -> batch 0
+        - new_contents_ccc  (10 bytes): preceding sum = 28 -> batch 1
         """
         self._load_temp_metadata_and_upload_status("new_documents")
 
         query = self.query_builder.build_new_documents_query(
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            target_batch_bytes=20,
         )
         results = self.query(query)
 
@@ -114,11 +120,39 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
             expect_unique_output_rows=False,
         )
 
+    def test_new_documents_query_batching(self) -> None:
+        """Tests batch assignment with batch_bytes=20.
+        Documents ordered by document_contents_id:
+        - doc_aaa ( 5 bytes): preceding sum =  0 -> batch 0
+        - doc_bbb (15 bytes): preceding sum =  5 -> batch 0
+        - doc_ccc (30 bytes): preceding sum = 20 -> batch 1 (oversized doc, gets own batch)
+        - doc_ddd ( 8 bytes): preceding sum = 50 -> batch 2
+        - doc_eee (10 bytes): preceding sum = 58 -> batch 2
+        """
+        self._load_temp_metadata_and_upload_status("new_documents_batching")
+
+        query = self.query_builder.build_new_documents_query(
+            temp_document_metadata_updates_address=self.temp_metadata_address,
+            target_batch_bytes=20,
+        )
+        results = self.query(query)
+
+        self.compare_results_to_fixture(
+            results=results,
+            expected_output_fixture_path=self._fixture_path(
+                "new_documents_batching", "new_documents_output"
+            ),
+            expect_missing_fixtures_on_empty_results=False,
+            create_expected=False,
+            expect_unique_output_rows=False,
+        )
+
     def test_new_documents_query_empty_temp_metadata(self) -> None:
         self._create_empty_temp_metadata_and_upload_status()
 
         query = self.query_builder.build_new_documents_query(
             temp_document_metadata_updates_address=self.temp_metadata_address,
+            target_batch_bytes=1_000_000_000,
         )
         results = self.query(query)
         self.assertEqual(len(results), 0)

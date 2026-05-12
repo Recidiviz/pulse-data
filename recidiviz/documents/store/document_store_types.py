@@ -25,17 +25,16 @@ from recidiviz.documents.store.document_collection_config import (
 
 
 @attr.define(frozen=True, kw_only=True)
-class DocumentBatchRange:
-    """A range of documents within a temp table to process. The table at
-    |temp_new_document_contents_table_address| is expected to have both document_contents_id and
-    sequence_num columns."""
+class DocumentUploadBatch:
+    """A batch of documents within a temp table to process. The table at
+    |temp_new_document_contents_table_address| is expected to have a
+    document_upload_batch_number column assigned by cumulative byte size."""
 
     collection_name: str = attr.ib(validator=attr_validators.is_str)
     temp_new_document_contents_table_address: ProjectSpecificBigQueryAddress = attr.ib(
         validator=attr.validators.instance_of(ProjectSpecificBigQueryAddress)
     )
-    start_sequence_num_inclusive: int = attr.ib(validator=attr_validators.is_int)
-    end_sequence_num_exclusive: int = attr.ib(validator=attr_validators.is_int)
+    batch_number: int = attr.ib(validator=attr_validators.is_int)
 
 
 @attr.define(frozen=True, kw_only=True)

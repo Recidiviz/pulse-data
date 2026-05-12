@@ -28,7 +28,8 @@ DOCUMENT_CONTENTS_ID_COLUMN_NAME = "document_contents_id"
 DOCUMENT_TEXT_COLUMN_NAME = "document_text"
 DOCUMENT_UPDATE_DATETIME_COLUMN_NAME = "document_update_datetime"
 ROW_CREATE_DATETIME_COLUMN_NAME = "row_create_datetime"
-SEQUENCE_NUM_COLUMN_NAME = "sequence_num"
+DOCUMENT_LENGTH_BYTES_COLUMN_NAME = "document_length_bytes"
+DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME = "document_upload_batch_number"
 
 _ALL_COLUMN_DEFINITIONS = [
     SchemaField(
@@ -92,10 +93,16 @@ _ALL_COLUMN_DEFINITIONS = [
         description="Datetime when this metadata row was written by the document store process",
     ),
     SchemaField(
-        name=SEQUENCE_NUM_COLUMN_NAME,
+        name=DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
         field_type=SqlTypeNames.INT64.value,
         mode="REQUIRED",
-        description="Sequence number assigned to each document in a temp table, used to batch documents for processing",
+        description="Length of the document_text in bytes",
+    ),
+    SchemaField(
+        name=DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
+        field_type=SqlTypeNames.INT64.value,
+        mode="REQUIRED",
+        description="Batch number assigned to each document based on cumulative byte size",
     ),
 ]
 

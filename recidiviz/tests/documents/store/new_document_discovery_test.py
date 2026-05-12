@@ -24,13 +24,15 @@ from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
     collect_document_collection_configs,
 )
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
+)
 from recidiviz.documents.store.document_store_types import (
-    DocumentBatchRange,
+    DocumentUploadBatch,
     SingleCollectionDocumentDiscoveryResult,
 )
 from recidiviz.documents.store.new_document_discovery import (
     NewDocumentDiscoverer,
-    build_collection_new_document_batches,
     build_document_batches,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -44,14 +46,13 @@ class TestBuildBatches(unittest.TestCase):
             project_id="recidiviz-testing", dataset_id="ds", table_id="t1"
         )
 
-    def _make_batch_range(
-        self, start: int, end: int, name: str = "test_collection"
-    ) -> DocumentBatchRange:
-        return DocumentBatchRange(
+    def _make_upload_batch(
+        self, batch_number: int, name: str = "test_collection"
+    ) -> DocumentUploadBatch:
+        return DocumentUploadBatch(
             collection_name=name,
             temp_new_document_contents_table_address=self.addr,
-            start_sequence_num_inclusive=start,
-            end_sequence_num_exclusive=end,
+            batch_number=batch_number,
         )
 
     def _make_collection_doc_discovery_result(
@@ -67,22 +68,14 @@ class TestBuildBatches(unittest.TestCase):
             num_document_metadata_updates_rows=num_new_document_contents_rows,
         )
 
-    def test_build_collection_new_document_batches(self) -> None:
-        batch_ranges = build_collection_new_document_batches(
-            collection_name="test_collection",
-            temp_new_documents_table_address=self.addr,
-            new_documents_table_row_count=897587,
-            num_batches=3,
-        )
-
-        self.assertEqual(len(batch_ranges), 3)
-        self.assertEqual(batch_ranges[0], self._make_batch_range(start=0, end=299196))
-        self.assertEqual(
-            batch_ranges[1], self._make_batch_range(start=299196, end=598392)
-        )
-        self.assertEqual(
-            batch_ranges[2], self._make_batch_range(start=598392, end=897587)
-        )
+    def _mock_bq_client_with_batch_numbers(self, batch_numbers: list[int]) -> MagicMock:
+        bq_client = MagicMock()
+        mock_job = MagicMock()
+        mock_job.result.return_value = [
+            {DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME: n} for n in batch_numbers
+        ]
+        bq_client.run_query_async.return_value = mock_job
+        return bq_client
 
     def test_build_document_batches(self) -> None:
         configs = collect_document_collection_configs(
@@ -114,52 +107,41 @@ class TestBuildBatches(unittest.TestCase):
             ),
         ]
 
-        batches = build_document_batches(collection_results, 3)
+        bq_client = self._mock_bq_client_with_batch_numbers([0, 1])
+        batches = build_document_batches(
+            collection_results, num_upload_task_instances=2, big_query_client=bq_client
+        )
 
-        self.assertEqual(len(batches), 3)
+        self.assertEqual(len(batches), 2)
         self.assertEqual(
             batches[0],
             [
-                self._make_batch_range(start=0, end=299196, name=name1),
-                self._make_batch_range(start=0, end=35308, name=name2),
-                self._make_batch_range(start=0, end=3256300, name=name3),
+                self._make_upload_batch(batch_number=0, name=name1),
+                self._make_upload_batch(batch_number=0, name=name2),
+                self._make_upload_batch(batch_number=0, name=name3),
             ],
         )
         self.assertEqual(
             batches[1],
             [
-                self._make_batch_range(start=299196, end=598392, name=name1),
-                self._make_batch_range(start=35308, end=70616, name=name2),
-                self._make_batch_range(start=3256300, end=6512600, name=name3),
+                self._make_upload_batch(batch_number=1, name=name1),
+                self._make_upload_batch(batch_number=1, name=name2),
+                self._make_upload_batch(batch_number=1, name=name3),
             ],
         )
-        self.assertEqual(
-            batches[2],
-            [
-                self._make_batch_range(start=598392, end=897587, name=name1),
-                self._make_batch_range(start=70616, end=105923, name=name2),
-                self._make_batch_range(start=6512600, end=9768899, name=name3),
-            ],
-        )
-
-    def test_fewer_rows_than_batches(self) -> None:
-        batch_ranges = build_collection_new_document_batches(
-            collection_name="test_collection",
-            temp_new_documents_table_address=self.addr,
-            new_documents_table_row_count=2,
-            num_batches=5,
-        )
-
-        self.assertEqual(len(batch_ranges), 2)
-        self.assertEqual(batch_ranges[0], self._make_batch_range(start=0, end=1))
-        self.assertEqual(batch_ranges[1], self._make_batch_range(start=1, end=2))
 
     def test_empty_list(self) -> None:
-        batches = build_document_batches([], 3)
+        bq_client = MagicMock()
+        batches = build_document_batches(
+            collection_results=[],
+            num_upload_task_instances=3,
+            big_query_client=bq_client,
+        )
 
         self.assertEqual(batches[0], [])
         self.assertEqual(batches[1], [])
         self.assertEqual(batches[2], [])
+        bq_client.run_query_async.assert_not_called()
 
 
 class TestNewDocumentDiscovery(unittest.TestCase):
@@ -172,7 +154,7 @@ class TestNewDocumentDiscovery(unittest.TestCase):
             project_id="recidiviz-testing",
             big_query_client=self.bq_client,
             job_id="test_job_id",
-            num_batches=3,
+            upload_task_instance_count=3,
         )
 
         def mock_collect_document_collection_configs(
@@ -211,6 +193,9 @@ class TestNewDocumentDiscovery(unittest.TestCase):
             self.bq_client.create_table_from_query.call_count,
             2 * len(self.configs),
         )
+        # No collections have new metadata rows, so build_document_batches
+        # should not issue any batch number queries.
+        self.bq_client.run_query_async.assert_not_called()
 
     def test_creates_temp_tables_and_batches(self) -> None:
         """Tests three categories of collections:
@@ -239,6 +224,12 @@ class TestNewDocumentDiscovery(unittest.TestCase):
                 mock.total_rows = 10
             return mock
 
+        mock_batch_numbers_job = MagicMock()
+        mock_batch_numbers_job.result.return_value = [
+            {DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME: 0}
+        ]
+        self.bq_client.run_query_async.return_value = mock_batch_numbers_job
+
         self.bq_client.create_table_from_query.side_effect = create_table_side_effect
 
         result = self.discovery.run()
@@ -251,6 +242,12 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         collections_with_metadata_updates = len(self.configs) - 1
         collections_with_new_docs = len(self.configs) - 2
 
+        # run_query_async called once per collection with new docs
+        self.assertEqual(
+            self.bq_client.run_query_async.call_count,
+            collections_with_new_docs,
+        )
+
         self.assertEqual(
             len(result.collection_results), collections_with_metadata_updates
         )
@@ -259,18 +256,12 @@ class TestNewDocumentDiscovery(unittest.TestCase):
         self.assertNotIn(no_changes_collection, result_collection_names)
         self.assertIn(metadata_only_collection, result_collection_names)
 
+        # Each non-empty collection has 1 batch, distributed round-robin
+        # across 3 task instances.
         self.assertEqual(len(result.document_batches), 3)
-        for batch in result.document_batches:
-            self.assertEqual(len(batch), collections_with_new_docs)
-            for batch_range in batch:
-                self.assertNotEqual(
-                    batch_range.collection_name, metadata_only_collection
-                )
+        total_upload_batches = sum(len(b) for b in result.document_batches)
+        self.assertEqual(total_upload_batches, collections_with_new_docs)
 
-        first_batch = result.document_batches[0]
-        for batch_range in first_batch:
-            self.assertEqual(batch_range.start_sequence_num_inclusive, 0)
-
-        last_batch = result.document_batches[-1]
-        for batch_range in last_batch:
-            self.assertEqual(batch_range.end_sequence_num_exclusive, 6)
+        all_upload_batches = [b for task in result.document_batches for b in task]
+        for upload_batch in all_upload_batches:
+            self.assertEqual(upload_batch.batch_number, 0)

@@ -28,9 +28,10 @@ from recidiviz.documents.store.document_collection_config import (
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
+    DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
     ROW_CREATE_DATETIME_COLUMN_NAME,
-    SEQUENCE_NUM_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_UPLOAD_SUCCESS,
@@ -55,16 +56,31 @@ class DocumentMetadataUpdatesQueryBuilder:
     def build_new_documents_query(
         self,
         temp_document_metadata_updates_address: ProjectSpecificBigQueryAddress,
+        target_batch_bytes: int,
     ) -> str:
         """Builds a query that selects distinct (document_contents_id, document_text)
         pairs from the temp metadata diff table that have not already been
-        successfully uploaded in the state, and assigns each a 0-indexed sequence_num.
+        successfully uploaded, and assigns each a batch number based on
+        cumulative byte size.
+
+        Batch boundaries are determined by the cumulative byte size of all
+        *preceding* rows, so a batch's actual total can exceed |target_batch_bytes| by
+        up to the size of one document.
         """
         return f"""
 SELECT
     {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
     {DOCUMENT_TEXT_COLUMN_NAME},
-    ROW_NUMBER() OVER (ORDER BY {DOCUMENT_CONTENTS_ID_COLUMN_NAME}) - 1 AS {SEQUENCE_NUM_COLUMN_NAME}
+    BYTE_LENGTH({DOCUMENT_TEXT_COLUMN_NAME}) AS {DOCUMENT_LENGTH_BYTES_COLUMN_NAME},
+    CAST(FLOOR(
+        COALESCE(
+            SUM(BYTE_LENGTH({DOCUMENT_TEXT_COLUMN_NAME})) OVER (
+                ORDER BY {DOCUMENT_CONTENTS_ID_COLUMN_NAME}
+                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+            ),
+            0
+        ) / {target_batch_bytes}
+    ) AS INT64) AS {DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME}
 FROM (
     SELECT DISTINCT
         {DOCUMENT_CONTENTS_ID_COLUMN_NAME},

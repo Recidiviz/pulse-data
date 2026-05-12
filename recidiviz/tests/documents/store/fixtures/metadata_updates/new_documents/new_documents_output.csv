@@ -1,4 +1,4 @@
-document_contents_id,document_text,sequence_num
-failed_upload_ddd,failed upload text,0
-new_contents_bbb,new text b,1
-new_contents_ccc,new text c,2
+document_contents_id,document_text,document_length_bytes,document_upload_batch_number
+failed_upload_ddd,failed upload text,18,0
+new_contents_bbb,new text b,10,0
+new_contents_ccc,new text c,10,1
