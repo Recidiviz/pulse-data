@@ -22,10 +22,10 @@ from types import ModuleType
 from typing import List, Type
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
-from recidiviz.pipelines import ingest as ingest_pipeline_top_level
 from recidiviz.pipelines import metrics as metrics_pipeline_top_level
 from recidiviz.pipelines import supplemental as supplemental_pipeline_top_level
 from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.ingest import activity as ingest_pipeline_top_level
 
 
 def collect_all_pipeline_names() -> List[str]:

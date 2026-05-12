@@ -34,8 +34,8 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest.state import write_root_entities_to_bq
-from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.activity.state import write_root_entities_to_bq
+from recidiviz.pipelines.ingest.activity.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
@@ -150,9 +150,7 @@ def run_test_pipeline(
             f"recidiviz.pipelines.supplemental.{class_name}.pipeline.WriteToBigQuery"
         )
     elif issubclass(pipeline_cls, StateIngestPipeline):
-        write_to_bq_class = (
-            "recidiviz.pipelines.ingest.state.process_ingest_view.WriteToBigQuery"
-        )
+        write_to_bq_class = "recidiviz.pipelines.ingest.activity.state.process_ingest_view.WriteToBigQuery"
     else:
         raise ValueError(f"Pipeline class not recognized: {pipeline_cls}")
 

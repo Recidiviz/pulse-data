@@ -31,8 +31,10 @@ from recidiviz.big_query.big_query_query_provider import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
+    IngestPipelineParameters,
+)
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier

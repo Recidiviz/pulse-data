@@ -25,7 +25,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.task_eligibility.reasons_field import ReasonsField

@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET

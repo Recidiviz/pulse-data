@@ -183,7 +183,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StateSupervisionSentence,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.task_eligibility.criteria.general.incarceration_past_half_full_term_release_date import (

@@ -78,10 +78,11 @@ See the **Data privacy** rule above — never query ME or CA data.
   - **`ingest/`** - Data ingestion configuration for different states/sources
   - **`persistence/`** - Database schemas, entities, and data access
   - **`pipelines/`** - Apache Beam data processing pipelines (see [Pipelines Documentation](./recidiviz/pipelines/CLAUDE.md))
-    - **`ingest/`** - Ingest pipeline
+    - **`ingest/`** - Ingest pipelines
+      - **`activity/`** - Activity ingest pipeline
+      - **`identity/`** - Identity ingest pipeline
     - **`metrics/`** - Metric computation pipelines
     - **`supplemental/`** - State-specific supplemental dataset pipelines
-    - **`batch_identity_clustering/`** - Identity resolution clustering pipeline
   - **`tools/`** - Scripts for local, CI, or Cloud Build use
   - **`validation/`** - Framework for validation and quality checks
   - **`workflows/`** - Workflow orchestration and ETL

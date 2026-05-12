@@ -48,7 +48,7 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module

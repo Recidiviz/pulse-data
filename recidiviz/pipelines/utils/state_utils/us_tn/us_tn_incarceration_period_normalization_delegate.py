@@ -34,7 +34,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (

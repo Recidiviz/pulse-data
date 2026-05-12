@@ -18,7 +18,7 @@
 from typing import Optional
 
 from recidiviz.persistence.entity.state.entities import StateAssessment
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
 )
 

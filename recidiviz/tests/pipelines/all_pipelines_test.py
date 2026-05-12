@@ -39,10 +39,10 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStatePersonRace,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.activity.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper functions for launching sandbox Dataflow pipelines from a local script."""
+import glob
 import json
 import os
 import time
@@ -75,9 +76,24 @@ def get_sandbox_pipeline_username() -> str:
 
 
 def get_template_path(pipeline_type: str) -> str:
+    """Returns the absolute path to the template_metadata.json for
+    *pipeline_type*. Matches on the JSON ``name`` field or, as a fallback,
+    the immediate parent directory name.
+    """
     pipeline_root_path = os.path.dirname(pipelines.__file__)
-    template_path = f"{pipeline_type}/template_metadata.json"
-    return os.path.join(pipeline_root_path, template_path)
+    for candidate in glob.glob(
+        os.path.join(pipeline_root_path, "**/template_metadata.json"), recursive=True
+    ):
+        dir_name = os.path.basename(os.path.dirname(candidate))
+        if dir_name == pipeline_type:
+            return candidate
+        with open(candidate, encoding="utf-8") as f:
+            if json.load(f).get("name") == pipeline_type:
+                return candidate
+    raise FileNotFoundError(
+        f"No template_metadata.json found for pipeline_type={pipeline_type!r} "
+        f"under {pipeline_root_path}"
+    )
 
 
 def get_all_reference_query_input_datasets_for_pipeline(

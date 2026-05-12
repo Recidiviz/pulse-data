@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains US_MO implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""
 
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
     StateSpecificStaffRolePeriodNormalizationDelegate,
 )
 

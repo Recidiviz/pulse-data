@@ -23,12 +23,14 @@ import attr
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.batch_identity_clustering.pipeline_parameters import (
-    BatchIdentityClusteringPipelineParameters,
+from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
+    IngestPipelineParameters,
 )
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
+from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
+    IdentityIngestPipelineParameters,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
@@ -38,7 +40,7 @@ from recidiviz.pipelines.supplemental.pipeline_parameters import (
 from recidiviz.utils.yaml_dict import YAMLDict
 
 ALL_PARAMETERS_SUBCLASSES: List[Type[PipelineParameters]] = [
-    BatchIdentityClusteringPipelineParameters,
+    IdentityIngestPipelineParameters,
     IngestPipelineParameters,
     MetricsPipelineParameters,
     SupplementalPipelineParameters,

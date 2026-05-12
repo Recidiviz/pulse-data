@@ -95,7 +95,7 @@ from recidiviz.observations.views.events.person.task_eligible_30_days import (
 from recidiviz.observations.views.spans.person.task_eligibility_session import (
     VIEW_BUILDER as TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )

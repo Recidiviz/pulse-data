@@ -45,7 +45,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateSupervisionViolation,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.metrics.base_metric_pipeline import (

@@ -65,7 +65,7 @@ from recidiviz.persistence.errors import (
     DirectIngestRawDataResourceLockAlreadyReleasedError,
     DirectIngestRawDataResourceLockHeldError,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )

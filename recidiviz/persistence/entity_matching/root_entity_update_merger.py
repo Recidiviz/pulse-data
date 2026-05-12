@@ -63,7 +63,7 @@ from recidiviz.persistence.entity_matching.entity_merger_utils import (
     external_id_key,
 )
 from recidiviz.persistence.persistence_utils import RootEntityT
-from recidiviz.pipelines.ingest.state.constants import ExternalId
+from recidiviz.pipelines.ingest.types import ExternalId
 from recidiviz.utils.types import T, assert_type
 
 # Schema classes that can have multiple parents of different types.

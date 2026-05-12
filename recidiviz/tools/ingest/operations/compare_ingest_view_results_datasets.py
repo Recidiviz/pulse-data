@@ -35,7 +35,7 @@ from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
 )
 from recidiviz.tools.ingest.operations.constants import (

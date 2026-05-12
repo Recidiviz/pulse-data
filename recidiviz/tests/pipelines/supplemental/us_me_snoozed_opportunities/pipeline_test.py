@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
     WORKFLOWS_OPPORTUNITY_CONFIGS,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET

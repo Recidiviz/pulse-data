@@ -74,7 +74,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
+    IngestPipelineParameters,
+)
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_dataflow_sandbox,

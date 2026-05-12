@@ -34,7 +34,7 @@ from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
-from recidiviz.pipelines.ingest import pipeline_utils
+from recidiviz.pipelines.ingest.activity import pipeline_utils
 from recidiviz.pipelines.utils import state_utils as state_specific_calculation_module
 from recidiviz.pipelines.utils.state_utils import state_calculation_config_manager
 from recidiviz.pipelines.utils.state_utils import (

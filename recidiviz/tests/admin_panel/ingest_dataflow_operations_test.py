@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module

@@ -5,13 +5,14 @@ flex templates. Every pipeline extends `BasePipeline` in `base_pipeline.py`.
 
 ## Pipeline Types
 
-- **`ingest/`** - Ingests raw state data into normalized Recidiviz entities. Reads
-  configurations from `recidiviz/ingest/direct/regions/`.
+- **`ingest/`** - Parent package for ingest pipelines:
+  - **`activity/`** - Ingests raw state data into normalized Recidiviz entities. Reads
+    configurations from `recidiviz/ingest/direct/regions/`.
+  - **`identity/`** - Clusters person records for identity resolution.
 - **`metrics/`** - Computes metrics from normalized entities. Sub-pipelines cover
   incarceration, supervision, recidivism, population spans, program, and violation.
 - **`supplemental/`** - Produces supplemental datasets, typically state-specific
   (e.g., `us_ix_case_note_extracted_entities`, `us_me_snoozed_opportunities`).
-- **`batch_identity_clustering/`** - Clusters person records for identity resolution.
 
 ## Key Files
 

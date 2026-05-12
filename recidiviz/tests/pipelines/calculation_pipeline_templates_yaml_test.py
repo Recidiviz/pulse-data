@@ -25,7 +25,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_UT implementation of the StateSpecificNormalizationDelegate."""
-from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
+from recidiviz.pipelines.ingest.activity.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
 

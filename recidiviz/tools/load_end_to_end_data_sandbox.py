@@ -72,8 +72,10 @@ from recidiviz.metrics.export.view_export_manager import (
 )
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.flex_pipeline_runner import pipeline_cls_for_pipeline_name
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
+    IngestPipelineParameters,
+)
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters

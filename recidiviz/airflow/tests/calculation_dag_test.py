@@ -47,7 +47,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module

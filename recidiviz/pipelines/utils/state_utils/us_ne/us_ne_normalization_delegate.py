@@ -26,11 +26,11 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalize_external_ids_helpers import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalize_external_ids_helpers import (
     select_alphabetically_highest_external_id,
     select_alphabetically_lowest_external_id,
 )
-from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization_delegate import (
+from recidiviz.pipelines.ingest.activity.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
 from recidiviz.utils.types import assert_type

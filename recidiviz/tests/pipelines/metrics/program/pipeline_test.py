@@ -52,10 +52,10 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.metrics.base_metric_pipeline import (

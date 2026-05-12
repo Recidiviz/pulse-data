@@ -32,14 +32,12 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     normalized_state_dataset_for_state_code,
     state_dataset_for_state_code,
 )
-from recidiviz.pipelines.ingest.state.constants import (
-    INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
-)
+from recidiviz.pipelines.ingest.constants import INGEST_VIEW_RESULTS_SCHEMA_COLUMNS
 from recidiviz.pipelines.pipeline_names import INGEST_PIPELINE_NAME
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,

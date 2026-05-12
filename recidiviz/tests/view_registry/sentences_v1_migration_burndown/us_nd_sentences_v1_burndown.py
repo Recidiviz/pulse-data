@@ -118,7 +118,7 @@ from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_inca
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence
-from recidiviz.pipelines.ingest.dataset_config import (
+from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.task_eligibility.criteria.general.incarceration_past_half_full_term_release_date import (

@@ -27,7 +27,7 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.ingest.pipeline_utils import (
+from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters

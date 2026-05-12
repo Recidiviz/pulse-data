@@ -50,7 +50,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.metrics.incarceration import (

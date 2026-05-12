@@ -30,7 +30,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSentenceStatusSnapshot,
     StateSupervisionPeriod,
 )
-from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
 
