@@ -28,6 +28,7 @@ import abc
 import collections
 import datetime
 import enum
+import json
 import logging
 from typing import Any
 
@@ -88,7 +89,7 @@ class LLMExtractionRequest:
     def output_schema(self) -> ExtractionOutputSchema:
         return get_extractor_collection(self.extractor.collection_name).output_schema
 
-    def build_messages(self) -> list[dict[str, str]]:
+    def build_messages(self) -> list[dict[str, Any]]:
         """Build the messages array for submission to the LLM."""
         # TODO(#61702): How to handle read errors?
         with self.document.open() as f:
@@ -99,7 +100,22 @@ class LLMExtractionRequest:
             # requests - the system message prefix can be cached while only the
             # user message (document content) varies per request.
             {"role": "system", "content": self.extractor.instructions_prompt},
-            {"role": "user", "content": document_content},
+            # Structured content parts: first part is JSON metadata (including
+            # document_contents_id) so it can be recovered from infrastructure-
+            # echoed requests in batch output (e.g., Vertex AI echoes the original
+            # request in each output line under "request.contents").
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(
+                            {"document_contents_id": self.document.document_id}
+                        ),
+                    },
+                    {"type": "text", "text": document_content},
+                ],
+            },
         ]
 
 

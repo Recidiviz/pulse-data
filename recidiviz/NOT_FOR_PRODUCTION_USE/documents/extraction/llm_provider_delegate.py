@@ -21,6 +21,7 @@ response format parsing, file ID processing, and the custom_llm_provider string
 used in LiteLLM API calls.
 """
 import abc
+import json
 import urllib.parse
 from typing import Any
 
@@ -116,7 +117,22 @@ class VertexAIProviderDelegate(LLMProviderDelegate):
     def extract_custom_id_from_batch_result_line(
         self, entry: dict[str, Any]
     ) -> str | None:
-        return None
+        # Vertex AI echoes the original request in each output line under
+        # "request.contents". The user message is structured as two parts:
+        # parts[0] is JSON metadata (including document_contents_id) and
+        # parts[1] is the document text, so we can recover the document ID
+        # from infrastructure rather than relying on positional correlation.
+        contents = entry.get("request", {}).get("contents", [])
+        if not contents:
+            return None
+        parts = contents[0].get("parts", [])
+        if len(parts) < 2:
+            return None
+        try:
+            metadata = json.loads(parts[0].get("text", ""))
+            return metadata.get("document_contents_id")
+        except (json.JSONDecodeError, KeyError):
+            return None
 
     def extract_token_usage_from_batch_result_line(
         self, entry: dict[str, Any]

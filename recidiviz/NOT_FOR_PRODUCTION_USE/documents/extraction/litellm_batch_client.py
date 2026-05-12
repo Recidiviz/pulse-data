@@ -112,7 +112,7 @@ class LiteLLMBatchClient(LLMClient, LLMResultReader):
         Returns:
             Dictionary representing one line in the batch JSONL.
         """
-        messages = request.build_messages()
+        messages = list(request.build_messages())
 
         body: dict[str, Any] = {
             "model": request.model,
