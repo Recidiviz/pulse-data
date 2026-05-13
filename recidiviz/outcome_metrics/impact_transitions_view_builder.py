@@ -78,7 +78,7 @@ SELECT
         AND DATE_SUB(DATE_TRUNC(full_state_launch_date, MONTH), INTERVAL 1 DAY)
     AS is_within_one_year_before_full_state_launch_month,
     full_state_launch_date AS full_state_launch_date,
-    CAST({weight_factor} AS FLOAT) AS weight_factor,
+    CAST({weight_factor} AS FLOAT64) AS weight_factor,
     {delta_direction_factor} AS delta_direction_factor,
 FROM ({query_template})
         """
