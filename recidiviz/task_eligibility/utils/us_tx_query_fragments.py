@@ -265,6 +265,11 @@ FROM intersection_spans_with_critical_understaffing
                 description="Contact cadence.",
             ),
             ReasonsField(
+                name="scheduled_contact_dates",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="String list dates of scheduled contacts between start date and contact due date",
+            ),
+            ReasonsField(
                 name="override_contact_type",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Override contact type based on special policy.",
