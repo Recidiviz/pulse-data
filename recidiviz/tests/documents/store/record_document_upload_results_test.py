@@ -91,7 +91,8 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         num_document_metadata_updates_rows: int,
     ) -> SingleCollectionDocumentDiscoveryResult:
         return SingleCollectionDocumentDiscoveryResult(
-            config=config,
+            state_code=config.state_code,
+            collection_name=config.name,
             temp_document_metadata_updates_address=config.temp_document_metadata_updates_table_address(
                 self.project_id, self.job_id
             ),
