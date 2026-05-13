@@ -4,13 +4,25 @@ If this is your first time doing front end development, we HIGHLY recommend you 
 [VSCode](https://code.visualstudio.com/download). Follow [these instructions](https://paper.dropbox.com/doc/Backend-Development-Environment-Setup-gobackend-eng-setup--BoLzK_1cjuAhIxON26WOOtthAg-7ykKMOKi5UwQJUybZP01v#:uid=642475582653717640401977&h2=VSCode-Setup-Instructions)
 to set up VSCode, which includes auto-formatting (it will make development much easier!).
 
-# Set up your environment
-
-Install `yarn`:
+# Install node
 
 ```bash
-brew install yarn
-brew install node
+brew update
+brew install nvm
+```
+
+# Ensure you're using the correct version of Node
+
+```bash
+nvm use
+```
+
+# Set up your environment
+
+Install `yarn` via corepack:
+
+```bash
+npm install -g corepack
 ```
 
 ## Yarn Security Configuration
@@ -28,6 +40,12 @@ yarn config get npmMinimalAgeGate  # Should return: 4320
 ```
 
 See `YARN_SECURITY_MIGRATION.md` in the repository root for more details.
+
+## Install dependencies 
+
+```bash
+yarn install
+```
 
 # Running the app
 
