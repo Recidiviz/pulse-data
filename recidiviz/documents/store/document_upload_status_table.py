@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Schema definition for the document_upload_status table."""
+
 from datetime import datetime
 
 from google.cloud.bigquery import SchemaField
@@ -22,6 +23,9 @@ from google.cloud.bigquery.enums import SqlTypeNames
 
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
+)
 from recidiviz.ingest.direct.dataset_config import (
     document_store_metadata_dataset_for_region,
 )
@@ -72,6 +76,12 @@ class DocumentUploadStatusTable:
                 description=f"{DOCUMENT_UPLOAD_SUCCESS} or {DOCUMENT_UPLOAD_FAILURE}",
             ),
             SchemaField(
+                name=DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
+                field_type=SqlTypeNames.INT64.value,
+                mode="REQUIRED",
+                description="Length of the document_text in bytes",
+            ),
+            SchemaField(
                 name=ERROR_MESSAGE,
                 field_type=SqlTypeNames.STRING.value,
                 mode="NULLABLE",
@@ -100,12 +110,14 @@ class DocumentUploadStatusTable:
         job_id: str,
         upload_datetime: datetime,
         status: str,
+        document_length_bytes: int,
         error_message: str | None,
-    ) -> tuple[str, str, str, str, str | None]:
+    ) -> tuple[str, str, str, str, int, str | None]:
         return (
             document_contents_id,
             job_id,
             upload_datetime.isoformat(),
             status,
+            document_length_bytes,
             error_message,
         )

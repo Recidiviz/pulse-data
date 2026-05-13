@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Uploads documents from BQ temp tables to GCS, writing upload successes and failures to CSV."""
+
 import csv
 import io
 import logging
@@ -34,6 +35,7 @@ from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
     DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME,
 )
@@ -57,11 +59,13 @@ BATCH_UPLOAD_TIMEOUT_SECONDS = 60 * 60
 class NewDocumentContentsRow:
     document_contents_id: str = attr.ib(validator=attr_validators.is_str)
     document_text: str = attr.ib(validator=attr_validators.is_str)
+    document_length_bytes: int = attr.ib(validator=attr_validators.is_int)
 
 
 @attr.define(frozen=True, kw_only=True)
 class DocumentUploadResult:
     document_contents_id: str = attr.ib(validator=attr_validators.is_str)
+    document_length_bytes: int = attr.ib(validator=attr_validators.is_int)
     error_message: str | None = attr.ib(validator=attr_validators.is_opt_str)
 
     @property
@@ -153,11 +157,11 @@ class GcsDocumentUploader:
     ) -> list[NewDocumentContentsRow]:
         """Queries `document_contents_id` and `document_text` from the
         `temp_new_document_contents_` table for the given batch number."""
-        # TODO(#63822) Query document_length and output to status CSV to store in upload status table
         query = f"""
             SELECT
                 {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
-                {DOCUMENT_TEXT_COLUMN_NAME}
+                {DOCUMENT_TEXT_COLUMN_NAME},
+                {DOCUMENT_LENGTH_BYTES_COLUMN_NAME}
             FROM `{upload_batch.temp_new_document_contents_table_address.to_str()}`
             WHERE {DOCUMENT_UPLOAD_BATCH_NUM_COLUMN_NAME} = {upload_batch.batch_number}
         """
@@ -169,6 +173,7 @@ class GcsDocumentUploader:
             NewDocumentContentsRow(
                 document_contents_id=row[DOCUMENT_CONTENTS_ID_COLUMN_NAME],
                 document_text=row[DOCUMENT_TEXT_COLUMN_NAME],
+                document_length_bytes=row[DOCUMENT_LENGTH_BYTES_COLUMN_NAME],
             )
             for row in query_job.result()
         ]
@@ -207,6 +212,7 @@ class GcsDocumentUploader:
                     results.append(
                         DocumentUploadResult(
                             document_contents_id=row.document_contents_id,
+                            document_length_bytes=row.document_length_bytes,
                             error_message=f"Batch timed out after {timeout_seconds}s",
                         )
                     )
@@ -240,6 +246,7 @@ class GcsDocumentUploader:
 
         return DocumentUploadResult(
             document_contents_id=document_contents_row.document_contents_id,
+            document_length_bytes=document_contents_row.document_length_bytes,
             error_message=error_msg,
         )
 
@@ -259,6 +266,7 @@ class GcsDocumentUploader:
                     job_id=self.job_id,
                     upload_datetime=self.upload_datetime,
                     status=result.status,
+                    document_length_bytes=result.document_length_bytes,
                     error_message=result.error_message,
                 )
             )

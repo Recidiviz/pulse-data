@@ -30,6 +30,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
 )
 from recidiviz.documents.store.document_store_gcs_path_utils import (
@@ -43,10 +44,17 @@ from recidiviz.documents.store.document_upload_status_table import (
 from recidiviz.documents.store.gcs_document_uploader import GcsDocumentUploader
 
 
-def _make_row(document_contents_id: str, document_text: str) -> bigquery.table.Row:
+def _make_new_document_contents_row(
+    document_contents_id: str, document_text: str
+) -> bigquery.table.Row:
+    document_length_bytes = len(document_text.encode("utf-8"))
     return bigquery.table.Row(
-        [document_contents_id, document_text],
-        {DOCUMENT_CONTENTS_ID_COLUMN_NAME: 0, DOCUMENT_TEXT_COLUMN_NAME: 1},
+        [document_contents_id, document_text, document_length_bytes],
+        {
+            DOCUMENT_CONTENTS_ID_COLUMN_NAME: 0,
+            DOCUMENT_TEXT_COLUMN_NAME: 1,
+            DOCUMENT_LENGTH_BYTES_COLUMN_NAME: 2,
+        },
     )
 
 
@@ -87,12 +95,12 @@ class TestGcsDocumentUploader(unittest.TestCase):
     def test_uploads_documents_success(self) -> None:
         batch_1_job = MagicMock()
         batch_1_job.result.return_value = [
-            _make_row("doc_a", "text a"),
-            _make_row("doc_b", "text b"),
+            _make_new_document_contents_row("doc_a", "text a"),
+            _make_new_document_contents_row("doc_b", "text b"),
         ]
         batch_2_job = MagicMock()
         batch_2_job.result.return_value = [
-            _make_row("doc_c", "text c"),
+            _make_new_document_contents_row("doc_c", "text c"),
         ]
         self.bq_client.run_query_async.side_effect = [batch_1_job, batch_2_job]
 
@@ -142,9 +150,9 @@ class TestGcsDocumentUploader(unittest.TestCase):
     def test_document_upload_failure(self) -> None:
         query_job = MagicMock()
         query_job.result.return_value = [
-            _make_row("doc_ok_1", "text ok 1"),
-            _make_row("doc_fail", "text fail"),
-            _make_row("doc_ok_2", "text ok 2"),
+            _make_new_document_contents_row("doc_ok_1", "text ok 1"),
+            _make_new_document_contents_row("doc_fail", "text fail"),
+            _make_new_document_contents_row("doc_ok_2", "text ok 2"),
         ]
         self.bq_client.run_query_async.return_value = query_job
 
@@ -163,7 +171,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             RuntimeError,
             r"Document upload completed with 1 error\(s\):\n"
             r"\[US_XX\] Collection \[test_collection\]: 1 documents failed to upload:\n"
-            r"DocumentUploadResult\(document_contents_id='doc_fail', error_message='gcp upload error'\)",
+            r"DocumentUploadResult\(document_contents_id='doc_fail', document_length_bytes=9, error_message='gcp upload error'\)",
         ):
             self.uploader.run([upload_batch])
 
@@ -202,7 +210,9 @@ class TestGcsDocumentUploader(unittest.TestCase):
         failing_job = MagicMock()
         failing_job.result.side_effect = RuntimeError("BQ query failed")
         ok_job = MagicMock()
-        ok_job.result.return_value = [_make_row("doc_a", "text a")]
+        ok_job.result.return_value = [
+            _make_new_document_contents_row("doc_a", "text a")
+        ]
         self.bq_client.run_query_async.side_effect = [failing_job, ok_job]
 
         ranges = [
@@ -235,9 +245,9 @@ class TestGcsDocumentUploader(unittest.TestCase):
 
     def test_write_status_csv_failure_continues_with_next_batch(self) -> None:
         job_1 = MagicMock()
-        job_1.result.return_value = [_make_row("doc_a", "text a")]
+        job_1.result.return_value = [_make_new_document_contents_row("doc_a", "text a")]
         job_2 = MagicMock()
-        job_2.result.return_value = [_make_row("doc_b", "text b")]
+        job_2.result.return_value = [_make_new_document_contents_row("doc_b", "text b")]
         self.bq_client.run_query_async.side_effect = [job_1, job_2]
 
         def upload_side_effect(
@@ -280,8 +290,8 @@ class TestGcsDocumentUploader(unittest.TestCase):
 
         query_job = MagicMock()
         query_job.result.return_value = [
-            _make_row("doc_fast", "fast text"),
-            _make_row("doc_slow", "slow text"),
+            _make_new_document_contents_row("doc_fast", "fast text"),
+            _make_new_document_contents_row("doc_slow", "slow text"),
         ]
         self.bq_client.run_query_async.return_value = query_job
 
@@ -303,7 +313,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             r"Document upload completed with 1 error\(s\):\n"
             r"\[US_XX\] Collection \[test_collection\]: 1 documents failed to upload:\n"
             r"DocumentUploadResult\(document_contents_id='doc_slow', "
-            r"error_message='Batch timed out after 0\.1s'\)",
+            r"document_length_bytes=9, error_message='Batch timed out after 0\.1s'\)",
         ):
             self.uploader.run([upload_batch])
         hang_event.set()

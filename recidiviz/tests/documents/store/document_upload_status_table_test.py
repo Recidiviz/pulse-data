@@ -15,9 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for document_upload_status_table.py."""
+
 import unittest
 from datetime import datetime, timezone
 
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
+)
 from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_CONTENTS_ID,
     DOCUMENT_UPLOAD_SUCCESS,
@@ -30,12 +34,15 @@ from recidiviz.documents.store.document_upload_status_table import (
 
 
 class TestDocumentUploadStatusTable(unittest.TestCase):
+    """Tests for DocumentUploadStatusTable."""
+
     def test_to_csv_row_matches_schema(self) -> None:
         expected_columns = [
             DOCUMENT_CONTENTS_ID,
             JOB_ID,
             UPLOAD_DATETIME,
             STATUS,
+            DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
             ERROR_MESSAGE,
         ]
         self.assertEqual(DocumentUploadStatusTable.column_names(), expected_columns)
@@ -46,6 +53,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
             job_id="job_1",
             upload_datetime=dt,
             status=DOCUMENT_UPLOAD_SUCCESS,
+            document_length_bytes=1024,
             error_message=None,
         )
         self.assertEqual(
@@ -55,6 +63,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
                 "job_1",
                 "2026-01-01T00:00:00+00:00",
                 DOCUMENT_UPLOAD_SUCCESS,
+                1024,
                 None,
             ),
         )
