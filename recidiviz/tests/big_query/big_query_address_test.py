@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for big_query_address.py"""
+
 import unittest
 
 import attrs
@@ -158,6 +159,32 @@ class TestBigQueryAddress(unittest.TestCase):
             ValueError, "Input must be in the format 'dataset.table'."
         ):
             BigQueryAddress.from_str(".my_table")
+
+    def test_project_specific_big_query_address_from_str(self) -> None:
+        address = ProjectSpecificBigQueryAddress(
+            project_id="recidiviz-456",
+            dataset_id="my_dataset",
+            table_id="my_table",
+        )
+        self.assertEqual(
+            address,
+            ProjectSpecificBigQueryAddress.from_str(
+                "recidiviz-456.my_dataset.my_table"
+            ),
+        )
+        self.assertEqual(
+            address, ProjectSpecificBigQueryAddress.from_str(address.to_str())
+        )
+
+        expected_error_message = "Input must be in the format 'project.dataset.table'."
+        with self.assertRaisesRegex(ValueError, expected_error_message):
+            ProjectSpecificBigQueryAddress.from_str("my_dataset.my_table")
+
+        with self.assertRaisesRegex(ValueError, expected_error_message):
+            ProjectSpecificBigQueryAddress.from_str("p.my_dataset.my_table.extra")
+
+        with self.assertRaisesRegex(ValueError, expected_error_message):
+            ProjectSpecificBigQueryAddress.from_str(".my_dataset.my_table")
 
     def test_is_state_specific_address(self) -> None:
         state_specific_addresses = [

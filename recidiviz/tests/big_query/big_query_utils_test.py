@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for big_query_utils.py"""
+
 import unittest
 
 from google.cloud import bigquery
@@ -26,6 +27,7 @@ from recidiviz.big_query.big_query_utils import (
     is_big_query_valid_delimiter,
     is_big_query_valid_encoding,
     is_big_query_valid_line_terminator,
+    make_bq_compatible_identifier,
     normalize_column_name_for_bq,
     to_big_query_valid_encoding,
     to_validated_schema_field,
@@ -80,6 +82,21 @@ class BigQueryUtilsTest(unittest.TestCase):
             normalize_column_name_for_bq,
             "  αα",
         )
+
+    def test_make_bq_compatible_identifier(self) -> None:
+        # Already-compatible identifiers pass through unchanged.
+        self.assertEqual("my_field_1", make_bq_compatible_identifier("my_field_1"))
+        self.assertEqual("ABC_123", make_bq_compatible_identifier("ABC_123"))
+        self.assertEqual("_leading", make_bq_compatible_identifier("_leading"))
+
+        # Disallowed characters get replaced with underscores.
+        self.assertEqual(
+            "field_with_spaces", make_bq_compatible_identifier("field with spaces")
+        )
+        self.assertEqual("a_b_c", make_bq_compatible_identifier("a-b.c"))
+        self.assertEqual("q__", make_bq_compatible_identifier("q?*"))
+        self.assertEqual("z__", make_bq_compatible_identifier("zαα"))
+        self.assertEqual("a_b", make_bq_compatible_identifier("a/b"))
 
     def test_is_big_query_valid_encoding(self) -> None:
         for valid_encoding in ["utf_8", "latin", "utf-16-be"]:

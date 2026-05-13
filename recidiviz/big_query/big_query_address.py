@@ -17,6 +17,7 @@
 """Defines a type that represents the (dataset_id, table_id) address of a BigQuery view
 or table.
 """
+
 from typing import Iterable
 
 import attr
@@ -192,6 +193,19 @@ class ProjectSpecificBigQueryAddress:
             dataset_id=table_ref.dataset_id,
             table_id=table_ref.table_id,
         )
+
+    @classmethod
+    def from_str(cls, address_str: str) -> "ProjectSpecificBigQueryAddress":
+        """Converts a string in the format 'project.dataset.table' to
+        ProjectSpecificBigQueryAddress.
+        """
+        parts = address_str.split(".")
+        if len(parts) != 3 or not all(parts):
+            raise ValueError(
+                "Input must be in the format 'project.dataset.table'. "
+                f"Received: '{address_str}'"
+            )
+        return cls(project_id=parts[0], dataset_id=parts[1], table_id=parts[2])
 
     def to_project_agnostic_address(self) -> BigQueryAddress:
         return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.table_id)

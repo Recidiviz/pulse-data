@@ -29,6 +29,7 @@ from recidiviz.big_query.big_query_attr_validators import (
 )
 from recidiviz.big_query.big_query_utils import (
     BigQueryFieldMode,
+    make_bq_compatible_identifier,
     to_validated_schema_field,
 )
 from recidiviz.common import attr_validators, recidiviz_attr_validators
@@ -215,7 +216,7 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_metadata_dataset_for_region(self.state_code),
-            table_id=f"temp_document_metadata_updates_{self.name}_{job_id}",
+            table_id=f"temp_document_metadata_updates_{self.name}_{make_bq_compatible_identifier(job_id)}",
         )
 
     def build_bq_temp_new_document_contents_schema(self) -> list[bigquery.SchemaField]:
@@ -239,7 +240,7 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_new_document_contents_{self.name}_{job_id}",
+            table_id=f"temp_new_document_contents_{self.name}_{make_bq_compatible_identifier(job_id)}",
         )
 
     @classmethod

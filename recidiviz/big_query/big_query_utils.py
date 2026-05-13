@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper functions for creating BigQuery views and manipulating BigQuery contents"""
+
 import datetime
 import enum
 import logging
@@ -260,7 +261,7 @@ def normalize_column_name_for_bq(column_name: str) -> str:
     column_name = _remove_non_printable_characters(column_name)
     # Strip whitespace from head/tail of column names
     column_name = column_name.strip()
-    column_name = _make_bq_compatible_column_name(column_name)
+    column_name = make_bq_compatible_identifier(column_name)
 
     if not column_name:
         raise ValueError(
@@ -279,16 +280,13 @@ def normalize_column_name_for_bq(column_name: str) -> str:
     return column_name
 
 
-def _make_bq_compatible_column_name(column_name: str) -> str:
+def make_bq_compatible_identifier(identifier: str) -> str:
     """Replaces all non-allowable BigQuery characters with an underscore."""
 
-    def is_bq_allowable_column_char(x: str) -> bool:
+    def is_bq_allowable_char(x: str) -> bool:
         return x in string.ascii_letters or x in string.digits or x == "_"
 
-    column_name = "".join(
-        [c if is_bq_allowable_column_char(c) else "_" for c in column_name]
-    )
-    return column_name
+    return "".join([c if is_bq_allowable_char(c) else "_" for c in identifier])
 
 
 def _remove_non_printable_characters(column_name: str) -> str:
