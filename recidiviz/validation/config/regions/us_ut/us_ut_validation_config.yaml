@@ -60,3 +60,8 @@ num_allowed_rows_overrides:
       This is expected - there is a Release and Reentry "user" assigned to supervise 
       some clients from a UDC Administration location that does not appear as a supervision
       location in location metadata.
+  - validation_name: missing_client_record_rows_null_full_name
+    hard_num_allowed_rows_override: 10
+    override_reason: |-
+      The majority of failures are AP&P supervision cases (probation, plea-in-abeyance) 
+      for people who have no DOC offender record yet. 6 failures as of 5/13/26.
