@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for document_store_gcs_path_utils.py."""
+
 import unittest
 
 from recidiviz.common.constants.states import StateCode
@@ -25,10 +26,12 @@ from recidiviz.documents.store.document_store_gcs_path_utils import (
 
 
 class TestDocumentStoreGcsPathUtils(unittest.TestCase):
+    """Tests for document_store_gcs_path_utils.py."""
+
     def setUp(self) -> None:
         self.project_id = "recidiviz-testing"
         self.state_code = StateCode.US_XX
-        self.job_id = "test_job_123"
+        self.job_id = "manual__2026-05-12T17:21:11.122491+00:00"
 
     def test_gcs_path_for_document(self) -> None:
         path = gcs_path_for_document(self.project_id, self.state_code, "abc123")
@@ -45,4 +48,6 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
             path.bucket_name,
             "recidiviz-testing-us-xx-temp-document-store-output",
         )
-        self.assertEqual(path.blob_name, "test_job_123/task_2_5.csv")
+        self.assertEqual(
+            path.blob_name, "manual__2026-05-12T17:21:11_122491+00:00/task_2_5.csv"
+        )

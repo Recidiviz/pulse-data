@@ -18,6 +18,7 @@
 Generic class representing path information about buckets/objects in
 Google Cloud Storage.
 """
+
 import abc
 import os
 import re
@@ -44,6 +45,32 @@ def normalize_relative_path(relative_path: str) -> str:
 def is_file(path: str) -> bool:
     _, ext = os.path.splitext(path)
     return not bool(ext)
+
+
+def make_directory_path_gcsfs_safe(directory_path: str) -> str:
+    """Returns a version of |directory_path| that is safe to use as a GcsfsDirectoryPath
+    relative path.
+
+    GCS permits any valid UTF-8 in object names, but a number of characters
+    either break GCS rules or our own codebase conventions:
+      - '\\r' and '\\n' are explicitly disallowed by GCS in object names.
+      - '.' is technically allowed by GCS but is disallowed by our codebase
+        because GcsfsDirectoryPath uses the presence of an extension to
+        distinguish directories from files.
+      - A segment that is exactly '.' or '..' is rejected by GCS.
+    """
+    if not directory_path:
+        raise ValueError("Directory path cannot be empty.")
+
+    if any(p in {".", ".."} for p in directory_path.split("/")):
+        raise ValueError(
+            f"Directory path cannot contain segments that are '.' or '..'. Found [{directory_path}]."
+        )
+
+    def is_safe_char(c: str) -> bool:
+        return c not in ".\r\n"
+
+    return "".join(c if is_safe_char(c) else "_" for c in directory_path)
 
 
 @attr.s(frozen=True)

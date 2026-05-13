@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility functions for document store GCS path construction."""
+
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
     GcsfsFilePath,
+    make_directory_path_gcsfs_safe,
 )
 from recidiviz.common.constants.states import StateCode
 
@@ -54,7 +56,7 @@ def gcs_directory_for_task_output(
 ) -> GcsfsDirectoryPath:
     return GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=temp_document_store_output_bucket_name(project_id, state_code),
-        blob_name=job_id,
+        blob_name=make_directory_path_gcsfs_safe(job_id),
     )
 
 

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for classes in gcsfs_path.py"""
+
 import re
 import unittest
 
@@ -23,6 +24,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsFilePath,
     GcsfsPath,
+    make_directory_path_gcsfs_safe,
 )
 from recidiviz.utils.types import assert_type
 
@@ -147,3 +149,25 @@ class TestGcsfsPath(unittest.TestCase):
         )
         expected_url = "https://console.cloud.google.com/storage/browser/recidiviz-456-bucket/path/to/very/deeply/nested/file.parquet"
         self.assertEqual(expected_url, path.cloud_console_link_for_gcs_path())
+
+    def test_make_directory_path_gcsfs_safe(self) -> None:
+        self.assertEqual("abc_123-XYZ", make_directory_path_gcsfs_safe("abc_123-XYZ"))
+        self.assertEqual("abc/def?ghi", make_directory_path_gcsfs_safe("abc/def?ghi"))
+
+        self.assertEqual("a_bc*d?e", make_directory_path_gcsfs_safe("a.bc*d?e"))
+        self.assertEqual("a_b_c", make_directory_path_gcsfs_safe("a\rb\nc"))
+
+        with self.assertRaisesRegex(ValueError, r"Directory path cannot be empty"):
+            make_directory_path_gcsfs_safe("")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Directory path cannot contain segments that are '\.' or '\.\.'",
+        ):
+            make_directory_path_gcsfs_safe("path/../to/somewhere")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Directory path cannot contain segments that are '\.' or '\.\.'",
+        ):
+            make_directory_path_gcsfs_safe("..")
