@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the spans of time during which someone in MI is eligible for an in person
- security classification committee review from the ADD"""
+ security classification committee review from the ADD, per 2026 policy"""
+from datetime import date
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mi import (
     ad_seg_scc_solitary_incarceration_population,
@@ -41,6 +43,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         one_year_since_last_add_in_person_scc_review.VIEW_BUILDER,
     ],
     completion_event_builder=add_in_person_security_classification_committee_review.VIEW_BUILDER,
+    policy_start_date=date(2026, 5, 7),
 )
 
 if __name__ == "__main__":

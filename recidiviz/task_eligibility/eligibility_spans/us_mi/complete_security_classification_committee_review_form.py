@@ -14,8 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the spans of time during which someone in MI is eligible for
-                    a security classification committee review"""
+"""Shows the spans of time during which someone in MI is eligible for a security classification committee review,
+prior to 2026 policy"""
+
+from datetime import date
+
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mi import (
@@ -74,6 +77,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_admitted_to_temporary_solitary_confinement_in_the_last_3_days.VIEW_BUILDER,
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
+    policy_end_date=date(2026, 5, 6),
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         reasons_date_field="next_scc_date",

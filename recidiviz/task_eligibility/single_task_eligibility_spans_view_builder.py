@@ -139,8 +139,10 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
         almost_eligible_condition: Optional[CriteriaCondition] = None,
-        policy_start_date: datetime.date | None = None,
-        policy_end_date: datetime.date | None = None,
+        policy_start_date: datetime.date
+        | None = None,  # policy_start_date is start date inclusive
+        policy_end_date: datetime.date
+        | None = None,  # policy_end_date is end date inclusive
     ) -> None:
         self._validate_builder_state_codes(
             state_code,

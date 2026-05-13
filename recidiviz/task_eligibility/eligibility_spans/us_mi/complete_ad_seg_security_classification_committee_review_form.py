@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the spans of time during which someone in MI is in ad seg and eligible for
-a security classification committee review"""
+a security classification committee review, per 2026 policy"""
+
+from datetime import date
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.state_specific.us_mi import (
@@ -55,6 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
+    policy_start_date=date(2026, 5, 7),
 )
 
 if __name__ == "__main__":
