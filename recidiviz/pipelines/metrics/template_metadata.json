@@ -1,5 +1,5 @@
 {
-  "name": "Streaming beam Python flex template",
+  "name": "metrics",
   "description": "Streaming beam example for python flex template.",
   "parameters": [
     {
