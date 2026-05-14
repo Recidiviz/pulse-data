@@ -135,6 +135,7 @@ dependencies = [
     "sshtunnel==0.4.0",
     "regex==2024.11.6",
     "pymssql",
+    "anthropic",
     # llama_index and openai are tightly coupled, so we pin them together
     "llama_index>=0.13.1",
     "openai>=1.99.8",
