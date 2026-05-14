@@ -107,6 +107,13 @@ States are abbreviated as `US_XX`. `US_OZ` is a fake state used for testing.
 Additional fake codes (`US_XX`, `US_YY`, `US_WW`) are available in unit tests
 and should be used when testing generic functionality.
 
+## Creature Comforts
+
+**Make references clickable.** In chat, whenever you mention something the user might want to look up — a file, class, function, variable, BQ view, PR, issue, or commit — print it as a markdown link, not bare text, so the user can Cmd-click the link to open it directly.
+
+- Local code: `[name](vscode://file/{absolute path}:{line})`. Include line when you know it. Link to the specific class/function definition, not just the file. If the user specifies a different IDE and URL scheme, use that instead.
+- GitHub: link PR numbers, issue numbers, and commit hashes to their github.com URLs.
+
 ## Sub-module Documentation
 
 - [Ingest Process](./recidiviz/ingest/CLAUDE.md)
