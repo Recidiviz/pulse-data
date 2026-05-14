@@ -245,11 +245,6 @@ FROM intersection_spans_with_critical_understaffing
                 description="Type of contact due.",
             ),
             ReasonsField(
-                name="overdue_flag",
-                type=bigquery.enums.StandardSqlTypeNames.STRING,
-                description="Flag that indicates whether contact was missed.",
-            ),
-            ReasonsField(
                 name="contact_count",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Number of contacts done within the overall period.",
