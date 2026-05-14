@@ -6,6 +6,7 @@ input_columns:
   new_nysid: STRING
   new_din: STRING
   file_date: DATE
+  crime2_desc: STRING
   vfo_desc: STRING
   county_desc: STRING
   aggmin_desc: STRING
@@ -60,5 +61,6 @@ output:
             - StateChargeV2:
                 external_id: $variable(sentence_external_id)
                 county_code: county_desc
+                description: crime2_desc
                 offense_type: vfo_desc
                 status: $literal_enum(StateChargeV2Status.CONVICTED)
