@@ -11,6 +11,12 @@ locals {
   sftpgo_admin_password = local.sops_data["sftpgo_admin_password"]
   sftpgo_user_password  = local.sops_data["sftpgo_user_password"]
 
+  # SSH public key (optional)
+  sftpgo_user_public_key = try(
+    local.sops_data["sftpgo_user_public_key"],
+    ""
+  )
+
   # Domain (can be overridden via variable)
   sftpgo_admin_domain = local.sops_data["sftpgo_admin_domain"]
 

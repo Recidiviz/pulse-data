@@ -18,6 +18,12 @@ resource "google_compute_subnetwork" "sftpgo_subnetwork" {
     range_name    = "ip-range-services"
     ip_cidr_range = "192.168.64.0/18"
   }
+
+  log_config {
+    aggregation_interval = "INTERVAL_5_SEC"
+    flow_sampling        = 1.0
+    metadata             = "INCLUDE_ALL_METADATA"
+  }
 }
 
 module "runner-cluster" {

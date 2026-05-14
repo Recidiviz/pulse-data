@@ -64,12 +64,7 @@ This component uses **SOPS (Secrets OPerationS)** to manage secrets and configur
    vim secrets.ingest-project.enc.yaml
    ```
 
-   Required fields:
-   - `sftpgo_admin_password`: Password for the SFTPGo web admin interface
-   - `sftpgo_user_password`: Password for the state-specific SFTP user
-   - `sftpgo_admin_domain`: Domain for HTTPS admin interface (e.g., `sftpgo-admin-us-xx.recidiviz.org`)
-   - `sftpgo_admin_allowed_ips`: List of IP CIDRs allowed to access HTTPS admin (empty list = allow all)
-   - `sftp_allowed_ips`: List of IP CIDRs allowed for SFTP connections (empty list = allow all)
+   See [configs/sftpgo-us-xx.enc.yaml.example](configs/sftpgo-us-xx.enc.yaml.example) for all available configuration fields and documentation.
 
 3. **Encrypt the file with SOPS**:
    ```bash
@@ -85,25 +80,6 @@ This component uses **SOPS (Secrets OPerationS)** to manage secrets and configur
    ```
 
    SOPS will decrypt in-memory, open your editor, and re-encrypt on save.
-
-#### Configuration File Format
-
-```yaml
-# Passwords (required)
-sftpgo_admin_password: "strong-random-password-here"
-sftpgo_user_password: "partner-sftp-password-here"
-
-# Domain (required)
-sftpgo_admin_domain: "sftpgo-admin-us-tn.recidiviz.org"
-
-# IP Allowlists (optional, empty list = allow all)
-sftpgo_admin_allowed_ips:
-  - "203.0.113.0/24"      # Office network
-  - "198.51.100.5/32"     # VPN gateway
-
-sftp_allowed_ips:
-  - "198.51.100.100/32"   # Partner SFTP client
-```
 
 ### Manual Prerequisites
 
@@ -131,9 +107,14 @@ We want to route all traffic to the SFTPGo Admin panel through the VPN. Reach ou
 
 #### 3. Initial Partial Deployment
 
-To avoid chicken-and-egg dependency issues, create the compute address and service first:
+To avoid chicken-and-egg dependency issues, create the compute address, service, and cert CRD first:
 
 ```bash
+# Install cert-manager chart
+atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
+     -target=helm_release.cert_manager
+
+# Create IP and SFTPGo service
 atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
   -- -target=google_compute_address.default \
      -target=kubernetes_service_v1.sftpgo_admin_http
@@ -147,6 +128,124 @@ Error: Unknown SFTPGo API Host
   on main.tf line 294, in provider "sftpgo":
   294:   host     = "http://${google_compute_address.default.address}:8080"
 ```
+
+### Manual Steps for HTTPS Setup
+
+After deploying the Terraform configuration, complete these manual steps:
+
+#### 1. Get Cloud DNS Nameservers
+
+Retrieve the nameservers for your Cloud DNS zone:
+
+```bash
+gcloud dns managed-zones describe sftpgo-admin-zone --project=<project-id>
+```
+
+Look for the `nameServers` field in the output. You'll see something like:
+```
+nameServers:
+- ns-cloud-e1.googledomains.com.
+- ns-cloud-e2.googledomains.com.
+- ns-cloud-e3.googledomains.com.
+- ns-cloud-e4.googledomains.com.
+```
+
+#### 2. Configure DNS Delegation in Squarespace
+
+Delegate the subdomain to Cloud DNS by creating NS records in Squarespace:
+
+1. Log in to your Squarespace domain management
+2. Navigate to DNS settings for `recidiviz.org`
+3. Create NS records for subdomain delegation:
+   - **Host**: `sftpgo-admin-us-tn` (or your subdomain prefix)
+   - **Type**: NS
+   - **Data/Value**: Add all four nameservers from step 1 (one record per nameserver)
+     - `ns-cloud-e1.googledomains.com.`
+     - `ns-cloud-e2.googledomains.com.`
+     - `ns-cloud-e3.googledomains.com.`
+     - `ns-cloud-e4.googledomains.com.`
+   - **TTL**: 3600 (1 hour) or default
+
+**Important**: Include the trailing dot (`.`) in each nameserver if your DNS provider requires it.
+
+#### 3. Verify DNS Delegation
+
+Wait 5-10 minutes for DNS propagation, then verify:
+
+```bash
+# Check that NS records are set correctly
+dig NS sftpgo-admin-us-xx.recidiviz.org
+
+# Check that A record is resolvable (should show load balancer IP)
+dig A sftpgo-admin-us-xx.recidiviz.org
+
+# Alternative verification
+nslookup sftpgo-admin-us-xx.recidiviz.org
+```
+
+You should see the Cloud DNS nameservers in the NS query response.
+
+#### 4. Restart cert-manager (If Needed)
+
+If cert-manager was already running when Workload Identity was configured, restart it to pick up the annotation:
+
+```bash
+kubectl rollout restart deployment cert-manager -n cert-manager
+```
+
+**Note**: This step may not be needed on a fresh installation where cert-manager is deployed with Workload Identity already configured.
+
+#### 5. Monitor Certificate Issuance
+
+Watch cert-manager obtain the Let's Encrypt certificate:
+
+```bash
+# Check certificate status
+kubectl describe certificate sftpgo-admin-cert -n sftpgo
+
+# Watch for challenges (should appear and complete)
+kubectl get challenges -n sftpgo --watch
+
+# Check cert-manager logs if issues occur
+kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager -f
+
+# Verify certificate is ready
+kubectl get certificate sftpgo-admin-cert -n sftpgo
+```
+
+The certificate will show `Ready: True` once successfully obtained. This typically takes 2-5 minutes after DNS delegation is complete.
+
+#### 6. Complete Terraform Apply
+
+After the certificate is obtained, Terraform can complete the SSL certificate upload:
+
+```bash
+atmos terraform apply sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code>
+```
+
+This will:
+- Read the certificate from the Kubernetes secret
+- Create the regional SSL certificate in GCP
+- Configure the HTTPS proxy and forwarding rule
+
+#### 7. Verify HTTPS Access
+
+Test that HTTPS is working correctly:
+
+```bash
+# Test HTTP to HTTPS redirect
+curl -I http://sftpgo-admin-us-xx.recidiviz.org
+# Should return: HTTP/1.1 301 Moved Permanently
+# Location: https://sftpgo-admin-us-xx.recidiviz.org/
+
+# Test HTTPS access
+curl -I https://sftpgo-admin-us-xx.recidiviz.org
+# Should return: HTTP/2 200
+
+# Access in browser
+open https://sftpgo-admin-us-xx.recidiviz.org
+```
+
 
 ### Required IAM Permissions
 
@@ -256,122 +355,7 @@ SFTPGo Pod (port 22)
 8. **HTTPS Proxy**: Uses regional SSL certificate for TLS termination
 9. **Automatic Renewal**: cert-manager renews certificates before expiration (90 days)
 
-### Manual Steps for HTTPS Setup
 
-After deploying the Terraform configuration, complete these manual steps:
-
-#### 1. Get Cloud DNS Nameservers
-
-Retrieve the nameservers for your Cloud DNS zone:
-
-```bash
-gcloud dns managed-zones describe sftpgo-admin-zone --project=<project-id>
-```
-
-Look for the `nameServers` field in the output. You'll see something like:
-```
-nameServers:
-- ns-cloud-e1.googledomains.com.
-- ns-cloud-e2.googledomains.com.
-- ns-cloud-e3.googledomains.com.
-- ns-cloud-e4.googledomains.com.
-```
-
-#### 2. Configure DNS Delegation in Squarespace
-
-Delegate the subdomain to Cloud DNS by creating NS records in Squarespace:
-
-1. Log in to your Squarespace domain management
-2. Navigate to DNS settings for `recidiviz.org`
-3. Create NS records for subdomain delegation:
-   - **Host**: `sftpgo-admin-us-tn` (or your subdomain prefix)
-   - **Type**: NS
-   - **Data/Value**: Add all four nameservers from step 1 (one record per nameserver)
-     - `ns-cloud-e1.googledomains.com.`
-     - `ns-cloud-e2.googledomains.com.`
-     - `ns-cloud-e3.googledomains.com.`
-     - `ns-cloud-e4.googledomains.com.`
-   - **TTL**: 3600 (1 hour) or default
-
-**Important**: Include the trailing dot (`.`) in each nameserver if your DNS provider requires it.
-
-#### 3. Verify DNS Delegation
-
-Wait 5-10 minutes for DNS propagation, then verify:
-
-```bash
-# Check that NS records are set correctly
-dig NS sftpgo-admin-us-tn.recidiviz.org
-
-# Check that A record is resolvable (should show load balancer IP)
-dig A sftpgo-admin-us-tn.recidiviz.org
-
-# Alternative verification
-nslookup sftpgo-admin-us-tn.recidiviz.org
-```
-
-You should see the Cloud DNS nameservers in the NS query response.
-
-#### 4. Restart cert-manager (If Needed)
-
-If cert-manager was already running when Workload Identity was configured, restart it to pick up the annotation:
-
-```bash
-kubectl rollout restart deployment cert-manager -n cert-manager
-```
-
-**Note**: This step may not be needed on a fresh installation where cert-manager is deployed with Workload Identity already configured.
-
-#### 5. Monitor Certificate Issuance
-
-Watch cert-manager obtain the Let's Encrypt certificate:
-
-```bash
-# Check certificate status
-kubectl describe certificate sftpgo-admin-cert -n sftpgo
-
-# Watch for challenges (should appear and complete)
-kubectl get challenges -n sftpgo --watch
-
-# Check cert-manager logs if issues occur
-kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager -f
-
-# Verify certificate is ready
-kubectl get certificate sftpgo-admin-cert -n sftpgo
-```
-
-The certificate will show `Ready: True` once successfully obtained. This typically takes 2-5 minutes after DNS delegation is complete.
-
-#### 6. Complete Terraform Apply
-
-After the certificate is obtained, Terraform can complete the SSL certificate upload:
-
-```bash
-atmos terraform apply sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code>
-```
-
-This will:
-- Read the certificate from the Kubernetes secret
-- Create the regional SSL certificate in GCP
-- Configure the HTTPS proxy and forwarding rule
-
-#### 7. Verify HTTPS Access
-
-Test that HTTPS is working correctly:
-
-```bash
-# Test HTTP to HTTPS redirect
-curl -I http://sftpgo-admin-us-tn.recidiviz.org
-# Should return: HTTP/1.1 301 Moved Permanently
-# Location: https://sftpgo-admin-us-tn.recidiviz.org/
-
-# Test HTTPS access
-curl -I https://sftpgo-admin-us-tn.recidiviz.org
-# Should return: HTTP/2 200
-
-# Access in browser
-open https://sftpgo-admin-us-tn.recidiviz.org
-```
 
 ### Certificate Renewal
 

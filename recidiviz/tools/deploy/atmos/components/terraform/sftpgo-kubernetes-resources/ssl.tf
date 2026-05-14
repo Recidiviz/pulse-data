@@ -101,7 +101,8 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
           }
           dns01 = {
             cloudDNS = {
-              project = var.project_id
+              project        = var.project_id
+              hostedZoneName = google_dns_managed_zone.sftpgo_admin.name
               # No serviceAccountSecretRef needed - uses Workload Identity
             }
           }

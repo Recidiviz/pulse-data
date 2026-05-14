@@ -12,7 +12,6 @@ settings:
 # The variables set here are automatically provided to any components used in this stack.
 vars:
   project_id: "{{ .settings.context.project_id }}"
-  state_code: "{{ .settings.context.state_code }}"
 
 components:
   terraform:
@@ -31,8 +30,29 @@ components:
         activate_apis:
           - compute.googleapis.com # GCE
           - container.googleapis.com # GKE
+          - logging.googleapis.com
           - secretmanager.googleapis.com
           - storagetransfer.googleapis.com
+
+    vendor/cloud-storage-bucket:
+      vars:
+        project_id: "{{ .settings.context.project_id }}"
+        prefix: "{{ .settings.context.project_id }}"
+        location: US
+        names:
+          # This is a bucket which backs an SFTP virtual folder for US_NC to download data and write it back into their OMS
+          # More info: https://www.notion.so/recidiviz/Design-Doc-Postgres-GCS-data-transfer-for-NC-RNA-writeback-3497889f4d1980beb7bccb946c3dc31d#3497889f4d1980888c54fc966e598c65
+          - writeback
+        encryption_key_names:
+          writeback: projects/recidiviz-ingest-us-nc/locations/us/keyRings/recidiviz-ingest-us-nc-cloud-storage/cryptoKeys/writeback-key
+        versioning:
+          writeback: true
+        bucket_lifecycle_rules:
+          writeback:
+            - action:
+                type: Delete
+              condition:
+                num_newer_versions: "7"
 
     isolated-direct-ingest-bucket-with-replication:
       vars:
@@ -52,8 +72,17 @@ components:
     sftpgo-kubernetes-resources:
       vars:
         project_id: "{{ .settings.context.project_id }}"
-        region: !terraform.output sftpgo-kubernetes-cluster {{.stack}} region
         state_code: "{{ .settings.context.state_code }}"
-        sftp_bucket_name: !terraform.output isolated-direct-ingest-bucket-with-replication {{.stack}} bucket_name
-        kubernetes_endpoint: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
-        kubernetes_ca_certificate: !terraform.output sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate
+        region: !terraform.state sftpgo-kubernetes-cluster {{.stack}} region
+        zone: us-central1-b
+        config_file: configs/sftpgo-us-nc.enc.yaml
+        sftp_bucket_name: !terraform.state isolated-direct-ingest-bucket-with-replication {{.stack}} bucket_name
+        sftpgo_virtual_folders:
+          - name: us-nc-writeback
+            bucket: recidiviz-ingest-us-nc-writeback
+            mount_path: /writeback
+            permissions:
+              - list
+              - download
+        kubernetes_endpoint: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_endpoint
+        kubernetes_ca_certificate: !terraform.state sftpgo-kubernetes-cluster {{.stack}} kubernetes_ca_certificate

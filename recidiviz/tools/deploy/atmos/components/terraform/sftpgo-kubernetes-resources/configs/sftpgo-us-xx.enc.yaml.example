@@ -13,6 +13,14 @@ sftpgo_admin_password: "CHANGE_ME_admin_password_here"
 # SFTP user password for state-specific user (e.g., tn-sftp)
 sftpgo_user_password: "CHANGE_ME_user_password_here"
 
+# SFTP user SSH public key (optional)
+# If provided, enables SSH public key authentication in addition to password auth
+# Format: Standard SSH public key (e.g., "ssh-rsa AAAAB3NzaC1yc2EA... user@host")
+# Leave empty or omit to use password-only authentication
+sftpgo_user_public_key: ""
+# Example with key:
+# sftpgo_user_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... partner@external-system"
+
 # Domain for HTTPS admin interface
 sftpgo_admin_domain: "sftpgo-admin-us-xx.recidiviz.org"
 

@@ -79,6 +79,11 @@ resource "google_compute_region_backend_service" "sftpgo" {
     }
   }
 
+  log_config {
+    enable      = true
+    sample_rate = 1.0
+  }
+
   backend {
     group           = data.google_compute_network_endpoint_group.sftpgo.id
     balancing_mode  = "RATE"

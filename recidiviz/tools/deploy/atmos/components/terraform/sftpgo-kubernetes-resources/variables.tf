@@ -39,3 +39,14 @@ variable "config_file" {
   type        = string
   description = "Path to SOPS-encrypted YAML file containing secrets and configuration (e.g., secrets.ingest-project.enc.yaml)"
 }
+
+variable "sftpgo_virtual_folders" {
+  type = list(object({
+    name        = string
+    bucket      = string
+    mount_path  = string
+    permissions = list(string)
+  }))
+  description = "Virtual folders to mount as additional GCS buckets in the SFTP user space. Permissions is a list of SFTPGo permissions (e.g., ['list', 'download'] for read-only, ['upload', 'overwrite', 'create_dirs'] for write, or ['*'] for all)."
+  default     = []
+}

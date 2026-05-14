@@ -1,0 +1,29 @@
+sftpgo_admin_password: ENC[AES256_GCM,data:smXKZYm7RhoOAqv5JgE9dmNVtg==,iv:LRgIs/kwC3JxoW50yynzY0gX89co57b+mnB8v8/aC0k=,tag:Bkn5nBxHRTZArByUMKn+XA==,type:str]
+sftpgo_user_password: ENC[AES256_GCM,data:tGsgR9mzWTyJZJ+U1AAxv4AuKA==,iv:8yAhe5MbUpSDtpxnwO3FcPgb0Hj2+VlpUE5CcP8Y38Y=,tag:YO02bY8IJitnAhLwv6u8BQ==,type:str]
+sftpgo_user_public_key: ENC[AES256_GCM,data:ZboEDSVDVkLSOTmSscOih7UzsmVybmhnIiDFkjtUmUOzBDJx+DGAgLVPsW/1ifiBBb2uptRizRPqWIqbAIpXDXQT0cXwwU8mLmVo3L7wQ+8lc59ott/ct6XIk0yv9yXIzLijRxo0pP/wO++f2kmCl6BLmbJJFRITFIlbeNklys+l5bZlCbNLHa99IqjguClQZsfn9HAM0ISAcMr9WrkgGHQoZGReU7/4nhMCVHVZQ8675ozIBbmzpOVL5JgUj7Fb3ZuYmaDW8Mjsi8jal9lJPVbj/+5U87k/hSb4WRndMsbE4um4NRdQK+3Xel5Gkr/c1aDlzawEEBaW9cT+NQjR9t2U0gFjwcTiHGG2MuDqmnH3ppa2kiWm4QNkC3oz8JfF6sQxBjc6GhzxbFciOxAwqnNuY5EzQIRibw5I0s3MuFPWbAWD5uvtoxFxYFvAhy+m23VAPH95mV2qFJZcVEc+JoJJR81MWSLhHF0sLQ2zO+QdUgO2V7yOJrEXVZFIzLOuWfQ6VDVXUlx48uPnKM4eNb1zubvEr1Lwuy6I/eoXiqww3F+9MMyYESnH7m2TClaQ6nzKUOcgX8nG+oFqVvTGV2fz6gT8cnAfwpWgsyKv8n0IObgt8VvLh2m0sf4nWT23uDhyBL4k3BSpCgpLfV8SQhDuNDy91HhswUUfxg97dib8BbTawDMkMg2T4aYFufMG3t+7bHLTA6OiC9h/gggSdh56vM6Vx4q8/ZRpxvHtkImqMbF4AhT9i8vIx6rRWA==,iv:0SCStF5Mee2Jspw9zq6XbYZpGFnf/P3y8A+yu6nfDl0=,tag:nvH4R/xiPpxVxk/OHt++5w==,type:str]
+sftpgo_admin_domain: ENC[AES256_GCM,data:L/s8lgGAcghz8JBexs68eOajCehVxAC9GMV02HUA6fI=,iv:JHDEqW0CMQjYczm5KgAwqnaAmkadKphQbyEDVJ4xKlM=,tag:/UBoXuAO5q2N6Bip9JfW0Q==,type:str]
+sftpgo_admin_allowed_ips:
+  - ENC[AES256_GCM,data:RNixFfsagGlyEHCh5TYY,iv:tIPVoLH68Xtx8IKgnWII9tMmQLiRrxt19ZzKGp7yQzQ=,tag:Q5E2TwA3VrG0UNk30aM1pQ==,type:str]
+  - ENC[AES256_GCM,data:19goD2zkQ1XvDsEplOtqbw==,iv:6CWAFp0lUnLarjJpSjYYWNKItgaw+glQpngjWYBNIg4=,tag:0qVLnYenoBgTqK3rdxbDlg==,type:str]
+sftpgo_allowed_ips:
+  - ENC[AES256_GCM,data:d7901q/VDETOkhrtQH0n,iv:gxqqQ2sHG+qnz31kZprws3vyvhlMDaUE02mrpJWyYPk=,tag:3DXfJOo1RqMU2h1c87wIAQ==,type:str]
+  - ENC[AES256_GCM,data:ngy1rWfEA9yy4bchQYNmUA==,iv:Cy6fnSZozFEePpdhEcJlBWRZo/Hb9ptojN+hyLHlwec=,tag:w+oyHCcLW8XIMH3By5c6oQ==,type:str]
+  - ENC[AES256_GCM,data:ZwPPdD79CvKx2+p77cY=,iv:lHuX9t7C8lEZ4++7h5XS6fTPiW7VNtLi1A83pdA5dNQ=,tag:MqrvkgBBe31JRXjLWmrNuQ==,type:str]
+iap_enabled: ENC[AES256_GCM,data:am1b5Q==,iv:iTKTWSR+scLlZekUOd+ILLcz5DeT3QKftStC4W4te50=,tag:6x4lG/32SFB+ZCNfFKZKvw==,type:bool]
+iap_support_email: ENC[AES256_GCM,data:zYnmtrkhqV7iPvAtreZ3tmx59D8o5w==,iv:59ox94XgU2Rsx/gNlF8wAtW5MakM5t9dKq+JEIv3Ry8=,tag:5Zhs+K1KarAqVi96ESb+YQ==,type:str]
+iap_oauth_client_id: ENC[AES256_GCM,data:JDW+ttoeuazzHJbJWEiAJHOLxzfQKt3mgT6CH9BX6y2gpF4DwYt6ukxWoieVA330BEPrcv5Dgn6ipw1Q3trOE51AmMSD/X88,iv:wniuWcZ3wv2r428D93VHHHrYJgOva959f2daM9qBvEQ=,tag:uCElLXBWMqCNarape+FQcg==,type:str]
+iap_oauth_client_secret: ENC[AES256_GCM,data:zWstMwlbkPHzU68d890ecgFJTxiEqWRgMpw4sOHUcAJ8hdQ=,iv:QwRLTA1E4GyJ1Zf3QC1T0U405pWA3ckDmYtdPik1jQw=,tag:oCWJtKFxNsLpX0qZZ0TBqA==,type:str]
+iap_access_members:
+  - ENC[AES256_GCM,data:k6kWqKdCQtbLffZIu6OyAjndMy6fZ+wX342RppIo69rmoA6wLvY=,iv:QH/OZ+9D0gNrsFWRsJJD05Da7O7BeH0zaOLSqEZ2W/A=,tag:x18tJgPPHxoPYinmazsRyQ==,type:str]
+  - ENC[AES256_GCM,data:7jAm11BFVIh54YxHfB6J7ISpXej+cKZVear/Vg==,iv:lu193BWkmsX2Vx9fdKBHfOfWVaCy39TDYUIpq2t2kMY=,tag:GsWAm8jIedS5c5FDHh0RiQ==,type:str]
+  - ENC[AES256_GCM,data:AFEFm6HVgsY/FltjEn4sgD82iU5sQaY6oxtOwFo=,iv:gjhuwNp+h/TeVOsSPH92CuCJJnVL7IZ4ar0ayvz5IBA=,tag:aNiFqIevPlvjVcAAIrLE8w==,type:str]
+  - ENC[AES256_GCM,data:IMrBxNlosDebxkaZwG4zw595B0Go+LPmh0912PBuAh32sh2qE14Ub6Vk9rKh6Cd7,iv:WGIulbsPpwTfPJSSmifx75E63tWFzp8vf0+T7vaMsHk=,tag:zR6Rsyb1dacpCZYKPz8rBw==,type:str]
+sops:
+  gcp_kms:
+    - resource_id: projects/recidiviz-staging/locations/us-central1/keyRings/recidiviz-ingest-project-secrets/cryptoKeys/recidiviz-ingest-project-secrets-key
+      created_at: "2026-05-04T19:26:42Z"
+      enc: CiQAnIOyPB7W3/mwU4WYCaD8Vr9mB6k1hCPGr1UaSTd5ky0KpXgSSQDlXDD89rsXCAUpZL7II9NL4P/8yoKE2OfxpdHRGJW0CATz8mFY/hOyYcan71VsBpVE5KAStrM7jrswoaWGWDuiksJKz+OzcOg=
+  lastmodified: "2026-05-04T21:19:39Z"
+  mac: ENC[AES256_GCM,data:fDwH4fv7T784MckGqvkf4FSTnYaro1ES7cxCIdqe5B701JfmtXRoLh5vbkMT7X8B9MxrBVzZTKLzZtRyGghNOl9xI2Ybr6T/EkNLTdMUlkZCiIBj2XegXKpMHeN+6Fjfj4lyzsZ+N2LARAnrq9frKPIy34xdHE51Sukf6xCKBx0=,iv:zZNvWMvpElqScbjxqXhBv0acmnCwB3QCFUk7Y7faeHc=,tag:mkGK6o1Kf/FeaAnrM9ceYQ==,type:str]
+  unencrypted_suffix: _unencrypted
+  version: 3.12.2

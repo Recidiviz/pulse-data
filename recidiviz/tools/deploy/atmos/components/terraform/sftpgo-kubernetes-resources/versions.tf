@@ -27,7 +27,7 @@ terraform {
 
     sftpgo = {
       source  = "drakkan/sftpgo"
-      version = ">= 0.0.12"
+      version = ">= 0.0.22"
     }
 
     sops = {

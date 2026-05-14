@@ -64,10 +64,14 @@ resource "helm_release" "sftpgo" {
   version   = local.sftpgo_version
   wait      = true
 
-  values = [replace(file("values.yaml"), "!!LOADBALANCERIP!!", google_compute_address.default.address)]
+  values = [file("values.yaml")]
 
   set = concat(
     [
+      {
+        name = "services.sftp-public.loadBalancerIp",
+        value = google_compute_address.default.address
+      },
       {
         name  = "serviceAccount.name"
         value = kubernetes_service_account.sftpgo.metadata[0].name
@@ -96,6 +100,10 @@ resource "helm_release" "sftpgo" {
         name  = "env.SFTPGO_DEFAULT_ADMIN_PASSWORD"
         value = local.sftpgo_admin_password
       },
+      {
+        name = "env.SFTPGO_LOG_LEVEL",
+        value = "debug"
+      }
     ],
     local.allowed_proxy_env_vars
   )
@@ -103,8 +111,28 @@ resource "helm_release" "sftpgo" {
   upgrade_install = true
 }
 
-resource "sftpgo_user" "sftp_user" {
+# Create virtual folder resources
+resource "sftpgo_folder" "virtual_folders" {
+  for_each = {
+    for folder in var.sftpgo_virtual_folders :
+    folder.name => folder
+  }
+
   depends_on = [helm_release.sftpgo]
+
+  name = each.value.name
+
+  filesystem = {
+    provider = 2  # Google Cloud Storage
+    gcsconfig = {
+      bucket                = each.value.bucket
+      automatic_credentials = 1
+    }
+  }
+}
+
+resource "sftpgo_user" "sftp_user" {
+  depends_on = [helm_release.sftpgo, sftpgo_folder.virtual_folders]
 
   username = "${local.lower_state_abbr}-sftp"
 
@@ -116,12 +144,31 @@ resource "sftpgo_user" "sftp_user" {
     }
   }
 
+  # Reference the created virtual folders
+  virtual_folders = [
+    for folder in var.sftpgo_virtual_folders : {
+      name         = folder.name
+      virtual_path = folder.mount_path
+      quota_files  = 0  # 0 means unlimited
+      quota_size   = 0  # 0 means unlimited
+    }
+  ]
+
   home_dir = "/tmp/${local.lower_state_abbr}-sftp"
-  permissions = {
-    "/" = "*"
-  }
-  password = local.sftpgo_user_password
-  status   = 1 # enabled
+
+  # Merge permissions: root directory + virtual folder paths
+  # Convert permission lists to comma-separated strings as SFTPGo expects
+  permissions = merge(
+    { "/" = "*" },
+    {
+      for folder in var.sftpgo_virtual_folders :
+      folder.mount_path => join(",", folder.permissions)
+    }
+  )
+
+  password    = local.sftpgo_user_password
+  public_keys = local.sftpgo_user_public_key != "" ? [local.sftpgo_user_public_key] : []
+  status      = 1 # enabled
 }
 
 resource "google_storage_bucket_iam_member" "sftp-bucket-creator" {
@@ -133,6 +180,32 @@ resource "google_storage_bucket_iam_member" "sftp-bucket-creator" {
 resource "google_storage_bucket_iam_member" "sftp-bucket-viewer" {
   bucket = var.sftp_bucket_name
   role   = "roles/storage.objectViewer"
+  member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/${kubernetes_namespace.sftpgo.metadata[0].name}/sa/${kubernetes_service_account.sftpgo.metadata[0].name}"
+}
+
+# Grant read access to virtual folder buckets
+# All virtual folders get at least read access
+resource "google_storage_bucket_iam_member" "sftp-virtual-folder-viewer" {
+  for_each = {
+    for folder in var.sftpgo_virtual_folders :
+    folder.name => folder
+  }
+
+  bucket = each.value.bucket
+  role   = "roles/storage.objectViewer"
+  member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/${kubernetes_namespace.sftpgo.metadata[0].name}/sa/${kubernetes_service_account.sftpgo.metadata[0].name}"
+}
+
+# Grant write access to virtual folder buckets (only if permissions include write capabilities)
+resource "google_storage_bucket_iam_member" "sftp-virtual-folder-creator" {
+  for_each = {
+    for folder in var.sftpgo_virtual_folders :
+    folder.name => folder
+    if contains(folder.permissions, "*") || contains(folder.permissions, "upload") || contains(folder.permissions, "overwrite")
+  }
+
+  bucket = each.value.bucket
+  role   = "roles/storage.objectCreator"
   member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/${kubernetes_namespace.sftpgo.metadata[0].name}/sa/${kubernetes_service_account.sftpgo.metadata[0].name}"
 }
 
