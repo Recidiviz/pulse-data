@@ -65,6 +65,9 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.views.extraction_view
     generate_context_metadata_union_sql,
     get_document_extraction_view_builders,
 )
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.views.document_view_schemas import (
+    CONTEXT_METADATA_VIEW_SCHEMA,
+)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.views.view_config import (
     get_document_extraction_current_summary_view_builders,
 )
@@ -104,7 +107,7 @@ def _deploy_collection_views_to_sandbox(
     # the base validated view.
     ran_extractor_ids = {e.extractor_id.lower() for e in ran_extractors}
     per_extractor_builders: list[BigQueryViewBuilder] = []
-    ran_validated_parents = []
+    ran_validated_parents: list[BigQueryViewBuilder] = []
     ran_entities_parents: list[SimpleBigQueryViewBuilder] = []
     collection_entities_view_id = f"{collection_view_id}_entities"
 
@@ -148,10 +151,12 @@ def _deploy_collection_views_to_sandbox(
                     ),
                     should_materialize=True,
                     clustering_fields=["person_id"],
+                    schema=CONTEXT_METADATA_VIEW_SCHEMA,
                 )
             )
 
     # Build a custom validated union with only ran states' validated builders as parents
+    assert len(ran_validated_parents) > 0
     custom_union_builder = UnionAllBigQueryViewBuilder(
         dataset_id=VALIDATED_DATASET,
         view_id=collection_view_id,
@@ -161,6 +166,7 @@ def _deploy_collection_views_to_sandbox(
         ),
         parents=ran_validated_parents,
         clustering_fields=["state_code", "person_id"],
+        schema=ran_validated_parents[0].build().schema,
     )
 
     # Combine builders: per-extractor + custom union + (optionally) summaries
@@ -187,6 +193,7 @@ def _deploy_collection_views_to_sandbox(
                 ),
                 parents=ran_entities_parents,
                 clustering_fields=["state_code", "person_id"],
+                schema=ran_entities_parents[0].schema,
             )
         )
 

@@ -117,6 +117,9 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.store.document_collection_config
     DocumentRootEntityIdType,
     get_document_collection_config,
 )
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.views.document_view_schemas import (
+    CONTEXT_METADATA_VIEW_SCHEMA,
+)
 from recidiviz.NOT_FOR_PRODUCTION_USE.source_tables.document_extraction_raw_source_table_collector import (
     collect_document_extraction_raw_source_table_collection,
 )
@@ -336,6 +339,7 @@ def _deploy_extraction_views_to_sandbox(
                     ),
                     should_materialize=True,
                     clustering_fields=["person_id"],
+                    schema=CONTEXT_METADATA_VIEW_SCHEMA,
                 )
             )
 
