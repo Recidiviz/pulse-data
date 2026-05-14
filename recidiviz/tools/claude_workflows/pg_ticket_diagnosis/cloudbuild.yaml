@@ -1,0 +1,67 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker pull us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest || true
+        docker build \
+          --cache-from us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest \
+          -t pg-diagnosis-agent \
+          -t us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest \
+          -f pg_ticket_diagnosis/Dockerfile \
+          .
+    id: build
+
+  - name: gcr.io/cloud-builders/git
+    entrypoint: bash
+    args:
+      - -c
+      - git clone --depth=1 --branch=${_REPO_BRANCH} https://x-access-token:$$GITHUB_TOKEN@github.com/Recidiviz/pulse-data.git /workspace/repo
+    secretEnv: [GITHUB_TOKEN]
+    id: clone
+
+  - name: pg-diagnosis-agent
+    env:
+      - "ISSUE_NUMBER=${_ISSUE_NUMBER}"
+      - "ISSUE_TITLE=${_ISSUE_TITLE}"
+      - "ISSUE_BODY=${_ISSUE_BODY}"
+      - "ISSUE_REPO=${_ISSUE_REPO}"
+      - "GCP_PROJECT_ID=$PROJECT_ID"
+      - "GOOGLE_CLOUD_PROJECT=$PROJECT_ID"
+      - "RECIDIVIZ_ENV=staging"
+      - "BUILD_ID=$BUILD_ID"
+      - "REPO_PATH=/workspace/repo"
+      - "BQ_PROJECT=$PROJECT_ID"
+      - "FORCE_RERUN=${_FORCE_RERUN}"
+      - "PRODUCT_AREAS=${_PRODUCT_AREAS}"
+    secretEnv: [ANTHROPIC_API_KEY]
+    id: run
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/pg_diagnosis_claude_api_key/versions/latest
+      env: ANTHROPIC_API_KEY
+    - versionName: projects/$PROJECT_ID/secrets/github_deploy_script_pat/versions/latest
+      env: GITHUB_TOKEN
+
+substitutions:
+  _ISSUE_NUMBER: ""
+  _ISSUE_TITLE: ""
+  _ISSUE_BODY: ""
+  # Should match recidiviz.utils.github.RECIDIVIZ_DASHBOARDS_REPO.
+  _ISSUE_REPO: "Recidiviz/recidiviz-dashboards"
+  _REPO_BRANCH: "main"
+  _FORCE_RERUN: ""
+  _PRODUCT_AREAS: ""
+
+serviceAccount: "projects/recidiviz-staging/serviceAccounts/diagnosis-for-pg-ticket@recidiviz-staging.iam.gserviceaccount.com"
+
+images:
+  - us-central1-docker.pkg.dev/$PROJECT_ID/pg-diagnosis/agent:latest
+
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s

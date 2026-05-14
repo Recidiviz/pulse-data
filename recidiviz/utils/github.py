@@ -30,6 +30,7 @@ GITHUB_HELPERBOT_TOKEN_SECRET_NAME = "github_deploy_script_pat"  # nosec
 
 RECIDIVIZ_GITHUB_ORGANIZATION = "Recidiviz"
 RECIDIVIZ_DATA_REPO = f"{RECIDIVIZ_GITHUB_ORGANIZATION}/pulse-data"
+RECIDIVIZ_DASHBOARDS_REPO = f"{RECIDIVIZ_GITHUB_ORGANIZATION}/recidiviz-dashboards"
 LOOKER_REPO_NAME = f"{RECIDIVIZ_GITHUB_ORGANIZATION}/looker"
 
 HELPERBOT_USER_NAME = "helperbot-recidiviz"
@@ -107,18 +108,23 @@ def open_pr_if_not_exists(
     return pr.html_url
 
 
-def upsert_pr_comment(
+def upsert_issue_comment(
     github_client: Github,
-    pull_request_number: int,
+    issue_number: int,
     body: str,
     prefix: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
 ) -> None:
-    pull_request = github_client.get_repo(RECIDIVIZ_DATA_REPO).get_pull(
-        pull_request_number
-    )
+    """Upsert a Helperbot comment on an issue or PR.
+
+    PRs are issues in GitHub's data model: `repo.get_issue(num)` works for
+    both, and the comments returned are the same set you'd see calling
+    `pr.get_issue_comments()`.
+    """
+    issue = github_client.get_repo(repo).get_issue(issue_number)
     comments = [
         comment
-        for comment in pull_request.get_issue_comments()
+        for comment in issue.get_comments()
         if comment.user.login == HELPERBOT_USER_NAME and comment.body.startswith(prefix)
     ]
 
@@ -130,18 +136,24 @@ def upsert_pr_comment(
         comment = one(comments)
         comment.edit(body=body_length_safe)
     except ValueError:
-        pull_request.create_issue_comment(body=body_length_safe)
+        issue.create_comment(body=body_length_safe)
 
 
-def upsert_helperbot_comment(pull_request_number: int, body: str, prefix: str) -> None:
-    """Adds a comment with the given |body| to the specified pull request, or overwrites an existing comment
-    with the |body| if a Helperbot-issued comment starting with |existing_comment_prefix| is found. You must
+def upsert_helperbot_comment(
+    issue_number: int,
+    body: str,
+    prefix: str,
+    repo: str = RECIDIVIZ_DATA_REPO,
+) -> None:
+    """Adds a comment with the given |body| to the specified issue (or PR), or overwrites an existing
+    comment with the |body| if a Helperbot-issued comment starting with |prefix| is found. You must
     have google secrets access to use this function.
     """
     github_client = github_helperbot_client()
-    upsert_pr_comment(
+    upsert_issue_comment(
         github_client=github_client,
-        pull_request_number=pull_request_number,
+        repo=repo,
+        issue_number=issue_number,
         body=body,
         prefix=prefix,
     )

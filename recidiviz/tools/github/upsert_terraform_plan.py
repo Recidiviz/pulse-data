@@ -114,7 +114,7 @@ def main(args: argparse.Namespace) -> None:
     )
 
     upsert_helperbot_comment(
-        pull_request_number=args.pull_request_number,
+        issue_number=args.pull_request_number,
         body=body,
         prefix="# Terraform plan",
     )

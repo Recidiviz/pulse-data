@@ -108,7 +108,7 @@ class TestUpsertTFPlan(TestCase):
 [Link to Cloud Build run](https://www.build.url)"""
 
         self.upsert_comment_mock.assert_called_with(
-            pull_request_number=123,
+            issue_number=123,
             body=expected_body,
             prefix="# Terraform plan",
         )
@@ -133,7 +133,7 @@ Some unexpected error....
 [Link to Cloud Build run](https://www.build.url)"""
 
         self.upsert_comment_mock.assert_called_with(
-            pull_request_number=123,
+            issue_number=123,
             body=expected_body,
             prefix="# Terraform plan",
         )
@@ -196,7 +196,7 @@ Some unexpected error....
 [Link to Cloud Build run](https://www.build.url)"""
 
         self.upsert_comment_mock.assert_called_with(
-            pull_request_number=123,
+            issue_number=123,
             body=expected_body,
             prefix="# Terraform plan",
         )

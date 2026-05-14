@@ -24,46 +24,10 @@ Usage:
 import json
 import sys
 
-
-def parse_doc(doc: dict) -> list[str]:
-    """Parse Google Doc JSON into a list of text lines with [IMAGE] placeholders."""
-    content = doc.get("body", {}).get("content", [])
-    lines: list[str] = []
-    current_line = ""
-    for elem in content:
-        if "paragraph" in elem:
-            for run in elem["paragraph"].get("elements", []):
-                if "textRun" in run:
-                    current_line += run["textRun"]["content"]
-                elif "inlineObjectElement" in run:
-                    current_line += "[IMAGE]"
-            parts = current_line.split("\n")
-            for p in parts[:-1]:
-                lines.append(p)
-            current_line = parts[-1]
-    if current_line:
-        lines.append(current_line)
-    return lines
-
-
-def find_issue_section(lines: list[str], issue_number: str) -> list[str]:
-    """Find and return the section of lines related to the given issue number."""
-    output: list[str] = []
-    for i, line in enumerate(lines):
-        if issue_number in line:
-            for j in range(i, min(i + 30, len(lines))):
-                output.append(lines[j])
-                if (
-                    j > i
-                    and any(c.isdigit() for c in lines[j])
-                    and (
-                        "recidiviz-dashboards" in lines[j]
-                        or "pulse-data" in lines[j]
-                    )
-                ):
-                    break
-            break
-    return output
+from recidiviz.tools.claude_workflows.pg_ticket_diagnosis.pii_doc_parser_utils import (
+    find_issue_section,
+    parse_doc,
+)
 
 
 def main() -> None:
