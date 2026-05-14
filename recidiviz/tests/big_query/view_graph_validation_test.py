@@ -74,9 +74,6 @@ from recidiviz.utils.environment import (
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type_list
 from recidiviz.validation.views.view_config import (
-    CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
-)
-from recidiviz.validation.views.view_config import (
     get_view_builders_for_views_to_update as get_validation_view_builders,
 )
 from recidiviz.view_registry.deployed_address_schema_utils import (
@@ -128,19 +125,6 @@ def _preprocess_views_to_load_to_emulator(
         # TODO(goccy/bigquery-emulator#318): The emulator does not support use of the bqutil UDFs
         if "bqutil.fn" in v.view_query_template:
             logging.info("Skipping due to unsupported  UDF: %s", v.address)
-            return CreateOrUpdateViewStatus.SKIPPED
-
-        cross_project_view_builder_addresses = [
-            view_builder.address
-            for view_builder in CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
-        ]
-        # The cross-project view builders hardcode references to the staging and production projects
-        # which end up raising errors in the view graph as we're loading to the recidiviz-bq-emulator-project project
-        # TODO(#15080): consider deleting these views entirely since they're not used.
-        if v.address in cross_project_view_builder_addresses:
-            logging.info(
-                "Skipping due to hardcoded prod/staging references: %s", v.address
-            )
             return CreateOrUpdateViewStatus.SKIPPED
 
         return CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES

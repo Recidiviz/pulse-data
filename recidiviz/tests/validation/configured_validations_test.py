@@ -47,27 +47,6 @@ from recidiviz.validation.views.dataset_config import (
     TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET,
     VIEWS_DATASET,
 )
-from recidiviz.validation.views.state.prod_staging_comparison.experiments_assigments_large_prod_staging_comparison import (
-    EXPERIMENT_ASSIGNMENTS_LARGE_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
-    INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.incarceration_population_external_prod_staging_comparison import (
-    INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.incarceration_release_external_prod_staging_comparison import (
-    INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.supervision_population_external_prod_staging_comparison import (
-    SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_external_prod_staging_comparison import (
-    SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
-    SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.task_eligibility.configured_validations import (
     get_all_task_eligibility_validations,
 )
@@ -150,20 +129,6 @@ class TestConfiguredValidations(unittest.TestCase):
             for builder in found_builders
             if builder.address.dataset_id
             in (VIEWS_DATASET, TASK_ELIGIBILITY_VALIDATION_VIEWS_DATASET)
-            # TODO(#15080): Configure validations for these views which were
-            #  created without an associated configured validation, or move
-            #  out of the validation_views dataset.
-            and builder
-            not in [
-                # External validation data
-                EXPERIMENT_ASSIGNMENTS_LARGE_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-            ]
         )
 
         validations = get_all_validations()
