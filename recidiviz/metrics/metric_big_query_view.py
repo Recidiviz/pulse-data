@@ -42,8 +42,7 @@ class MetricBigQueryView(BigQueryView):
         materialized_address: BigQueryAddress,
         sandbox_context: BigQueryViewSandboxContext | None,
         clustering_fields: Optional[List[str]] = None,
-        # TODO(#54941): Make this required after schemas are required for all views.
-        schema: Sequence[BigQueryViewColumn] | None = None,
+        schema: Sequence[BigQueryViewColumn],
         **query_format_kwargs: str,
     ):
         super().__init__(
@@ -85,8 +84,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         dimensions: Tuple[str, ...],
         materialized_address_override: Optional[BigQueryAddress] = None,
         clustering_fields: Optional[List[str]] = None,
-        # TODO(#54941): Make this required after schemas are required for all views.
-        schema: Sequence[BigQueryViewColumn] | None = None,
+        schema: Sequence[BigQueryViewColumn],
         # All keyword args must have string values
         **query_format_kwargs: str,
     ):

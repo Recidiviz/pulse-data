@@ -420,24 +420,10 @@ def _create_or_update_view_and_materialize_if_necessary(
         # Update the view if time partitioning configuration has changed (partitioning
         # info stored on the materialized table)
         or existing_materialized_table.time_partitioning != view.time_partitioning
-        # If the view declares a schema, the materialized table schema may differ from
-        # the deployed view schema because of mode metadata, but the table schema should
-        # match the declared view schema exactly.
-        # TODO(#54941): adjust these two clauses when all views have declared schemas
-        or (
-            view.bq_schema is not None
-            and not are_bq_schemas_same(
-                view.bq_schema, existing_materialized_table.schema
-            )
-        )
-        # If the view has no declared schema, we expect that the table should be
-        # materialized with the same schema as the view.
-        or (
-            view.bq_schema is None
-            and not are_bq_schemas_same(
-                updated_view.schema, existing_materialized_table.schema
-            )
-        )
+        # The materialized table schema may differ from the deployed view schema
+        # because of mode metadata, but the table schema should match the declared
+        # view schema exactly.
+        or not are_bq_schemas_same(view.bq_schema, existing_materialized_table.schema)
     )
 
     view_changed = (
@@ -449,14 +435,10 @@ def _create_or_update_view_and_materialize_if_necessary(
     )
 
     # In a sandbox, avoid erroring out if declared schema doesn't match deployed schemas.
-    materialize_with_declared_schema = view.schema is not None
-    if (
-        view.schema
-        and sandbox_context
-        and diff_declared_schema_to_bq_schema(
-            view.schema,
-            updated_view.schema,
-        )
+    materialize_with_declared_schema = True
+    if sandbox_context and diff_declared_schema_to_bq_schema(
+        view.schema,
+        updated_view.schema,
     ):
 
         logging.warning(

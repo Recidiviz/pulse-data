@@ -21,6 +21,9 @@ tables.
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_schema_utils import (
+    declared_schema_for_sqlalchemy_table,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
@@ -76,6 +79,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
             view_id=view_id,
             bq_description=description,
             description=description,
+            schema=declared_schema_for_sqlalchemy_table(table),
             materialized_address=materialized_address,
             sandbox_context=sandbox_context,
             view_query_template=TABLE_QUERY_TEMPLATE,

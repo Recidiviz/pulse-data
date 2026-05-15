@@ -770,7 +770,7 @@ class BigQueryViewTest(unittest.TestCase):
         )
 
     def test_schema_signature(self) -> None:
-        def signature_for(schema: list[BigQueryViewColumn] | None) -> str | None:
+        def signature_for(schema: list[BigQueryViewColumn]) -> str:
             return (
                 SimpleBigQueryViewBuilder(
                     dataset_id="view_dataset",

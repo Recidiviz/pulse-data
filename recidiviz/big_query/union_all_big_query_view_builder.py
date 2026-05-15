@@ -55,7 +55,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             Callable[[BigQueryAddress], str] | None
         ) = None,
         materialized_address_override: BigQueryAddress | None = None,
-        schema: Sequence[BigQueryViewColumn] | None = None,
+        schema: Sequence[BigQueryViewColumn],
     ):
         """
         Args:

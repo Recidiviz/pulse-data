@@ -163,11 +163,8 @@ class SamenessDataValidationCheck(DataValidationCheck):
             view_id += f"_{self.validation_name_suffix}"
 
         parent_schema = self.view_builder.schema
-        error_schema: list[BigQueryViewColumn] | None
-        # TODO(#54941): Remove after view schemas are required
-        if parent_schema is None:
-            error_schema = None
-        elif self.sameness_check_type == SamenessDataValidationCheckType.PER_ROW:
+        error_schema: list[BigQueryViewColumn]
+        if self.sameness_check_type == SamenessDataValidationCheckType.PER_ROW:
             error_schema = [
                 *parent_schema,
                 Float(

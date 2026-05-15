@@ -33,6 +33,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_schema_utils import schema_field_to_view_column
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
@@ -127,12 +128,16 @@ def export_from_table(
     table_id: str,
     dataset_id: str,
 ) -> None:
+    """Re-exports the table at `dataset_id.table_id` to `file` in optimized metric format."""
     mock_validator = create_autospec(OptimizedMetricBigQueryViewExportValidator)
     view_exporter = OptimizedMetricBigQueryViewExporter(bq_client, mock_validator)
     output_path = GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=file.bucket_name,
         blob_name=get_blob_name_without_filename(file.blob_name),
     )
+    deployed_schema = bq_client.get_table(
+        BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+    ).schema
     export_config = ExportBigQueryViewConfig(
         view=MetricBigQueryViewBuilder(
             dataset_id=dataset_id,
@@ -140,6 +145,7 @@ def export_from_table(
             view_query_template="",
             dimensions=get_dimensions(table_id),
             description="temporary table for exporting optimized format fixture files from GCS",
+            schema=[schema_field_to_view_column(f) for f in deployed_schema],
         ).build(),
         view_filter_clause="",
         intermediate_table_name="temporary_table_for_export",

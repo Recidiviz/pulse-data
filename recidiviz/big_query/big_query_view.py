@@ -53,7 +53,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         # Schema for the deployed view. In materialized tables, this will
         # match exactly. In non-materialized views, REQUIRED fields are created
         # as NULLABLE, and everything else will match.
-        schema: Sequence[BigQueryViewColumn] | None = None,
+        schema: Sequence[BigQueryViewColumn],
         # Address this table will be materialized to, if this is a view that is
         # materialized.
         materialized_address: Optional[BigQueryAddress] = None,
@@ -137,7 +137,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         self._materialized_address = materialized_address
         self._clustering_fields = clustering_fields
         self._time_partitioning = time_partitioning
-        self.schema = schema
+        self.schema: Sequence[BigQueryViewColumn] = schema
 
     @property
     def view_id(self) -> str:
@@ -205,16 +205,12 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         return self._view_query_signature
 
     @property
-    def schema_signature(self) -> str | None:
+    def schema_signature(self) -> str:
         """Returns a SHA256 hash of this view's declared schema.
 
         Can be used to determine if a view's declared schema has changed across
         view update runs. Column descriptions are not included in the signature.
         """
-        # TODO(#54941): Remove this None case once schema is non-optional on
-        # BigQueryView.
-        if self.schema is None:
-            return None
         payload = json.dumps(
             [(c.name, c.field_type.name, c.mode) for c in self.schema],
             sort_keys=False,
@@ -264,19 +260,13 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         return self.address
 
     @property
-    def bq_schema(self) -> list[bigquery.SchemaField] | None:
+    def bq_schema(self) -> list[bigquery.SchemaField]:
         """Returns the schema as a list of bigquery.SchemaField objects."""
-        if self.schema is None:
-            return None
         return [c.as_schema_field() for c in self.schema]
 
     @property
     def schema_summary(self) -> str:
         """A summary of the view schema for logging/debugging purposes."""
-        # TODO(#54941): remove when schemas are mandatory
-        if not self.schema:
-            return "No schema defined."
-
         lines = ["Schema:"]
         for column in self.schema:
             lines.append(
@@ -440,7 +430,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
-        schema: Sequence[BigQueryViewColumn] | None = None,
+        schema: Sequence[BigQueryViewColumn],
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         # All query format kwargs args must have string values
@@ -455,7 +445,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.view_query_template = view_query_template
         self.clustering_fields = clustering_fields
         self.time_partitioning = time_partitioning
-        self.schema = schema
+        self.schema: Sequence[BigQueryViewColumn] = schema
         self.query_format_kwargs = query_format_kwargs
         self.materialized_address = self._build_materialized_address(
             dataset_id=dataset_id,

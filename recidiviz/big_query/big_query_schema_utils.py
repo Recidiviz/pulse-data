@@ -18,8 +18,10 @@
 
 from typing import Sequence, cast
 
+import sqlalchemy
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.big_query.big_query_view_column import (
     COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
     BigQueryViewColumn,
@@ -113,6 +115,19 @@ def schema_field_to_view_column(field: bigquery.SchemaField) -> BigQueryViewColu
         description=description,
         mode=mode,
     )
+
+
+def declared_schema_for_sqlalchemy_table(
+    table: sqlalchemy.Table,
+) -> list[BigQueryViewColumn]:
+    """Returns the declared BigQueryViewColumn schema for the given SQLAlchemy
+    table. Wraps schema_for_sqlalchemy_table + schema_field_to_view_column so
+    the SQLAlchemy -> BigQuery type mapping has a single source of truth.
+    """
+    return [
+        schema_field_to_view_column(field)
+        for field in schema_for_sqlalchemy_table(table)
+    ]
 
 
 def truncate_column_description_for_big_query(description: str) -> str:
