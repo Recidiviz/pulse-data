@@ -55,6 +55,7 @@ from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 
 # TODO(#27976) migrate to use the BigQueryEmulatorTestCase for testing instead of
@@ -111,6 +112,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
+            schema=[
+                String(name="fake_column", description="fake column", mode="NULLABLE")
+            ],
         ).build()
 
         self.bq_client = BigQueryClientImpl()
@@ -1358,7 +1362,10 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_materialize_view_to_table(self) -> None:
         """Tests that the materialize_view_to_table function calls the function to create a table from a query."""
         mock_table = create_autospec(bigquery.Table)
-        self.mock_client.get_table.return_value = mock_table
+        self.mock_client.get_table.side_effect = [
+            exceptions.NotFound("not found"),
+            mock_table,
+        ]
 
         self.bq_client.materialize_view_to_table(
             view=self.mock_view, use_query_cache=False, view_configuration_changed=True
@@ -1393,7 +1400,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         in a custom location.
         """
         mock_table = create_autospec(bigquery.Table)
-        self.mock_client.get_table.return_value = mock_table
+        # First, tell the caller the table doesn't exist. Then return the created table.
+        self.mock_client.get_table.side_effect = [
+            exceptions.NotFound("not found"),
+            mock_table,
+        ]
 
         mock_view = SimpleBigQueryViewBuilder(
             dataset_id="dataset",
@@ -1404,6 +1415,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             materialized_address_override=BigQueryAddress(
                 dataset_id="custom_dataset", table_id="custom_view"
             ),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         self.bq_client.materialize_view_to_table(
@@ -1437,6 +1449,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=False,
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         with self.assertRaisesRegex(
@@ -3262,7 +3275,7 @@ class MaterializeTableJobConfigMatcher:
         if not isinstance(other, QueryJobConfig):
             return False
 
-        if other.write_disposition != bigquery.WriteDisposition.WRITE_TRUNCATE:
+        if other.write_disposition != bigquery.WriteDisposition.WRITE_APPEND:
             return False
 
         return str(other.destination) == self.expected_destination

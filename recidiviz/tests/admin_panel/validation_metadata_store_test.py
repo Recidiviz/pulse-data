@@ -35,6 +35,7 @@ from recidiviz.admin_panel.models.validation_pb2 import (
 )
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.validation_models import ValidationCategory
@@ -318,6 +319,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                     view_id="my_validation",
                     description="my_validation description",
                     view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 validation_category=ValidationCategory.INVARIANT,
             ),

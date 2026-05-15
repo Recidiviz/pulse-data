@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 from recidiviz.utils.environment import (
@@ -85,6 +86,7 @@ def get_test_validations() -> List[DataValidationJob]:
                     view_id="test_1",
                     description="test_1 description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         ),
@@ -97,6 +99,7 @@ def get_test_validations() -> List[DataValidationJob]:
                     view_id="test_2",
                     description="test_2 description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         ),
@@ -109,6 +112,7 @@ def get_test_validations() -> List[DataValidationJob]:
                     view_id="test_3",
                     description="test_3 description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         ),
@@ -121,6 +125,7 @@ def get_test_validations() -> List[DataValidationJob]:
                     view_id="test_4",
                     description="test_4 description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         ),
@@ -133,6 +138,7 @@ def get_test_validations() -> List[DataValidationJob]:
                     view_id="test_5",
                     description="test_5 description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         ),
@@ -826,6 +832,7 @@ class TestFetchValidations(TestCase):
             view_id="existence_view",
             description="existence_view description",
             view_query_template="SELECT NULL LIMIT 0",
+            schema=MINIMAL_SCHEMA,
         )
         sameness_builder = SimpleBigQueryViewBuilder(
             project_id="my_project",
@@ -833,6 +840,7 @@ class TestFetchValidations(TestCase):
             view_id="sameness_view",
             description="sameness_view description",
             view_query_template="SELECT NULL LIMIT 1",
+            schema=MINIMAL_SCHEMA,
         )
         mock_get_region_configs_fn.return_value = {
             "US_XX": ValidationRegionConfig(
@@ -1017,6 +1025,7 @@ class TestFetchValidations(TestCase):
             view_id="test_2",
             description="test_2 description",
             view_query_template="select * from literally_anything",
+            schema=MINIMAL_SCHEMA,
         )
 
         existence_check_job = DataValidationJob(
@@ -1037,6 +1046,7 @@ class TestFetchValidations(TestCase):
             view_id="test_2",
             description="test_2 description",
             view_query_template="select * from literally_anything",
+            schema=MINIMAL_SCHEMA,
         )
 
         address_overrides_builder = BigQueryAddressOverrides.Builder(

@@ -22,6 +22,7 @@ from recidiviz.admin_panel.lineage_store import LineageStore
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 # View builders for views forming a DAG shaped like an X:
 # S1     S2
@@ -37,12 +38,14 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
         view_id="table_1",
         description="table_1 description",
         view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_2",
         view_id="table_2",
         description="table_2 description",
         view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_3",
@@ -52,6 +55,7 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_4",
@@ -59,6 +63,7 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
         description="table_4 description",
         view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_5",
@@ -66,6 +71,7 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
         description="table_5 description",
         view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        schema=MINIMAL_SCHEMA,
     ),
 ]
 

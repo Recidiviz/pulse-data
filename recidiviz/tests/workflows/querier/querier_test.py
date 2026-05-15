@@ -41,6 +41,7 @@ from recidiviz.persistence.database.schema.workflows.schema import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
 from recidiviz.tools.workflows import fixtures
@@ -249,6 +250,7 @@ def generate_mock_config(
             view_id=f"{prefix}_record",
             view_query_template="SELECT 1",
             description="mock description",
+            schema=MINIMAL_SCHEMA,
         ),
         task_completion_event=f"{prefix}_event",  # type: ignore
         export_collection_name=f"{prefix}_collection",

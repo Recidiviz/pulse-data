@@ -40,6 +40,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -64,6 +65,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=MINIMAL_SCHEMA,
             clustering_fields=fake_clustering_fields,
         )
 
@@ -87,6 +89,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         )
 
         self.assertEqual("other-project", view.project)
@@ -107,6 +110,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             bq_description="my_view description",
             view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
             select_col_1="name",
             select_col_2="date",
@@ -132,6 +136,7 @@ class BigQueryViewTest(unittest.TestCase):
                 description="my_view description",
                 bq_description="my_view description",
                 view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
+                schema=MINIMAL_SCHEMA,
                 some_dataset="a_dataset",
                 select_col_2="date",
             )
@@ -152,6 +157,7 @@ class BigQueryViewTest(unittest.TestCase):
                     dataset_id="view_dataset", table_id="my_view"
                 ),
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+                schema=MINIMAL_SCHEMA,
                 some_dataset="a_dataset",
             ).build()
 
@@ -171,6 +177,7 @@ class BigQueryViewTest(unittest.TestCase):
                     table_id="my_view_table",
                 ),
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+                schema=MINIMAL_SCHEMA,
                 some_dataset="a_dataset",
             ).build()
 
@@ -181,6 +188,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build()
 
@@ -211,6 +219,7 @@ class BigQueryViewTest(unittest.TestCase):
                 table_id="my_view_table",
             ),
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build()
 
@@ -236,6 +245,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_id="my_view",
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build()
 
@@ -273,6 +283,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build(sandbox_context=sandbox_context)
 
@@ -299,6 +310,7 @@ class BigQueryViewTest(unittest.TestCase):
                 table_id="my_view_table",
             ),
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build(sandbox_context=sandbox_context)
 
@@ -322,6 +334,7 @@ class BigQueryViewTest(unittest.TestCase):
             bq_description="my_view description",
             sandbox_context=sandbox_context,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         )
 
@@ -353,6 +366,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build(sandbox_context=sandbox_context)
 
@@ -385,6 +399,7 @@ class BigQueryViewTest(unittest.TestCase):
                 table_id="my_view_table",
             ),
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="not_in_sandbox_dataset",
         ).build(sandbox_context=sandbox_context)
 
@@ -412,6 +427,7 @@ class BigQueryViewTest(unittest.TestCase):
             bq_description="my_view description",
             sandbox_context=sandbox_context,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         )
 
@@ -456,6 +472,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build(sandbox_context=sandbox_context)
 
@@ -470,6 +487,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.us_xx_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
@@ -483,6 +501,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.us_yy_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
@@ -510,6 +529,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            schema=MINIMAL_SCHEMA,
             some_dataset="a_dataset",
         ).build(sandbox_context=sandbox_context)
 
@@ -524,6 +544,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.us_xx_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
@@ -537,6 +558,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.us_yy_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         ).build(sandbox_context=sandbox_context)
 
         self.assertEqual(
@@ -551,6 +573,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         )
 
         v_copy = copy.copy(v)
@@ -574,6 +597,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_id="my_view",
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         )
 
         self.assertTrue(v.should_deploy_in_project("test-project"))
@@ -587,6 +611,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
             projects_to_deploy={GCP_PROJECT_STAGING},
+            schema=MINIMAL_SCHEMA,
         )
 
         self.assertFalse(v.should_deploy_in_project("test-project"))
@@ -600,6 +625,7 @@ class BigQueryViewTest(unittest.TestCase):
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
             projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
+            schema=MINIMAL_SCHEMA,
         )
 
         self.assertFalse(v.should_deploy_in_project("test-project"))
@@ -621,6 +647,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
             projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
 
         v = builder.build()
@@ -652,6 +679,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
             projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
 
         v = builder.build()
@@ -685,6 +713,7 @@ class BigQueryViewTest(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
             projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
 
         v = builder.build()
@@ -762,7 +791,6 @@ class BigQueryViewTest(unittest.TestCase):
         ]
         base_sig = signature_for(base_schema)
 
-        self.assertIsNone(signature_for(None))
         self.assertIsNotNone(base_sig)
 
         # Description-only change -> same signature (description is not part of
@@ -805,23 +833,17 @@ class BigQueryViewTest(unittest.TestCase):
                 self.assertNotEqual(base_sig, signature_for(schema))
 
     def test_schema_summary(self) -> None:
-        # Test with no schema
+        test_schema = [
+            String(name="col1", description="Column 1", mode="NULLABLE"),
+            Integer(name="col2", description="Column 2", mode="REQUIRED"),
+        ]
         vb = SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=test_schema,
         )
-        view = vb.build()
-
-        self.assertEqual("No schema defined.", view.schema_summary)
-
-        # Test with schema
-        test_schema = [
-            String(name="col1", description="Column 1", mode="NULLABLE"),
-            Integer(name="col2", description="Column 2", mode="REQUIRED"),
-        ]
-        vb.schema = test_schema
         view = vb.build()
 
         expected_summary = (

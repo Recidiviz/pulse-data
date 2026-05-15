@@ -19,6 +19,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
     check_query_selects_output_columns,
@@ -206,6 +207,7 @@ class TestSqlglotHelpers(unittest.TestCase):
             view_id="my_view",
             description="Description for my_view",
             view_query_template=query_template,
+            schema=MINIMAL_SCHEMA,
         )
 
     @patch(

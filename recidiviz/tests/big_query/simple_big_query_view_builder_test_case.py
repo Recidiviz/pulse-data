@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 TableRow = dict[str, Any]
 
@@ -79,6 +80,7 @@ _ExampleVB = SimpleBigQueryViewBuilder(
     view_id="example_view",
     description="This is a lil fake view for an example.",
     view_query_template="SELECT col FROM `{project_id}.example.ex_input`",
+    schema=MINIMAL_SCHEMA,
 )
 
 

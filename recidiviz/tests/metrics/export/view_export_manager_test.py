@@ -44,6 +44,7 @@ from recidiviz.metrics.export.view_export_manager import (
     execute_metric_view_data_export,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.environment import (
@@ -100,6 +101,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
+            schema=MINIMAL_SCHEMA,
         )
         self.mock_metric_view_builder = MetricBigQueryViewBuilder(
             dataset_id=self.mock_dataset.dataset_id,
@@ -107,6 +109,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             dimensions=tuple(),
+            schema=MINIMAL_SCHEMA,
         )
 
         self.view_builders_for_dataset: list[BigQueryViewBuilder] = [

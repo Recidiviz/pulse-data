@@ -37,6 +37,7 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
     OptimizedMetricRepresentation,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 _DATA_POINTS = [
     {
@@ -491,6 +492,7 @@ class ConvertQueryResultsTest(unittest.TestCase):
                 description="test_view description",
                 view_query_template="you know",
                 dimensions=("district", "year", "month", "supervision_type"),
+                schema=MINIMAL_SCHEMA,
             ).build(),
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="tubular",

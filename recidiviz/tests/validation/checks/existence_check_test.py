@@ -21,6 +21,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.validation.checks.existence_check import (
     ExistenceDataValidationCheck,
     ExistenceValidationChecker,
@@ -77,6 +78,7 @@ class TestExistenceValidationChecker(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         )
@@ -107,6 +109,7 @@ class TestExistenceValidationChecker(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         )
@@ -137,6 +140,7 @@ class TestExistenceValidationChecker(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 hard_num_allowed_rows=2,
                 soft_num_allowed_rows=2,
@@ -169,6 +173,7 @@ class TestExistenceValidationChecker(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 hard_num_allowed_rows=2,
                 soft_num_allowed_rows=0,
@@ -206,6 +211,7 @@ class TestExistenceValidationChecker(TestCase):
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
+                        schema=MINIMAL_SCHEMA,
                     ),
                     hard_num_allowed_rows=2,
                     soft_num_allowed_rows=10,

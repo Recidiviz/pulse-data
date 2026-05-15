@@ -17,6 +17,7 @@
 """A test view builder file for big_query_view_collector_test.py"""
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.big_query.fake_big_query_view_builder import (
     FakeBigQueryViewBuilder,
 )
@@ -33,6 +34,7 @@ with local_project_id_override("my-project-id"):
         ),
         dimensions=("dimension_col",),
         sandbox_context=None,
+        schema=MINIMAL_SCHEMA,
     )
 
 VIEW_BUILDER = FakeBigQueryViewBuilder(GOOD_VIEW_2)

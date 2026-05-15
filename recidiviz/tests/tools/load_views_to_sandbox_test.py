@@ -54,7 +54,7 @@ class TestDeployedViewSignatureMatchesLocalView(unittest.TestCase):
 
     @staticmethod
     def _build_view(
-        schema: list | None,
+        schema: list,
     ) -> BigQueryView:
         return SimpleBigQueryViewBuilder(
             dataset_id="view_dataset",
@@ -95,11 +95,6 @@ class TestDeployedViewSignatureMatchesLocalView(unittest.TestCase):
             deployed_view, schema_signature=deployed_view.schema_signature
         )
         self.assertFalse(signature.matches_local_view(local_view))
-
-    def test_no_local_schema_no_deployed_signature(self) -> None:
-        local_view = self._build_view(schema=None)
-        signature = self._signature_for(local_view, schema_signature=None)
-        self.assertTrue(signature.matches_local_view(local_view))
 
 
 class TestSandboxChangedAddresses(unittest.TestCase):

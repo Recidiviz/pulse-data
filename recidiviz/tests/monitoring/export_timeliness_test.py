@@ -41,6 +41,7 @@ from recidiviz.monitoring.export_timeliness import (
     seconds_since_epoch,
 )
 from recidiviz.monitoring.keys import AttributeKey
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 
 product_configs_fixture = ProductConfigs(
@@ -67,18 +68,21 @@ TEST_EXPORT_CONFIG = ExportViewCollectionConfig(
             view_id="test_view",
             description="test view",
             view_query_template="select 1",
+            schema=MINIMAL_SCHEMA,
         ),
         SimpleBigQueryViewBuilder(
             dataset_id="test_dataset",
             view_id="other_test_view",
             description="other test view",
             view_query_template="select 2",
+            schema=MINIMAL_SCHEMA,
         ),
         SimpleBigQueryViewBuilder(
             dataset_id="test_dataset",
             view_id="newly_added_test_view",
             description="other test view",
             view_query_template="select 2",
+            schema=MINIMAL_SCHEMA,
         ),
     ],
 )

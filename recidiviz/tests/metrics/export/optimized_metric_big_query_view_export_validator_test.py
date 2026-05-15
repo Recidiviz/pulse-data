@@ -30,6 +30,7 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator i
     OptimizedMetricBigQueryViewExportValidator,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 
 class ValidateTest(unittest.TestCase):
@@ -46,6 +47,7 @@ class ValidateTest(unittest.TestCase):
             description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_one_staging = ExportBigQueryViewConfig(
@@ -63,6 +65,7 @@ class ValidateTest(unittest.TestCase):
             description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_two_staging = ExportBigQueryViewConfig(

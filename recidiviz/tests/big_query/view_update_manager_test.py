@@ -43,6 +43,7 @@ from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
@@ -127,7 +128,7 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                schema=None,
+                schema=MINIMAL_SCHEMA,
                 **view,
             )
             for view in sample_views
@@ -176,6 +177,7 @@ class ViewManagerTest(unittest.TestCase):
                 description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -183,6 +185,7 @@ class ViewManagerTest(unittest.TestCase):
                 description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -191,11 +194,14 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template=f"SELECT * FROM `{{project_id}}.{_DATASET_NAME}.my_fake_view` "
                 f"JOIN `{{project_id}}.{_DATASET_NAME}.my_fake_view_2`;",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
         def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
-            schema = [bigquery.SchemaField("some_field", "STRING", "REQUIRED")]
+            schema = [
+                bigquery.SchemaField("col", "STRING", "NULLABLE", description="col")
+            ]
 
             if address in {
                 mock_view_builders[0].materialized_address,
@@ -294,6 +300,7 @@ class ViewManagerTest(unittest.TestCase):
                 description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -301,6 +308,7 @@ class ViewManagerTest(unittest.TestCase):
                 description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME,
@@ -312,11 +320,14 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address_override=BigQueryAddress(
                     dataset_id=_DATASET_NAME_2, table_id="materialized_table"
                 ),
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
         def mock_get_table(address: BigQueryAddress) -> bigquery.Table:
-            schema = [bigquery.SchemaField("some_field", "STRING", "REQUIRED")]
+            schema = [
+                bigquery.SchemaField("col", "STRING", "NULLABLE", description="col")
+            ]
 
             if address in {
                 mock_view_builders[0].materialized_address,
@@ -395,14 +406,14 @@ class ViewManagerTest(unittest.TestCase):
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
                     view_configuration_changed=False,
-                    use_declared_schema=False,
+                    use_declared_schema=True,
                 ),
                 # Child view of updated view is also materialized
                 mock.call(
                     view=mock_view_builders[2].build(),
                     use_query_cache=True,
                     view_configuration_changed=False,
-                    use_declared_schema=False,
+                    use_declared_schema=True,
                 ),
             ],
             any_order=True,
@@ -447,6 +458,7 @@ class ViewManagerTest(unittest.TestCase):
                 description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME_2,
@@ -454,6 +466,7 @@ class ViewManagerTest(unittest.TestCase):
                 description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -532,7 +545,7 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                schema=None,
+                schema=MINIMAL_SCHEMA,
                 **view,
             )
             for view in sample_views
@@ -547,6 +560,7 @@ class ViewManagerTest(unittest.TestCase):
                 dataset_id=materialized_dataset,
                 table_id="some_table",
             ),
+            schema=MINIMAL_SCHEMA,
         )
 
         mock_view_builders += [materialized_view_builder]
@@ -663,6 +677,7 @@ class ViewManagerTest(unittest.TestCase):
                 materialized_address=None,
                 clustering_fields=None,
                 sandbox_context=None,
+                schema=MINIMAL_SCHEMA,
             )
             for view in sample_views
         ]
@@ -759,6 +774,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="a",
                 should_materialize=False,
                 materialized_address_override=None,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=_DATASET_NAME_2,
@@ -767,6 +783,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="a",
                 should_materialize=False,
                 materialized_address_override=None,
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -900,6 +917,10 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="SELECT state_code, person_id FROM table",
                 should_materialize=True,
                 clustering_fields=["state_code"],
+                schema=[
+                    String(name="state_code", description="s", mode="NULLABLE"),
+                    String(name="person_id", description="p", mode="NULLABLE"),
+                ],
             ),
             # View 2: Changing existing clustering fields
             SimpleBigQueryViewBuilder(
@@ -909,6 +930,10 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="SELECT state_code, person_id FROM table",
                 should_materialize=True,
                 clustering_fields=["state_code", "person_id"],
+                schema=[
+                    String(name="state_code", description="s", mode="NULLABLE"),
+                    String(name="person_id", description="p", mode="NULLABLE"),
+                ],
             ),
         ]
 
@@ -981,13 +1006,13 @@ class ViewManagerTest(unittest.TestCase):
                     view=mock_view_builders[0].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
-                    use_declared_schema=False,
+                    use_declared_schema=True,
                 ),
                 mock.call(
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
-                    use_declared_schema=False,
+                    use_declared_schema=True,
                 ),
             ],
             any_order=True,
@@ -1022,6 +1047,10 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="SELECT update_datetime, person_id FROM table",
                 should_materialize=True,
                 time_partitioning=new_partitioning_config,
+                schema=[
+                    String(name="update_datetime", description="u", mode="NULLABLE"),
+                    String(name="person_id", description="p", mode="NULLABLE"),
+                ],
             ),
             # View 2: Changing existing partitioning
             SimpleBigQueryViewBuilder(
@@ -1031,6 +1060,10 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="SELECT update_datetime, person_id FROM table",
                 should_materialize=True,
                 time_partitioning=new_partitioning_config,
+                schema=[
+                    String(name="update_datetime", description="u", mode="NULLABLE"),
+                    String(name="person_id", description="p", mode="NULLABLE"),
+                ],
             ),
         ]
 
@@ -1103,13 +1136,13 @@ class ViewManagerTest(unittest.TestCase):
                     view=mock_view_builders[0].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
-                    use_declared_schema=False,
+                    use_declared_schema=True,
                 ),
                 mock.call(
                     view=mock_view_builders[1].build(),
                     use_query_cache=True,
                     view_configuration_changed=True,
-                    use_declared_schema=False,
+                    use_declared_schema=True,
                 ),
             ],
             any_order=True,

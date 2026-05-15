@@ -27,6 +27,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tools.find_direct_raw_data_references import (
@@ -202,4 +203,5 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
             view_id=view_id,
             description=f"{view_id} description",
             view_query_template=query_template,
+            schema=MINIMAL_SCHEMA,
         )

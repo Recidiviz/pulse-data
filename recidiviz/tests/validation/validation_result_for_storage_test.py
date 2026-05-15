@@ -32,6 +32,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
@@ -91,6 +92,7 @@ class TestValidationResultStorage(unittest.TestCase):
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
+                        schema=MINIMAL_SCHEMA,
                     ),
                     region_configs={},
                 ),
@@ -194,6 +196,7 @@ class TestValidationResultStorage(unittest.TestCase):
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
+                        schema=MINIMAL_SCHEMA,
                     ),
                 ),
             ),
@@ -278,6 +281,7 @@ class TestValidationResultStorage(unittest.TestCase):
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
+                        schema=MINIMAL_SCHEMA,
                     ),
                     region_configs={},
                 ),
@@ -366,6 +370,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 region_configs={},
             ),

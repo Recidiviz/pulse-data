@@ -28,10 +28,13 @@ from pandas import RangeIndex
 from pandas._testing import assert_frame_equal
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_schema_utils import schema_field_to_view_column
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import String
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
@@ -86,6 +89,7 @@ class TestSamenessValidationCheckers(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 region_configs={},
             )
@@ -105,6 +109,7 @@ class TestSamenessValidationCheckers(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 hard_max_allowed_error=1.5,
                 soft_max_allowed_error=1.5,
@@ -122,6 +127,7 @@ class TestSamenessValidationCheckers(TestCase):
                 view_id="test_view",
                 description="test_view description",
                 view_query_template="select * from literally_anything",
+                schema=MINIMAL_SCHEMA,
             ),
             region_configs={},
         )
@@ -138,6 +144,7 @@ class TestSamenessValidationCheckers(TestCase):
                 view_id="test_view",
                 description="test_view description",
                 view_query_template="select * from literally_anything",
+                schema=MINIMAL_SCHEMA,
             ),
             region_configs={},
         )
@@ -165,6 +172,7 @@ class TestSamenessValidationCheckers(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 region_configs={},
             ),
@@ -214,6 +222,7 @@ class TestSamenessValidationCheckers(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 region_configs={},
             ),
@@ -279,6 +288,7 @@ class TestSamenessValidationCheckers(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 region_configs={},
             ),
@@ -338,6 +348,7 @@ class TestSamenessValidationCheckers(TestCase):
                         view_id="test_view",
                         description="test_view description",
                         view_query_template="select * from literally_anything",
+                        schema=MINIMAL_SCHEMA,
                     ),
                 ),
             )
@@ -362,6 +373,7 @@ class TestSamenessValidationCheckers(TestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
                 region_configs={},
             ),
@@ -388,6 +400,15 @@ class TestSamenessValidationCheckers(TestCase):
                 ),
             ),
         )
+
+
+SAMENESS_CHECK_TEST_SCHEMA = [
+    String(name="region_code", description="r", mode="NULLABLE"),
+    String(name="label", description="l", mode="NULLABLE"),
+    String(name="a", description="a", mode="NULLABLE"),
+    String(name="b", description="b", mode="NULLABLE"),
+    String(name="c", description="c", mode="NULLABLE"),
+]
 
 
 class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
@@ -453,6 +474,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=SAMENESS_CHECK_TEST_SCHEMA,
                 ),
             ),
         )
@@ -518,6 +540,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=SAMENESS_CHECK_TEST_SCHEMA,
                 ),
             ),
         )
@@ -581,6 +604,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=SAMENESS_CHECK_TEST_SCHEMA,
                 ),
             ),
         )
@@ -644,6 +668,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=SAMENESS_CHECK_TEST_SCHEMA,
                 ),
             ),
         )
@@ -715,6 +740,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=SAMENESS_CHECK_TEST_SCHEMA,
                 ),
             ),
         )
@@ -783,6 +809,12 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=[
+                        String(name="region_code", description="r", mode="NULLABLE"),
+                        String(name="date", description="d", mode="NULLABLE"),
+                        String(name="a", description="a", mode="NULLABLE"),
+                        String(name="b", description="b", mode="NULLABLE"),
+                    ],
                 ),
             ),
         )
@@ -852,6 +884,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
                     view_id="test_view",
                     description="test_view description",
                     view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                    schema=SAMENESS_CHECK_TEST_SCHEMA,
                 ),
             ),
         )
@@ -900,6 +933,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryEmulatorTestCase):
             description="test_view description",
             view_query_template="select * from `{project_id}.my_dataset.test_data`",
             should_materialize=True,
+            schema=[schema_field_to_view_column(f) for f in mock_schema],
         )
         view = view_builder.build()
         self.bq_client.create_or_update_view(view)

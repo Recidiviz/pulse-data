@@ -27,6 +27,7 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 
 class TestPointingAtStagingSubdirectory(unittest.TestCase):
@@ -47,6 +48,7 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
                 view_id="test_view",
                 description="test_view description",
                 view_query_template="you know",
+                schema=MINIMAL_SCHEMA,
             ).build(),
             view_filter_clause="WHERE state_code = 'US_XX'",
             intermediate_table_name="tubular",

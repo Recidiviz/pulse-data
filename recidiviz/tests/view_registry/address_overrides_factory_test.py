@@ -27,6 +27,7 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_input_source_tables,
@@ -54,6 +55,7 @@ class TestAddressOverrides(unittest.TestCase):
                 description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_2",
@@ -64,6 +66,7 @@ class TestAddressOverrides(unittest.TestCase):
                 materialized_address_override=BigQueryAddress(
                     dataset_id="materialized_dataset", table_id="table_materialized"
                 ),
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 

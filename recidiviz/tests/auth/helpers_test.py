@@ -31,6 +31,7 @@ from recidiviz.tests.auth.helpers import convert_list_values_to_json
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 
 class BQHelpersTest(BigQueryEmulatorTestCase):
@@ -243,6 +244,7 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
             view_id="test_merge_permissions_single_role",
             description="View to test permissions merging for a user with a single role",
             view_query_template=self.permissions_bq_query,
+            schema=MINIMAL_SCHEMA,
         )
         self.run_query_test(
             query_str=query_builder.build().view_query, expected_result=generated
@@ -308,6 +310,7 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
             view_id="test_merge_permissions_multiple_roles_no_conflict",
             description="View to test permissions merging for a user with multiple roles that don't conflict",
             view_query_template=self.permissions_bq_query,
+            schema=MINIMAL_SCHEMA,
         )
         self.run_query_test(
             query_str=query_builder.build().view_query, expected_result=generated
@@ -380,6 +383,7 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
             view_id="test_merge_permissions_multiple_roles_with_conflicts",
             description="View to test permissions merging for a user with multiple roles that do conflict",
             view_query_template=self.permissions_bq_query,
+            schema=MINIMAL_SCHEMA,
         )
         self.run_query_test(
             query_str=query_builder.build().view_query, expected_result=generated

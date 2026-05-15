@@ -39,6 +39,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -65,6 +66,7 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
                 view_id="test_view",
                 description="test_view description",
                 view_query_template="SELECT NULL LIMIT 0",
+                schema=MINIMAL_SCHEMA,
             ),
             metadata_query="SELECT 'test' as col, 'US_XX' as state_code",
         )
@@ -75,6 +77,7 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
                 view_id="test_view_2",
                 description="test_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
+                schema=MINIMAL_SCHEMA,
             ),
             metadata_query="SELECT 'test2' as {col}, 'US_YY' as state_code",
             col="col_name",

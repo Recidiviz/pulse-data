@@ -27,6 +27,7 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.validation import views as views_module
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
@@ -167,6 +168,7 @@ class TestConfiguredValidations(unittest.TestCase):
             view_id="existence_view",
             description="existence_view description",
             view_query_template="SELECT NULL LIMIT 0",
+            schema=MINIMAL_SCHEMA,
         )
         sameness_builder = SimpleBigQueryViewBuilder(
             project_id="my_project",
@@ -174,6 +176,7 @@ class TestConfiguredValidations(unittest.TestCase):
             view_id="sameness_view",
             description="sameness_view description",
             view_query_template="SELECT NULL LIMIT 1",
+            schema=MINIMAL_SCHEMA,
         )
         mock_get_region_configs.return_value = {
             "US_XX": ValidationRegionConfig(

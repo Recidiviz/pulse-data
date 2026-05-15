@@ -44,6 +44,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
@@ -64,12 +65,14 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
         view_id="table_1",
         description="table_1 description",
         view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_2",
         view_id="table_2",
         description="table_2 description",
         view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_3",
@@ -79,6 +82,7 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_4",
@@ -86,6 +90,7 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
         description="table_4 description",
         view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_5",
@@ -93,6 +98,7 @@ X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
         description="table_5 description",
         view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
+        schema=MINIMAL_SCHEMA,
     ),
 ]
 
@@ -114,6 +120,7 @@ DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST = [
             SELECT * FROM `{project_id}.dataset_4.table_4`
             JOIN `{project_id}.dataset_5.table_5`
             USING (col)""",
+        schema=MINIMAL_SCHEMA,
     ),
 ]
 
@@ -330,12 +337,14 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         view_3 = SimpleBigQueryViewBuilder(
@@ -343,6 +352,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_id="table_3",
             description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         with self.assertRaisesRegex(
@@ -358,6 +368,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -367,12 +378,14 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_3.table_3`
             USING (col)""",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         with self.assertRaisesRegex(
             ValueError,
@@ -387,12 +400,14 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
@@ -402,6 +417,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
+            schema=MINIMAL_SCHEMA,
         ).build()
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -836,6 +852,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -846,6 +863,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id=view_1.dataset_id, table_id=view_1.view_id
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         with self.assertRaisesRegex(
             ValueError,
@@ -864,6 +882,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="other_dataset", table_id="other_table"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -874,6 +893,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="other_dataset", table_id="other_table"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         with self.assertRaisesRegex(
             ValueError,
@@ -889,6 +909,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             description="table_1 description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -896,6 +917,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             description="table_2 description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
@@ -905,6 +927,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 SELECT * FROM `{project_id}.dataset_1.table_1`
                 JOIN `{project_id}.dataset_2.table_2_materialized`
                 USING (col)""",
+            schema=MINIMAL_SCHEMA,
         ).build()
         walker = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -936,6 +959,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -946,6 +970,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="other_dataset_2", table_id="other_table_2"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
@@ -955,6 +980,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 SELECT * FROM `{project_id}.dataset_1.table_1`
                 JOIN `{project_id}.other_dataset_2.other_table_2`
                 USING (col)""",
+            schema=MINIMAL_SCHEMA,
         ).build()
         walker = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -1395,6 +1421,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_4.table_4`
             JOIN `{project_id}.dataset_6.table_6`
             USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_8",
@@ -1404,6 +1431,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_5.table_5`
             JOIN `{project_id}.dataset_6.table_6`
             USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_9",
@@ -1411,6 +1439,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 description="table_9 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_7.table_7`""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_10",
@@ -1420,6 +1449,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_5.table_5`
             JOIN `{project_id}.dataset_8.table_8`
             USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_11",
@@ -1427,6 +1457,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 description="table_11 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_not_in_graph.table`""",
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -1457,6 +1488,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 description="table_6 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_4.table_4`""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_7",
@@ -1464,6 +1496,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 description="table_7 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_5.table_5`""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_8",
@@ -1473,6 +1506,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_7.table_7`
             JOIN `{project_id}.dataset_8.table_8`
             USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_9",
@@ -1480,6 +1514,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 description="table_9 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_7.table_7`""",
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -1616,6 +1651,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="view_one",
             description="First test view - root view",
             view_query_template="SELECT 1 as col",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         # view_two depends on view_one
@@ -1624,6 +1660,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="view_two",
             description="Second test view that depends on view_one",
             view_query_template="SELECT * FROM `{project_id}.view_dataset.view_one`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         # view_three also depends on view_one
@@ -1632,6 +1669,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="view_three",
             description="Third test view that depends on view_one",
             view_query_template="SELECT * FROM `{project_id}.view_dataset.view_one`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
     @property
@@ -1668,6 +1706,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             UNION ALL
             SELECT * FROM `{project_id}.view_dataset.view_two`
             """,
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker(
@@ -1715,6 +1754,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="isolated_view",
             description="A view with no dependencies",
             view_query_template="SELECT 1 as col1, 'isolated' as col2",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([isolated_view])
@@ -1840,6 +1880,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             description="table_1 description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -1847,6 +1888,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             description="table_2 description",
             should_materialize=True,
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
@@ -1857,6 +1899,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 SELECT * FROM `{project_id}.dataset_1.table_1`
                 JOIN `{project_id}.dataset_2.table_2_materialized`
                 USING (col)""",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3])
@@ -1887,6 +1930,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
@@ -1897,6 +1941,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 dataset_id="other_dataset_2", table_id="other_table_2"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
@@ -1906,6 +1951,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 SELECT * FROM `{project_id}.dataset_1.table_1`
                 JOIN `{project_id}.other_dataset_2.other_table_2`
                 USING (col)""",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3])
@@ -1933,6 +1979,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="movements_latest",
             description="Latest movements from raw data",
             view_query_template="SELECT * FROM `{project_id}.us_ca_raw_data.movements`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         ingest_view = SimpleBigQueryViewBuilder(
@@ -1940,6 +1987,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="incarceration_periods",
             description="Processed incarceration periods",
             view_query_template="SELECT * FROM `{project_id}.us_ca_raw_data_up_to_date_views.movements_latest`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         normalized_view = SimpleBigQueryViewBuilder(
@@ -1947,6 +1995,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="state_incarceration_period",
             description="Normalized incarceration periods",
             view_query_template="SELECT * FROM `{project_id}.us_ca_ingest_view_results.incarceration_periods`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         validation_view = SimpleBigQueryViewBuilder(
@@ -1954,6 +2003,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="incarceration_period_validation",
             description="Validation checks for incarceration periods",
             view_query_template="SELECT * FROM `{project_id}.us_ca_normalized_state.state_incarceration_period`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         # Create another branch from normalized
@@ -1962,6 +2012,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="incarceration_metrics",
             description="Aggregated metrics from incarceration data",
             view_query_template="SELECT * FROM `{project_id}.us_ca_normalized_state.state_incarceration_period`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker(
@@ -2030,6 +2081,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
             USING (some_col);
             """,
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view])
@@ -2084,6 +2136,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 view_id=f"chain_view_{i}",
                 description=f"Chain view {i}",
                 view_query_template=query,
+                schema=MINIMAL_SCHEMA,
             ).build()
             views.append(view)
 
@@ -2112,6 +2165,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="parent_view",
             description="Parent view with many children",
             view_query_template="SELECT 1 as col, 'parent' as source",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         # Create multiple child views
@@ -2122,6 +2176,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 view_id=f"child_view_{i}",
                 description=f"Child view {i}",
                 view_query_template="SELECT * FROM `{project_id}.parent_dataset.parent_view`",
+                schema=MINIMAL_SCHEMA,
             ).build()
             child_views.append(child_view)
 
@@ -2190,6 +2245,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="view_with_source",
             description="View that references source tables",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view_with_source])
@@ -2223,6 +2279,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 UNION ALL
                 SELECT * FROM `{project_id}.source_dataset.table2`
             """,
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view_multi_source])
@@ -2261,6 +2318,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="view_no_sources",
             description="View with no source table dependencies",
             view_query_template="SELECT 1 as col",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view])
@@ -2284,6 +2342,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="root_view",
             description="Root view",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.raw_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dependent_view = SimpleBigQueryViewBuilder(
@@ -2294,6 +2353,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 SELECT a.* FROM `{project_id}.test_dataset.root_view` a
                 JOIN `{project_id}.source_dataset.lookup_table` b ON a.id = b.id
             """,
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([root_view, dependent_view])
@@ -2339,6 +2399,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="view_with_source",
             description="View that references source tables",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         # Create a view that depends on the first view
@@ -2347,6 +2408,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="dependent_view",
             description="View that depends on another view",
             view_query_template="SELECT * FROM `{project_id}.test_dataset.view_with_source`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         dag_walker = BigQueryViewDagWalker([view_with_source, dependent_view])
@@ -2407,12 +2469,14 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         view_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         with self.assertRaisesRegex(
@@ -2459,6 +2523,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 view_id="another_table",
                 description="another_table description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -2481,6 +2546,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         )
 
         dag_1 = BigQueryViewDagWalker([view_builder_1.build()])
@@ -2494,6 +2560,7 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
                 dataset_id="other_dataset_1", table_id="other_table_1"
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            schema=MINIMAL_SCHEMA,
         )
 
         dag_2 = BigQueryViewDagWalker([view_builder_2.build()])
@@ -2513,12 +2580,14 @@ class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
             LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
             USING (some_col);
             """,
+            schema=MINIMAL_SCHEMA,
         ).build()
         child_view = SimpleBigQueryViewBuilder(
             dataset_id="my_dataset",
             view_id="child_view",
             description="my view description",
             view_query_template="""SELECT * FROM `{project_id}.my_dataset.my_view_id`""",
+            schema=MINIMAL_SCHEMA,
         ).build()
         walker = BigQueryViewDagWalker([view, child_view])
         self.assertEqual(
@@ -2593,6 +2662,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             view_id="my_view_id",
             description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         node = BigQueryViewDagNode(view)
         self.assertIsNone(view.materialized_address)
@@ -2622,6 +2692,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             view_id="my_view_id",
             description="my view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.some_table_materialized`",
+            schema=MINIMAL_SCHEMA,
         ).build()
         parent_view = SimpleBigQueryViewBuilder(
             dataset_id="some_dataset",
@@ -2629,6 +2700,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             description="my parent view description",
             view_query_template="SELECT * FROM UNNEST([])",
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         ).build()
         dag_walker = BigQueryViewDagWalker([view, parent_view])
         node = dag_walker.node_for_view(view)
@@ -2646,6 +2718,7 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             LEFT OUTER JOIN `{project_id}.some_dataset.other_table`
             USING (some_col);
             """,
+            schema=MINIMAL_SCHEMA,
         ).build()
         node = BigQueryViewDagNode(view)
         self.assertEqual(

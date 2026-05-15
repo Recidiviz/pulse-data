@@ -35,6 +35,7 @@ from recidiviz.big_query.view_update_manager_utils import (
     get_managed_view_and_materialized_table_addresses_by_dataset,
     validate_builders_not_in_source_datasets,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.utils.test_utils import assert_group_contains_regex
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
@@ -57,6 +58,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_0 description",
                 bq_description="table_0 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                schema=MINIMAL_SCHEMA,
             )
         ]
         # Views forming a DAG shaped like an X:
@@ -72,6 +74,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_1 description",
                 bq_description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_2",
@@ -79,6 +82,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_2 description",
                 bq_description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_3",
@@ -89,6 +93,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_4",
@@ -97,6 +102,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="table_4 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_5",
@@ -105,6 +111,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="table_5 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -127,6 +134,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             SELECT * FROM `{project_id}.dataset_4.table_4`
             JOIN `{project_id}.dataset_5.table_5`
             USING (col)""",
+                schema=MINIMAL_SCHEMA,
             )
         )
 
@@ -137,6 +145,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_1 description",
                 bq_description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_1",
@@ -144,6 +153,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_2 description",
                 bq_description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_3",
@@ -154,6 +164,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                     SELECT * FROM `{project_id}.dataset_1.table_1`
                     JOIN `{project_id}.dataset_1.table_2`
                     USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_4",
@@ -162,6 +173,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="table_4 description",
                 view_query_template="""
                     SELECT * FROM `{project_id}.dataset_3.table_3`""",
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -172,6 +184,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_1 description",
                 bq_description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_1",
@@ -179,6 +192,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description="table_2 description",
                 bq_description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+                schema=MINIMAL_SCHEMA,
             ),
             BigQueryView(
                 dataset_id="dataset_1",
@@ -189,6 +203,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                     SELECT * FROM `{project_id}.dataset_1.table_1`
                     JOIN `{project_id}.dataset_1.table_2`
                     USING (col)""",
+                schema=MINIMAL_SCHEMA,
             ),
         ]
         self.project_id = "fake-recidiviz-project"
@@ -457,7 +472,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                schema=None,
+                schema=MINIMAL_SCHEMA,
                 **view,
             )
             for view in sample_views
@@ -529,6 +544,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_2",
@@ -537,6 +553,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -641,7 +658,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                schema=None,
+                schema=MINIMAL_SCHEMA,
                 **view,
             )
             for view in sample_views
@@ -711,7 +728,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 materialized_address_override=None,
                 clustering_fields=None,
                 time_partitioning=None,
-                schema=None,
+                schema=MINIMAL_SCHEMA,
                 **view,
             )
             for view in sample_views
@@ -767,6 +784,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="bogus_dataset",
@@ -775,6 +793,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -843,6 +862,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             )
         ]
 
@@ -902,6 +922,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_2",
@@ -910,6 +931,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 bq_description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -989,6 +1011,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
 
         # no error
@@ -1004,6 +1027,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
 
         with assert_group_contains_regex(
@@ -1031,6 +1055,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="source_dataset", table_id="test_view"
             ),
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
         with assert_group_contains_regex(
             r"Found the following views in source table-only datasets\:",
@@ -1056,6 +1081,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             should_materialize=True,
+            schema=MINIMAL_SCHEMA,
         )
 
         # no error

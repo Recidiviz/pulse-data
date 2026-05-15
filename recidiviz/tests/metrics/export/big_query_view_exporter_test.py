@@ -37,6 +37,7 @@ from recidiviz.big_query.export.export_query_config import (
     ExportValidationType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 
 class BigQueryViewExporterTest(unittest.TestCase):
@@ -57,12 +58,14 @@ class BigQueryViewExporterTest(unittest.TestCase):
             view_id="test_view",
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
+            schema=MINIMAL_SCHEMA,
         )
         self.second_view_builder = SimpleBigQueryViewBuilder(
             dataset_id="test_dataset",
             view_id="test_view_2",
             description="test_view_2 description",
             view_query_template="SELECT NULL LIMIT 0",
+            schema=MINIMAL_SCHEMA,
         )
         self.view_export_configs = [
             ExportBigQueryViewConfig(

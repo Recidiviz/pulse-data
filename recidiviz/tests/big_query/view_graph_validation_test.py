@@ -406,10 +406,6 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         ]
 
         for v in source_views:
-            # TODO(#54941): Once all views have declared schemas, remove this check
-            if v.schema is None:
-                continue
-
             actual_schema = view_address_to_schema.get(v.address) or []
             schema_diff = diff_declared_schema_to_bq_schema(v.schema, actual_schema)
             if len(schema_diff) > 0:

@@ -23,6 +23,7 @@ from github.Repository import Repository
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.validation.validation_manager_test import (
     FakeValidationResultDetails,
 )
@@ -56,6 +57,7 @@ class ValidationGithubTicketManagerTest(TestCase):
                     view_id="test_1",
                     description="test_1 description",
                     view_query_template="select * from literally_anything",
+                    schema=MINIMAL_SCHEMA,
                 ),
             ),
         )

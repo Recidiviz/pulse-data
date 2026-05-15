@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_create_or_replace_view_query_provider import 
 )
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_column import Integer, String
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 PROJECT_ID = "recidiviz-test"
 
@@ -68,13 +69,14 @@ AS
 SELECT 1 AS col1, 2 AS col2""",
         )
 
-    def test_generates_create_view_without_schema(self) -> None:
+    def test_generates_create_view_with_minimal_schema(self) -> None:
         view = BigQueryView(
             dataset_id="my_dataset",
             view_id="my_view",
             description="test view",
             bq_description="test view",
-            view_query_template="SELECT 1 AS col1",
+            view_query_template="SELECT 1 AS col",
+            schema=MINIMAL_SCHEMA,
         )
 
         provider = CreateOrReplaceViewQueryProvider(view=view, project_id=PROJECT_ID)
@@ -83,10 +85,13 @@ SELECT 1 AS col1, 2 AS col2""",
         self.assertEqual(
             query,
             """CREATE OR REPLACE VIEW `recidiviz-test.my_dataset.my_view`
+(
+  `col` OPTIONS(description='''col''')
+)
 OPTIONS(description='''test view
 Explore this view\\'s lineage at https://go/lineage-staging/my_dataset.my_view''')
 AS
-SELECT 1 AS col1""",
+SELECT 1 AS col""",
         )
 
     def test_single_quotes_preserved_in_descriptions(self) -> None:
@@ -179,6 +184,7 @@ SELECT 1 AS col1, 2 AS col2""",
             description="test view",
             bq_description="test view",
             view_query_template="SELECT 1 AS col1",
+            schema=MINIMAL_SCHEMA,
         )
 
         provider = CreateOrReplaceViewQueryProvider(

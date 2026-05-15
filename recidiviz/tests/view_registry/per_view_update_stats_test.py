@@ -53,6 +53,7 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
     build_source_table_repository_for_yaml_managed_tables,
 )
 from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils import metadata
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.address_to_complexity_score_mapping import (
@@ -79,6 +80,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         description="table_1 description",
         # Query complexity: 1
         view_query_template="SELECT *, a + b AS c FROM `{project_id}.source_dataset.source_table`",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_2",
@@ -87,6 +89,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         description="table_2 description",
         # Query complexity: 11
         view_query_template="SELECT * FROM `{project_id}.us_xx_raw_data.raw_table` WHERE state_code = 'US_XX'",
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_3",
@@ -106,6 +109,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
             )
             USING (col)""",
         clustering_fields=["foo", "bar"],
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_4",
@@ -118,6 +122,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         time_partitioning=bigquery.TimePartitioning(
             field="partition_field", type_=bigquery.TimePartitioningType.DAY
         ),
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_5",
@@ -130,6 +135,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
             FROM `{project_id}.dataset_3.table_3_materialized`
             WHERE d < h
             """,
+        schema=MINIMAL_SCHEMA,
     ),
     SimpleBigQueryViewBuilder(
         dataset_id="dataset_6",
@@ -141,6 +147,7 @@ _DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST: list[BigQueryViewBuilder[Any]] = [
         SELECT * FROM `{project_id}.dataset_4.table_4_materialized`
         JOIN `{project_id}.dataset_5.table_5_materialized`
         USING (col)""",
+        schema=MINIMAL_SCHEMA,
     ),
 ]
 
@@ -173,6 +180,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
                 description="my_view description",
                 bq_description="my_view description",
                 view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+                schema=MINIMAL_SCHEMA,
             )
 
     def tearDown(self) -> None:
@@ -218,7 +226,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "was_materialized": False,
             "update_runtime_sec": 15.5,
             "view_query_signature": "cdc996837491e7716d35d3c73be265c236f5f6c9ded04f88874ee3bc0718d707",
-            "schema_signature": None,
+            "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
             "clustering_fields_string": None,
             "time_partitioning_string": None,
             "materialized_table_num_rows": None,
@@ -300,7 +308,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "was_materialized": True,
             "update_runtime_sec": 15.5,
             "view_query_signature": "cdc996837491e7716d35d3c73be265c236f5f6c9ded04f88874ee3bc0718d707",
-            "schema_signature": None,
+            "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
             "clustering_fields_string": None,
             "time_partitioning_string": None,
             "materialized_table_num_rows": 100,
@@ -456,7 +464,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "dataset_id": "dataset_1",
                 "table_id": "table_1_us_yy",
                 "view_query_signature": "bb7e62b212044f5944712fcd5bb052c541d7019c0bd453bc07b13ceb57896667",
-                "schema_signature": None,
+                "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
                 "complexity_score_2025": 1,
@@ -484,7 +492,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "dataset_id": "dataset_2",
                 "table_id": "table_2_us_xx",
                 "view_query_signature": "07b207f7fcdea521507c0041cd25579fb5736ceb2d908bc2948662b6268402a0",
-                "schema_signature": None,
+                "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
                 "complexity_score_2025": 11,
@@ -512,7 +520,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "dataset_id": "dataset_3",
                 "table_id": "table_3",
                 "view_query_signature": "dd3dc013a592a0c038d3cb8290e432ba162b25a9233cdc5a00f4c57ed3a6ba8c",
-                "schema_signature": None,
+                "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": "foo,bar",
                 "time_partitioning_string": None,
                 "complexity_score_2025": 20,
@@ -543,7 +551,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "dataset_id": "dataset_4",
                 "table_id": "table_4",
                 "view_query_signature": "8434a01d21c51adca8af9f90a4efdb919c65f62b781cda17bce96dab0478283c",
-                "schema_signature": None,
+                "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": '{"field": "partition_field", "type": "DAY"}',
                 "complexity_score_2025": 1,
@@ -572,7 +580,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "dataset_id": "dataset_5",
                 "table_id": "table_5",
                 "view_query_signature": "520b874d0882be60a2b43250645ed04b63802667fbfd4b9d4bca8dcc02283ea7",
-                "schema_signature": None,
+                "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
                 "complexity_score_2025": 4,
@@ -601,7 +609,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "dataset_id": "dataset_6",
                 "table_id": "table_6",
                 "view_query_signature": "5c73fee77db98c5f0709b78e6f4092e9354c4f3b7260686b5b015d1b89ce544a",
-                "schema_signature": None,
+                "schema_signature": "b6908b9e17682449dcb2eceac9de54482afe65d5da228729869318229b53af07",
                 "clustering_fields_string": None,
                 "time_partitioning_string": None,
                 "complexity_score_2025": 2,

@@ -28,6 +28,7 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -42,6 +43,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
                 description="parent_table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.my_dataset.table_foo`",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="parent_dataset_2",
@@ -49,6 +51,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
                 description="parent_table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.my_dataset.table_bar`",
                 should_materialize=True,
+                schema=MINIMAL_SCHEMA,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id="parent_dataset_3",
@@ -57,6 +60,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
                 view_query_template="SELECT * FROM `{project_id}.my_dataset.table_baz`",
                 should_materialize=True,
                 projects_to_deploy={"recidiviz-789"},
+                schema=MINIMAL_SCHEMA,
             ),
         ]
 
@@ -67,6 +71,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             description="All data together",
             parents=self.view_builders[0:1],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -84,6 +89,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             description="All data together",
             parents=self.view_builders[0:2],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -109,6 +115,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
                 BigQueryAddress.from_str("source_table_dataset2.table_2"),
             ],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -133,6 +140,7 @@ SELECT * FROM `recidiviz-456.source_table_dataset2.table_2`"""
             ],
             custom_select_statement="SELECT a, b",
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -159,6 +167,7 @@ SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
                 "another_dataset.another_table"
             ),
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
         self.assertEqual(
             builder.table_for_query,
@@ -182,6 +191,7 @@ SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
                 BigQueryAddress.from_str("source_table_dataset2.table_2"),
             ],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
         self.assertEqual(
             builder_no_override.table_for_query,
@@ -195,6 +205,7 @@ SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
             description="All data together",
             parents=self.view_builders[0:3],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -232,6 +243,7 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
             description="All data together",
             parents=self.view_builders[0:2],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         address_overrides = (
@@ -272,6 +284,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             description="All data together",
             parents=self.view_builders[0:2],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         address_overrides = (
@@ -318,6 +331,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
                     description="parent_table_1 description",
                     view_query_template="SELECT * FROM `{project_id}.my_dataset.table_foo`",
                     should_materialize=True,
+                    schema=MINIMAL_SCHEMA,
                 ),
                 SimpleBigQueryViewBuilder(
                     dataset_id="us_yy_parent_dataset",
@@ -325,9 +339,11 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
                     description="parent_table_2 description",
                     view_query_template="SELECT * FROM `{project_id}.my_dataset.table_bar`",
                     should_materialize=True,
+                    schema=MINIMAL_SCHEMA,
                 ),
             ],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         address_overrides = (
@@ -366,6 +382,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             description="All data together",
             parents=self.view_builders[0:2],
             clustering_fields=["state_code"],
+            schema=MINIMAL_SCHEMA,
         )
 
         address_overrides = (

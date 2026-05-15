@@ -44,6 +44,7 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
 from recidiviz.view_registry.execute_update_all_managed_views import (
@@ -93,6 +94,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
             description="my_view description",
             bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         )
         view_2 = BigQueryView(
             dataset_id="view_dataset",
@@ -100,6 +102,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
             description="my_view_2 description",
             bq_description="my_view_2 description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            schema=MINIMAL_SCHEMA,
         )
 
         mock_table = create_autospec(bigquery.Table)

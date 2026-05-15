@@ -35,6 +35,7 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.environment import (
     ALL_GCP_PROJECTS,
@@ -68,6 +69,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             description="test_view description",
             view_query_template="SELECT NULL LIMIT 0",
             dimensions=(),
+            schema=MINIMAL_SCHEMA,
         )
 
         self.views_for_dataset = [self.mock_view_builder]
@@ -395,6 +397,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_id="us_mo_test_view",
             description="Missouri specific view",
             view_query_template="SELECT * FROM us_mo_table",
+            schema=MINIMAL_SCHEMA,
         )
 
         us_ca_view_builder = SimpleBigQueryViewBuilder(
@@ -402,6 +405,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_id="us_ca_view",
             description="California specific view",
             view_query_template="SELECT * FROM us_ca_table",
+            schema=MINIMAL_SCHEMA,
         )
 
         # Create export config with mixed state-specific views
@@ -451,6 +455,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_id="us_ix_test_view",
             description="Idaho specific view with legacy naming",
             view_query_template="SELECT * FROM us_ix_table",
+            schema=MINIMAL_SCHEMA,
         )
 
         # Create export config with US_IX view and the ATLAS->ID mapping

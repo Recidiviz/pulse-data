@@ -31,6 +31,7 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.export.view_export_manager import export_views_with_exporters
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 
 
 class ExportManagerCompositeExportTest(unittest.TestCase):
@@ -51,6 +52,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
@@ -76,6 +78,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
@@ -199,6 +202,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
@@ -224,6 +228,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(
@@ -285,6 +290,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             description="view1 description",
             view_query_template="select * from table",
             dimensions=("a", "b", "c"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_one = ExportBigQueryViewConfig(
@@ -310,6 +316,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
             description="view2 description",
             view_query_template="select * from view2",
             dimensions=("d", "e", "f"),
+            schema=MINIMAL_SCHEMA,
         ).build()
 
         export_config_two = ExportBigQueryViewConfig(

@@ -19,6 +19,7 @@ from typing import List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
+from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.big_query.fake_big_query_view_builder import (
     FakeBigQueryViewBuilder,
 )
@@ -35,6 +36,7 @@ with local_project_id_override("my-project-id"):
         ),
         dimensions=("dimension_col",),
         sandbox_context=None,
+        schema=MINIMAL_SCHEMA,
     )
     GOOD_VIEW_6 = MetricBigQueryView(
         dataset_id="fake_metrics_dataset",
@@ -46,6 +48,7 @@ with local_project_id_override("my-project-id"):
         ),
         dimensions=("dimension_col",),
         sandbox_context=None,
+        schema=MINIMAL_SCHEMA,
     )
 
 
