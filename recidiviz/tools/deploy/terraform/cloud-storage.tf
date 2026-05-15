@@ -649,6 +649,17 @@ module "user-data-downloads" {
   use_cmek    = true
 }
 
+resource "google_storage_bucket_iam_member" "user-data-downloads-dashboard-member" {
+  for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
+  bucket   = module.user-data-downloads.name
+  role     = each.key
+  member = (
+    var.project_id == "recidiviz-123"
+    ? "serviceAccount:recidiviz-dashboard-production@appspot.gserviceaccount.com"
+    : "serviceAccount:recidiviz-dashboard-staging@appspot.gserviceaccount.com"
+  )
+}
+
 module "us-tn-persistence-redirect" {
   source = "./modules/cloud-storage-bucket"
 
