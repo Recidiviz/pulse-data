@@ -1,0 +1,9 @@
+source_uri: https://docs.google.com/spreadsheets/d/15mi5SxXBEQSPeu-62a3wuHhzmrpRQ3repcpgUGDwTzA/edit?gid=493132846#gid=493132846
+
+accuracy_threshold: 0.80
+
+array_of_struct_field_configs:
+  employers:
+    primary_key_cols: [employer_name]
+  employment_changes:
+    primary_key_cols: [employment_change_type, employment_change_date]

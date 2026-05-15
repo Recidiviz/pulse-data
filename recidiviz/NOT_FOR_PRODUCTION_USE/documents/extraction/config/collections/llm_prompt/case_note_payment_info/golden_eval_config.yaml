@@ -1,0 +1,7 @@
+source_uri: https://docs.google.com/spreadsheets/d/15mi5SxXBEQSPeu-62a3wuHhzmrpRQ3repcpgUGDwTzA/edit?gid=597909845#gid=597909845
+
+accuracy_threshold: 0.80
+
+array_of_struct_field_configs:
+  payments:
+    primary_key_cols: [payment_type, payment_status]

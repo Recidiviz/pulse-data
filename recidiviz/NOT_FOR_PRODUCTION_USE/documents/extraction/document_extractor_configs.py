@@ -19,6 +19,9 @@ import os
 from functools import cache
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.eval.golden_eval_config import (
+    GoldenEvalConfig,
+)
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.document_extractor_collection_metadata import (
     DocumentExtractorCollectionMetadata,
 )
@@ -61,6 +64,31 @@ def collect_extractor_collections() -> dict[str, DocumentExtractorCollectionMeta
             collections[collection.name] = collection
 
     return collections
+
+
+@cache
+def collect_extractor_collection_eval_configs() -> dict[str, GoldenEvalConfig]:
+    """Returns a map of collection name to its eval configuration.
+
+    Only includes collections that have an golden_eval_config.yaml file.
+    """
+    eval_configs: dict[str, GoldenEvalConfig] = {}
+
+    for type_entry in os.scandir(_COLLECTIONS_DIR):
+        if not type_entry.is_dir():
+            continue
+
+        for entry in os.scandir(type_entry.path):
+            if not entry.is_dir():
+                continue
+            eval_schema_path = os.path.join(entry.path, "golden_eval_config.yaml")
+            if not os.path.exists(eval_schema_path):
+                continue
+            eval_configs[entry.name.upper()] = GoldenEvalConfig.from_yaml(
+                eval_schema_path
+            )
+
+    return eval_configs
 
 
 def get_extractor_collection(
