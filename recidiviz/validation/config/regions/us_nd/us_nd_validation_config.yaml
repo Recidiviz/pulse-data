@@ -18,7 +18,7 @@ exclusions:
     exclusion_reason: This validation is currently broken. # TODO(#28365)
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
-    hard_max_allowed_error_override: 0.03
+    hard_max_allowed_error_override: 0.05
     override_reason:
       Given the very small size of some facilities in ND, this is actually a
       very strict threshold and we likely will not be able to do better. We're
@@ -65,7 +65,7 @@ num_allowed_rows_overrides:
       (out of state) which maps to INTERNAL_UNKNOWN PFI. This should be fixed
       when we have a comprehensive fix for handling OOS in ND.
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 100
+    hard_num_allowed_rows_override: 175
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 11000

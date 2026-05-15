@@ -122,25 +122,33 @@ custom:
   US_UT:
     file_tags:
       spcl_cond_cd:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2024-08-30T00:00:00Z"
-            datetime_end_exclusive: "2025-12-12T00:00:00Z"
-            reason: "File size jumped after this date range."
+        tolerance_override:
+          percent_change_tolerance: 0.25
+          reason:
+            "Naturally growing reference table not used in any downstream views.
+            Observed a 21% jump in May 2026; set to 25% to accommodate continued
+            organic growth."
       rim_accomp_spcl_cond:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2024-08-30T00:00:00Z"
-            datetime_end_exclusive: "2025-12-12T00:00:00Z"
-            reason: "File size jumped after this date range."
+        tolerance_override:
+          percent_change_tolerance: 0.35
+          reason:
+            "Naturally growing reference table not used in any downstream views.
+            Observed a 30% jump in May 2026; set to 35% to accommodate continued
+            organic growth."
       rim_accomp_agrmnt_cond:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2024-08-30T00:00:00Z"
-            datetime_end_exclusive: "2025-12-12T00:00:00Z"
-            reason: "File size jumped after this date range."
+        tolerance_override:
+          percent_change_tolerance: 0.25
+          reason:
+            "Naturally growing reference table not used in any downstream views.
+            Observed an 18% jump in May 2026; set to 25% to accommodate continued
+            organic growth."
       p_p_agrmnt_cond_cd:
-        date_range_exclusions:
-          - datetime_start_inclusive: "2024-08-22T00:00:00Z"
-            datetime_end_exclusive: "2025-12-12T00:00:00Z"
-            reason: "File size jumped after this date range."
+        tolerance_override:
+          percent_change_tolerance: 0.20
+          reason:
+            "Naturally growing reference table not used in any downstream views.
+            Observed a 14% jump in May 2026; set to 20% to accommodate continued
+            organic growth."
       p_p_agrmnt_cat_cd:
         date_range_exclusions:
           - datetime_start_inclusive: "2024-08-22T00:00:00Z"
