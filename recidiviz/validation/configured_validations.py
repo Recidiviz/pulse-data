@@ -75,6 +75,9 @@ from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopba
 from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wonky_tomis_data import (
     US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wrong_last_classification_date import (
+    US_TN_LOOPBACK_WRONG_LAST_CLASSIFICATION_DATE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.dataflow_metrics.configured_validations import (
     get_all_dataflow_metrics_validations,
 )
@@ -700,6 +703,11 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+            hard_num_allowed_rows=0,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TN_LOOPBACK_WRONG_LAST_CLASSIFICATION_DATE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             hard_num_allowed_rows=0,
         ),
