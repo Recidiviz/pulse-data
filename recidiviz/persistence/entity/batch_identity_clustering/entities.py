@@ -37,6 +37,7 @@ from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
 from recidiviz.persistence.entity.base_entity import (
     Entity,
+    EnumEntity,
     ExternalIdEntity,
     HasMultipleExternalIdsEntity,
     RootEntity,
@@ -73,28 +74,28 @@ class IdentityName(IdentityEntityMixin, Entity):
 
 
 @attr.s(eq=False, kw_only=True)
-class IdentityGender(IdentityEntityMixin, Entity):
+class IdentityGender(IdentityEntityMixin, EnumEntity):
     gender: Gender = attr.ib(validator=attr.validators.instance_of(Gender))
     gender_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_attributes: "IdentityAttributes | None" = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)
-class IdentitySex(IdentityEntityMixin, Entity):
+class IdentitySex(IdentityEntityMixin, EnumEntity):
     sex: Sex = attr.ib(validator=attr.validators.instance_of(Sex))
     sex_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_attributes: "IdentityAttributes | None" = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)
-class IdentityRace(IdentityEntityMixin, Entity):
+class IdentityRace(IdentityEntityMixin, EnumEntity):
     race: Race = attr.ib(validator=attr.validators.instance_of(Race))
     race_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_attributes: "IdentityAttributes | None" = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)
-class IdentityEthnicity(IdentityEntityMixin, Entity):
+class IdentityEthnicity(IdentityEntityMixin, EnumEntity):
     ethnicity: Ethnicity = attr.ib(validator=attr.validators.instance_of(Ethnicity))
     ethnicity_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
     identity_attributes: "IdentityAttributes | None" = attr.ib(default=None)
@@ -116,10 +117,9 @@ class IdentityEmail(IdentityEntityMixin, Entity):
 class IdentityAttributes(IdentityEntityMixin, Entity):
     """Identity attributes associated with one dataset's view of a person
     (as the attributes field on IdentityFragment) or with a cluster's chosen
-    best-known attributes (as the chosen_attributes field on IdentityCluster)."""
+    best-known attributes (as the attributes field on IdentityCluster)."""
 
     person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))
-    person_type_raw_text: str | None = attr.ib(default=None, validator=is_opt_str)
 
     name: "IdentityName | None" = attr.ib(default=None, validator=is_opt(IdentityName))
 

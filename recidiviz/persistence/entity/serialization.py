@@ -18,16 +18,24 @@
 import datetime
 from enum import Enum
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Sequence, Type
 
-from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attribute_field_type_reference_for_class,
+)
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
     entities_have_direct_relationship,
     get_entity_class_in_module_with_name,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
     is_one_to_many_relationship,
+    sort_based_on_flat_fields,
 )
 from recidiviz.utils.types import assert_type
 
@@ -71,11 +79,24 @@ def _related_entity_id_field_lives_on_entity(
     )
 
 
+def extract_flat_fields(entity: Entity) -> Dict[str, Any]:
+    """Extract all flat field values (non-reference fields) from an entity as
+    raw Python values. Does not apply JSON serialization."""
+    class_reference = attribute_field_type_reference_for_class(type(entity))
+    return {
+        field_name: getattr(entity, field_name)
+        for field_name in class_reference.fields
+        if not class_reference.get_field_info(field_name).referenced_cls_name
+    }
+
+
 def serialize_entity_into_json(
     entity: Entity, entities_module: ModuleType
 ) -> Dict[str, Any]:
-    """Generate a JSON dictionary that represents the table row values for this entity."""
-    entity_field_dict: Dict[str, Any] = {}
+    """Generate a JSON-serializeable dictionary that represents the table row values
+    for this entity.
+    """
+    entity_field_dict = extract_flat_fields(entity)
 
     entity_cls = entity.__class__
     class_reference = attribute_field_type_reference_for_class(entity_cls)
@@ -83,7 +104,6 @@ def serialize_entity_into_json(
         field_info = class_reference.get_field_info(field_name)
         if not field_info.referenced_cls_name:
             # This is a flat field
-            entity_field_dict[field_name] = getattr(entity, field_name)
             continue
 
         referenced_entity_cls = get_entity_class_in_module_with_name(
@@ -102,6 +122,61 @@ def serialize_entity_into_json(
         entity_field_dict[id_field] = id_value
 
     return json_serializable_dict(entity_field_dict)
+
+
+def serialize_entity_tree_into_json(
+    entity: Entity,
+    entities_module: ModuleType,
+) -> Dict[str, Any]:
+    """Recursively serialize an entity and its forward-edge children into a
+    JSON-serializable dict suitable for deterministic hashing.
+    """
+    result: Dict[str, Any] = json_serializable_dict(extract_flat_fields(entity))
+
+    field_index = entities_module_context_for_module(entities_module).field_index()
+    entity_cls = type(entity)
+    class_ref = attribute_field_type_reference_for_class(entity_cls)
+
+    for field_name in field_index.get_all_entity_fields(
+        entity_cls, EntityFieldType.FORWARD_EDGE
+    ):
+        field_info = class_ref.get_field_info(field_name)
+        if field_info.field_type == BuildableAttrFieldType.LIST:
+            children = entity.get_field_as_list(field_name)
+            entities_module_context = entities_module_context_for_module(
+                entities_module
+            )
+            sort_based_on_flat_fields(children, entities_module_context)
+            result[field_name] = [
+                serialize_entity_tree_into_json(child, entities_module)
+                for child in children
+            ]
+        else:
+            child = entity.get_field(field_name)
+            result[field_name] = (
+                serialize_entity_tree_into_json(child, entities_module)
+                if child is not None
+                else None
+            )
+
+    return result
+
+
+def serialize_entity_trees_into_json(
+    entities: Sequence[Entity],
+    entities_module: ModuleType,
+) -> List[Dict[str, Any]]:
+    """Sort a list of entities by flat fields and serialize each into a
+    JSON-serializable dict via serialize_entity_tree_into_json."""
+    sorted_entities = list(entities)
+    sort_based_on_flat_fields(
+        sorted_entities,
+        entities_module_context_for_module(entities_module),
+    )
+    return [
+        serialize_entity_tree_into_json(entity, entities_module)
+        for entity in sorted_entities
+    ]
 
 
 def json_serializable_dict(

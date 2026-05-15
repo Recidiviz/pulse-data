@@ -18,12 +18,23 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+from typing import Any
+
 import attr
 
-from recidiviz.common.attr_validators import is_list_of, is_str
+from recidiviz.common.attr_validators import is_list_of
+from recidiviz.persistence.entity.batch_identity_clustering import (
+    entities as identity_entities_module,
+)
 from recidiviz.persistence.entity.batch_identity_clustering.entities import (
     IdentityAttributes,
     IdentityExternalId,
+)
+from recidiviz.persistence.entity.serialization import (
+    serialize_entity_tree_into_json,
+    serialize_entity_trees_into_json,
 )
 
 
@@ -31,14 +42,54 @@ from recidiviz.persistence.entity.batch_identity_clustering.entities import (
 class IdentityCluster:
     """Result of clustering identity fragments for one logical person."""
 
-    cluster_id: str = attr.ib(validator=is_str)
     external_ids: list[IdentityExternalId] = attr.ib(
         validator=is_list_of(IdentityExternalId)
     )
-    chosen_attributes: IdentityAttributes = attr.ib(
+
+    attributes: IdentityAttributes = attr.ib(
         validator=attr.validators.instance_of(IdentityAttributes)
     )
-    # SHA-256 of the cluster's sorted external IDs and normalized attribute
-    # values, used by the Identity Service to detect whether a cluster has
-    # changed since the last import.
-    cluster_hash: str = attr.ib(validator=is_str)
+
+    cluster_id: str = attr.ib(init=False)
+
+    # SHA-256 of the cluster's sorted external IDs and attribute values, used
+    # by the Identity Service to detect whether a cluster has changed since the
+    # last import.
+    cluster_hash: str = attr.ib(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        tenant = self.attributes.tenant
+        mismatched_tenants = sorted(
+            {eid.tenant for eid in self.external_ids if eid.tenant != tenant}
+        )
+        if mismatched_tenants:
+            raise ValueError(
+                f"All external_ids must share the cluster's tenant {tenant!r}; "
+                f"found mismatched tenants: {mismatched_tenants}"
+            )
+        self.cluster_id = self._compute_id()
+        self.cluster_hash = self._compute_hash()
+
+    def _serialized_external_ids(self) -> list[dict[str, Any]]:
+        return serialize_entity_trees_into_json(
+            self.external_ids, identity_entities_module
+        )
+
+    def _compute_id(self) -> str:
+        return self._hash_json(self._serialized_external_ids())
+
+    def _compute_hash(self) -> str:
+        return self._hash_json(
+            {
+                "external_ids": self._serialized_external_ids(),
+                "attributes": serialize_entity_tree_into_json(
+                    self.attributes, identity_entities_module
+                ),
+            }
+        )
+
+    @staticmethod
+    def _hash_json(json_to_serialize: list[dict[str, Any]] | dict[str, Any]) -> str:
+        return hashlib.sha256(
+            json.dumps(json_to_serialize, sort_keys=True).encode("utf-8")
+        ).hexdigest()

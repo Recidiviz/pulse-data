@@ -157,7 +157,7 @@ def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str
     return {cls_.__name__ for cls_ in get_all_entity_classes_in_module(entities_module)}
 
 
-def _sort_based_on_flat_fields(
+def sort_based_on_flat_fields(
     db_entities: Sequence[Entity], entities_module_context: EntitiesModuleContext
 ) -> None:
     """Helper function that sorts all entities in |db_entities| in place as
@@ -178,7 +178,7 @@ def _sort_based_on_flat_fields(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             field = entity.get_field_as_list(field_name)
-            _sort_based_on_flat_fields(field, entities_module_context)
+            sort_based_on_flat_fields(field, entities_module_context)
 
 
 def get_flat_fields_json_str(
@@ -256,7 +256,7 @@ def print_entity_trees(
 
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields(entities_list, entities_module_context)
+        sort_based_on_flat_fields(entities_list, entities_module_context)
 
     for entity in entities_list:
         print_entity_tree(
@@ -289,7 +289,7 @@ def print_entity_tree(
     field_index = entities_module_context.field_index()
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields([entity], entities_module_context)
+        sort_based_on_flat_fields([entity], entities_module_context)
 
     _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent, file_or_buffer)
 

@@ -18,6 +18,7 @@
 import datetime
 import unittest
 
+from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_charge import (
     StateChargeStatus,
@@ -25,9 +26,22 @@ from recidiviz.common.constants.state.state_charge import (
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.demographics import Gender, Race
+from recidiviz.persistence.entity.batch_identity_clustering import (
+    entities as identity_entities,
+)
+from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+    IdentityAttributes,
+    IdentityExternalId,
+    IdentityGender,
+    IdentityName,
+    IdentityRace,
+)
 from recidiviz.persistence.entity.serialization import (
     json_serializable_dict,
     serialize_entity_into_json,
+    serialize_entity_tree_into_json,
+    serialize_entity_trees_into_json,
 )
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -453,3 +467,154 @@ class TestJsonSerializableDict(unittest.TestCase):
             },
             serialize_entity_into_json(assessment, entities),
         )
+
+
+class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
+    """Tests for serialize_entity_tree_into_json with identity entities."""
+
+    def test_recursive_tree(self) -> None:
+        attrs = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_OZ", given_name="John", surname="Doe"),
+        )
+
+        result = serialize_entity_tree_into_json(attrs, identity_entities)
+
+        self.assertEqual(result["tenant"], "US_OZ")
+        self.assertEqual(result["person_type"], "JII")
+        self.assertEqual(
+            result["name"],
+            {
+                "tenant": "US_OZ",
+                "given_name": "John",
+                "preferred_name": None,
+                "surname": "Doe",
+                "middle_name": None,
+                "name_suffix": None,
+            },
+        )
+
+    def test_none_optional_forward_edge_children(self) -> None:
+        attrs = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+        )
+
+        result = serialize_entity_tree_into_json(attrs, identity_entities)
+
+        self.assertIsNone(result["name"])
+        self.assertIsNone(result["gender"])
+        self.assertIsNone(result["sex"])
+        self.assertIsNone(result["ethnicity"])
+
+    def test_forward_edge_list_children_sorted(self) -> None:
+        attrs = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+            races=[
+                IdentityRace(tenant="US_OZ", race=Race.WHITE, race_raw_text="W"),
+                IdentityRace(tenant="US_OZ", race=Race.BLACK, race_raw_text="B"),
+            ],
+        )
+
+        result = serialize_entity_tree_into_json(attrs, identity_entities)
+
+        self.assertEqual(result["races"][0]["race"], "BLACK")
+        self.assertEqual(result["races"][1]["race"], "WHITE")
+
+    def test_back_edges_excluded(self) -> None:
+        attrs = IdentityAttributes(
+            tenant="US_OZ",
+            person_type=PersonType.JII,
+            name=IdentityName(tenant="US_OZ", given_name="John", surname="Doe"),
+            gender=IdentityGender(
+                tenant="US_OZ", gender=Gender.MALE, gender_raw_text="M"
+            ),
+            races=[
+                IdentityRace(tenant="US_OZ", race=Race.BLACK, race_raw_text="B"),
+            ],
+        )
+
+        result = serialize_entity_tree_into_json(attrs, identity_entities)
+
+        self.assertNotIn("fragment", result)
+        self.assertNotIn("identity_attributes", result["name"])
+        self.assertNotIn("identity_attributes", result["gender"])
+        self.assertNotIn("identity_attributes", result["races"][0])
+
+
+class TestSerializeEntityTreeIntoJsonWithActivityEntities(unittest.TestCase):
+    """Tests for serialize_entity_tree_into_json with activity entities."""
+
+    def test_recursive_tree(self) -> None:
+        person = StatePerson(person_id=1, state_code="US_OZ", gender=StateGender.FEMALE)
+        assessment = StateAssessment(
+            assessment_id=1,
+            state_code="US_OZ",
+            external_id="A1",
+            assessment_class=StateAssessmentClass.RISK,
+            person=person,
+        )
+        person.assessments = [assessment]
+
+        result = serialize_entity_tree_into_json(person, entities)
+
+        self.assertEqual(result["state_code"], "US_OZ")
+        self.assertEqual(result["gender"], "FEMALE")
+        self.assertEqual(len(result["assessments"]), 1)
+        self.assertEqual(result["assessments"][0]["external_id"], "A1")
+        self.assertEqual(result["assessments"][0]["assessment_class"], "RISK")
+
+    def test_forward_edge_list_children_sorted(self) -> None:
+        person = StatePerson(person_id=1, state_code="US_OZ", gender=StateGender.FEMALE)
+        a2 = StateAssessment(
+            assessment_id=2,
+            state_code="US_OZ",
+            external_id="A2",
+            assessment_class=StateAssessmentClass.RISK,
+            person=person,
+        )
+        a1 = StateAssessment(
+            assessment_id=1,
+            state_code="US_OZ",
+            external_id="A1",
+            assessment_class=StateAssessmentClass.SEX_OFFENSE,
+            person=person,
+        )
+        person.assessments = [a2, a1]
+
+        result = serialize_entity_tree_into_json(person, entities)
+
+        self.assertEqual(result["assessments"][0]["external_id"], "A1")
+        self.assertEqual(result["assessments"][1]["external_id"], "A2")
+
+    def test_back_edges_excluded(self) -> None:
+        person = StatePerson(person_id=1, state_code="US_OZ", gender=StateGender.FEMALE)
+        assessment = StateAssessment(
+            assessment_id=1,
+            state_code="US_OZ",
+            external_id="A1",
+            assessment_class=StateAssessmentClass.RISK,
+            person=person,
+        )
+        person.assessments = [assessment]
+
+        result = serialize_entity_tree_into_json(person, entities)
+
+        self.assertNotIn("person", result["assessments"][0])
+
+
+class TestSerializeEntityTreesIntoJson(unittest.TestCase):
+    """Tests for serialize_entity_trees_into_json"""
+
+    def test_sorts_top_level(self) -> None:
+        eids = [
+            IdentityExternalId(tenant="US_OZ", external_id="B", id_type="T1"),
+            IdentityExternalId(tenant="US_OZ", external_id="A", id_type="T1"),
+        ]
+
+        result = serialize_entity_trees_into_json(eids, identity_entities)
+
+        self.assertEqual(result[0]["external_id"], "A")
+        self.assertEqual(result[1]["external_id"], "B")
