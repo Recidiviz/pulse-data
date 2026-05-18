@@ -25,7 +25,7 @@ from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.pipelines import metrics as metrics_pipeline_top_level
 from recidiviz.pipelines import supplemental as supplemental_pipeline_top_level
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest import activity as ingest_pipeline_top_level
+from recidiviz.pipelines.ingest import activity as activity_ingest_pipeline_top_level
 
 
 def collect_all_pipeline_names() -> List[str]:
@@ -54,30 +54,45 @@ def collect_all_pipeline_classes() -> List[Type[BasePipeline]]:
     return pipelines
 
 
-def collect_all_pipeline_modules() -> List[ModuleType]:
-    """Collects all of the modules storing BasePipeline implementations."""
-    pipeline_submodules: List[ModuleType] = []
-
-    for top_level_pipeline_module in _TOP_LEVEL_PIPELINE_MODULES:
-        pipeline_submodules.extend(
-            ModuleCollectorMixin.get_submodules(
-                base_module=top_level_pipeline_module, submodule_name_prefix_filter=None
-            )
-        )
-
-    pipeline_file_modules: List[ModuleType] = []
-
-    for module in pipeline_submodules:
-        pipeline_modules = ModuleCollectorMixin.get_submodules(
+def _get_pipeline_submodule(module: ModuleType) -> ModuleType | None:
+    """Returns the ``pipeline`` submodule of |module|, or None."""
+    pipeline_modules = [
+        m
+        for m in ModuleCollectorMixin.get_submodules(
             module, submodule_name_prefix_filter="pipeline"
         )
-        if len(pipeline_modules) > 1:
-            raise ValueError(
-                "More than one submodule found named 'pipeline' in "
-                f"module: {module}. Found: [{pipeline_modules}]."
-            )
-        if pipeline_modules:
-            pipeline_file_modules.append(pipeline_modules[0])
+        if m.__name__.endswith(".pipeline")
+    ]
+    if len(pipeline_modules) > 1:
+        raise ValueError(
+            "More than one submodule named 'pipeline' in "
+            f"module: {module}. Found: [{pipeline_modules}]."
+        )
+    return pipeline_modules[0] if pipeline_modules else None
+
+
+def collect_all_pipeline_modules() -> List[ModuleType]:
+    """Collects all of the modules storing BasePipeline implementations.
+
+    For each entry in _TOP_LEVEL_PIPELINE_MODULES, looks for a ``pipeline``
+    submodule. If found directly, uses it. Otherwise, walks sub-packages
+    looking for ``pipeline`` inside each one.
+    """
+    pipeline_file_modules: List[ModuleType] = []
+
+    for top_level_pipeline_module in _TOP_LEVEL_PIPELINE_MODULES:
+        direct = _get_pipeline_submodule(top_level_pipeline_module)
+        if direct:
+            pipeline_file_modules.append(direct)
+            continue
+
+        for submodule in ModuleCollectorMixin.get_submodules(
+            base_module=top_level_pipeline_module,
+            submodule_name_prefix_filter=None,
+        ):
+            found = _get_pipeline_submodule(submodule)
+            if found:
+                pipeline_file_modules.append(found)
 
     return pipeline_file_modules
 
@@ -86,5 +101,5 @@ def collect_all_pipeline_modules() -> List[ModuleType]:
 _TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     supplemental_pipeline_top_level,
     metrics_pipeline_top_level,
-    ingest_pipeline_top_level,
+    activity_ingest_pipeline_top_level,
 ]

@@ -22,7 +22,7 @@ from recidiviz.common.constants.state.state_sentence import (
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSentenceStatusSnapshot,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
 

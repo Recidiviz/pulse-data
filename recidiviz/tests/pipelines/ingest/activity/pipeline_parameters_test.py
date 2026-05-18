@@ -24,13 +24,13 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.activity.pipeline import StateIngestPipeline
 from recidiviz.pipelines.ingest.activity.pipeline_parameters import (
     IngestPipelineParameters,
 )
 from recidiviz.pipelines.ingest.activity.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
-from recidiviz.pipelines.ingest.activity.state.pipeline import StateIngestPipeline
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     get_all_reference_query_input_datasets_for_pipeline,
 )

@@ -42,7 +42,7 @@ from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.persistence.entity.activity.state_entity_mixins import LedgerEntityMixin
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.pipelines.ingest.activity.state.validator import validate_root_entity
+from recidiviz.pipelines.ingest.activity.validator import validate_root_entity
 
 # We test the normalized variants of the sentencing ledger entities because we only run their
 # validations after normalization.
@@ -149,7 +149,7 @@ class LedgerEntityTestCaseProtocol:
         """Tests the ledger_entity has a well-defined partition key."""
         raise NotImplementedError
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -334,7 +334,7 @@ class StateTaskDeadlineTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
             [first, second],
         )
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -385,7 +385,7 @@ class StateSentenceStatusSnapshotTest(unittest.TestCase, LedgerEntityTestCasePro
         )
         self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-000-")
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -434,7 +434,7 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -525,7 +525,7 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
         )
         self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -626,7 +626,7 @@ class NormalizedStateSentenceStatusSnapshotTest(
         )
         self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-000-")
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -682,7 +682,7 @@ class NormalizedStateSentenceLengthTest(
         )
         self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -783,7 +783,7 @@ class NormalizedStateSentenceGroupLengthTest(
         )
         self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:
@@ -926,7 +926,7 @@ class StateScheduledSupervisionContactTest(
             "2023-01-01T00:00:00-001-StateScheduledSupervisionContactMethod.IN_PERSON-STAFF_ID-STAFF_TYPE",
         )
 
-    @patch("recidiviz.pipelines.ingest.activity.state.validator.ledger_entity_checks")
+    @patch("recidiviz.pipelines.ingest.activity.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
         self, mock_ledger_entity_checks: MagicMock
     ) -> None:

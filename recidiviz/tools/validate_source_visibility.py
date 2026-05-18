@@ -269,7 +269,7 @@ def main() -> int:
                     "recidiviz.persistence",
                 }
             )
-        if "ingest" in pipeline.__name__:
+        if "activity" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.big_query.big_query_address_formatter",

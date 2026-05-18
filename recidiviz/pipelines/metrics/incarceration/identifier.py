@@ -41,7 +41,7 @@ from recidiviz.persistence.entity.activity.normalized_entities import (
 from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.metrics.base_identifier import (

@@ -30,14 +30,14 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
-from recidiviz.pipelines.ingest.activity.state.generate_ingest_view_results import (
+from recidiviz.pipelines.ingest.activity.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.tests.ingest.direct.fixture_util import (
     ingest_view_results_directory,
     read_ingest_view_results_fixture,
 )
-from recidiviz.tests.pipelines.ingest.activity.state.pipeline_test_case import (
+from recidiviz.tests.pipelines.ingest.activity.pipeline_test_case import (
     StateIngestPipelineTestCase,
 )
 
@@ -83,7 +83,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         self.mock_environment_fn.return_value = True
 
         self.context_patcher = patch(
-            "recidiviz.pipelines.ingest.activity.state.pipeline.IngestViewContentsContext.build_for_project"
+            "recidiviz.pipelines.ingest.activity.pipeline.IngestViewContentsContext.build_for_project"
         )
         self.context_patcher_fn = self.context_patcher.start()
         self.context_patcher_fn.return_value = (
@@ -198,7 +198,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         passed in directly.
         """
         with patch(
-            "recidiviz.pipelines.ingest.activity.state.process_ingest_view.GenerateIngestViewResults",
+            "recidiviz.pipelines.ingest.activity.process_ingest_view.GenerateIngestViewResults",
             self.legacy_generate_ingest_view_results_for_one_date,
         ):
             self.run_test_ingest_pipeline(
@@ -216,7 +216,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         the results of individual ingest view tests.
         """
         with patch(
-            "recidiviz.pipelines.ingest.activity.state.process_ingest_view.GenerateIngestViewResults",
+            "recidiviz.pipelines.ingest.activity.process_ingest_view.GenerateIngestViewResults",
             self.generate_ingest_view_results_for_one_date,
         ):
             self.run_test_ingest_pipeline(

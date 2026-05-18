@@ -25,12 +25,10 @@ from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.utils import (
-    get_min_max_fields,
-)
+from recidiviz.pipelines.ingest.activity.normalization.utils import get_min_max_fields
 from recidiviz.utils.types import assert_type
 
 # Note: the way MO sentences are ingested means that each sentence can only ever have

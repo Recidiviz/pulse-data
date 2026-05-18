@@ -37,8 +37,8 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.pipelines.ingest.activity.state import write_root_entities_to_bq
-from recidiviz.pipelines.ingest.activity.state.write_root_entities_to_bq import (
+from recidiviz.pipelines.ingest.activity import write_root_entities_to_bq
+from recidiviz.pipelines.ingest.activity.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (

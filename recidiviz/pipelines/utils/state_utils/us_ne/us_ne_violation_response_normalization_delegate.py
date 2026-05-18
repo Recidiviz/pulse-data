@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_NE implementation of the StateSpecificViolationResponseNormalizationDelegate."""
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
 

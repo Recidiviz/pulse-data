@@ -38,7 +38,7 @@ from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
 from recidiviz.pipelines.utils.execution_utils import (
@@ -53,7 +53,7 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violations_delegate impor
 from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     hydrate_bidirectional_relationships_on_expected_response,
 )
-from recidiviz.tests.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager_test import (
+from recidiviz.tests.pipelines.ingest.activity.normalization.normalization_managers.assessment_normalization_manager_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
 )
 

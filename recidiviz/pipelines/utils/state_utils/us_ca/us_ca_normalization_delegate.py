@@ -30,13 +30,13 @@ from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.pipelines.ingest.activity.state.normalization.normalize_external_ids_helpers import (
+from recidiviz.pipelines.ingest.activity.normalization.normalize_external_ids_helpers import (
     select_alphabetically_highest_external_id,
     select_alphabetically_lowest_external_id,
     select_least_recently_active_external_id,
     select_most_recently_active_external_id,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.state_specific_normalization_delegate import (
+from recidiviz.pipelines.ingest.activity.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )
 

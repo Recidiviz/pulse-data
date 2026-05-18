@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.activity.entities import StateIncarcerationPer
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_incarceration_period_normalization_delegate import (

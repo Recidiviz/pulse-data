@@ -18,7 +18,7 @@
 from typing import List
 
 from recidiviz.persistence.entity.activity.entities import StateStaffSupervisorPeriod
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.staff_role_period_normalization_manager import (
     StateSpecificStaffRolePeriodNormalizationDelegate,
 )
 

@@ -32,7 +32,7 @@ from recidiviz.persistence.entity.activity.entities import (
 from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     update_entity_with_globally_unique_id,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violations_delegate import (

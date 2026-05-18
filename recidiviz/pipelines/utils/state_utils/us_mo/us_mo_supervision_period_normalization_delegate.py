@@ -50,7 +50,7 @@ from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_period_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (

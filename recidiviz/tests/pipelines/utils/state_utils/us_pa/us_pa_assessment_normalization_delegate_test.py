@@ -26,7 +26,7 @@ from recidiviz.persistence.entity.activity.entities import StateAssessment
 from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
     AssessmentNormalizationManager,
 )
@@ -36,7 +36,7 @@ from recidiviz.pipelines.utils.execution_utils import (
 from recidiviz.pipelines.utils.state_utils.us_pa.us_pa_assessment_normalization_delegate import (
     UsPaAssessmentNormalizationDelegate,
 )
-from recidiviz.tests.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager_test import (
+from recidiviz.tests.pipelines.ingest.activity.normalization.normalization_managers.assessment_normalization_manager_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
 )
 

@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.ingest.direct.regions.us_mi.constants import COMS_MIGRATION_DATE
 from recidiviz.persistence.entity.activity.entities import StateSupervisionPeriod
-from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_period_normalization_manager import (
+from recidiviz.pipelines.ingest.activity.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import SUCCESSFUL_TERMINATIONS
