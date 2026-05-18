@@ -41,6 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nc import (
     has_no_sex_offender_treatment_assigned,
     no_pending_violations_or_convictions_precluding_crr,
     reporting_as_directed,
+    supervision_not_past_projected_end_date,
     supervision_within_30_months_of_full_term_completion_date,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
@@ -140,6 +141,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=community_confinement_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        supervision_not_past_projected_end_date.VIEW_BUILDER,
         _90_CONSECUTIVE_DAYS_POSITIVE_BEHAVIOR_VIEW_BUILDER,
         # Stub criteria that always return True - can be toggled via admin panel
         no_pending_violations_or_convictions_precluding_crr.VIEW_BUILDER,
