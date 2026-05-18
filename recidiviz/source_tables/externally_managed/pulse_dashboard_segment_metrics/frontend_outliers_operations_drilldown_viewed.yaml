@@ -93,6 +93,9 @@ schema:
   - name: uuid_ts
     type: TIMESTAMP
     mode: NULLABLE
+  - name: user_id
+    type: STRING
+    mode: NULLABLE
 clustering_fields: null
 time_partitioning:
   type: DAY
