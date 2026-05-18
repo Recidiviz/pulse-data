@@ -1,5 +1,9 @@
 steps:
+  # `source_to_build` checks the repo root out to /workspace, so `dir:` scopes
+  # the docker context to the same path as before (so the COPY lines in the
+  # Dockerfile resolve against `claude_workflows/`).
   - name: gcr.io/cloud-builders/docker
+    dir: recidiviz/tools/claude_workflows
     entrypoint: bash
     args:
       - -c

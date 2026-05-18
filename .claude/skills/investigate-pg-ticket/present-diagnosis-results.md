@@ -1,8 +1,13 @@
 ## Present results of your diagnosis
 
-Start with a **TLDR** — a 2-3 sentence plain-language summary of the diagnosis
-that anyone (including non-engineers) can understand. This should answer: what
-was wrong, why it happened, and whether it's fixed. Avoid jargon, table names,
+Begin the response with the **TLDR** heading itself. Do not write any preamble,
+lede, or framing sentence before it — no "Here's what I found", no "This is
+the smoking gun", no dramatic intros. The very first characters of the output
+must be the TLDR heading.
+
+The **TLDR** is a 2-3 sentence plain-language summary of the diagnosis that
+anyone (including non-engineers) can understand. It should answer: what was
+wrong, why it happened, and whether it's fixed. Avoid jargon, table names,
 or implementation details in the TLDR.
 
 Then present the full details in the following format:

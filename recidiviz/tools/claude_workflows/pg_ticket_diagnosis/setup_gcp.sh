@@ -71,17 +71,32 @@ else
 fi
 
 # 4. Grant IAM roles to the service account.
-# This SA is used both by the GitHub Action (via WIF) to submit builds
-# and as the custom Cloud Build SA that runs the build steps.
+# The Cloud Build trigger defined in pg-diagnosis-trigger.tf runs as this SA;
+# these are the runtime permissions it needs.
 echo "==> Granting IAM roles..."
 grant_role "$SA_EMAIL" "roles/cloudbuild.builds.editor"
-grant_role "$SA_EMAIL" "roles/storage.objectAdmin"
 grant_role "$SA_EMAIL" "roles/bigquery.dataViewer"
 grant_role "$SA_EMAIL" "roles/bigquery.jobUser"
 grant_role "$SA_EMAIL" "roles/logging.logWriter"
 grant_role "$SA_EMAIL" "roles/artifactregistry.writer"
 
-# 5. Grant BigQuery row-access-policy group memberships.
+# 5. Grant the SA permission to mint OAuth tokens for itself.
+# The agent's PII-doc fetch (fetch_pii_for_issue in run_pg_ticket_diagnosis.py)
+# self-impersonates to get a token scoped to documents.readonly, which the
+# default Cloud Build credentials don't have. `add-iam-policy-binding` is
+# naturally idempotent so no skip-guard is needed.
+echo "==> Granting self-impersonation binding..."
+if gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+  --project="$PROJECT_ID" \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/iam.serviceAccountTokenCreator" \
+  --quiet > /dev/null 2>&1; then
+  echo "    OK."
+else
+  echo "    FAILED — you may need Service Account Admin permissions."
+fi
+
+# 6. Grant BigQuery row-access-policy group memberships.
 # `normalized_state.state_person_external_id` and other downstream tables
 # have row-access policies that filter by state_code. Project-level
 # `bigquery.dataViewer` alone is not enough — the SA must also be a member of
@@ -123,7 +138,27 @@ for GROUP in \
   add_to_group "$GROUP" "$SA_EMAIL"
 done
 
-# 6. Grant secret-level access (required for Cloud Build availableSecrets)
+# 7. Create the Cloud Build webhook auth secret.
+# Used by pg-diagnosis-trigger.tf to authenticate webhook calls. The value is
+# random and untyped — anything fits, as long as the same value is used in the
+# webhook URL that pg-diagnosis.yml POSTs to.
+echo "==> Creating Cloud Build webhook secret..."
+WEBHOOK_SECRET_NAME="github_pg_diagnosis_webhook"
+if gcloud secrets describe "$WEBHOOK_SECRET_NAME" --project="$PROJECT_ID" > /dev/null 2>&1; then
+  echo "    $WEBHOOK_SECRET_NAME already exists, skipping."
+else
+  # 32 random bytes (64 hex chars) is plenty of entropy.
+  WEBHOOK_SECRET_VALUE=$(openssl rand -hex 32)
+  if echo -n "$WEBHOOK_SECRET_VALUE" | gcloud secrets create "$WEBHOOK_SECRET_NAME" \
+    --data-file=- --project="$PROJECT_ID" \
+    --replication-policy=user-managed --locations=us-west1; then
+    echo "    Created."
+  else
+    echo "    FAILED to create $WEBHOOK_SECRET_NAME."
+  fi
+fi
+
+# 8. Grant secret-level access (required for Cloud Build availableSecrets)
 echo "==> Granting secret-level access..."
 for SECRET in pg_diagnosis_claude_api_key github_deploy_script_pat; do
   echo "    Granting access to $SECRET..."
@@ -138,7 +173,7 @@ for SECRET in pg_diagnosis_claude_api_key github_deploy_script_pat; do
   fi
 done
 
-# 7. Store Anthropic API key (GitHub token uses existing github_deploy_script_pat secret)
+# 9. Store Anthropic API key (GitHub token uses existing github_deploy_script_pat secret)
 echo "==> Storing secrets..."
 SECRET_NAME="pg_diagnosis_claude_api_key"
 if gcloud secrets describe "$SECRET_NAME" --project="$PROJECT_ID" > /dev/null 2>&1; then
@@ -165,12 +200,21 @@ else
   fi
 fi
 
-# 8. Summary
+# 10. Summary
 echo ""
 echo "============================================================"
 echo "Setup complete."
 echo ""
 echo "The GitHub Action workflow (.github/workflows/pg-diagnosis.yml)"
-echo "authenticates via WIF and submits Cloud Build jobs using"
+echo "POSTs to a Cloud Build webhook trigger declared in"
+echo "recidiviz/tools/deploy/terraform/pg-diagnosis-trigger.tf, which"
+echo "runs the build steps in"
 echo "recidiviz/tools/claude_workflows/pg_ticket_diagnosis/cloudbuild.yaml."
+echo ""
+echo "Remaining one-time setup (do after the next staging deploy applies"
+echo "pg-diagnosis-trigger.tf):"
+echo "  1. Grab the trigger's webhook URL from the Cloud Build UI"
+echo "     (it embeds the github_pg_diagnosis_webhook secret value)."
+echo "  2. Set it as the CLOUD_BUILD_PG_DIAGNOSIS_WEBHOOK secret in"
+echo "     GitHub Actions (repo settings → Secrets and variables)."
 echo "============================================================"

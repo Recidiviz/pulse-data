@@ -27,23 +27,37 @@ Features:
 - Token usage logging per iteration and in the GitHub comment footer.
 - Docker image caching via Artifact Registry.
 
-To test, submit a Cloud Build job directly:
+To test end-to-end, fire the Cloud Build webhook trigger directly:
 
-    gcloud builds submit recidiviz/tools/claude_workflows/ \\
-      --config=recidiviz/tools/claude_workflows/pg_ticket_diagnosis/cloudbuild.yaml \\
-      --substitutions="_ISSUE_NUMBER=<NUMBER>,\\
-        _ISSUE_TITLE=$(gh issue view <NUMBER> --repo Recidiviz/recidiviz-dashboards --json title --jq '.title' | base64),\\
-        _ISSUE_BODY=$(gh issue view <NUMBER> --repo Recidiviz/recidiviz-dashboards --json body --jq '.body' | base64),\\
-        _ISSUE_REPO=Recidiviz/recidiviz-dashboards,\\
-        _REPO_BRANCH=<BRANCH>,\\
-        _PRODUCT_AREAS=workflows,\\
-        _FORCE_RERUN=1" \\
-      --project=recidiviz-staging
+    SECRET=$(gcloud secrets versions access latest \\
+      --secret=github_pg_diagnosis_webhook --project=recidiviz-staging)
+    PROJECT_NUMBER=$(gcloud projects describe recidiviz-staging \\
+      --format='value(projectNumber)')
+    NUMBER=<issue number>
+    ENCODED_TITLE=$(gh issue view $NUMBER --repo Recidiviz/recidiviz-dashboards \\
+      --json title --jq '.title' | base64 -w 0)
+    ENCODED_BODY=$(gh issue view $NUMBER --repo Recidiviz/recidiviz-dashboards \\
+      --json body --jq '.body' | base64 -w 0)
+    jq -n \\
+      --arg issue_number "$NUMBER" \\
+      --arg issue_title "$ENCODED_TITLE" \\
+      --arg issue_body "$ENCODED_BODY" \\
+      --arg issue_repo "Recidiviz/recidiviz-dashboards" \\
+      --arg repo_branch "main" \\
+      --arg product_areas "workflows" \\
+      --arg force_rerun "1" \\
+      '{ISSUE_NUMBER: $issue_number, ISSUE_TITLE: $issue_title, ISSUE_BODY: $issue_body, ISSUE_REPO: $issue_repo, REPO_BRANCH: $repo_branch, PRODUCT_AREAS: $product_areas, FORCE_RERUN: $force_rerun}' \\
+      | curl -X POST -H "Content-Type: application/json" --data @- \\
+        "https://cloudbuild.googleapis.com/v1/projects/${PROJECT_NUMBER}/locations/us-west1/triggers/pg-diagnosis:webhook?key=<API_KEY>&secret=${SECRET}"
 
-Replace <NUMBER> with the issue number and <BRANCH> with the branch to clone
-(defaults to main). _PRODUCT_AREAS is a comma-separated list of product areas
-(workflows, tasks, insights); leave empty for all. Requires GCP setup via
-setup_gcp.sh.
+The API key portion of the URL is shown on the trigger's detail page in the
+Cloud Build console. _PRODUCT_AREAS is a comma-separated list of product
+areas (workflows, tasks, insights); leave empty for all. Requires GCP setup
+via setup_gcp.sh and Terraform-applied pg-diagnosis-trigger.tf.
+
+Alternatively, fire the `workflow_dispatch` event on
+.github/workflows/pg-diagnosis.yml from the GitHub Actions UI — that wraps
+the same webhook call.
 """
 import base64
 import logging
