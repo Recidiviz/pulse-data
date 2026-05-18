@@ -28,7 +28,7 @@ from recidiviz.common.attr_mixins import attribute_field_type_reference_for_clas
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateOrDateTime
 from recidiviz.persistence.entity.core_entity import CoreEntity
-from recidiviz.persistence.entity.state.reasonable_date_validators import (
+from recidiviz.persistence.entity.reasonable_date_validators import (
     STANDARD_REASONABLE_OPT_PAST_DATETIME_VALIDATOR,
 )
 from recidiviz.utils import environment

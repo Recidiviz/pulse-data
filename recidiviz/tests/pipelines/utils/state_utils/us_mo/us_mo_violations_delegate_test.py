@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,

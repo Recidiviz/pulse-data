@@ -21,14 +21,14 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
     StatePersonStaffRelationshipType,
 )
 from recidiviz.common.date import CriticalRangesBuilder, PotentiallyOpenDateRange
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePersonStaffRelationshipPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePersonStaffRelationshipPeriod,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.pipelines.ingest.activity.state.create_root_entity_id_to_staff_id_mapping import (
     StaffExternalIdToIdMap,

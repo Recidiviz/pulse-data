@@ -30,8 +30,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 
 if TYPE_CHECKING:
-    from recidiviz.persistence.entity.state import entities as state_entities
-    from recidiviz.persistence.entity.state import normalized_entities
+    from recidiviz.persistence.entity.activity import entities as state_entities
+    from recidiviz.persistence.entity.activity import normalized_entities
 
 
 PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR = "||"

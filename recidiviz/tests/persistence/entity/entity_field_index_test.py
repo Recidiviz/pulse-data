@@ -22,6 +22,16 @@ from recidiviz.common.attr_mixins import attribute_field_type_reference_for_clas
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity import entity_field_index
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StateCharge,
+    StatePerson,
+    StateSupervisionSentence,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.persistence.entity.entities_module_context_factory import (
     clear_entities_module_context_cache,
     entities_module_context_for_module,
@@ -31,14 +41,6 @@ from recidiviz.persistence.entity.entity_field_index import (
     EntityFieldType,
     clear_entity_field_index_cache,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StateCharge,
-    StatePerson,
-    StateSupervisionSentence,
-)
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 
 _ID = 1
 _EXTERNAL_ID = "EXTERNAL_ID-1"

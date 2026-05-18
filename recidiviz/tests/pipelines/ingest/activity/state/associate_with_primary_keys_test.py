@@ -21,7 +21,7 @@ import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StatePersonExternalId,
 )

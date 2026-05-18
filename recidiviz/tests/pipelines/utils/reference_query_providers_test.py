@@ -19,7 +19,7 @@ import unittest
 
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.activity import entities
 from recidiviz.pipelines.utils.reference_query_providers import (
     RootEntityIdFilteredQueryProvider,
 )

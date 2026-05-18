@@ -22,7 +22,7 @@ from recidiviz.common.constants.state.state_shared_enums import StateCustodialAu
 from recidiviz.ingest.direct.regions.us_ut.ingest_views.common_code_constants import (
     SUPERVISION_LEGAL_STATUS_CODES_SET,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (

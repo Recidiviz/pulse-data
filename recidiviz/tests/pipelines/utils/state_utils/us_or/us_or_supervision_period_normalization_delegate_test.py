@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.activity.entities import StateSupervisionPeriod
 from recidiviz.pipelines.utils.state_utils.us_or.us_or_supervision_period_normalization_delegate import (
     UsOrSupervisionNormalizationDelegate,
 )

@@ -24,11 +24,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StateSupervisionPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_period_normalization_manager import (

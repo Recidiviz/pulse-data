@@ -19,11 +19,11 @@ StatePerson entity graph.
 """
 from typing import Type, TypeVar
 
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )

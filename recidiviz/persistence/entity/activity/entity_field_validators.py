@@ -23,10 +23,10 @@ import attr
 from more_itertools import one
 
 from recidiviz.common.attr_utils import is_list
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 
 
 @attr.s(repr=False, slots=True, hash=True)

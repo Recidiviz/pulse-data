@@ -24,6 +24,8 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateEntityToSchemaConverter,
     StateSchemaToEntityConverter,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import StatePerson
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
@@ -33,10 +35,8 @@ from recidiviz.persistence.entity.entity_utils import (
     entities_have_direct_relationship,
     print_entity_trees,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
 )
 

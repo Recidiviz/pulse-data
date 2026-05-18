@@ -24,8 +24,8 @@ from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
 )

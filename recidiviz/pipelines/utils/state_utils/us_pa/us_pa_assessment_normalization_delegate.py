@@ -17,7 +17,7 @@
 """Contains US_XX implementation of the StateSpecificAssessmentNormalizationDelegate."""
 from typing import Optional
 
-from recidiviz.persistence.entity.state.entities import StateAssessment
+from recidiviz.persistence.entity.activity.entities import StateAssessment
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
 )

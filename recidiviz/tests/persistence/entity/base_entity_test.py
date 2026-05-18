@@ -25,6 +25,8 @@ from typing import no_type_check
 import attr
 
 from recidiviz.persistence.entity import base_entity
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -32,8 +34,6 @@ from recidiviz.persistence.entity.base_entity import (
     entity_graph_eq,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state import entities as state_entities
 
 
 class TestBaseEntities(unittest.TestCase):

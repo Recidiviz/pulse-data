@@ -23,8 +23,8 @@ from __future__ import absolute_import
 from typing import List, Type
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer

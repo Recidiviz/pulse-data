@@ -84,7 +84,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_t
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateCharge
+from recidiviz.persistence.entity.activity.entities import StateCharge
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )

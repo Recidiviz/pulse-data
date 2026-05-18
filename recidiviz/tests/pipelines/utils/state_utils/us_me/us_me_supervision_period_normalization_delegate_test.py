@@ -29,11 +29,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StateSupervisionPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.us_me.us_me_supervision_period_normalization_delegate import (

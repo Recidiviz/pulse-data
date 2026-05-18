@@ -31,7 +31,7 @@ from recidiviz.common.date import (
     PotentiallyOpenDateRange,
     convert_critical_dates_to_time_spans,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,

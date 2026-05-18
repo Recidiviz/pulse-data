@@ -16,12 +16,12 @@
 # =============================================================================
 """Factory classes for deserializing identity ingest pipeline entities."""
 
-from recidiviz.persistence.entity.batch_identity_clustering import entities
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
     entity_deserialize,
 )
+from recidiviz.persistence.entity.identity import entities
 
 
 class IdentityExternalIdFactory(EntityFactory):

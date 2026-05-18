@@ -28,6 +28,19 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StatePersonAddressPeriod,
+    StatePersonAlias,
+    StatePersonHousingStatusPeriod,
+    StatePersonStaffRelationshipPeriod,
+)
+from recidiviz.persistence.entity.activity.root_entity_typevars import RootEntityT
+from recidiviz.persistence.entity.activity.state_entity_mixins import (
+    LedgerEntityMixin,
+    LedgerEntityMixinT,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EntityT,
@@ -45,24 +58,11 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePersonAddressPeriod,
-    StatePersonAlias,
-    StatePersonHousingStatusPeriod,
-    StatePersonStaffRelationshipPeriod,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import (
-    LedgerEntityMixin,
-    LedgerEntityMixinT,
-)
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     enum_entity_key,
     external_id_key,
 )
-from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.ingest.types import ExternalId
 from recidiviz.utils.types import T, assert_type
 

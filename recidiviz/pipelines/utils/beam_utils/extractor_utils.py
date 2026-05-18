@@ -49,6 +49,15 @@ from recidiviz.common.attr_mixins import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity import entity_utils
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStateStaff,
+)
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
@@ -59,15 +68,6 @@ from recidiviz.persistence.entity.entity_utils import (
     is_many_to_many_relationship,
     is_many_to_one_relationship,
     is_one_to_many_relationship,
-)
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStatePerson,
-    NormalizedStateStaff,
-)
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
 from recidiviz.pipelines.utils.beam_utils.load_query_results_keyed_by_column import (

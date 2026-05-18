@@ -31,15 +31,15 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import CriticalRangesBuilder, DateRangeDiff
-from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
+)
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )

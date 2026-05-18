@@ -18,6 +18,16 @@
 import unittest
 from functools import cmp_to_key
 
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import StatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateSentence,
+)
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
@@ -30,16 +40,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestDataflowRawTableUpperBounds,
-)
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateSentence,
-)
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
 )
 from recidiviz.utils.types import assert_subclass
 

@@ -22,6 +22,7 @@ from types import ModuleType
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
@@ -34,7 +35,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_association_table_id,
     get_entity_class_in_module_with_table_id,
 )
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.ingest.activity.state.normalization.state_specific_normalization_delegate import (
     StateSpecificNormalizationDelegate,
 )

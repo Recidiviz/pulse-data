@@ -29,11 +29,14 @@ from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.persistence.entity.activity.root_entity_typevars import (
+    NormalizedRootEntityT,
+    RootEntityT,
+)
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.activity.state import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.activity.state.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,

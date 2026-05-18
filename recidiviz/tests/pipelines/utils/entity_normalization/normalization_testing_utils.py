@@ -17,7 +17,7 @@
 """Utils for tests that use pre-processed entities."""
 from typing import List, Optional
 
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )

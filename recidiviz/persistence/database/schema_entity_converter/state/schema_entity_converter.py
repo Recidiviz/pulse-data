@@ -31,8 +31,8 @@ from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_c
 from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
     SchemaToEntityClassMapper,
 )
+from recidiviz.persistence.entity.activity import entities
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities
 
 StatePersonType = TypeVar("StatePersonType", entities.StatePerson, schema.StatePerson)
 

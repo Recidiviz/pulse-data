@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.utils.state_utils.us_co.us_co_incarceration_period_normalization_delegate import (
     UsCoIncarcerationNormalizationDelegate,
 )

@@ -20,6 +20,15 @@ from typing import List, Set, Union, cast
 
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity.entities import (
+    StatePerson,
+    StateSentenceStatusSnapshot,
+    StateStaff,
+)
+from recidiviz.persistence.entity.activity.state_entity_utils import (
+    build_unique_sentence_status_snapshot_key,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     ExternalIdEntity,
@@ -35,15 +44,6 @@ from recidiviz.persistence.entity.generate_primary_key import (
     generate_primary_key,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StateSentenceStatusSnapshot,
-    StateStaff,
-)
-from recidiviz.persistence.entity.state.state_entity_utils import (
-    build_unique_sentence_status_snapshot_key,
-)
 from recidiviz.pipelines.ingest.types import ExternalIdKey
 from recidiviz.utils.types import assert_type, non_optional
 

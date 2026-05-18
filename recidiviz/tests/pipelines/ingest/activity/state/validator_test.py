@@ -46,6 +46,21 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
+from recidiviz.persistence.entity.activity import entities as entities_schema
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StatePersonExternalId,
+    StateStaffExternalId,
+    StateTaskDeadline,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStatePersonExternalId,
+    NormalizedStatePersonStaffRelationshipPeriod,
+    NormalizedStateStaff,
+    NormalizedStateStaffExternalId,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -53,21 +68,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     set_backedges,
-)
-from recidiviz.persistence.entity.state import entities as entities_schema
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePersonExternalId,
-    StateStaffExternalId,
-    StateTaskDeadline,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStatePerson,
-    NormalizedStatePersonExternalId,
-    NormalizedStatePersonStaffRelationshipPeriod,
-    NormalizedStateStaff,
-    NormalizedStateStaffExternalId,
 )
 from recidiviz.pipelines.ingest.activity.state.validator import (
     Error,

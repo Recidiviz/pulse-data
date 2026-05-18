@@ -108,6 +108,8 @@ from recidiviz.ingest.views.dataset_config import (
     STATE_BASE_VIEWS_DATASET,
 )
 from recidiviz.persistence.database.schema_utils import is_association_table
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
@@ -115,8 +117,6 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_table_id,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.utils import metadata
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 

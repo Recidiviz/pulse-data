@@ -31,6 +31,10 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
+from recidiviz.persistence.entity.activity import (
+    deserialize_entity_factories as state_deserialize_entity_factories,
+)
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
@@ -40,10 +44,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_enum_classes_in_module,
     get_entity_class_in_module_with_name,
 )
-from recidiviz.persistence.entity.state import (
-    deserialize_entity_factories as state_deserialize_entity_factories,
-)
-from recidiviz.persistence.entity.state import entities as state_entities
 
 
 class IngestViewManifestCompilerDelegate:

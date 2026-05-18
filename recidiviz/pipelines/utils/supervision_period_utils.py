@@ -28,11 +28,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
 )

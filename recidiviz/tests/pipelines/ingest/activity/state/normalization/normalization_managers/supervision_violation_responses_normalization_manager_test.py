@@ -31,14 +31,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
@@ -55,7 +55,7 @@ from recidiviz.pipelines.utils.execution_utils import (
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
     UsXxViolationResponseNormalizationDelegate,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     get_normalized_violation_tree,
     get_violation_tree,
     hydrate_bidirectional_relationships_on_expected_response,

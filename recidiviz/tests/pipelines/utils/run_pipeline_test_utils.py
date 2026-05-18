@@ -30,7 +30,7 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline

@@ -30,8 +30,8 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
     SHOCK_SANCTION_STATUS_CODES,
     TREATMENT_SANCTION_STATUS_CODES,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (

@@ -28,7 +28,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
@@ -36,7 +36,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaffSupervisorPeriod,
     StateSupervisionPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,

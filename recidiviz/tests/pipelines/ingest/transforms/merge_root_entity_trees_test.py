@@ -23,8 +23,8 @@ import apache_beam as beam
 from apache_beam.testing.util import assert_that, equal_to
 
 from recidiviz.common.constants.state.state_person import StateRace
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StatePersonExternalId,
     StatePersonRace,

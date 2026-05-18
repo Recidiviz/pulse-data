@@ -28,7 +28,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.activity.entities import StateSupervisionPeriod
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     SupervisionPeriodNormalizationManager,
 )

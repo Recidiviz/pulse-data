@@ -125,11 +125,11 @@ from recidiviz.common.str_field_utils import (
     NormalizedSerializableJSON,
     SerializableJSON,
 )
+from recidiviz.persistence.entity.activity import deserialize_entity_factories, entities
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_entity_factory_classes_in_module,
 )
-from recidiviz.persistence.entity.state import deserialize_entity_factories, entities
 
 
 class TestDeserializeEntityFactories(unittest.TestCase):

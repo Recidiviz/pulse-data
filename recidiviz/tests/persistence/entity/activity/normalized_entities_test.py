@@ -48,25 +48,25 @@ from recidiviz.common.constants.state.state_staff_role_period import (
 )
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entity_field_validators import (
+    ParsingOptionalOnlyValidator,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    EntityBackedgeValidator,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
+)
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entity_field_validators import (
-    ParsingOptionalOnlyValidator,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    EntityBackedgeValidator,
-)
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
 from recidiviz.utils.types import non_optional
 
 NORMALIZED_PREFIX = "Normalized"

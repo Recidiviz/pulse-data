@@ -22,7 +22,7 @@ from typing import List
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (

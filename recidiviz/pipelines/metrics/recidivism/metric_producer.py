@@ -30,7 +30,9 @@ from typing import Any, Dict, List, Set, Type
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.date import current_date_us_eastern
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.recidivism.events import (
     NonRecidivismReleaseEvent,

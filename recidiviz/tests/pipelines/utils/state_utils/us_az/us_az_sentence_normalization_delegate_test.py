@@ -21,7 +21,7 @@ from datetime import date, datetime
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationPeriod,
     StateSentence,
     StateSentenceStatusSnapshot,

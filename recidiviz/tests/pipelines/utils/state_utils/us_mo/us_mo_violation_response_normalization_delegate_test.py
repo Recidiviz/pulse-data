@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -50,7 +50,7 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violation_response_normal
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violations_delegate import (
     LAW_CITATION_SUBTYPE_STR,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     hydrate_bidirectional_relationships_on_expected_response,
 )
 from recidiviz.tests.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager_test import (
@@ -70,7 +70,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         self.person_id = 2900000000000000123
 
         self.unique_id_patcher = mock.patch(
-            "recidiviz.persistence.entity."
+            "recidiviz.persistence.entity.activity."
             "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

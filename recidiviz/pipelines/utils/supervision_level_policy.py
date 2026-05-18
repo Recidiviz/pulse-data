@@ -24,7 +24,9 @@ from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 
 
 @attr.s

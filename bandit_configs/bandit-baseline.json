@@ -32606,7 +32606,7 @@
       "nosec": 0,
       "skipped_tests": 0
     },
-    "recidiviz/persistence/entity/state/__init__.py": {
+    "recidiviz/persistence/entity/activity/__init__.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
@@ -32619,7 +32619,7 @@
       "nosec": 0,
       "skipped_tests": 0
     },
-    "recidiviz/persistence/entity/state/deserialize_entity_factories.py": {
+    "recidiviz/persistence/entity/activity/deserialize_entity_factories.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
@@ -32632,7 +32632,7 @@
       "nosec": 0,
       "skipped_tests": 0
     },
-    "recidiviz/persistence/entity/state/entities.py": {
+    "recidiviz/persistence/entity/activity/entities.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
@@ -32645,7 +32645,7 @@
       "nosec": 0,
       "skipped_tests": 0
     },
-    "recidiviz/persistence/entity/state/entity_deprecation_utils.py": {
+    "recidiviz/persistence/entity/activity/entity_deprecation_utils.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,

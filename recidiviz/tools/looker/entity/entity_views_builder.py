@@ -23,6 +23,7 @@ from google.cloud import bigquery
 from recidiviz.looker.lookml_field_registry import LookMLFieldRegistry
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.persistence.database.schema_utils import is_association_table
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
@@ -30,7 +31,6 @@ from recidiviz.persistence.entity.entity_metadata_helper import (
     AssociationTableMetadataHelper,
     EntityMetadataHelper,
 )
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.entity.entity_custom_field_registry import (
     get_custom_field_registry_for_entity_module,
 )

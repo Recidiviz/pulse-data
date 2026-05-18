@@ -21,10 +21,10 @@ from datetime import date
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.validation.views.state.stable_counts.entity_by_column_count_stable_counts import (
     exemptions_string_builder,
     view_builder_for_entity_and_date_col,

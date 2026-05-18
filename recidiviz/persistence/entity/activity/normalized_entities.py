@@ -149,6 +149,24 @@ from recidiviz.common.date import (
     PotentiallyOpenDateTimeRange,
 )
 from recidiviz.common.state_exempted_attrs_validator import state_exempted_validator
+from recidiviz.persistence.entity.activity.entities import (
+    StateSupervisionViolationResponseSeverity,
+    email_to_lower,
+)
+from recidiviz.persistence.entity.activity.entity_field_validators import (
+    EntityBackedgeValidator,
+    appears_with,
+)
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
+from recidiviz.persistence.entity.activity.state_entity_mixins import (
+    LedgerEntityMixin,
+    SequencedEntityMixin,
+)
+from recidiviz.persistence.entity.activity.state_entity_utils import (
+    PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -159,18 +177,7 @@ from recidiviz.persistence.entity.base_entity import (
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
-from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolationResponseSeverity,
-    email_to_lower,
-)
-from recidiviz.persistence.entity.state.entity_field_validators import (
-    EntityBackedgeValidator,
-    appears_with,
-)
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
-from recidiviz.persistence.entity.state.reasonable_date_validators import (
+from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
     STANDARD_REASONABLE_DATE_VALIDATOR,
     STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
@@ -180,13 +187,6 @@ from recidiviz.persistence.entity.state.reasonable_date_validators import (
     STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
     reasonable_projected_sentence_date_validator,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import (
-    LedgerEntityMixin,
-    SequencedEntityMixin,
-)
-from recidiviz.persistence.entity.state.state_entity_utils import (
-    PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR,
 )
 from recidiviz.utils.types import assert_type
 
@@ -678,7 +678,7 @@ class NormalizedStateSentenceStatusSnapshot(
     )
 
     # Primary key, that is built with
-    # recidiviz.persistence.entity.state.state_entity_utils.build_unique_sentence_status_snapshot_key
+    # recidiviz.persistence.entity.activity.state_entity_utils.build_unique_sentence_status_snapshot_key
     # We do not set a default here or have this value optional so that setting this ID
     # is as explicit (and debuggable) as possible.
     # TODO(#32690) Don't forget this case (and function ^) when update PK generation

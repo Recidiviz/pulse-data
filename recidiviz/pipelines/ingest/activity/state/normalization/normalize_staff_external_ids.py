@@ -20,8 +20,8 @@ from collections import defaultdict
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateStaffExternalId
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateStaffExternalId
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateStaffExternalId,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.state_specific_normalization_delegate import (

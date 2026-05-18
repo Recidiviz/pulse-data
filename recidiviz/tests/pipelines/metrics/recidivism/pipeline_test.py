@@ -43,7 +43,7 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,

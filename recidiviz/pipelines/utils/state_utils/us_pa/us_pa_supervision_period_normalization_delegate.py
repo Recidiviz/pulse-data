@@ -17,7 +17,7 @@
 """US_PA implementation of the supervision normalization delegate"""
 from typing import List
 
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )

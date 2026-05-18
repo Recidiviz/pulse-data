@@ -23,8 +23,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )

@@ -23,10 +23,10 @@ from recidiviz.common.constants.state.state_person_staff_relationship_period imp
 )
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePersonStaffRelationshipPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePersonStaffRelationshipPeriod,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalize_person_staff_relationship_periods import (

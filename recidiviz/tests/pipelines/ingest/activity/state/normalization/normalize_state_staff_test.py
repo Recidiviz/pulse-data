@@ -19,16 +19,18 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities, normalized_entities
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateStaff,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.pipelines.ingest.activity.state.normalization import (
     normalize_state_staff,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalize_state_staff import (
     build_normalized_state_staff,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_staff,
 )
 from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (

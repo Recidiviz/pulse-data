@@ -25,6 +25,7 @@ from functools import cache
 from types import ModuleType
 from typing import (
     IO,
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -63,11 +64,12 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.utils.log_helpers import make_log_output_path
+
+if TYPE_CHECKING:
+    from recidiviz.persistence.entity.activity.normalized_state_entity import (
+        NormalizedStateEntity,
+    )
 
 
 @cache
@@ -85,7 +87,6 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 StateExternalIdEntity,
                 HasMultipleExternalIdsEntity,
                 EnumEntity,
-                LedgerEntityMixin,
             ) and issubclass(attribute, Entity):
                 expected_classes.add(attribute)
 
@@ -409,8 +410,8 @@ def get_all_entities_from_tree(
 
 
 def update_reverse_references_on_related_entities(
-    updated_entity: Union[Entity, NormalizedStateEntity],
-    new_related_entities: Union[List[Entity], List[NormalizedStateEntity]],
+    updated_entity: Union[Entity, "NormalizedStateEntity"],
+    new_related_entities: Union[List[Entity], List["NormalizedStateEntity"]],
     reverse_relationship_field: str,
     reverse_relationship_field_type: BuildableAttrFieldType,
 ) -> None:

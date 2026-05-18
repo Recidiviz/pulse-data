@@ -36,13 +36,13 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.metrics.population_spans import identifier
 from recidiviz.pipelines.metrics.population_spans import (
     identifier as population_spans_identifier,

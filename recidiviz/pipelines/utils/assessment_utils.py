@@ -20,7 +20,7 @@ from datetime import date
 from typing import Optional
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (

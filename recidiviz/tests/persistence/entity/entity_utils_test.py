@@ -26,6 +26,36 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.database.schema_utils import is_association_table
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StateAssessment,
+    StateCharge,
+    StateChargeV2,
+    StateEarlyDischarge,
+    StateIncarcerationSentence,
+    StatePerson,
+    StatePersonExternalId,
+    StateSentence,
+    StateStaff,
+    StateStaffExternalId,
+    StateSupervisionCaseTypeEntry,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateCharge,
+    NormalizedStateChargeV2,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStatePerson,
+    NormalizedStateSentence,
+    NormalizedStateSupervisionSentence,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.persistence.entity.base_entity import Entity, HasExternalIdEntity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
@@ -53,37 +83,7 @@ from recidiviz.persistence.entity.entity_utils import (
     is_one_to_many_relationship,
     set_backedges,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
-    StateCharge,
-    StateChargeV2,
-    StateEarlyDischarge,
-    StateIncarcerationSentence,
-    StatePerson,
-    StatePersonExternalId,
-    StateSentence,
-    StateStaff,
-    StateStaffExternalId,
-    StateSupervisionCaseTypeEntry,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateCharge,
-    NormalizedStateChargeV2,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStatePerson,
-    NormalizedStateSentence,
-    NormalizedStateSupervisionSentence,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )

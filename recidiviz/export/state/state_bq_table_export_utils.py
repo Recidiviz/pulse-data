@@ -26,11 +26,11 @@ from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entity_table,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 
 
 def state_table_export_query_str(

@@ -7,17 +7,17 @@ from typing import Type
 import pytest
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entity_documentation_utils import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entity_documentation_utils import (
     FIELD_KEY,
     NORMALIZATION_FIELD_KEY,
     STATE_DATASET_ONLY_FIELD_KEY,
     description_for_field,
     get_entity_field_descriptions,
 )
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 
 
 def _entity_fields_to_document(entity: Type[Entity]) -> set[str]:

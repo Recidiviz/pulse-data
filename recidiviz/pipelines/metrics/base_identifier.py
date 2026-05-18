@@ -20,7 +20,9 @@ from typing import Any, Dict, Generic, Set, Type, TypeVar
 
 import attr
 
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 
 IdentifierResultT = TypeVar("IdentifierResultT")

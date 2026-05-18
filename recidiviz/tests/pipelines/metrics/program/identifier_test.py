@@ -32,13 +32,13 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStatePerson,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )

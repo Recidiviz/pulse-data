@@ -49,10 +49,10 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetricType
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_KEY

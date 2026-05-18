@@ -167,7 +167,7 @@ def reasonable_projected_sentence_date_validator(
                 f"If this far-future date is legitimate for {state_code.value} "
                 f"(e.g., many consecutive, non-life sentences), add an entry to "
                 f"STATE_TO_VALID_FAR_FUTURE_SENTENCE_DATE_UPPER_BOUND in "
-                f"recidiviz/persistence/entity/state/reasonable_date_validators.py"
+                f"recidiviz/persistence/entity/reasonable_date_validators.py"
             ) from e
 
     return _validator

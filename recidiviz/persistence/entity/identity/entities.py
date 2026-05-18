@@ -42,7 +42,7 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.state.reasonable_date_validators import (
+from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
 )
 

@@ -20,13 +20,13 @@ from typing import Dict, Iterable, Tuple
 import apache_beam as beam
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )

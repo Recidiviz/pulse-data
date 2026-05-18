@@ -28,7 +28,9 @@ from recidiviz.common.date import (
     split_range_by_birthdate,
     year_and_month_for_today_us_eastern,
 )
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Event, IdentifierResult, Span
 

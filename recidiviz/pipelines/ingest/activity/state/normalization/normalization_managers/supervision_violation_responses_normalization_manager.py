@@ -25,27 +25,29 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    copy_entities_and_add_unique_ids,
-    get_shared_additional_attributes_map_for_entities,
-    merge_additional_attributes_maps,
-    update_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.persistence.entity.state.violation_utils import collect_unique_violations
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    copy_entities_and_add_unique_ids,
+    get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
+    update_entity_with_globally_unique_id,
+)
+from recidiviz.persistence.entity.activity.violation_utils import (
+    collect_unique_violations,
+)
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )

@@ -22,7 +22,7 @@ from recidiviz.common.constants.state.external_id_types import (
     US_NE_PAROLE_STAFF_ID,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
 )

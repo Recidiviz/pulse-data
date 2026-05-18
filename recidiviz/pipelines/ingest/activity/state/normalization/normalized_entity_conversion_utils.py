@@ -26,6 +26,16 @@ from recidiviz.common.attr_mixins import (
     attr_field_referenced_cls_name_for_field_name,
     attr_field_type_for_field_name,
 )
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    NormalizedStateEntityT,
+    get_base_entity_class_for_normalized_entity,
+    update_forward_references_on_updated_entity,
+)
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
@@ -34,16 +44,6 @@ from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
     update_reverse_references_on_related_entities,
-)
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    NormalizedStateEntityT,
-    get_base_entity_class_for_normalized_entity,
-    update_forward_references_on_updated_entity,
-)
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
 )
 from recidiviz.utils.types import assert_subclass
 

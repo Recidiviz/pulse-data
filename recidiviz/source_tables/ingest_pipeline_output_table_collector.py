@@ -28,10 +28,10 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
+from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     ingest_view_materialization_results_dataset,
     normalized_state_dataset_for_state_code,

@@ -35,7 +35,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSentence,
     StateSentenceStatusSnapshot,
     StateSupervisionCaseTypeEntry,
@@ -56,7 +56,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         self.person_id = 2900000000000000123
 
         self.unique_id_patcher = mock.patch(
-            "recidiviz.persistence.entity."
+            "recidiviz.persistence.entity.activity."
             "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

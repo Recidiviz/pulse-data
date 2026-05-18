@@ -36,10 +36,10 @@ from typing import Optional
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 
 
 @attr.define

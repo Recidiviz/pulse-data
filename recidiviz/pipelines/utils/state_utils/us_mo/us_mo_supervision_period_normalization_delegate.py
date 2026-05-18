@@ -40,16 +40,16 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
     parse_supervision_period_admission_reason,
     parse_supervision_period_termination_reason,
 )
-from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    copy_entities_and_add_unique_ids,
-    update_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSentence,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    copy_entities_and_add_unique_ids,
+    update_entity_with_globally_unique_id,
+)
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )

@@ -24,11 +24,8 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    AdditionalAttributesMap,
-)
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
@@ -36,7 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateCharge,
     NormalizedStateEarlyDischarge,
     NormalizedStateIncarcerationPeriod,
@@ -45,11 +42,14 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
 from recidiviz.pipelines.ingest.activity.state.normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     get_normalized_violation_tree,
     get_violation_tree,
 )

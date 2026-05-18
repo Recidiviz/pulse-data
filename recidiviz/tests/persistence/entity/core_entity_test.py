@@ -24,7 +24,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.utils.types import assert_type
 
 _STATE_CODE = "US_ND"

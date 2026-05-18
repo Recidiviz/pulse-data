@@ -19,7 +19,7 @@ import datetime
 import unittest
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.persistence.entity.state import entities, entity_deprecation_utils
+from recidiviz.persistence.entity.activity import entities, entity_deprecation_utils
 
 
 class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):

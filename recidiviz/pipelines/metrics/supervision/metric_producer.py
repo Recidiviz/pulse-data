@@ -22,7 +22,9 @@ basis. It transforms SupervisionEvents into SupervisionMetrics.
 from operator import attrgetter
 from typing import Dict, List, Set, Type
 
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.metrics.base_metric_producer import (
     BaseMetricProducer,
     metric_type_for_metric_class,

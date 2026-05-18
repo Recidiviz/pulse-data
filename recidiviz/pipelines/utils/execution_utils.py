@@ -22,8 +22,10 @@ from googleapiclient.discovery import build
 from more_itertools import one
 from oauth2client.client import GoogleCredentials
 
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 
 # The name of an entity, e.g. StatePerson.
 EntityClassName = str

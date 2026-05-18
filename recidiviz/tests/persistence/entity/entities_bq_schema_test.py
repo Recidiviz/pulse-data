@@ -22,13 +22,13 @@ from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import (
+    normalized_entities as normalized_state_entities,
+)
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
     get_bq_schema_for_entity_table,
-)
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import (
-    normalized_entities as normalized_state_entities,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,

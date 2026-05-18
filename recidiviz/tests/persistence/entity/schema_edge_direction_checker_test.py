@@ -18,18 +18,18 @@
 
 import unittest
 
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES,
-    entities_module_context_for_module,
-)
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionSentence,
     StateSupervisionViolation,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES,
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 
 
 class TestSchemaEdgeDirectionChecker(unittest.TestCase):

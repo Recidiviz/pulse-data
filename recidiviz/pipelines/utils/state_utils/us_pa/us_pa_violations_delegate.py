@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationTypeEntry,
 )

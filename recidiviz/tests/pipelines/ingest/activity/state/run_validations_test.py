@@ -30,14 +30,9 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_module,
-)
-from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StatePersonExternalId,
     StateStaff,
@@ -47,7 +42,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateTaskDeadline,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStatePersonExternalId,
     NormalizedStateStaff,
@@ -57,6 +52,11 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateTaskDeadline,
 )
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.pipelines.ingest.activity.state.run_validations import RunValidations
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,

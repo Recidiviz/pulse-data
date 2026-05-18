@@ -27,20 +27,20 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     AdditionalAttributesMap,
     copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
     update_entity_with_globally_unique_id,
 )
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-)
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     get_violation_tree,
 )
 

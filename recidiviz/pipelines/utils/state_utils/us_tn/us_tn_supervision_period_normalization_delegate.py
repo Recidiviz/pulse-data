@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import current_date_us_eastern
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )

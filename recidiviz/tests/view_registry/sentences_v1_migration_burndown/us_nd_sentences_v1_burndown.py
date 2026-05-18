@@ -117,7 +117,7 @@ from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_inca
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateSupervisionSentence
+from recidiviz.persistence.entity.activity.entities import StateSupervisionSentence
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )

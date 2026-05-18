@@ -24,13 +24,13 @@ from more_itertools import one
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity.entities import StateStaff
+from recidiviz.persistence.entity.activity.root_entity_typevars import RootEntityT
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
-from recidiviz.persistence.entity.state.entities import StateStaff
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
-from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.utils.types import assert_type
 

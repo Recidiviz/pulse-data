@@ -23,13 +23,7 @@ from more_itertools import first
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.ncic import get_description
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    get_shared_additional_attributes_map_for_entities,
-    merge_additional_attributes_maps,
-)
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateCharge,
     StateEarlyDischarge,
     StateIncarcerationSentence,
@@ -37,7 +31,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSentenceStatusSnapshot,
     StateSupervisionSentence,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateCharge,
     NormalizedStateChargeV2,
     NormalizedStateIncarcerationSentence,
@@ -45,6 +39,12 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentenceStatusSnapshot,
     NormalizedStateSupervisionSentence,
 )
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
+)
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )

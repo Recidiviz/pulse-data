@@ -115,6 +115,20 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StateProgramAssignment,
+    StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateSupervisionViolatedConditionEntry,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
@@ -125,20 +139,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     set_backedges,
-)
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StateProgramAssignment,
-    StateSupervisionViolationResponse,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSupervisionViolatedConditionEntry,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-    NormalizedStateSupervisionViolationResponseDecisionEntry,
-    NormalizedStateSupervisionViolationTypeEntry,
 )
 from recidiviz.utils.types import assert_type
 

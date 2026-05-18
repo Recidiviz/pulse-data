@@ -62,6 +62,17 @@ from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientI
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
+from recidiviz.persistence.entity.activity import entities, normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StatePerson,
+    StatePersonExternalId,
+    StateStaff,
+    StateStaffExternalId,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+    NormalizedStateStaff,
+)
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -74,17 +85,6 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
-)
-from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonExternalId,
-    StateStaff,
-    StateStaffExternalId,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStatePerson,
-    NormalizedStateStaff,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,

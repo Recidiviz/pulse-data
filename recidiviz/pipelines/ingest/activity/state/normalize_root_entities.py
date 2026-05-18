@@ -24,14 +24,17 @@ import apache_beam as beam
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity, RootEntity
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateStaff,
 )
-from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
+from recidiviz.persistence.entity.activity.root_entity_typevars import (
+    NormalizedRootEntityT,
+    RootEntityT,
+)
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.pipelines.ingest.activity.state.create_root_entity_id_to_staff_id_mapping import (
     CreateRootEntityIdToStaffIdMapping,
     PersonId,

@@ -37,8 +37,8 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.us_mi.us_mi_incarceration_period_normalization_delegate import (
@@ -59,7 +59,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         self.person_id = 2600000000000000123
 
         self.unique_id_patcher = mock.patch(
-            "recidiviz.persistence.entity."
+            "recidiviz.persistence.entity.activity."
             "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

@@ -24,7 +24,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.direct.regions.us_az.ingest_views.common_sentencing_views_and_utils import (
     RECIDIVIZ_MARKED_COMPLETED,
 )
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationPeriod,
     StateSentence,
     StateSentenceStatusSnapshot,

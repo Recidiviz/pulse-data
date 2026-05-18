@@ -21,7 +21,7 @@ from typing import List
 from unittest import mock
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
     StateSupervisionViolationType,
@@ -40,7 +40,7 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
         self.person_id = 2600000000000000123
 
         self.unique_id_patcher = mock.patch(
-            "recidiviz.persistence.entity."
+            "recidiviz.persistence.entity.activity."
             "normalized_entities_utils.generate_primary_key"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

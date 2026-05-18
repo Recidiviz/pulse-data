@@ -23,8 +23,10 @@ from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.persistence.entity.state import entities as state_entites
-from recidiviz.persistence.entity.state import normalized_entities as normalized_entites
+from recidiviz.persistence.entity.activity import entities as state_entites
+from recidiviz.persistence.entity.activity import (
+    normalized_entities as normalized_entites,
+)
 from recidiviz.tools.looker.entity.custom_views.person_periods import (
     PersonPeriodsJoinProvider,
     PersonPeriodsLookMLViewBuilder,

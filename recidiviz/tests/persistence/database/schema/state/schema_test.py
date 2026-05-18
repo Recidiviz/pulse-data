@@ -70,10 +70,10 @@ from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_schema,
     is_association_table,
 )
+from recidiviz.persistence.entity.activity import entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
 

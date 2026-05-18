@@ -35,18 +35,18 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.date import current_date_us_eastern
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionViolationResponse,
-)
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )

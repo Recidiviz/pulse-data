@@ -23,20 +23,20 @@ from typing import List, Optional
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateChargeV2,
     StateChargeV2Status,
     StatePerson,
 )
-from recidiviz.persistence.entity.state.entity_field_validators import (
+from recidiviz.persistence.entity.activity.entity_field_validators import (
     EntityBackedgeValidator,
     appears_with,
     parsing_opt_only,
 )
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 
 
 class Foo:

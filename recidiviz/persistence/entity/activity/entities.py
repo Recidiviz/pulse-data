@@ -148,6 +148,17 @@ from recidiviz.common.date import (
     PotentiallyOpenDateRange,
 )
 from recidiviz.common.state_exempted_attrs_validator import state_exempted_validator
+from recidiviz.persistence.entity.activity.entity_field_validators import (
+    appears_with,
+    parsing_opt_only,
+)
+from recidiviz.persistence.entity.activity.state_entity_mixins import (
+    LedgerEntityMixin,
+    StateEntityMixin,
+)
+from recidiviz.persistence.entity.activity.state_entity_utils import (
+    PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -157,11 +168,7 @@ from recidiviz.persistence.entity.base_entity import (
     StateExternalIdEntity,
     UniqueConstraint,
 )
-from recidiviz.persistence.entity.state.entity_field_validators import (
-    appears_with,
-    parsing_opt_only,
-)
-from recidiviz.persistence.entity.state.reasonable_date_validators import (
+from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
     STANDARD_REASONABLE_DATE_VALIDATOR,
     STANDARD_REASONABLE_OPT_DATE_VALIDATOR,
@@ -170,13 +177,6 @@ from recidiviz.persistence.entity.state.reasonable_date_validators import (
     STANDARD_REASONABLE_PAST_DATE_VALIDATOR,
     STANDARD_REASONABLE_PAST_DATETIME_VALIDATOR,
     reasonable_projected_sentence_date_validator,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import (
-    LedgerEntityMixin,
-    StateEntityMixin,
-)
-from recidiviz.persistence.entity.state.state_entity_utils import (
-    PARENT_SENTENCE_EXTERNAL_ID_SEPARATOR,
 )
 
 # **** Entity ordering template *****:

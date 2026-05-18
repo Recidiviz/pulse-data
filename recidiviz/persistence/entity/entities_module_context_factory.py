@@ -18,15 +18,17 @@
 from types import ModuleType
 from typing import Type
 
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities,
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entity_documentation_utils import (
+    description_for_field,
 )
+from recidiviz.persistence.entity.activity.state_entity_mixins import StateEntityMixin
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.identity import entities as identity_entities
 from recidiviz.persistence.entity.operations import entities as operations_entities
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.utils import environment
 
 ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES = [
@@ -130,6 +132,12 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
             ),
         }
 
+    @classmethod
+    def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
+        if not issubclass(entity_cls, StateEntityMixin):
+            return None
+        return description_for_field(entity_cls, field_name)
+
 
 class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
     """EntitiesModuleContext for the normalized state entities module defined at
@@ -204,6 +212,12 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
                 normalized_entities.NormalizedStateIncarcerationSentence,
             ),
         }
+
+    @classmethod
+    def field_description(cls, entity_cls: type[Entity], field_name: str) -> str | None:
+        if not issubclass(entity_cls, StateEntityMixin):
+            return None
+        return description_for_field(entity_cls, field_name)
 
 
 class _OperationsEntitiesModuleContext(EntitiesModuleContext):

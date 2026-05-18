@@ -31,6 +31,7 @@ from recidiviz.looker.lookml_dashboard_element import dict_to_scoped_field_names
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_source_table import SqlTableAddress
 from recidiviz.persistence.database.schema_utils import is_association_table
+from recidiviz.persistence.entity.activity.state_entity_mixins import StateEntityMixin
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -46,7 +47,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
-from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
 from recidiviz.tools.looker.constants import MODEL_NAME_VAR_STRING
 from recidiviz.tools.looker.entity.state_dataset_dashboard_element_providers import (
     get_elements_provider,

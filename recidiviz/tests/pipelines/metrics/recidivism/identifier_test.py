@@ -30,11 +30,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.metrics.recidivism import identifier
 from recidiviz.pipelines.metrics.recidivism.events import (
     NonRecidivismReleaseEvent,

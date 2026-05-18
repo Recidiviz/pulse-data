@@ -23,10 +23,8 @@ import attr
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities_module,
-)
-from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+from recidiviz.persistence.entity.identity import entities as identity_entities_module
+from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityEmail,
     IdentityEthnicity,

@@ -27,10 +27,21 @@ from recidiviz.common.constants.state.state_charge import (
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.demographics import Gender, Race
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities,
+from recidiviz.persistence.entity.activity import entities, normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StateAssessment,
+    StateChargeV2,
+    StatePerson,
+    StateSentence,
 )
-from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateCharge,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStatePerson,
+)
+from recidiviz.persistence.entity.identity import entities as identity_entities
+from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityGender,
@@ -42,19 +53,6 @@ from recidiviz.persistence.entity.serialization import (
     serialize_entity_into_json,
     serialize_entity_tree_into_json,
     serialize_entity_trees_into_json,
-)
-from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
-    StateChargeV2,
-    StatePerson,
-    StateSentence,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateCharge,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStatePerson,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import (
     json_serializable_list_value_handler,

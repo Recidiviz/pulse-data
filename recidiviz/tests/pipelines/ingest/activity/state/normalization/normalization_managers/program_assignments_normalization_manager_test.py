@@ -23,7 +23,7 @@ from typing import List
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.persistence.entity.state.entities import StateProgramAssignment
+from recidiviz.persistence.entity.activity.entities import StateProgramAssignment
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )

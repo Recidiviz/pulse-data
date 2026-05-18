@@ -21,8 +21,8 @@ Tests helper functions for state entities (and their normalized counterparts)
 import unittest
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.state_entity_utils import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.state_entity_utils import (
     ConsecutiveSentenceErrors,
     ConsecutiveSentenceGraph,
 )

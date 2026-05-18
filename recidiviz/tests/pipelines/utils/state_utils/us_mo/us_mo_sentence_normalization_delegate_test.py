@@ -28,7 +28,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
     NormalizedStateSentenceLength,

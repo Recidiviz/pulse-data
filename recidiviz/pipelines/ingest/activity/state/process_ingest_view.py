@@ -32,9 +32,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity.base_entity import RootEntity
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.activity.state.exemptions import (
     INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
 )

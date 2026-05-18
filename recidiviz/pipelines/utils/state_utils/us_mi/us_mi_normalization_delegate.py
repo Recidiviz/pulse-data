@@ -21,7 +21,7 @@ from recidiviz.common.constants.state.external_id_types import (
     US_MI_OMNI_USER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
 )

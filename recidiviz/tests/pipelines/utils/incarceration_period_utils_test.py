@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.utils.incarceration_period_utils import (
     ip_is_nested_in_previous_period,
     period_edges_are_valid_transfer,

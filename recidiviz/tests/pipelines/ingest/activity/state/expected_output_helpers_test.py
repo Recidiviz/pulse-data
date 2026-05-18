@@ -25,11 +25,11 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities, normalized_entities
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity import entities, normalized_entities
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.expected_output_helpers import (
     get_all_table_ids_for_schema,
     get_entity_table_ids_to_clear,

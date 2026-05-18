@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
+from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.transforms.generate_entities import GenerateEntities
 from recidiviz.tests.ingest.direct import fake_regions
 

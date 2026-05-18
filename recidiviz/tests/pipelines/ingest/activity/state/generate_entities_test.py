@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StatePersonExternalId,
     StateStaff,

@@ -28,15 +28,15 @@ import datetime
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.date import as_datetime
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePerson,
     StateSentence,
     StateSentenceStatusSnapshot,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSentenceStatusSnapshot,
 )
-from recidiviz.persistence.entity.state.state_entity_utils import (
+from recidiviz.persistence.entity.activity.state_entity_utils import (
     build_unique_sentence_status_snapshot_key,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (

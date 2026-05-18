@@ -17,11 +17,11 @@
 """Tests for EntityCustomFieldRegistry."""
 import unittest
 
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_table_id,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.entity.entity_custom_field_registry import (
     COMMON_CUSTOM_FIELDS,
     NORMALIZED_STATE_CUSTOM_FIELDS,

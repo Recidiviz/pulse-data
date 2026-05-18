@@ -40,8 +40,8 @@ from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterValueFormat,
 )
 from recidiviz.looker.lookml_view_source_table import SqlTableAddress
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
     FakeEntitiesModuleContext,
 )

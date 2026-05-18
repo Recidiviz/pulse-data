@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSentenceStatusSnapshot,
 )
 from recidiviz.pipelines.utils.state_utils.us_me.us_me_sentence_normalization_delegate import (

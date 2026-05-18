@@ -17,7 +17,7 @@
 """Contains US_AR implementation of the StateSpecificNormalizationDelegate."""
 from recidiviz.common.constants.state.external_id_types import US_AR_PARTYID
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateStaffExternalId
+from recidiviz.persistence.entity.activity.entities import StateStaffExternalId
 from recidiviz.pipelines.ingest.activity.state.normalization.normalize_external_ids_helpers import (
     select_alphabetically_highest_external_id,
     select_alphabetically_lowest_external_id,

@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.us_pa.us_pa_incarceration_delegate import (

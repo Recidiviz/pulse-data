@@ -21,6 +21,10 @@ from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
     attribute_field_type_reference_for_class,
 )
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -28,10 +32,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
     set_backedges,
-)
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,

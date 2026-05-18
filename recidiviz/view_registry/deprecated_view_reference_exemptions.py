@@ -177,12 +177,12 @@ from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live
 from recidiviz.observations.views.events.person.sentences_imposed import (
     VIEW_BUILDER as SENTENCES_IMPOSED_OBSERVATIONS_VIEW_BUILDER,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateCharge,
     StateIncarcerationSentence,
     StateSupervisionSentence,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.dataset_config import (
     normalized_state_dataset_for_state_code,
 )

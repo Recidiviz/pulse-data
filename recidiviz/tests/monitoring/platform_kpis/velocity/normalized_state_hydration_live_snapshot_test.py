@@ -28,10 +28,14 @@ from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live
     _build_query_for_entity_cls,
     _get_functionally_non_optional_fields_for_normalized_entity,
 )
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    NormalizedStateEntity,
+)
+from recidiviz.persistence.entity.activity.state_entity_mixins import (
+    SequencedEntityMixin,
+)
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
-from recidiviz.persistence.entity.normalized_entities_utils import NormalizedStateEntity
-from recidiviz.persistence.entity.state.state_entity_mixins import SequencedEntityMixin
 
 
 @attr.s(eq=False, kw_only=True)
@@ -110,11 +114,6 @@ class TestNormalizedStateHydrationLiveSnapShot(TestCase):
             return_value=self._module_ctx,
         )
         self._bq_schema_patcher.start()
-        self._description_patcher = patch(
-            "recidiviz.persistence.entity.entities_bq_schema.description_for_field",
-            return_value=None,
-        )
-        self._description_patcher.start()
         self._module_patcher = patch(
             "recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live_snapshot.normalized_entities",
             self._fake_module,
@@ -123,7 +122,6 @@ class TestNormalizedStateHydrationLiveSnapShot(TestCase):
 
     def tearDown(self) -> None:
         self._bq_schema_patcher.stop()
-        self._description_patcher.stop()
         self._module_patcher.stop()
 
     def test_optional_fields(self) -> None:

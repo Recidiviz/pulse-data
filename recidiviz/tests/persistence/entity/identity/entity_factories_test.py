@@ -20,14 +20,11 @@ from typing import Set
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities,
-    entity_factories,
-)
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_entity_factory_classes_in_module,
 )
+from recidiviz.persistence.entity.identity import entities, entity_factories
 
 _TENANT = "US_OZ"
 

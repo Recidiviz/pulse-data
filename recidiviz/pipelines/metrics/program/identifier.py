@@ -24,13 +24,13 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.date import current_date_us_eastern
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    sort_normalized_entities_by_sequence_num,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,

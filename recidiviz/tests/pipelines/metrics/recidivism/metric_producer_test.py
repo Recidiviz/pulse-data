@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStatePersonExternalId,
     NormalizedStatePersonRace,

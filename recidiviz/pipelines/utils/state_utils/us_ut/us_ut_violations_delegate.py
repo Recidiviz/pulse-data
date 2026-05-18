@@ -20,7 +20,7 @@
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (

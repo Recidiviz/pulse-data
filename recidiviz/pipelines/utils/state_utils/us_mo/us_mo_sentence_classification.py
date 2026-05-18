@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.date import DateRange, DurationMixin
-from recidiviz.persistence.entity.state.entities import StateSentenceStatusSnapshot
+from recidiviz.persistence.entity.activity.entities import StateSentenceStatusSnapshot
 
 
 @attr.s(frozen=True)

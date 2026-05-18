@@ -30,12 +30,8 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import as_datetime
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_module,
-)
-from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
     NormalizedStateSentenceGroup,
@@ -43,6 +39,10 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentenceLength,
     NormalizedStateSentenceStatusSnapshot,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )

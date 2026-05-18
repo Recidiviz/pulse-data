@@ -24,9 +24,9 @@ from google.cloud.bigquery import SchemaField
 from recidiviz.common import attr_validators
 from recidiviz.looker.lookml_explore_parameter import ExploreParameterJoin
 from recidiviz.looker.lookml_view import LookMLView
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.entity.custom_views.entity_custom_view import (
     EntityCustomViewBuilder,
     EntityCustomViewJoinProvider,

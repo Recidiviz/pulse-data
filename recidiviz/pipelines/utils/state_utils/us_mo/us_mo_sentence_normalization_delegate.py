@@ -21,7 +21,7 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeV2ClassificationType,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceType
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
 )

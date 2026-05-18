@@ -22,8 +22,8 @@ from unittest.mock import patch
 import mock
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StatePersonExternalId
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StatePersonExternalId
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalize_external_ids_helpers import (

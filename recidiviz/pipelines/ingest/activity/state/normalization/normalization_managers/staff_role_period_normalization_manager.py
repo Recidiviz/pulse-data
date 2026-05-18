@@ -19,14 +19,14 @@ StateStaffRolePeriod entities in the calculation pipelines."""
 from copy import deepcopy
 from typing import List, Optional, Tuple, Type
 
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    AdditionalAttributesMap,
-)
-from recidiviz.persistence.entity.state.entities import StateStaffRolePeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateStaffRolePeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateStaffRolePeriod,
 )
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )

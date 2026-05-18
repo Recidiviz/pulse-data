@@ -27,18 +27,16 @@ from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities,
-)
-from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
+from recidiviz.persistence.entity.identity import entities as identity_entities
+from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,
     IdentityName,
     IdentityPhoneNumber,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     EntityMergingError,
     IngestViewTreeMerger,

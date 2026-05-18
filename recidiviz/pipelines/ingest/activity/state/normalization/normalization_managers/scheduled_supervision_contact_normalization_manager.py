@@ -21,16 +21,18 @@ from copy import deepcopy
 from datetime import datetime, time
 from typing import Any, Dict, List, Optional, Tuple, Type
 
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.activity.entities import (
+    StateScheduledSupervisionContact,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStateScheduledSupervisionContact,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
 )
-from recidiviz.persistence.entity.state.entities import StateScheduledSupervisionContact
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateScheduledSupervisionContact,
-)
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )

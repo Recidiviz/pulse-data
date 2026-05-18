@@ -33,14 +33,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    AdditionalAttributesMap,
-)
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    AdditionalAttributesMap,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,

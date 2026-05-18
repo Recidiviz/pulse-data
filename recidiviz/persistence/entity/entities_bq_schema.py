@@ -27,6 +27,7 @@ from google.cloud.bigquery import SchemaField
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
@@ -40,10 +41,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
-from recidiviz.persistence.entity.state.entity_documentation_utils import (
-    description_for_field,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
 
 STATE_CODE_COL = "state_code"
 
@@ -55,10 +52,11 @@ def get_bq_schema_for_entities_module(
     """Derives a BQ dataset schema from a module containing a collection of related
     Entity classes.
     """
+    entities_module_context = entities_module_context_for_module(entities_module)
     table_to_schema = _get_association_table_to_schema_map(entities_module)
     for entity_cls in get_all_entity_classes_in_module(entities_module):
         table_to_schema[entity_cls.get_table_id()] = _get_bq_schema_for_entity_class(
-            entities_module, entity_cls
+            entities_module, entities_module_context, entity_cls
         )
     return table_to_schema
 
@@ -72,14 +70,10 @@ def get_bq_schema_for_entity_table(
     return get_bq_schema_for_entities_module(entities_module)[table_id]
 
 
-def _get_field_definition(entity_cls: Type[Entity], field_name: str) -> str | None:
-    if issubclass(entity_cls, StateEntityMixin):
-        return description_for_field(entity_cls, field_name)
-    return None
-
-
 def _get_bq_schema_for_entity_class(
-    entities_module: ModuleType, entity_cls: Type[Entity]
+    entities_module: ModuleType,
+    entities_module_context: EntitiesModuleContext,
+    entity_cls: Type[Entity],
 ) -> list[SchemaField]:
     """Derives a BQ table schema for the provided Entity class."""
     schema = []
@@ -95,7 +89,7 @@ def _get_bq_schema_for_entity_class(
                 schema_field_for_attribute(
                     field,
                     field_info.attribute,
-                    _get_field_definition(entity_cls, field),
+                    entities_module_context.field_description(entity_cls, field),
                 )
             )
             continue

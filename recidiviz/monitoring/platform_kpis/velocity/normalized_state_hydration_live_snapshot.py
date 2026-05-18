@@ -34,6 +34,13 @@ from recidiviz.common.attr_mixins import attribute_field_type_reference_for_clas
 from recidiviz.common.attr_utils import is_optional_type
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
+from recidiviz.persistence.entity.activity.state_entity_mixins import (
+    SequencedEntityMixin,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entity_table,
@@ -43,12 +50,7 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
-from recidiviz.persistence.entity.entity_utils import (
-    NormalizedStateEntity,
-    get_all_entity_classes_in_module,
-)
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.state_entity_mixins import SequencedEntityMixin
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter

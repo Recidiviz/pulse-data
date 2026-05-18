@@ -25,10 +25,10 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.activity.entities import StateAssessment
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
-from recidiviz.persistence.entity.state.entities import StateAssessment
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
     AssessmentNormalizationManager,

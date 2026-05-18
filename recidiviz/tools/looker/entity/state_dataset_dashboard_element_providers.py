@@ -27,9 +27,9 @@ from recidiviz.looker.lookml_dashboard_element import (
     LookMLDashboardElement,
     LookMLListen,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.entity.custom_views.person_periods import (
     person_periods_view_name_for_dataset,
 )

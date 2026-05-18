@@ -63,12 +63,12 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

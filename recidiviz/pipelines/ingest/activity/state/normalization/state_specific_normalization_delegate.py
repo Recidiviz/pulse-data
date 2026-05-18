@@ -19,14 +19,14 @@
 import abc
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
 )
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.multiple_external_id_helpers import (
     staff_external_id_types_with_allowed_multiples_per_person,
 )

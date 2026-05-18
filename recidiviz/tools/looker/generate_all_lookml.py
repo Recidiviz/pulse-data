@@ -60,7 +60,7 @@ from recidiviz.tools.looker.top_level_generators.usage_lookml_generator import (
 
 # If you update this mapping, please also update the files regex for generate_lookml in .pre-commit-config.yaml
 LOOKML_GENERATORS_TO_DEPENDENT_FILE_REGEX: dict[type[LookMLGenerator], str | None] = {
-    StateDatasetLookMLGenerator: r"^recidiviz/persistence/entity/state/",
+    StateDatasetLookMLGenerator: r"^recidiviz/persistence/entity/activity/",
     RawDataPersonDetailsLookMLGenerator: r"^recidiviz/ingest/direct/regions/.+/raw_data/",
     ObservationsLookMLGenerator: r"^recidiviz/observations/views/",
     # Doesn't rely on any pulse-data defined views

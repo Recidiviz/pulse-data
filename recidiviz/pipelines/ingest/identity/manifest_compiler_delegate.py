@@ -38,18 +38,16 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IngestViewManifestCompilerDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities,
-)
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entity_factories as identity_entity_factories,
-)
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
 )
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
+)
+from recidiviz.persistence.entity.identity import entities as identity_entities
+from recidiviz.persistence.entity.identity import (
+    entity_factories as identity_entity_factories,
 )
 
 _IDENTITY_MAPPINGS_DIR_NAME = "identity_mappings"

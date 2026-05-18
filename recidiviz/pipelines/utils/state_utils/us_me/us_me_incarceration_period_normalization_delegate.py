@@ -24,8 +24,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
 from recidiviz.common.date import safe_strptime
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationSentence,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.incarceration_period_normalization_manager import (

@@ -94,17 +94,17 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
     is_reference_only_state_entity,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
 )
 from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (

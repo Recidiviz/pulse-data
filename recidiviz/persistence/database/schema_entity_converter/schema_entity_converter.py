@@ -34,6 +34,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateEntityToSchemaConverter,
     StateSchemaToEntityConverter,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -43,7 +44,6 @@ from recidiviz.persistence.entity.entity_field_index import (
     EntityFieldType,
 )
 from recidiviz.persistence.entity.operations import entities as operations_entities
-from recidiviz.persistence.entity.state import entities as state_entities
 
 
 def _is_obj_in_module(obj: Any, module: ModuleType) -> bool:

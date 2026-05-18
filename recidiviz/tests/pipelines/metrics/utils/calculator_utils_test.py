@@ -21,7 +21,9 @@ from datetime import date, datetime
 from freezegun import freeze_time
 
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateGender
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.metrics.utils import calculator_utils
 from recidiviz.pipelines.metrics.utils.calculator_utils import (
     age_at_date,

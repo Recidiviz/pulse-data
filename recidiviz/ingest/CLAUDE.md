@@ -198,7 +198,7 @@ output:
 ### Entity Structure
 
 Standardized entities are defined in
-`recidiviz/persistence/entity/state/entities.py`:
+`recidiviz/persistence/entity/activity/entities.py`:
 
 ```python
 @attr.s(eq=False, kw_only=True)

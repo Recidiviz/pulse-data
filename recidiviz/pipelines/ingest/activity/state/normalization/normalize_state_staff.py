@@ -20,18 +20,18 @@ NormalizedStateStaff.
 from typing import Any, Mapping, Sequence
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateStaff,
     StateStaffSupervisorPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateStaff,
     NormalizedStateStaffSupervisorPeriod,
 )
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.activity.state.create_root_entity_id_to_staff_id_mapping import (
     StaffExternalIdToIdMap,
 )

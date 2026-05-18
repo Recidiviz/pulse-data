@@ -20,21 +20,21 @@ from apache_beam.pipeline_test import assert_that
 from apache_beam.testing.util import is_not_empty
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.ingest.activity.state.serialize_entities import (
     SerializeEntities,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_normalized_state_person,
     generate_full_graph_normalized_state_staff,
     generate_full_graph_state_person,

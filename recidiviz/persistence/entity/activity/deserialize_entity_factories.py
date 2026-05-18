@@ -23,13 +23,13 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import parse_days
+from recidiviz.persistence.entity.activity import entities
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
     EntityFieldConverter,
     entity_deserialize,
 )
-from recidiviz.persistence.entity.state import entities
 
 
 class StatePersonAddressPeriodFactory(EntityFactory):

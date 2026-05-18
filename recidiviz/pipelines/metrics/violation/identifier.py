@@ -25,13 +25,13 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    sort_normalized_entities_by_sequence_num,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,

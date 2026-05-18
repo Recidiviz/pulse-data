@@ -22,8 +22,8 @@ from typing import Set, Type
 import attr
 
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStatePerson,
     NormalizedStateStaff,
 )

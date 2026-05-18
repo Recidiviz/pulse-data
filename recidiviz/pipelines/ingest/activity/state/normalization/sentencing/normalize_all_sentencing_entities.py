@@ -38,20 +38,15 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ncic import get_description
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_module,
-)
-from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
     StateChargeV2,
     StatePerson,
     StateSentence,
     StateSentenceGroup,
     StateSentenceGroupLength,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
     NormalizedStateSentenceGroup,
@@ -61,9 +56,14 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentenceLength,
     NormalizedStateSentenceStatusSnapshot,
 )
-from recidiviz.persistence.entity.state.state_entity_utils import (
+from recidiviz.persistence.entity.activity.state_entity_utils import (
     ConsecutiveSentenceGraph,
 )
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )

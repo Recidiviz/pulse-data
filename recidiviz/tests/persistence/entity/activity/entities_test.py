@@ -44,17 +44,8 @@ from recidiviz.common.constants.state.state_system_type import StateSystemType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
-from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
-from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
-from recidiviz.persistence.entity.entities_bq_schema import (
-    get_bq_schema_for_entities_module,
-)
-from recidiviz.persistence.entity.entity_utils import (
-    get_all_entity_classes_in_module,
-    get_entity_class_in_module_with_table_id,
-)
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import entities
+from recidiviz.persistence.entity.activity.entities import (
     StateAssessment,
     StatePersonAddressPeriod,
     StatePersonStaffRelationshipPeriod,
@@ -64,7 +55,16 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateTaskDeadline,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
+from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    get_entity_class_in_module_with_table_id,
+)
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
 )
 

@@ -20,7 +20,9 @@ This contains the core logic for calculating population span metrics on a person
 basis. It transforms Spans into PopulationSpanMetrics."""
 from typing import Dict, List, Sequence, Set, Type
 
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    NormalizedStatePerson,
+)
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,

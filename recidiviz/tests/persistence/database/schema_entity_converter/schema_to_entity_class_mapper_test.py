@@ -22,7 +22,7 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
     SchemaToEntityClassMapper,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.tests.persistence.database.schema_entity_converter import (
     fake_entities,
     fake_schema,

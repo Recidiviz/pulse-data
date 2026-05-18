@@ -25,14 +25,14 @@ import datetime
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import (
-    group_has_external_id_entities_by_function,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
     NormalizedStateSentenceImposedGroup,
     NormalizedStateSentenceInferredGroup,
+)
+from recidiviz.persistence.entity.entity_utils import (
+    group_has_external_id_entities_by_function,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,

@@ -25,10 +25,8 @@ from typing import Any
 import attr
 
 from recidiviz.common.attr_validators import is_list_of
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities_module,
-)
-from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+from recidiviz.persistence.entity.identity import entities as identity_entities_module
+from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityExternalId,
 )

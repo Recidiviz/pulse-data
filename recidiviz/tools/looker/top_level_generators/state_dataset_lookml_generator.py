@@ -27,6 +27,8 @@ from recidiviz.ingest.views.dataset_config import (
     STATE_BASE_DATASET,
 )
 from recidiviz.looker.lookml_explore import write_explores_to_file
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
@@ -34,8 +36,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_classes_in_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.looker.constants import (
     DASHBOARDS_DIR,
     EXPLORES_DIR,

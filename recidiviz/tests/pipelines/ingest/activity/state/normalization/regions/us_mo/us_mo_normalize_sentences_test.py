@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
@@ -40,7 +41,6 @@ from recidiviz.persistence.entity.entity_utils import (
     set_backedges,
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
-from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.ingest.activity.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
     string_representation,

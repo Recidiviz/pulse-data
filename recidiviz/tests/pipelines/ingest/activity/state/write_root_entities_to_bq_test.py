@@ -23,6 +23,12 @@ import apache_beam as beam
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StatePerson,
+    StatePersonExternalId,
+)
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
@@ -30,12 +36,6 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonExternalId,
-)
 from recidiviz.pipelines.ingest.activity.state import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.activity.state.write_root_entities_to_bq import (
     WriteRootEntitiesToBQ,
@@ -49,7 +49,7 @@ from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_normalized_state_person,
     generate_full_graph_normalized_state_staff,
     generate_full_graph_state_person,

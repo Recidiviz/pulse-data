@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (

@@ -31,15 +31,15 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    sort_normalized_entities_by_sequence_num,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStatePerson,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,

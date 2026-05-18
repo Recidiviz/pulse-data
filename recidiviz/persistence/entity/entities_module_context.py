@@ -60,3 +60,13 @@ class EntitiesModuleContext:
     @classmethod
     def custom_association_tables(cls) -> dict[str, tuple[type[Entity], type[Entity]]]:
         return {}
+
+    @classmethod
+    def field_description(  # pylint: disable=unused-argument
+        cls, entity_cls: type[Entity], field_name: str
+    ) -> str | None:
+        """Returns a description for the given class and field, used in BQ schemas
+        and entity documentation. Returns None if no description is available for
+        this module's entities.
+        """
+        return None

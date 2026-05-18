@@ -41,6 +41,8 @@ from recidiviz.common.attr_mixins import (
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.entity_enum_strings import SHARED_ENUM_VALUE_DESCRIPTIONS
 from recidiviz.common.str_field_utils import to_snake_case
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
@@ -48,8 +50,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_enum_classes_in_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import (
     DOCS_ROOT_PATH,

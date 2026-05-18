@@ -20,8 +20,8 @@ from types import ModuleType
 
 from more_itertools import one
 
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.tools.looker.entity.custom_views.person_periods import (
     PersonPeriodsJoinProvider,
     PersonPeriodsLookMLViewBuilder,

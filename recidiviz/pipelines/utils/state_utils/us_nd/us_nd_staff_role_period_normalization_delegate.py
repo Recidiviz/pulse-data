@@ -17,7 +17,7 @@
 """Contains US_ND implementation of the StateSpecificStaffRolePeriodNormalizationDelegate."""
 from typing import List
 
-from recidiviz.persistence.entity.state.entities import StateStaffSupervisorPeriod
+from recidiviz.persistence.entity.activity.entities import StateStaffSupervisorPeriod
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
     StateSpecificStaffRolePeriodNormalizationDelegate,
 )

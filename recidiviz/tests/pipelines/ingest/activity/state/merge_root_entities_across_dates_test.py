@@ -23,7 +23,7 @@ from apache_beam.pipeline_test import assert_that
 from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.activity import entities
 from recidiviz.pipelines.ingest.activity.state import pipeline
 from recidiviz.pipelines.ingest.activity.state.generate_primary_keys import (
     generate_primary_key,

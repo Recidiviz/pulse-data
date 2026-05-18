@@ -210,10 +210,10 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.span_type import SpanType
 from recidiviz.outcome_metrics.dataset_config import TRANSITIONS_DATASET
+from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )

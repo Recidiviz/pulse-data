@@ -32,15 +32,15 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import (
     StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )

@@ -19,21 +19,21 @@ import unittest
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity.entities import (
+    StatePerson,
+    StatePersonExternalId,
+)
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonExternalId,
-)
 from recidiviz.pipelines.ingest.activity.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
     string_representation,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+from recidiviz.tests.persistence.entity.activity.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )

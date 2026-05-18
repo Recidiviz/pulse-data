@@ -19,7 +19,7 @@
 import unittest
 
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,

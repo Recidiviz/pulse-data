@@ -22,15 +22,15 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.persistence.entity.state.violation_utils import (
+from recidiviz.persistence.entity.activity.violation_utils import (
     collect_unique_violations,
     collect_violation_responses,
 )

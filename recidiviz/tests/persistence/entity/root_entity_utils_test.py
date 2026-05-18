@@ -17,12 +17,12 @@
 """Tests for root_entity_utils.py"""
 import unittest
 
+from recidiviz.persistence.entity.activity import entities, normalized_entities
 from recidiviz.persistence.entity.root_entity_utils import (
     get_entity_class_to_root_entity_class,
     get_root_entity_class_for_entity,
     get_root_entity_id,
 )
-from recidiviz.persistence.entity.state import entities, normalized_entities
 
 
 class RootEntityUtilsTest(unittest.TestCase):

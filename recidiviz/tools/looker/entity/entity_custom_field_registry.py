@@ -21,8 +21,8 @@ from types import ModuleType
 
 from recidiviz.looker.lookml_field_registry import LookMLFieldRegistry
 from recidiviz.looker.lookml_view_field import LookMLViewField
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.tools.looker.entity.entity_lookml_field_factory import (
     EntityLookMLFieldFactory,
 )

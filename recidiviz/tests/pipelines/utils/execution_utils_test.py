@@ -20,7 +20,7 @@ import unittest
 from typing import Any, Dict, Iterable
 
 from recidiviz.common.constants.state.state_person import StateEthnicity
-from recidiviz.persistence.entity.state.normalized_entities import (
+from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStatePerson,
 )

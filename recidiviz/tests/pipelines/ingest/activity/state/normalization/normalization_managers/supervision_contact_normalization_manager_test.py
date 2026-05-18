@@ -25,10 +25,10 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
+from recidiviz.persistence.entity.activity.entities import StateSupervisionContact
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
 )

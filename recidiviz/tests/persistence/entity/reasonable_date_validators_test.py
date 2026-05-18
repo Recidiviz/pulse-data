@@ -28,7 +28,7 @@ from recidiviz.common.attr_validators import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.reasonable_date_validators import (
+from recidiviz.persistence.entity.reasonable_date_validators import (
     reasonable_projected_sentence_date_validator,
 )
 
@@ -59,7 +59,7 @@ class TestReasonableProjectedSentenceDateValidator(unittest.TestCase):
         )  # Just below upper bound
 
     @mock.patch.dict(
-        "recidiviz.persistence.entity.state.reasonable_date_validators.STATE_TO_VALID_FAR_FUTURE_SENTENCE_DATE_UPPER_BOUND",
+        "recidiviz.persistence.entity.reasonable_date_validators.STATE_TO_VALID_FAR_FUTURE_SENTENCE_DATE_UPPER_BOUND",
         {
             StateCode.US_YY: datetime.date(2700, 1, 1),
             StateCode.US_WW: datetime.date(2500, 1, 1),
@@ -135,7 +135,7 @@ class TestReasonableProjectedSentenceDateValidator(unittest.TestCase):
                 "If this far-future date is legitimate for US_XX "
                 "(e.g., many consecutive, non-life sentences), add an entry to "
                 "STATE_TO_VALID_FAR_FUTURE_SENTENCE_DATE_UPPER_BOUND in "
-                "recidiviz/persistence/entity/state/reasonable_date_validators.py"
+                "recidiviz/persistence/entity/reasonable_date_validators.py"
             ),
         ):
             _ = _TestEntity(
@@ -144,7 +144,7 @@ class TestReasonableProjectedSentenceDateValidator(unittest.TestCase):
             )
 
     @mock.patch.dict(
-        "recidiviz.persistence.entity.state.reasonable_date_validators.STATE_TO_VALID_FAR_FUTURE_SENTENCE_DATE_UPPER_BOUND",
+        "recidiviz.persistence.entity.reasonable_date_validators.STATE_TO_VALID_FAR_FUTURE_SENTENCE_DATE_UPPER_BOUND",
         {
             StateCode.US_YY: datetime.date(2700, 1, 1),
             StateCode.US_WW: datetime.date(2500, 1, 1),

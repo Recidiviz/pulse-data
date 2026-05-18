@@ -22,13 +22,13 @@ from typing import List, Optional
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
+)
+from recidiviz.persistence.entity.activity.normalized_entities_utils import (
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.pipelines.ingest.activity.state.normalization.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,

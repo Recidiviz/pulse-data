@@ -21,11 +21,11 @@ from functools import cache
 import yaml
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
-from recidiviz.persistence.entity.base_entity import CoreEntity
-from recidiviz.persistence.entity.state.normalized_state_entity import (
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
     NormalizedStateEntity,
 )
-from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
+from recidiviz.persistence.entity.activity.state_entity_mixins import StateEntityMixin
+from recidiviz.persistence.entity.base_entity import CoreEntity
 
 FIELD_KEY = "fields"
 STATE_DATASET_ONLY_FIELD_KEY = "state_dataset_only_fields"

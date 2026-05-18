@@ -21,11 +21,11 @@ from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tests.persistence.entity.fake_entities_module_context import (
     FakeEntitiesModuleContext,

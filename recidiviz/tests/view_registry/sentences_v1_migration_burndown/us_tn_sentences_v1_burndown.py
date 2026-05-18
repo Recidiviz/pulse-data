@@ -78,7 +78,7 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.resident_record_inca
     US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
+from recidiviz.persistence.entity.activity.entities import (
     StateIncarcerationSentence,
     StateSupervisionSentence,
 )

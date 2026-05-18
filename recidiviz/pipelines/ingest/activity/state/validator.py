@@ -39,26 +39,29 @@ from recidiviz.common.date import (
     PotentiallyOpenDateRange,
     get_overlapping_date_ranges,
 )
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.entity_field_validators import (
+    ParsingOptionalOnlyValidator,
+)
+from recidiviz.persistence.entity.activity.normalized_entities import (
+    EntityBackedgeValidator,
+    NormalizedStatePersonStaffRelationshipPeriod,
+)
+from recidiviz.persistence.entity.activity.root_entity_typevars import (
+    NormalizedRootEntityT,
+    RootEntityT,
+)
+from recidiviz.persistence.entity.activity.state_entity_mixins import LedgerEntityMixin
+from recidiviz.persistence.entity.activity.state_entity_utils import (
+    ConsecutiveSentenceErrors,
+    ConsecutiveSentenceGraph,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
 )
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.entity_field_validators import (
-    ParsingOptionalOnlyValidator,
-)
-from recidiviz.persistence.entity.state.normalized_entities import (
-    EntityBackedgeValidator,
-    NormalizedStatePersonStaffRelationshipPeriod,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
-from recidiviz.persistence.entity.state.state_entity_utils import (
-    ConsecutiveSentenceErrors,
-    ConsecutiveSentenceGraph,
-)
-from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.activity.state.multiple_external_id_helpers import (
     person_external_id_types_with_allowed_multiples_per_person,
     staff_external_id_types_with_allowed_multiples_per_person,

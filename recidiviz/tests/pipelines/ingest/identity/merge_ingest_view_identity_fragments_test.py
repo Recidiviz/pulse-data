@@ -23,10 +23,8 @@ from apache_beam.testing.util import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Gender, Race
-from recidiviz.persistence.entity.batch_identity_clustering import (
-    entities as identity_entities,
-)
-from recidiviz.persistence.entity.batch_identity_clustering.entities import (
+from recidiviz.persistence.entity.identity import entities as identity_entities
+from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,

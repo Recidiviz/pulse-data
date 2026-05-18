@@ -28,6 +28,16 @@ from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.common.attr_mixins import BuildableAttrFieldType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.persistence.entity.activity import entities as state_entities
+from recidiviz.persistence.entity.activity import normalized_entities
+from recidiviz.persistence.entity.activity.normalized_state_entity import (
+    NormalizedStateEntity,
+)
+from recidiviz.persistence.entity.activity.state_entity_mixins import (
+    SequencedEntityMixin,
+    SequencedEntityMixinT,
+    StateEntityMixin,
+)
 
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, EntityT
@@ -43,16 +53,6 @@ from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
-from recidiviz.persistence.entity.state.state_entity_mixins import (
-    SequencedEntityMixin,
-    SequencedEntityMixinT,
-    StateEntityMixin,
-)
 from recidiviz.utils.types import assert_subclass, assert_type
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
