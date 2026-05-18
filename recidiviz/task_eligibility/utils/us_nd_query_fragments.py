@@ -636,12 +636,19 @@ def get_offender_case_notes(
 def get_ids_as_case_notes() -> str:
     """
     Returns a SQL query that retrieves ID's available as side panel notes.
+
+    The note_body labels each ID with the Form I-9 list it satisfies:
+        List A — establishes both identity AND work authorization (sufficient alone)
+        List B — establishes identity only (must pair with a List C document)
+        List C — establishes work authorization only (must pair with a List B document)
+    An AIC meets I-9 ID requirements if they have one List A doc OR one List B
+    doc plus one List C doc.
     """
     return f"""
-SELECT 
+SELECT
     person_id,
     "Available IDs" AS criteria,
-    CASE 
+    CASE
         WHEN CHECK_LIST_CODE = 'BC' THEN 'Birth Certificate'
         WHEN CHECK_LIST_CODE = 'BIA' THEN 'Bureau of Indian Affairs ID'
         WHEN CHECK_LIST_CODE = 'SG' THEN 'State Government Photo ID'
@@ -655,7 +662,12 @@ SELECT
         WHEN CHECK_LIST_CODE = 'DEBIT' THEN 'Debit Card'
         ELSE 'Unknown ID'
     END AS note_title,
-    'Confirmed' AS note_body,
+    CASE
+        WHEN CHECK_LIST_CODE IN ('PASS', 'NAT') THEN 'I-9 List A'
+        WHEN CHECK_LIST_CODE IN ('SG', 'MIL', 'BIA') THEN 'I-9 List B'
+        WHEN CHECK_LIST_CODE IN ('SSN', 'BC') THEN 'I-9 List C'
+        ELSE 'Not I-9 acceptable'
+    END AS note_body,
     SAFE_CAST(LEFT(MODIFY_DATETIME, 10) AS DATE) AS event_date,
 FROM (
     SELECT person_id, CHECK_LIST_CODE, CHECK_LIST_CATEGORY, CONFIRMED_FLAG, MODIFY_DATETIME

@@ -662,6 +662,10 @@ def combining_several_criteria_into_one(
     """
     Returns a SQL query that combines several criteria into one view builder.
 
+    TODO(#78557): Deprecated. Use StateSpecificTaskCriteriaGroupBigQueryViewBuilder
+    or StateAgnosticTaskCriteriaGroupBigQueryViewBuilder instead. Do not add new
+    call sites; delete this helper once every existing call site has migrated.
+
     Args:
         select_statements_for_criteria (List[str]): List of select statements for each criteria.
 

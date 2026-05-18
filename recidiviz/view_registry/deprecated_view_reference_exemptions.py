@@ -201,6 +201,9 @@ from recidiviz.task_eligibility.criteria.general.incarceration_within_42_months_
 from recidiviz.task_eligibility.criteria.general.serving_at_least_one_year_on_parole_supervision_or_supervision_out_of_state import (
     VIEW_BUILDER as SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER,
 )
+from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_of_2_years_or_less import (
+    VIEW_BUILDER as SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER,
+)
 from recidiviz.task_eligibility.criteria.general.serving_incarceration_sentence_of_less_than_6_years import (
     VIEW_BUILDER as SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER,
 )
@@ -502,6 +505,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
+        SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
         SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
@@ -614,6 +621,10 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
             "sentence_sessions view"
         ),
         SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_VIEW_BUILDER.address: (
+            "TODO(#33402): Replace this reference with a reference to a "
+            "sentence_sessions view"
+        ),
+        SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS_VIEW_BUILDER.address: (
             "TODO(#33402): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),

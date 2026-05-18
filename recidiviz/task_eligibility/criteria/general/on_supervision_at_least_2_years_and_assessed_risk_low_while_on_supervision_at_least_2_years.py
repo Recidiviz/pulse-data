@@ -99,6 +99,7 @@ MAX(eligible_date) AS eligible_date,
 
 _QUERY_TEMPLATE = f"""
     WITH combined_criteria AS (
+        # TODO(#78557): Migrate to StateAgnosticTaskCriteriaGroupBigQueryViewBuilder.
         {combining_several_criteria_into_one(
             select_statements_for_criteria_lst=[
                 _CRITERIA_QUERY_1,

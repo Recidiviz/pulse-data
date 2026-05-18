@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes spans of time when someone is serving an incarceration sentence
-of less than 6 years."""
+of 2 years or less."""
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -26,13 +26,14 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS"
+_CRITERIA_NAME = "SERVING_INCARCERATION_SENTENCE_OF_2_YEARS_OR_LESS"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     serving_incarceration_sentence_of_less_than_x_years_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        years_threshold=6,
+        years_threshold=2,
+        inclusive=True,
     )
 )
 

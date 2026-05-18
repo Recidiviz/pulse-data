@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,26 +13,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-"""Describes spans of time when someone is serving an incarceration sentence
-of less than 6 years."""
-
+# =============================================================================
+"""
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 4 months of their full term completion date.
+"""
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    serving_incarceration_sentence_of_less_than_x_years_criteria_builder,
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SERVING_INCARCERATION_SENTENCE_OF_LESS_THAN_6_YEARS"
+_CRITERIA_NAME = "INCARCERATION_WITHIN_4_MONTHS_OF_FULL_TERM_COMPLETION_DATE"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    serving_incarceration_sentence_of_less_than_x_years_criteria_builder(
+    is_past_completion_date_criteria_builder(
+        compartment_level_1_filter="INCARCERATION",
+        meets_criteria_leading_window_time=4,
+        date_part="MONTH",
+        critical_date_name_in_reason="full_term_completion_date",
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        years_threshold=6,
     )
 )
 

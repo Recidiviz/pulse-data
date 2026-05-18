@@ -31,6 +31,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     join_sentence_serving_periods_to_compartment_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
@@ -1500,6 +1501,58 @@ WHERE start_date != {nonnull_end_date_clause('end_date')}
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the critical date has passed",
             ),
+        ],
+    )
+
+
+def serving_incarceration_sentence_of_less_than_x_years_criteria_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    years_threshold: int,
+    inclusive: bool = False,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria view builder that shows spans of time during which
+    someone is serving an incarceration sentence shorter than `years_threshold`
+    years. Sentence length is measured as the calendar duration of the longest
+    active sentence (`max_sentence_length_days_calculated`), not the time
+    remaining until release — a person serving a 5-year sentence with 18 months
+    left does NOT pass a 2-year threshold.
+
+    Args:
+        criteria_name: Criteria query name.
+        description: Criteria query description.
+        years_threshold: Threshold in years. Anyone whose longest active
+            incarceration sentence is less than this many years (using
+            365 days/year) meets the criterion.
+        inclusive: When True, the threshold is inclusive (`<=`) — sentences of
+            exactly `years_threshold` years pass. Defaults to False (strict `<`).
+    """
+    days_threshold = 365 * years_threshold
+    comparison_operator = "<=" if inclusive else "<"
+    criteria_query = f"""
+    SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        MAX(sent.max_sentence_length_days_calculated) AS length_of_longest_sentence_in_days,
+        MAX(sent.max_sentence_length_days_calculated) {comparison_operator} {days_threshold} AS meets_criteria,
+        TO_JSON(STRUCT(MAX(sent.max_sentence_length_days_calculated) AS length_of_longest_sentence_in_days)) AS reason,
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
+    GROUP BY 1, 2, 3, 4
+"""
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="length_of_longest_sentence_in_days",
+                type=bigquery.enums.StandardSqlTypeNames.INT64,
+                description="Length of longest active sentence in days.",
+            )
         ],
     )
 
