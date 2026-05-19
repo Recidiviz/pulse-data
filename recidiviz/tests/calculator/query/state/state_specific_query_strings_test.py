@@ -97,4 +97,4 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
         using_count = result.count("USING (state_code)") + result.count(
             "USING(state_code)"
         )
-        self.assertEqual(using_count, 9)
+        self.assertEqual(using_count, 11)

@@ -54,4 +54,5 @@ class Dimension(enum.Enum):
     SENTENCE_LENGTH_MAX = "sentence_length_max"
     CHARGE_COUNTY_CODE = "charge_county_code"
     OFFENSE_TYPE = "offense_type"
+    CHARGE_DESCRIPTION = "charge_description"
     DATE_IN_POPULATION = "date_in_population"

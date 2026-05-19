@@ -27,6 +27,7 @@ PrisonPopulationOverTime:
     counting_column: person_id
     date_column: date_in_population
   dimension_mappings:
+    admission_reason: FILTER
     age_group: FILTER
     facility: FILTER
     gender: FILTER
@@ -38,6 +39,7 @@ PrisonPopulationOverTime:
     sentence_length_max: FILTER
     charge_county_code: FILTER
     offense_type: FILTER
+    charge_description: FILTER
 
 PrisonPopulationByDimensionCount:
   database_entity: PublicPrisonPopulationOverTime
@@ -46,6 +48,7 @@ PrisonPopulationByDimensionCount:
     counting_column: person_id
     date_column: date_in_population
   dimension_mappings:
+    admission_reason: ALL
     age_group: ALL
     facility: ALL
     gender: ALL
@@ -56,4 +59,5 @@ PrisonPopulationByDimensionCount:
     sentence_length_max: ALL
     charge_county_code: ALL
     offense_type: ALL
+    charge_description: ALL
     date_in_population: FILTER

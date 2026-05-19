@@ -145,6 +145,7 @@ class PrisonPopulationOverTime(PathwaysBase):
             "sentence_length_max",
             "charge_county_code",
             "offense_type",
+            "charge_description",
             unique=True,
         ),
         Index(
@@ -163,6 +164,7 @@ class PrisonPopulationOverTime(PathwaysBase):
                 "sentence_length_max",
                 "charge_county_code",
                 "offense_type",
+                "charge_description",
             ],
         ),
         # Allows fast execution of select min(date_in_population)
@@ -202,6 +204,8 @@ class PrisonPopulationOverTime(PathwaysBase):
     charge_county_code = Column(String, nullable=True)
     # Offense type of the person
     offense_type = Column(String, nullable=True)
+    # Charge description of the person
+    charge_description = Column(String, nullable=True)
 
 
 class PrisonPopulationByDimension(PathwaysBase):
@@ -227,6 +231,7 @@ class PrisonPopulationByDimension(PathwaysBase):
             "sentence_length_max",
             "charge_county_code",
             "offense_type",
+            "charge_description",
             unique=True,
         ),
         *build_covered_indexes(
@@ -243,6 +248,7 @@ class PrisonPopulationByDimension(PathwaysBase):
                 "sentence_length_max",
                 "charge_county_code",
                 "offense_type",
+                "charge_description",
             ],
             includes=["person_id"],
         ),
@@ -276,6 +282,8 @@ class PrisonPopulationByDimension(PathwaysBase):
     charge_county_code = Column(String, nullable=True)
     # Offense type of the person
     offense_type = Column(String, nullable=True)
+    # Charge description of the person
+    charge_description = Column(String, nullable=True)
 
 
 class PrisonPopulationProjection(PathwaysBase):

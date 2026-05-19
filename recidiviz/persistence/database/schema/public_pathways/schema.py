@@ -89,6 +89,8 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
             "sentence_length_max",
             "charge_county_code",
             "offense_type",
+            "charge_description",
+            "admission_reason",
             unique=True,
         ),
         Index(
@@ -106,6 +108,8 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
                 "sentence_length_max",
                 "charge_county_code",
                 "offense_type",
+                "charge_description",
+                "admission_reason",
             ],
         ),
         # Allows fast execution of select min(date_in_population)
@@ -143,6 +147,10 @@ class PublicPrisonPopulationOverTime(PublicPathwaysBase):
     charge_county_code = Column(String, primary_key=True, nullable=True)
     # Offense type of the person
     offense_type = Column(String, primary_key=True, nullable=True)
+    # Charge description of the person
+    charge_description = Column(String, nullable=True)
+    # Admission reason
+    admission_reason = Column(String, primary_key=True, nullable=True)
 
 
 class PublicPrisonPopulationByDimension(PublicPathwaysBase):
@@ -167,6 +175,8 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
             "sentence_length_max",
             "charge_county_code",
             "offense_type",
+            "charge_description",
+            "admission_reason",
             unique=True,
         ),
         *build_covered_indexes(
@@ -182,6 +192,8 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
                 "sentence_length_max",
                 "charge_county_code",
                 "offense_type",
+                "charge_description",
+                "admission_reason",
             ],
             includes=["person_id"],
         ),
@@ -211,3 +223,7 @@ class PublicPrisonPopulationByDimension(PublicPathwaysBase):
     charge_county_code = Column(String, primary_key=True, nullable=True)
     # Offense type of the person
     offense_type = Column(String, primary_key=True, nullable=True)
+    # Charge description of the person
+    charge_description = Column(String, nullable=True)
+    # Admission reason
+    admission_reason = Column(String, primary_key=True, nullable=True)
