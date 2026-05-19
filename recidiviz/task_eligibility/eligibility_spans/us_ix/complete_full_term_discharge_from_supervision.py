@@ -24,6 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import full_term_discharge
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    has_active_interstate_compact_end_date,
     no_violation_without_decision,
     supervision_past_full_term_completion_date,
 )
@@ -31,6 +32,9 @@ from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
+)
+from recidiviz.task_eligibility.inverted_task_criteria_big_query_view_builder import (
+    StateSpecificInvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -46,6 +50,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,
         no_violation_without_decision.VIEW_BUILDER,
+        StateSpecificInvertedTaskCriteriaBigQueryViewBuilder(
+            sub_criteria=has_active_interstate_compact_end_date.VIEW_BUILDER,
+        ),
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
