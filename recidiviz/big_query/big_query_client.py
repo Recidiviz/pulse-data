@@ -69,6 +69,7 @@ from recidiviz.big_query.big_query_job_labels import BigQueryDatasetIdJobLabel
 from recidiviz.big_query.big_query_utils import (
     are_bq_schemas_same,
     get_file_destinations_for_bq_export,
+    get_reserved_bq_column_name_prefix,
 )
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
@@ -2624,6 +2625,14 @@ class BigQueryClientImpl(BigQueryClient):
                     f"Attempting to set description for field [{field.name}] on table "
                     f"[{address.to_str()}] that is too long. Max allowed length "
                     f"is {BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH} characters."
+                )
+            reserved_prefix = get_reserved_bq_column_name_prefix(field.name)
+            if reserved_prefix is not None:
+                raise ValueError(
+                    f"Field name [{field.name}] in schema for table "
+                    f"[{address.to_str()}] starts with reserved BigQuery column "
+                    f"name prefix [{reserved_prefix}]. See "
+                    f"https://cloud.google.com/bigquery/docs/schemas#schema_components."
                 )
             seen_fields.add(field.name)
 

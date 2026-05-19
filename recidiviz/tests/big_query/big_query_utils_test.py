@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_utils import (
     BigQueryFieldMode,
     are_bq_schemas_same,
     format_description_for_big_query,
+    get_reserved_bq_column_name_prefix,
     is_big_query_valid_delimiter,
     is_big_query_valid_encoding,
     is_big_query_valid_line_terminator,
@@ -272,3 +273,34 @@ class ValidateBqIdentifierTest(unittest.TestCase):
             validate_unquoted_bq_identifier("SELECT")
         with self.assertRaisesRegex(ValueError, "is a reserved word"):
             validate_unquoted_bq_identifier("select")
+
+
+class GetReservedBqColumnNamePrefixTest(unittest.TestCase):
+    """Tests for get_reserved_bq_column_name_prefix."""
+
+    def test_no_reserved_prefix(self) -> None:
+        self.assertIsNone(get_reserved_bq_column_name_prefix("state_code"))
+        self.assertIsNone(get_reserved_bq_column_name_prefix("person_id"))
+        # Underscore-prefixed but not reserved
+        self.assertIsNone(get_reserved_bq_column_name_prefix("_internal_id"))
+        self.assertIsNone(get_reserved_bq_column_name_prefix("_file"))
+
+    def test_reserved_prefixes(self) -> None:
+        self.assertEqual("_FILE_", get_reserved_bq_column_name_prefix("_FILE_NAME"))
+        self.assertEqual("_TABLE_", get_reserved_bq_column_name_prefix("_TABLE_SUFFIX"))
+        self.assertEqual(
+            "_PARTITION", get_reserved_bq_column_name_prefix("_PARTITIONTIME")
+        )
+        self.assertEqual(
+            "_PARTITION", get_reserved_bq_column_name_prefix("_PARTITIONDATE")
+        )
+        self.assertEqual("__ROOT__", get_reserved_bq_column_name_prefix("__ROOT__"))
+        self.assertEqual(
+            "_CHANGE_TYPE", get_reserved_bq_column_name_prefix("_CHANGE_TYPE")
+        )
+
+    def test_case_insensitive(self) -> None:
+        self.assertEqual("_FILE_", get_reserved_bq_column_name_prefix("_file_name"))
+        self.assertEqual(
+            "_PARTITION", get_reserved_bq_column_name_prefix("_partitiondate")
+        )

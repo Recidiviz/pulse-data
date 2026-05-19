@@ -1889,6 +1889,69 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.query.assert_not_called()
         self.mock_client.update_table.assert_not_called()
 
+    def test_update_schema_fails_on_reserved_prefix_field(self) -> None:
+        """Tests that update_schema() throws if any column name starts with a
+        BigQuery-reserved prefix, since those collide with reserved pseudocolumns.
+        """
+        new_schema_fields = [
+            bigquery.SchemaField("field_1", "STRING"),
+            bigquery.SchemaField("_FILE_NAME", "STRING"),
+        ]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field name \[_FILE_NAME\] in schema for table "
+            r"\[fake-dataset.test_table\] starts with reserved BigQuery column "
+            r"name prefix \[_FILE_\]\.",
+        ):
+            self.bq_client.update_schema(
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
+                allow_field_deletions=False,
+            )
+
+        self.mock_client.get_table.assert_not_called()
+
+        # No other work to remove or add fields is done
+        self.mock_client.query.assert_not_called()
+        self.mock_client.update_table.assert_not_called()
+
+    def test_update_schema_reserved_prefix_check_is_case_insensitive(self) -> None:
+        """Tests that the reserved-prefix check matches regardless of case."""
+        new_schema_fields = [
+            bigquery.SchemaField("_partitiondate", "DATE"),
+        ]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field name \[_partitiondate\] in schema for table "
+            r"\[fake-dataset.test_table\] starts with reserved BigQuery column "
+            r"name prefix \[_PARTITION\]\.",
+        ):
+            self.bq_client.update_schema(
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
+                allow_field_deletions=False,
+            )
+
+    def test_update_schema_allows_leading_underscore_non_reserved(self) -> None:
+        """Tests that update_schema() allows underscore-prefixed field names that
+        do not collide with BigQuery's reserved pseudocolumn prefixes.
+        """
+        new_schema_fields = [
+            bigquery.SchemaField("field_1", "STRING"),
+            bigquery.SchemaField("_internal_id", "STRING"),
+        ]
+        self.mock_client.get_table.return_value = bigquery.Table(
+            self.mock_table, schema=new_schema_fields
+        )
+
+        self.bq_client.update_schema(
+            address=self.mock_table_address,
+            desired_schema_fields=new_schema_fields,
+            allow_field_deletions=False,
+        )
+
     def test__get_excess_schema_fields_simple_excess(self) -> None:
         """Tests _get_excess_schema_fields() when extended_schema is a strict superset of base_schema."""
         base_schema = [bigquery.SchemaField("field_1", "INT")]

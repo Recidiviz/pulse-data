@@ -30,7 +30,10 @@ from google.cloud import bigquery
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.big_query.constants import (
+    BQ_RESERVED_COLUMN_NAME_PREFIXES,
+    BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.attr_utils import (
     is_bool,
@@ -199,6 +202,22 @@ def schema_for_sqlalchemy_table(table: sqlalchemy.Table) -> List[bigquery.Schema
     ]
 
     return columns_for_table
+
+
+def get_reserved_bq_column_name_prefix(field_name: str) -> Optional[str]:
+    """Returns the BigQuery-reserved column-name prefix that |field_name| starts
+    with (case-insensitive), or None if it does not collide with any reserved
+    prefix. See https://cloud.google.com/bigquery/docs/schemas#schema_components.
+    """
+    upper_name = field_name.upper()
+    return next(
+        (
+            prefix
+            for prefix in BQ_RESERVED_COLUMN_NAME_PREFIXES
+            if upper_name.startswith(prefix)
+        ),
+        None,
+    )
 
 
 def validate_unquoted_bq_identifier(name: str) -> None:

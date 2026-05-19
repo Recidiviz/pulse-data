@@ -53,3 +53,18 @@ PARTITION_TIME_PSEUDOCOLUMN = "_PARTITIONTIME"
 PARTITION_DATE_PSEUDOCOLUMN = "_PARTITIONDATE"
 
 REQUIRE_PARTITION_FILTER_FIELD_NAME = "require_partition_filter"
+
+# Column name prefixes reserved by BigQuery. Column names starting with any of
+# these (case-insensitive) collide with BigQuery's reserved pseudocolumns. See
+# https://cloud.google.com/bigquery/docs/schemas#schema_components.
+BQ_RESERVED_COLUMN_NAME_PREFIXES = (
+    "_TABLE_",
+    "_FILE_",
+    "_PARTITION",
+    "_ROW_TIMESTAMP",
+    "__ROOT__",
+    "_COLIDENTIFIER",
+    "_CHANGE_SEQUENCE_NUMBER",
+    "_CHANGE_TYPE",
+    "_CHANGE_TIMESTAMP",
+)
