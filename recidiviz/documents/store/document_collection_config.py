@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Configuration for document collections stored in GCS with metadata in BigQuery."""
+
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
@@ -215,7 +216,7 @@ class DocumentCollectionConfig:
         this collection."""
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
-            dataset_id=document_store_metadata_dataset_for_region(self.state_code),
+            dataset_id=document_store_temp_dataset_for_region(self.state_code),
             table_id=f"temp_document_metadata_updates_{self.name}_{make_bq_compatible_identifier(job_id)}",
         )
 
