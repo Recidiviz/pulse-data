@@ -21,6 +21,7 @@ input_columns:
   ConditionsText: STRING
   earliest_known_sentence_status: STRING
   earliest_known_sentenced_to: STRING
+  current_sentence_status: STRING
   ConsecutiveConvictionCounty: STRING
   ConsecutiveCaseYear: STRING
   ConsecutiveCaseNumber: STRING
@@ -89,6 +90,11 @@ output:
               CSL_FLAG: CslFlag
               Life_Prison_Flag: LifePrisonFlag
               CASE_NUMBER: CaseNumber
+              # Latest raw SentenceStatus (AC/IN/PB/CC/etc). Surfaced into
+              # sentence_metadata for use at the view layer (AC-status filter on
+              # incarceration surfaces) and in the TN normalization delegate
+              # (past-date hygiene skips synthesizing a COMPLETED when status = 'AC').
+              CURRENT_SENTENCE_STATUS: current_sentence_status
           is_life:
             $in:
               $value: lifetime_flag

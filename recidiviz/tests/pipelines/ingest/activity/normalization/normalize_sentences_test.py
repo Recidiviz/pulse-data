@@ -102,6 +102,24 @@ class FakeDelegateThatCorrectsTerminating(StateSpecificSentenceNormalizationDele
         return True
 
 
+class FakeDelegateThatClosesAtPassedProjectedDate(
+    StateSpecificSentenceNormalizationDelegate
+):
+    """Mimics the TN past-date hygiene behavior: returns True for all
+    sentences so the framework injects a synthetic COMPLETED at the
+    latest projected_completion_date_max_external when it's in the
+    past."""
+
+    @property
+    def correct_early_completed_statuses(self) -> bool:
+        return True
+
+    def close_serving_period_at_passed_projected_date(
+        self, sentence: StateSentence
+    ) -> bool:
+        return True
+
+
 class FakeDelegateThatInfersProjectedDatesFromLengthDays(
     StateSpecificSentenceNormalizationDelegate
 ):
@@ -1468,3 +1486,171 @@ class TestSentenceV2Normalization(unittest.TestCase):
         assert len(snapshots) == 1
         assert snapshots[0].status == StateSentenceStatus.COMPLETED
         assert snapshots[0].status_update_datetime == completed_dt
+
+    def test_close_serving_period_injects_completed_when_projected_date_passed(
+        self,
+    ) -> None:
+        """When the delegate enables past-date hygiene and the latest
+        projected_completion_date_max_external is in the past, the
+        framework injects a synthetic COMPLETED at the projected date."""
+        sentence = self._new_sentence(1)
+        sentence.imposed_date = datetime.date(2020, 1, 1)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=as_datetime(datetime.date(2020, 1, 1)),
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+        passed_projected_date = datetime.date(2023, 6, 24)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                length_update_datetime=as_datetime(datetime.date(2020, 1, 1)),
+                projected_completion_date_max_external=passed_projected_date,
+                sentence_length_id=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatClosesAtPassedProjectedDate()
+        )[0]
+
+        snapshots = sorted(
+            normalized_sentence.sentence_status_snapshots,
+            key=lambda s: s.status_update_datetime,
+        )
+        assert len(snapshots) == 2
+        assert snapshots[-1].status == StateSentenceStatus.COMPLETED
+        assert snapshots[-1].status_update_datetime == as_datetime(
+            passed_projected_date
+        )
+
+    def test_close_serving_period_skipped_when_existing_snapshot_after_projected(
+        self,
+    ) -> None:
+        """If the latest existing status snapshot is dated AFTER the
+        projected date (e.g., person still serving past their formal
+        end), past-date hygiene must NOT inject a synthetic COMPLETED —
+        otherwise it would land non-final and crash validation."""
+        sentence = self._new_sentence(1)
+        sentence.imposed_date = datetime.date(2020, 1, 1)
+        # SERVING dated AFTER the projected date.
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=as_datetime(datetime.date(2024, 1, 1)),
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                length_update_datetime=as_datetime(datetime.date(2020, 1, 1)),
+                projected_completion_date_max_external=datetime.date(2023, 6, 24),
+                sentence_length_id=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatClosesAtPassedProjectedDate()
+        )[0]
+
+        snapshots = normalized_sentence.sentence_status_snapshots
+        # No injection — sentence stays open. Only the original SERVING
+        # remains.
+        assert len(snapshots) == 1
+        assert snapshots[0].status == StateSentenceStatus.SERVING
+
+    def test_close_serving_period_skipped_when_existing_snapshot_at_projected_date(
+        self,
+    ) -> None:
+        """Tie-on-date case: if an existing snapshot's datetime equals
+        the projected date, the gate's strict-`>` requirement skips
+        injection. Without that, the synthetic could sort non-last on a
+        tie-break by sequence_num and crash validation."""
+        sentence = self._new_sentence(1)
+        sentence.imposed_date = datetime.date(2020, 1, 1)
+        passed_projected_date = datetime.date(2023, 6, 24)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=as_datetime(passed_projected_date),
+                status=StateSentenceStatus.SERVING,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                length_update_datetime=as_datetime(datetime.date(2020, 1, 1)),
+                projected_completion_date_max_external=passed_projected_date,
+                sentence_length_id=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatClosesAtPassedProjectedDate()
+        )[0]
+
+        snapshots = normalized_sentence.sentence_status_snapshots
+        # No injection — gate requires close_dt strictly greater than
+        # all existing datetimes.
+        assert len(snapshots) == 1
+        assert snapshots[0].status == StateSentenceStatus.SERVING
+
+    def test_close_serving_period_skipped_when_terminating_status_exists(
+        self,
+    ) -> None:
+        """If the sentence already has a terminating status, past-date
+        hygiene must NOT inject — would create a multi-terminator
+        sequence that fails validation."""
+        sentence = self._new_sentence(1)
+        sentence.imposed_date = datetime.date(2020, 1, 1)
+        sentence.sentence_status_snapshots = [
+            StateSentenceStatusSnapshot(
+                state_code=self.state_code_value,
+                status_update_datetime=as_datetime(datetime.date(2024, 1, 1)),
+                status=StateSentenceStatus.COMPLETED,
+                sentence_status_snapshot_id=1,
+                sequence_num=1,
+            ),
+        ]
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                length_update_datetime=as_datetime(datetime.date(2020, 1, 1)),
+                projected_completion_date_max_external=datetime.date(2023, 6, 24),
+                sentence_length_id=1,
+            ),
+        ]
+
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, FakeDelegateThatClosesAtPassedProjectedDate()
+        )[0]
+
+        snapshots = normalized_sentence.sentence_status_snapshots
+        # No injection — already has a terminating status.
+        assert len(snapshots) == 1
+        assert snapshots[0].status == StateSentenceStatus.COMPLETED

@@ -157,9 +157,6 @@ from recidiviz.calculator.query.state.views.workflows.us_ix.resident_record_inca
 from recidiviz.calculator.query.state.views.workflows.us_nd.resident_record_incarceration_cases_with_dates import (
     US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.us_tn.resident_record_incarceration_cases_with_dates import (
-    US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -896,10 +893,6 @@ SENTENCES_V1_DEPRECATED_VIEWS_AND_USAGE_EXEMPTIONS: dict[
         ),
         US_ND_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
             "TODO(#46257): Replace this reference with a reference to a "
-            "sentence_sessions view"
-        ),
-        US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address: (
-            "TODO(#46261): Replace this reference with a reference to a "
             "sentence_sessions view"
         ),
         INCARCERATION_WITHIN_42_MONTHS_OF_FULL_TERM_COMPLETION_DATE_VIEW_BUILDER.address: (

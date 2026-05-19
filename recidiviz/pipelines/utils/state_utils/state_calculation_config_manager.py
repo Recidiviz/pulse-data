@@ -1034,7 +1034,11 @@ def get_state_specific_sentence_normalization_delegate(  # pylint: disable=unuse
     if state_code == StateCode.US_PA.value:
         return UsPaSentenceNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnSentenceNormalizationDelegate()
+        return UsTnSentenceNormalizationDelegate(
+            incarceration_periods=incarceration_periods,
+            supervision_periods=supervision_periods,
+            sentences=sentences,
+        )
     if state_code == StateCode.US_OZ.value:
         return UsOzSentenceNormalizationDelegate()
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID

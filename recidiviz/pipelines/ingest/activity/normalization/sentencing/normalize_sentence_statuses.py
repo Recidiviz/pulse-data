@@ -412,11 +412,90 @@ def normalize_snapshots_for_single_sentence(
             raw_text_for_new_serving_status="Created during normalization from current_state_provided_start_date",
         )
 
-    # We have possibly created new snapshots, and so we should validate that
-    # there's at most one terminating status (and it is the last one).
+    # If the delegate enables it for this sentence, inject a synthetic
+    # COMPLETED status snapshot at the latest projected
+    # completion-date-max when that date is in the past. Only fires when:
+    #   - the sentence has no existing terminating status (avoid creating
+    #     a multi-terminating-status sequence), and
+    #   - the projected date is strictly later than every existing
+    #     snapshot's status_update_datetime (so the synthetic becomes the
+    #     final status and passes _validate_terminating_statuses).
+    # Sentences with SERVING snapshots after the projected date are
+    # intentionally not closed — those represent ongoing custody past the
+    # formal end, where leaving the sentence open is the more
+    # conservative choice.
+    if delegate.close_serving_period_at_passed_projected_date(sentence):
+        latest_projected_date = _latest_projected_completion_date_max(sentence)
+        if (
+            latest_projected_date is not None
+            and latest_projected_date < datetime.date.today()
+        ):
+            close_dt = as_datetime(latest_projected_date)
+            has_any_terminating = any(
+                s.status.is_terminating_status for s in all_snapshots
+            )
+            latest_existing_snapshot_dt = (
+                max(s.status_update_datetime for s in all_snapshots)
+                if all_snapshots
+                else None
+            )
+            # Strict `>`: no datetime ties allowed. Partition_key sort
+            # breaks datetime ties by sequence_num, and a tied synthetic
+            # could end up before an existing snapshot (sorting non-last)
+            # which would then fail _validate_terminating_statuses.
+            close_dt_is_strictly_after_all_existing = (
+                latest_existing_snapshot_dt is None
+                or close_dt > latest_existing_snapshot_dt
+            )
+            if not has_any_terminating and close_dt_is_strictly_after_all_existing:
+                # sequence_num set higher than any existing as a defensive
+                # tie-breaker (the strict `>` gate already prevents ties).
+                next_seq_num = (
+                    max(
+                        (
+                            s.sequence_num
+                            for s in all_snapshots
+                            if s.sequence_num is not None
+                        ),
+                        default=-1,
+                    )
+                    + 1
+                )
+                all_snapshots.append(
+                    StateSentenceStatusSnapshot(
+                        state_code=sentence.state_code,
+                        status=StateSentenceStatus.COMPLETED,
+                        status_raw_text="Created during normalization from passed projected_completion_date_max",
+                        status_update_datetime=close_dt,
+                        sentence=sentence,
+                        sequence_num=next_seq_num,
+                    )
+                )
+                all_snapshots = sorted(all_snapshots, key=lambda s: s.partition_key)
+
+    # We may have appended a synthetic COMPLETED above, so re-validate.
+    # correct_early_completed_statuses=False because the synthetic is
+    # strictly later than all existing snapshots by construction.
     all_snapshots = _validate_terminating_statuses(
         sorted_snapshots=all_snapshots,
         correct_early_completed_statuses=False,
         correct_early_terminating_statuses=delegate.correct_early_terminating_statuses,
     )
     return _add_end_datetime_and_normalize_sequence_num(snapshots=all_snapshots)
+
+
+def _latest_projected_completion_date_max(
+    sentence: StateSentence,
+) -> datetime.date | None:
+    """Returns the projected_completion_date_max_external from the sentence's
+    most recent StateSentenceLength snapshot (by length_update_datetime), or
+    None if no snapshot has a non-null value."""
+    latest_dt: datetime.datetime | None = None
+    latest_value: datetime.date | None = None
+    for length in sentence.sentence_lengths:
+        if length.projected_completion_date_max_external is None:
+            continue
+        if latest_dt is None or length.length_update_datetime > latest_dt:
+            latest_dt = length.length_update_datetime
+            latest_value = length.projected_completion_date_max_external
+    return latest_value

@@ -299,6 +299,35 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         """
         return False
 
+    def should_carry_forward_projected_dates(self, sentence: "StateSentence") -> bool:
+        """If True, when normalizing this sentence's StateSentenceLength snapshots,
+        NULL projected_completion_date_min/max_external and
+        parole_eligibility_date_external values are replaced with the most recent
+        prior non-null value (carry-forward).
+
+        Default returns False (no carry-forward). State delegates can override to
+        enable carry-forward for specific sentences whose raw data is known to drop
+        projected dates after the date passes but where the sentence is still
+        relevant for the person's current legal status.
+        """
+        return False
+
+    def close_serving_period_at_passed_projected_date(
+        self, sentence: "StateSentence"
+    ) -> bool:
+        """If True for this sentence, the framework will inject a synthetic
+        COMPLETED sentence_status_snapshot at the latest
+        projected_completion_date_max_external when that date is in the past
+        and the sentence has no existing terminating status snapshot at or
+        before that date.
+
+        Default returns False. State delegates can override per-sentence
+        based on data quality patterns (e.g. raw projected dates that aren't
+        updated after the date passes, leaving the sentence's serving_period
+        open indefinitely without a COMPLETED snapshot).
+        """
+        return False
+
     @staticmethod
     def sentences_are_in_same_imposed_group(
         s1: NormalizedStateSentence, s2: NormalizedStateSentence

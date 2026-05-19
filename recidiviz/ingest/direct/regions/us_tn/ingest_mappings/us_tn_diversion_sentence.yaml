@@ -22,6 +22,8 @@ input_columns:
   # StateSentenceStatusSnapshot information
   DiversionStatus: STRING
   StatusDate: DATE
+  ExpirationDate: DATE
+  assume_completed: STRING
 
 unused_columns: []
 variables:
@@ -90,5 +92,23 @@ output:
                   $then:
                     StateSentenceStatusSnapshot:
                       status_update_datetime: StatusDate
+                      status: $literal_enum(StateSentenceStatus.COMPLETED)
+                      sequence_num: $literal("2")
+            # If `assume_completed` was set to "Y" in the view (raw data
+            # has DiversionStatus = "O"-or-other but ExpirationDate has
+            # passed), emit a synthetic COMPLETED snapshot at the
+            # expiration date. The view excludes DiversionStatus = "C"
+            # from the assume_completed flag, so this branch and the
+            # explicit DiversionStatus = "C" branch above are mutually
+            # exclusive (no double-COMPLETED snapshots).
+            #
+            # See view_diversion_sentence.py for the data quality
+            # rationale and historical v1 context.
+            - $conditional:
+                - $if:
+                    $equal: [assume_completed, $literal("Y")]
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      status_update_datetime: ExpirationDate
                       status: $literal_enum(StateSentenceStatus.COMPLETED)
                       sequence_num: $literal("2")

@@ -138,8 +138,17 @@ def normalize_sentence_lengths(
           to actually be the min/max of the hydrated values, correcting it if external
           data is not consistent. Other date enforcement occurs at ingest in the
           __attrs_post_init__ of StateSentenceLength
+
+    If the delegate's `should_carry_forward_projected_dates(sentence)` returns
+    True, NULL `projected_completion_date_min/max_external` and
+    `parole_eligibility_date_external` are replaced with the most recent prior
+    non-null value across the sorted sentence_lengths.
     """
     normalized_lengths = []
+    carry_forward = delegate.should_carry_forward_projected_dates(sentence)
+    last_comp_min: datetime.date | None = None
+    last_comp_max: datetime.date | None = None
+    last_parole_elig: datetime.date | None = None
     serving_status_datetimes = [
         snapshot.status_update_datetime
         for snapshot in sentence.sentence_status_snapshots
@@ -183,6 +192,22 @@ def normalize_sentence_lengths(
                 length.projected_completion_date_min_external,
                 length.projected_completion_date_max_external,
             )
+        parole_elig = length.parole_eligibility_date_external
+
+        if carry_forward:
+            if comp_date_min is None:
+                comp_date_min = last_comp_min
+            if comp_date_max is None:
+                comp_date_max = last_comp_max
+            if parole_elig is None:
+                parole_elig = last_parole_elig
+            # Re-enforce min<=max consistency in case carry-forward filled only one.
+            comp_date_min, comp_date_max = get_min_max_fields(
+                comp_date_min, comp_date_max
+            )
+        last_comp_min = comp_date_min if comp_date_min is not None else last_comp_min
+        last_comp_max = comp_date_max if comp_date_max is not None else last_comp_max
+        last_parole_elig = parole_elig if parole_elig is not None else last_parole_elig
 
         normalized_lengths.append(
             NormalizedStateSentenceLength(
@@ -197,7 +222,7 @@ def normalize_sentence_lengths(
                 sentence_length_days_max=days_max,
                 projected_completion_date_min_external=comp_date_min,
                 projected_completion_date_max_external=comp_date_max,
-                parole_eligibility_date_external=length.parole_eligibility_date_external,
+                parole_eligibility_date_external=parole_elig,
             )
         )
     return normalized_lengths

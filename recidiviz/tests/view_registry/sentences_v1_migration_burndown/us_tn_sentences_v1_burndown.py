@@ -23,9 +23,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liber
 from recidiviz.calculator.query.state.views.meetings.clients import (
     MEETINGS_CLIENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.meetings.residents import (
-    MEETINGS_RESIDENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -38,9 +35,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
-    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
@@ -50,17 +44,8 @@ from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
-    state_specific_supervision_projected_completion_date_spans_address,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
-    RESIDENT_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
     US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
@@ -73,9 +58,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.us_tn.resident_record_incarceration_cases_with_dates import (
-    US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.activity.entities import (
@@ -95,9 +77,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
 ] = {
     "INSIGHTS": {
         SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
@@ -109,11 +88,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_TN
-                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -129,9 +103,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
@@ -143,11 +114,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_TN
-                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -163,9 +129,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
-            },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
@@ -177,11 +140,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_TN
-                ),
             },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
@@ -209,11 +167,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     },
     "WORKFLOWS_FIRESTORE": {
         CLIENT_RECORD_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_TN
-                ),
-            },
             BigQueryAddress(
                 dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
                 table_id=StateIncarcerationSentence.get_table_id(),
@@ -225,11 +178,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        RESIDENT_RECORD_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: {
@@ -267,11 +215,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
     },
     "MEETINGS": {
         MEETINGS_CLIENTS_VIEW_BUILDER.address: {
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                state_specific_supervision_projected_completion_date_spans_address(
-                    StateCode.US_TN
-                ),
-            },
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER.address,
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
@@ -295,11 +238,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 table_id=StateSupervisionSentence.get_table_id(),
             ): {
                 CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
-        MEETINGS_RESIDENTS_VIEW_BUILDER.address: {
-            INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                US_TN_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_VIEW_BUILDER.address,
             },
         },
     },
