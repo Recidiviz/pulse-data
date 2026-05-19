@@ -122,3 +122,9 @@ ApplyRowLevelPermissionsEntrypoint:
     limits:
       cpu: 500m
       memory: 500Mi
+
+DocumentUploadEntrypoint:
+  default_resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi

@@ -40,6 +40,7 @@ from recidiviz.documents.store.document_store_types import (
 )
 
 # TODO(#73430) Put some thought behind what the batch size should be
+# and align kubernetes pod resource requests/limits
 DEFAULT_TARGET_UPLOAD_BATCH_BYTES = 1_000_000_000  # 1 GB
 
 

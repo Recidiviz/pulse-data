@@ -56,6 +56,9 @@ from recidiviz.entrypoints.bigquery.dataflow_metric_pruning_entrypoint import (
 from recidiviz.entrypoints.bigquery.dataset_cleanup_and_validation_entrypoint import (
     DatasetCleanupAndValidationEntrypoint,
 )
+from recidiviz.entrypoints.document_store.document_upload import (
+    DocumentUploadEntrypoint,
+)
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
     IngestCheckRawDataFlashingEntrypoint,
@@ -101,6 +104,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     BigQueryRefreshEntrypoint,
     DataflowMetricPruningEntrypoint,
     DatasetCleanupAndValidationEntrypoint,
+    DocumentUploadEntrypoint,
     MetricViewExportEntrypoint,
     ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,

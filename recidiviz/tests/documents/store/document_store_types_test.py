@@ -26,7 +26,7 @@ from recidiviz.documents.store.document_store_types import (
 
 
 class TestDocumentUploadBatchSerialization(unittest.TestCase):
-    def test_serialize_deserialize_roundtrip(self) -> None:
+    def test_to_dict_from_dict_roundtrip(self) -> None:
         batch = DocumentUploadBatch(
             collection_name="test_collection",
             temp_new_document_contents_table_address=ProjectSpecificBigQueryAddress(
@@ -36,11 +36,11 @@ class TestDocumentUploadBatchSerialization(unittest.TestCase):
             ),
             batch_number=4,
         )
-        self.assertEqual(batch, DocumentUploadBatch.deserialize(batch.serialize()))
+        self.assertEqual(batch, DocumentUploadBatch.from_dict(batch.to_dict()))
 
 
 class TestSingleCollectionDocumentDiscoveryResultSerialization(unittest.TestCase):
-    def test_serialize_deserialize_roundtrip(self) -> None:
+    def test_to_dict_from_dict_roundtrip(self) -> None:
         result = SingleCollectionDocumentDiscoveryResult(
             state_code=StateCode.US_XX,
             collection_name="test_collection",
@@ -59,5 +59,5 @@ class TestSingleCollectionDocumentDiscoveryResultSerialization(unittest.TestCase
         )
         self.assertEqual(
             result,
-            SingleCollectionDocumentDiscoveryResult.deserialize(result.serialize()),
+            SingleCollectionDocumentDiscoveryResult.from_dict(result.to_dict()),
         )
