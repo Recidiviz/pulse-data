@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
+
 from typing import Any, Dict, List, Optional, Sequence
 
 import attr
@@ -88,6 +89,8 @@ from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     GCP_PROJECT_DASHBOARDS_PRODUCTION,
     GCP_PROJECT_DASHBOARDS_STAGING,
+    GCP_PROJECT_JII_PRODUCTION,
+    GCP_PROJECT_JII_STAGING,
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
 )
@@ -532,6 +535,10 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=JII_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="JII_TABLET",
         allow_empty=True,
+        output_project_by_data_project={
+            GCP_PROJECT_STAGING: GCP_PROJECT_JII_STAGING,
+            GCP_PROJECT_PRODUCTION: GCP_PROJECT_JII_PRODUCTION,
+        },
         publish_success_pubsub_message=True,
     ),
 ]

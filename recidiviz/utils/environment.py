@@ -22,6 +22,7 @@ static and cannot be trivially made environment-specific. So this includes
 functionality for determining which environment we are in and loading the
 appropriate variables.
 """
+
 import logging
 import os
 import sys
@@ -43,6 +44,9 @@ GCP_PROJECT_JUSTICE_COUNTS_STAGING = "justice-counts-staging"
 GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION = "justice-counts-production"
 GCP_PROJECT_DASHBOARDS_STAGING = "recidiviz-dashboard-staging"
 GCP_PROJECT_DASHBOARDS_PRODUCTION = "recidiviz-dashboard-production"
+# The JII tablet app (Opportunities) has its own project for its resources
+GCP_PROJECT_JII_STAGING = "recidiviz-jii-staging"
+GCP_PROJECT_JII_PRODUCTION = "recidiviz-jii-production"
 # This is not a GCP environment. We use this flag when triggering local jobs.
 PROJECT_JUSTICE_COUNTS_LOCAL = "justice-counts-local"
 
@@ -56,6 +60,8 @@ ALL_GCP_PROJECTS = DATA_PLATFORM_GCP_PROJECTS + [
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
     GCP_PROJECT_DASHBOARDS_STAGING,
     GCP_PROJECT_DASHBOARDS_PRODUCTION,
+    GCP_PROJECT_JII_STAGING,
+    GCP_PROJECT_JII_PRODUCTION,
 ]
 
 RECIDIVIZ_ENV = "RECIDIVIZ_ENV"

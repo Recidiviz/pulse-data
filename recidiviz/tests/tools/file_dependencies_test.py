@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for file dependency utilities."""
+
 import importlib
 import os
 import unittest
@@ -104,7 +105,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=32, col_offset=0
+                            filepath="r/utils/environment.py", lineno=33, col_offset=0
                         )
                     ],
                 },
@@ -257,7 +258,7 @@ class FileDependenciesTest(unittest.TestCase):
                 "enum": {
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=28, col_offset=0
+                            filepath="r/utils/environment.py", lineno=29, col_offset=0
                         )
                     ],
                     "recidiviz.utils.metadata": [
@@ -269,7 +270,7 @@ class FileDependenciesTest(unittest.TestCase):
                 "functools": {
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=29, col_offset=0
+                            filepath="r/utils/environment.py", lineno=30, col_offset=0
                         )
                     ]
                 },
@@ -293,7 +294,7 @@ class FileDependenciesTest(unittest.TestCase):
                 "logging": {
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=25, col_offset=0
+                            filepath="r/utils/environment.py", lineno=26, col_offset=0
                         )
                     ],
                     "recidiviz.utils.metadata": [
@@ -308,7 +309,7 @@ class FileDependenciesTest(unittest.TestCase):
                 "os": {
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=26, col_offset=0
+                            filepath="r/utils/environment.py", lineno=27, col_offset=0
                         )
                     ],
                     "recidiviz.utils.metadata": [
@@ -359,7 +360,7 @@ class FileDependenciesTest(unittest.TestCase):
                 "sys": {
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=27, col_offset=0
+                            filepath="r/utils/environment.py", lineno=28, col_offset=0
                         )
                     ]
                 },
@@ -385,7 +386,7 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.environment": [
                         Callsite(
-                            filepath="r/utils/environment.py", lineno=30, col_offset=0
+                            filepath="r/utils/environment.py", lineno=31, col_offset=0
                         )
                     ],
                     "recidiviz.utils.metadata": [
@@ -484,7 +485,7 @@ class FileDependenciesTest(unittest.TestCase):
             "recidiviz.tests.tools.fixtures.example_dependency_entrypoint"
         )
         assert deps.sample_call_chain_for_module("recidiviz") == [
-            ("recidiviz.utils.environment", Callsite("r/utils/environment.py", 32, 0)),
+            ("recidiviz.utils.environment", Callsite("r/utils/environment.py", 33, 0)),
             ("recidiviz.utils.secrets", Callsite("r/utils/secrets.py", 28, 0)),
             (
                 "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
@@ -644,12 +645,15 @@ class DynamicallyCollectedFileDependenciesTest(unittest.TestCase):
 
             # we use before to capture the calls to importlib.import_module while
             # still allowing the module to be imported
-            with local_project_id_override("recidiviz-456"), before(
-                "recidiviz.common.module_collector_mixin.importlib.import_module",
-                _add,
-                once=False,
+            with (
+                local_project_id_override("recidiviz-456"),
+                before(
+                    "recidiviz.common.module_collector_mixin.importlib.import_module",
+                    _add,
+                    once=False,
+                ),
             ):
-                for (collection_class, collection_callable) in collection_classes:
+                for collection_class, collection_callable in collection_classes:
                     assert issubclass(collection_class, ModuleCollectorMixin)
                     _ = collection_callable()
 
