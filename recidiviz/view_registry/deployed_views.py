@@ -382,8 +382,6 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
     },
     SchemaType.OPERATIONS: {
         "operations_cloudsql_connection",
-        # TODO(#73599): Remove once this dataset is deleted from prod and staging.
-        "operations_v2_cloudsql_connection",
         "us_ar_operations_regional",
         "us_ca_operations_regional",
         "us_co_operations_regional",
