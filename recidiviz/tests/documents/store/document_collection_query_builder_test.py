@@ -124,7 +124,8 @@ class TestBuildDocumentDiffQuery(BigQueryEmulatorTestCase):
         - NOTE_3: exists in new but not current (added)
         - NOTE_5: exists in current but not new (deleted, NULL content)
         - NOTE_6: same content but note_type changed (metadata-only update)
-        - NOTE_8: added with NULL document_text, NULL document_contents_id
+        - NOTE_8: NULL document_text in source, filtered out of generation
+          query so it never enters the diff
         """
         self._load_raw_table(self._fixture_path("fake_notes_latest"))
         self._load_metadata(self.config, self._fixture_path("fake_case_notes_metadata"))

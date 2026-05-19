@@ -70,7 +70,8 @@ SELECT
     {DOCUMENT_TEXT_COLUMN_NAME},
     {DOCUMENT_UPDATE_DATETIME_COLUMN_NAME},
     {list_to_query_string(config.primary_key_column_names + config.other_metadata_column_names)}
-FROM ({inner_query})"""
+FROM ({inner_query})
+WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL"""
 
     def build_document_diff_query(
         self,
