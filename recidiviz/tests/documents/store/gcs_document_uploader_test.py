@@ -64,11 +64,11 @@ class TestGcsDocumentUploader(unittest.TestCase):
     def setUp(self) -> None:
         self.project_id = "recidiviz-testing"
         self.state_code = StateCode.US_XX
-        self.job_id = "test_job_123"
+        self.run_id = "test_run_123"
         self.temp_table = ProjectSpecificBigQueryAddress(
             project_id=self.project_id,
             dataset_id="us_xx_document_store_temp",
-            table_id="temp_document_test_collection_test_job_123",
+            table_id="temp_document_test_collection_test_run_123",
         )
         self.bq_client = MagicMock()
         self.fs = MagicMock()
@@ -78,7 +78,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
             project_id=self.project_id,
             big_query_client=self.bq_client,
             fs=self.fs,
-            job_id=self.job_id,
+            run_id=self.run_id,
             task_index=0,
             upload_datetime=self.upload_datetime,
         )
@@ -132,7 +132,7 @@ class TestGcsDocumentUploader(unittest.TestCase):
         csv_paths = [c.kwargs["path"] for c in csv_calls]
         expected_paths = [
             gcs_path_for_task_output(
-                self.project_id, self.state_code, self.job_id, 0, i
+                self.project_id, self.state_code, self.run_id, 0, i
             )
             for i in range(2)
         ]

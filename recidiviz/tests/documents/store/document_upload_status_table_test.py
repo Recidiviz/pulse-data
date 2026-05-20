@@ -26,7 +26,7 @@ from recidiviz.documents.store.document_upload_status_table import (
     DOCUMENT_CONTENTS_ID,
     DOCUMENT_UPLOAD_SUCCESS,
     ERROR_MESSAGE,
-    JOB_ID,
+    RUN_ID,
     STATUS,
     UPLOAD_DATETIME,
     DocumentUploadStatusTable,
@@ -39,7 +39,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
     def test_to_csv_row_matches_schema(self) -> None:
         expected_columns = [
             DOCUMENT_CONTENTS_ID,
-            JOB_ID,
+            RUN_ID,
             UPLOAD_DATETIME,
             STATUS,
             DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
@@ -50,7 +50,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
         dt = datetime(2026, 1, 1, tzinfo=timezone.utc)
         row = DocumentUploadStatusTable.to_csv_row(
             document_contents_id="abc",
-            job_id="job_1",
+            run_id="run_1",
             upload_datetime=dt,
             status=DOCUMENT_UPLOAD_SUCCESS,
             document_length_bytes=1024,
@@ -60,7 +60,7 @@ class TestDocumentUploadStatusTable(unittest.TestCase):
             row,
             (
                 "abc",
-                "job_1",
+                "run_1",
                 "2026-01-01T00:00:00+00:00",
                 DOCUMENT_UPLOAD_SUCCESS,
                 1024,

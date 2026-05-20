@@ -51,7 +51,7 @@ def has_collections_with_updates(
 @task
 def run_document_discovery(
     state_code: StateCode,
-    job_id: str,
+    run_id: str,
 ) -> list[dict[str, str | int]]:
     """Runs document discovery for all collections in a state, writing temp BQ
     tables and returning per-collection discovery results."""
@@ -59,7 +59,7 @@ def run_document_discovery(
         state_code=state_code,
         project_id=get_project_id(),
         big_query_client=BigQueryClientImpl(),
-        job_id=job_id,
+        run_id=run_id,
     )
     collection_results = discoverer.run()
 
@@ -108,7 +108,7 @@ def build_document_upload_pod_arguments(
 def record_document_upload_results(
     collection_results: list[dict[str, str | int]],
     state_code: StateCode,
-    job_id: str,
+    run_id: str,
 ) -> None:
     """Loads upload status CSVs into BQ, inserts metadata rows for successful
     uploads, and cleans up temp tables."""
@@ -119,7 +119,7 @@ def record_document_upload_results(
         state_code=state_code,
         project_id=get_project_id(),
         big_query_client=BigQueryClientImpl(),
-        job_id=job_id,
+        run_id=run_id,
         metadata_row_create_datetime=datetime.now(tz=timezone.utc),
     )
     recorder.run(

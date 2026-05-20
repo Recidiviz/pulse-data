@@ -68,17 +68,16 @@ class DocumentUploadEntrypoint(EntrypointInterface):
         if not upload_batches:
             raise ValueError("Expected non-empty upload_batches.")
 
-        # TODO(#75610) Rename job_id to run_id everywhere in docstore code
-        job_id = AirflowKubernetesPodEnvironment.get_run_id()
+        run_id = AirflowKubernetesPodEnvironment.get_run_id()
         task_index = int(
             assert_type(AirflowKubernetesPodEnvironment.get_map_index(), str)
         )
 
         logging.info(
-            "Running document upload for [%s] job_id [%s] task_index [%d] "
+            "Running document upload for [%s] run_id [%s] task_index [%d] "
             "with %d batches",
             args.state_code.value,
-            job_id,
+            run_id,
             task_index,
             len(upload_batches),
         )
@@ -88,7 +87,7 @@ class DocumentUploadEntrypoint(EntrypointInterface):
             project_id=project_id(),
             big_query_client=BigQueryClientImpl(),
             fs=GcsfsFactory.build(),
-            job_id=job_id,
+            run_id=run_id,
             task_index=task_index,
             upload_datetime=datetime.now(tz=timezone.utc),
         )

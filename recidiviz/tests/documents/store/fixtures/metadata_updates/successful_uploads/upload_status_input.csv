@@ -1,4 +1,4 @@
-document_contents_id,job_id,upload_datetime,status,error_message
-success_aaa,job_1,2026-01-01 12:00:00,SUCCESS,
-failed_bbb,job_1,2026-02-01 12:00:00,FAILURE,timeout
-success_eee,job_0,2026-04-01 12:00:00,SUCCESS,
+document_contents_id,run_id,upload_datetime,status,error_message
+success_aaa,run_1,2026-01-01 12:00:00,SUCCESS,
+failed_bbb,run_1,2026-02-01 12:00:00,FAILURE,timeout
+success_eee,run_0,2026-04-01 12:00:00,SUCCESS,

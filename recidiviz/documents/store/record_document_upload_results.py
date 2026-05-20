@@ -50,7 +50,7 @@ class DocumentUploadResultRecorder:
     project_id: str = attr.ib(validator=attr_validators.is_str)
     big_query_client: BigQueryClient = attr.ib()
     # Unique identifier for the DAG run.
-    job_id: str = attr.ib(validator=attr_validators.is_str)
+    run_id: str = attr.ib(validator=attr_validators.is_str)
     # The datetime to use for the row_create_datetime column value when inserting new metadata rows.
     metadata_row_create_datetime: datetime = attr.ib(
         validator=attr_validators.is_datetime
@@ -110,9 +110,9 @@ class DocumentUploadResultRecorder:
             )
 
     def _load_upload_status_to_bq(self) -> None:
-        """Loads all upload status CSVs for this job from GCS into the document_upload_status BQ table."""
+        """Loads all upload status CSVs for this run from GCS into the document_upload_status BQ table."""
         output_dir = gcs_directory_for_task_output(
-            self.project_id, self.state_code, self.job_id
+            self.project_id, self.state_code, self.run_id
         )
         source_uri = f"{output_dir.uri()}/*.csv"
         upload_status_table_address = DocumentUploadStatusTable.get_table_address(

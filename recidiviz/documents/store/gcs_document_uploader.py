@@ -86,7 +86,7 @@ class GcsDocumentUploader:
     big_query_client: BigQueryClient = attr.ib()
     fs: GCSFileSystem = attr.ib()
     # Unique identifier for the DAG run; used in GCS output paths and status CSV rows.
-    job_id: str = attr.ib(validator=attr_validators.is_str)
+    run_id: str = attr.ib(validator=attr_validators.is_str)
     # Index of this task within the DAG run's mapped task group; used to
     # namespace output CSVs so parallel tasks don't collide.
     task_index: int = attr.ib(validator=attr_validators.is_int)
@@ -263,7 +263,7 @@ class GcsDocumentUploader:
             writer.writerow(
                 DocumentUploadStatusTable.to_csv_row(
                     document_contents_id=result.document_contents_id,
-                    job_id=self.job_id,
+                    run_id=self.run_id,
                     upload_datetime=self.upload_datetime,
                     status=result.status,
                     document_length_bytes=result.document_length_bytes,
@@ -274,7 +274,7 @@ class GcsDocumentUploader:
         output_path = gcs_path_for_task_output(
             project_id=self.project_id,
             state_code=self.state_code,
-            job_id=self.job_id,
+            run_id=self.run_id,
             task_index=self.task_index,
             batch_index=batch_index,
         )

@@ -52,7 +52,7 @@ class NewDocumentDiscoverer:
     state_code: StateCode = attr.ib(validator=recidiviz_attr_validators.is_state_code)
     project_id: str = attr.ib(validator=attr_validators.is_str)
     big_query_client: BigQueryClient = attr.ib()
-    job_id: str = attr.ib(validator=attr_validators.is_str)
+    run_id: str = attr.ib(validator=attr_validators.is_str)
     target_upload_batch_bytes: int = attr.ib(
         validator=attr_validators.is_positive_int,
         default=DEFAULT_TARGET_UPLOAD_BATCH_BYTES,
@@ -122,7 +122,7 @@ class NewDocumentDiscoverer:
         """Runs document discovery for a single collection. Writes two temp
         tables and returns a SingleCollectionDocumentDiscoveryResult."""
         temp_metadata_address = config.temp_document_metadata_updates_table_address(
-            self.project_id, self.job_id
+            self.project_id, self.run_id
         )
         diff_query = self.diff_query_builder.build_document_diff_query(config)
 
@@ -139,7 +139,7 @@ class NewDocumentDiscoverer:
         )
 
         temp_document_address = config.temp_new_document_contents_table_address(
-            self.project_id, self.job_id
+            self.project_id, self.run_id
         )
         new_documents_query = DocumentMetadataUpdatesQueryBuilder(
             project_id=self.project_id, state_code=config.state_code

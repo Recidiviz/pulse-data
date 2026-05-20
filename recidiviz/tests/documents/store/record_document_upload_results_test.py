@@ -41,14 +41,14 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
     def setUp(self) -> None:
         self.project_id = "recidiviz-testing"
         self.state_code = StateCode.US_XX
-        self.job_id = "test_job_123"
+        self.run_id = "test_run_123"
         self.row_create_datetime = datetime(2026, 4, 21, 12, 0, 0, tzinfo=timezone.utc)
         self.bq_client = MagicMock()
         self.recorder = DocumentUploadResultRecorder(
             state_code=self.state_code,
             project_id=self.project_id,
             big_query_client=self.bq_client,
-            job_id=self.job_id,
+            run_id=self.run_id,
             metadata_row_create_datetime=self.row_create_datetime,
         )
 
@@ -94,10 +94,10 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             state_code=config.state_code,
             collection_name=config.name,
             temp_document_metadata_updates_address=config.temp_document_metadata_updates_table_address(
-                self.project_id, self.job_id
+                self.project_id, self.run_id
             ),
             temp_new_document_contents_address=config.temp_new_document_contents_table_address(
-                self.project_id, self.job_id
+                self.project_id, self.run_id
             ),
             num_new_document_contents_rows=num_new_document_contents_rows,
             num_document_metadata_updates_rows=num_document_metadata_updates_rows,

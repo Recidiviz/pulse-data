@@ -31,7 +31,7 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
     def setUp(self) -> None:
         self.project_id = "recidiviz-testing"
         self.state_code = StateCode.US_XX
-        self.job_id = "manual__2026-05-12T17:21:11.122491+00:00"
+        self.run_id = "manual__2026-05-12T17:21:11.122491+00:00"
 
     def test_gcs_path_for_document(self) -> None:
         path = gcs_path_for_document(self.project_id, self.state_code, "abc123")
@@ -42,7 +42,7 @@ class TestDocumentStoreGcsPathUtils(unittest.TestCase):
 
     def test_gcs_path_for_task_output(self) -> None:
         path = gcs_path_for_task_output(
-            self.project_id, self.state_code, self.job_id, 2, 5
+            self.project_id, self.state_code, self.run_id, 2, 5
         )
         self.assertEqual(
             path.bucket_name,

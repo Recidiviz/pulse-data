@@ -45,7 +45,7 @@ class TestDocumentMetadataUpdatesQueryBuilder(BigQueryEmulatorTestCase):
         )
         self.temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(
-                self.project_id, "test_job_id"
+                self.project_id, "test_run_id"
             )
         )
         self.metadata_table_address = self.config.metadata_table_address(

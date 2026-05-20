@@ -38,7 +38,7 @@ class TestNewDocumentDiscovery(unittest.TestCase):
             state_code=StateCode.US_XX,
             project_id="recidiviz-testing",
             big_query_client=self.bq_client,
-            job_id="test_job_id",
+            run_id="test_run_id",
         )
 
         def mock_collect_document_collection_configs(

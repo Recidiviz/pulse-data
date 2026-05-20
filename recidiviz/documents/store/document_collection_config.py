@@ -208,7 +208,7 @@ class DocumentCollectionConfig:
         ]
 
     def temp_document_metadata_updates_table_address(
-        self, project_id: str, job_id: str
+        self, project_id: str, run_id: str
     ) -> ProjectSpecificBigQueryAddress:
         """Returns the BigQuery address for the temp document metadata updates
         table that contains rows where there were any changes to
@@ -217,7 +217,7 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_document_metadata_updates_{self.name}_{make_bq_compatible_identifier(job_id)}",
+            table_id=f"temp_document_metadata_updates_{self.name}_{make_bq_compatible_identifier(run_id)}",
         )
 
     def build_bq_temp_new_document_contents_schema(self) -> list[bigquery.SchemaField]:
@@ -232,7 +232,7 @@ class DocumentCollectionConfig:
         ]
 
     def temp_new_document_contents_table_address(
-        self, project_id: str, job_id: str
+        self, project_id: str, run_id: str
     ) -> ProjectSpecificBigQueryAddress:
         """Returns the BigQuery address for the temp new document contents table
         that tracks which document_contents_ids in this collection have not yet
@@ -241,7 +241,7 @@ class DocumentCollectionConfig:
         return ProjectSpecificBigQueryAddress(
             project_id=project_id,
             dataset_id=document_store_temp_dataset_for_region(self.state_code),
-            table_id=f"temp_new_document_contents_{self.name}_{make_bq_compatible_identifier(job_id)}",
+            table_id=f"temp_new_document_contents_{self.name}_{make_bq_compatible_identifier(run_id)}",
         )
 
     @classmethod
