@@ -1490,3 +1490,197 @@ class TestIsNonEmptyList(unittest.TestCase):
     def test_not_a_list(self) -> None:
         with self.assertRaises((TypeError, ValueError)):
             _ = self._TestClass(items="not a list")  # type: ignore[arg-type]
+
+
+@attr.s(frozen=True)
+class _TestNamePartClass:
+    """Used in TestNamePartValidator."""
+
+    my_name: str = attr.ib(validator=attr_validators.is_valid_name_part)
+    my_opt_name: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_valid_name_part
+    )
+
+
+class TestNamePartValidator(unittest.TestCase):
+    """Tests for is_valid_name_part and is_opt_valid_name_part."""
+
+    def test_valid_alpha_name(self) -> None:
+        instance = _TestNamePartClass(my_name="John")
+        self.assertEqual(instance.my_name, "John")
+
+    def test_valid_name_with_hyphen_and_apostrophe(self) -> None:
+        instance = _TestNamePartClass(my_name="O'Brien-Smith")
+        self.assertEqual(instance.my_name, "O'Brien-Smith")
+
+    def test_valid_unicode_name(self) -> None:
+        instance = _TestNamePartClass(my_name="José")
+        self.assertEqual(instance.my_name, "José")
+
+    def test_valid_name_with_period(self) -> None:
+        for name in ["J.", "L.R.", "St. Pierre"]:
+            instance = _TestNamePartClass(my_name=name)
+            self.assertEqual(instance.my_name, name)
+
+    def test_valid_name_with_internal_whitespace(self) -> None:
+        instance = _TestNamePartClass(my_name="Mary Anne")
+        self.assertEqual(instance.my_name, "Mary Anne")
+
+    def test_valid_empty_string(self) -> None:
+        instance = _TestNamePartClass(my_name="")
+        self.assertEqual(instance.my_name, "")
+
+    def test_opt_name_allows_none(self) -> None:
+        instance = _TestNamePartClass(my_name="John", my_opt_name=None)
+        self.assertIsNone(instance.my_opt_name)
+
+    def test_opt_name_accepts_valid_string(self) -> None:
+        instance = _TestNamePartClass(my_name="John", my_opt_name="Doe")
+        self.assertEqual(instance.my_opt_name, "Doe")
+
+    def test_rejects_digit_in_name(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"must contain only letters, hyphens, apostrophes, periods, and "
+            r"whitespace. Found value \[J0HN\]",
+        ):
+            _ = _TestNamePartClass(my_name="J0HN")
+
+    def test_rejects_trailing_digit(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="John2")
+
+    def test_rejects_opt_name_with_digit(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="John", my_opt_name="Smith1")
+
+    def test_rejects_non_string(self) -> None:
+        with self.assertRaisesRegex(TypeError, r"Expected str for \[my_name\]"):
+            _ = _TestNamePartClass(my_name=123)  # type: ignore[arg-type]
+
+    def test_rejects_pure_numeric_string(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="12345")
+
+    def test_rejects_parentheses(self) -> None:
+        for name in ["JOHN (RUSTY)", "SMITH (JONES)", "(DECEASED)"]:
+            with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+                _ = _TestNamePartClass(my_name=name)
+
+    def test_rejects_comma(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="RAY, JR")
+
+    def test_rejects_slash(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="JONATHAN/JOSHUA")
+
+    def test_rejects_asterisk(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="MICHAEL***")
+
+    def test_rejects_double_quote(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name='"SONNY"')
+
+    def test_rejects_backtick(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="ELIZABETH`")
+
+    def test_rejects_underscore(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            _ = _TestNamePartClass(my_name="UT_COTTONWOOD")
+
+    def test_rejects_other_special_chars(self) -> None:
+        for name in ["JOHN+", "JOHN;", "JOHN]", "JOHN&", "JOHN?", "JOHN@"]:
+            with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+                _ = _TestNamePartClass(my_name=name)
+
+
+@attr.s(frozen=True)
+class _TestNameSuffixClass:
+    """Used in TestNameSuffixValidator."""
+
+    my_suffix: str = attr.ib(validator=attr_validators.is_valid_name_suffix)
+    my_opt_suffix: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_valid_name_suffix
+    )
+
+
+class TestNameSuffixValidator(unittest.TestCase):
+    """Tests for is_valid_name_suffix and is_opt_valid_name_suffix."""
+
+    def test_opt_allows_none(self) -> None:
+        instance = _TestNameSuffixClass(my_suffix="Jr", my_opt_suffix=None)
+        self.assertIsNone(instance.my_opt_suffix)
+
+    def test_allows_empty_string(self) -> None:
+        instance = _TestNameSuffixClass(my_suffix="")
+        self.assertEqual(instance.my_suffix, "")
+
+    def test_allows_common_generational_variants(self) -> None:
+        for suffix in ["Jr", "Jr.", "JR", "JR.", "Sr", "Sr.", "III", "iii", "VIII"]:
+            instance = _TestNameSuffixClass(my_suffix=suffix)
+            self.assertEqual(instance.my_suffix, suffix)
+
+    def test_allows_ordinal_variants(self) -> None:
+        for suffix in ["2nd", "3rd", "4th"]:
+            instance = _TestNameSuffixClass(my_suffix=suffix)
+            self.assertEqual(instance.my_suffix, suffix)
+
+    def test_allows_bare_digit(self) -> None:
+        instance = _TestNameSuffixClass(my_suffix="2")
+        self.assertEqual(instance.my_suffix, "2")
+
+    def test_allows_professional_credentials(self) -> None:
+        for suffix in ["MD", "M.D.", "PhD", "Esq.", "Jr., MD"]:
+            instance = _TestNameSuffixClass(my_suffix=suffix)
+            self.assertEqual(instance.my_suffix, suffix)
+
+    def test_allows_unicode_letters(self) -> None:
+        # "Père" / "Fils" are the French equivalents of "Sr." / "Jr.".
+        for suffix in ["Père", "Fils"]:
+            instance = _TestNameSuffixClass(my_suffix=suffix)
+            self.assertEqual(instance.my_suffix, suffix)
+
+    def test_rejects_underscore(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"must contain only letters, digits, periods, commas, hyphens, "
+            r"and whitespace",
+        ):
+            _ = _TestNameSuffixClass(my_suffix="Jr_5")
+
+    def test_rejects_long_id_number(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"must be no more than {attr_validators.MAX_NAME_SUFFIX_LENGTH} characters",
+        ):
+            _ = _TestNameSuffixClass(my_suffix="12345678901")
+
+    def test_rejects_free_text(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"must be no more than {attr_validators.MAX_NAME_SUFFIX_LENGTH} characters",
+        ):
+            _ = _TestNameSuffixClass(my_suffix="Father of John")
+
+    def test_rejects_disallowed_characters(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"must contain only letters, digits, periods, commas, hyphens, "
+            r"and whitespace",
+        ):
+            _ = _TestNameSuffixClass(my_suffix="Jr<br>")
+
+    def test_rejects_special_characters(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"must contain only letters, digits, periods, commas, hyphens, "
+            r"and whitespace",
+        ):
+            _ = _TestNameSuffixClass(my_suffix="@#$")
+
+    def test_rejects_non_string(self) -> None:
+        with self.assertRaisesRegex(TypeError, r"Expected str for \[my_suffix\]"):
+            _ = _TestNameSuffixClass(my_suffix=2)  # type: ignore[arg-type]

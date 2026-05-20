@@ -29,6 +29,8 @@ from recidiviz.common.attr_validators import (
     is_list_of,
     is_opt,
     is_opt_str,
+    is_opt_valid_name_part,
+    is_opt_valid_name_suffix,
     is_str,
     is_valid_email,
     is_valid_phone_number,
@@ -67,13 +69,11 @@ class IdentityExternalId(IdentityEntityMixin, ExternalIdEntity):
 
 @attr.s(eq=False, kw_only=True)
 class IdentityName(IdentityEntityMixin, Entity):
-    # TODO(#73389): Add validators that enforce that given_name, surname, and
-    # middle_name fields do not contain digits.
-    given_name: str | None = attr.ib(default=None, validator=is_opt_str)
-    preferred_name: str | None = attr.ib(default=None, validator=is_opt_str)
-    surname: str | None = attr.ib(default=None, validator=is_opt_str)
-    middle_name: str | None = attr.ib(default=None, validator=is_opt_str)
-    name_suffix: str | None = attr.ib(default=None, validator=is_opt_str)
+    given_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    preferred_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    surname: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    middle_name: str | None = attr.ib(default=None, validator=is_opt_valid_name_part)
+    name_suffix: str | None = attr.ib(default=None, validator=is_opt_valid_name_suffix)
     identity_attributes: "IdentityAttributes | None" = attr.ib(default=None)
 
 

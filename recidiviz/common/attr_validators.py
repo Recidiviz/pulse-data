@@ -397,6 +397,87 @@ def is_valid_email(instance: Any, attribute: attr.Attribute, value: str) -> None
         )
 
 
+# Unicode letters (via [^\W_], which is \w minus underscore) plus hyphen,
+# apostrophe, period, and whitespace.
+_NAME_PART_CHARS_PATTERN = re.compile(r"(?:[^\W\d_]|[\-'.\s])*")
+
+
+def is_opt_valid_name_part(
+    instance: Any, attribute: attr.Attribute, value: str | None
+) -> None:
+    if value is not None:
+        is_valid_name_part(instance, attribute, value)
+
+
+def is_valid_name_part(instance: Any, attribute: attr.Attribute, value: str) -> None:
+    """Validates that |value| is a string suitable for a person-name part (e.g.
+    given name, surname, middle name).
+
+    Accepts Unicode letters, hyphens, apostrophes, periods, and whitespace.
+    Rejects digits and other special characters (parentheses, commas, slashes,
+    asterisks, quotes, etc.) and other content that indicates the field is
+    being used for something other than a name part.
+
+    Use is_opt_valid_name_suffix or is_valid_name_suffix for fields like
+    name_suffix that legitimately contain digits (e.g. "3rd", "2nd", "2").
+    """
+    if not isinstance(value, str):
+        raise TypeError(
+            f"Expected str for [{attribute.name}] on [{type(instance).__name__}], "
+            f"found [{type(value).__name__}]."
+        )
+    if not _NAME_PART_CHARS_PATTERN.fullmatch(value):
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must contain "
+            f"only letters, hyphens, apostrophes, periods, and whitespace. "
+            f"Found value [{value}]."
+        )
+
+
+# Max length for a name suffix. (Real suffixes (Jr/Sr/III/MD and combinations
+# like "Jr., MD") fit comfortably under 10 characters.)
+MAX_NAME_SUFFIX_LENGTH = 10
+
+# Unicode letters/digits (via [^\W_], which is \w minus underscore) plus
+# period, comma, hyphen, and whitespace.
+_NAME_SUFFIX_CHARS_PATTERN = re.compile(r"(?:[^\W_]|[.,\-\s])*")
+
+
+def is_opt_valid_name_suffix(
+    instance: Any, attribute: attr.Attribute, value: str | None
+) -> None:
+    if value is not None:
+        is_valid_name_suffix(instance, attribute, value)
+
+
+def is_valid_name_suffix(instance: Any, attribute: attr.Attribute, value: str) -> None:
+    """Validates that |value| is plausibly a person-name suffix.
+
+    Accepts short strings of letters, digits, periods, commas, hyphens, and
+    whitespace so "Jr", "Jr.", "III", "iii", "3rd", "2", "MD", "Sr., Esq." all
+    pass. Rejects long values, special characters (parens, quotes, apostrophes),
+    and other content that indicates the suffix field is being used for
+    something other than a suffix.
+    """
+    if not isinstance(value, str):
+        raise TypeError(
+            f"Expected str for [{attribute.name}] on [{type(instance).__name__}], "
+            f"found [{type(value).__name__}]."
+        )
+    if len(value) > MAX_NAME_SUFFIX_LENGTH:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be no "
+            f"more than {MAX_NAME_SUFFIX_LENGTH} characters. Found [{value}] "
+            f"({len(value)} chars)."
+        )
+    if not _NAME_SUFFIX_CHARS_PATTERN.fullmatch(value):
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must contain "
+            f"only letters, digits, periods, commas, hyphens, and whitespace. "
+            f"Found value [{value}]."
+        )
+
+
 # String field validators
 is_str = attr.validators.instance_of(str)
 is_opt_str = is_opt(str)

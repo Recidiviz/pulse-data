@@ -105,6 +105,63 @@ class TestIdentityName(unittest.TestCase):
     def test_pickle_roundtrip(self) -> None:
         self.assertEqual(_NAME, pickle.loads(pickle.dumps(_NAME)))
 
+    def test_rejects_digit_in_given_name(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            IdentityName(tenant=_TENANT, given_name="J0hn", surname="Doe")
+
+    def test_rejects_digit_in_surname(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            IdentityName(tenant=_TENANT, given_name="John", surname="Do3")
+
+    def test_rejects_digit_in_middle_name(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            IdentityName(
+                tenant=_TENANT, given_name="John", surname="Doe", middle_name="Q2"
+            )
+
+    def test_rejects_digit_in_preferred_name(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must contain only letters"):
+            IdentityName(
+                tenant=_TENANT,
+                given_name="John",
+                surname="Doe",
+                preferred_name="Johnny5",
+            )
+
+    def test_allows_numeric_name_suffix(self) -> None:
+        name = IdentityName(
+            tenant=_TENANT, given_name="John", surname="Doe", name_suffix="3rd"
+        )
+        self.assertEqual(name.name_suffix, "3rd")
+
+    def test_allows_bare_digit_name_suffix(self) -> None:
+        name = IdentityName(
+            tenant=_TENANT, given_name="John", surname="Smith", name_suffix="2"
+        )
+        self.assertEqual(name.name_suffix, "2")
+
+    def test_rejects_overlong_name_suffix(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"must be no more than"):
+            IdentityName(
+                tenant=_TENANT,
+                given_name="John",
+                surname="Doe",
+                name_suffix="Father of John",
+            )
+
+    def test_rejects_garbage_name_suffix(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"must contain only letters, digits, periods, commas, hyphens, "
+            r"and whitespace",
+        ):
+            IdentityName(
+                tenant=_TENANT,
+                given_name="John",
+                surname="Doe",
+                name_suffix="Jr<br>",
+            )
+
 
 class TestIdentityGender(unittest.TestCase):
     """Tests the IdentityGender entity."""
