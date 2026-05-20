@@ -6,8 +6,8 @@ input_columns:
   CDDORNUM: STRING
   CDOFICER: STRING
   sentence_seq: INTEGER
-  period_start_date: DATETIME
-  end_date: DATETIME
+  period_start_date: DATE
+  end_date: DATE
   SUPVLEVL: STRING
   ACTIVE_PW: STRING
   SUPERVISION: STRING
