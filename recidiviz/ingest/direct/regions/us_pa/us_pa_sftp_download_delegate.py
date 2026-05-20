@@ -21,6 +21,7 @@ from typing import Any, Dict, List
 from zipfile import ZipFile, is_zipfile
 
 import paramiko
+from paramiko.sftp_file import SFTPFile
 
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE, GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -30,9 +31,15 @@ from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
 )
 from recidiviz.ingest.direct.sftp.metadata import (
     DISABLED_ALGORITHMS_KWARG,
+    MAX_CONCURRENT_READ_THREADS,
     SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
+
+# PA's MOVEit Transfer server terminates connections when pending prefetch data
+# exceeds its maximum window size (2^27 bytes).
+MOVEIT_MAX_WINDOW_BYTES = 2**27
+MAX_PREFETCH_REQUESTS = MOVEIT_MAX_WINDOW_BYTES // SFTPFile.MAX_REQUEST_SIZE
 
 
 class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -119,7 +126,7 @@ class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
         }
 
     def get_read_kwargs(self) -> Dict[str, Any]:
-        return {}
+        return {MAX_CONCURRENT_READ_THREADS: MAX_PREFETCH_REQUESTS}
 
     def post_download_actions(
         self, *, sftp_client: paramiko.SFTPClient, remote_path: str
