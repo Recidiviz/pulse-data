@@ -40,7 +40,7 @@ With ARRAY_OF_STRUCT fields (primary_key_cols required to match elements):
         primary_key_cols: [employment_change_type, employment_change_date]
 """
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from recidiviz.big_query.big_query_view_column import (
     BigQueryViewColumn,
@@ -136,13 +136,15 @@ class ArrayOfStructEvalConfig:
             )
 
 
-def _expected_col_description(field_name: str, field: ExtractionInferredField) -> str:
-    if field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
+def _expected_col_description(
+    field_name: str, inferred_field: ExtractionInferredField
+) -> str:
+    if inferred_field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
         return (
             f"Expected value for {field_name} (ARRAY_OF_STRUCT). "
             f"JSON-encoded list of objects."
         )
-    return f"Expected value for {field_name} ({field.field_type.value})."
+    return f"Expected value for {field_name} ({inferred_field.field_type.value})."
 
 
 def _derive_columns(
@@ -184,6 +186,9 @@ class GoldenEvalConfig:
     columns: list[BigQueryViewColumn]
     # Keyed by field name. Only ARRAY_OF_STRUCT fields need an entry here.
     array_of_struct_configs: dict[str, ArrayOfStructEvalConfig]
+    # Derived from the sibling collection.yaml when loaded via from_yaml.
+    # None when there is no sibling collection.yaml.
+    output_schema: ExtractionOutputSchema | None = field(default=None)
 
     def __post_init__(self) -> None:
         if self.accuracy_threshold <= 0.0:
@@ -235,6 +240,7 @@ class GoldenEvalConfig:
             accuracy_threshold=accuracy_threshold,
             columns=columns,
             array_of_struct_configs=array_of_struct_configs,
+            output_schema=output_schema,
         )
 
 
