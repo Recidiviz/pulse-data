@@ -21,6 +21,9 @@ from recidiviz.pipelines.ingest.types import ExternalIdKey
 ExternalIdClusterEdge = tuple[ExternalIdKey, ExternalIdKey | None]
 ExternalIdCluster = tuple[ExternalIdKey, set[ExternalIdKey]]
 
+# A cluster of external IDs as a sorted tuple.
+ClusterKey = tuple[ExternalIdKey, ...]
+
 # Beam does not have a standard datetime coder for datetime objects, so we use
 # UTC timestamps (floats) for any keys that require datetime objects.
 UpperBoundDate = float

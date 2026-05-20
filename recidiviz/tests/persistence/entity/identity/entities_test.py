@@ -21,6 +21,10 @@ import unittest
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity_class,
+)
+from recidiviz.persistence.entity.entity_field_index import EntityFieldIndex
 from recidiviz.persistence.entity.identity.entities import (
     IdentityAttributes,
     IdentityEmail,
@@ -34,10 +38,10 @@ from recidiviz.persistence.entity.identity.entities import (
     IdentitySex,
 )
 
-_TENANT = "US_OZ"
+_TENANT = "US_XX"
 
 _EXTERNAL_ID = IdentityExternalId(
-    tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+    tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
 )
 _NAME = IdentityName(
     tenant=_TENANT, given_name="John", surname="Doe", middle_name="Q", name_suffix="Jr"
@@ -56,20 +60,20 @@ class TestIdentityExternalId(unittest.TestCase):
     def test_equality(self) -> None:
         self.assertEqual(
             IdentityExternalId(
-                tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
             ),
             IdentityExternalId(
-                tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
             ),
         )
 
     def test_inequality(self) -> None:
         self.assertNotEqual(
             IdentityExternalId(
-                tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
             ),
             IdentityExternalId(
-                tenant=_TENANT, external_id="EXT_002", id_type="US_OZ_ID_TYPE"
+                tenant=_TENANT, external_id="EXT_002", id_type="US_XX_ID_TYPE"
             ),
         )
 
@@ -249,6 +253,11 @@ class TestIdentityEmail(unittest.TestCase):
 class TestIdentityAttributes(unittest.TestCase):
     """Tests the IdentityAttributes entity."""
 
+    def _field_index(self) -> EntityFieldIndex:
+        return entities_module_context_for_entity_class(
+            IdentityAttributes
+        ).field_index()
+
     def test_equality(self) -> None:
         self.assertEqual(
             IdentityAttributes(
@@ -310,6 +319,80 @@ class TestIdentityAttributes(unittest.TestCase):
         self.assertEqual(attrs.phone_numbers, [])
         self.assertEqual(attrs.emails, [])
 
+    def test_has_at_least_one_attribute_false_when_all_defaults(self) -> None:
+        attrs = IdentityAttributes(tenant=_TENANT, person_type=PersonType.JII)
+        self.assertFalse(attrs.has_at_least_one_attribute(self._field_index()))
+
+    def test_has_at_least_one_attribute_true_for_each_scalar(self) -> None:
+        field_index = self._field_index()
+        cases: list[tuple[str, IdentityAttributes]] = [
+            (
+                "name",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, name=_NAME
+                ),
+            ),
+            (
+                "birthdate",
+                IdentityAttributes(
+                    tenant=_TENANT,
+                    person_type=PersonType.JII,
+                    birthdate=datetime.date(1990, 1, 1),
+                ),
+            ),
+            (
+                "gender",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, gender=_GENDER
+                ),
+            ),
+            (
+                "sex",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, sex=_SEX
+                ),
+            ),
+            (
+                "ethnicity",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, ethnicity=_ETHNICITY
+                ),
+            ),
+        ]
+        for field, attrs in cases:
+            self.assertTrue(
+                attrs.has_at_least_one_attribute(field_index),
+                f"Expected True for {field}",
+            )
+
+    def test_has_at_least_one_attribute_true_for_each_list(self) -> None:
+        field_index = self._field_index()
+        cases: list[tuple[str, IdentityAttributes]] = [
+            (
+                "races",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, races=[_RACE]
+                ),
+            ),
+            (
+                "phone_numbers",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, phone_numbers=[_PHONE]
+                ),
+            ),
+            (
+                "emails",
+                IdentityAttributes(
+                    tenant=_TENANT, person_type=PersonType.JII, emails=[_EMAIL]
+                ),
+            ),
+        ]
+        for field, attrs in cases:
+            self.assertTrue(
+                attrs.has_at_least_one_attribute(field_index),
+                f"Expected True for {field}",
+            )
+
     def test_pickle_roundtrip(self) -> None:
         attrs = IdentityAttributes(
             tenant=_TENANT,
@@ -337,7 +420,7 @@ class TestIdentityFragment(unittest.TestCase):
                     IdentityExternalId(
                         tenant=_TENANT,
                         external_id="EXT_001",
-                        id_type="US_OZ_ID_TYPE",
+                        id_type="US_XX_ID_TYPE",
                     )
                 ],
                 attributes=IdentityAttributes(
@@ -365,7 +448,7 @@ class TestIdentityFragment(unittest.TestCase):
                     IdentityExternalId(
                         tenant=_TENANT,
                         external_id="EXT_001",
-                        id_type="US_OZ_ID_TYPE",
+                        id_type="US_XX_ID_TYPE",
                     )
                 ],
                 attributes=IdentityAttributes(
@@ -397,7 +480,7 @@ class TestIdentityFragment(unittest.TestCase):
                     IdentityExternalId(
                         tenant=_TENANT,
                         external_id="EXT_001",
-                        id_type="US_OZ_ID_TYPE",
+                        id_type="US_XX_ID_TYPE",
                     )
                 ],
                 attributes=IdentityAttributes(
@@ -410,7 +493,7 @@ class TestIdentityFragment(unittest.TestCase):
                     IdentityExternalId(
                         tenant=_TENANT,
                         external_id="EXT_002",
-                        id_type="US_OZ_ID_TYPE",
+                        id_type="US_XX_ID_TYPE",
                     )
                 ],
                 attributes=IdentityAttributes(
@@ -462,7 +545,7 @@ class TestIdentityFragment(unittest.TestCase):
             tenant=_TENANT,
             external_ids=[
                 IdentityExternalId(
-                    tenant=_TENANT, external_id="EXT_001", id_type="US_OZ_ID_TYPE"
+                    tenant=_TENANT, external_id="EXT_001", id_type="US_XX_ID_TYPE"
                 )
             ],
             attributes=IdentityAttributes(

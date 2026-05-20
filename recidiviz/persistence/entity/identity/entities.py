@@ -42,6 +42,10 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
+from recidiviz.persistence.entity.entity_field_index import (
+    EntityFieldIndex,
+    EntityFieldType,
+)
 from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
 )
@@ -150,6 +154,22 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
     )
 
     fragment: "IdentityFragment | None" = attr.ib(default=None)
+
+    ATTRIBUTE_FIELDS_TO_EXCLUDE_WHEN_CHECKING_FOR_AT_LEAST_ONE = frozenset(
+        {"tenant", "person_type"}
+    )
+
+    def has_at_least_one_attribute(self, field_index: EntityFieldIndex) -> bool:
+        """Returns True if at least one field beyond tenant/person_type is
+        non-empty."""
+        non_empty = field_index.get_fields_with_non_empty_values(
+            self, EntityFieldType.FLAT_FIELD
+        ) | field_index.get_fields_with_non_empty_values(
+            self, EntityFieldType.FORWARD_EDGE
+        )
+        return bool(
+            non_empty - self.ATTRIBUTE_FIELDS_TO_EXCLUDE_WHEN_CHECKING_FOR_AT_LEAST_ONE
+        )
 
     @classmethod
     def back_edge_field_name(cls) -> str:

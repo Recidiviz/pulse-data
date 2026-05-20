@@ -19,7 +19,7 @@ import datetime
 import unittest
 
 import apache_beam as beam
-from apache_beam.testing.util import assert_that, equal_to
+from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Gender, Race
@@ -38,7 +38,7 @@ from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
 )
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
 
-_TENANT = "US_OZ"
+_TENANT = "US_XX"
 
 
 def _make_attrs(
@@ -98,7 +98,7 @@ class TestMergeIngestViewIdentityFragmentsPTransform(unittest.TestCase):
         phone = IdentityPhoneNumber(tenant=_TENANT, number="5550100001")
 
         frag1 = _make_fragment(
-            [("P1", "US_OZ_EG")],
+            [("P1", "US_XX_EG")],
             _make_attrs(
                 name=name,
                 birthdate=datetime.date(1990, 1, 1),
@@ -106,7 +106,7 @@ class TestMergeIngestViewIdentityFragmentsPTransform(unittest.TestCase):
             ),
         )
         frag2 = _make_fragment(
-            [("P1", "US_OZ_EG"), ("B1", "US_OZ_BOOKING")],
+            [("P1", "US_XX_EG"), ("B1", "US_XX_BOOKING")],
             _make_attrs(
                 birthdate=datetime.date(1990, 1, 1),
                 gender=gender,
@@ -119,10 +119,10 @@ class TestMergeIngestViewIdentityFragmentsPTransform(unittest.TestCase):
             tenant=_TENANT,
             external_ids=[
                 IdentityExternalId(
-                    tenant=_TENANT, external_id="P1", id_type="US_OZ_EG"
+                    tenant=_TENANT, external_id="P1", id_type="US_XX_EG"
                 ),
                 IdentityExternalId(
-                    tenant=_TENANT, external_id="B1", id_type="US_OZ_BOOKING"
+                    tenant=_TENANT, external_id="B1", id_type="US_XX_BOOKING"
                 ),
             ],
             attributes=_make_attrs(
@@ -152,11 +152,11 @@ class TestMergeIngestViewIdentityFragmentsPTransform(unittest.TestCase):
                 equal_to(
                     [
                         (
-                            ("P1", "US_OZ_EG"),
+                            ("P1", "US_XX_EG"),
                             (_UPPER_BOUND_TS, _VIEW_NAME, expected_p1_merged),
                         ),
                         (
-                            ("B1", "US_OZ_BOOKING"),
+                            ("B1", "US_XX_BOOKING"),
                             (_UPPER_BOUND_TS, _VIEW_NAME, frag2),
                         ),
                     ]

@@ -74,4 +74,16 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         # 4. ClusterRootExternalIds
         #    Compute connected components from edges
         #    → PCollection[(ExternalIdKey, set[ExternalIdKey])]
+        #
+        # 4a. MapTuple sort
+        #    Convert each cluster's set of ExternalIdKeys into a sorted
+        #    ClusterKey tuple so downstream stages can use the cluster
+        #    as a deterministic key.
+        #    → PCollection[(ExternalIdKey, ClusterKey)]
+        #
+        # 5. BuildIdentityClusters
+        #    Join cluster memberships (step 4a) with merged fragments (step 2)
+        #    via CoGroupByKey, merge attributes within and across external IDs,
+        #    and produce one IdentityCluster per cluster.
+        #    → PCollection[IdentityCluster]
         pass
