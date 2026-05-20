@@ -4585,3 +4585,115 @@ DISTINCT_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS_MAXED_OUT_CREDITS = EventDi
         },
     ),
 )
+
+PERSON_DAYS_WEIGHTED_EARNED_CREDIT_BALANCE = SumSpanDaysMetric(
+    name="person_days_weighted_earned_credit_balance",
+    display_name="Person-Days Weighted by Earned Credit Balance",
+    description=(
+        "Total person-days of earned credit balance summed across all credit "
+        "types over the active incarcerated population (each active person-day "
+        "weighted by the person's net credit balance on that day). Pair with "
+        "AVG_DAILY_POPULATION × period_days (Looker's 'Normalized' measure "
+        "does this automatically) to get population-averaged credit balance "
+        "per resident. Excludes PENDING and PARTIALLY_APPLIED credits."
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.EARNED_CREDIT_BALANCE_SESSION,
+        span_conditions_dict={},
+    ),
+    weight_col="balance",
+)
+
+PERSON_DAYS_WEIGHTED_ACHIEVEMENT_EARNED_CREDIT_BALANCE = SumSpanDaysMetric(
+    name="person_days_weighted_achievement_earned_credit_balance",
+    display_name="Person-Days Weighted by ACHIEVEMENT Earned Credit Balance",
+    description=(
+        "Total person-days of ACHIEVEMENT credit balance summed over the "
+        "active incarcerated population (each active person-day weighted by "
+        "the person's net ACHIEVEMENT balance on that day). Pair with "
+        "AVG_DAILY_POPULATION × period_days (Looker's 'Normalized' measure "
+        "does this automatically) to get population-averaged ACHIEVEMENT "
+        "balance per resident]. Excludes PENDING and PARTIALLY_APPLIED credits."
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.EARNED_CREDIT_BALANCE_BY_TYPE_SESSION,
+        span_conditions_dict={"credit_type": ["ACHIEVEMENT"]},
+    ),
+    weight_col="balance",
+)
+
+DISTINCT_POPULATION_AT_ACHIEVEMENT_EARNED_CREDIT_CAP = SpanDistinctUnitCountMetric(
+    name="distinct_population_at_achievement_earned_credit_cap",
+    display_name="Distinct Population: At ACHIEVEMENT Earned Credit Cap",
+    description=(
+        "Total distinct count of people whose cumulative ACHIEVEMENT credit "
+        "balance reached the 120-day cap. Excludes PENDING and "
+        "PARTIALLY_APPLIED credits."
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.EARNED_CREDIT_BALANCE_BY_TYPE_SESSION,
+        span_conditions_dict={
+            "credit_type": ["ACHIEVEMENT"],
+            "is_at_cap": ["true"],
+        },
+    ),
+)
+
+PERSON_DAYS_WEIGHTED_EARNED_CREDIT_BALANCE_FOR_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SumSpanDaysMetric(
+    name="person_days_weighted_earned_credit_balance_for_registered_jii_tablet_app_provisioned_users",
+    display_name="Person-Days Weighted by Earned Credit Balance — Registered JII Tablet App Users",
+    description=(
+        "Total person-days of earned credit balance summed across all credit "
+        "types over the active incarcerated population, restricted to "
+        "person-days where the person was a registered JII tablet app user. "
+        "Pair with AVG_DAILY_POPULATION × period_days (Looker's 'Normalized' "
+        "measure does this automatically) to get the share of total "
+        "credit-balance-days held by registered users. Excludes PENDING and "
+        "PARTIALLY_APPLIED credits."
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.EARNED_CREDIT_BALANCE_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+    weight_col="balance",
+)
+
+PERSON_DAYS_WEIGHTED_ACHIEVEMENT_EARNED_CREDIT_BALANCE_FOR_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SumSpanDaysMetric(
+    name="person_days_weighted_achievement_earned_credit_balance_for_registered_jii_tablet_app_provisioned_users",
+    display_name="Person-Days Weighted by ACHIEVEMENT Earned Credit Balance — Registered JII Tablet App Users",
+    description=(
+        "Total person-days of ACHIEVEMENT credit balance summed over the "
+        "active incarcerated population, restricted to person-days where the "
+        "person was a registered JII tablet app user. Pair with "
+        "AVG_DAILY_POPULATION × period_days (Looker's 'Normalized' measure "
+        "does this automatically) to get the share of total ACHIEVEMENT "
+        "credit-balance-days held by registered users. Excludes "
+        "PENDING and PARTIALLY_APPLIED credits."
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.EARNED_CREDIT_BALANCE_BY_TYPE_SESSION,
+        span_conditions_dict={
+            "credit_type": ["ACHIEVEMENT"],
+            "is_registered": ["true"],
+        },
+    ),
+    weight_col="balance",
+)
+
+DISTINCT_POPULATION_AT_ACHIEVEMENT_EARNED_CREDIT_CAP_FOR_REGISTERED_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
+    name="distinct_population_at_achievement_earned_credit_cap_for_registered_jii_tablet_app_provisioned_users",
+    display_name="Distinct Population: At ACHIEVEMENT Earned Credit Cap — Registered JII Tablet App Users",
+    description=(
+        "Total distinct count of registered JII tablet app users whose "
+        "cumulative ACHIEVEMENT credit balance reached the 120-day cap. "
+        "Excludes PENDING and PARTIALLY_APPLIED credits."
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.EARNED_CREDIT_BALANCE_BY_TYPE_SESSION,
+        span_conditions_dict={
+            "credit_type": ["ACHIEVEMENT"],
+            "is_at_cap": ["true"],
+            "is_registered": ["true"],
+        },
+    ),
+)

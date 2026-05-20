@@ -1305,6 +1305,9 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 dataset_id="reference_views", table_id="compliance_tasks_configs"
             ),
             BigQueryAddress(
+                dataset_id="reference_views", table_id="earned_credit_type_caps"
+            ),
+            BigQueryAddress(
                 dataset_id="task_eligibility_completion_events_us_nc",
                 table_id="granted_supervision_sentence_reduction",
             ),
