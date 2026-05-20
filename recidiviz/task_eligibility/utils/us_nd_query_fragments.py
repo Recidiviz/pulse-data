@@ -69,6 +69,12 @@ MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE = f"""
     -- Only folks on Haven in DWCRC are minimum security
     AND (facility != 'DWCRC' OR REGEXP_CONTAINS(housing_unit, r'HVN'))"""
 
+# Boolean SQL expression that evaluates to TRUE when the row's (facility, housing_unit)
+# identifies an orientation unit. Assumes `facility` and `housing_unit` columns are in scope.
+# Folks on ORU in NDSP and folks on HZN-E in DWCRC are in an orientation unit.
+IS_IN_ORIENTATION_UNIT_CLAUSE = """((facility = 'NDSP' AND REGEXP_CONTAINS(housing_unit, r'ORU'))
+        OR (facility = 'DWCRC' AND REGEXP_CONTAINS(housing_unit, r'HZN-E')))"""
+
 
 def initial_review_dates_query() -> str:
     """
