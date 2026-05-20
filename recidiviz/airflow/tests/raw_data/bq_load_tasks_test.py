@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for bq_load_tasks.py airflow tasks"""
+
 import datetime
 from typing import List
 from unittest import TestCase
@@ -34,6 +35,9 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     SKIPPED_FILE_ERRORS,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -43,6 +47,14 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawDataAppendImportError,
     RawFileBigQueryLoadConfig,
     RawFileLoadAndPrepError,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataBlockingValidationFailure,
+    RawDataNonBlockingValidationFailure,
+    RawDataPreImportValidationError,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
+    RawDataPreImportValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
@@ -126,7 +138,9 @@ class LoadAndPrepForRegionTest(TestCase):
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
-            result_str, result_cls=AppendReadyFile, error_cls=RawFileLoadAndPrepError
+            result_str,
+            result_cls=AppendReadyFile,
+            error_cls=RawFileLoadAndPrepError,
         )
 
         assert result.errors == []
@@ -161,7 +175,7 @@ class LoadAndPrepForRegionTest(TestCase):
         def return_success(
             irf: ImportReadyFile,
             *,
-            temp_table_prefix: str  # pylint: disable=unused-argument
+            temp_table_prefix: str,  # pylint: disable=unused-argument
         ) -> AppendReadyFile:
             lps = AppendReadyFile(
                 import_ready_file=irf,
@@ -183,7 +197,9 @@ class LoadAndPrepForRegionTest(TestCase):
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
-            result_str, result_cls=AppendReadyFile, error_cls=RawFileLoadAndPrepError
+            result_str,
+            result_cls=AppendReadyFile,
+            error_cls=RawFileLoadAndPrepError,
         )
 
         assert len(result.results) == len(expected_results)
@@ -192,16 +208,35 @@ class LoadAndPrepForRegionTest(TestCase):
 
     def test_mix_results(self) -> None:
         expected_results = []
-        expected_errors = []
+        expected_errors: List[ImportReadyFile] = []
 
         def return_mixed(
             irf: ImportReadyFile,
             *,
-            temp_table_prefix: str  # pylint: disable=unused-argument
+            temp_table_prefix: str,  # pylint: disable=unused-argument
         ) -> AppendReadyFile:
             if irf.file_id == 2:
                 expected_errors.append(irf)
                 raise ValueError("We hit an error")
+            if irf.file_id == 3:
+                expected_errors.append(irf)
+                raise RawDataPreImportValidationError(
+                    file_tag=irf.file_tag,
+                    failures=[
+                        RawDataBlockingValidationFailure(
+                            validation_type=RawDataPreImportValidationType.NONNULL_VALUES,
+                            validation_query="SELECT 2",
+                            error_msg="null in nonnull column",
+                        )
+                    ],
+                    warnings=[
+                        RawDataNonBlockingValidationFailure(
+                            validation_type=RawDataPreImportValidationType.KNOWN_VALUES,
+                            validation_query="SELECT 1",
+                            error_msg="non-blocking finding",
+                        )
+                    ],
+                )
             lps = AppendReadyFile(
                 import_ready_file=irf,
                 append_ready_table_address=BigQueryAddress(
@@ -222,14 +257,51 @@ class LoadAndPrepForRegionTest(TestCase):
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
-            result_str, result_cls=AppendReadyFile, error_cls=RawFileLoadAndPrepError
+            result_str,
+            result_cls=AppendReadyFile,
+            error_cls=RawFileLoadAndPrepError,
         )
 
         assert len(result.results) == len(expected_results)
         assert self._sort(result.results) == self._sort(expected_results)
-        assert len(result.errors) == 1
-        assert result.errors[0].update_datetime == expected_errors[0].update_datetime
-        assert "We hit an error" in result.errors[0].error_msg
+        assert len(result.errors) == len(expected_errors)
+
+        errors_by_file_id = {error.file_id: error for error in result.errors}
+
+        assert "We hit an error" in errors_by_file_id[2].error_msg
+        assert errors_by_file_id[2].non_blocking_failure_message is None
+
+        validation_error = errors_by_file_id[3]
+        expected_error_msg = (
+            "1 pre-import validation(s) failed for file [singlePrimaryKey]."
+            " If you wish [singlePrimaryKey] to be permanently excluded from any validation, "
+            " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
+            " for a table-wide exemption or to pre_import_column_validation_exemptions"
+            " for a column-specific exemption in the raw file config."
+            "\n**Blocking failure**"
+            "\nFile import blocked until issue is addressed."
+            "\nError: null in nonnull column"
+            "\nValidation type: NONNULL_VALUES"
+            "\nValidation query: SELECT 2"
+        )
+        assert validation_error.error_msg == expected_error_msg
+        assert (
+            validation_error.error_type
+            == DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP
+        )
+        expected_non_blocking = (
+            "1 pre-import validation(s) failed for file [singlePrimaryKey]."
+            " If you wish [singlePrimaryKey] to be permanently excluded from any validation, "
+            " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
+            " for a table-wide exemption or to pre_import_column_validation_exemptions"
+            " for a column-specific exemption in the raw file config."
+            "\n**Non-blocking failure**"
+            "\nThis failure does not block the file import but should be reviewed and addressed."
+            "\nError: non-blocking finding"
+            "\nValidation type: KNOWN_VALUES"
+            "\nValidation query: SELECT 1"
+        )
+        assert validation_error.non_blocking_failure_message == expected_non_blocking
 
 
 class GenerateAppendBatchesTest(TestCase):
@@ -398,6 +470,12 @@ class GenerateAppendBatchesTest(TestCase):
 
     def test_filter_load_results_based_on_errors_blocking(self) -> None:
         results_input = self.get_summaries("tagFullHistoricalExport")
+        non_blocking_failure_message = (
+            "1 pre-import validation(s) failed for file [tagFullHistoricalExport]."
+        )
+        results_input[1] = attr.evolve(
+            results_input[1], non_blocking_failure_message=non_blocking_failure_message
+        )
         results, errors = _filter_load_results_based_on_errors(
             results_input,
             [
@@ -421,6 +499,22 @@ class GenerateAppendBatchesTest(TestCase):
             result_input.import_ready_file.update_datetime
             for result_input in results_input[1:]
         }
+        non_blocking_failure_messages_by_dt = {
+            error.update_datetime: error.non_blocking_failure_message
+            for error in errors
+        }
+        assert (
+            non_blocking_failure_messages_by_dt[
+                results_input[1].import_ready_file.update_datetime
+            ]
+            == non_blocking_failure_message
+        )
+        assert (
+            non_blocking_failure_messages_by_dt[
+                results_input[2].import_ready_file.update_datetime
+            ]
+            is None
+        )
 
 
 class AppendToRawDataTableForRegionTest(TestCase):

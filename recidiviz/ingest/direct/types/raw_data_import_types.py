@@ -1178,9 +1178,6 @@ class RawFileImport(BaseResult):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    def error_message_quote_safe(self) -> Optional[str]:
-        return self.error_message.replace("'", "''") if self.error_message else None
-
     def serialize(self) -> str:
         return json.dumps(
             {

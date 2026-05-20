@@ -26,7 +26,10 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.dags.raw_data.metadata import FILE_IMPORTS, IMPORT_RUN_ID
-from recidiviz.airflow.dags.utils.cloud_sql import postgres_formatted_datetime_with_tz
+from recidiviz.airflow.dags.utils.cloud_sql import (
+    postgres_formatted_datetime_with_tz,
+    postgres_quote_escape,
+)
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
@@ -60,16 +63,17 @@ AND import_status != 'DEFERRED'
 
 UPDATE_FILE_IMPORT_BY_FILE_IMPORT_ID = """
 UPDATE direct_ingest_raw_file_import AS o
-SET 
+SET
   import_status = v.import_status::direct_ingest_file_import_status,
   historical_diffs_active = v.historical_diffs_active::boolean,
   raw_rows = v.raw_rows::numeric,
   net_new_or_updated_rows = v.net_new_or_updated_rows::numeric,
   deleted_rows = v.deleted_rows::numeric,
-  error_message = v.error_message::text
+  error_message = v.error_message::text,
+  non_blocking_failure_message = v.non_blocking_failure_message::text
 FROM ( VALUES
   {file_import_rows}
-) AS v(file_import_id, import_status, historical_diffs_active, raw_rows, net_new_or_updated_rows, deleted_rows, error_message)
+) AS v(file_import_id, import_status, historical_diffs_active, raw_rows, net_new_or_updated_rows, deleted_rows, error_message, non_blocking_failure_message)
 WHERE o.file_import_id = v.file_import_id
 RETURNING o.file_import_id, o.import_run_id, o.file_id, o.import_status;"""
 
@@ -193,6 +197,7 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
                 "'Could not find a RawFileImport object associated with the file_import_id, "
                 "despite it being marked as STARTED. This likely means that there was a "
                 "DAG-level failure occurred during this import run.'",
+                None,
             ]
         else:
             row = [
@@ -203,8 +208,13 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
                 file_import_result.net_new_or_updated_rows,
                 file_import_result.deleted_rows,
                 (
-                    f"'{file_import_result.error_message_quote_safe()}'"
+                    f"'{postgres_quote_escape(file_import_result.error_message)}'"
                     if file_import_result.error_message
+                    else None
+                ),
+                (
+                    f"'{postgres_quote_escape(file_import_result.non_blocking_failure_message)}'"
+                    if file_import_result.non_blocking_failure_message
                     else None
                 ),
             ]

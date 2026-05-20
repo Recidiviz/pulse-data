@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for WriteImportCompletionsSqlQueryGenerator"""
+
 import datetime
 from typing import Any, Dict, List, NamedTuple, Optional
 from unittest.mock import create_autospec
@@ -408,6 +409,56 @@ ValueError: known_values for tagBasic must not be empty""",
         assert self.import_run_id_xcom is not None
         assert import_run[0] == self.import_run_id_xcom[IMPORT_RUN_ID]
         assert import_run[1] == end_time
+
+    def test_write_results_with_non_blocking_failure_message(self) -> None:
+        end_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+
+        non_blocking_failure_message = (
+            "2 pre-import validation(s) failed for file [tagBasic]."
+            "\n**Non-blocking failure**"
+            "\nError: unknown value 'Z' in column foo"
+            "\n**Non-blocking failure**"
+            "\nError: null in NONNULL column bar"
+        )
+
+        self.file_imports = [
+            RawFileImport(
+                file_id=1,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                historical_diffs_active=False,
+                raw_rows=1,
+                error_message=None,
+                non_blocking_failure_message=non_blocking_failure_message,
+            ),
+            RawFileImport(
+                file_id=2,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                historical_diffs_active=False,
+                raw_rows=1,
+                error_message=None,
+            ),
+        ]
+
+        self._seed_bq_metadata(self.file_imports)
+        self._seed_import_run(self.file_imports)
+
+        with freeze_time(end_time):
+            self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+        persisted = assert_type(
+            self.mock_pg_hook.get_records(
+                """SELECT file_id, non_blocking_failure_message
+                FROM direct_ingest_raw_file_import
+                ORDER BY file_id;"""
+            ),
+            list,
+        )
+        by_file_id = {row[0]: row[1] for row in persisted}
+
+        assert by_file_id[1] == non_blocking_failure_message
+        assert by_file_id[2] is None
 
     def test_write_results_some_missing(self) -> None:
         end_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)

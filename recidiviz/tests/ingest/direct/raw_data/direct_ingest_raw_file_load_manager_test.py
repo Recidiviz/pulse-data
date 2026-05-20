@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for DirectIngestRawFileLoadManager"""
+
 import datetime
 import os
 import re
@@ -48,6 +49,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
 )
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
     RawDataBlockingValidationFailure,
+    RawDataNonBlockingValidationFailure,
     RawDataPreImportValidationError,
 )
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
@@ -972,6 +974,53 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 )
             )
         )
+
+    def test_non_blocking_failure_message_for_append_ready_file(
+        self,
+    ) -> None:
+        file_tag, input_paths, *_ = self._prep_test(
+            "no_migrations_no_changes_single_file"
+        )
+        non_blocking_failure = RawDataNonBlockingValidationFailure(
+            validation_type=RawDataPreImportValidationType.KNOWN_VALUES,
+            validation_query="SELECT 1",
+            error_msg="unknown known_values found in column foo",
+        )
+        with patch(
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator.DirectIngestRawTablePreImportValidator.run_raw_data_temp_table_validations",
+            return_value=[non_blocking_failure],
+        ):
+            append_ready_file = self.manager.load_and_prep_paths(
+                ImportReadyFile(
+                    file_id=1,
+                    file_tag=file_tag,
+                    update_datetime=datetime.datetime(
+                        2023, 4, 8, 0, 0, 1, tzinfo=datetime.UTC
+                    ),
+                    original_file_paths=input_paths,
+                    pre_import_normalized_file_paths=None,
+                    bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                        raw_file_config=self.region_raw_file_config.raw_file_configs[
+                            file_tag
+                        ],
+                    ),
+                ),
+                temp_table_prefix="test",
+            )
+
+        expected = (
+            f"1 pre-import validation(s) failed for file [{file_tag}]."
+            f" If you wish [{file_tag}] to be permanently excluded from any validation, "
+            " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
+            " for a table-wide exemption or to pre_import_column_validation_exemptions"
+            " for a column-specific exemption in the raw file config."
+            "\n**Non-blocking failure**"
+            "\nThis failure does not block the file import but should be reviewed and addressed."
+            "\nError: unknown known_values found in column foo"
+            "\nValidation type: KNOWN_VALUES"
+            "\nValidation query: SELECT 1"
+        )
+        self.assertEqual(append_ready_file.non_blocking_failure_message, expected)
 
     def test_iso_8859_file_no_migrations_single_file_starts_empty(
         self,

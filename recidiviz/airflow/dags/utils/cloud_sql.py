@@ -36,3 +36,9 @@ def postgres_formatted_datetime_with_tz(dt: datetime.datetime) -> str:
         raise ValueError(f"Must provide a timezone, none found on {dt}")
 
     return dt.strftime("%Y-%m-%d %H:%M:%S.%f %Z")
+
+
+def postgres_quote_escape(s: str) -> str:
+    """Doubles single quotes in |s| so it can be safely inlined inside a Postgres
+    single-quoted string literal. Not idempotent."""
+    return s.replace("'", "''")

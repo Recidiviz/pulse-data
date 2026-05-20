@@ -31,7 +31,10 @@ from recidiviz.airflow.dags.monitoring.raw_data_file_tag_import_runs_sql_query_g
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.utils.cloud_sql import postgres_formatted_datetime_with_tz
+from recidiviz.airflow.dags.utils.cloud_sql import (
+    postgres_formatted_datetime_with_tz,
+    postgres_quote_escape,
+)
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
@@ -108,7 +111,11 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
                 "'PRIMARY'",
                 s.historical_diffs_active,
                 s.raw_rows or NULL,
-                (f"'{s.error_message_quote_safe()}'" if s.error_message else NULL),
+                (
+                    f"'{postgres_quote_escape(s.error_message)}'"
+                    if s.error_message
+                    else NULL
+                ),
             ]
             for s in file_imports
         ]

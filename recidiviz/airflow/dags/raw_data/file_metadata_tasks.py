@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Python logic for managing and handling raw file metadata"""
+
 import concurrent.futures
 import logging
 from collections import deque
@@ -367,15 +368,24 @@ def coalesce_results_and_errors(
         serialized_append_result,
     )
 
+    append_summaries, append_ready_file_batches = import_results
+    processing_errors, load_and_prep_errors, append_errors = import_errors
+
     (
         successful_file_imports_for_file_id,
         successfully_imported_paths,
-    ) = _build_file_imports_for_results(*import_results)
+    ) = _build_file_imports_for_results(append_summaries, append_ready_file_batches)
 
     region_raw_config = get_direct_ingest_region_raw_config(region_code)
 
     failed_file_imports_for_file_id = _build_file_imports_for_errors(
-        region_raw_config, raw_data_instance, bq_metadata, *import_errors
+        region_raw_config,
+        raw_data_instance,
+        bq_metadata,
+        processing_errors,
+        load_and_prep_errors,
+        append_errors,
+        append_ready_file_batches,
     )
 
     missing_file_imports = _reconcile_file_imports_and_bq_metadata(
@@ -470,12 +480,23 @@ def _build_file_imports_for_errors(
     processing_errors: List[RawFileProcessingError],
     load_and_prep_errors: List[RawFileLoadAndPrepError],
     append_errors: List[RawDataAppendImportError],
+    append_ready_file_batches: List[AppendReadyFileBatch],
 ) -> Dict[int, RawFileImport]:
     """Builds RawFileImport objects for all errors seen during the import process"""
 
     failed_file_imports: Dict[int, RawFileImport] = {}
 
     # --- simple case: append_errors and load_and_prep_errors have file_id -------------
+
+    # cross-reference the AppendReadyFile objects in order to surface any
+    # non-blocking failure message associated with the file
+    non_blocking_failure_message_by_file_id: Dict[int, str] = {
+        append_ready_file.import_ready_file.file_id: append_ready_file.non_blocking_failure_message
+        for batch in append_ready_file_batches
+        for files_for_tag in batch.append_ready_files_by_tag.values()
+        for append_ready_file in files_for_tag
+        if append_ready_file.non_blocking_failure_message
+    }
 
     for append_error in append_errors:
         failed_file_imports[append_error.file_id] = RawFileImport(
@@ -485,6 +506,9 @@ def _build_file_imports_for_errors(
                 raw_region_config, raw_data_instance, append_error.file_tag
             ),
             error_message=append_error.error_msg,
+            non_blocking_failure_message=non_blocking_failure_message_by_file_id.get(
+                append_error.file_id
+            ),
         )
 
     for load_and_prep_error in load_and_prep_errors:
@@ -495,6 +519,7 @@ def _build_file_imports_for_errors(
                 raw_region_config, raw_data_instance, load_and_prep_error.file_tag
             ),
             error_message=load_and_prep_error.error_msg,
+            non_blocking_failure_message=load_and_prep_error.non_blocking_failure_message,
         )
 
     # --- complex case: map file path back to file_id ----------------------------------

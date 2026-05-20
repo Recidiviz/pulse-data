@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A cloudsql generator for retrieving recent file import runs at the file tag level"""
+
 import datetime
 import logging
 from typing import List
@@ -39,6 +40,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
 )
 from recidiviz.utils.string import StrictStringFormatter
 
+# TODO(#71014) Pull non-blocking failure messages + add alerting for them as well
 GET_RECENT_FILE_TAG_IMPORTS_QUERY_TEMPLATE = """
 WITH imports_in_lookback as (
     SELECT 

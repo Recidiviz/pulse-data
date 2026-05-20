@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class responsible for loading raw files into BigQuery"""
+
 import datetime
 import logging
 from typing import List, Optional, Tuple
@@ -62,6 +63,10 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendSummary,
     ImportReadyFile,
     PreImportNormalizationType,
+)
+from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
+    RawDataNonBlockingValidationFailure,
+    build_non_blocking_failure_message,
 )
 from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
     RawDataDiffQueryBuilder,
@@ -336,6 +341,7 @@ class DirectIngestRawFileLoadManager:
                 temp_raw_file_with_transformations_address,
             )
 
+        non_blocking_failures: list[RawDataNonBlockingValidationFailure] = []
         # TODO(#34610) Skip import entirely if there are no rows in an incremental file
         if not skip_pre_import_validations and (
             raw_rows_count != 0
@@ -343,7 +349,7 @@ class DirectIngestRawFileLoadManager:
                 file.file_tag
             ].always_historical_export
         ):
-            self.validator.run_raw_data_temp_table_validations(
+            non_blocking_failures = self.validator.run_raw_data_temp_table_validations(
                 file.file_tag,
                 file.update_datetime,
                 temp_raw_file_with_transformations_address,
@@ -356,6 +362,9 @@ class DirectIngestRawFileLoadManager:
             import_ready_file=file,
             append_ready_table_address=temp_raw_file_with_transformations_address,
             raw_rows_count=raw_rows_count,
+            non_blocking_failure_message=build_non_blocking_failure_message(
+                file.file_tag, non_blocking_failures
+            ),
         )
 
     def _generate_historical_diff(

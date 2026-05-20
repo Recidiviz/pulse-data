@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Airflow tasks for biq query load step of the raw data import dag"""
+
 import concurrent.futures
 import logging
 import traceback
@@ -153,9 +154,10 @@ def load_and_prep_paths_for_batch(
                         ].pre_import_normalized_file_paths,
                         file_tag=future_to_metadata[future].file_tag,
                         update_datetime=future_to_metadata[future].update_datetime,
-                        error_msg=str(e),
+                        error_msg=e.error_message,
                         temp_table=None,
                         error_type=DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
+                        non_blocking_failure_message=e.non_blocking_failure_message,
                     )
                 )
             except Exception as e:
@@ -305,6 +307,7 @@ def _filter_load_results_based_on_errors(
                     file_tag=successful_load.import_ready_file.file_tag,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_paths}",
                     error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                    non_blocking_failure_message=successful_load.non_blocking_failure_message,
                 )
             )
         else:

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for python logic for managing and handling raw file metadata"""
+
 import datetime
 from typing import Dict, List
 from unittest import TestCase
@@ -791,6 +792,12 @@ class CoalesceResultsAndErrorsTest(TestCase):
         )
 
     def test_build_file_imports_for_errors_bq_errors(self) -> None:
+        load_non_blocking_failure_message = (
+            "1 pre-import validation(s) failed: warning attached to load_and_prep error"
+        )
+        append_non_blocking_failure_message = (
+            "1 pre-import validation(s) failed: warning carried via AppendReadyFile"
+        )
         load_errors = [
             # no temp files, no temp table
             RawFileLoadAndPrepError(
@@ -817,6 +824,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 original_file_paths=[],
                 temp_table=None,
                 error_msg="yikes!",
+                non_blocking_failure_message=load_non_blocking_failure_message,
             ),
             # temp table
             RawFileLoadAndPrepError(
@@ -838,6 +846,67 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 raw_temp_table=BigQueryAddress.from_str("temp.table2"),
                 error_msg="yikes!",
             ),
+            # append error for a file with no associated non_blocking_failure_message
+            RawDataAppendImportError(
+                file_id=5,
+                file_tag="tagBasicData",
+                raw_temp_table=BigQueryAddress.from_str("temp.table3"),
+                error_msg="yikes!",
+            ),
+        ]
+
+        append_ready_file_batches = [
+            AppendReadyFileBatch(
+                append_ready_files_by_tag={
+                    "tagBasicData": [
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=4,
+                                file_tag="tagBasicData",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 4, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=None,
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="bucket", blob_name="file_4.csv"
+                                    )
+                                ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
+                            ),
+                            append_ready_table_address=BigQueryAddress.from_str(
+                                "temp.table2"
+                            ),
+                            raw_rows_count=10,
+                            non_blocking_failure_message=append_non_blocking_failure_message,
+                        ),
+                        AppendReadyFile(
+                            import_ready_file=ImportReadyFile(
+                                file_id=5,
+                                file_tag="tagBasicData",
+                                update_datetime=datetime.datetime(
+                                    2024, 1, 5, 1, 1, 1, tzinfo=datetime.UTC
+                                ),
+                                pre_import_normalized_file_paths=None,
+                                original_file_paths=[
+                                    GcsfsFilePath(
+                                        bucket_name="bucket", blob_name="file_5.csv"
+                                    )
+                                ],
+                                bq_load_config=RawFileBigQueryLoadConfig(
+                                    schema_fields=[], skip_leading_rows=1
+                                ),
+                            ),
+                            append_ready_table_address=BigQueryAddress.from_str(
+                                "temp.table3"
+                            ),
+                            raw_rows_count=10,
+                        ),
+                    ]
+                }
+            )
         ]
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
@@ -845,17 +914,30 @@ class CoalesceResultsAndErrorsTest(TestCase):
         file_imports = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
-            [],
-            [],
-            load_errors,
-            append_errors,
+            bq_metadata=[],
+            processing_errors=[],
+            load_and_prep_errors=load_errors,
+            append_errors=append_errors,
+            append_ready_file_batches=append_ready_file_batches,
         )
 
-        assert len(file_imports) == 4
+        assert len(file_imports) == 5
         assert (
             one({summary.import_status for summary in file_imports.values()})
             == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
+
+        assert file_imports[1].non_blocking_failure_message is None
+        assert (
+            file_imports[2].non_blocking_failure_message
+            == load_non_blocking_failure_message
+        )
+        assert file_imports[3].non_blocking_failure_message is None
+        assert (
+            file_imports[4].non_blocking_failure_message
+            == append_non_blocking_failure_message
+        )
+        assert file_imports[5].non_blocking_failure_message is None
 
     def test_build_file_imports_for_errors_processing_errors_single_chunk_fail_all_fail(
         self,
@@ -920,8 +1002,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
             DirectIngestInstance.PRIMARY,
             bq_metadata,
             processing_errors,
-            [],
-            [],
+            load_and_prep_errors=[],
+            append_errors=[],
+            append_ready_file_batches=[],
         )
 
         assert len(file_imports) == 1
@@ -1002,8 +1085,9 @@ class CoalesceResultsAndErrorsTest(TestCase):
             DirectIngestInstance.PRIMARY,
             bq_metadata,
             processing_errors,
-            [],
-            [],
+            load_and_prep_errors=[],
+            append_errors=[],
+            append_ready_file_batches=[],
         )
 
         assert len(file_imports) == 1

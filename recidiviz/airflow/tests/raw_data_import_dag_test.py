@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the raw data import DAG"""
+
 import datetime
 import json
 import os
@@ -2554,6 +2555,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             assert set(self.fs.all_paths) == set(original_paths)
 
 
+# TODO(#71014) Add test case to cover new non-blocking failure case
 class RawDataImportDagE2ETest(AirflowIntegrationTest):
     """end to end tests for the raw data import dag"""
 
