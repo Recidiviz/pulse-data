@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Types associated with raw data imports"""
+
 import abc
 import datetime
 import json
@@ -188,6 +189,12 @@ class RawFileLoadAndPrepError(RawDataImportError):
         default=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
         validator=attr.validators.in_(DirectIngestRawFileImportStatus),
     )
+    # Non-blocking validation findings collected during load_and_prep before the
+    # blocking failure that produced this error. We carry the rendered string through
+    # so it lands on the file's RawFileImport row.
+    non_blocking_failure_message: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     def __str__(self) -> str:
         file_paths_str = "\n* ".join(
@@ -209,6 +216,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
             "error_msg": self.error_msg,
             "error_type": self.error_type.value,
             "temp_table": None if self.temp_table is None else self.temp_table.to_str(),
+            "non_blocking_failure_message": self.non_blocking_failure_message,
         }
         return json.dumps(result_dict)
 
@@ -238,6 +246,7 @@ class RawFileLoadAndPrepError(RawDataImportError):
                 ]
             ),
             error_msg=data["error_msg"],
+            non_blocking_failure_message=data["non_blocking_failure_message"],
         )
 
 
@@ -988,6 +997,10 @@ class AppendReadyFile(BaseResult):
             migrated raw data
         raw_rows_count (int): number of raw rows loaded from raw file paths before any
             transformations or filtering occurred
+        non_blocking_failure_message (str | None): rendered message describing
+            non-blocking findings from pre-import validations. Travels with the file
+            so it can be attached to the file's eventual RawFileImport row regardless
+            of whether the append step later succeeds or fails.
     """
 
     import_ready_file: ImportReadyFile = attr.ib(
@@ -997,6 +1010,9 @@ class AppendReadyFile(BaseResult):
         validator=attr.validators.instance_of(BigQueryAddress)
     )
     raw_rows_count: int = attr.ib(validator=attr_validators.is_int)
+    non_blocking_failure_message: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     def serialize(self) -> str:
         return json.dumps(
@@ -1004,6 +1020,7 @@ class AppendReadyFile(BaseResult):
                 self.import_ready_file.serialize(),
                 self.append_ready_table_address.to_str(),
                 self.raw_rows_count,
+                self.non_blocking_failure_message,
             ]
         )
 
@@ -1014,6 +1031,7 @@ class AppendReadyFile(BaseResult):
             import_ready_file=ImportReadyFile.deserialize(data[0]),
             append_ready_table_address=BigQueryAddress.from_str(data[1]),
             raw_rows_count=data[2],
+            non_blocking_failure_message=data[3],
         )
 
 
@@ -1136,6 +1154,9 @@ class RawFileImport(BaseResult):
         deleted_rows (int | None): if |historical_diffs_active| is True, the number
             of rows with is_deleted=True added to the raw data table by the historical
             diffing process
+        non_blocking_failure_message (str | None): rendered message describing
+            non-blocking validation failures associated with the import, can be
+            populated whether the import passed or failed.
     """
 
     file_id: int = attr.ib(validator=attr_validators.is_int)
@@ -1153,6 +1174,9 @@ class RawFileImport(BaseResult):
     deleted_rows: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+    non_blocking_failure_message: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     def error_message_quote_safe(self) -> Optional[str]:
         return self.error_message.replace("'", "''") if self.error_message else None
@@ -1167,6 +1191,7 @@ class RawFileImport(BaseResult):
                 "net_new_or_updated_rows": self.net_new_or_updated_rows,
                 "deleted_rows": self.deleted_rows,
                 "error_message": self.error_message,
+                "non_blocking_failure_message": self.non_blocking_failure_message,
             }
         )
 
@@ -1181,11 +1206,14 @@ class RawFileImport(BaseResult):
             net_new_or_updated_rows=data["net_new_or_updated_rows"],
             deleted_rows=data["deleted_rows"],
             error_message=data["error_message"],
+            non_blocking_failure_message=data["non_blocking_failure_message"],
         )
 
     @classmethod
     def from_load_results(
-        cls, append_ready_file: AppendReadyFile, append_summary: AppendSummary
+        cls,
+        append_ready_file: AppendReadyFile,
+        append_summary: AppendSummary,
     ) -> "RawFileImport":
         return RawFileImport(
             import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
@@ -1195,6 +1223,7 @@ class RawFileImport(BaseResult):
             deleted_rows=append_summary.deleted_rows,
             historical_diffs_active=append_summary.historical_diffs_active,
             error_message=None,
+            non_blocking_failure_message=append_ready_file.non_blocking_failure_message,
         )
 
 

@@ -250,6 +250,8 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
             " for a table-wide exemption or to pre_import_column_validation_exemptions"
             " for a column-specific exemption in the raw file config."
+            "\n**Blocking failure**"
+            "\nFile import blocked until issue is addressed."
             f"\nError: Found column(s) on raw file [{self.file_tag}] with only null values."
             f"\nColumn name: [{self.column_name}]"
             f"\nValidation type: {RawDataPreImportValidationType.NONNULL_VALUES.value}"

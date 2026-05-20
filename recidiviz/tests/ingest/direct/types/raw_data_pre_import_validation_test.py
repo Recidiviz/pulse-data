@@ -20,24 +20,11 @@ import unittest
 
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation import (
     RawDataBlockingValidationFailure,
-    RawDataNonBlockingValidationFailure,
     RawDataPreImportValidationError,
 )
 from recidiviz.ingest.direct.types.raw_data_pre_import_validation_type import (
     RawDataPreImportValidationType,
 )
-
-
-class TestRawDataNonBlockingValidationFailure(unittest.TestCase):
-    def test_json_round_trip(self) -> None:
-        original = RawDataNonBlockingValidationFailure(
-            validation_type=RawDataPreImportValidationType.KNOWN_VALUES,
-            validation_query="SELECT 1",
-            error_msg="unknown value 'Z' in column foo with quote ' inside",
-        )
-        self.assertEqual(
-            original, RawDataNonBlockingValidationFailure.from_json(original.to_json())
-        )
 
 
 class TestRawDataPreImportValidationError(unittest.TestCase):
@@ -58,6 +45,8 @@ class TestRawDataPreImportValidationError(unittest.TestCase):
             " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
             " for a table-wide exemption or to pre_import_column_validation_exemptions"
             " for a column-specific exemption in the raw file config."
+            "\n**Blocking failure**"
+            "\nFile import blocked until issue is addressed."
             "\nError: all values null in col foo"
             "\nValidation type: NONNULL_VALUES"
             "\nValidation query: SELECT 1"

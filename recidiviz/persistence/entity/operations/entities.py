@@ -295,6 +295,12 @@ class DirectIngestRawFileImport(Entity, BuildableAttr, DefaultableAttr):
     # be non-null if import_status is fail-y
     error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
 
+    # Rendered message describing non-blocking validation failures associated with
+    # an import. Can be populated regardless of import_status.
+    non_blocking_failure_message: Optional[str] = attr.ib(
+        validator=attr_validators.is_opt_str
+    )
+
     # RawBigQueryFile object from direct_ingest_raw_big_query_file_metadata table
     bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)
     # ImportRun object from direct_ingest_raw_file_import_run table

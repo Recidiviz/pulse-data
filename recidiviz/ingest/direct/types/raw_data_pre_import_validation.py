@@ -18,7 +18,7 @@
 
 import abc
 import datetime
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Sequence
 
 import attr
 
@@ -67,30 +67,23 @@ class RawDataPreImportValidationFailure:
             error_msg=self.error_msg,
         )
 
-    def to_json(self) -> dict[str, str]:
-        return {
-            "validation_type": self.validation_type.value,
-            "validation_query": self.validation_query,
-            "error_msg": self.error_msg,
-        }
-
-    @classmethod
-    def from_json(cls, data: dict[str, str]) -> "RawDataPreImportValidationFailure":
-        return cls(
-            validation_type=RawDataPreImportValidationType(data["validation_type"]),
-            validation_query=data["validation_query"],
-            error_msg=data["error_msg"],
-        )
-
 
 @attr.define
 class RawDataBlockingValidationFailure(RawDataPreImportValidationFailure):
     """Validation failure that should block the file import."""
 
+    def __str__(self) -> str:
+        preamble = "**Blocking failure**\nFile import blocked until issue is addressed."
+        return f"{preamble}\n{super().__str__()}"
+
 
 @attr.define
 class RawDataNonBlockingValidationFailure(RawDataPreImportValidationFailure):
     """Validation failure that should not block the file import, but should be surfaced to monitoring."""
+
+    def __str__(self) -> str:
+        preamble = "**Non-blocking failure**\nThis failure does not block the file import but should be reviewed and addressed."
+        return f"{preamble}\n{super().__str__()}"
 
 
 @attr.dataclass
@@ -190,6 +183,35 @@ class RawDataColumnValidationMixin:
         return f"AND {column_name} NOT IN ({null_values_str})"
 
 
+def build_pre_import_validation_failure_summary(
+    file_tag: str,
+    failures: Sequence[RawDataPreImportValidationFailure],
+) -> str:
+    """Renders a list of pre-import validation failures into a human-readable summary."""
+    if not failures:
+        raise ValueError(
+            "At least one failure must be provided to build a failure summary."
+        )
+
+    failure_messages = "\n\n".join([str(failure) for failure in failures])
+    return (
+        f"{len(failures)} pre-import validation(s) failed for file [{file_tag}]."
+        f" If you wish [{file_tag}] to be permanently excluded from any validation, "
+        " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
+        " for a table-wide exemption or to pre_import_column_validation_exemptions"
+        " for a column-specific exemption in the raw file config."
+        f"\n{failure_messages}"
+    )
+
+
+def build_non_blocking_failure_message(
+    file_tag: str, warnings: list[RawDataNonBlockingValidationFailure]
+) -> str | None:
+    if not warnings:
+        return None
+    return build_pre_import_validation_failure_summary(file_tag, warnings)
+
+
 @attr.define
 class RawDataPreImportValidationError(Exception):
     """Raised when one or more blocking pre-import validations fail for a given file tag."""
@@ -200,22 +222,17 @@ class RawDataPreImportValidationError(Exception):
         validator=attr_validators.is_non_empty_list
     )
     # Validation warnings that should not block the file import but should be surfaced to monitoring.
-    warnings: list[RawDataNonBlockingValidationFailure] | None = attr.ib(
-        validator=attr_validators.is_opt_list, default=None
+    warnings: list[RawDataNonBlockingValidationFailure] = attr.ib(
+        factory=list, validator=attr_validators.is_list
     )
 
     @property
     def error_message(self) -> str:
-        # Warnings are surfaced separately from errors, so we only include blocking failures in the error message.
-        failure_messages = "\n\n".join([str(failure) for failure in self.failures])
-        return (
-            f"{len(self.failures)} pre-import validation(s) failed for file [{self.file_tag}]."
-            f" If you wish [{self.file_tag}] to be permanently excluded from any validation, "
-            " please add the validation_type and exemption_reason to pre_import_validation_exemptions"
-            " for a table-wide exemption or to pre_import_column_validation_exemptions"
-            " for a column-specific exemption in the raw file config."
-            f"\n{failure_messages}"
-        )
+        return build_pre_import_validation_failure_summary(self.file_tag, self.failures)
+
+    @property
+    def non_blocking_failure_message(self) -> str | None:
+        return build_non_blocking_failure_message(self.file_tag, self.warnings)
 
     def __str__(self) -> str:
         return self.error_message

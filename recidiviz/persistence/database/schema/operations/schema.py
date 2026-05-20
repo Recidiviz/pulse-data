@@ -23,6 +23,7 @@ When making updates to this schema, please ensure to generate a corresponding da
 
 python -m recidiviz.tools.migrations.autogenerate_migration --database OPERATIONS --message add_field_foo
 """
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -518,6 +519,10 @@ class DirectIngestRawFileImport(OperationsBase):
     # Error message, typically a stack trace, associated with an import. Will likely
     # be non-null if import_status is fail-y
     error_message = Column(Text, nullable=True)
+
+    # Rendered message describing non-blocking validation failures associated with
+    # an import. Can be populated regardless of import_status.
+    non_blocking_failure_message = Column(Text, nullable=True)
 
     __table_args__ = (
         CheckConstraint(

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for raw_data_import_types.py"""
+
 import datetime
 import unittest
 from collections import defaultdict
@@ -207,6 +208,7 @@ class TestSerialization(unittest.TestCase):
             pre_import_normalized_file_paths=None,
             error_msg="aaaaaaaaa",
             temp_table=BigQueryAddress(dataset_id="d", table_id="t"),
+            non_blocking_failure_message="1 pre-import validation(s) failed for file [tag].",
         )
 
         self._validate_serialization(no_temp, RawFileLoadAndPrepError)
@@ -342,6 +344,7 @@ class TestSerialization(unittest.TestCase):
                 dataset_id="dataset", table_id="table"
             ),
             raw_rows_count=3,
+            non_blocking_failure_message="1 pre-import validation(s) failed for file [fake_tag].",
         )
         self._validate_serialization(original, AppendReadyFile)
 
@@ -477,6 +480,7 @@ class TestSerialization(unittest.TestCase):
             net_new_or_updated_rows=None,
             deleted_rows=1,
             error_message="failure!",
+            non_blocking_failure_message="1 pre-import validation(s) failed for file [tag] with apostrophe '",
         )
         self._validate_serialization(original, RawFileImport)
 
