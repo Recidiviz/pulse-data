@@ -18,3 +18,5 @@ updates:
       - dependencies
       - javascript
       - "Type: Dependency Upgrade"
+    cooldown:
+      default-days: 3
