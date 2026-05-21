@@ -276,20 +276,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         ],
     },
     StateCode.US_TN: {
-        "AssignedStaffSupervisionPeriod_v2": [
-            "all_supervision_periods",
-            "cleaned_assignment_periods",
-            "close_oos_periods",
-            "combined_officer_and_level",
-            "last_movement_from_OffenderMovement",
-            "officer_names",
-            "override_backdated_discharges",
-            "raw_supervision_level_periods",
-            "split_officer_names",
-            "supervision_level_sessions",
-            "supervision_level_sessions_padded",
-            "ungrouped_supervision_level_sessions",
-        ],
         "OffenderName": ["filtered_out_nicknames", "normalized_rows"],
         "SentencesChargesAndCourtCases_v4": [
             "all_latest_sentences_joined",
