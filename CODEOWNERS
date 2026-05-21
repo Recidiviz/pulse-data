@@ -35,6 +35,7 @@ recidiviz/tests/calculator/query/state/views/reference/product_person_external_i
 recidiviz/tools/find_unused_bq_views.py @Recidiviz/doppler-codeowners
 recidiviz/source_tables/untracked_source_table_exemptions.py @Recidiviz/doppler
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler
+recidiviz/tests/big_query/known_undocumented_columns.py @Recidiviz/doppler
 recidiviz/tests/view_registry/sentence_v1_migration_burndown_test.py @ageiduschek
 recidiviz/tests/view_registry/sentences_v1_migration_burndown/** @ageiduschek
 recidiviz/view_registry/deprecated_view_reference_exemptions.py @ageiduschek

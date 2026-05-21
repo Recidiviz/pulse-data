@@ -18,7 +18,7 @@
 import logging
 from concurrent import futures
 from itertools import groupby
-from typing import Literal, Sequence
+from typing import Literal, NamedTuple, Sequence
 from unittest.mock import patch
 
 import pytest
@@ -35,6 +35,11 @@ from recidiviz.big_query.big_query_schema_utils import (
     format_schema_diffs,
 )
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_column import (
+    COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT,
+    BigQueryViewColumn,
+    Record,
+)
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagWalker,
     BigQueryViewDagWalkerProcessingFailureMode,
@@ -66,12 +71,16 @@ from recidiviz.source_tables.source_table_config import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.big_query.known_undocumented_columns import (
+    KNOWN_UNDOCUMENTED_COLUMNS,
+)
 from recidiviz.utils.environment import (
     DATA_PLATFORM_GCP_PROJECTS,
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import is_meaningful_docstring
 from recidiviz.utils.types import assert_type_list
 from recidiviz.validation.views.view_config import (
     get_view_builders_for_views_to_update as get_validation_view_builders,
@@ -87,6 +96,14 @@ from recidiviz.view_registry.deployed_view_external_id_exemptions import (
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 DEFAULT_TEMPORARY_TABLE_EXPIRATION = 60 * 60 * 1000  # 1 hour
+
+
+class ViewSchemaPair(NamedTuple):
+    """The declared BigQueryViewColumnschema and deployed BigQuery SchemaField schema
+    for a single view."""
+
+    declared: Sequence[BigQueryViewColumn]
+    deployed: list[bigquery.SchemaField]
 
 
 def _preprocess_views_to_load_to_emulator(
@@ -301,35 +318,23 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
         return list(assert_type_list(schema, bigquery.SchemaField))
 
-    # TODO(#18306): Once the BigQueryViewBuilders store the schema, update this check
-    #  to just verify that the schema generated in this test matches the schema defined
-    #  in the builder, then migrate all the remaining checks in this function to just
-    #  query against the schema defined on the builder.
+    # TODO(#80204): Update this check to just verify that the schemas deployed in this
+    #  test match the schemas declared in the views, then migrate all the remaining
+    #  checks in this function to a new test that verifies against declared schemas.
     def _run_view_schema_checks(self) -> None:
-        view_address_to_schema = self._load_view_schemas_by_address()
-        filtered_view_address_to_schema = {
-            address: schema
-            for address, schema in view_address_to_schema.items()
-            if schema is not None
-        }
-        skipped_view_addresses = {
-            address
-            for address, schema in view_address_to_schema.items()
-            if schema is None
-        }
+        deployed_view_address_to_schemas = self._load_view_schemas_by_address()
 
         self._verify_declared_schemas_match_actual_schemas(
-            filtered_view_address_to_schema, skipped_view_addresses
+            deployed_view_address_to_schemas
         )
-        self._verify_views_all_have_state_code_column(
-            filtered_view_address_to_schema, skipped_view_addresses
-        )
+        self._verify_views_all_have_state_code_column(deployed_view_address_to_schemas)
         self._verify_views_have_no_unqualified_external_id_columns(
-            filtered_view_address_to_schema, skipped_view_addresses
+            deployed_view_address_to_schemas
         )
         self._verify_non_export_views_have_no_person_external_id_columns(
-            filtered_view_address_to_schema, skipped_view_addresses
+            deployed_view_address_to_schemas
         )
+        self._verify_meaningful_column_descriptions(deployed_view_address_to_schemas)
 
     def _schema_has_field(
         self, schema: list[bigquery.SchemaField], field_name: str
@@ -338,7 +343,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
     def _split_by_has_field(
         self,
-        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair],
         field_name: str,
         match_type: Literal["exact", "suffix"],
     ) -> tuple[set[BigQueryAddress], set[BigQueryAddress]]:
@@ -349,14 +354,16 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         """
         does_not_have_field_addresses = set()
         has_field_addresses = set()
-        for address, schema in view_address_to_schema.items():
+        for address, schemas in view_address_to_schemas.items():
             # Check if any column name contains the field
             match match_type:
                 case "exact":
-                    has_matching_field = any(field_name == f.name for f in schema)
+                    has_matching_field = any(
+                        field_name == f.name for f in schemas.deployed
+                    )
                 case "suffix":
                     has_matching_field = any(
-                        f.name.endswith(field_name) for f in schema
+                        f.name.endswith(field_name) for f in schemas.deployed
                     )
             if not has_matching_field:
                 does_not_have_field_addresses.add(address)
@@ -366,14 +373,16 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
     def _load_view_schemas_by_address(
         self,
-    ) -> dict[BigQueryAddress, list[bigquery.SchemaField] | None]:
-        """Loads schemas for every view address into a map. If the view was not loaded
-        during the view graph test as an optimization, the schema returned for that
-        view will be None.
+    ) -> dict[BigQueryAddress, ViewSchemaPair]:
+        """Loads schemas for every view address into a map, pairing each view's
+        declared schema (from the builder) with its deployed schema (from
+        BigQuery). Views that were not loaded for the view graph test as an
+        optimization are omitted from the returned map.
         """
-        view_address_to_schema: dict[
-            BigQueryAddress, list[bigquery.SchemaField] | None
-        ] = {}
+        declared_by_address: dict[BigQueryAddress, Sequence[BigQueryViewColumn]] = {
+            vb.address: vb.build().schema for vb in self._view_builders_to_update
+        }
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair] = {}
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
@@ -386,30 +395,29 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             }
             for future in futures.as_completed(get_schema_futures):
                 address = get_schema_futures[future]
-                schema = future.result()
-                view_address_to_schema[address] = schema
-        return view_address_to_schema
+                deployed = future.result()
+                if deployed is None:
+                    continue
+                view_address_to_schemas[address] = ViewSchemaPair(
+                    declared=declared_by_address[address], deployed=deployed
+                )
+        return view_address_to_schemas
 
     def _verify_declared_schemas_match_actual_schemas(
         self,
-        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
-        skipped_addresses: set[BigQueryAddress],
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair],
     ) -> None:
         """Throws if we find a view whose declared schema does not match the
         schema of the loaded view.
         """
         mismatched_schemas: dict[str, list[tuple[str, bigquery.SchemaField]]] = {}
-        source_views = [
-            vb.build()
-            for vb in self._view_builders_to_update
-            if vb.address not in skipped_addresses
-        ]
 
-        for v in source_views:
-            actual_schema = view_address_to_schema.get(v.address) or []
-            schema_diff = diff_declared_schema_to_bq_schema(v.schema, actual_schema)
+        for address, schemas in view_address_to_schemas.items():
+            schema_diff = diff_declared_schema_to_bq_schema(
+                schemas.declared, schemas.deployed
+            )
             if len(schema_diff) > 0:
-                mismatched_schemas[v.address.to_str()] = schema_diff
+                mismatched_schemas[address.to_str()] = schema_diff
 
         if mismatched_schemas:
             raise ValueError(
@@ -420,8 +428,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
     def _verify_views_all_have_state_code_column(
         self,
-        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
-        skipped_addresses: set[BigQueryAddress],
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair],
     ) -> None:
         """Throws if we find any view that does not have a state_code column (and is not
         in our list of exempted views).
@@ -430,12 +437,10 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             has_state_code_addresses,
             missing_state_code_addresses,
         ) = self._split_by_has_field(
-            view_address_to_schema, "state_code", match_type="exact"
+            view_address_to_schemas, "state_code", match_type="exact"
         )
 
-        expected_missing_state_code_addresses = {
-            a for a in self._known_no_state_col_addresses if a not in skipped_addresses
-        }
+        expected_missing_state_code_addresses = self._known_no_state_col_addresses
 
         unexpected_missing_state_code_addresses = (
             missing_state_code_addresses - expected_missing_state_code_addresses
@@ -467,25 +472,21 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
     def _verify_views_have_no_unqualified_external_id_columns(
         self,
-        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
-        skipped_addresses: set[BigQueryAddress],
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair],
     ) -> None:
         """Validates that no view in our BQ view graph has a column named "external_id".
         All external id columns should have a qualified name, like sentence_external_id
         or stable_person_external_id.
         """
         has_external_id_addresses, no_external_id_addresses = self._split_by_has_field(
-            view_address_to_schema, "external_id", match_type="exact"
+            view_address_to_schemas, "external_id", match_type="exact"
         )
 
-        expected_has_external_id_addresses = {
-            a
-            for a in self._known_has_external_id_addresses
-            if a not in skipped_addresses
-        }
+        expected_has_external_id_addresses = self._known_has_external_id_addresses
 
-        invalid_addresses = expected_has_external_id_addresses - set(
-            view_address_to_schema
+        all_known_view_addresses = {vb.address for vb in self._view_builders_to_update}
+        invalid_addresses = (
+            expected_has_external_id_addresses - all_known_view_addresses
         )
         if invalid_addresses:
             addresses_list = BigQueryAddress.addresses_to_str(
@@ -529,8 +530,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
     def _verify_non_export_views_have_no_person_external_id_columns(
         self,
-        view_address_to_schema: dict[BigQueryAddress, list[bigquery.SchemaField]],
-        skipped_addresses: set[BigQueryAddress],
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair],
     ) -> None:
         """Validates that views not part of metric exports don't have columns matching
         the pattern *person_external_id. We should not pass external id information
@@ -541,18 +541,14 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             has_person_external_id_addresses,
             no_person_external_id_addresses,
         ) = self._split_by_has_field(
-            view_address_to_schema, "person_external_id", match_type="suffix"
+            view_address_to_schemas, "person_external_id", match_type="suffix"
         )
 
         # Views that are part of metric exports are allowed to have person_external_id columns
-        expected_has_person_external_id_addresses = {
-            a
-            for a in (
-                self._allowed_has_person_external_id_addresses()
-                | self._known_non_export_views_with_person_external_id
-            )
-            if a not in skipped_addresses
-        }
+        expected_has_person_external_id_addresses = (
+            self._allowed_has_person_external_id_addresses()
+            | self._known_non_export_views_with_person_external_id
+        )
 
         unexpected_has_person_external_id_addresses = (
             has_person_external_id_addresses - expected_has_person_external_id_addresses
@@ -589,6 +585,87 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 f"_KNOWN_NON_EXPORT_VIEWS_WITH_PERSON_EXTERNAL_ID_COLUMN:"
                 f"{addresses_list}\nThese should be removed from that list (yay!)."
             )
+
+    @classmethod
+    def _bad_description_columns(
+        cls, columns: Sequence[BigQueryViewColumn]
+    ) -> list[str]:
+        """Returns the names of declared columns (recursing into Records) whose
+        description is not meaningful. Record subfield names are returned as "parent_name.subfield_name".
+        """
+        names: list[str] = []
+        if not columns:
+            return names
+        for col in columns:
+            if (
+                col.description == COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT
+                or not is_meaningful_docstring(col.description)
+            ):
+                names.append(col.name)
+            if isinstance(col, Record):
+                for sub_name in cls._bad_description_columns(col.fields):
+                    names.append(f"{col.name}.{sub_name}")
+        return names
+
+    def _verify_meaningful_column_descriptions(
+        self,
+        view_address_to_schemas: dict[BigQueryAddress, ViewSchemaPair],
+    ) -> None:
+        """Validates that every declared column description is "meaningful" —
+        non-empty, not indicating unfinished work, and not equal to the
+        COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT sentinel. (view_address, column_name)
+        pairs in KNOWN_UNDOCUMENTED_COLUMNS are exempted.
+        """
+        unexpected_bad: dict[BigQueryAddress, list[str]] = {}
+        unexpected_fixed: dict[BigQueryAddress, list[str]] = {}
+
+        for address, schemas in view_address_to_schemas.items():
+
+            actual_set = set(self._bad_description_columns(schemas.declared))
+            expected_set = set(KNOWN_UNDOCUMENTED_COLUMNS.get(address, []))
+
+            new_bad = sorted(actual_set - expected_set)
+            if new_bad:
+                unexpected_bad[address] = new_bad
+
+            now_fixed = sorted(expected_set - actual_set)
+            if now_fixed:
+                unexpected_fixed[address] = now_fixed
+
+        error_chunks: list[str] = []
+        if unexpected_bad:
+            lines = [
+                f"  {addr.to_str()}: {cols}"
+                for addr, cols in sorted(
+                    unexpected_bad.items(),
+                    key=lambda kv: (kv[0].dataset_id, kv[0].table_id),
+                )
+            ]
+            error_chunks.append(
+                "Found new columns with non-meaningful descriptions (empty, "
+                "TO" + "DO/XXX prefix, or the COLUMN_UNDOCUMENTED_PLACEHOLDER_TEXT "
+                "sentinel) that are not in KNOWN_UNDOCUMENTED_COLUMNS:\n"
+                + "\n".join(lines)
+                + "\n\nPlease write a real description for these columns. If there are "
+                "known undocumented columns in the same view, please document those as "
+                "well and remove them from the KNOWN_UNDOCUMENTED_COLUMNS exemption list."
+            )
+        if unexpected_fixed:
+            lines = [
+                f"  {addr.to_str()}: {cols}"
+                for addr, cols in sorted(
+                    unexpected_fixed.items(),
+                    key=lambda kv: (kv[0].dataset_id, kv[0].table_id),
+                )
+            ]
+            error_chunks.append(
+                "Found columns listed in KNOWN_UNDOCUMENTED_COLUMNS that now "
+                "have a meaningful description (yay!). Please remove them from "
+                "recidiviz/tests/big_query/known_undocumented_columns.py:\n"
+                + "\n".join(lines)
+            )
+        if error_chunks:
+            raise ValueError("\n\n".join(error_chunks))
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
