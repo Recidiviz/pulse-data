@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_lower_than_recommended,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    caf_assessed_level_lower_than_2026_policy_v2_recommended_at_caf_date,
     custody_level_lower_than_recommended_2026_policy_v2,
     has_not_been_classified_under_2026_policy,
     ineligible_for_annual_reclassification,
@@ -60,6 +61,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ineligible_for_initial_classification.VIEW_BUILDER,
         custody_level_lower_than_recommended_2026_policy_v2.VIEW_BUILDER,
         custody_level_not_lower_than_recommended_previous_policy_view_builder,
+        caf_assessed_level_lower_than_2026_policy_v2_recommended_at_caf_date.VIEW_BUILDER,
         has_not_been_classified_under_2026_policy.VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_upgrade_2026_policy.VIEW_BUILDER,
