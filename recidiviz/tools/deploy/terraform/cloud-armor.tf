@@ -160,7 +160,7 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     priority    = "900"
     match {
       expr {
-        expression = "request.path.matches(\"/admin/workflows/[a-zA-Z_]+/opportunities/[a-zA-Z_]+/configurations\")"
+        expression = "request.path.matches(\"/admin/workflows/[a-zA-Z0-9_]+/opportunities/[a-zA-Z0-9_]+/configurations\")"
       }
     }
   }
