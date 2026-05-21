@@ -17,10 +17,7 @@
 /* Apps Script for sending email reminders to supervision line staff. */
 
 const SUPERVISION_LINESTAFF_INCLUDED_STATES = [
-  "US_IA",
   "US_IX",
-  "US_MI",
-  "US_ND",
   "US_NE",
   "US_PA",
   "US_TX",

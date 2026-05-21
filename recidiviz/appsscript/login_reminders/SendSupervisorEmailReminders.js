@@ -16,7 +16,7 @@
 // =============================================================================
 /* Apps Script for sending email reminders to supervisors. */
 
-const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_PA"];
+const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_PA"];
 
 // =============================================================================
 
