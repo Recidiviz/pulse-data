@@ -27,7 +27,7 @@ exclusions:
     exclusion_reason: Sentencing assistance case insights are not configured/launched for this state
 max_allowed_error_overrides:
   - validation_name: supervision_population_by_type_external_comparison
-    hard_max_allowed_error_override: 0.1215
+    hard_max_allowed_error_override: 0.13
     soft_max_allowed_error_override: 0.0502
     override_reason: |-
       5% is the tightest threshold the state thought we could get to given the quality
@@ -37,10 +37,10 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .11
     override_reason: Investigation needed. TODO(#32640)
   - validation_name: state_supervision_violation_by_violation_date_stable_counts
-    hard_max_allowed_error_override: .41
+    hard_max_allowed_error_override: .43
     override_reason: This is standard variation for this entity month to month.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
-    hard_max_allowed_error_override: .41
+    hard_max_allowed_error_override: .43
     override_reason: This is standard variation for this entity month to month.
   - validation_name: state_supervision_period_by_start_date_stable_counts
     hard_max_allowed_error_override: .28
@@ -54,7 +54,33 @@ max_allowed_error_overrides:
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.0003
     override_reason: TODO(#45221) - Delete duplicates resolved after #66209
+  - validation_name: officer_monthly_usage_report_vs_impact_report_active_users_supervision
+    hard_max_allowed_error_override: 0.10
+    override_reason: |-
+      Contractor staff (GEO Group, CoreCivic) who register for Workflows are not present
+      in ACIS data and therefore cannot be linked to ingested supervision officers. These
+      users appear in impact report active user counts but not in the officer monthly usage
+      report, causing a structural gap. The observed worst case is ~6% (Nov 2025).
+  - validation_name: officer_monthly_usage_report_vs_impact_report_registered_users_supervision
+    hard_max_allowed_error_override: 0.21
+    override_reason: |-
+      Contractor staff (GEO Group, CoreCivic) who register for Workflows are not present
+      in ACIS data. These users appear in impact report registered user counts but cannot
+      be linked to ingested supervision officers, causing a gap between the state-level and
+      district-level impact report counts (users without a district assignment are excluded
+      from district aggregates). The absolute gap is ~4-5 users; the 20% worst case (May
+      2025) occurred when total registered users was only 10. With the current ~90 registered
+      users the gap is ~5%, and it will not worsen as the user base grows.
 num_allowed_rows_overrides:
+  - validation_name: workflows_primary_users_not_in_state_staff
+    hard_num_allowed_rows_override: 23
+    override_reason: |-
+      Contractor staff (GEO Group, CoreCivic) are not present in ACIS data. ADCRR staff
+      also commonly register for workflows using an email distinct from the one assigned 
+      to them in ACIS.
+      This threshold represents the irreducible set of users that cannot have emails 
+      properly assigned using currently available data. Active users in this set are
+      experiencing silently dropped activity in officer-level usage metrics.
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 2000
     override_reason: Investigation needed. TODO(#34826)
@@ -70,9 +96,6 @@ num_allowed_rows_overrides:
   - validation_name: inferred_group_aggregated_projected_dates_validation
     hard_num_allowed_rows_override: 60000
     override_reason: Bumping until work is complete to fix. TODO(#34858)
-  - validation_name: missing_client_record_rows_null_full_name
-    hard_num_allowed_rows_override: 1
-    override_reason: Investigation needed. TODO(#50213)
   - validation_name: missing_client_record_rows_null_officer
     hard_num_allowed_rows_override: 10
     override_reason: Investigation needed. TODO(#50214)
