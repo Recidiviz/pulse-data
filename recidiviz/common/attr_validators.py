@@ -62,6 +62,14 @@ def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> 
         raise ValueError("String value should not be empty.")
 
 
+def is_none(_instance: Any, attribute: attr.Attribute, value: Any) -> None:
+    """Validator that enforces a field is always None. Useful for fields that
+    exist only to satisfy a structural convention (e.g. an enum's _raw_text
+    companion) but should never carry a value at runtime."""
+    if value is not None:
+        raise ValueError(f"Expected {attribute.name} to always be None, got {value!r}")
+
+
 def is_opt_utc_timezone_aware_datetime(
     _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.datetime]
 ) -> None:

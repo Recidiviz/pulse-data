@@ -27,6 +27,7 @@ import attr
 
 from recidiviz.common.attr_validators import (
     is_list_of,
+    is_none,
     is_opt,
     is_opt_str,
     is_opt_valid_name_part,
@@ -124,6 +125,14 @@ class IdentityAttributes(IdentityEntityMixin, Entity):
     best-known attributes (as the attributes field on IdentityCluster)."""
 
     person_type: PersonType = attr.ib(validator=attr.validators.instance_of(PersonType))
+
+    # Always None at runtime (enforced by is_none). Present because the manifest
+    # compiler pairs every enum field with a _raw_text companion (see
+    # EnumLiteralFieldManifest.additional_field_manifests). person_type comes
+    # from $literal_enum in the YAML, which auto-injects None for the raw_text
+    # counterpart. The type annotation stays `str | None` so the serialization
+    # framework's attribute-type introspection keeps working.
+    person_type_raw_text: str | None = attr.ib(default=None, validator=is_none)
 
     name: "IdentityName | None" = attr.ib(default=None, validator=is_opt(IdentityName))
 

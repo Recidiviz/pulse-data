@@ -267,8 +267,15 @@ class TestClusterHash(unittest.TestCase):
         )
         self.assertEqual(
             cluster.cluster_hash,
-            "3f6bacf8a682144f27e776d8217d5ac3acfee065270600d5f9fd1dfde675dfc8",
+            "932eb8ad7c6d05f47a0ad62124a5324f4505d5215ba2c5ee79c54f7f39f409a3",
         )
+
+    # Fields that must remain None even in _fully_populated_attributes (their
+    # validators enforce it). Listed here so the field-coverage check below
+    # doesn't flag them.
+    _FIELDS_ALWAYS_NONE: frozenset[str] = frozenset(
+        {"IdentityAttributes.person_type_raw_text"}
+    )
 
     def test_fully_populated_attributes_field_coverage(self) -> None:
         """Ensures _fully_populated_attributes populates every field so the
@@ -286,6 +293,12 @@ class TestClusterHash(unittest.TestCase):
     def _assert_all_fields_populated(self, d: dict[str, object], path: str) -> None:
         for key, value in d.items():
             field_path = f"{path}.{key}"
+            if field_path in self._FIELDS_ALWAYS_NONE:
+                self.assertIsNone(
+                    value,
+                    f"{field_path} should be None per its validator, got {value!r}",
+                )
+                continue
             if isinstance(value, dict):
                 self._assert_all_fields_populated(value, field_path)
             elif isinstance(value, list):

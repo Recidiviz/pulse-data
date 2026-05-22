@@ -1492,6 +1492,28 @@ class TestIsNonEmptyList(unittest.TestCase):
             _ = self._TestClass(items="not a list")  # type: ignore[arg-type]
 
 
+class TestIsNone(unittest.TestCase):
+    """Tests for the is_none() validator."""
+
+    @attr.define
+    class _TestClass:
+        field: str | None = attr.ib(default=None, validator=attr_validators.is_none)
+
+    def test_none(self) -> None:
+        _ = self._TestClass()
+
+    def test_explicit_none(self) -> None:
+        _ = self._TestClass(field=None)
+
+    def test_string_value_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Expected field to always be None"):
+            _ = self._TestClass(field="value")  # type: ignore[arg-type]
+
+    def test_empty_string_raises(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Expected field to always be None"):
+            _ = self._TestClass(field="")  # type: ignore[arg-type]
+
+
 @attr.s(frozen=True)
 class _TestNamePartClass:
     """Used in TestNamePartValidator."""
