@@ -40,24 +40,23 @@ from recidiviz.common.constants.operations.direct_ingest_raw_file_import import 
 )
 from recidiviz.utils.string import StrictStringFormatter
 
-# TODO(#71014) Pull non-blocking failure messages + add alerting for them as well
 GET_RECENT_FILE_TAG_IMPORTS_QUERY_TEMPLATE = """
 WITH imports_in_lookback as (
-    SELECT 
+    SELECT
         dag_run_id,
         import_run_start,
-        region_code, 
+        region_code,
         raw_data_instance,
         import_run_id
     FROM direct_ingest_raw_file_import_run
-    WHERE 
+    WHERE
         EXTRACT(epoch FROM '{current_datetime}'::timestamp with time zone - import_run_start) <= {lookback_in_seconds}
         AND raw_data_instance = 'PRIMARY'
 ), recent_file_imports as (
-    SELECT 
+    SELECT
         ir.dag_run_id,
         ir.import_run_start,
-        ir.region_code, 
+        ir.region_code,
         ir.raw_data_instance,
         fi.file_id,
         CASE
@@ -69,6 +68,7 @@ WITH imports_in_lookback as (
         END as import_state,
         import_status,
         fi.error_message,
+        fi.non_blocking_failure_message,
         bq.file_tag,
         bq.update_datetime
     FROM imports_in_lookback as ir
@@ -79,10 +79,18 @@ WITH imports_in_lookback as (
 )
 SELECT
     import_run_start,
-    region_code, 
+    region_code,
     raw_data_instance,
     file_tag,
-    MAX(import_state) as file_tag_import_state,
+    -- a non-blocking failure on any file in this file_tag should alert like a normal
+    -- file-tag-level failure, so promote the file_tag's state to FAILED whenever one
+    -- is present
+    -- TODO(#71014) Create separate alerts for non-blocking failures instead
+    -- See https://github.com/Recidiviz/pulse-data/pull/79839#discussion_r3270586365
+    GREATEST(
+        MAX(import_state),
+        MAX(CASE WHEN non_blocking_failure_message IS NOT NULL THEN {failed_value} ELSE {success_value} END)
+    ) as file_tag_import_state,
     -- we filter down to just FAILED statuses since they are the details we care about
     json_agg(
         json_build_object(
@@ -91,12 +99,20 @@ SELECT
             'failed_file_import_status', import_status,
             'error_message', error_message
         )
-    ) FILTER (WHERE import_status in {failed_statuses}) as failed_file_import_runs
+    ) FILTER (WHERE import_status in {failed_statuses}) as failed_file_import_runs,
+    json_agg(
+        json_build_object(
+            'file_id', file_id,
+            'update_datetime', update_datetime,
+            'failed_file_import_status', import_status,
+            'error_message', non_blocking_failure_message
+        )
+    ) FILTER (WHERE non_blocking_failure_message IS NOT NULL) as non_blocking_file_import_runs
 FROM recent_file_imports
 GROUP BY (
-    dag_run_id, 
+    dag_run_id,
     import_run_start,
-    region_code, 
+    region_code,
     raw_data_instance,
     file_tag
 );
@@ -128,6 +144,7 @@ class RawDataFileTagImportRunSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]
                 file_tag=file_tag_import_run_summary[3],
                 file_tag_import_state_int=file_tag_import_run_summary[4],
                 failed_file_import_runs_json=file_tag_import_run_summary[5],
+                non_blocking_file_import_runs_json=file_tag_import_run_summary[6],
             )
             for file_tag_import_run_summary in postgres_hook.get_records(
                 self._get_recent_file_import_runs_sql_query()

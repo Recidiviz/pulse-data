@@ -101,6 +101,7 @@ class RawDataFileTagTaskRunHistoryDelegateTest(TestCase):
                         error_message="ERROR\n\n\n\n\nERROR!",
                     ),
                 ],
+                non_blocking_file_import_runs=[],
             ),
             FileTagImportRunSummary(
                 import_run_start=datetime.datetime(
@@ -128,6 +129,7 @@ class RawDataFileTagTaskRunHistoryDelegateTest(TestCase):
                         error_message=None,
                     ),
                 ],
+                non_blocking_file_import_runs=[],
             ),
         ]
 

@@ -74,6 +74,16 @@ class FileSummarySerializationTest(TestCase):
                     error_message="ERROR\n\n\n\n\nERROR!",
                 ),
             ],
+            non_blocking_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=3,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                    error_message="pre import validation failure",
+                ),
+            ],
         )
 
         self._validate_serialization(summary, FileTagImportRunSummary)
@@ -115,6 +125,7 @@ class FileSummaryErrorSummaryTest(TestCase):
                     error_message="ERROR\n\n\n\n\nERROR!",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
         pending_summary = FileTagImportRunSummary(
             import_run_start=datetime.datetime(
@@ -142,6 +153,7 @@ class FileSummaryErrorSummaryTest(TestCase):
                     error_message="ERROR\n\n\n\n\nERROR!",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
 
         assert succeeded_summary.format_error_message() == ""
@@ -174,6 +186,7 @@ class FileSummaryErrorSummaryTest(TestCase):
                     error_message="ERROR\nfailed pre-import norm step\nERROR!",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
 
         assert (
@@ -245,6 +258,7 @@ ERROR!
                     error_message="Blocked by 1",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
 
         assert (
@@ -298,6 +312,66 @@ ERROR!
 Blocked by 1
 ------------------------------------------------------------------------------------------------------------------------
 ... and 2 more not included in this alert; see airflow logs for more info
+========================================================================================================================
+========================================================================================================================"""
+        )
+
+    def test_non_blocking_failures(self) -> None:
+        summary = FileTagImportRunSummary(
+            import_run_start=datetime.datetime(
+                2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+            ),
+            state_code=StateCode.US_XX,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            file_tag="tag_a",
+            file_tag_import_state=JobRunState.FAILED,
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=1,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                    error_message="boom",
+                ),
+            ],
+            non_blocking_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=2,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                    error_message="warning A (earlier)",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=3,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                    error_message="warning B (later)",
+                ),
+            ],
+        )
+
+        assert (
+            summary.format_error_message()
+            == """========================================================================================================================
+===================================================== FAILURES (1) =====================================================
+========================================================================================================================
+[tag_a] with update_datetime [2024-01-01T01:01:01+00:00] and file_id [1] failed: 
+boom
+========================================================================================================================
+========================================================================================================================
+========================================================================================================================
+============================================== NON-BLOCKING FAILURES (2) ===============================================
+========================================================================================================================
+[tag_a] with update_datetime [2024-01-02T01:01:01+00:00] and file_id [2] failed: 
+warning A (earlier)
+------------------------------------------------------------------------------------------------------------------------
+[tag_a] with update_datetime [2024-01-03T01:01:01+00:00] and file_id [3] failed: 
+warning B (later)
 ========================================================================================================================
 ========================================================================================================================"""
         )

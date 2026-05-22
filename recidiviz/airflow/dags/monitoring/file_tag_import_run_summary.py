@@ -94,6 +94,7 @@ class FileTagImportRunSummary(BaseResult):
     file_tag: str
     file_tag_import_state: JobRunState
     failed_file_import_runs: list[BigQueryFailedFileImportRunSummary]
+    non_blocking_file_import_runs: list[BigQueryFailedFileImportRunSummary]
 
     def _format_failed_file_import_run(
         self, file_import_run: BigQueryFailedFileImportRunSummary
@@ -163,6 +164,10 @@ class FileTagImportRunSummary(BaseResult):
             blocked_failures,
         ) = self.filter_and_sort_failed_import_runs()
 
+        sorted_non_blocking_runs = sorted(
+            self.non_blocking_file_import_runs, key=lambda x: x.update_datetime
+        )
+
         return "\n".join(
             filter(
                 None,
@@ -175,6 +180,11 @@ class FileTagImportRunSummary(BaseResult):
                     self._format_error_section(
                         errors=blocked_failures,
                         header="IMPORT BLOCKED BY ABOVE FAILURES",
+                        max_errors=max_errors,
+                    ),
+                    self._format_error_section(
+                        errors=sorted_non_blocking_runs,
+                        header="NON-BLOCKING FAILURES",
                         max_errors=max_errors,
                     ),
                 ],
@@ -198,6 +208,10 @@ class FileTagImportRunSummary(BaseResult):
                 self.file_tag,
                 self.file_tag_import_state.value,
                 [import_run.serialize() for import_run in self.failed_file_import_runs],
+                [
+                    import_run.serialize()
+                    for import_run in self.non_blocking_file_import_runs
+                ],
             ]
         )
 
@@ -214,6 +228,10 @@ class FileTagImportRunSummary(BaseResult):
                 BigQueryFailedFileImportRunSummary.deserialize(import_run)
                 for import_run in json_obj[5]
             ],
+            non_blocking_file_import_runs=[
+                BigQueryFailedFileImportRunSummary.deserialize(import_run)
+                for import_run in json_obj[6]
+            ],
         )
 
     @classmethod
@@ -226,6 +244,7 @@ class FileTagImportRunSummary(BaseResult):
         file_tag: str,
         file_tag_import_state_int: int,
         failed_file_import_runs_json: list[dict[str, Any]] | None,
+        non_blocking_file_import_runs_json: list[dict[str, Any]] | None,
     ) -> "FileTagImportRunSummary":
         return FileTagImportRunSummary(
             import_run_start=import_run_start,
@@ -239,6 +258,14 @@ class FileTagImportRunSummary(BaseResult):
                     for import_run_json in failed_file_import_runs_json
                 ]
                 if failed_file_import_runs_json is not None
+                else []
+            ),
+            non_blocking_file_import_runs=(
+                [
+                    BigQueryFailedFileImportRunSummary.from_db_json(import_run_json)
+                    for import_run_json in non_blocking_file_import_runs_json
+                ]
+                if non_blocking_file_import_runs_json is not None
                 else []
             ),
         )

@@ -116,13 +116,18 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
                     if s.error_message
                     else NULL
                 ),
+                (
+                    f"'{postgres_quote_escape(s.non_blocking_failure_message)}'"
+                    if s.non_blocking_failure_message
+                    else NULL
+                ),
             ]
             for s in file_imports
         ]
 
         str_rows = ",".join([f'({",".join(str(col) for col in row)})' for row in rows])
         self.mock_pg_hook.run(
-            f"""INSERT INTO direct_ingest_raw_file_import (file_id, import_run_id, import_status, region_code, raw_data_instance, historical_diffs_active, raw_rows, error_message)
+            f"""INSERT INTO direct_ingest_raw_file_import (file_id, import_run_id, import_status, region_code, raw_data_instance, historical_diffs_active, raw_rows, error_message, non_blocking_failure_message)
                 VALUES {str_rows};
         """
         )
@@ -215,6 +220,7 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
             assert summary.file_tag_import_state == JobRunState.SUCCESS
 
             assert len(summary.failed_file_import_runs) == 0
+            assert len(summary.non_blocking_file_import_runs) == 0
 
     def test_consecutive_dags(self) -> None:
         start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
@@ -703,3 +709,87 @@ ValueError: known_values for tagBasic must not be empty""",
         for run in sorted(summary.failed_file_import_runs, key=lambda x: x.file_id):
             assert run.file_import_status == file_imports[0].import_status
             assert run.error_message == file_imports[0].error_message
+
+    def test_non_blocking_failures(self) -> None:
+        start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+
+        # tag_a: all succeeded, but one file has a non-blocking message -- should be
+        # promoted to FAILED and have the non-blocking run surfaced
+        tag_a_file_imports = [
+            RawFileImport(
+                file_id=1,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                historical_diffs_active=False,
+                raw_rows=2,
+                error_message=None,
+                non_blocking_failure_message="warning: column COL_X had unexpected nulls",
+            ),
+            RawFileImport(
+                file_id=2,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                historical_diffs_active=False,
+                raw_rows=2,
+                error_message=None,
+            ),
+        ]
+        # tag_b: a real failure alongside a non-blocking message on a succeeded file --
+        # both should be surfaced and state should remain FAILED
+        tag_b_file_imports = [
+            RawFileImport(
+                file_id=3,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                historical_diffs_active=False,
+                error_message="real failure!",
+            ),
+            RawFileImport(
+                file_id=4,
+                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                historical_diffs_active=False,
+                raw_rows=2,
+                error_message=None,
+                non_blocking_failure_message="warning: 'has\"weird'`chars`",
+            ),
+        ]
+
+        update_datetime = start_time - datetime.timedelta(hours=2)
+        self._seed_bq_metadata(tag_a_file_imports, file_tag="tag_a", dt=update_datetime)
+        self._seed_import_run(tag_a_file_imports, dt=start_time)
+        self._seed_bq_metadata(tag_b_file_imports, file_tag="tag_b", dt=update_datetime)
+        self._seed_import_run(tag_b_file_imports, dt=start_time, dag_run_id="abc_b")
+
+        with freeze_time(start_time + datetime.timedelta(hours=1)):
+            results = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
+            )
+
+        assert len(results) == 2
+
+        summaries_by_tag = {
+            summary.file_tag: summary
+            for summary in (FileTagImportRunSummary.deserialize(r) for r in results)
+        }
+
+        tag_a = summaries_by_tag["tag_a"]
+        assert tag_a.file_tag_import_state == JobRunState.FAILED
+        assert len(tag_a.failed_file_import_runs) == 0
+        assert len(tag_a.non_blocking_file_import_runs) == 1
+        assert tag_a.non_blocking_file_import_runs[0].file_id == 1
+        assert (
+            tag_a.non_blocking_file_import_runs[0].error_message
+            == "warning: column COL_X had unexpected nulls"
+        )
+        assert (
+            tag_a.non_blocking_file_import_runs[0].file_import_status
+            == DirectIngestRawFileImportStatus.SUCCEEDED
+        )
+
+        tag_b = summaries_by_tag["tag_b"]
+        assert tag_b.file_tag_import_state == JobRunState.FAILED
+        assert len(tag_b.failed_file_import_runs) == 1
+        assert tag_b.failed_file_import_runs[0].file_id == 3
+        assert len(tag_b.non_blocking_file_import_runs) == 1
+        assert tag_b.non_blocking_file_import_runs[0].file_id == 4
+        assert (
+            tag_b.non_blocking_file_import_runs[0].error_message
+            == "warning: 'has\"weird'`chars`"
+        )

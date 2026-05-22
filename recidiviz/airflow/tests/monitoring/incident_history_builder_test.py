@@ -887,6 +887,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                     error_message="Blocked by 4",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
         primary_2024_01_02 = FileTagImportRunSummary(
             import_run_start=date_2024_01_02,
@@ -920,6 +921,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                     error_message="Blocked by 4",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
         primary_2024_01_03 = FileTagImportRunSummary(
             import_run_start=date_2024_01_03,
@@ -928,6 +930,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             file_tag="tag_a",
             file_tag_import_state=JobRunState.SUCCESS,
             failed_file_import_runs=[],
+            non_blocking_file_import_runs=[],
         )
         secondary_2024_01_01 = FileTagImportRunSummary(
             import_run_start=date_2024_01_01,
@@ -961,6 +964,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                     error_message="Blocked by 1",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
         secondary_2024_01_03 = FileTagImportRunSummary(
             import_run_start=date_2024_01_03,
@@ -994,6 +998,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                     error_message="Blocked by 1",
                 ),
             ],
+            non_blocking_file_import_runs=[],
         )
         summaries = [
             # are out of order, will be ordered in .build()
@@ -1610,6 +1615,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.FAILED_NO_ALERT,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
             FileTagImportRunSummary(
                 import_run_start=date_2024_01_02,
@@ -1618,6 +1624,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.FAILED_NO_ALERT,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
         ]
 
@@ -1680,6 +1687,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.FAILED,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
             FileTagImportRunSummary(
                 import_run_start=date_2024_01_02,
@@ -1688,6 +1696,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.FAILED_NO_ALERT,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
         ]
 
@@ -1758,6 +1767,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.FAILED,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
             FileTagImportRunSummary(
                 import_run_start=date_2024_01_02,
@@ -1766,6 +1776,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.FAILED_NO_ALERT,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
             FileTagImportRunSummary(
                 import_run_start=date_2024_01_03,
@@ -1774,6 +1785,7 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 file_tag="tag_a",
                 file_tag_import_state=JobRunState.SUCCESS,
                 failed_file_import_runs=[],
+                non_blocking_file_import_runs=[],
             ),
         ]
 
