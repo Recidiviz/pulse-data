@@ -71,6 +71,7 @@ output:
               $mappings:
                 StateAssessmentType.RCAF:
                   - RCAF
+                  - RCAF_V2
                 StateAssessmentType.DCAF:
                   - DCAF
           assessment_date: AssessmentDate
