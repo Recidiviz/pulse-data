@@ -17,12 +17,6 @@
 """
 Utility to find TODOs in our codebase.
 
-Find closed TODOs:
-$ python -m recidiviz.tools.github.find_todos --closed --github_token $GITHUB_PAT
-
-Note, the $GITHUB_PAT here is a Personal Access Token for Github. If you need one, they
-can be created here: https://github.com/settings/tokens
-
 Find TODOs referencing specific issues:
 $ python -m recidiviz.tools.github.find_todos --issues "#123" Recidiviz/pulse-data#789
 """
@@ -31,8 +25,6 @@ import argparse
 import logging
 import sys
 from typing import Dict, List, Optional, Set
-
-import github
 
 from recidiviz.repo.issue_references import (
     CodeReference,
@@ -45,16 +37,6 @@ from recidiviz.repo.issue_references import (
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser(description="Finds TODOs in our codebase.")
-    parser.add_argument(
-        "--closed",
-        action="store_true",
-        help="Only include references to closed issues.",
-    )
-    parser.add_argument(
-        "--github-token",
-        default=None,
-        help="Token to use when talking to github, required when filtering to closed issues.",
-    )
     parser.add_argument(
         "--issues",
         nargs="+",
@@ -73,31 +55,6 @@ def create_parser() -> argparse.ArgumentParser:
         help="Only outputs the issues, for use in automation.",
     )
     return parser
-
-
-def filter_to_closed(
-    github_token: str, issue_references: Dict[GithubIssue, List[CodeReference]]
-) -> Dict[GithubIssue, List[CodeReference]]:
-    g = github.Github(login_or_token=github_token)
-
-    closed_issue_references = {}
-
-    for issue in issue_references:
-        if issue.number == 0:
-            # Issue #0 is a special placeholder used in templates -- skip it.
-            continue
-
-        repo = g.get_repo(issue.repo)
-        try:
-            github_issue = repo.get_issue(number=issue.number)
-        except github.UnknownObjectException:
-            logging.error("Unable to get issue %s", issue)
-            continue
-
-        if github_issue.state == "closed":
-            closed_issue_references[issue] = issue_references[issue]
-
-    return closed_issue_references
 
 
 def filter_to_issues(
@@ -127,8 +84,6 @@ def write_output(
 
 
 def main(
-    github_token: Optional[str],
-    closed: bool,
     issues: Optional[List[str]],
     fail_if_found: bool,
     minimal_output: bool,
@@ -137,10 +92,6 @@ def main(
     if issues is not None:
         issues_to_include = {GithubIssue.from_string(issue) for issue in issues}
         issue_references = filter_to_issues(issues_to_include, issue_references)
-    if closed:
-        if not github_token:
-            raise ValueError("--github-token is required when --closed is provided.")
-        issue_references = filter_to_closed(github_token, issue_references)
     write_output(issue_references, minimal_output)
 
     return 1 if fail_if_found and issue_references else 0
@@ -151,8 +102,6 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
     sys.exit(
         main(
-            args.github_token,
-            args.closed,
             args.issues,
             args.fail_if_found,
             args.minimal_output,
