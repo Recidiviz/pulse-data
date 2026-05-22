@@ -219,7 +219,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
     StateCode, dict[str, dict[str, list[str]]]
 ] = {
     StateCode.US_AR: {
-        "ADDRESS": {"Unknown": ["ADDRESSOTHER", "ADDRESSEDITBYPASSED"]},
         "SENTENCECOMPUTE": {
             "Unknown": [
                 "DAYSCLISERVEDMR",
@@ -233,7 +232,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "DAYSSERVEDCL3BMRDAYS",
                 "GT3DAYSEARNEDMR",
                 "EMERPOWACTDAYSOFFMR",
-                "MRRULINGINDICATOR",
                 "TIMESERVEDTO",
                 "TIMEREMAININGTOMR",
                 "NETGTBEFOREMRDATE",
@@ -301,7 +299,6 @@ DUPLICATE_COLUMN_DESCRIPTION_EXEMPTIONS: dict[
                 "UOFFNLASTNAME",
                 "UOFFNFIRSTNAME",
                 "UOFFNMIDDLENAME",
-                "UOFFNNAMESUFFIX",
             ]
         },
         "PERSONPROFILE": {
