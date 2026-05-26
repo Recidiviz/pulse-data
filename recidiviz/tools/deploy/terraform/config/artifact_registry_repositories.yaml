@@ -4,14 +4,14 @@ repositories:
     repository_id: "case-triage-pathways"
     description: "Repository for docker images for Case Triage / Pathways. Contractors may have access to images in this repository."
     format: "DOCKER"
-    cleanup_policy_dry_run: true
+    cleanup_policy_dry_run: false
 
   asset_generation:
     location: "us"
     repository_id: "asset-generation"
     description: "Repository for docker images for the Asset Generation service"
     format: "DOCKER"
-    cleanup_policy_dry_run: true
+    cleanup_policy_dry_run: false
 
   recidiviz_base:
     location: "us"
@@ -32,11 +32,11 @@ repositories:
     repository_id: "dataflow"
     description: "Repository for docker images used in Dataflow pipeline runners"
     format: "DOCKER"
-    cleanup_policy_dry_run: true
+    cleanup_policy_dry_run: false
 
   dataflow_dev:
     location: "us"
     repository_id: "dataflow-dev"
     description: "Repository for docker images used when running sandbox pipelines"
     format: "DOCKER"
-    cleanup_policy_dry_run: true
+    cleanup_policy_dry_run: false

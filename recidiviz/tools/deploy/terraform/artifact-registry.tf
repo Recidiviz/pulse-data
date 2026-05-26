@@ -46,6 +46,24 @@ resource "google_artifact_registry_repository" "repositories" {
     }
   }
 
+  # Delete all image versions older than 2 years (see #12137)
+  cleanup_policies {
+    id     = "delete-old-images"
+    action = "DELETE"
+    condition {
+      older_than = "${730 * 24 * 60 * 60}s"
+    }
+  }
+
+  # Safety net: always keep the 10 most recent versions per image path
+  cleanup_policies {
+    id     = "keep-minimum-versions"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 10
+    }
+  }
+
   depends_on = [
     google_project_service.artifact_registry_api
   ]
