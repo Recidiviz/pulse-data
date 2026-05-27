@@ -154,3 +154,14 @@ custom:
           - datetime_start_inclusive: "2024-08-22T00:00:00Z"
             datetime_end_exclusive: "2025-12-12T00:00:00Z"
             reason: "File size jumped after this date range."
+
+  US_TX:
+    file_tags:
+      TPCURBAL:
+        date_range_exclusions:
+          - datetime_start_inclusive: "2024-01-01T00:00:00Z"
+            datetime_end_exclusive: "2026-05-22T00:00:00Z"
+            reason:
+              "Table was changed to use FULL_HISTORICAL_LOOKBACK on 2026-05-22,
+              causing row count to jump from ~6.9k to ~106k. Excluding historical
+              smaller imports from the median calculation."
