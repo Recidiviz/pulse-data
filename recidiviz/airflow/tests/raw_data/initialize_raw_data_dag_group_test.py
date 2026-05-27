@@ -41,6 +41,7 @@ from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 _PROJECT_ID = "recidiviz-testing"
 _TEST_DAG_ID = get_raw_data_import_dag_id(_PROJECT_ID)
 _VERIFY_PARAMETERS_TASK_ID = "initialize_dag.verify_parameters"
+_RECORD_PLATFORM_VERSION_TASK_ID = "initialize_dag.record_dag_run_metadata"
 _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_dag.wait_to_continue_or_cancel"
 _HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_dag.handle_queueing_result"
 _DOWNSTREAM_TASK_ID = "downstream_task"
@@ -73,22 +74,42 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
             {verify_parameters_task.task_id},
         )
 
-    def test_handle_params_check_upstream_of_wait_to_continue_or_cancel(
+    def test_handle_params_check_upstream_of_record_dag_run_metadata(
         self,
     ) -> None:
         test_dag = _create_test_initialize_raw_data_import_dag()
         handle_params_check = test_dag.get_task("initialize_dag.handle_params_check")
+        record_dag_run_metadata = test_dag.get_task(
+            "initialize_dag.record_dag_run_metadata"
+        )
+
+        self.assertEqual(
+            handle_params_check.downstream_task_ids,
+            {record_dag_run_metadata.task_id},
+        )
+        self.assertEqual(
+            record_dag_run_metadata.upstream_task_ids,
+            {handle_params_check.task_id},
+        )
+
+    def test_record_dag_run_metadata_upstream_of_wait_to_continue_or_cancel(
+        self,
+    ) -> None:
+        test_dag = _create_test_initialize_raw_data_import_dag()
+        record_dag_run_metadata = test_dag.get_task(
+            "initialize_dag.record_dag_run_metadata"
+        )
         wait_to_continue_or_cancel = test_dag.get_task(
             "initialize_dag.wait_to_continue_or_cancel"
         )
 
         self.assertEqual(
-            handle_params_check.downstream_task_ids,
+            record_dag_run_metadata.downstream_task_ids,
             {wait_to_continue_or_cancel.task_id},
         )
         self.assertEqual(
             wait_to_continue_or_cancel.upstream_task_ids,
-            {handle_params_check.task_id},
+            {record_dag_run_metadata.task_id},
         )
 
     def test_wait_to_continue_or_cancel_upstream_of_handle_queueing_result(
@@ -148,6 +169,7 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_task_id_regexes=[
+                    _RECORD_PLATFORM_VERSION_TASK_ID,
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
@@ -197,6 +219,7 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_task_id_regexes=[
+                    _RECORD_PLATFORM_VERSION_TASK_ID,
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
@@ -221,6 +244,7 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_task_id_regexes=[
+                    _RECORD_PLATFORM_VERSION_TASK_ID,
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
@@ -242,6 +266,7 @@ class TestInitializeRawDataDagGroupIntegration(AirflowIntegrationTest):
                 run_conf={"unknown_key": "value"},
                 expected_failure_task_id_regexes=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_task_id_regexes=[
+                    _RECORD_PLATFORM_VERSION_TASK_ID,
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
                     _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,

@@ -35,12 +35,17 @@ from recidiviz.airflow.dags.operators.cloud_sql_proxy_sidecar import (
     configure_cloud_sql_proxy_for_pod,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
+from recidiviz.airflow.dags.utils.dag_run_metadata import (
+    APP_ENGINE_IMAGE_XCOM_KEY,
+    PLATFORM_VERSION_XCOM_KEY,
+    _get_current_app_engine_image,
+    _get_current_platform_version,
+    resolve_metadata_task_id,
+)
 from recidiviz.airflow.dags.utils.environment import (
     COMPOSER_ENVIRONMENT,
     DATA_PLATFORM_VERSION,
-    get_app_engine_image_from_airflow_env,
     get_composer_environment,
-    get_data_platform_version_from_airflow_env,
     get_project_id,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -132,7 +137,9 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             namespace=COMPOSER_USER_WORKLOADS,
             # Do not delete pods after running, its handled `recidiviz.airflow.dags.monitoring.cleanup_exited_pods`
             on_finish_action="keep_pod",
-            image=get_app_engine_image_from_airflow_env(),
+            # Set at execution time in execute() from XCom to pin to the
+            # version snapshotted at the start of the DAG run.
+            image=None,
             image_pull_policy="Always",
             # This config is provided by Cloud Composer
             config_file="/home/airflow/composer_kube_config",
@@ -158,10 +165,6 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
                 # TODO(census-instrumentation/opencensus-python#796)
                 k8s.V1EnvVar(
                     name=COMPOSER_ENVIRONMENT, value=get_composer_environment()
-                ),
-                k8s.V1EnvVar(
-                    name=DATA_PLATFORM_VERSION,
-                    value=get_data_platform_version_from_airflow_env(),
                 ),
                 k8s.V1EnvVar(
                     name=RECIDIVIZ_ENV,
@@ -195,8 +198,36 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             k8s.V1EnvVar(name=MAP_INDEX, value=str(ti.map_index)),
         ]
 
-    # The execute method is called after templated arguments have been rendered
     def execute(self, context: Context) -> Any:
+        """Called after templated arguments have been rendered."""
+        ti = context["ti"]
+
+        # Read the image and version snapshotted at the start of this DAG run
+        # by the record_dag_run_metadata task. This pins all K8s pods in a run
+        # to the same version, even if a deploy happens mid-run.
+        # The fallbacks via get_current_*() handle DagRuns that were in flight
+        # when this code first deployed (no record_dag_run_metadata XCom yet).
+        # TODO(#77283): Remove fallbacks once fully deployed.
+        metadata_task_id = resolve_metadata_task_id(context["dag"])
+        self.image = (
+            ti.xcom_pull(
+                task_ids=metadata_task_id,
+                key=APP_ENGINE_IMAGE_XCOM_KEY,
+            )
+            or _get_current_app_engine_image()
+        )
+
+        platform_version = (
+            ti.xcom_pull(
+                task_ids=metadata_task_id,
+                key=PLATFORM_VERSION_XCOM_KEY,
+            )
+            or _get_current_platform_version()
+        )
+        self.env_vars.append(
+            k8s.V1EnvVar(name=DATA_PLATFORM_VERSION, value=platform_version)
+        )
+
         # Assign resources based on the entrypoint that we are running
         self.container_resources = (
             KubernetesEntrypointResourceAllocator().get_resources(self.arguments)

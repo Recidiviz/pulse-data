@@ -88,6 +88,7 @@ from recidiviz.airflow.dags.sftp.metadata import (
     get_configs_bucket,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
+from recidiviz.airflow.dags.utils.dag_run_metadata import record_dag_run_metadata
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.gcsfs_utils import read_yaml_config
@@ -236,9 +237,10 @@ def sftp_dag() -> None:
 
     project_id = get_project_id()
 
+    version_task = record_dag_run_metadata()
     start_sftp = EmptyOperator(task_id=START_SFTP)
     rm_dags = remove_queued_up_dags()
-    start_sftp >> rm_dags
+    version_task >> start_sftp >> rm_dags
     end_sftp = EmptyOperator(task_id=END_SFTP, trigger_rule=TriggerRule.ALL_DONE)
     for state_code in states_with_sftp_delegates(project_id):
         with TaskGroup(group_id=state_code.value) as state_specific_task_group:

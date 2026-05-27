@@ -15,6 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Periodically cleans the Airflow database to keep size down; important during upgrades"""
+# Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
+# pylint: disable=W0104 pointless-statement
+
+# Need a disable expression-not-assigned because the chaining ('>>') doesn't need expressions to be assigned
+# pylint: disable=W0106 expression-not-assigned
 from datetime import timedelta
 
 import pendulum
@@ -27,6 +32,7 @@ from airflow.utils.db_cleanup import run_cleanup
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_metadata_maintenance_dag_id,
 )
+from recidiviz.airflow.dags.utils.dag_run_metadata import record_dag_run_metadata
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.email import can_send_mail
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -97,7 +103,7 @@ def cleanup_task() -> None:
     render_template_as_native_obj=True,
 )
 def create_metadata_maintenance_dag() -> None:
-    cleanup_task()
+    record_dag_run_metadata() >> cleanup_task()
 
 
 metadata_maintenance_dag = create_metadata_maintenance_dag()

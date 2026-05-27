@@ -836,6 +836,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.verify_parameters",
                 ],
                 expected_skipped_task_id_regexes=[
+                    r"^initialize_dag.record_dag_run_metadata",
                     r"^initialize_dag.wait_to_continue_or_cancel",
                     r"^initialize_dag.handle_queueing_result",
                     r"^update_big_query_table_schemata",

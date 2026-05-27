@@ -55,6 +55,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
+from recidiviz.airflow.dags.utils.dag_run_metadata import record_dag_run_metadata
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.email import can_send_mail
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -96,14 +97,15 @@ email = pagerduty_service.service_integration_email
 )
 def create_monitoring_dag() -> None:
     """Creates the hourly monitoring dag"""
-    build_kubernetes_pod_task(
+    version_task = record_dag_run_metadata()
+
+    export_timeliness = build_kubernetes_pod_task(
         task_id="generate_export_timeliness_metrics",
         container_name="generate_export_timeliness_metric",
         arguments=[
             "--entrypoint=MetricExportTimelinessEntrypoint",
         ],
     )
-
     fetch_raw_data_file_tag_import_runs = CloudSqlQueryOperator(
         task_id=FETCH_RAW_DATA_FILE_TAG_IMPORT_RUNS_TASK_ID,
         cloud_sql_conn_id=cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS),
@@ -120,12 +122,12 @@ def create_monitoring_dag() -> None:
 
     fetch_raw_data_file_tag_import_runs >> airflow_failure_monitoring_and_alerting
 
-    PythonOperator(
+    cleanup_pods = PythonOperator(
         task_id="cleanup_exited_pods",
         python_callable=cleanup_exited_pods,
     )
 
-    build_kubernetes_pod_task(
+    environment_age = build_kubernetes_pod_task(
         task_id="generate_airflow_environment_age_metrics",
         container_name="generate_airflow_environment_age_metrics",
         arguments=[
@@ -133,7 +135,7 @@ def create_monitoring_dag() -> None:
         ],
     )
 
-    PythonOperator(
+    dag_run_history = PythonOperator(
         task_id="generate_airflow_dag_run_history",
         python_callable=generate_airflow_dag_run_history,
         op_kwargs={"lookback": DAG_RUN_HISTORY_LOOKBACK},
@@ -171,6 +173,16 @@ def create_monitoring_dag() -> None:
     )
 
     fetch_stale_raw_data >> report_stale_raw_data
+
+    version_task >> [
+        export_timeliness,
+        fetch_raw_data_file_tag_import_runs,
+        cleanup_pods,
+        environment_age,
+        dag_run_history,
+        fetch_sftp_upload_times,
+        fetch_stale_raw_data,
+    ]
 
 
 monitoring_dag = create_monitoring_dag()
