@@ -66,18 +66,7 @@ VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     ]
 }
 
-SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
-    f"{state_code.value.lower()}_supplemental": (
-        f"Contains data provided directly by {StateCode.get_state(state_code)} that is "
-        f"not run through direct ingest, e.g. validation data."
-    )
-    for state_code in [
-        StateCode.US_PA,
-    ]
-}
-
 EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
-    **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
     **VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS,
     AUTH0_EVENTS: "Stores legacy events logged from Auth0 actions via Segment",
     AUTH0_PROD_ACTION_LOGS: "Stores events logged from Auth0 actions via Segment",

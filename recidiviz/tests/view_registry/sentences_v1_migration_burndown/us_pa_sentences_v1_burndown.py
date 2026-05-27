@@ -26,33 +26,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_client_events i
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration.community_corrections_population_by_facility_by_demographics import (
-    COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_admission_reason import (
-    INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_facility_by_demographics import (
-    INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_dashboard.sentencing.sentence_type_by_district_by_demographics import (
-    SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_population_by_district_by_demographics import (
-    SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_terminations_by_month import (
-    SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.public_dashboard.supervision.supervision_terminations_by_period_by_demographics import (
-    SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
-    COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
-    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
     SENTENCE_SPANS_VIEW_BUILDER,
 )
@@ -64,15 +37,6 @@ from recidiviz.calculator.query.state.views.sessions.supervision_projected_compl
 )
 from recidiviz.calculator.query.state.views.sessions.v1_supervision_projected_completion_date_state_views import (
     state_specific_supervision_projected_completion_date_spans_address,
-)
-from recidiviz.calculator.query.state.views.shared_metric.single_day_incarceration_population_for_spotlight import (
-    SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.shared_metric.single_day_supervision_population_for_spotlight import (
-    SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
-    SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
@@ -185,72 +149,6 @@ US_PA_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 # TODO(#50859): migrate these usages to sentence_sessions
                 US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER.address,
                 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER.address,
-            },
-        },
-    },
-    "PUBLIC_DASHBOARD": {
-        SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_BUILDER.address: {
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-        SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER.address: {
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_SPANS_VIEW_BUILDER.address: {
-                SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-        COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-        INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-        INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-        SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-                SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-                SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-        },
-        SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER.address: {
-            COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER.address: {
-                SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: {
-                SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
-            },
-            SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.address: {
-                SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.address,
             },
         },
     },

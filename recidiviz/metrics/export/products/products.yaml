@@ -81,8 +81,6 @@ products:
     states:
       - state_code: US_ND
         environment: production
-      - state_code: US_PA
-        environment: production
   - name: Vitals
     description:
       Vitals provides a snapshot of agency performance on a set of key
