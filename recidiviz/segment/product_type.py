@@ -42,6 +42,7 @@ class ProductType(Enum):
     CASE_NOTE_SEARCH = "CASE_NOTE_SEARCH"
     CASE_PLANNING_ASSISTANT = "CASE_PLANNING_ASSISTANT"
     CLIENT_PAGE = "CLIENT_PAGE"
+    DISTRICT_DIRECTOR_DASHBOARD = "DISTRICT_DIRECTOR_DASHBOARD"
     LANTERN = "LANTERN"
     MILESTONES = "MILESTONES"
     PATHWAYS = "PATHWAYS"
@@ -90,6 +91,7 @@ class ProductType(Enum):
         if self in [
             ProductType.CASE_PLANNING_ASSISTANT,
             ProductType.CLIENT_PAGE,
+            ProductType.DISTRICT_DIRECTOR_DASHBOARD,
             ProductType.LANTERN,
             ProductType.MEETINGS,
             ProductType.MILESTONES,
@@ -129,6 +131,8 @@ class ProductType(Enum):
         # Path-based filtering for each product type
         if self == ProductType.CASE_NOTE_SEARCH:
             path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/workflows')"
+        elif self == ProductType.DISTRICT_DIRECTOR_DASHBOARD:
+            path_filter = f"REGEXP_CONTAINS({context_page_url_col_name}, r'/directorDashboard/supervision')"
         elif self == ProductType.CASE_PLANNING_ASSISTANT:
             # No additional path filtering needed - just the url_base check
             return url_base_check
@@ -216,6 +220,8 @@ class ProductType(Enum):
 
         if self == ProductType.CASE_PLANNING_ASSISTANT:
             return ["cpa"]
+        if self == ProductType.DISTRICT_DIRECTOR_DASHBOARD:
+            return ["director_dashboard"]
         if self == ProductType.CLIENT_PAGE:
             return [
                 "workflows",
@@ -333,6 +339,11 @@ class ProductType(Enum):
         if self == ProductType.SENTENCING_ASSESSMENT_REPORT:
             return [
                 RosterPredefinedRoles.SAR_STAFF.value.lower(),
+            ]
+        if self == ProductType.DISTRICT_DIRECTOR_DASHBOARD:
+            return [
+                RosterPredefinedRoles.SUPERVISION_LEADERSHIP.value.lower(),
+                RosterPredefinedRoles.SUPERVISION_REGIONAL_LEADERSHIP.value.lower(),
             ]
         return []
 

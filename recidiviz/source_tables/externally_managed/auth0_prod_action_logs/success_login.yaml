@@ -171,6 +171,9 @@ schema:
   - name: routes_meetings_facilities
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_director_dashboard
+    type: BOOLEAN
+    mode: NULLABLE
   - name: feature_variants_case_note_search
     type: BOOLEAN
     mode: NULLABLE
