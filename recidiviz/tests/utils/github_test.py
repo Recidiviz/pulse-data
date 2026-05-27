@@ -18,7 +18,108 @@
 import unittest
 from unittest import mock
 
-from recidiviz.utils.github import poll_for_pr_merge
+from github import GithubException
+
+from recidiviz.repo.issue_references import GithubIssue
+from recidiviz.utils.github import get_closing_github_issues, poll_for_pr_merge
+from recidiviz.utils.github_pull_request import GithubPullRequest
+
+GRAPHQL_RESPONSE_TWO_ISSUES = {
+    "data": {
+        "repository": {
+            "pullRequest": {
+                "closingIssuesReferences": {
+                    "nodes": [
+                        {
+                            "repository": {"nameWithOwner": "Recidiviz/pulse-data"},
+                            "number": 123,
+                        },
+                        {
+                            "repository": {"nameWithOwner": "Recidiviz/pulse-data"},
+                            "number": 456,
+                        },
+                    ]
+                }
+            }
+        }
+    }
+}
+
+GRAPHQL_RESPONSE_EMPTY: dict = {
+    "data": {"repository": {"pullRequest": {"closingIssuesReferences": {"nodes": []}}}}
+}
+
+
+class TestGithubPullRequest(unittest.TestCase):
+    """Tests for GithubPullRequest."""
+
+    def test_from_url(self) -> None:
+        pr = GithubPullRequest.from_url(
+            "https://github.com/Recidiviz/pulse-data/pull/123"
+        )
+        self.assertEqual(pr.owner, "Recidiviz")
+        self.assertEqual(pr.repo, "pulse-data")
+        self.assertEqual(pr.number, 123)
+
+    def test_url_property(self) -> None:
+        pr = GithubPullRequest(owner="Recidiviz", repo="pulse-data", number=456)
+        self.assertEqual(pr.url, "https://github.com/Recidiviz/pulse-data/pull/456")
+
+    def test_from_url_roundtrip(self) -> None:
+        url = "https://github.com/Recidiviz/pulse-dashboard/pull/789"
+        pr = GithubPullRequest.from_url(url)
+        self.assertEqual(pr.url, url)
+
+    def test_from_url_invalid(self) -> None:
+        with self.assertRaises(ValueError):
+            GithubPullRequest.from_url("not-a-url")
+
+    def test_from_url_rejects_issue_url(self) -> None:
+        with self.assertRaises(ValueError):
+            GithubPullRequest.from_url(
+                "https://github.com/Recidiviz/pulse-data/issues/123"
+            )
+
+
+class TestGetClosingGithubIssues(unittest.TestCase):
+    """Tests for get_closing_github_issues."""
+
+    PR = GithubPullRequest(owner="Recidiviz", repo="pulse-data", number=100)
+
+    def test_returns_closing_issues(self) -> None:
+        mock_client = mock.MagicMock()
+        mock_client.requester.graphql_query.return_value = (
+            {},
+            GRAPHQL_RESPONSE_TWO_ISSUES,
+        )
+
+        result = get_closing_github_issues(self.PR, mock_client)
+        self.assertEqual(
+            result,
+            [
+                GithubIssue(repo="Recidiviz/pulse-data", number=123),
+                GithubIssue(repo="Recidiviz/pulse-data", number=456),
+            ],
+        )
+
+    def test_returns_empty_when_no_closing_issues(self) -> None:
+        mock_client = mock.MagicMock()
+        mock_client.requester.graphql_query.return_value = (
+            {},
+            GRAPHQL_RESPONSE_EMPTY,
+        )
+
+        result = get_closing_github_issues(self.PR, mock_client)
+        self.assertEqual(result, [])
+
+    def test_raises_on_graphql_errors(self) -> None:
+        mock_client = mock.MagicMock()
+        mock_client.requester.graphql_query.side_effect = GithubException(
+            400, {"errors": [{"message": "bad"}]}, None
+        )
+
+        with self.assertRaises(GithubException):
+            get_closing_github_issues(self.PR, mock_client)
 
 
 class TestPollForPrMerge(unittest.TestCase):

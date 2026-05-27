@@ -529,6 +529,7 @@ def main() -> int:
         "recidiviz.utils.metadata",
         "recidiviz.utils.size",
         "recidiviz.utils.github",
+        "recidiviz.utils.github_pull_request",
         "recidiviz.utils.secrets",
         "recidiviz.utils.yaml_dict",
     }
@@ -815,6 +816,7 @@ def main() -> int:
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
+                "recidiviz.repo.issue_references",
                 "recidiviz.segment",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",

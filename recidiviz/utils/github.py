@@ -20,8 +20,11 @@ import logging
 import time
 
 from github import Github
+from github.Auth import Token
 from more_itertools import one
 
+from recidiviz.repo.issue_references import GithubIssue
+from recidiviz.utils.github_pull_request import GithubPullRequest
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
@@ -43,7 +46,7 @@ def github_helperbot_client() -> Github:
         access_token = get_secret(GITHUB_HELPERBOT_TOKEN_SECRET_NAME)  # nosec
         if access_token is None:
             raise KeyError("Couldn't locate helperbot access token")
-        __gh_helperbot_client = Github(access_token)
+        __gh_helperbot_client = Github(auth=Token(access_token))
     return __gh_helperbot_client
 
 
@@ -167,6 +170,52 @@ def format_region_specific_ticket_title(
     validation failures.
     """
     return f"[{environment}][{region_code.upper()}] {title}"
+
+
+def get_closing_github_issues(
+    pr: GithubPullRequest, github_client: Github
+) -> list[GithubIssue]:
+    """Query the GitHub GraphQL API for Github issues that will be closed by a PR
+    (via "Closes #XXXX" in the PR description).
+    """
+    query = """
+    query issuesToClose($owner: String!, $repo: String!, $pr: Int!) {
+      repository(owner: $owner, name: $repo) {
+        pullRequest(number: $pr) {
+          closingIssuesReferences(first: 10) {
+            nodes {
+              repository { nameWithOwner }
+              number
+            }
+          }
+        }
+      }
+    }
+    """
+    _, data = github_client.requester.graphql_query(
+        query,
+        variables={"owner": pr.owner, "repo": pr.repo, "pr": pr.number},
+    )
+
+    nodes = data["data"]["repository"]["pullRequest"]["closingIssuesReferences"][
+        "nodes"
+    ]
+    return [
+        GithubIssue(repo=node["repository"]["nameWithOwner"], number=node["number"])
+        for node in nodes
+    ]
+
+
+def get_pr_head_sha(pr: GithubPullRequest, github_client: Github) -> str:
+    """Return the SHA of a pull request's head commit."""
+    pull = github_client.get_repo(f"{pr.owner}/{pr.repo}").get_pull(pr.number)
+    return pull.head.sha
+
+
+def get_pr_body(pr: GithubPullRequest, github_client: Github) -> str:
+    """Return the body (description) of a pull request."""
+    pull = github_client.get_repo(f"{pr.owner}/{pr.repo}").get_pull(pr.number)
+    return pull.body or ""
 
 
 def get_short_commit_sha(commit_sha: str) -> str:
