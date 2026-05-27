@@ -383,6 +383,9 @@ from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff
 from recidiviz.validation.views.static_reference_tables.experiment_assignments_unit_of_analysis_validation import (
     EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.static_reference_tables.us_tx_contact_standards_condition_columns_validation import (
+    US_TX_CONTACT_STANDARDS_CONDITION_COLUMNS_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.completion_event_type_mismatch import (
     COMPLETION_EVENT_TYPE_MISMATCH_VIEW_BUILDER,
 )
@@ -601,6 +604,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_TX_CONTACT_STANDARDS_CONDITION_COLUMNS_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
