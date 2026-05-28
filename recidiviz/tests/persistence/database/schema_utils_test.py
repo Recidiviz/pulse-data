@@ -244,6 +244,30 @@ class TestSchemaUtils(unittest.TestCase):
             "action_strategy_surfaced_events",
             "supervision_contacts_drilldown_due_date_based",
         ]
+        identity_table_names = [
+            "identities",
+            "external_ids",
+            "names",
+            "dates_of_birth",
+            "genders",
+            "races",
+            "sexes",
+            "ethnicities",
+            "phone_numbers",
+            "emails",
+            "create_candidates",
+            "update_attribute_candidates",
+            "merge_candidates",
+            "merge_candidate_identities",
+            "split_candidates",
+            "merge_events",
+            "attribute_conflicts",
+            "split_events",
+            "split_event_new_identities",
+            "split_event_moved_external_ids",
+            "split_event_moved_attributes",
+            "no_merge",
+        ]
 
         expected_table_class_names = (
             case_triage_table_names
@@ -255,6 +279,7 @@ class TestSchemaUtils(unittest.TestCase):
             + state_table_names
             + workflows_table_names
             + insights_table_names
+            + identity_table_names
         )
 
         all_table_classes = get_all_table_classes()

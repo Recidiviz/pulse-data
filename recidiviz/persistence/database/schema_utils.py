@@ -28,6 +28,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
+    IdentityBase,
     InsightsBase,
     JusticeCountsBase,
     OperationsBase,
@@ -40,6 +41,7 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
+from recidiviz.persistence.database.schema.identity import schema as identity_schema
 from recidiviz.persistence.database.schema.insights import schema as insights_schema
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
@@ -67,6 +69,7 @@ _SCHEMA_MODULES: List[ModuleType] = [
     operations_schema,
     workflows_schema,
     insights_schema,
+    identity_schema,
 ]
 
 
@@ -188,5 +191,7 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
             return WorkflowsBase
         case SchemaType.INSIGHTS:
             return InsightsBase
+        case SchemaType.IDENTITY:
+            return IdentityBase
 
     raise ValueError(f"Unexpected schema type [{schema_type}].")

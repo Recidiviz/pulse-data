@@ -158,6 +158,7 @@ class CloudSqlToBQConfig:
             SchemaType.STATE,
             SchemaType.WORKFLOWS,
             SchemaType.INSIGHTS,
+            SchemaType.IDENTITY,
         ):
             return False
 

@@ -292,7 +292,24 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="identity_service_db_user_value",
+                        password="identity_service_db_password_value",
+                        port=5432,
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/identity_service_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
+            msg="Actual calls to `create_engine` (First) did not match expected calls (Second).",
         )
 
     @patch(
@@ -335,7 +352,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
 
         # Act
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(self._all_db_keys())
-        # Assert
+        # Assert that `create_engine` was called with expected arguments for each database.
         self.assertCountEqual(
             mock_create_engine.call_args_list,
             [
@@ -523,7 +540,24 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="identity_service_db_user_value",
+                        password="identity_service_db_password_value",
+                        port=5432,
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/identity_service_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
+            msg="Actual calls to `create_engine` (First) did not match expected calls (Second).",
         )
 
     @patch("recidiviz.utils.secrets.get_secret")
@@ -540,13 +574,16 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:666",
             "project:region:777",
             "project:region:888",
+            "project:region:999",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666", "777", "888"])
+        self.assertEqual(
+            ids, ["111", "222", "333", "444", "555", "666", "777", "888", "999"]
+        )
         mock_secrets.assert_has_calls(
             [
                 mock.call("operations_cloudsql_instance_id"),
@@ -557,6 +594,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 mock.call("public_pathways_cloudsql_instance_id"),
                 mock.call("workflows_cloudsql_instance_id"),
                 mock.call("insights_cloudsql_instance_id"),
+                mock.call("identity_service_cloudsql_instance_id"),
             ],
             any_order=True,
         )

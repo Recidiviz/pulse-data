@@ -56,6 +56,8 @@ class BaseEngineManager:
                 return "workflows"
             case SchemaType.INSIGHTS:
                 return "insights"
+            case SchemaType.IDENTITY:
+                return "identity_service"
 
         raise ValueError(f"Unexpected schema type [{schema_type}].")
 

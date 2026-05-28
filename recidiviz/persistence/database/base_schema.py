@@ -18,6 +18,7 @@
 from typing import Union
 
 from recidiviz.persistence.database.schema.case_triage.schema import CaseTriageBase
+from recidiviz.persistence.database.schema.identity.schema import IdentityBase
 from recidiviz.persistence.database.schema.insights.schema import InsightsBase
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     JusticeCountsBase,
@@ -41,4 +42,5 @@ SQLAlchemyModelType = Union[
     PublicPathwaysBase,
     WorkflowsBase,
     InsightsBase,
+    IdentityBase,
 ]
