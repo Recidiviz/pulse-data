@@ -23,8 +23,6 @@ import attr
 
 from recidiviz.issue_tracking.issue import Issue
 
-DEFAULT_REPO = "Recidiviz/pulse-data"
-
 
 @attr.s(frozen=True, kw_only=True)
 class GithubIssue(Issue):
@@ -38,20 +36,20 @@ class GithubIssue(Issue):
         return r"(?P<repo>\S+\/\S+)?#(?P<issue>[0-9]+)"
 
     @classmethod
-    def _from_match(cls, match: Match[str]) -> "GithubIssue":
+    def _from_match(cls, match: Match[str], *, default_repo: str) -> "GithubIssue":
         return cls(
-            repo=match.group("repo") or DEFAULT_REPO,
+            repo=match.group("repo") or default_repo,
             number=int(match.group("issue")),
         )
 
     @classmethod
-    def from_string(cls, issue_string: str) -> "GithubIssue":
+    def from_string(cls, issue_string: str, *, default_repo: str) -> "GithubIssue":
         match = re.fullmatch(cls.issue_regex(), issue_string)
         if match is None:
             raise ValueError(
                 "String did not match format '<owner>/<repo>#<issue>' (e.g. 'Recidiviz/pulse-data#123')"
             )
-        return cls._from_match(match)
+        return cls._from_match(match, default_repo=default_repo)
 
     _ISSUE_URL_REGEX = re.compile(
         r"https://github\.com/(?P<repo>[^/]+/[^/]+)/issues/(?P<number>\d+)"

@@ -19,11 +19,16 @@ Git repository manager for handling common git operations.
 """
 import logging
 import os
+import re
 from pathlib import Path
 
 import attr
 
 from recidiviz.tools.utils.script_helpers import run_command
+
+_GITHUB_REMOTE_URL_REGEX = re.compile(
+    r"(?:https://github\.com/|git@github\.com:)(?P<slug>[^/]+/[^/]+?)(?:\.git)?$"
+)
 
 
 @attr.define
@@ -224,6 +229,24 @@ class GitManager:
         self._commit_staged_changes(commit_msg)
         self._push_branch(branch_name=self._get_current_branch())
 
+    def get_repo_name(self) -> str:
+        """Returns the 'Owner/Repo' slug for the origin remote (e.g.
+        'Recidiviz/pulse-data').
+        """
+        url = self._run_git_command("git remote get-url origin")
+        match = _GITHUB_REMOTE_URL_REGEX.match(url)
+        if not match:
+            raise ValueError(
+                f"Could not parse GitHub owner/repo from origin URL: {url!r}"
+            )
+        return match.group("slug")
+
     def _run_git_command(self, cmd: str) -> str:
         """Execute a git command in the repository directory."""
         return run_command(command=cmd, cwd=self.repo_root).strip()
+
+
+def get_local_repo_name() -> str:
+    """Returns the 'Owner/Repo' slug for the git repo in the current working
+    directory, parsed from the origin remote URL."""
+    return GitManager(repo_root=Path.cwd()).get_repo_name()

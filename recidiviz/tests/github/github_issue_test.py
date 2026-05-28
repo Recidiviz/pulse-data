@@ -18,6 +18,7 @@
 
 import unittest
 
+from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
 
 
@@ -25,18 +26,20 @@ class TestGithubIssue(unittest.TestCase):
     """Tests for GithubIssue."""
 
     def test_from_string_short(self) -> None:
-        issue = GithubIssue.from_string("#123")
+        issue = GithubIssue.from_string("#123", default_repo=RECIDIVIZ_DATA_REPO)
         self.assertEqual(issue.repo, "Recidiviz/pulse-data")
         self.assertEqual(issue.number, 123)
 
     def test_from_string_with_repo(self) -> None:
-        issue = GithubIssue.from_string("Recidiviz/pulse-dashboard#456")
+        issue = GithubIssue.from_string(
+            "Recidiviz/pulse-dashboard#456", default_repo=RECIDIVIZ_DATA_REPO
+        )
         self.assertEqual(issue.repo, "Recidiviz/pulse-dashboard")
         self.assertEqual(issue.number, 456)
 
     def test_from_string_invalid(self) -> None:
         with self.assertRaises(ValueError):
-            GithubIssue.from_string("not-an-issue")
+            GithubIssue.from_string("not-an-issue", default_repo=RECIDIVIZ_DATA_REPO)
 
     def test_str(self) -> None:
         issue = GithubIssue(repo="Recidiviz/pulse-data", number=123)

@@ -21,21 +21,37 @@ import unittest
 from github import GithubException
 from mock import MagicMock, patch
 
+from recidiviz.github.github_code_reference import GithubCodeReference
+from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
-from recidiviz.issue_tracking.codebase_todos import CodeReference
 from recidiviz.issue_tracking.linear.linear_client import LinearApiError
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.tools.github.find_closing_issue_todos import main
 
 FAKE_ISSUE_REFERENCES = {
     GithubIssue(repo="Recidiviz/pulse-data", number=123): [
-        CodeReference(filepath="foo.py", line_number=10, line_text="# TODO(#123)"),
+        GithubCodeReference(
+            repo=RECIDIVIZ_DATA_REPO,
+            filepath="foo.py",
+            line_number=10,
+            line_text="# TODO(#123)",
+        ),
     ],
     LinearIssue(team_prefix="OBT", number=456): [
-        CodeReference(filepath="bar.py", line_number=20, line_text="# TODO(OBT-456)"),
+        GithubCodeReference(
+            repo=RECIDIVIZ_DATA_REPO,
+            filepath="bar.py",
+            line_number=20,
+            line_text="# TODO(OBT-456)",
+        ),
     ],
     GithubIssue(repo="Recidiviz/pulse-data", number=789): [
-        CodeReference(filepath="baz.py", line_number=30, line_text="# TODO(#789)"),
+        GithubCodeReference(
+            repo=RECIDIVIZ_DATA_REPO,
+            filepath="baz.py",
+            line_number=30,
+            line_text="# TODO(#789)",
+        ),
     ],
 }
 

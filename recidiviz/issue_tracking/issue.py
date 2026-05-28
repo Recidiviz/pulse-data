@@ -23,8 +23,6 @@ import re
 
 import attr
 
-_TODO_WITH_ARGS_REGEX = re.compile(r"TODO\((?P<issue_reference>[^)]+)\)")
-
 
 @attr.s(frozen=True, kw_only=True)
 class Issue(abc.ABC):
@@ -39,32 +37,10 @@ class Issue(abc.ABC):
         (e.g. '#123', 'OBT-456', 'https://...')."""
 
     @classmethod
-    @abc.abstractmethod
-    def from_string(cls, issue_string: str) -> "Issue":
-        """Parses a bare issue identifier string into this type. Raises
-        ValueError if the string doesn't match."""
-
-    @classmethod
     def todo_regex(cls) -> str:
         """Returns a regex pattern matching a TODO referencing this issue type,
         e.g. 'TODO(#123)' or 'TODO(OBT-456)'."""
         return rf"TODO\({cls.issue_regex()}\)"
-
-    @classmethod
-    def from_todo(cls, todo_string: str) -> "Issue":
-        """Parses a TODO string like 'TODO(#12345)' or 'TODO(OBT-789)' into
-        the appropriate Issue subclass. Only subclasses whose modules have
-        already been imported will be considered."""
-        match = re.fullmatch(_TODO_WITH_ARGS_REGEX, todo_string)
-        if match is None:
-            raise ValueError(f"Unrecognized TODO format: {todo_string}")
-        issue_ref_string = match.group("issue_reference")
-        for subclass in cls.__subclasses__():
-            try:
-                return subclass.from_string(issue_ref_string)
-            except ValueError:
-                continue
-        raise ValueError(f"Unrecognized TODO format: {todo_string}")
 
 
 @attr.s(frozen=True, kw_only=True)

@@ -18,9 +18,7 @@
 
 import unittest
 
-from recidiviz.github.github_issue import GithubIssue
-from recidiviz.issue_tracking.issue import Issue, UrlIssue
-from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.issue import UrlIssue
 
 
 class TestUrlIssue(unittest.TestCase):
@@ -42,29 +40,3 @@ class TestUrlIssue(unittest.TestCase):
         )
         self.assertNotRegex("TODO(#123)", UrlIssue.todo_regex())
         self.assertNotRegex("TODO(XXXX)", UrlIssue.todo_regex())
-
-
-class TestIssueFromTodo(unittest.TestCase):
-    """Tests for Issue.from_todo()."""
-
-    def test_github_todo(self) -> None:
-        issue = Issue.from_todo("TODO(#123)")
-        self.assertEqual(
-            issue, GithubIssue(repo="Recidiviz/pulse-data", number=123)
-        )
-
-    def test_linear_todo(self) -> None:
-        issue = Issue.from_todo("TODO(OBT-789)")
-        self.assertEqual(issue, LinearIssue(team_prefix="OBT", number=789))
-
-    def test_url_todo(self) -> None:
-        issue = Issue.from_todo(
-            "TODO(https://issues.apache.org/jira/browse/BEAM-12641)"
-        )
-        self.assertEqual(
-            issue, UrlIssue(url="https://issues.apache.org/jira/browse/BEAM-12641")
-        )
-
-    def test_unrecognized_todo(self) -> None:
-        with self.assertRaises(ValueError):
-            Issue.from_todo("TODO(XXXX)")

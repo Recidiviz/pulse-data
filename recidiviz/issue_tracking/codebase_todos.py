@@ -21,29 +21,21 @@ import re
 import subprocess
 from typing import DefaultDict, Dict, List, Mapping
 
-import attr
-
+from recidiviz.github.github_code_reference import GithubCodeReference
 from recidiviz.github.github_issue import GithubIssue
-from recidiviz.issue_tracking.issue import _TODO_WITH_ARGS_REGEX, Issue
+from recidiviz.issue_tracking.issue import Issue, UrlIssue
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.tools.utils.git_manager import get_local_repo_name
 
-
-@attr.s(frozen=True, kw_only=True)
-class CodeReference:
-    filepath: str = attr.ib()
-    line_number: int = attr.ib()
-    line_text: str = attr.ib()
-
-    def __str__(self) -> str:
-        return f"{self.filepath}:{self.line_number}"
-
-
+_TODO_ISSUE_REF_REGEX = re.compile(r"TODO\((?P<issue_ref>[^)]+)\)")
 _COMMIT_SHA_REGEX = re.compile(r"^[0-9a-f]{4,40}$")
 
 
-def _find_todo_code_references(commit_ref: str) -> List[CodeReference]:
-    """Returns a CodeReference for every line containing 'TODO' in the given
-    git ref (e.g. a commit SHA).
+def _find_todo_code_references(
+    commit_ref: str,
+) -> List[GithubCodeReference]:
+    """Returns a GithubCodeReference for every line containing 'TODO' in the
+    locally checked out repo at the given git ref (e.g. a commit SHA).
 
     Uses ``git grep`` to scan the ref without checking it out.
     """
@@ -63,12 +55,14 @@ def _find_todo_code_references(commit_ref: str) -> List[CodeReference]:
         raise RuntimeError(
             f"git grep failed (exit {res.returncode}): {res.stderr.decode()}"
         )
+    repo = get_local_repo_name()
     prefix = f"{commit_ref}:"
-    code_refs: List[CodeReference] = []
+    code_refs: List[GithubCodeReference] = []
     for line in res.stdout.decode().splitlines():
         filepath, lineno, line_text = line.removeprefix(prefix).split(":", 2)
         code_refs.append(
-            CodeReference(
+            GithubCodeReference(
+                repo=repo,
                 filepath=filepath,
                 line_number=int(lineno),
                 line_text=line_text,
@@ -77,17 +71,37 @@ def _find_todo_code_references(commit_ref: str) -> List[CodeReference]:
     return code_refs
 
 
+def issue_from_todo(todo_string: str, *, default_repo: str) -> Issue:
+    """Parses a TODO string like 'TODO(#12345)' or 'TODO(OBT-789)' into the
+    appropriate Issue subclass."""
+    ref_match = re.fullmatch(_TODO_ISSUE_REF_REGEX, todo_string)
+    if ref_match is None:
+        raise ValueError(f"Unrecognized TODO format: {todo_string}")
+    issue_ref = ref_match.group("issue_ref")
+
+    if re.fullmatch(GithubIssue.issue_regex(), issue_ref):
+        return GithubIssue.from_string(issue_ref, default_repo=default_repo)
+    if re.fullmatch(LinearIssue.issue_regex(), issue_ref):
+        return LinearIssue.from_string(issue_ref)
+    if re.fullmatch(UrlIssue.issue_regex(), issue_ref):
+        return UrlIssue.from_string(issue_ref)
+
+    raise ValueError(f"Unrecognized TODO format: {todo_string}")
+
+
 def get_entire_codebase_issue_references(
     commit_ref: str,
-) -> Dict[Issue, List[CodeReference]]:
-    """Scans every file tracked by git for TODO comments and returns a mapping
-    from each referenced issue to the code locations where it appears."""
-    issue_references: Dict[Issue, List[CodeReference]] = DefaultDict(list)
+) -> Dict[Issue, List[GithubCodeReference]]:
+    """Scans every file tracked by git in the local repo for TODO comments and returns
+    a mapping from each referenced issue to the code locations where it appears.
+    """
+    repo = get_local_repo_name()
+    issue_references: Dict[Issue, List[GithubCodeReference]] = DefaultDict(list)
 
     for code_ref in _find_todo_code_references(commit_ref):
-        for todo_match in _TODO_WITH_ARGS_REGEX.finditer(code_ref.line_text):
+        for todo_match in _TODO_ISSUE_REF_REGEX.finditer(code_ref.line_text):
             try:
-                issue = Issue.from_todo(todo_match.group(0))
+                issue = issue_from_todo(todo_match.group(0), default_repo=repo)
             except ValueError:
                 continue
             issue_references[issue].append(code_ref)
@@ -95,14 +109,16 @@ def get_entire_codebase_issue_references(
     return issue_references
 
 
-def parse_issue_string(issue_string: str) -> Issue:
+def parse_issue_string(issue_string: str, *, default_repo: str) -> Issue:
     """Parses '#123', 'Owner/Repo#123', or 'OBT-12345' into an Issue."""
     if re.fullmatch(LinearIssue.issue_regex(), issue_string):
         return LinearIssue.from_string(issue_string)
-    return GithubIssue.from_string(issue_string)
+    return GithubIssue.from_string(issue_string, default_repo=default_repo)
 
 
-def to_markdown(issue_references: Mapping[Issue, List[CodeReference]]) -> str:
+def to_markdown(
+    issue_references: Mapping[Issue, List[GithubCodeReference]],
+) -> str:
     lines = []
     for issue in sorted(issue_references.keys(), key=str):
         lines.append(f"* {issue}")

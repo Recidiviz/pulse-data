@@ -45,10 +45,10 @@ from github import Github
 from github.Auth import Token
 
 from recidiviz.github.github_client import get_closing_github_issues, get_pr_head_sha
+from recidiviz.github.github_code_reference import GithubCodeReference
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.github.github_pull_request import GithubPullRequest
 from recidiviz.issue_tracking.codebase_todos import (
-    CodeReference,
     get_entire_codebase_issue_references,
     to_markdown,
 )
@@ -122,13 +122,13 @@ def main(
     github_client = Github(auth=Token(github_token))
     pr_head_sha = get_pr_head_sha(pr, github_client)
     codebase_issue_references = get_entire_codebase_issue_references(
-        commit_ref=pr_head_sha
+        commit_ref=pr_head_sha,
     )
     linear_client = LinearClient(linear_api_key)
 
     closing_issues = _get_closing_issues(pr, github_client, linear_client)
 
-    matching_references: dict[Issue, list[CodeReference]] = {
+    matching_references: dict[Issue, list[GithubCodeReference]] = {
         issue: codebase_issue_references[issue]
         for issue in closing_issues
         if issue in codebase_issue_references

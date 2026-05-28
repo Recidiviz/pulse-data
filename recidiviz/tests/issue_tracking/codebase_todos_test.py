@@ -21,10 +21,12 @@ import unittest
 from mock import patch
 from mock.mock import MagicMock
 
+from recidiviz.github.github_code_reference import GithubCodeReference
+from recidiviz.github.github_constants import RECIDIVIZ_DATA_REPO
 from recidiviz.github.github_issue import GithubIssue
 from recidiviz.issue_tracking.codebase_todos import (
-    CodeReference,
     get_entire_codebase_issue_references,
+    issue_from_todo,
     parse_issue_string,
     to_markdown,
 )
@@ -35,36 +37,46 @@ from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
     """Tests for get_entire_codebase_issue_references()."""
 
+    @patch("recidiviz.issue_tracking.codebase_todos.get_local_repo_name")
     @patch("recidiviz.issue_tracking.codebase_todos._find_todo_code_references")
-    def test_get_issue_references(self, mock_todo_lines: MagicMock) -> None:
+    def test_get_issue_references(
+        self, mock_todo_lines: MagicMock, mock_repo_name: MagicMock
+    ) -> None:
+        mock_repo_name.return_value = RECIDIVIZ_DATA_REPO
         self.maxDiff = None
         mock_todo_lines.return_value = [
-            CodeReference(
+            GithubCodeReference(
+                repo=RECIDIVIZ_DATA_REPO,
                 filepath="foo.py",
                 line_number=10,
                 line_text="# TODO(#123): Get something",
             ),
-            CodeReference(
+            GithubCodeReference(
+                repo=RECIDIVIZ_DATA_REPO,
                 filepath="bar.yaml",
                 line_number=20,
                 line_text="  - key: value  # TODO(Recidiviz/pulse-dashboard#456): Remap for frontend",
             ),
-            CodeReference(
+            GithubCodeReference(
+                repo=RECIDIVIZ_DATA_REPO,
                 filepath="baz.py",
                 line_number=30,
                 line_text="# TODO(https://issues.apache.org/jira/browse/BEAM-12641): Upgrade once fixed by Apache",
             ),
-            CodeReference(
+            GithubCodeReference(
+                repo=RECIDIVIZ_DATA_REPO,
                 filepath="dir/qux.py",
                 line_number=40,
                 line_text="  # TODO(Recidiviz/pulse-data#123): Get something else now",
             ),
-            CodeReference(
+            GithubCodeReference(
+                repo=RECIDIVIZ_DATA_REPO,
                 filepath="linear.py",
                 line_number=50,
                 line_text="# TODO(OBT-789): Migrate to Linear",
             ),
-            CodeReference(
+            GithubCodeReference(
+                repo=RECIDIVIZ_DATA_REPO,
                 filepath="multi.py",
                 line_number=60,
                 line_text="# TODO(#123), TODO(#456), TODO(OBT-789): Multiple on one line",
@@ -73,7 +85,8 @@ class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
 
         references = get_entire_codebase_issue_references(commit_ref="HEAD")
 
-        multi_code_ref = CodeReference(
+        multi_code_ref = GithubCodeReference(
+            repo=RECIDIVIZ_DATA_REPO,
             filepath="multi.py",
             line_number=60,
             line_text="# TODO(#123), TODO(#456), TODO(OBT-789): Multiple on one line",
@@ -82,12 +95,14 @@ class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
             references,
             {
                 GithubIssue(repo="Recidiviz/pulse-data", number=123): [
-                    CodeReference(
+                    GithubCodeReference(
+                        repo=RECIDIVIZ_DATA_REPO,
                         filepath="foo.py",
                         line_number=10,
                         line_text="# TODO(#123): Get something",
                     ),
-                    CodeReference(
+                    GithubCodeReference(
+                        repo=RECIDIVIZ_DATA_REPO,
                         filepath="dir/qux.py",
                         line_number=40,
                         line_text="  # TODO(Recidiviz/pulse-data#123): Get something else now",
@@ -95,14 +110,16 @@ class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
                     multi_code_ref,
                 ],
                 GithubIssue(repo="Recidiviz/pulse-dashboard", number=456): [
-                    CodeReference(
+                    GithubCodeReference(
+                        repo=RECIDIVIZ_DATA_REPO,
                         filepath="bar.yaml",
                         line_number=20,
                         line_text="  - key: value  # TODO(Recidiviz/pulse-dashboard#456): Remap for frontend",
                     ),
                 ],
                 LinearIssue(team_prefix="OBT", number=789): [
-                    CodeReference(
+                    GithubCodeReference(
+                        repo=RECIDIVIZ_DATA_REPO,
                         filepath="linear.py",
                         line_number=50,
                         line_text="# TODO(OBT-789): Migrate to Linear",
@@ -110,7 +127,8 @@ class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
                     multi_code_ref,
                 ],
                 UrlIssue(url="https://issues.apache.org/jira/browse/BEAM-12641"): [
-                    CodeReference(
+                    GithubCodeReference(
+                        repo=RECIDIVIZ_DATA_REPO,
                         filepath="baz.py",
                         line_number=30,
                         line_text="# TODO(https://issues.apache.org/jira/browse/BEAM-12641): Upgrade once fixed by Apache",
@@ -127,17 +145,19 @@ class ParseIssueStringTest(unittest.TestCase):
     """Tests for parse_issue_string()."""
 
     def test_github_hash(self) -> None:
-        issue = parse_issue_string("#123")
+        issue = parse_issue_string("#123", default_repo=RECIDIVIZ_DATA_REPO)
         self.assertEqual(
             issue, GithubIssue(repo="Recidiviz/pulse-data", number=123)
         )
 
     def test_github_repo(self) -> None:
-        issue = parse_issue_string("Recidiviz/pulse-data#789")
+        issue = parse_issue_string(
+            "Recidiviz/pulse-data#789", default_repo=RECIDIVIZ_DATA_REPO
+        )
         self.assertEqual(issue, GithubIssue(repo="Recidiviz/pulse-data", number=789))
 
     def test_linear(self) -> None:
-        issue = parse_issue_string("OBT-12345")
+        issue = parse_issue_string("OBT-12345", default_repo=RECIDIVIZ_DATA_REPO)
         self.assertEqual(issue, LinearIssue(team_prefix="OBT", number=12345))
 
 
@@ -145,21 +165,24 @@ class ToMarkdownTest(unittest.TestCase):
     """Tests for to_markdown()."""
 
     def test_github_only(self) -> None:
-        issue_references: dict[Issue, list[CodeReference]] = {
+        issue_references: dict[Issue, list[GithubCodeReference]] = {
             GithubIssue(repo="Recidiviz/pulse-data", number=123): [
-                CodeReference(
+                GithubCodeReference(
+                    repo=RECIDIVIZ_DATA_REPO,
                     filepath="foo.py",
                     line_number=10,
                     line_text="# TODO(#123): Get something",
                 ),
-                CodeReference(
+                GithubCodeReference(
+                    repo=RECIDIVIZ_DATA_REPO,
                     filepath="dir/qux.py",
                     line_number=40,
                     line_text="  # TODO(Recidiviz/pulse-data#123): Get something else now",
                 ),
             ],
             GithubIssue(repo="Recidiviz/pulse-dashboard", number=456): [
-                CodeReference(
+                GithubCodeReference(
+                    repo=RECIDIVIZ_DATA_REPO,
                     filepath="bar.yaml",
                     line_number=20,
                     line_text="  - key: value  # TODO(Recidiviz/pulse-dashboard#456): Remap for frontend",
@@ -179,16 +202,18 @@ class ToMarkdownTest(unittest.TestCase):
         )
 
     def test_mixed_types(self) -> None:
-        issue_references: dict[Issue, list[CodeReference]] = {
+        issue_references: dict[Issue, list[GithubCodeReference]] = {
             GithubIssue(repo="Recidiviz/pulse-data", number=123): [
-                CodeReference(
+                GithubCodeReference(
+                    repo=RECIDIVIZ_DATA_REPO,
                     filepath="foo.py",
                     line_number=10,
                     line_text="# TODO(#123): Fix",
                 ),
             ],
             LinearIssue(team_prefix="OBT", number=456): [
-                CodeReference(
+                GithubCodeReference(
+                    repo=RECIDIVIZ_DATA_REPO,
                     filepath="bar.py",
                     line_number=20,
                     line_text="# TODO(OBT-456): Migrate",
@@ -205,3 +230,30 @@ class ToMarkdownTest(unittest.TestCase):
 * Recidiviz/pulse-data#123
   * foo.py:10""",
         )
+
+
+class IssueFromTodoTest(unittest.TestCase):
+    """Tests for issue_from_todo()."""
+
+    def test_github_todo(self) -> None:
+        issue = issue_from_todo("TODO(#123)", default_repo=RECIDIVIZ_DATA_REPO)
+        self.assertEqual(
+            issue, GithubIssue(repo="Recidiviz/pulse-data", number=123)
+        )
+
+    def test_linear_todo(self) -> None:
+        issue = issue_from_todo("TODO(OBT-789)", default_repo=RECIDIVIZ_DATA_REPO)
+        self.assertEqual(issue, LinearIssue(team_prefix="OBT", number=789))
+
+    def test_url_todo(self) -> None:
+        issue = issue_from_todo(
+            "TODO(https://issues.apache.org/jira/browse/BEAM-12641)",
+            default_repo=RECIDIVIZ_DATA_REPO,
+        )
+        self.assertEqual(
+            issue, UrlIssue(url="https://issues.apache.org/jira/browse/BEAM-12641")
+        )
+
+    def test_unrecognized_todo(self) -> None:
+        with self.assertRaises(ValueError):
+            issue_from_todo("TODO(XXXX)", default_repo=RECIDIVIZ_DATA_REPO)
