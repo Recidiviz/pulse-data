@@ -37,6 +37,7 @@ PUBLIC_PATHWAYS_ALLOWED_ORIGINS = [
     r"https\://pathways-staging\.recidiviz\.org$",
     r"https\://pathways\.recidiviz\.org$",
     r"https\://dashboards\.doccs\.ny\.gov$",
+    r"https\://public-pathways-staging--[a-zA-Z0-9-]+-[a-z0-9]{8}\.web\.app$",
 ]
 
 

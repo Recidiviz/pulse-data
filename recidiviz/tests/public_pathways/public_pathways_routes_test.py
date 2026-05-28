@@ -510,6 +510,50 @@ class TestPathwaysCORS(PublicPathwaysBlueprintTestCase):
         expected_status=HTTPStatus.FORBIDDEN,
     )
 
+    test_firebase_preview_v1_is_allowed = make_cors_test(
+        request_origin="https://public-pathways-staging--john-doe-foo-12345-v1-oi8f34kw.web.app",
+        expected_headers={
+            "Access-Control-Allow-Origin": "https://public-pathways-staging--john-doe-foo-12345-v1-oi8f34kw.web.app",
+            "Vary": "Origin",
+        },
+    )
+
+    test_firebase_preview_v2_is_allowed = make_cors_test(
+        request_origin="https://public-pathways-staging--john-doe-foo-12345-v2-9zum45bs.web.app",
+        expected_headers={
+            "Access-Control-Allow-Origin": "https://public-pathways-staging--john-doe-foo-12345-v2-9zum45bs.web.app",
+            "Vary": "Origin",
+        },
+    )
+
+    test_firebase_preview_test_branch_is_allowed = make_cors_test(
+        request_origin="https://public-pathways-staging--john-doe-foo-12345-v1-bg5evm16.web.app",
+        expected_headers={
+            "Access-Control-Allow-Origin": "https://public-pathways-staging--john-doe-foo-12345-v1-bg5evm16.web.app",
+            "Vary": "Origin",
+        },
+    )
+
+    test_firebase_preview_http_is_disallowed = make_cors_test(
+        request_origin="http://public-pathways-staging--john-doe-foo-12345-v1-oi8f34kw.web.app",
+        expected_status=HTTPStatus.FORBIDDEN,
+    )
+
+    test_firebase_preview_uppercase_hash_is_disallowed = make_cors_test(
+        request_origin="https://public-pathways-staging--john-doe-foo-12345-v1-OI8F34KW.web.app",
+        expected_status=HTTPStatus.FORBIDDEN,
+    )
+
+    test_firebase_preview_short_hash_is_disallowed = make_cors_test(
+        request_origin="https://public-pathways-staging--john-doe-foo-12345-v1-oi8f34k.web.app",
+        expected_status=HTTPStatus.FORBIDDEN,
+    )
+
+    test_firebase_preview_domain_injection_is_disallowed = make_cors_test(
+        request_origin="https://public-pathways-staging--john-doe-foo-12345-v1-oi8f34kw.web.app.evil.com",
+        expected_status=HTTPStatus.FORBIDDEN,
+    )
+
 
 class TestAuthorizationIntegration(PublicPathwaysBlueprintTestCase):
     """Tests that routes require authorization"""
