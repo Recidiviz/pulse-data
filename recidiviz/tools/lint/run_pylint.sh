@@ -99,38 +99,10 @@ exit_code=$((exit_code + $?))
 
 # TODO format check
 echo "Checking for TODO format"
-# This set of commands does the following:
-# - List all files with updates that are not deletions
-# - Skips `find*todos.py/yml`, `issue_references.py`, `bandit-baseline.json`, `run_pylint.sh`, `.pylintrc`, `CLAUDE.md`, or any templates as they can have 'TODO' that doesn't match the format
-# - Runs grep for each updated file, getting all lines containing 'TODO' (and including the line number in the output via -n)
-# - Filters to only the lines that don't contain 'TODO' with the correct format
-invalid_lines=$(get_changed_files \
-    | grep --invert-match -e 'find-\(closed\|linked\)-todos.yml' \
-    | grep --invert-match -e 'find_todos.py' \
-    | grep --invert-match -e 'repo/issue.py' \
-    | grep --invert-match -e 'repo/issue_test.py' \
-    | grep --invert-match -e 'issue_references.py' \
-    | grep --invert-match -e 'issue_references_test.py' \
-    | grep --invert-match -e 'bandit-baseline.json' \
-    | grep --invert-match -e 'recidiviz/tools/deploy/atmos/components/terraform/vendor' \
-    | grep --invert-match -e 'run_pylint\.sh' \
-    | grep --invert-match -e '\.pylintrc' \
-    | grep --invert-match -e 'CLAUDE\.md' \
-    | grep --invert-match -e '\.claude/skills/create_recidiviz_data_github_tasks/SKILL\.md' \
-    | grep --invert-match -e '\.claude/skills/maintain_skill_files/SKILL\.md' \
-    | grep --invert-match -e '/templates/' \
-    | grep --invert-match -e '/nbautoexports/' \
-    | grep --invert-match -e '/migrated_notebooks/' \
-    | xargs grep -n -e '[^A-Za-z]TODO' \
-    | grep --invert-match -e 'TODO(\(\(.*#[0-9]\+\)\|\(http.*\)\))')
-
-if [[ -n ${invalid_lines} ]]
-then
-    echo "TODOs must be of format TODO(#000), TODO(organization/repo#000), or TODO(https://issues.com/000)"
-    echo "${invalid_lines}" | indent_output
-    exit_code=$((exit_code + 1))
-else
-    echo "All TODOs match format"
+mapfile -t changed_files < <(get_changed_files)
+if [[ ${#changed_files[@]} -gt 0 ]]; then
+    uv run python -m recidiviz.tools.lint.check_todo_format "${changed_files[@]}"
+    exit_code=$((exit_code + $?))
 fi
 
 # TODO(#10252): Once we have a linter setup for SQL, see if it can perform this check for us.
