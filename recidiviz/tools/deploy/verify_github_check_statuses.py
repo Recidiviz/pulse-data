@@ -42,13 +42,13 @@ from typing import List
 import attr
 from github.CheckRun import CheckRun
 
+from recidiviz.github.github_client import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.tools.utils.script_helpers import (
     ANSI,
     color_text,
     prompt_for_step_or_skip,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.utils.metadata import local_project_id_override
 
 _REQUIRED_CHECKS_BY_PROJECT = {

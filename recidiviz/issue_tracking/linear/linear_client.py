@@ -23,7 +23,8 @@ from typing import Any
 import attr
 import requests
 
-from recidiviz.repo.issue import GithubIssue, LinearIssue
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 LINEAR_API_URL = "https://api.linear.app/graphql"
 

@@ -32,10 +32,12 @@ class IsExcludedTest(unittest.TestCase):
         self.assertTrue(
             is_excluded("recidiviz/tools/github/find_closing_issue_todos.py")
         )
-        self.assertTrue(is_excluded("recidiviz/repo/issue.py"))
-        self.assertTrue(is_excluded("recidiviz/tests/repo/issue_test.py"))
-        self.assertTrue(is_excluded("recidiviz/repo/issue_references.py"))
-        self.assertTrue(is_excluded("recidiviz/tests/repo/issue_references_test.py"))
+        self.assertTrue(is_excluded("recidiviz/issue_tracking/issue.py"))
+        self.assertTrue(is_excluded("recidiviz/tests/issue_tracking/issue_test.py"))
+        self.assertTrue(is_excluded("recidiviz/issue_tracking/codebase_todos.py"))
+        self.assertTrue(
+            is_excluded("recidiviz/tests/issue_tracking/codebase_todos_test.py")
+        )
         self.assertTrue(is_excluded("bandit-baseline.json"))
         self.assertTrue(
             is_excluded(
@@ -134,9 +136,7 @@ class MainTest(unittest.TestCase):
         self.assertEqual(main([path]), 1)
 
     def test_excludes_files(self) -> None:
-        path = self._write_temp_file(
-            "# TODO(bad): Bad\n", suffix="_issue_references.py"
-        )
+        path = self._write_temp_file("# TODO(bad): Bad\n", suffix="_codebase_todos.py")
         self.assertEqual(main([path]), 0)
 
     def test_empty_file_list(self) -> None:

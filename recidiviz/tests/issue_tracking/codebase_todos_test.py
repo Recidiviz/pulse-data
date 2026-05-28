@@ -14,26 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for recidiviz.repo.issue_references."""
+"""Tests for recidiviz.issue_tracking.codebase_todos."""
 
 import unittest
 
 from mock import patch
 from mock.mock import MagicMock
 
-from recidiviz.repo.issue import GithubIssue, Issue, LinearIssue, UrlIssue
-from recidiviz.repo.issue_references import (
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.codebase_todos import (
     CodeReference,
     get_entire_codebase_issue_references,
     parse_issue_string,
     to_markdown,
 )
+from recidiviz.issue_tracking.issue import Issue, UrlIssue
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 
 class GetEntireCodebaseIssueReferencesTest(unittest.TestCase):
     """Tests for get_entire_codebase_issue_references()."""
 
-    @patch("recidiviz.repo.issue_references._find_todo_code_references")
+    @patch("recidiviz.issue_tracking.codebase_todos._find_todo_code_references")
     def test_get_issue_references(self, mock_todo_lines: MagicMock) -> None:
         self.maxDiff = None
         mock_todo_lines.return_value = [

@@ -24,7 +24,7 @@ from github.Issue import Issue
 from github.IssueComment import IssueComment
 from github.Repository import Repository
 
-from recidiviz.utils.github import HELPERBOT_USER_NAME, RECIDIVIZ_DATA_REPO
+from recidiviz.github.github_client import HELPERBOT_USER_NAME, RECIDIVIZ_DATA_REPO
 
 
 @attr.define

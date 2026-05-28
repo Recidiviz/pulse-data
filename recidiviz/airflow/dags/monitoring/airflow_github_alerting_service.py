@@ -31,11 +31,11 @@ from recidiviz.airflow.dags.monitoring.recidiviz_github_mixin import (
     RecidivizGithubMixin,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import get_environment_for_project
-from recidiviz.utils.github import (
+from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     format_region_specific_ticket_title,
 )
+from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 from recidiviz.utils.types import assert_type

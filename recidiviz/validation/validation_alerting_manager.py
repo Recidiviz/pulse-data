@@ -26,8 +26,8 @@ from github.Issue import Issue as GithubIssue
 from github.Repository import Repository as GitHubRepository
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.github.github_client import format_region_specific_ticket_title
 from recidiviz.utils.environment import GCPEnvironment, get_admin_panel_base_url
-from recidiviz.utils.github import format_region_specific_ticket_title
 from recidiviz.utils.secrets import get_secret
 from recidiviz.validation.validation_alerting_config import (
     VALIDATION_ALERTING_CONFIG_PATH,

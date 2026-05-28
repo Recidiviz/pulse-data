@@ -23,7 +23,7 @@ from collections.abc import Sequence
 from enum import Enum
 
 import recidiviz
-from recidiviz.repo.issue import GithubIssue
+from recidiviz.github.github_issue import GithubIssue
 
 DOCS_ROOT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(recidiviz.__file__), "..", "docs")

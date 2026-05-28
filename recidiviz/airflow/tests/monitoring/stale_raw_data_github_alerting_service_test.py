@@ -30,8 +30,8 @@ from recidiviz.airflow.dags.monitoring.stale_raw_data_github_alerting_service im
     StaleRawDataGitHubService,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.github.github_client import HELPERBOT_USER_NAME
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.utils.github import HELPERBOT_USER_NAME
 
 
 @pytest.fixture(name="github_mocks")

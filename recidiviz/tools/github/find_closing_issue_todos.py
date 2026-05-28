@@ -44,15 +44,17 @@ import sys
 from github import Github
 from github.Auth import Token
 
-from recidiviz.repo.issue import GithubIssue, Issue, LinearIssue
-from recidiviz.repo.issue_references import (
+from recidiviz.github.github_client import get_closing_github_issues, get_pr_head_sha
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.github.github_pull_request import GithubPullRequest
+from recidiviz.issue_tracking.codebase_todos import (
     CodeReference,
     get_entire_codebase_issue_references,
     to_markdown,
 )
-from recidiviz.repo.linear_client import LinearClient
-from recidiviz.utils.github import get_closing_github_issues, get_pr_head_sha
-from recidiviz.utils.github_pull_request import GithubPullRequest
+from recidiviz.issue_tracking.issue import Issue
+from recidiviz.issue_tracking.linear.linear_client import LinearClient
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 
 def create_parser() -> argparse.ArgumentParser:

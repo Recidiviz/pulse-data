@@ -32,12 +32,12 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.github.github_client import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.monitoring import trace
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import gcp_only, get_environment_for_project
-from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
     get_all_deployed_validations,
     get_validation_global_config,

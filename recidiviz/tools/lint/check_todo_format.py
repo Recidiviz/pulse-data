@@ -25,7 +25,9 @@ Exits 0 if all TODOs are valid, 1 if any invalid TODOs are found.
 import re
 import sys
 
-from recidiviz.repo.issue import GithubIssue, LinearIssue, UrlIssue
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.issue import UrlIssue
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 TODO_RE = re.compile(r"[^A-Za-z]TODO")
 VALID_TODO_RE = re.compile(
@@ -39,8 +41,8 @@ EXCLUDED_PATH_PATTERNS: list[re.Pattern[str]] = [
         r"find_closing_issue_todos\.py",
         r"issue\.py",
         r"issue_test\.py",
-        r"issue_references\.py",
-        r"issue_references_test\.py",
+        r"codebase_todos\.py",
+        r"codebase_todos_test\.py",
         r"bandit-baseline\.json",
         r"recidiviz/tools/deploy/atmos/components/terraform/vendor",
         r"run_pylint\.sh",

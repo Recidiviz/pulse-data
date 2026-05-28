@@ -34,7 +34,9 @@ class TestPollForPrMerge(unittest.TestCase):
         )
         self.mock_github = self.patch_github.start()
 
-        self.patch_get_pr = mock.patch("recidiviz.utils.github.get_pr_if_exists")
+        self.patch_get_pr = mock.patch(
+            "recidiviz.github.github_client.get_pr_if_exists"
+        )
         self.mock_get_pr = self.patch_get_pr.start()
 
         self.patch_poll = mock.patch(

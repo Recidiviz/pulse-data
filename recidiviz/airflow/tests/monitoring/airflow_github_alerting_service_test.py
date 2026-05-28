@@ -32,8 +32,8 @@ from recidiviz.airflow.dags.monitoring.airflow_github_alerting_service import (
     AirflowGitHubService,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.github.github_client import HELPERBOT_USER_NAME
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.utils.github import HELPERBOT_USER_NAME
 
 TEST_DAG = "test_dag"
 

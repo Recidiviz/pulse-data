@@ -42,10 +42,15 @@ from collections import defaultdict
 from github import Github
 from github.Auth import Token
 
-from recidiviz.repo.issue import GithubIssue, LinearIssue
-from recidiviz.repo.linear_client import LinearAttachment, LinearClient, LinkKind
-from recidiviz.utils.github import get_pr_body
-from recidiviz.utils.github_pull_request import GithubPullRequest
+from recidiviz.github.github_client import get_pr_body
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.github.github_pull_request import GithubPullRequest
+from recidiviz.issue_tracking.linear.linear_client import (
+    LinearAttachment,
+    LinearClient,
+    LinkKind,
+)
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 AUTO_LINK_SOURCE_MARKER = "auto-link-action"
 

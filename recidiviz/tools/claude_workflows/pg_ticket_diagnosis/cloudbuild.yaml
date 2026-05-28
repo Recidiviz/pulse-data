@@ -53,7 +53,7 @@ substitutions:
   _ISSUE_NUMBER: ""
   _ISSUE_TITLE: ""
   _ISSUE_BODY: ""
-  # Should match recidiviz.utils.github.RECIDIVIZ_DASHBOARDS_REPO.
+  # Should match recidiviz.github.github_client.RECIDIVIZ_DASHBOARDS_REPO.
   _ISSUE_REPO: "Recidiviz/recidiviz-dashboards"
   _REPO_BRANCH: "main"
   _FORCE_RERUN: ""

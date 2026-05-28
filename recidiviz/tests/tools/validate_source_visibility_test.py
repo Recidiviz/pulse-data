@@ -110,8 +110,8 @@ class ValidateSourceVisibilityTest(unittest.TestCase):
 
     def test_is_valid_module_dependency_invalid_but_prefix(self) -> None:
         prefixes = make_module_matcher(["recidiviz.report"])
-        self.assertFalse(is_valid_module_dependency("recidiviz.repo", prefixes))
-        self.assertFalse(is_valid_module_dependency("recidiviz.repo.foo", prefixes))
+        self.assertFalse(is_valid_module_dependency("recidiviz.repor", prefixes))
+        self.assertFalse(is_valid_module_dependency("recidiviz.repor.foo", prefixes))
         self.assertFalse(is_valid_module_dependency("recidiviz.reporting", prefixes))
         self.assertFalse(
             is_valid_module_dependency("recidiviz.reporting.foo", prefixes)

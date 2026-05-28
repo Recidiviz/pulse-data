@@ -23,8 +23,8 @@ from github import Github
 from github.Auth import Token
 from more_itertools import one
 
-from recidiviz.repo.issue import GithubIssue
-from recidiviz.utils.github_pull_request import GithubPullRequest
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.github.github_pull_request import GithubPullRequest
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 

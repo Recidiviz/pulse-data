@@ -30,11 +30,11 @@ from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
 
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.github import (
+from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     upsert_helperbot_comment,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 from recidiviz.utils.types import assert_type

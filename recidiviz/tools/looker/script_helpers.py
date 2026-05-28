@@ -20,9 +20,9 @@ import os
 import shutil
 from pathlib import Path
 
+from recidiviz.github.github_client import LOOKER_REPO_NAME
 from recidiviz.tools.looker.constants import GENERATED_LOOKML_ROOT_PATH, VIEWS_DIR
 from recidiviz.tools.utils.git_manager import GitManager
-from recidiviz.utils.github import LOOKER_REPO_NAME
 
 
 def hash_directory(path: Path) -> str:

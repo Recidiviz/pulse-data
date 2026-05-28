@@ -14,15 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for recidiviz.utils.github."""
+"""Tests for recidiviz.github.github_client."""
 import unittest
 from unittest import mock
 
 from github import GithubException
 
-from recidiviz.repo.issue import GithubIssue
-from recidiviz.utils.github import get_closing_github_issues, poll_for_pr_merge
-from recidiviz.utils.github_pull_request import GithubPullRequest
+from recidiviz.github.github_client import get_closing_github_issues, poll_for_pr_merge
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.github.github_pull_request import GithubPullRequest
 
 GRAPHQL_RESPONSE_TWO_ISSUES = {
     "data": {
@@ -128,10 +128,12 @@ class TestPollForPrMerge(unittest.TestCase):
     def setUp(self) -> None:
         self.mock_github_client = mock.MagicMock()
 
-        self.patch_get_pr = mock.patch("recidiviz.utils.github.get_pr_if_exists")
+        self.patch_get_pr = mock.patch(
+            "recidiviz.github.github_client.get_pr_if_exists"
+        )
         self.mock_get_pr = self.patch_get_pr.start()
 
-        self.patch_time = mock.patch("recidiviz.utils.github.time")
+        self.patch_time = mock.patch("recidiviz.github.github_client.time")
         self.mock_time = self.patch_time.start()
 
     def tearDown(self) -> None:

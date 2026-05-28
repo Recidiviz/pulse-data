@@ -80,7 +80,7 @@ from google.cloud import bigquery, secretmanager
 
 # The Cloud Build container only ships run_pg_ticket_diagnosis.py; the rest
 # of the recidiviz package lives in the cloned repo at REPO_PATH (set by
-# cloudbuild.yaml). Prepend it so we can import recidiviz.utils.github.
+# cloudbuild.yaml). Prepend it so we can import recidiviz.github.github_client.
 sys.path.insert(0, os.environ.get("REPO_PATH", "."))
 
 # pylint: disable=wrong-import-position
@@ -94,7 +94,7 @@ from pii_doc_parser_utils import (  # type: ignore[import-not-found]  # noqa: E4
     parse_doc,
 )
 
-from recidiviz.utils.github import (  # noqa: E402
+from recidiviz.github.github_client import (  # noqa: E402
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     RECIDIVIZ_DASHBOARDS_REPO,
     github_helperbot_client,

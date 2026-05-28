@@ -21,9 +21,10 @@ import unittest
 from github import GithubException
 from mock import MagicMock, patch
 
-from recidiviz.repo.issue import GithubIssue, LinearIssue
-from recidiviz.repo.issue_references import CodeReference
-from recidiviz.repo.linear_client import LinearApiError
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.codebase_todos import CodeReference
+from recidiviz.issue_tracking.linear.linear_client import LinearApiError
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.tools.github.find_closing_issue_todos import main
 
 FAKE_ISSUE_REFERENCES = {

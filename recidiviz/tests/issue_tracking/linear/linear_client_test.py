@@ -20,13 +20,14 @@ import unittest
 
 from mock import MagicMock, patch
 
-from recidiviz.repo.issue import GithubIssue, LinearIssue
-from recidiviz.repo.linear_client import (
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.linear.linear_client import (
     LinearApiError,
     LinearAttachment,
     LinearClient,
     LinkKind,
 )
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 FAKE_API_KEY = "lin_api_test_key"
 
@@ -34,7 +35,7 @@ FAKE_API_KEY = "lin_api_test_key"
 class GetClosingIssuesTest(unittest.TestCase):
     """Tests for LinearClient.get_closing_issues()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_closing_issues(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -73,7 +74,7 @@ class GetClosingIssuesTest(unittest.TestCase):
             ],
         )
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_empty_when_no_closing_issues(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -87,7 +88,7 @@ class GetClosingIssuesTest(unittest.TestCase):
 
         self.assertEqual(result, [])
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=500,
@@ -100,7 +101,7 @@ class GetClosingIssuesTest(unittest.TestCase):
                 "https://github.com/Recidiviz/pulse-data/pull/100",
             )
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_raises_on_graphql_errors(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -113,7 +114,7 @@ class GetClosingIssuesTest(unittest.TestCase):
                 "https://github.com/Recidiviz/pulse-data/pull/100",
             )
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_handles_metadata_as_string(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -142,7 +143,7 @@ class GetClosingIssuesTest(unittest.TestCase):
 class ResolveLinearToGithubTest(unittest.TestCase):
     """Tests for LinearClient.resolve_linear_to_github()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_github_issue(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -171,7 +172,7 @@ class ResolveLinearToGithubTest(unittest.TestCase):
             GithubIssue(repo="Recidiviz/pulse-data", number=45678),
         )
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_none_when_no_github_attachment(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -189,7 +190,7 @@ class ResolveLinearToGithubTest(unittest.TestCase):
 class ResolveGithubToLinearTest(unittest.TestCase):
     """Tests for LinearClient.resolve_github_to_linear()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_linear_issue(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -209,7 +210,7 @@ class ResolveGithubToLinearTest(unittest.TestCase):
 
         self.assertEqual(result, LinearIssue(team_prefix="OBT", number=12345))
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_none_when_no_linear_issue(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -230,7 +231,7 @@ FAKE_PR_URL = "https://github.com/Recidiviz/pulse-data/pull/100"
 class GetAllPrAttachmentsTest(unittest.TestCase):
     """Tests for LinearClient.get_all_pr_attachments()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_all_attachments(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -292,7 +293,7 @@ class GetAllPrAttachmentsTest(unittest.TestCase):
             ],
         )
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_returns_empty_when_no_attachments(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -302,7 +303,7 @@ class GetAllPrAttachmentsTest(unittest.TestCase):
         client = LinearClient(FAKE_API_KEY)
         self.assertEqual(client.get_all_pr_attachments(FAKE_PR_URL), [])
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_handles_metadata_as_string(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -332,7 +333,7 @@ class GetAllPrAttachmentsTest(unittest.TestCase):
 class CreatePrAttachmentTest(unittest.TestCase):
     """Tests for LinearClient.create_pr_attachment()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_creates_attachment(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -363,7 +364,7 @@ class CreatePrAttachmentTest(unittest.TestCase):
             {"source": "my-source", "linkKind": "closes"},
         )
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_raises_on_api_error(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=500, text="Internal Server Error"
@@ -379,7 +380,7 @@ class CreatePrAttachmentTest(unittest.TestCase):
 class UpdateAttachmentTest(unittest.TestCase):
     """Tests for LinearClient.update_attachment()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_updates_attachment(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,
@@ -403,7 +404,7 @@ class UpdateAttachmentTest(unittest.TestCase):
 class DeleteAttachmentTest(unittest.TestCase):
     """Tests for LinearClient.delete_attachment()."""
 
-    @patch("recidiviz.repo.linear_client.requests.post")
+    @patch("recidiviz.issue_tracking.linear.linear_client.requests.post")
     def test_deletes_attachment(self, mock_post: MagicMock) -> None:
         mock_post.return_value = MagicMock(
             status_code=200,

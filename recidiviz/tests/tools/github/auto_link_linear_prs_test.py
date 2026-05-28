@@ -20,14 +20,19 @@ import unittest
 
 from mock import MagicMock, call, patch
 
-from recidiviz.repo.issue import GithubIssue, LinearIssue
-from recidiviz.repo.linear_client import LinearApiError, LinearAttachment, LinkKind
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.github.github_pull_request import GithubPullRequest
+from recidiviz.issue_tracking.linear.linear_client import (
+    LinearApiError,
+    LinearAttachment,
+    LinkKind,
+)
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 from recidiviz.tools.github.auto_link_linear_prs import (
     AUTO_LINK_SOURCE_MARKER,
     main,
     parse_issue_references,
 )
-from recidiviz.utils.github_pull_request import GithubPullRequest
 
 FAKE_PR_URL = "https://github.com/Recidiviz/pulse-data/pull/100"
 FAKE_PR = GithubPullRequest(owner="Recidiviz", repo="pulse-data", number=100)

@@ -23,7 +23,9 @@ from typing import DefaultDict, Dict, List, Mapping
 
 import attr
 
-from recidiviz.repo.issue import _TODO_WITH_ARGS_REGEX, GithubIssue, Issue, LinearIssue
+from recidiviz.github.github_issue import GithubIssue
+from recidiviz.issue_tracking.issue import _TODO_WITH_ARGS_REGEX, Issue
+from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -49,7 +51,7 @@ def _find_todo_code_references(commit_ref: str) -> List[CodeReference]:
         raise ValueError(
             f"commit_ref must be a hex SHA (4-40 characters), got: {commit_ref!r}"
         )
-    res = subprocess.run(  # nosec: B603
+    res = subprocess.run(  # nosec: B603, B607
         ["git", "grep", "-In", "TODO", commit_ref, "--"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
