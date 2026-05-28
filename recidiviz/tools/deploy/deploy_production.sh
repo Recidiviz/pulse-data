@@ -108,10 +108,10 @@ run_cmd_no_exiting_no_echo uv run python -m recidiviz.tools.deploy.generate_rele
   --new_tag "${GIT_VERSION_TAG}" \
   --github_token "${GITHUB_DEPLOY_BOT_TOKEN}" || exit_on_fail
 
-echo "Triggering post-deploy jobs."
-post_deploy_triggers 'recidiviz-123'
-
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
+
+echo "Triggering post-deploy jobs."
+post_deploy_triggers "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 
 duration=$SECONDS
 MINUTES=$((duration / 60))

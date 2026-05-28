@@ -443,18 +443,119 @@ function deployment_bot_message {
 }
 
 function post_deploy_triggers {
-    PROJECT=$1
+    local PROJECT_ID=$1
+    local COMMIT_HASH=$2
+    local RELEASE_VERSION_TAG=$3
+
+    # See "Deployment lifecycle and Slack notifications" header below for an
+    # explanation for the use of DEPLOYMENT_STATUS.
+    DEPLOYMENT_STATUS=$DEPLOYMENT_STATUS_POST_DEPLOY_RUNNING
 
     echo "Triggering post-deploy tasks"
+    echo "[$(date '+%Y-%m-%d %T')] Running: uv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id ${PROJECT_ID}"
+    if ! run_cmd_no_exiting_no_echo uv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT_ID}"; then
+        notify_post_deploy_triggers_failure "$PROJECT_ID" "$COMMIT_HASH" "$RELEASE_VERSION_TAG"
+    fi
 
-    run_cmd uv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT}"
+    DEPLOYMENT_STATUS=$DEPLOYMENT_STATUS_SUCCEEDED
+}
+
+function notify_post_deploy_triggers_failure {
+  local PROJECT_ID=$1
+  local COMMIT_HASH=$2
+  local RELEASE_VERSION_TAG=$3
+
+  local WARNING_MESSAGE="⚠️ \`[${RELEASE_VERSION_TAG}]\` Deploy of \`${COMMIT_HASH}\` to \`${PROJECT_ID}\` succeeded, but the post-deploy task failed. Please investigate and re-trigger if needed."
+
+  deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${WARNING_MESSAGE}" "${DEPLOYMENT_SUCCESS_MESSAGE_TS}" > /dev/null
 }
 
 
+# ============================================================================
+# Deployment lifecycle and Slack notifications
+# ============================================================================
+#
+# A deploy moves through a small state machine tracked in $DEPLOYMENT_STATUS
+# (constants defined just below). Function names in [brackets] are in this
+# file; reading them in order is the easiest way to follow the flow.
+#
+# Happy-path walkthrough:
+#
+#   1. [update_deployment_status STARTED] — sets status to STARTED, posts
+#      the 🛳 "deploy started" Slack message, and registers
+#      `trap on_deploy_exited EXIT` so we have a single funnel for whatever
+#      happens next.
+#
+#   2. The deploy body runs (terraform apply, docker push, git tag push, ...).
+#
+#   3. [update_deployment_status SUCCEEDED] — sets status to SUCCEEDED, posts
+#      the ✅ "successfully deployed" Slack message via
+#      [deployment_bot_message], and captures the message's Slack `ts` in
+#      DEPLOYMENT_SUCCESS_MESSAGE_TS so later messages can thread under it.
+#
+#   4. [post_deploy_triggers] — flips status to POST_DEPLOY_RUNNING and shells
+#      out the Python trigger script (which calls trigger_calculation_dag, in
+#      recidiviz/utils/trigger_dag_helpers.py). Python exits 0; status is
+#      flipped back to SUCCEEDED.
+#
+#   5. Script exits cleanly. [on_deploy_exited] fires (registered in step 1),
+#      sees status == SUCCEEDED, and posts nothing — the right message (the
+#      ✅ from step 3) is already in Slack.
+#
+# Variations from the happy path (most important cases):
+#
+# (A) Calc DAG already running when step 4 fires.
+#     - trigger_calculation_dag detects the in-progress run via
+#       has_running_dag_run, triggers the new run, and *skips* the
+#       update_big_query_table_schemata smoke test, because the new run will
+#       queue behind the existing one and the smoke test would just time out.
+#     - Python exits 0; bash sees this as a normal success and behaves
+#       identically to the happy path.
+#     - Before this skip existed, the smoke-test timeout would fail step 4 and
+#       post a misleading ❌, even though the deploy itself was fine.
+#
+# (B) Post-deploy script exits non-zero (e.g. the smoke test times out for an
+#     unrelated reason, calc DAG fails to trigger, ...).
+#     - Step 4's `if !` branch fires [notify_post_deploy_triggers_failure],
+#       which posts a ⚠️ reply threaded under the ✅ message (using
+#       DEPLOYMENT_SUCCESS_MESSAGE_TS as `thread_ts`).
+#     - Status is then flipped to SUCCEEDED, so step 5's trap posts nothing
+#       additional. Channel readers see ✅ + 💬 ⚠️.
+#
+# (C) Deploy body itself fails before step 3 (terraform error, docker push
+#     failure, git push rejected, ...).
+#     - The script exits with status still at STARTED.
+#     - Step 5's trap sees status < SUCCEEDED and posts a red ❌ "deploy
+#       failed" message.
+#
+# (D) Script killed mid-call during step 4 (ctrl-C, OOM, SIGTERM, ...).
+#     - Status was flipped to POST_DEPLOY_RUNNING in step 4 but never flipped
+#       back, because the kill happened in the middle of the Python call.
+#     - Step 5's trap sees POST_DEPLOY_RUNNING and calls
+#       [notify_post_deploy_triggers_failure] itself, posting the same ⚠️
+#       thread reply that variation (B) would post explicitly.
+#
+# Two design choices that may not be obvious:
+#
+# - Slack threading via DEPLOYMENT_SUCCESS_MESSAGE_TS: Slack identifies each
+#   message by a `ts` timestamp. A follow-up message renders under another
+#   message (as "1 reply" in a thread, not a separate channel post) by passing
+#   the original's `ts` as `thread_ts` on the chat.postMessage call. That's
+#   why we keep the success message's ts as a global: both variations (B) and
+#   (D) need to thread under it.
+#
+# - POST_DEPLOY_RUNNING is set by direct assignment, not via
+#   update_deployment_status: update_deployment_status has fat side effects
+#   (Slack messages, log uploads, gcloud calls) on STARTED/SUCCEEDED. The
+#   transitional value is just a breadcrumb for on_deploy_exited; there's
+#   nothing for the helper to do.
 DEPLOYMENT_STATUS_INITIAL=0
 DEPLOYMENT_STATUS_STARTED=1
 DEPLOYMENT_STATUS_SUCCEEDED=2
+DEPLOYMENT_STATUS_POST_DEPLOY_RUNNING=3
 DEPLOYMENT_STATUS=$DEPLOYMENT_STATUS_INITIAL
+
+DEPLOYMENT_SUCCESS_MESSAGE_TS=""
 
 
 DEPLOYMENT_STARTED_EMOJI=(🛳 🚀 ⛴ 🚢 🛸 ✈️ 🕊 🦅 ⛵ ️🚤 🛥 🛶 🚁 🛰 🚝 🚞 🚲 🛵 🛴)
@@ -468,7 +569,9 @@ function on_deploy_exited {
   local RELEASE_VERSION_TAG=$3
 
 
-  if [[ "${DEPLOYMENT_STATUS}" -lt "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
+  if [[ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_POST_DEPLOY_RUNNING}" ]]; then
+    notify_post_deploy_triggers_failure "${PROJECT_ID}" "${COMMIT_HASH}" "${RELEASE_VERSION_TAG}"
+  elif [[ "${DEPLOYMENT_STATUS}" -lt "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
     local EMOJI=${DEPLOYMENT_FAILED_EMOJI[$RANDOM % ${#DEPLOYMENT_FAILED_EMOJI[@]}]}
     local DEPLOYMENT_ERROR_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` There was an error deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
     local ERROR_MESSAGE_TS
@@ -503,11 +606,10 @@ function update_deployment_status {
       EMOJI=${DEPLOYMENT_SUCCESS_EMOJI[$RANDOM % ${#DEPLOYMENT_SUCCESS_EMOJI[@]}]}
       DEPLOY_SUCCEEDED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` ${GCLOUD_USER} successfully deployed to \`${PROJECT_ID}\` in ${MINUTES} minutes"
 
-      local SUCCESS_MESSAGE_TS
-      SUCCESS_MESSAGE_TS=$(deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_SUCCEEDED_MESSAGE}")
-      upload_deployment_log "${PROJECT_ID}" "${COMMIT_HASH}" "${RELEASE_VERSION_TAG}" "${SUCCESS_MESSAGE_TS}"
-      upload_internet_speed "${PROJECT_ID}" "${RELEASE_VERSION_TAG}" "${SUCCESS_MESSAGE_TS}"
-      
+      DEPLOYMENT_SUCCESS_MESSAGE_TS=$(deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_SUCCEEDED_MESSAGE}")
+      upload_deployment_log "${PROJECT_ID}" "${COMMIT_HASH}" "${RELEASE_VERSION_TAG}" "${DEPLOYMENT_SUCCESS_MESSAGE_TS}"
+      upload_internet_speed "${PROJECT_ID}" "${RELEASE_VERSION_TAG}" "${DEPLOYMENT_SUCCESS_MESSAGE_TS}"
+
       deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOY_SUCCEEDED_MESSAGE}" > /dev/null
   fi
 }

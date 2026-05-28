@@ -23,6 +23,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.trigger_dag_helpers import (
     _execute_and_poll,
+    has_running_dag_run,
     trigger_calculation_dag,
     trigger_dag_run,
     trigger_raw_data_import_dag,
@@ -276,11 +277,13 @@ def test_wait_for_dag_task_success_timeout(
 @patch(
     "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
 )
+@patch("recidiviz.utils.trigger_dag_helpers.has_running_dag_run", return_value=False)
 @patch("recidiviz.utils.trigger_dag_helpers.wait_for_dag_task_success")
 @patch("recidiviz.utils.trigger_dag_helpers.trigger_dag_run")
 def test_trigger_calculation_dag_success(
     mock_trigger_dag_run: MagicMock,
     mock_wait: MagicMock,
+    _mock_has_running: MagicMock,
     _mock_project_id: MagicMock,
 ) -> None:
     mock_trigger_dag_run.return_value = "manual__2024-01-01T00:00:00+00:00"
@@ -296,6 +299,226 @@ def test_trigger_calculation_dag_success(
         "update_big_query_table_schemata",
         timeout_seconds=1200,
     )
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.has_running_dag_run", return_value=True)
+@patch("recidiviz.utils.trigger_dag_helpers.wait_for_dag_task_success")
+@patch("recidiviz.utils.trigger_dag_helpers.trigger_dag_run")
+def test_trigger_calculation_dag_skips_wait_when_concurrent_run_in_progress(
+    mock_trigger_dag_run: MagicMock,
+    mock_wait: MagicMock,
+    _mock_has_running: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_trigger_dag_run.return_value = "manual__2024-01-01T00:00:00+00:00"
+
+    trigger_calculation_dag()
+
+    mock_trigger_dag_run.assert_called_once_with(
+        "recidiviz-staging_calculation_dag", conf={}
+    )
+    mock_wait.assert_not_called()
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.has_running_dag_run")
+@patch("recidiviz.utils.trigger_dag_helpers.wait_for_dag_task_success")
+@patch("recidiviz.utils.trigger_dag_helpers.trigger_dag_run")
+def test_trigger_calculation_dag_propagates_has_running_dag_run_error(
+    mock_trigger_dag_run: MagicMock,
+    mock_wait: MagicMock,
+    mock_has_running: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_has_running.side_effect = ValueError(
+        "Could not find JSON array in `airflow dags list-runs` output"
+    )
+
+    with pytest.raises(
+        ValueError, match="Could not find JSON array in `airflow dags list-runs`"
+    ):
+        trigger_calculation_dag()
+
+    mock_trigger_dag_run.assert_not_called()
+    mock_wait.assert_not_called()
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_true(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Some Airflow log line",
+        '[{"dag_id": "my_dag", "run_id": "manual__...", "state": "running"}]',
+    ]
+
+    assert has_running_dag_run("my_dag") is True
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_false(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Some Airflow log line",
+        "[]",
+    ]
+
+    assert has_running_dag_run("my_dag") is False
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_true_pretty_printed(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Some Airflow log line",
+        "[",
+        "  {",
+        '    "dag_id": "my_dag",',
+        '    "run_id": "manual__...",',
+        '    "state": "running"',
+        "  }",
+        "]",
+    ]
+
+    assert has_running_dag_run("my_dag") is True
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_tolerates_trailing_log_lines(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Some Airflow log line",
+        '[{"dag_id": "my_dag", "run_id": "manual__...", "state": "running"}]',
+        "[2026-05-20 14:32:08 UTC] INFO - Trailing Airflow log line",
+    ]
+
+    assert has_running_dag_run("my_dag") is True
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_tolerates_interleaved_log_lines(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Some Airflow log line",
+        "[",
+        "  {",
+        '    "dag_id": "my_dag",',
+        "[2026-05-20 14:32:08 UTC] INFO - Interleaved Airflow log line",
+        '    "run_id": "manual__...",',
+        '    "state": "running"',
+        "  }",
+        "]",
+        "[2026-05-20 14:32:09 UTC] INFO - Trailing Airflow log line",
+    ]
+
+    assert has_running_dag_run("my_dag") is True
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_unrecognized_output_raises(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Something unexpected",
+    ]
+
+    with pytest.raises(
+        ValueError, match="Could not find JSON array in `airflow dags list-runs`"
+    ):
+        has_running_dag_run("my_dag")
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_malformed_json_raises(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = [
+        "[2026-05-20 14:32:07 UTC] INFO - Some Airflow log line",
+        "[{not valid json",
+    ]
+
+    with pytest.raises(
+        ValueError, match="Failed to parse `airflow dags list-runs` JSON output"
+    ):
+        has_running_dag_run("my_dag")
+
+
+@patch(
+    "recidiviz.utils.trigger_dag_helpers.project_id", return_value="recidiviz-staging"
+)
+@patch("recidiviz.utils.trigger_dag_helpers.EnvironmentsClient")
+@patch("recidiviz.utils.trigger_dag_helpers._execute_and_poll")
+def test_has_running_dag_run_passes_expected_cli_args(
+    mock_execute_and_poll: MagicMock,
+    _mock_client_class: MagicMock,
+    _mock_project_id: MagicMock,
+) -> None:
+    mock_execute_and_poll.return_value = ["[]"]
+
+    has_running_dag_run("my_dag")
+
+    call_kwargs = mock_execute_and_poll.call_args.kwargs
+    assert call_kwargs["command"] == "dags"
+    assert call_kwargs["subcommand"] == "list-runs"
+    assert call_kwargs["parameters"] == [
+        "-d",
+        "my_dag",
+        "--state",
+        "running",
+        "--output",
+        "json",
+    ]
 
 
 @patch(

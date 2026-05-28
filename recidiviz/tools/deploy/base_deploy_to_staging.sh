@@ -278,12 +278,12 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
   run_cmd git push origin --tags
 fi
 
+update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
+
 if [[ -n ${PROMOTE} ]]; then
     echo "Triggering post-deploy jobs."
     verify_hash "$COMMIT_HASH"
-    post_deploy_triggers "$PROJECT_ID"
+    post_deploy_triggers "$PROJECT_ID" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 else
     echo "Skipping post deploy triggers for no promote build."
 fi
-
-update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"

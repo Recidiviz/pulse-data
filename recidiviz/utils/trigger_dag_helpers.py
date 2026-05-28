@@ -17,6 +17,7 @@
 """Helper functions for triggering DAGs."""
 import json
 import logging
+import re
 import time
 from datetime import datetime, timezone
 from typing import Optional
@@ -35,6 +36,11 @@ _POLL_TIMEOUT_SECONDS = 120
 _POLL_INTERVAL_SECONDS = 2
 
 _TASK_WAIT_INTERVAL_SECONDS = 30
+
+# Matches Airflow CLI log lines, which begin with a bracketed ISO-ish timestamp,
+# e.g. `[2026-05-20 14:32:07 UTC] INFO - ...`. Used to distinguish log output
+# from JSON payload lines that also start with `[`.
+_AIRFLOW_LOG_LINE_RE = re.compile(r"^\s*\[\d{4}-\d{2}-\d{2}")
 
 
 def _get_environment_path(client: EnvironmentsClient) -> str:
@@ -194,13 +200,69 @@ def wait_for_dag_task_success(
 _CALCULATION_DAG_UPDATE_SCHEMAS_TASK_ID = "update_big_query_table_schemata"
 
 
+def has_running_dag_run(dag_id: str) -> bool:
+    """Returns True if at least one run of DAG `dag_id` is in the `running`
+    state, and False if not. Raises a ValueError if it cannot parse the CLI
+    output."""
+    client = EnvironmentsClient()
+    environment = _get_environment_path(client)
+
+    output_lines = _execute_and_poll(
+        client=client,
+        environment=environment,
+        command="dags",
+        subcommand="list-runs",
+        parameters=["-d", dag_id, "--state", "running", "--output", "json"],
+    )
+    # `airflow dags list-runs --output json` emits a JSON array — `[]` if no
+    # runs match the filter, or `[{...}, ...]` if any do. The array may be
+    # compact on one line or pretty-printed across many. Airflow CLI log
+    # lines (which also start with `[`, e.g. `[2026-...] INFO - ...`) may be
+    # interleaved anywhere in the output. Filter them out and parse what's
+    # left as one JSON document.
+    json_lines = [line for line in output_lines if not _AIRFLOW_LOG_LINE_RE.match(line)]
+    if not any(line.strip() for line in json_lines):
+        raise ValueError(
+            f"Could not find JSON array in `airflow dags list-runs` output for "
+            f"dag_id {dag_id}. Output: {output_lines}"
+        )
+
+    try:
+        runs = json.loads("\n".join(json_lines))
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"Failed to parse `airflow dags list-runs` JSON output for dag_id "
+            f"{dag_id}: {e}. Output: {output_lines}"
+        ) from e
+
+    return len(runs) > 0
+
+
 def trigger_calculation_dag() -> None:
-    """Triggers the calculation DAG and waits for the update_big_query_table_schemata
-    task to succeed, confirming the DAG has actually started running."""
+    """Triggers the calculation DAG."""
 
     logging.info("Triggering the calc DAG.")
     dag_id = f"{project_id()}_calculation_dag"
+
+    # Note: the prior run may finish between this check and the trigger just
+    # below. That would cause us to skip a smoke test.
+    is_another_run_in_progress = has_running_dag_run(dag_id)
     run_id = trigger_dag_run(dag_id, conf={})
+
+    if is_another_run_in_progress:
+        # If another calc DAG run is already in progress, the new run will
+        # queue behind it at the wait_to_continue_or_cancel sensor in
+        # initialize_calculation_dag_group, and
+        # update_big_query_table_schemata will not start within any
+        # reasonable wait window.
+        logging.info(
+            "Skipping the post-trigger wait for %s, as another %s run "
+            "is already in progress.",
+            _CALCULATION_DAG_UPDATE_SCHEMAS_TASK_ID,
+            dag_id,
+        )
+        return
+
     wait_for_dag_task_success(
         dag_id, run_id, _CALCULATION_DAG_UPDATE_SCHEMAS_TASK_ID, timeout_seconds=1200
     )
