@@ -45,9 +45,11 @@ from recidiviz.persistence.entity.entity_deserialize import (
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
 )
-from recidiviz.persistence.entity.identity import entities as identity_entities
 from recidiviz.persistence.entity.identity import (
-    entity_factories as identity_entity_factories,
+    identity_fragment_entities as identity_fragment_entities_module,
+)
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entity_factories as identity_fragment_entity_factories_module,
 )
 
 _IDENTITY_MAPPINGS_DIR_NAME = "identity_mappings"
@@ -99,11 +101,13 @@ class IdentityIngestViewManifestCompilerDelegate(
 
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
         factory_cls_name = f"{entity_cls_name}Factory"
-        factory_cls = getattr(identity_entity_factories, factory_cls_name, None)
+        factory_cls = getattr(
+            identity_fragment_entity_factories_module, factory_cls_name, None
+        )
         if factory_cls is None:
             raise ValueError(
                 f"No factory class [{factory_cls_name}] found in "
-                f"identity.entity_factories."
+                f"identity.identity_fragment_entity_factories."
             )
         return factory_cls
 
@@ -111,7 +115,7 @@ class IdentityIngestViewManifestCompilerDelegate(
         if entity_cls_name in self._entity_cls_cache:
             return self._entity_cls_cache[entity_cls_name]
         entity_cls = get_entity_class_in_module_with_name(
-            identity_entities, entity_cls_name
+            identity_fragment_entities_module, entity_cls_name
         )
         self._entity_cls_cache[entity_cls_name] = entity_cls
         return entity_cls

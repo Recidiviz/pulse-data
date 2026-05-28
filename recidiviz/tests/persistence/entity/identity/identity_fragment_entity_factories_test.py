@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for identity ingest pipeline entity_factories.py."""
+"""Tests for identity_fragment_entity_factories.py."""
 import unittest
-from typing import Set
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
@@ -24,18 +23,21 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_entity_factory_classes_in_module,
 )
-from recidiviz.persistence.entity.identity import entities, entity_factories
+from recidiviz.persistence.entity.identity import identity_fragment_entities as entities
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entity_factories as entity_factories,
+)
 
 _TENANT = "US_OZ"
 
 
 class TestEntityFactories(unittest.TestCase):
-    """Tests for identity ingest pipeline entity_factories.py."""
+    """Tests for identity_fragment_entity_factories.py."""
 
     def test_factories_defined_for_all_classes(self) -> None:
         """Tests that an entity factory has been added for every entity."""
         factory_classes = get_all_entity_factory_classes_in_module(entity_factories)
-        found_entity_class_names: Set[str] = set()
+        found_entity_class_names: set[str] = set()
         for factory_class in factory_classes:
             entity_class_name = factory_class.__name__[: -len("Factory")]
             deserialize_return_type = factory_class.deserialize.__annotations__[
@@ -57,8 +59,8 @@ class TestEntityFactories(unittest.TestCase):
         self.assertEqual(set(), missing_classes)
 
     def test_has_tests_for_all_factories(self) -> None:
-        """Tests that a unittest has been added to this class for every expected entity
-        factory.
+        """Tests that a unit test has been added to this class for every
+        expected entity factory.
         """
         test_names = {t for t in dir(self) if t.startswith("test")}
 

@@ -40,8 +40,13 @@ from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStatePerson,
 )
-from recidiviz.persistence.entity.identity import entities as identity_entities
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_entities,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityGender,
@@ -477,7 +482,9 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
             name=IdentityName(tenant="US_OZ", given_name="John", surname="Doe"),
         )
 
-        result = serialize_entity_tree_into_json(attrs, identity_entities)
+        result = serialize_entity_tree_into_json(
+            attrs, entities_module_context_for_module(identity_entities)
+        )
 
         self.assertEqual(result["tenant"], "US_OZ")
         self.assertEqual(result["person_type"], "JII")
@@ -499,7 +506,9 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
             person_type=PersonType.JII,
         )
 
-        result = serialize_entity_tree_into_json(attrs, identity_entities)
+        result = serialize_entity_tree_into_json(
+            attrs, entities_module_context_for_module(identity_entities)
+        )
 
         self.assertIsNone(result["name"])
         self.assertIsNone(result["gender"])
@@ -516,7 +525,9 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
             ],
         )
 
-        result = serialize_entity_tree_into_json(attrs, identity_entities)
+        result = serialize_entity_tree_into_json(
+            attrs, entities_module_context_for_module(identity_entities)
+        )
 
         self.assertEqual(result["races"][0]["race"], "BLACK")
         self.assertEqual(result["races"][1]["race"], "WHITE")
@@ -534,7 +545,9 @@ class TestSerializeEntityTreeIntoJsonWithIdentityEntities(unittest.TestCase):
             ],
         )
 
-        result = serialize_entity_tree_into_json(attrs, identity_entities)
+        result = serialize_entity_tree_into_json(
+            attrs, entities_module_context_for_module(identity_entities)
+        )
 
         self.assertNotIn("fragment", result)
         self.assertNotIn("identity_attributes", result["name"])
@@ -556,7 +569,9 @@ class TestSerializeEntityTreeIntoJsonWithActivityEntities(unittest.TestCase):
         )
         person.assessments = [assessment]
 
-        result = serialize_entity_tree_into_json(person, entities)
+        result = serialize_entity_tree_into_json(
+            person, entities_module_context_for_module(entities)
+        )
 
         self.assertEqual(result["state_code"], "US_OZ")
         self.assertEqual(result["gender"], "FEMALE")
@@ -582,7 +597,9 @@ class TestSerializeEntityTreeIntoJsonWithActivityEntities(unittest.TestCase):
         )
         person.assessments = [a2, a1]
 
-        result = serialize_entity_tree_into_json(person, entities)
+        result = serialize_entity_tree_into_json(
+            person, entities_module_context_for_module(entities)
+        )
 
         self.assertEqual(result["assessments"][0]["external_id"], "A1")
         self.assertEqual(result["assessments"][1]["external_id"], "A2")
@@ -598,7 +615,9 @@ class TestSerializeEntityTreeIntoJsonWithActivityEntities(unittest.TestCase):
         )
         person.assessments = [assessment]
 
-        result = serialize_entity_tree_into_json(person, entities)
+        result = serialize_entity_tree_into_json(
+            person, entities_module_context_for_module(entities)
+        )
 
         self.assertNotIn("person", result["assessments"][0])
 
@@ -612,7 +631,9 @@ class TestSerializeEntityTreesIntoJson(unittest.TestCase):
             IdentityExternalId(tenant="US_OZ", external_id="A", id_type="T1"),
         ]
 
-        result = serialize_entity_trees_into_json(eids, identity_entities)
+        result = serialize_entity_trees_into_json(
+            eids, entities_module_context_for_module(identity_entities)
+        )
 
         self.assertEqual(result[0]["external_id"], "A")
         self.assertEqual(result[1]["external_id"], "B")

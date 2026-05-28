@@ -21,7 +21,7 @@ from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,
     entity_deserialize,
 )
-from recidiviz.persistence.entity.identity import entities
+from recidiviz.persistence.entity.identity import identity_fragment_entities as entities
 
 
 class IdentityExternalIdFactory(EntityFactory):

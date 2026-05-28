@@ -23,8 +23,13 @@ import attr
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Ethnicity, Gender, Race, Sex
-from recidiviz.persistence.entity.identity import entities as identity_entities_module
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_entities_module,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityEmail,
     IdentityEthnicity,
@@ -286,7 +291,8 @@ class TestClusterHash(unittest.TestCase):
         update the expected hashes in the golden hash test above.
         """
         serialized = serialize_entity_tree_into_json(
-            _fully_populated_attributes(), identity_entities_module
+            _fully_populated_attributes(),
+            entities_module_context_for_module(identity_entities_module),
         )
         self._assert_all_fields_populated(serialized, "IdentityAttributes")
 

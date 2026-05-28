@@ -32,8 +32,10 @@ from recidiviz.persistence.entity.entity_field_index import (
     EntityFieldIndex,
     EntityFieldType,
 )
-from recidiviz.persistence.entity.identity import entities as identity_entities_module
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_entities_module,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityEmail,
     IdentityEthnicity,

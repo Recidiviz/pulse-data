@@ -29,8 +29,10 @@ from recidiviz.common.constants.state.state_staff_role_period import StateStaffR
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.activity import entities as state_entities
 from recidiviz.persistence.entity.activity.entities import StatePerson, StateStaff
-from recidiviz.persistence.entity.identity import entities as identity_entities
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_entities,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,

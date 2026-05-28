@@ -22,7 +22,7 @@ import apache_beam as beam
 from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,

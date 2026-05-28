@@ -32,7 +32,6 @@ from recidiviz.common.attr_validators import (
     is_opt_str,
     is_opt_valid_name_part,
     is_opt_valid_name_suffix,
-    is_str,
     is_valid_email,
     is_valid_phone_number,
 )
@@ -49,18 +48,12 @@ from recidiviz.persistence.entity.entity_field_index import (
     EntityFieldIndex,
     EntityFieldType,
 )
+from recidiviz.persistence.entity.identity.identity_entity_mixin import (
+    IdentityEntityMixin,
+)
 from recidiviz.persistence.entity.reasonable_date_validators import (
     REASONABLE_OPT_BIRTHDATE_VALIDATOR,
 )
-
-
-@attr.s(eq=False)
-class IdentityEntityMixin:
-    """Mixin providing the tenant field on all identity entities, analogous to
-    StateEntityMixin providing state_code on all state entities."""
-
-    # TODO(#73568): Add a validator to ensure this is a valid tenant, or change to type Tenant
-    tenant: str = attr.ib(validator=is_str)
 
 
 @attr.s(eq=False, kw_only=True)

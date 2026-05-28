@@ -25,8 +25,13 @@ from typing import Any
 import attr
 
 from recidiviz.common.attr_validators import is_list_of
-from recidiviz.persistence.entity.identity import entities as identity_entities_module
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_fragment_entities_module,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
 )
@@ -36,6 +41,9 @@ from recidiviz.persistence.entity.serialization import (
 )
 
 
+# TODO(#80448): Remove this class once the pipeline migrates to the
+# entity-framework IdentityCluster in
+# recidiviz/persistence/entity/identity/identity_cluster_entities.py.
 @attr.s(eq=False, kw_only=True)
 class IdentityCluster:
     """Result of clustering identity fragments for one logical person."""
@@ -70,7 +78,8 @@ class IdentityCluster:
 
     def _serialized_external_ids(self) -> list[dict[str, Any]]:
         return serialize_entity_trees_into_json(
-            self.external_ids, identity_entities_module
+            self.external_ids,
+            entities_module_context_for_module(identity_fragment_entities_module),
         )
 
     def _compute_id(self) -> str:
@@ -81,7 +90,10 @@ class IdentityCluster:
             {
                 "external_ids": self._serialized_external_ids(),
                 "attributes": serialize_entity_tree_into_json(
-                    self.attributes, identity_entities_module
+                    self.attributes,
+                    entities_module_context_for_module(
+                        identity_fragment_entities_module
+                    ),
                 ),
             }
         )

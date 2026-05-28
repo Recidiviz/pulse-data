@@ -23,8 +23,10 @@ from apache_beam.pipeline_test import assert_that, equal_to
 
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.demographics import Gender, Race
-from recidiviz.persistence.entity.identity import entities as identity_entities
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.identity import (
+    identity_fragment_entities as identity_entities,
+)
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,

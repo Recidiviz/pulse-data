@@ -24,7 +24,7 @@ from more_itertools import one
 from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
 )
-from recidiviz.persistence.entity.identity.entities import (
+from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityAttributes,
     IdentityExternalId,
     IdentityFragment,

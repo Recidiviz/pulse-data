@@ -27,7 +27,13 @@ from recidiviz.persistence.entity.activity.state_entity_mixins import StateEntit
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.identity import entities as identity_entities
+from recidiviz.persistence.entity.identity import (
+    identity_cluster_entities,
+    identity_fragment_entities,
+)
+from recidiviz.persistence.entity.identity.identity_cluster_entities_module_context import (
+    IDENTITY_CLUSTER_ENTITIES_CONTEXT,
+)
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.utils import environment
 
@@ -35,7 +41,8 @@ ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES = [
     normalized_entities,
     state_entities,
     operations_entities,
-    identity_entities,
+    identity_fragment_entities,
+    identity_cluster_entities,
 ]
 
 _module_context_by_module: dict[ModuleType, EntitiesModuleContext] = {}
@@ -248,26 +255,26 @@ class _OperationsEntitiesModuleContext(EntitiesModuleContext):
         ]
 
 
-class _IdentityEntitiesModuleContext(EntitiesModuleContext):
-    """EntitiesModuleContext for the batch identity clustering entities module."""
+class _IdentityFragmentEntitiesModuleContext(EntitiesModuleContext):
+    """EntitiesModuleContext for the identity fragment entities module."""
 
     @classmethod
     def entities_module(cls) -> ModuleType:
-        return identity_entities
+        return identity_fragment_entities
 
     @classmethod
     def class_hierarchy(cls) -> list[str]:
         return [
-            identity_entities.IdentityFragment.__name__,
-            identity_entities.IdentityExternalId.__name__,
-            identity_entities.IdentityAttributes.__name__,
-            identity_entities.IdentityName.__name__,
-            identity_entities.IdentityGender.__name__,
-            identity_entities.IdentitySex.__name__,
-            identity_entities.IdentityRace.__name__,
-            identity_entities.IdentityEthnicity.__name__,
-            identity_entities.IdentityPhoneNumber.__name__,
-            identity_entities.IdentityEmail.__name__,
+            identity_fragment_entities.IdentityFragment.__name__,
+            identity_fragment_entities.IdentityExternalId.__name__,
+            identity_fragment_entities.IdentityAttributes.__name__,
+            identity_fragment_entities.IdentityName.__name__,
+            identity_fragment_entities.IdentityGender.__name__,
+            identity_fragment_entities.IdentitySex.__name__,
+            identity_fragment_entities.IdentityRace.__name__,
+            identity_fragment_entities.IdentityEthnicity.__name__,
+            identity_fragment_entities.IdentityPhoneNumber.__name__,
+            identity_fragment_entities.IdentityEmail.__name__,
         ]
 
 
@@ -285,8 +292,10 @@ def entities_module_context_for_module(
             context = _NormalizedStateEntitiesModuleContext()
         elif entities_module is operations_entities:
             context = _OperationsEntitiesModuleContext()
-        elif entities_module is identity_entities:
-            context = _IdentityEntitiesModuleContext()
+        elif entities_module is identity_fragment_entities:
+            context = _IdentityFragmentEntitiesModuleContext()
+        elif entities_module is identity_cluster_entities:
+            context = IDENTITY_CLUSTER_ENTITIES_CONTEXT
         else:
             raise ValueError(f"Unsupported module: [{entities_module}]")
         _module_context_by_module[context.entities_module()] = context
