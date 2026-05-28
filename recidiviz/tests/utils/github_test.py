@@ -20,7 +20,7 @@ from unittest import mock
 
 from github import GithubException
 
-from recidiviz.repo.issue_references import GithubIssue
+from recidiviz.repo.issue import GithubIssue
 from recidiviz.utils.github import get_closing_github_issues, poll_for_pr_merge
 from recidiviz.utils.github_pull_request import GithubPullRequest
 

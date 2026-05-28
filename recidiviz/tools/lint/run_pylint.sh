@@ -107,6 +107,8 @@ echo "Checking for TODO format"
 invalid_lines=$(get_changed_files \
     | grep --invert-match -e 'find-\(closed\|linked\)-todos.yml' \
     | grep --invert-match -e 'find_todos.py' \
+    | grep --invert-match -e 'repo/issue.py' \
+    | grep --invert-match -e 'repo/issue_test.py' \
     | grep --invert-match -e 'issue_references.py' \
     | grep --invert-match -e 'issue_references_test.py' \
     | grep --invert-match -e 'bandit-baseline.json' \

@@ -24,11 +24,11 @@ $ python -m recidiviz.tools.github.find_todos --issues "#123" Recidiviz/pulse-da
 import argparse
 import logging
 import sys
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set
 
+from recidiviz.repo.issue import GithubIssue, Issue
 from recidiviz.repo.issue_references import (
     CodeReference,
-    GithubIssue,
     get_issue_references,
     to_markdown,
 )
@@ -59,8 +59,8 @@ def create_parser() -> argparse.ArgumentParser:
 
 def filter_to_issues(
     issues_to_include: Set[GithubIssue],
-    issue_references: Dict[GithubIssue, List[CodeReference]],
-) -> Dict[GithubIssue, List[CodeReference]]:
+    issue_references: Dict[Issue, List[CodeReference]],
+) -> Dict[Issue, List[CodeReference]]:
     return {
         issue: issue_references[issue]
         for issue in issues_to_include
@@ -69,7 +69,7 @@ def filter_to_issues(
 
 
 def write_output(
-    issue_references: Dict[GithubIssue, List[CodeReference]], minimal_output: bool
+    issue_references: Mapping[Issue, List[CodeReference]], minimal_output: bool
 ) -> None:
     if not issue_references:
         if not minimal_output:
