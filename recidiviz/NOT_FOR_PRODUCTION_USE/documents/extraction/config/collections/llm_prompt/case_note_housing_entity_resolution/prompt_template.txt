@@ -19,13 +19,13 @@ OUTPUT FORMAT:
 
 STRUCTURAL FIELDS — CRITICAL:
 The following fields are identifiers, not inferences. Output them as plain
-integers, NOT as {{value, null_reason, confidence_score, citations}} objects:
+integers, NOT as {{value, null_reason, confidence_level, citations}} objects:
   - entities[].entity_id
   - mention_mappings[].mention_id
   - mention_mappings[].entity_id
 
 All other fields (address, housed_type, temporary_housing_name) use the
-standard {{value, null_reason, confidence_score, citations}} wrapper.
+standard {{value, null_reason, confidence_level, citations}} wrapper.
 
 ENTITY RULES:
 - Two mentions refer to the same housing entity if they describe the same

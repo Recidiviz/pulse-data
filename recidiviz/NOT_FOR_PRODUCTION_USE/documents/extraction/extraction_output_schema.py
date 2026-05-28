@@ -21,7 +21,7 @@ Each document produces exactly one extraction result object.
 
 Supported field types: STRING, BOOLEAN, ENUM, INTEGER, FLOAT, ARRAY_OF_STRUCT.
 ARRAY_OF_STRUCT fields contain nested sub-fields, each individually wrapped in the
-standard {value, null_reason, confidence_score, citations} structure.
+standard {value, null_reason, confidence_level, citations} structure.
 
 Semantic consistency constraints can be expressed on any field (flat or sub-field)
 via three optional keys:
@@ -101,6 +101,19 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # Reserved field names that are auto-generated
 RESERVED_FIELD_NAME_IS_RELEVANT = "is_relevant"
 
+# Ordinal confidence labels, ordered from lowest to highest.
+# Each label names a distinct evidence quality: the LLM chooses based on which
+# definition best matches how it arrived at the extracted value.
+CONFIDENCE_LEVELS: tuple[str, ...] = (
+    "speculative",  # any doubt: weak/indirect evidence OR any plausible alternative reading exists
+    "inferred",  # one clear inferential step; adversarial_interpretation is null
+    "explicit",  # value directly stated; at most minor normalization (synonym, abbreviation)
+    "verbatim",  # value appears as-is in the document; citation text IS the value
+)
+CONFIDENCE_LEVEL_RANK: dict[str, int] = {
+    level: rank for rank, level in enumerate(CONFIDENCE_LEVELS)
+}
+
 
 class ExtractionFieldType(Enum):
     """Supported field types for extraction output schemas."""
@@ -117,11 +130,11 @@ class ExtractionFieldMode(Enum):
     """Controls how a field appears in the LLM schema and validation pipeline.
 
     INFERRED (default): field is an LLM inference, wrapped in the standard
-    {value, null_reason, confidence_score, citations} envelope.
+    {value, null_reason, confidence_level, citations} envelope.
 
     STRUCTURAL: field is an identifier the LLM echoes back or assigns
     sequentially (e.g. entity_id, mention_id). No confidence envelope,
-    excluded from confidence-threshold validation.
+    excluded from confidence-level validation.
     Only valid for STRING, INTEGER, FLOAT, and BOOLEAN field types.
     """
 
@@ -428,7 +441,7 @@ class ExtractionInferredField:
         }
 
     def value_wrapped_schema_property(self) -> dict[str, Any]:
-        """Returns the standard {value, null_reason, confidence_score, citations}
+        """Returns the standard {adversarial_interpretation, value, null_reason, confidence_level, citations}
         wrapper schema for a flat field."""
         # Build the value property
         value_property: dict[str, Any] = {
@@ -470,6 +483,18 @@ class ExtractionInferredField:
             "type": "OBJECT",
             "description": f"Extraction result for '{self.name}'",
             "properties": {
+                "adversarial_interpretation": {
+                    "type": "STRING",
+                    "description": (
+                        "FIRST: in one sentence, state the strongest plausible alternative interpretation "
+                        "of the evidence. The alternative may argue: a different value is more defensible; "
+                        "the value should be null (evidence too weak); or something should have been "
+                        "extracted when value is null. Set to null only if every alternative contradicts "
+                        "the document or requires assuming absent facts. "
+                        "If non-null, you MUST set confidence_level to 'speculative'."
+                    ),
+                    "nullable": True,
+                },
                 "value": value_property,
                 "null_reason": {
                     "type": "STRING",
@@ -482,9 +507,18 @@ class ExtractionInferredField:
                     "nullable": True,
                     "enum": list(NULL_REASON_VALUES),
                 },
-                "confidence_score": {
-                    "type": "NUMBER",
-                    "description": "Confidence score (0.0-1.0) for this extraction",
+                "confidence_level": {
+                    "type": "STRING",
+                    "description": (
+                        "Evidence quality for this extraction — chosen AFTER filling in adversarial_interpretation. "
+                        "If adversarial_interpretation is not null, you MUST use 'speculative'. "
+                        "Use one of: "
+                        "'speculative' — adversarial_interpretation is not null; OR evidence is weak/indirect; OR multiple inferential steps are needed; "
+                        "'inferred' — adversarial_interpretation is null; AND one clear inferential step from direct evidence in the document; "
+                        "'explicit' — adversarial_interpretation is null; AND value is directly stated in the document with at most minor normalization (synonym, abbreviation, paraphrase); "
+                        "'verbatim' — adversarial_interpretation is null; AND value appears exactly as-is in the document; the citation text IS the value with zero rewording or substitution."
+                    ),
+                    "enum": list(CONFIDENCE_LEVELS),
                 },
                 "citations": {
                     "type": "ARRAY",
@@ -498,18 +532,24 @@ class ExtractionInferredField:
                     "items": citation_item_schema,
                 },
             },
-            "required": ["value", "null_reason", "confidence_score", "citations"],
+            "required": [
+                "adversarial_interpretation",
+                "value",
+                "null_reason",
+                "confidence_level",
+                "citations",
+            ],
         }
 
     def to_llm_schema_property(self) -> dict[str, Any]:
         """Converts to the JSON schema property for this field.
 
         For flat fields, returns a nested object with
-        {value, null_reason, confidence_score, citations}.
+        {value, null_reason, confidence_level, citations}.
 
         For ARRAY_OF_STRUCT fields, returns an ARRAY where each item is an OBJECT
         whose inner fields are individually wrapped in the standard
-        {value, null_reason, confidence_score, citations} structure. The
+        {value, null_reason, confidence_level, citations} structure. The
         ARRAY_OF_STRUCT field itself is NOT wrapped.
         """
         if self.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
@@ -541,32 +581,36 @@ class ExtractionInferredField:
     def example_results(self) -> list[dict[str, Any]]:
         """Returns example results showing common cases for inferred fields."""
         return [
-            # Case 1: Value present
+            # Case 1: Value present, verbatim copy from document
             {
+                "adversarial_interpretation": None,
                 "value": "example_value",
                 "null_reason": None,
-                "confidence_score": 0.95,
+                "confidence_level": "verbatim",
                 "citations": [{"text": "example citation", "start": 0, "end": 15}],
             },
             # Case 2: Value null - not applicable
             {
+                "adversarial_interpretation": None,
                 "value": None,
                 "null_reason": "not_applicable",
-                "confidence_score": 0.9,
+                "confidence_level": "explicit",
                 "citations": None,
             },
             # Case 3: Value null - no info found
             {
+                "adversarial_interpretation": None,
                 "value": None,
                 "null_reason": "no_info_found",
-                "confidence_score": 0.85,
+                "confidence_level": "explicit",
                 "citations": None,
             },
             # Case 4: Value null - explicitly unknown (with citation)
             {
+                "adversarial_interpretation": None,
                 "value": None,
                 "null_reason": "explicitly_unknown",
-                "confidence_score": 0.95,
+                "confidence_level": "verbatim",
                 "citations": [{"text": "Status: Unknown", "start": 100, "end": 115}],
             },
         ]
@@ -735,7 +779,7 @@ class ExtractionOutputSchema:
         # Inferred field examples
         lines.append(
             "Each flat field in the output is an object with "
-            "{value, null_reason, confidence_score, citations}. Example cases:"
+            "{value, null_reason, confidence_level, citations}. Example cases:"
         )
         dummy_inferred_field = ExtractionInferredField(
             name="my_field",
@@ -766,7 +810,7 @@ class ExtractionOutputSchema:
             lines.append(
                 "Some fields are marked STRUCTURAL. These are identifiers you assign "
                 "or echo back — output them as plain values, not as "
-                "{value, null_reason, confidence_score, citations} objects."
+                "{value, null_reason, confidence_level, citations} objects."
             )
             lines.append("")
 
@@ -778,24 +822,26 @@ class ExtractionOutputSchema:
         if has_array_fields:
             lines.append(
                 "Array-of-struct fields are arrays where each element is an object "
-                "whose fields each use the same {value, null_reason, confidence_score, "
-                "citations} wrapper. Example:"
+                "whose fields each use the same {adversarial_interpretation, value, "
+                "null_reason, confidence_level, citations} wrapper. Example:"
             )
             array_example = {
                 "my_array_field": [
                     {
                         "sub_field_a": {
+                            "adversarial_interpretation": None,
                             "value": "example",
                             "null_reason": None,
-                            "confidence_score": 0.95,
+                            "confidence_level": "verbatim",
                             "citations": [
                                 {"text": "example citation", "start": 0, "end": 15}
                             ],
                         },
                         "sub_field_b": {
+                            "adversarial_interpretation": None,
                             "value": None,
                             "null_reason": "no_info_found",
-                            "confidence_score": 0.9,
+                            "confidence_level": "explicit",
                             "citations": None,
                         },
                     }

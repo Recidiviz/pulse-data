@@ -4,7 +4,7 @@
 # from case notes.
 
 name: CASE_NOTE_HOUSING_INFO
-confidence_threshold: 0.8
+minimum_confidence_level: inferred
 
 description: >
   Extract information about a person's housing status from case notes, including

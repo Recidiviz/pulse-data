@@ -34,7 +34,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.persisted_models.data
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
-DEFAULT_LLM_CONFIDENCE_THRESHOLD: float = 0.8
+DEFAULT_MINIMUM_CONFIDENCE_LEVEL: str = "inferred"
 
 
 @attr.define(frozen=True)
@@ -59,11 +59,11 @@ class DocumentExtractorCollectionMetadata:
     # schema so that we can write to unified, state-agnostic tables.
     output_schema: ExtractionOutputSchema
 
-    # Minimum confidence score (0.0-1.0) required for a row to appear in the
-    # validated output view. If ANY field in a row has confidence below this
-    # threshold, the entire row is excluded from validated results.
-    # TODO(#61701): Revisit per-field confidence thresholds
-    confidence_threshold: float
+    # Minimum confidence level required for a row to appear in the validated
+    # output view. If ANY field in a row has a confidence_level below this
+    # level in the ordinal scale, the entire row is excluded from validated results.
+    # TODO(#61701): Revisit per-field confidence levels
+    minimum_confidence_level: str
 
     @classmethod
     def metadata_table_address(
@@ -128,13 +128,15 @@ class DocumentExtractorCollectionMetadata:
             output_schema_yaml,
             collection_description=description,
         )
-        confidence_threshold = yaml_dict.pop_optional("confidence_threshold", float)
+        minimum_confidence_level = yaml_dict.pop_optional(
+            "minimum_confidence_level", str
+        )
 
         return cls(
             name=dir_name,
             description=description,
             output_schema=output_schema,
-            confidence_threshold=confidence_threshold
-            if confidence_threshold is not None
-            else DEFAULT_LLM_CONFIDENCE_THRESHOLD,
+            minimum_confidence_level=minimum_confidence_level
+            if minimum_confidence_level is not None
+            else DEFAULT_MINIMUM_CONFIDENCE_LEVEL,
         )

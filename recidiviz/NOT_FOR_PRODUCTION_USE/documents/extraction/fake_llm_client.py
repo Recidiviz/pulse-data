@@ -19,6 +19,7 @@ import uuid
 from typing import Any
 
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.extraction_output_schema import (
+    CONFIDENCE_LEVELS,
     ExtractionFieldType,
     ExtractionInferredField,
     ExtractionOutputSchema,
@@ -107,9 +108,9 @@ class FakeLLMClient(LLMClient, LLMResultReader):
     ) -> LLMExtractionResult:
         """Generates a fake extraction result for testing purposes.
 
-        Inferred fields are nested objects with value, null_reason, confidence_score, and citations.
+        Inferred fields are nested objects with value, null_reason, confidence_level, and citations.
         ARRAY_OF_STRUCT fields produce an array with one struct item whose sub-fields
-        each have the standard {value, null_reason, confidence_score, citations} wrapper.
+        each have the standard {value, null_reason, confidence_level, citations} wrapper.
         """
         if schema is None:
             return LLMExtractionResult(
@@ -148,7 +149,7 @@ class FakeLLMClient(LLMClient, LLMResultReader):
     def _generate_fake_field_value(
         field: ExtractionInferredField, seed: int
     ) -> dict[str, Any]:
-        """Generates a fake {value, null_reason, confidence_score, citations} object."""
+        """Generates a fake {value, null_reason, confidence_level, citations} object."""
         if field.field_type == ExtractionFieldType.BOOLEAN:
             value: Any = seed % 2 == 0
         elif field.field_type == ExtractionFieldType.ENUM:
@@ -184,6 +185,6 @@ class FakeLLMClient(LLMClient, LLMResultReader):
         return {
             "value": value,
             "null_reason": null_reason,
-            "confidence_score": round(0.5 + (seed % 50) / 100.0, 2),
+            "confidence_level": CONFIDENCE_LEVELS[seed % len(CONFIDENCE_LEVELS)],
             "citations": citations,
         }

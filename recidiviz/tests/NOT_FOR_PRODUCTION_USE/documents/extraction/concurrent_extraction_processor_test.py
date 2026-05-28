@@ -90,7 +90,7 @@ def _make_collection() -> DocumentExtractorCollectionMetadata:
         name="TEST_COLLECTION",
         description="Test collection",
         output_schema=_make_schema(),
-        confidence_threshold=0.8,
+        minimum_confidence_level="inferred",
     )
 
 
@@ -104,17 +104,17 @@ def _make_document(doc_id: str) -> GCSDocument:
     )
 
 
-def _make_llm_response(is_relevant: bool = True, confidence: float = 0.9) -> dict:
+def _make_llm_response(is_relevant: bool = True, confidence: str = "explicit") -> dict:
     return {
         "is_relevant": {
             "value": is_relevant,
-            "confidence_score": confidence,
+            "confidence_level": confidence,
             "null_reason": None,
             "citations": None,
         },
         "test_field": {
             "value": "test_value",
-            "confidence_score": confidence,
+            "confidence_level": confidence,
             "null_reason": None,
             "citations": None,
         },

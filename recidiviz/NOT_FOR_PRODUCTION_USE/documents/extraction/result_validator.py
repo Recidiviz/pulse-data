@@ -26,6 +26,7 @@ import re
 import attr
 
 from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.extraction_output_schema import (
+    CONFIDENCE_LEVEL_RANK,
     RESERVED_FIELD_NAME_IS_RELEVANT,
     ExtractionFieldMode,
     ExtractionFieldType,
@@ -99,7 +100,7 @@ def _check_is_relevant(
                 {
                     "is_relevant_value": value,
                     "is_relevant_confidence": is_relevant_wrapper.get(
-                        "confidence_score"
+                        "confidence_level"
                     ),
                 }
             ),
@@ -107,16 +108,27 @@ def _check_is_relevant(
     return None
 
 
+def _confidence_level_passes(level: str | None, minimum: str) -> bool:
+    """Returns True if level meets or exceeds minimum in the ordinal scale."""
+    if level is None:
+        return False
+    level_rank = CONFIDENCE_LEVEL_RANK.get(level)
+    min_rank = CONFIDENCE_LEVEL_RANK.get(minimum)
+    if level_rank is None or min_rank is None:
+        return False
+    return level_rank >= min_rank
+
+
 def _check_field_confidence(
     result_data: dict,
     field: ExtractionInferredField,
-    confidence_threshold: float,
+    minimum_confidence_level: str,
     result: DocumentExtractionResultMetadata,
 ) -> list[DocumentResultExclusionMetadata]:
-    """Returns LOW_CONFIDENCE failures for fields below threshold.
+    """Returns LOW_CONFIDENCE failures for fields below the minimum level.
 
-    For flat fields, checks the field's confidence_score directly.
-    For ARRAY_OF_STRUCT fields, checks each sub-field's confidence_score
+    For flat fields, checks the field's confidence_level directly.
+    For ARRAY_OF_STRUCT fields, checks each sub-field's confidence_level
     within each array element.
     """
     if field.field_mode == ExtractionFieldMode.STRUCTURAL:
@@ -124,13 +136,13 @@ def _check_field_confidence(
 
     if field.field_type == ExtractionFieldType.ARRAY_OF_STRUCT:
         return _check_array_of_struct_confidence(
-            result_data, field, confidence_threshold, result
+            result_data, field, minimum_confidence_level, result
         )
 
     field_wrapper = result_data.get(field.name, {})
-    confidence_score = field_wrapper.get("confidence_score")
+    confidence_level = field_wrapper.get("confidence_level")
 
-    if confidence_score is None or float(confidence_score) < confidence_threshold:
+    if not _confidence_level_passes(confidence_level, minimum_confidence_level):
         return [
             DocumentResultExclusionMetadata(
                 job_id=result.job_id,
@@ -142,8 +154,8 @@ def _check_field_confidence(
                 exclusion_details_json=json.dumps(
                     {
                         "field_name": field.name,
-                        "confidence_score": confidence_score,
-                        "threshold": confidence_threshold,
+                        "confidence_level": confidence_level,
+                        "minimum_confidence_level": minimum_confidence_level,
                     }
                 ),
             )
@@ -154,10 +166,10 @@ def _check_field_confidence(
 def _check_array_of_struct_confidence(
     result_data: dict,
     field: ExtractionInferredField,
-    confidence_threshold: float,
+    minimum_confidence_level: str,
     result: DocumentExtractionResultMetadata,
 ) -> list[DocumentResultExclusionMetadata]:
-    """Checks confidence scores for each sub-field in each element of an
+    """Checks confidence levels for each sub-field in each element of an
     ARRAY_OF_STRUCT field."""
     array_data = result_data.get(field.name)
     if not array_data or not field.struct_fields:
@@ -169,11 +181,8 @@ def _check_array_of_struct_confidence(
             if sf.field_mode == ExtractionFieldMode.STRUCTURAL:
                 continue
             sf_wrapper = element.get(sf.name, {})
-            confidence_score = sf_wrapper.get("confidence_score")
-            if (
-                confidence_score is None
-                or float(confidence_score) < confidence_threshold
-            ):
+            confidence_level = sf_wrapper.get("confidence_level")
+            if not _confidence_level_passes(confidence_level, minimum_confidence_level):
                 failures.append(
                     DocumentResultExclusionMetadata(
                         job_id=result.job_id,
@@ -185,8 +194,8 @@ def _check_array_of_struct_confidence(
                         exclusion_details_json=json.dumps(
                             {
                                 "field_name": f"{field.name}[{element_index}].{sf.name}",
-                                "confidence_score": confidence_score,
-                                "threshold": confidence_threshold,
+                                "confidence_level": confidence_level,
+                                "minimum_confidence_level": minimum_confidence_level,
                             }
                         ),
                     )
@@ -593,8 +602,8 @@ def _build_validated_result(
     """Builds the validated result dict, keeping LLM envelopes intact.
 
     Strips is_relevant (used only for filtering) and retains all other fields
-    with their original {value, confidence_score, null_reason, citations}
-    envelope so that confidence scores remain available downstream.
+    with their original {value, confidence_level, null_reason, citations}
+    envelope so that confidence levels remain available downstream.
     """
     return {
         field.name: result_data[field.name]
@@ -606,14 +615,14 @@ def _build_validated_result(
 def validate_extraction_result(
     result: DocumentExtractionResultMetadata,
     output_schema: ExtractionOutputSchema,
-    confidence_threshold: float,
+    minimum_confidence_level: str,
     document_text: str | None = None,
 ) -> ValidationResult:
-    """Validates a successful extraction result against the schema and threshold.
+    """Validates a successful extraction result against the schema and minimum level.
 
     Checks applied in order:
     1. is_relevant must be True
-    2. All fields must have confidence_score >= threshold (including
+    2. All fields must have confidence_level >= minimum_confidence_level (including
        sub-fields within ARRAY_OF_STRUCT elements)
     3. All non-null fields must have a citation
     4. Semantic consistency: allowed_if_nonnull, allowed_if_value, and
@@ -633,12 +642,12 @@ def validate_extraction_result(
     if relevance_failure:
         failures.append(relevance_failure)
 
-    # Check 2: confidence threshold for each field (including array sub-fields)
+    # Check 2: confidence level for each field (including array sub-fields)
     for field in output_schema.inferred_fields:
         if field.name == RESERVED_FIELD_NAME_IS_RELEVANT:
             continue
         confidence_failures = _check_field_confidence(
-            result_data, field, confidence_threshold, result
+            result_data, field, minimum_confidence_level, result
         )
         failures.extend(confidence_failures)
 

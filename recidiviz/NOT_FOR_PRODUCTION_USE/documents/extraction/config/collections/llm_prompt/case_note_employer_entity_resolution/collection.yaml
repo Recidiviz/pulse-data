@@ -6,7 +6,7 @@
 # collection (one document per person).
 
 name: CASE_NOTE_EMPLOYER_ENTITY_RESOLUTION
-confidence_threshold: 0.8
+minimum_confidence_level: inferred
 
 description: >
   Cluster employer mentions extracted from case notes into real-world employer

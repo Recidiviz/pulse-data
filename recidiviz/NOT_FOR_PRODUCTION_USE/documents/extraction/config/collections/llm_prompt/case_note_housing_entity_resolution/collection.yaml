@@ -7,7 +7,7 @@
 # case note, no array unnesting).
 
 name: CASE_NOTE_HOUSING_ENTITY_RESOLUTION
-confidence_threshold: 0.8
+minimum_confidence_level: inferred
 
 description: >
   Cluster housing mentions extracted from case notes into real-world housing

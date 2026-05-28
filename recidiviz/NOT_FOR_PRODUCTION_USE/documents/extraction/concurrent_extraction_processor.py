@@ -483,7 +483,7 @@ class ConcurrentExtractionProcessor:
                 validation = validate_extraction_result(
                     result=result,
                     output_schema=self._collection.output_schema,
-                    confidence_threshold=self._collection.confidence_threshold,
+                    minimum_confidence_level=self._collection.minimum_confidence_level,
                     document_text=document_contents.get(result.document_id)
                     if document_contents
                     else None,

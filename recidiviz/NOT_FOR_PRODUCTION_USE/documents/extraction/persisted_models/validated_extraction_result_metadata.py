@@ -31,7 +31,7 @@ class ValidatedExtractionResultMetadata:
 
     Stores result_json as a JSON string rather than typed columns so that this
     table's schema stays stable as extraction schemas evolve. The JSON preserves
-    the LLM's per-field {value, confidence_score, null_reason, citations}
+    the LLM's per-field {value, confidence_level, null_reason, citations}
     envelope for all fields except is_relevant (which is used only for
     filtering and is stripped). A SQL view unpacks result_json into typed
     columns for querying.

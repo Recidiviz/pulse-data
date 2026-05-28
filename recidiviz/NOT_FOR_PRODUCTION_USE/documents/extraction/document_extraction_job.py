@@ -171,7 +171,7 @@ class LLMPromptExtractionJobResultProcessor(ExtractionJobResultProcessor):
             validation = validate_extraction_result(
                 result=result,
                 output_schema=self.collection.output_schema,
-                confidence_threshold=self.collection.confidence_threshold,
+                minimum_confidence_level=self.collection.minimum_confidence_level,
             )
 
             if validation.validated_result_json is not None:

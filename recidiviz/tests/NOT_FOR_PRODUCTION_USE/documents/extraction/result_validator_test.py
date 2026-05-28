@@ -39,7 +39,7 @@ from recidiviz.NOT_FOR_PRODUCTION_USE.documents.extraction.result_validator impo
     validate_extraction_result,
 )
 
-_THRESHOLD = 0.8
+_MIN_LEVEL = "inferred"
 _DATETIME = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
 
 
@@ -76,12 +76,12 @@ def _make_schema(
     )
 
 
-def _envelope(value: object, confidence: float = 0.9) -> dict:
+def _envelope(value: object, confidence: str = "explicit") -> dict:
     """Minimal field envelope with no citation — use for tests that don't
     exercise citation validation. Use _wrap_value for tests that need citations."""
     return {
         "value": value,
-        "confidence_score": confidence,
+        "confidence_level": confidence,
         "null_reason": None,
         "citations": None,
     }
@@ -89,14 +89,14 @@ def _envelope(value: object, confidence: float = 0.9) -> dict:
 
 def _wrap_value(
     value: str | bool | None,
-    confidence: float = 0.95,
+    confidence: str = "verbatim",
     null_reason: str | None = None,
 ) -> dict:
-    """Creates a standard {value, null_reason, confidence_score, citations} wrapper."""
+    """Creates a standard {value, null_reason, confidence_level, citations} wrapper."""
     return {
         "value": value,
         "null_reason": null_reason,
-        "confidence_score": confidence,
+        "confidence_level": confidence,
         "citations": (
             [{"text": "example", "start": 0, "end": 7}] if value is not None else None
         ),
@@ -144,7 +144,7 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
         return validate_extraction_result(
             result=_make_result(result_data),
             output_schema=self.schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
         )
 
     def test_valid_result_passes(self) -> None:
@@ -176,7 +176,7 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
         result = self._validate(
             {
                 "is_relevant": _wrap_value(True),
-                "employer_name": _wrap_value("Walmart", confidence=0.5),
+                "employer_name": _wrap_value("Walmart", confidence="ambiguous"),
                 "employment_status": _wrap_value("EMPLOYED"),
             }
         )
@@ -188,14 +188,14 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
         assert result.failures[0].exclusion_details_json is not None
         details = json.loads(result.failures[0].exclusion_details_json)
         self.assertEqual(details["field_name"], "employer_name")
-        self.assertAlmostEqual(details["confidence_score"], 0.5)
+        self.assertEqual(details["confidence_level"], "ambiguous")
 
     def test_multiple_low_confidence_fields_all_recorded(self) -> None:
         result = self._validate(
             {
                 "is_relevant": _wrap_value(True),
-                "employer_name": _wrap_value("Walmart", confidence=0.5),
-                "employment_status": _wrap_value("EMPLOYED", confidence=0.3),
+                "employer_name": _wrap_value("Walmart", confidence="ambiguous"),
+                "employment_status": _wrap_value("EMPLOYED", confidence="speculative"),
             }
         )
         self.assertIsNone(result.validated_result_json)
@@ -211,7 +211,7 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
         result = self._validate(
             {
                 "is_relevant": _wrap_value(False),
-                "employer_name": _wrap_value("Walmart", confidence=0.5),
+                "employer_name": _wrap_value("Walmart", confidence="ambiguous"),
                 "employment_status": _wrap_value("EMPLOYED"),
             }
         )
@@ -236,14 +236,14 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
         result = self._validate(
             {
                 "is_relevant": _wrap_value(True),
-                "employer_name": _wrap_value("Walmart", confidence=0.95),
-                "employment_status": _wrap_value("EMPLOYED", confidence=0.88),
+                "employer_name": _wrap_value("Walmart", confidence="verbatim"),
+                "employment_status": _wrap_value("EMPLOYED", confidence="explicit"),
             }
         )
         assert result.validated_result_json is not None
         validated = json.loads(result.validated_result_json)
         self.assertEqual(validated["employer_name"]["value"], "Walmart")
-        self.assertAlmostEqual(validated["employer_name"]["confidence_score"], 0.95)
+        self.assertEqual(validated["employer_name"]["confidence_level"], "verbatim")
         self.assertEqual(validated["employment_status"]["value"], "EMPLOYED")
 
     def test_array_of_struct_low_confidence_subfield_excluded(self) -> None:
@@ -276,14 +276,14 @@ class TestValidateExtractionResultDocumentLevel(unittest.TestCase):
             "employers": [
                 {
                     "employer_name": _wrap_value("Walmart"),
-                    "pay_rate": _wrap_value("15.0", confidence=0.3),
+                    "pay_rate": _wrap_value("15.0", confidence="speculative"),
                 }
             ],
         }
         result = validate_extraction_result(
             result=_make_result(result_data),
             output_schema=schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
         )
         self.assertIsNone(result.validated_result_json)
         self.assertEqual(len(result.failures), 1)
@@ -363,7 +363,7 @@ class TestSemanticConsistencyAllowedIfValue(unittest.TestCase):
                 "housing_address": _wrap_value("123 Main St"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
         self.assertEqual(len(validation.failures), 0)
 
@@ -377,7 +377,7 @@ class TestSemanticConsistencyAllowedIfValue(unittest.TestCase):
                 "housing_address": _wrap_value(None, null_reason="not_applicable"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_fails_address_when_not_housed(self) -> None:
@@ -391,7 +391,7 @@ class TestSemanticConsistencyAllowedIfValue(unittest.TestCase):
                 "housing_address": _wrap_value("123 Main St"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -414,7 +414,7 @@ class TestSemanticConsistencyAllowedIfValue(unittest.TestCase):
                 "housing_address": _wrap_value("123 Main St"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -439,7 +439,7 @@ class TestSemanticConsistencyAllowedIfValue(unittest.TestCase):
                 "housing_address": _wrap_value(None, null_reason="not_applicable"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -462,7 +462,7 @@ class TestSemanticConsistencyAllowedIfValue(unittest.TestCase):
                 "housing_address": _wrap_value(None, null_reason="not_applicable"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
 
@@ -500,7 +500,7 @@ class TestSemanticConsistencyAllowedIfNonnull(unittest.TestCase):
                 "change_date": _wrap_value("2026-01-15"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_valid_both_null(self) -> None:
@@ -512,7 +512,7 @@ class TestSemanticConsistencyAllowedIfNonnull(unittest.TestCase):
                 "change_date": _wrap_value(None, null_reason="no_info_found"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_fails_date_without_type(self) -> None:
@@ -524,7 +524,7 @@ class TestSemanticConsistencyAllowedIfNonnull(unittest.TestCase):
                 "change_date": _wrap_value("2026-01-15"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -602,7 +602,7 @@ class TestSemanticConsistencyArrayOfStruct(unittest.TestCase):
                 ],
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
         self.assertEqual(len(validation.failures), 0)
 
@@ -622,7 +622,7 @@ class TestSemanticConsistencyArrayOfStruct(unittest.TestCase):
                 ],
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -650,7 +650,7 @@ class TestSemanticConsistencyArrayOfStruct(unittest.TestCase):
                 ],
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -677,7 +677,7 @@ class TestSemanticConsistencyArrayOfStruct(unittest.TestCase):
                 ],
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_null_employers_when_unemployed_is_valid(self) -> None:
@@ -691,7 +691,7 @@ class TestSemanticConsistencyArrayOfStruct(unittest.TestCase):
                 "employers": None,
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_multiple_elements_independent_failures(self) -> None:
@@ -720,7 +720,7 @@ class TestSemanticConsistencyArrayOfStruct(unittest.TestCase):
                 ],
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -778,7 +778,7 @@ class TestSemanticConsistencyAllowedValueCombinations(unittest.TestCase):
                 "change_type": _wrap_value("hired"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_valid_fired_when_unemployed(self) -> None:
@@ -790,7 +790,7 @@ class TestSemanticConsistencyAllowedValueCombinations(unittest.TestCase):
                 "change_type": _wrap_value("fired"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
     def test_fails_hired_when_unemployed(self) -> None:
@@ -803,7 +803,7 @@ class TestSemanticConsistencyAllowedValueCombinations(unittest.TestCase):
                 "change_type": _wrap_value("hired"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNone(validation.validated_result_json)
         semantic_failures = [
             f
@@ -828,7 +828,7 @@ class TestSemanticConsistencyAllowedValueCombinations(unittest.TestCase):
                 "change_type": _wrap_value(None, null_reason="no_info_found"),
             }
         )
-        validation = validate_extraction_result(result, schema, 0.8)
+        validation = validate_extraction_result(result, schema, _MIN_LEVEL)
         self.assertIsNotNone(validation.validated_result_json)
 
 
@@ -858,7 +858,7 @@ class TestCitationPresence(unittest.TestCase):
         return validate_extraction_result(
             result=_make_result(result_data),
             output_schema=self.schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
         )
 
     def test_nonnull_field_with_citation_passes(self) -> None:
@@ -951,7 +951,7 @@ class TestCitationPresence(unittest.TestCase):
         result = validate_extraction_result(
             result=_make_result(result_data),
             output_schema=schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
         )
         self.assertIsNone(result.validated_result_json)
         citation_failures = [
@@ -992,7 +992,7 @@ class TestCitationPresence(unittest.TestCase):
         result = validate_extraction_result(
             result=_make_result(result_data),
             output_schema=schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
         )
         self.assertIsNotNone(result.validated_result_json)
 
@@ -1019,7 +1019,7 @@ class TestCitationTextMatches(unittest.TestCase):
         return validate_extraction_result(
             result=_make_result(result_data),
             output_schema=self.schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
             document_text=document_text,
         )
 
@@ -1028,7 +1028,7 @@ class TestCitationTextMatches(unittest.TestCase):
             "is_relevant": _wrap_value(True),
             "employer_name": {
                 "value": "Walmart",
-                "confidence_score": 0.95,
+                "confidence_level": "verbatim",
                 "null_reason": None,
                 "citations": [{"text": citation_text, "start": 22, "end": 29}],
             },
@@ -1100,7 +1100,7 @@ class TestCitationTextMatches(unittest.TestCase):
                 {
                     "employer_name": {
                         "value": "Walmart",
-                        "confidence_score": 0.95,
+                        "confidence_level": "verbatim",
                         "null_reason": None,
                         "citations": [
                             {"text": "hallucinated text", "start": 0, "end": 10}
@@ -1112,7 +1112,7 @@ class TestCitationTextMatches(unittest.TestCase):
         result = validate_extraction_result(
             result=_make_result(result_data),
             output_schema=schema,
-            confidence_threshold=_THRESHOLD,
+            minimum_confidence_level=_MIN_LEVEL,
             document_text=self.document_text,
         )
         self.assertIsNone(result.validated_result_json)
