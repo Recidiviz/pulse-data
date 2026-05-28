@@ -29,7 +29,9 @@ class IsExcludedTest(unittest.TestCase):
     def test_excluded_files(self) -> None:
         self.assertTrue(is_excluded(".github/workflows/find-linked-todos.yml"))
         self.assertTrue(is_excluded(".github/workflows/find-closed-todos.yml"))
-        self.assertTrue(is_excluded("recidiviz/tools/github/find_todos.py"))
+        self.assertTrue(
+            is_excluded("recidiviz/tools/github/find_closing_issue_todos.py")
+        )
         self.assertTrue(is_excluded("recidiviz/repo/issue.py"))
         self.assertTrue(is_excluded("recidiviz/tests/repo/issue_test.py"))
         self.assertTrue(is_excluded("recidiviz/repo/issue_references.py"))

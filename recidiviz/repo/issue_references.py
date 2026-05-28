@@ -23,13 +23,7 @@ from typing import DefaultDict, Dict, List, Mapping
 
 import attr
 
-from recidiviz.repo.issue import (
-    _TODO_WITH_ARGS_REGEX,
-    DEFAULT_REPO,
-    GithubIssue,
-    Issue,
-    LinearIssue,
-)
+from recidiviz.repo.issue import _TODO_WITH_ARGS_REGEX, GithubIssue, Issue, LinearIssue
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -113,45 +107,3 @@ def to_markdown(issue_references: Mapping[Issue, List[CodeReference]]) -> str:
         for reference in sorted(issue_references[issue]):
             lines.append(f"  * {reference}")
     return "\n".join(lines)
-
-
-# --- Legacy functions used by recidiviz/tools/github/find_todos.py ---
-
-
-TO_DO_REGEX = rf"TODO\({GithubIssue.issue_regex()}\)"
-
-
-def _read_todo_lines_from_codebase() -> List[str]:
-    res = subprocess.run(
-        "git ls-files -z | xargs -0 grep -Il 'TODO' | tr '\n' '\\0' | xargs -0 grep -n 'TODO'",
-        shell=True,
-        stdout=subprocess.PIPE,
-        check=True,
-    )
-    return res.stdout.decode().splitlines()
-
-
-# TODO(#80248): Delete get_issue_references() once find_todos.py is replaced by
-# find_closing_issue_todos.py.
-def get_issue_references() -> Dict[Issue, List[CodeReference]]:
-    todo_regex = re.compile(TO_DO_REGEX)
-    issue_references: Dict[Issue, List[CodeReference]] = DefaultDict(list)
-
-    for todo_line in _read_todo_lines_from_codebase():
-        filepath, lineno, line_text = todo_line.split(":", 2)
-        match = re.search(todo_regex, line_text)
-
-        if match is not None:
-            issue_references[
-                GithubIssue(
-                    repo=match.group("repo") or DEFAULT_REPO,
-                    number=int(match.group("issue")),
-                )
-            ].append(
-                CodeReference(
-                    line_text=line_text,
-                    filepath=filepath,
-                    line_number=int(lineno),
-                )
-            )
-    return issue_references
