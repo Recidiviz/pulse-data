@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for SupervisionStaffRecordEtlDelegate to parse json rows."""
+
 import os
 from datetime import datetime, timezone
 from unittest import IsolatedAsyncioTestCase
@@ -131,6 +132,10 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                     "givenNames": "",
                     "surname": "",
                     "pseudonymizedId": "p103",
+                    "stateSpecificData": {
+                        "stateCode": "US_ID",
+                        "someField": "some_value",
+                    },
                 },
             )
 

@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL supervision staff records for Workflows into Firestore."""
+
 import json
 from typing import List, Tuple
 
@@ -36,6 +37,15 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsFirestoreETLDelegate):
 
         # Convert all keys to camelcase
         new_document = convert_nested_dictionary_keys(data, snake_to_camel)
+
+        # This field is a nested JSON string that needs to be parsed as well
+        state_specific_data = convert_nested_dictionary_keys(
+            json.loads(data.get("state_specific_data", "{}")), snake_to_camel
+        )
+        if state_specific_data.get("stateCode") == "US_IX":
+            state_specific_data["stateCode"] = "US_ID"
+        if state_specific_data:
+            new_document["stateSpecificData"] = state_specific_data
 
         new_document["givenNames"] = person_name_case(data.get("given_names", ""))
         new_document["surname"] = person_name_case(data.get("surname", ""))
