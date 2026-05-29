@@ -985,7 +985,8 @@ misconduct_reports_since_latest_review AS (
         -- it occurred after the latest scc
         AND DATE(incident_date) >= DATE(latest_scc_review_date)
     GROUP BY 1
-)
+),
+{us_mi_holiday_calendar_ctes()}
 SELECT
     tes.person_id,
     tes.state_code,
@@ -1023,7 +1024,29 @@ SELECT
     DATE(sgt.person_projected_full_term_release_date_max) AS metadata_max_release_date,
     DATE(sgt.person_projected_full_term_release_date_min) AS metadata_min_release_date,
     DATE_DIFF(DATE(sgt.person_projected_full_term_release_date_min), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
-    DATE_DIFF(CURRENT_DATE('US/Eastern'), ssd.start_date, DAY) AS metadata_days_in_solitary_session,
+    CASE 
+        WHEN -- this is someone in temp seg who hasn't had a review before
+            ssd.housing_unit_type_collapsed_scc_seg = "temp_seg_scc" AND e.latest_scc_review_date IS NULL
+        THEN -- then calculate business days since temp seg start
+          (
+              SELECT COUNT(*)
+              FROM UNNEST(GENERATE_DATE_ARRAY(
+                  DATE_ADD(ssd.start_date, INTERVAL 1 DAY),
+                  CURRENT_DATE('US/Eastern')
+              )) AS d
+              WHERE EXTRACT(DAYOFWEEK FROM d) NOT IN (1, 7)
+                  AND d NOT IN (SELECT holiday_date FROM all_holidays)
+          )
+        ELSE -- otherwise just calculate calendar date
+            DATE_DIFF(CURRENT_DATE('US/Eastern'), ssd.start_date, DAY) 
+        END AS metadata_days_in_solitary_session,
+    CASE
+        WHEN -- this is someone in temp seg who hasn't had a review before and metadata_days_in_solitary_session is in biz days
+            ssd.housing_unit_type_collapsed_scc_seg = "temp_seg_scc" AND e.latest_scc_review_date IS NULL
+        THEN 'BUSINESS' 
+        ELSE -- otherwise metadata_days_in_solitary_session is in cal days
+          'CALENDAR' 
+        END AS metadata_days_in_solitary_session_type,
     ssd.start_date AS metadata_solitary_session_start_date,
     CASE WHEN ssd.housing_unit_type_collapsed_scc_seg = "temp_seg_scc" THEN 'Temporary Segregation' 
             WHEN ssd.housing_unit_type_collapsed_scc_seg = "ad_seg_scc" THEN 'Administrative Segregation'
@@ -1118,6 +1141,107 @@ LEFT JOIN misconduct_reports_since_latest_review mr
         should_materialize=True,
         schema=schema,
     )
+
+
+def us_mi_holiday_calendar_ctes() -> str:
+    """Returns SQL CTE definitions for the Michigan state holiday calendar.
+
+    Covers 5 years of history and 10 years forward. The final CTE is
+    ``all_holidays``, which exposes a single ``holiday_date`` column.
+
+    Intended to be embedded at the start of a WITH clause::
+
+        WITH {us_mi_holiday_calendar_ctes()},
+        next_cte AS (...)
+    """
+    return """year_range AS (
+    -- Covers 5 years of history and 10 years forward
+    SELECT year
+    FROM UNNEST(GENERATE_ARRAY(
+        EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 5 YEAR)),
+        EXTRACT(YEAR FROM DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 10 YEAR))
+    )) AS year
+),
+fixed_holidays_raw AS (
+    -- Fixed-date holidays before applying weekend observance rules.
+    SELECT DATE(year, 1, 1) AS holiday_date FROM year_range UNION ALL    -- New Year's Day
+    SELECT DATE(year, 6, 19) FROM year_range UNION ALL                   -- Juneteenth
+    SELECT DATE(year, 7, 4) FROM year_range UNION ALL                    -- Independence Day
+    SELECT DATE(year, 11, 11) FROM year_range UNION ALL                  -- Veterans Day
+    SELECT DATE(year, 12, 24) FROM year_range UNION ALL                  -- Christmas Eve
+    SELECT DATE(year, 12, 25) FROM year_range UNION ALL                  -- Christmas Day
+    SELECT DATE(year, 12, 31) FROM year_range                            -- New Year's Eve
+),
+fixed_holidays AS (
+    -- When a fixed holiday falls on a weekend it is observed on the nearest
+    -- weekday: Saturday → Friday, Sunday → Monday.
+    SELECT
+        CASE EXTRACT(DAYOFWEEK FROM holiday_date)
+            WHEN 7 THEN DATE_SUB(holiday_date, INTERVAL 1 DAY)  -- Saturday → Friday
+            WHEN 1 THEN DATE_ADD(holiday_date, INTERVAL 1 DAY)  -- Sunday → Monday
+            ELSE holiday_date
+        END AS holiday_date
+    FROM fixed_holidays_raw
+),
+floating_holidays AS (
+    -- Holidays whose dates shift each year based on day-of-week rules.
+    --
+    -- Formula for the first Monday of month M:
+    --   DATE_ADD(DATE(year, M, 1), INTERVAL MOD(9 - DAYOFWEEK(DATE(year, M, 1)), 7) DAY)
+    --   where DAYOFWEEK is 1=Sun ... 7=Sat. The MOD expression gives the number
+    --   of days to advance from the 1st to reach the next Monday (0 if the 1st
+    --   is already a Monday). The Nth Monday is then first_monday + (N-1)*7 days.
+    --
+    -- Formula for the last Monday of month M:
+    --   DATE_SUB(last_day_of_month, INTERVAL MOD(DAYOFWEEK(last_day) + 5, 7) DAY)
+    --   The MOD expression gives days to step back from last_day to reach Monday.
+
+    -- MLK Jr. Day: 3rd Monday of January
+    SELECT DATE_ADD(
+        DATE_ADD(DATE(year, 1, 1), INTERVAL MOD(9 - EXTRACT(DAYOFWEEK FROM DATE(year, 1, 1)), 7) DAY),
+        INTERVAL 14 DAY) AS holiday_date
+    FROM year_range
+    UNION ALL
+    -- Presidents Day: 3rd Monday of February
+    SELECT DATE_ADD(
+        DATE_ADD(DATE(year, 2, 1), INTERVAL MOD(9 - EXTRACT(DAYOFWEEK FROM DATE(year, 2, 1)), 7) DAY),
+        INTERVAL 14 DAY)
+    FROM year_range
+    UNION ALL
+    -- Memorial Day: last Monday of May
+    SELECT DATE_SUB(
+        DATE_SUB(DATE(year, 6, 1), INTERVAL 1 DAY),
+        INTERVAL MOD(EXTRACT(DAYOFWEEK FROM DATE_SUB(DATE(year, 6, 1), INTERVAL 1 DAY)) + 5, 7) DAY)
+    FROM year_range
+    UNION ALL
+    -- Labor Day: 1st Monday of September
+    SELECT DATE_ADD(DATE(year, 9, 1), INTERVAL MOD(9 - EXTRACT(DAYOFWEEK FROM DATE(year, 9, 1)), 7) DAY)
+    FROM year_range
+    UNION ALL
+    -- Election Day: first Tuesday after first Monday of November, even years only
+    SELECT DATE_ADD(
+        DATE_ADD(DATE(year, 11, 1), INTERVAL MOD(9 - EXTRACT(DAYOFWEEK FROM DATE(year, 11, 1)), 7) DAY),
+        INTERVAL 1 DAY)
+    FROM year_range
+    WHERE MOD(year, 2) = 0
+    UNION ALL
+    -- Thanksgiving: 4th Thursday of November
+    SELECT DATE_ADD(
+        DATE_ADD(DATE(year, 11, 1), INTERVAL MOD(12 - EXTRACT(DAYOFWEEK FROM DATE(year, 11, 1)), 7) DAY),
+        INTERVAL 21 DAY)
+    FROM year_range
+    UNION ALL
+    -- Black Friday: last Friday of November
+    SELECT DATE_SUB(
+        DATE_SUB(DATE(year, 12, 1), INTERVAL 1 DAY),
+        INTERVAL MOD(EXTRACT(DAYOFWEEK FROM DATE_SUB(DATE(year, 12, 1), INTERVAL 1 DAY)) + 1, 7) DAY)
+    FROM year_range
+),
+all_holidays AS (
+    SELECT holiday_date FROM fixed_holidays
+    UNION ALL
+    SELECT holiday_date FROM floating_holidays
+)"""
 
 
 def secondary_officer_dockets_cte() -> str:
