@@ -85,10 +85,13 @@ def staff_role_type_from_staff_title(
 def staff_role_subtype_from_staff_title(
     raw_text: str,
 ) -> StateStaffRoleSubtype:
-    if raw_text in ("PAOS"):
+    if raw_text in (
+        "PAOS",
+        "PRBM",
+    ):  # parole supervisor and probation manager, both supervisor officers
         return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
 
-    if raw_text in ("PRBM", "PRBO", "PRBP", "PARO"):
+    if raw_text in ("PRBO", "PRBP", "PARO"):
         return StateStaffRoleSubtype.SUPERVISION_OFFICER
 
     return StateStaffRoleSubtype.INTERNAL_UNKNOWN
