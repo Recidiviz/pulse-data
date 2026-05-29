@@ -32,6 +32,7 @@ import recidiviz
 from recidiviz.calculator.query.state.views.dashboard.shared_pathways.pathways_helpers import (
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
+from recidiviz.case_triage.edovo.edovo_routes import create_edovo_api_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
@@ -153,6 +154,7 @@ def set_headers(response: Response) -> Response:
 pathways_api_blueprint = create_pathways_api_blueprint()
 workflows_blueprint = create_workflows_api_blueprint()
 outliers_api_blueprint = create_outliers_api_blueprint()
+edovo_blueprint = create_edovo_api_blueprint()
 
 csrf = CSRFProtect(app)
 # Disable CSRF protection for workflows+outliers routes because the session id changes between
@@ -162,6 +164,8 @@ csrf = CSRFProtect(app)
 csrf.exempt(workflows_blueprint)
 csrf.exempt(outliers_api_blueprint)
 csrf.exempt(jii_api_blueprint)
+# Edovo uses HMAC-SHA256 request signing — no session cookie, no CSRF token needed.
+csrf.exempt(edovo_blueprint)
 
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 # Only the pathways endpoints are accessible in offline mode
@@ -169,6 +173,7 @@ if not in_offline_mode():
     app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
     app.register_blueprint(outliers_api_blueprint, url_prefix="/outliers")
     app.register_blueprint(jii_api_blueprint, url_prefix="/jii")
+    app.register_blueprint(edovo_blueprint, url_prefix="/edovo")
 
     @app.route("/")
     def index() -> Response:
