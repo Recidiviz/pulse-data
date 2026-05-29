@@ -52,6 +52,19 @@ SDS_SUPERVISION_LEVELS_RAW_TEXT = [
 
 FACE_TO_FACE_CONTACTS = ["FAC1", "FAC2", "FACA", "FACF", "FACI", "FACO"]
 
+COMPLIANT_REPORTING_REFERRAL_DENIAL_CONTACTS = [
+    "ACIO",
+    "DECF",
+    "DECR",
+    "DECT",
+    "DEDF",
+    "DEDU",
+    "DEIJ",
+    "DEIO",
+    "DEIR",
+    "REIO",
+]
+
 # The following list contains contact-note codes that indicate when a warrant has been
 # issued for a client in TN.
 # The 'PWAR' code is also relevant for warrants and is used for probation clients;
