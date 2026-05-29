@@ -44,9 +44,6 @@ from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_supervision_discharge_record import (
     US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
 )
@@ -58,14 +55,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
-)
-from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.activity.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-)
-from recidiviz.pipelines.ingest.activity.dataset_config import (
-    normalized_state_dataset_for_state_code,
 )
 
 # For each US_TN metric export, for each product view in that export, a mapping of
@@ -89,18 +78,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
         },
         SUPERVISION_OFFICER_METRICS_VIEW_BUILDER.address: {
             SENTENCE_SPANS_VIEW_BUILDER.address: {
@@ -114,18 +91,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
         METRIC_BENCHMARKS_VIEW_BUILDER.address: {
@@ -141,18 +106,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
             },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
         },
     },
     "PATHWAYS_EVENT_LEVEL": {
@@ -166,20 +119,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
         },
     },
     "WORKFLOWS_FIRESTORE": {
-        CLIENT_RECORD_VIEW_BUILDER.address: {
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-        },
         US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address: {
             SENTENCE_SPANS_VIEW_BUILDER.address: {
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
@@ -226,18 +165,6 @@ US_TN_SENTENCE_V1_PRODUCT_USAGE_EXEMPTIONS: dict[
                 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address,
                 US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateIncarcerationSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
-            },
-            BigQueryAddress(
-                dataset_id=normalized_state_dataset_for_state_code(StateCode.US_TN),
-                table_id=StateSupervisionSentence.get_table_id(),
-            ): {
-                CLIENT_RECORD_VIEW_BUILDER.address,
             },
         },
     },

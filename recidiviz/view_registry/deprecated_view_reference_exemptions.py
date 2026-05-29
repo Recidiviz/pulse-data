@@ -121,9 +121,6 @@ from recidiviz.calculator.query.state.views.shared_metric.single_day_supervision
 from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
     SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    CLIENT_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -379,10 +376,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
         ),
     },
     (StateCode.US_TN, StateIncarcerationSentence): {
-        CLIENT_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove state_incarceration_sentence reference as "
-            "part of the v2 sentences migration"
-        ),
         US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46261): This view should be deleted once TN no longer "
             "relies on v1 sentences"
@@ -393,10 +386,6 @@ _SENTENCE_STATE_SPECIFIC_REFERENCE_EXEMPTIONS = {
         ),
     },
     (StateCode.US_TN, StateSupervisionSentence): {
-        CLIENT_RECORD_VIEW_BUILDER.address: (
-            "TODO(#46261): Remove state_supervision_sentence reference as part "
-            "of the v2 sentences migration"
-        ),
         US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER.address: (
             "TODO(#46261): This view should be deleted once TN no longer "
             "relies on v1 sentences"
