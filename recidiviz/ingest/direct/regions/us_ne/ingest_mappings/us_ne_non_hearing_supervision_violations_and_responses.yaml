@@ -344,6 +344,7 @@ output:
                                   - "Alcohol Monitoring"
                                   - "Electronic Monitoring: House Arrest
                                     (REQUIRES APPROVAL FROM CSS ADMINISTRATION)"
+                                  - "Parenting Class"
 
                                 StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
                                   - Cognitive Behavioral Program Referral
