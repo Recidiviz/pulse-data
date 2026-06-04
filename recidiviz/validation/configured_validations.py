@@ -276,6 +276,9 @@ from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentenc
 from recidiviz.validation.views.state.sentences.us_mo_sentencing_sentence_cohort_data_issues import (
     US_MO_SENTENCING_SENTENCE_COHORT_DATA_ISSUES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentences.us_mo_sentencing_time_served_all_data_issues import (
+    US_MO_SENTENCING_TIME_SERVED_ALL_DATA_ISSUES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentences.us_mo_sentencing_time_served_preprocessed_data_issues import (
     US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
 )
@@ -572,6 +575,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MO_SENTENCING_SENTENCE_COHORT_DATA_ISSUES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_MO_SENTENCING_TIME_SERVED_ALL_DATA_ISSUES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
