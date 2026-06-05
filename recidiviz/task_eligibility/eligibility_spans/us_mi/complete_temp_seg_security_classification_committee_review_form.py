@@ -26,6 +26,9 @@ from recidiviz.task_eligibility.candidate_populations.state_specific.us_mi impor
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     security_classification_committee_review,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    housing_unit_type_is_not_mental_health_solitary_confinement,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     eligible_for_initial_temp_seg_security_classification_committee_review,
     thirty_days_past_last_temp_seg_security_classification_committee_review_date,
@@ -55,6 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=["eligibility_type", "next_scc_due_date"],
         ),
+        housing_unit_type_is_not_mental_health_solitary_confinement.VIEW_BUILDER,
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
     policy_start_date=date(2026, 5, 7),
