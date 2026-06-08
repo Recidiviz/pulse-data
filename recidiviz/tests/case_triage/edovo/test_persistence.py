@@ -26,6 +26,7 @@ from flask import Flask
 from recidiviz.case_triage.edovo.course_completion_models import CourseCompletionRequest
 from recidiviz.case_triage.edovo.persistence import (
     AlreadyCompletedError,
+    acquire_person_credit_lock,
     persist_completion,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -147,3 +148,11 @@ class TestPersistCompletion(TestCase):
             id_b = record_b.id
 
         self.assertNotEqual(id_a, id_b)
+
+    def test_acquire_person_credit_lock_succeeds(self) -> None:
+        # Smoke test: the advisory lock SQL is valid against Postgres and a
+        # subsequent acquire for a different key in the same transaction does
+        # not block (advisory locks are scoped per (lock_key, transaction)).
+        with SessionFactory.using_database(self.database_key) as session:
+            acquire_person_credit_lock(session, "US_CO", _PERSON_ID)
+            acquire_person_credit_lock(session, "US_CO", "different-person")

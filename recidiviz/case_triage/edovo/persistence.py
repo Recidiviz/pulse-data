@@ -19,6 +19,7 @@
 import uuid
 
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.case_triage.edovo.course_completion_models import CourseCompletionRequest
@@ -32,6 +33,21 @@ _NO_DOUBLE_CREDIT_CONSTRAINT = "edovo_course_completions_no_double_credit"
 
 class AlreadyCompletedError(Exception):
     """Raised when the person+course pair already has credit under a different idempotency key."""
+
+
+def acquire_person_credit_lock(
+    session: Session, state_code: str, person_id: str
+) -> None:
+    """Take a transaction-scoped Postgres advisory lock for (state_code, person_id).
+
+    Serializes credit-calculation transactions for the same person so two
+    concurrent webhooks cannot both read the same prior_hours and double-issue
+    a credit. Released automatically when the transaction commits or rolls back.
+    """
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:key))"),
+        {"key": f"{state_code}:{person_id}"},
+    )
 
 
 def persist_completion(

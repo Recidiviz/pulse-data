@@ -47,6 +47,7 @@ from recidiviz.case_triage.edovo.credit_calculator import (
 from recidiviz.case_triage.edovo.hmac_verifier import load_secret_and_verify
 from recidiviz.case_triage.edovo.persistence import (
     AlreadyCompletedError,
+    acquire_person_credit_lock,
     persist_completion,
 )
 from recidiviz.case_triage.edovo.person_resolver import (
@@ -128,6 +129,10 @@ def create_edovo_api_blueprint() -> Blueprint:
             )
 
         idempotency_key = _derive_idempotency_key(completion_request)
+
+        acquire_person_credit_lock(
+            current_session, completion_request.state_code, person_id
+        )
 
         prior_hours = query_total_hours(
             current_session, person_id, completion_request.state_code
