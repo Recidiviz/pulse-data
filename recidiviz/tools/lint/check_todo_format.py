@@ -51,6 +51,7 @@ EXCLUDED_PATH_PATTERNS: list[re.Pattern[str]] = [
         r"run_pylint\.sh",
         r"\.pylintrc",
         r"CLAUDE\.md",
+        r"\.claude/rules/python-style.md",
         r"\.claude/skills/create_recidiviz_data_github_tasks/SKILL\.md",
         r"\.claude/skills/maintain_skill_files/SKILL\.md",
         r"/templates/",

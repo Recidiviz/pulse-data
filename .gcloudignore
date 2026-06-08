@@ -218,9 +218,10 @@ release.out
 .claude/pulse-data-local-settings.md
 .mcp.json
 
-# Claude rules — personal rules are ignored, but shared security rules are tracked
+# Claude rules — personal rules are ignored, but shared rules are tracked
 .claude/rules/*
 !.claude/rules/security.md
+!.claude/rules/python-style.md
 .claude/commands/*
 !.claude/commands/security-review.md
 

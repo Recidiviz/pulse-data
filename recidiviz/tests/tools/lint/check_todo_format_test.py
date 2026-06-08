@@ -47,6 +47,7 @@ class IsExcludedTest(unittest.TestCase):
         self.assertTrue(is_excluded("recidiviz/tools/lint/run_pylint.sh"))
         self.assertTrue(is_excluded(".pylintrc"))
         self.assertTrue(is_excluded("CLAUDE.md"))
+        self.assertTrue(is_excluded(".claude/rules/python-style.md"))
         self.assertTrue(is_excluded("some/path/templates/foo.txt"))
         self.assertTrue(is_excluded("some/nbautoexports/foo.py"))
         self.assertTrue(is_excluded("some/migrated_notebooks/foo.py"))
