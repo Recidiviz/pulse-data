@@ -16947,23 +16947,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "start_date",
         "state_code",
     ],
-    BigQueryAddress.from_str("workflows_views.incarceration_staff_record"): [
-        "district",
-        "email",
-        "given_names",
-        "id",
-        "pseudonymized_id",
-        "role_subtype",
-        "state_code",
-        "surname",
-    ],
-    BigQueryAddress.from_str("workflows_views.location_record"): [
-        "id",
-        "id_type",
-        "name",
-        "state_code",
-        "system",
-    ],
     BigQueryAddress.from_str("workflows_views.person_record"): [
         "all_eligible_opportunities",
         "correctional_level",
@@ -17064,18 +17047,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "snoozed_by",
         "state_code",
         "user_input",
-    ],
-    BigQueryAddress.from_str("workflows_views.supervision_staff_record"): [
-        "district",
-        "email",
-        "given_names",
-        "id",
-        "pseudonymized_id",
-        "role_subtype",
-        "state_code",
-        "supervisor_external_id",
-        "supervisor_external_ids",
-        "surname",
     ],
     BigQueryAddress.from_str(
         "workflows_views.us_ar_institutional_worker_status_record"
