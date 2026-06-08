@@ -103,7 +103,9 @@ def create_edovo_api_blueprint() -> Blueprint:
     def handle_course_completion() -> Response:
         body = request.get_data()
 
-        load_secret_and_verify(body, request.headers.get("Authorization", ""))
+        load_secret_and_verify(
+            body, request.headers.get("Authorization", ""), request.path
+        )
 
         try:
             completion_request = CourseCompletionRequest.model_validate_json(body)

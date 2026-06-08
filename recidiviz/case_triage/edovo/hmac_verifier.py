@@ -20,7 +20,7 @@ The Authorization header format is:
     HMAC-SHA256 KeyId=<key_id>, Signature=<signature>, Timestamp=<unix_ts>
 
 The canonical string signed by Edovo is:
-    POST\n/edovo/course-completions\n<unix_ts>\n<sha256_hex_of_body>
+    POST\n<request_path>\n<unix_ts>\n<sha256_hex_of_body>
 
 Secret keys are stored in Secret Manager under the name ``edovo_hmac_<key_id>``
 as base64-encoded 256-bit values.
@@ -35,7 +35,6 @@ from typing import NamedTuple
 from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.secrets import get_secret
 
-_ENDPOINT_PATH = "/edovo/course-completions"
 _MAX_CLOCK_SKEW_SECONDS = 300
 
 _SCHEME_PREFIX = "HMAC-SHA256"
@@ -92,6 +91,7 @@ def verify_hmac_signature(
     request_body: bytes,
     authorization_header: str,
     secret_key: bytes,
+    request_path: str,
 ) -> None:
     """Verify the HMAC-SHA256 signature of an inbound Edovo request.
 
@@ -99,13 +99,17 @@ def verify_hmac_signature(
     outside the 5-minute window, or the computed signature does not match.
     """
     _verify_with_parsed(
-        request_body, _parse_authorization_header(authorization_header), secret_key
+        request_body,
+        _parse_authorization_header(authorization_header),
+        secret_key,
+        request_path,
     )
 
 
 def load_secret_and_verify(
     request_body: bytes,
     authorization_header: str,
+    request_path: str,
 ) -> None:
     """Look up the HMAC secret from Secret Manager by KeyId and verify the signature.
 
@@ -119,14 +123,14 @@ def load_secret_and_verify(
             description=f"No HMAC secret found for KeyId {parsed.key_id!r}",
         )
 
-    # Pass the already-parsed header fields directly to avoid re-parsing.
-    _verify_with_parsed(request_body, parsed, base64.b64decode(secret))
+    _verify_with_parsed(request_body, parsed, base64.b64decode(secret), request_path)
 
 
 def _verify_with_parsed(
     request_body: bytes,
     parsed: _ParsedAuthHeader,
     secret_key: bytes,
+    request_path: str,
 ) -> None:
     now = int(time.time())
     if abs(now - parsed.timestamp) > _MAX_CLOCK_SKEW_SECONDS:
@@ -136,7 +140,7 @@ def _verify_with_parsed(
         )
 
     body_hash = hashlib.sha256(request_body).hexdigest()
-    string_to_sign = f"POST\n{_ENDPOINT_PATH}\n{parsed.timestamp}\n{body_hash}"
+    string_to_sign = f"POST\n{request_path}\n{parsed.timestamp}\n{body_hash}"
     expected = base64.b64encode(
         hmac.new(secret_key, string_to_sign.encode(), hashlib.sha256).digest()
     ).decode()

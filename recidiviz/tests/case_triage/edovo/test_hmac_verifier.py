@@ -34,6 +34,7 @@ _NOW = 1_700_000_000
 _SECRET_KEY = b"test-secret-key-32-bytes-long!!!"
 _BODY = b'{"person_id": "012345", "state_code": "US_CO", "course_id": "foo-bar"}'
 _KEY_ID = "edovo-key-001"
+_PATH = "/edovo/course-completions"
 
 
 def _make_auth_header(
@@ -45,7 +46,7 @@ def _make_auth_header(
     if timestamp is None:
         timestamp = int(time.time())
     body_hash = hashlib.sha256(body).hexdigest()
-    string_to_sign = f"POST\n/edovo/course-completions\n{timestamp}\n{body_hash}"
+    string_to_sign = f"POST\n{_PATH}\n{timestamp}\n{body_hash}"
     signature = base64.b64encode(
         hmac.new(secret_key, string_to_sign.encode(), hashlib.sha256).digest()
     ).decode()
@@ -55,20 +56,20 @@ def _make_auth_header(
 class TestVerifyHmacSignature(TestCase):
     def test_valid_signature_passes(self) -> None:
         header = _make_auth_header()
-        verify_hmac_signature(_BODY, header, _SECRET_KEY)
+        verify_hmac_signature(_BODY, header, _SECRET_KEY, _PATH)
 
     def test_tampered_body_fails(self) -> None:
         header = _make_auth_header()
         tampered = _BODY + b" TAMPERED"
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(tampered, header, _SECRET_KEY)
+            verify_hmac_signature(tampered, header, _SECRET_KEY, _PATH)
         self.assertEqual(cm.exception.code, "invalid_signature")
 
     def test_wrong_key_fails(self) -> None:
         header = _make_auth_header()
         wrong_key = b"completely-different-secret-key!"
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(_BODY, header, wrong_key)
+            verify_hmac_signature(_BODY, header, wrong_key, _PATH)
         self.assertEqual(cm.exception.code, "invalid_signature")
 
     @patch(f"{MODULE}.time")
@@ -76,7 +77,7 @@ class TestVerifyHmacSignature(TestCase):
         mock_time.time.return_value = _NOW
         header = _make_auth_header(timestamp=_NOW - 301)
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(_BODY, header, _SECRET_KEY)
+            verify_hmac_signature(_BODY, header, _SECRET_KEY, _PATH)
         self.assertEqual(cm.exception.code, "stale_request")
 
     @patch(f"{MODULE}.time")
@@ -84,24 +85,24 @@ class TestVerifyHmacSignature(TestCase):
         mock_time.time.return_value = _NOW
         header = _make_auth_header(timestamp=_NOW + 301)
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(_BODY, header, _SECRET_KEY)
+            verify_hmac_signature(_BODY, header, _SECRET_KEY, _PATH)
         self.assertEqual(cm.exception.code, "stale_request")
 
     @patch(f"{MODULE}.time")
     def test_timestamp_at_boundary_passes(self, mock_time: MagicMock) -> None:
         mock_time.time.return_value = _NOW
         header = _make_auth_header(timestamp=_NOW - 300)
-        verify_hmac_signature(_BODY, header, _SECRET_KEY)
+        verify_hmac_signature(_BODY, header, _SECRET_KEY, _PATH)
 
     def test_malformed_header_fails(self) -> None:
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(_BODY, "Bearer some-token", _SECRET_KEY)
+            verify_hmac_signature(_BODY, "Bearer some-token", _SECRET_KEY, _PATH)
         self.assertEqual(cm.exception.code, "invalid_authorization_header")
 
     def test_missing_timestamp_fails(self) -> None:
         header = f"HMAC-SHA256 KeyId={_KEY_ID}, Signature=abc123"
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(_BODY, header, _SECRET_KEY)
+            verify_hmac_signature(_BODY, header, _SECRET_KEY, _PATH)
         self.assertEqual(cm.exception.code, "invalid_authorization_header")
 
     def test_reordered_params_still_verifies(self) -> None:
@@ -109,12 +110,12 @@ class TestVerifyHmacSignature(TestCase):
         # Reverse the parameter order — should still be accepted.
         scheme, params = canonical.split(" ", 1)
         reversed_header = scheme + " " + ", ".join(reversed(params.split(", ")))
-        verify_hmac_signature(_BODY, reversed_header, _SECRET_KEY)
+        verify_hmac_signature(_BODY, reversed_header, _SECRET_KEY, _PATH)
 
     def test_unknown_param_fails(self) -> None:
         header = f"HMAC-SHA256 KeyId={_KEY_ID}, Signature=abc, Timestamp=1, Bogus=x"
         with self.assertRaises(AuthorizationError) as cm:
-            verify_hmac_signature(_BODY, header, _SECRET_KEY)
+            verify_hmac_signature(_BODY, header, _SECRET_KEY, _PATH)
         self.assertEqual(cm.exception.code, "invalid_authorization_header")
 
 
@@ -123,7 +124,7 @@ class TestLoadSecretAndVerify(TestCase):
     def test_valid_request_passes(self, mock_get_secret: MagicMock) -> None:
         mock_get_secret.return_value = base64.b64encode(_SECRET_KEY).decode()
         header = _make_auth_header()
-        load_secret_and_verify(_BODY, header)
+        load_secret_and_verify(_BODY, header, _PATH)
         mock_get_secret.assert_called_once_with(f"edovo_hmac_{_KEY_ID}")
 
     @patch(f"{MODULE}.get_secret")
@@ -131,5 +132,5 @@ class TestLoadSecretAndVerify(TestCase):
         mock_get_secret.return_value = None
         header = _make_auth_header()
         with self.assertRaises(AuthorizationError) as cm:
-            load_secret_and_verify(_BODY, header)
+            load_secret_and_verify(_BODY, header, _PATH)
         self.assertEqual(cm.exception.code, "unknown_key")
