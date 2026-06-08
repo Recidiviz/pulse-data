@@ -38,12 +38,9 @@ from recidiviz.utils.secrets import get_secret
 _ENDPOINT_PATH = "/edovo/course-completions"
 _MAX_CLOCK_SKEW_SECONDS = 300
 
-_AUTH_HEADER_RE = re.compile(
-    r"^HMAC-SHA256\s+"
-    r"KeyId=(?P<key_id>[^,\s]+),\s*"
-    r"Signature=(?P<signature>[^,\s]+),\s*"
-    r"Timestamp=(?P<timestamp>\d+)\s*$"
-)
+_SCHEME_PREFIX = "HMAC-SHA256"
+_PARAM_RE = re.compile(r"^(?P<key>[A-Za-z]+)=(?P<value>[^,\s]+)$")
+_EXPECTED_PARAMS = {"KeyId", "Signature", "Timestamp"}
 
 
 class _ParsedAuthHeader(NamedTuple):
@@ -53,16 +50,41 @@ class _ParsedAuthHeader(NamedTuple):
 
 
 def _parse_authorization_header(authorization_header: str) -> _ParsedAuthHeader:
-    match = _AUTH_HEADER_RE.match(authorization_header.strip())
-    if not match:
+    stripped = authorization_header.strip()
+    if not stripped.startswith(_SCHEME_PREFIX + " "):
         raise AuthorizationError(
             code="invalid_authorization_header",
-            description="Authorization header does not match expected HMAC-SHA256 format",
+            description=f"Authorization header must start with {_SCHEME_PREFIX!r} scheme",
         )
+
+    params: dict[str, str] = {}
+    for raw in stripped[len(_SCHEME_PREFIX) :].split(","):
+        match = _PARAM_RE.match(raw.strip())
+        if match is None or match.group("key") not in _EXPECTED_PARAMS:
+            raise AuthorizationError(
+                code="invalid_authorization_header",
+                description="Authorization header parameter is malformed or unknown",
+            )
+        params[match.group("key")] = match.group("value")
+
+    if params.keys() != _EXPECTED_PARAMS:
+        raise AuthorizationError(
+            code="invalid_authorization_header",
+            description=f"Authorization header missing required parameters: {sorted(_EXPECTED_PARAMS - params.keys())}",
+        )
+
+    try:
+        timestamp = int(params["Timestamp"])
+    except ValueError as exc:
+        raise AuthorizationError(
+            code="invalid_authorization_header",
+            description="Authorization Timestamp must be an integer",
+        ) from exc
+
     return _ParsedAuthHeader(
-        key_id=match.group("key_id"),
-        signature=match.group("signature"),
-        timestamp=int(match.group("timestamp")),
+        key_id=params["KeyId"],
+        signature=params["Signature"],
+        timestamp=timestamp,
     )
 
 

@@ -104,6 +104,19 @@ class TestVerifyHmacSignature(TestCase):
             verify_hmac_signature(_BODY, header, _SECRET_KEY)
         self.assertEqual(cm.exception.code, "invalid_authorization_header")
 
+    def test_reordered_params_still_verifies(self) -> None:
+        canonical = _make_auth_header()
+        # Reverse the parameter order — should still be accepted.
+        scheme, params = canonical.split(" ", 1)
+        reversed_header = scheme + " " + ", ".join(reversed(params.split(", ")))
+        verify_hmac_signature(_BODY, reversed_header, _SECRET_KEY)
+
+    def test_unknown_param_fails(self) -> None:
+        header = f"HMAC-SHA256 KeyId={_KEY_ID}, Signature=abc, Timestamp=1, Bogus=x"
+        with self.assertRaises(AuthorizationError) as cm:
+            verify_hmac_signature(_BODY, header, _SECRET_KEY)
+        self.assertEqual(cm.exception.code, "invalid_authorization_header")
+
 
 class TestLoadSecretAndVerify(TestCase):
     @patch(f"{MODULE}.get_secret")
