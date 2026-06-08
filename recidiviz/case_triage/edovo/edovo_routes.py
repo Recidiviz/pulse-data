@@ -56,12 +56,17 @@ from recidiviz.case_triage.edovo.person_resolver import (
 from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
 
 _ConstraintLiteral = Literal[
-    "gt_zero", "required", "timezone_aware", "invalid_state_code"
+    "gt_zero", "required", "timezone_aware", "invalid_state_code", "invalid"
 ]
 
 _PYDANTIC_TYPE_TO_CONSTRAINT: dict[str, _ConstraintLiteral] = {
     "missing": "required",
     "timezone_aware": "timezone_aware",
+}
+
+_FIELD_AND_TYPE_TO_CONSTRAINT: dict[tuple[str, str], _ConstraintLiteral] = {
+    ("content_hours", "value_error"): "gt_zero",
+    ("state_code", "literal_error"): "invalid_state_code",
 }
 
 
@@ -72,13 +77,11 @@ def _map_pydantic_error(
     field = str(first["loc"][0]) if first["loc"] else "unknown"
     error_type = first["type"]
 
-    mapped = _PYDANTIC_TYPE_TO_CONSTRAINT.get(error_type)
-    if mapped is not None:
-        constraint: _ConstraintLiteral = mapped
-    elif field == "content_hours":
-        constraint = "gt_zero"
-    else:
-        constraint = "invalid_state_code"
+    constraint: _ConstraintLiteral = (
+        _PYDANTIC_TYPE_TO_CONSTRAINT.get(error_type)
+        or _FIELD_AND_TYPE_TO_CONSTRAINT.get((field, error_type))
+        or "invalid"
+    )
 
     return CourseCompletionValidationErrorResponse(
         message=first["msg"],

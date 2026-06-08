@@ -82,7 +82,9 @@ class ValidationErrorDetails(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     field: str
-    constraint: Literal["gt_zero", "required", "timezone_aware", "invalid_state_code"]
+    constraint: Literal[
+        "gt_zero", "required", "timezone_aware", "invalid_state_code", "invalid"
+    ]
 
 
 class CourseCompletionValidationErrorResponse(BaseModel):

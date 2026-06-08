@@ -203,6 +203,16 @@ class TestEdovoRoutes(TestCase):
         self.assertEqual(data["error_code"], "VALIDATION_ERROR")
         self.assertEqual(data["details"]["constraint"], "timezone_aware")
 
+    def test_unmapped_field_failure_reports_generic_constraint(self) -> None:
+        # course_name is required but has no specific constraint mapping.
+        # The previous mapper would have mislabeled this as "invalid_state_code".
+        response = self._post(body={**_VALID_BODY, "course_name": 12345})
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        data = response.get_json()
+        self.assertEqual(data["error_code"], "VALIDATION_ERROR")
+        self.assertEqual(data["details"]["field"], "course_name")
+        self.assertEqual(data["details"]["constraint"], "invalid")
+
 
 class TestDeriveIdempotencyKey(TestCase):
     def test_same_request_produces_same_key(self) -> None:
