@@ -20,6 +20,7 @@ Request shape: POST /edovo/course-completions
 Response shapes: accepted (201), duplicate (200), validation error (400),
 person not found (422), already completed (422).
 """
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator
@@ -34,12 +35,12 @@ class CourseCompletionRequest(BaseModel):
     state_code: Literal["US_CO"]
     course_id: str
     course_name: str
-    content_hours: float
+    content_hours: Decimal
     completed_at: AwareDatetime
 
     @field_validator("content_hours")
     @classmethod
-    def content_hours_must_be_positive(cls, v: float) -> float:
+    def content_hours_must_be_positive(cls, v: Decimal) -> Decimal:
         if v <= 0:
             raise ValueError("content_hours must be greater than 0")
         return v

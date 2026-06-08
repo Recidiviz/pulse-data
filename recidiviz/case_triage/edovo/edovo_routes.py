@@ -24,7 +24,6 @@ is required; the request is authenticated entirely by the shared secret.
 import logging
 import uuid
 from datetime import timezone
-from decimal import Decimal
 from http import HTTPStatus
 from typing import Literal
 
@@ -142,7 +141,7 @@ def create_edovo_api_blueprint() -> Blueprint:
 
         if is_new:
             credits_earned = new_credits_for_completion(
-                prior_hours, Decimal(str(completion_request.content_hours))
+                prior_hours, completion_request.content_hours
             )
             logging.info(
                 "Edovo: person %s earned %d credit(s) from course %s (%.2f hours, prior total %.2f)",

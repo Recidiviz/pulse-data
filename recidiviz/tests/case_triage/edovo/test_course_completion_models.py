@@ -16,6 +16,7 @@
 # =============================================================================
 """Unit tests for the Edovo course-completion Pydantic models."""
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest import TestCase
 
 from pydantic import ValidationError
@@ -48,7 +49,7 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(req.state_code, "US_CO")
         self.assertEqual(req.course_id, "foo-bar")
         self.assertEqual(req.course_name, "Course Foo Bar")
-        self.assertEqual(req.content_hours, 4.5)
+        self.assertEqual(req.content_hours, Decimal("4.5"))
         self.assertEqual(
             req.completed_at, datetime(2026, 4, 23, 17, 42, 0, tzinfo=timezone.utc)
         )
@@ -58,7 +59,7 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(dumped["state_code"], "US_CO")
         self.assertEqual(dumped["course_id"], "foo-bar")
         self.assertEqual(dumped["course_name"], "Course Foo Bar")
-        self.assertEqual(dumped["content_hours"], 4.5)
+        self.assertEqual(dumped["content_hours"], "4.5")
         self.assertEqual(dumped["completed_at"], "2026-04-23T17:42:00Z")
 
     # --- content_hours validation ---
