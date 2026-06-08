@@ -23,6 +23,7 @@ is required; the request is authenticated entirely by the shared secret.
 """
 import logging
 import uuid
+from datetime import timezone
 from decimal import Decimal
 from http import HTTPStatus
 from typing import Literal
@@ -87,7 +88,8 @@ def _map_pydantic_error(
 
 
 def _derive_idempotency_key(req: CourseCompletionRequest) -> uuid.UUID:
-    canonical = f"{req.state_code}:{req.person_id}:{req.course_id}:{req.completed_at.isoformat()}"
+    completed_at_utc = req.completed_at.astimezone(timezone.utc).isoformat()
+    canonical = f"{req.state_code}:{req.person_id}:{req.course_id}:{completed_at_utc}"
     return uuid.uuid5(uuid.NAMESPACE_URL, canonical)
 
 

@@ -231,3 +231,14 @@ class TestDeriveIdempotencyKey(TestCase):
         req = CourseCompletionRequest.model_validate(_VALID_BODY)
         result = _derive_idempotency_key(req)
         self.assertIsInstance(result, uuid.UUID)
+
+    def test_same_instant_different_tz_produces_same_key(self) -> None:
+        req_utc = CourseCompletionRequest.model_validate(
+            {**_VALID_BODY, "completed_at": "2026-04-23T17:42:00+00:00"}
+        )
+        req_offset = CourseCompletionRequest.model_validate(
+            {**_VALID_BODY, "completed_at": "2026-04-23T22:42:00+05:00"}
+        )
+        self.assertEqual(
+            _derive_idempotency_key(req_utc), _derive_idempotency_key(req_offset)
+        )
