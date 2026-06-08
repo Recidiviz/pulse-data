@@ -23,7 +23,7 @@ from sqlalchemy.exc import IntegrityError
 
 from recidiviz.case_triage.edovo.course_completion_models import CourseCompletionRequest
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    EdevoCourseCompletion,
+    EdovoCourseCompletion,
 )
 from recidiviz.persistence.database.session import Session
 
@@ -39,7 +39,7 @@ def persist_completion(
     request: CourseCompletionRequest,
     person_id: str,
     idempotency_key: uuid.UUID,
-) -> tuple[EdevoCourseCompletion, bool]:
+) -> tuple[EdovoCourseCompletion, bool]:
     """Write a course completion to the database and return (record, is_new).
 
     On constraint failure the session transaction is rolled back. Callers must
@@ -50,14 +50,14 @@ def persist_completion(
     previously recorded with a different idempotency key.
     """
     existing = (
-        session.query(EdevoCourseCompletion)
+        session.query(EdovoCourseCompletion)
         .filter_by(idempotency_key=idempotency_key)
         .one_or_none()
     )
     if existing is not None:
         return existing, False
 
-    record = EdevoCourseCompletion(
+    record = EdovoCourseCompletion(
         idempotency_key=idempotency_key,
         person_id=person_id,
         state_code=request.state_code,
@@ -77,7 +77,7 @@ def persist_completion(
                 raise AlreadyCompletedError() from exc
             # Concurrent request won the race on the idempotency key.
             existing = (
-                session.query(EdevoCourseCompletion)
+                session.query(EdovoCourseCompletion)
                 .filter_by(idempotency_key=idempotency_key)
                 .one_or_none()
             )

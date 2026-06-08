@@ -27,7 +27,7 @@ from recidiviz.case_triage.edovo.credit_calculator import (
     query_total_hours,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    EdevoCourseCompletion,
+    EdovoCourseCompletion,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -46,8 +46,8 @@ def _make_completion(
     state_code: str,
     course_id: str,
     content_hours: float,
-) -> EdevoCourseCompletion:
-    return EdevoCourseCompletion(
+) -> EdovoCourseCompletion:
+    return EdovoCourseCompletion(
         idempotency_key=uuid.uuid4(),
         person_id=person_id,
         state_code=state_code,

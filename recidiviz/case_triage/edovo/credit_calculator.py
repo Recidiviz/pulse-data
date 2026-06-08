@@ -27,7 +27,7 @@ from decimal import Decimal
 from sqlalchemy import func
 
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    EdevoCourseCompletion,
+    EdovoCourseCompletion,
 )
 from recidiviz.persistence.database.session import Session
 
@@ -61,10 +61,10 @@ def query_total_hours(
     the new record is included in the sum.
     """
     result = (
-        session.query(func.sum(EdevoCourseCompletion.content_hours))
+        session.query(func.sum(EdovoCourseCompletion.content_hours))
         .filter(
-            EdevoCourseCompletion.person_id == person_id,
-            EdevoCourseCompletion.state_code == state_code,
+            EdovoCourseCompletion.person_id == person_id,
+            EdovoCourseCompletion.state_code == state_code,
         )
         .scalar()
     )

@@ -99,7 +99,7 @@ class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     jii_permissions = Column(JSONB(none_as_null=True), nullable=True)
 
 
-class EdevoCourseCompletion(CaseTriageBase):
+class EdovoCourseCompletion(CaseTriageBase):
     """Records each Edovo course completion received for earned-time processing."""
 
     __tablename__ = "edovo_course_completions"
