@@ -118,6 +118,15 @@ class TestCourseCompletionRequest(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0]["loc"], ("state_code",))
 
+    def test_non_colorado_state_code_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError) as cm:
+            CourseCompletionRequest.model_validate(
+                {**VALID_PAYLOAD, "state_code": "US_PA"}
+            )
+        errors = cm.exception.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["loc"], ("state_code",))
+
     # --- required fields ---
 
     def test_missing_person_id_raises(self) -> None:

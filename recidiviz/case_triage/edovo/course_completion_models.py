@@ -24,8 +24,6 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator
 
-from recidiviz.common.constants.states import StateCode
-
 
 class CourseCompletionRequest(BaseModel):
     """Inbound payload sent by Edovo when a learner completes eligible content."""
@@ -33,18 +31,11 @@ class CourseCompletionRequest(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     person_id: str
-    state_code: str
+    state_code: Literal["US_CO"]
     course_id: str
     course_name: str
     content_hours: float
     completed_at: AwareDatetime
-
-    @field_validator("state_code")
-    @classmethod
-    def state_code_must_be_valid(cls, v: str) -> str:
-        if StateCode.get(v) is None:
-            raise ValueError(f"{v!r} is not a valid state code")
-        return v
 
     @field_validator("content_hours")
     @classmethod
