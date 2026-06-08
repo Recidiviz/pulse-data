@@ -461,8 +461,8 @@ def contact_compliance_builder_type_agnostic(
             period_end as end_date,
             contact_period_start,
             DATE_SUB(contact_period_end_exclusive, INTERVAL 1 DAY) as contact_due_date,
-            supervision_level,
-            case_type,
+            cc.supervision_level,
+            cc.case_type,
             CASE
                 WHEN CAST(SCHEDULED_HOME_REQ AS INT64) <= scheduled_home_count AND CAST(SCHEDULED_HOME_REQ AS INT64) != 0
                     THEN FALSE
@@ -487,7 +487,7 @@ def contact_compliance_builder_type_agnostic(
                 scheduled_office_count AS scheduled_office_done
             )) AS types_and_amounts_done,
             types_and_amounts_due,
-            contact_types_accepted,
+            cc.contact_types_accepted,
             CASE 
                 WHEN period_start = contact_period_start
                     THEN "START"
@@ -509,8 +509,15 @@ def contact_compliance_builder_type_agnostic(
             frequency,
             frequency_date_part
         FROM contact_count cc
-        LEFT JOIN types_and_amounts_due_cte
-            USING (supervision_level, case_type, contact_types_accepted)
+        LEFT JOIN types_and_amounts_due_cte td
+            ON cc.supervision_level = td.supervision_level
+            AND cc.contact_types_accepted = td.contact_types_accepted
+            -- The type-agnostic standards table leaves case_type blank for standards
+            -- that apply regardless of case type (e.g. RESIDENTIAL_PROGRAM), so treat a
+            -- blank standards case_type as a wildcard that matches the client's actual
+            -- case_type. This mirrors the join in us_tx_contact_cadence_spans_type_agnostic;
+            -- without it the requirement columns come back NULL and the contact never clears.
+            AND (cc.case_type = td.case_type OR COALESCE(td.case_type, '') = '')
 
     ),
     -- Finalize periods
