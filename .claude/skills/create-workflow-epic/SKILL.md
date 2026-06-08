@@ -120,7 +120,7 @@ Core sub-issues assigned to: @DA_HANDLE
 Proceed? (yes/no)
 ```
 
-Once confirmed, call the `create_recidiviz_data_github_tasks` skill to create
+Once confirmed, call the `create_recidiviz_data_issues` skill to create
 the epic with:
 
 - Title: `[{STATE_CODE}][Workflow] {workflow_name}`
@@ -146,9 +146,9 @@ Create the following 4 core sub-issues for the workflow using the templates:
 Process each of the 4 core workflow templates in order using the Template
 Processing procedure.
 
-#### 2b. File Sub-Issues Using create_recidiviz_data_github_tasks
+#### 2b. File Sub-Issues Using create_recidiviz_data_issues
 
-For each of the 4 core sub-issues, call the `create_recidiviz_data_github_tasks`
+For each of the 4 core sub-issues, call the `create_recidiviz_data_issues`
 skill with:
 
 - Title: The populated title from the template (e.g.,
@@ -207,10 +207,10 @@ successfully roll out the workflow.
 Process each of the 19 launch preparation templates listed above using the
 Template Processing procedure.
 
-#### 3b. File Launch Sub-Issues Using create_recidiviz_data_github_tasks
+#### 3b. File Launch Sub-Issues Using create_recidiviz_data_issues
 
 For each of the 19 launch sub-issues, call the
-`create_recidiviz_data_github_tasks` skill with:
+`create_recidiviz_data_issues` skill with:
 
 - Title: The populated title from the template (e.g.,
   `[US_TX][Workflows][MB] EMW - Write Bug Bash Documentation`)
@@ -229,7 +229,7 @@ criteria? If so, provide a list of criteria names (one per line), or type 'no'
 to skip."
 
 If the user provides a list, for each criteria name call
-`create_recidiviz_data_github_tasks` with:
+`create_recidiviz_data_issues` with:
 
 - Title: `[{STATE_CODE}][Workflows][Criteria] {ACRONYM} - {criteria_name}`
 - Body: A brief description noting this is an eligibility criteria ticket for
@@ -276,5 +276,5 @@ After all issues are created, provide a summary with:
 
 ## Related Documentation
 
-- [Create Recidiviz Data GitHub Tasks Skill](../create_recidiviz_data_github_tasks/SKILL.md) -
+- [Create Recidiviz Data Issues Skill](../create_recidiviz_data_issues/SKILL.md) -
   More comprehensive task filing

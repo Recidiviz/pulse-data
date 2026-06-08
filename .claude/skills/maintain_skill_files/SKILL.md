@@ -93,7 +93,7 @@ consider:
 Tell the user what you want to update and why. For example:
 
 > "I notice you had to correct me about using the issue template. I should
-> update the create_recidiviz_data_github_tasks skill to make that more
+> update the create_recidiviz_data_issues skill to make that more
 > explicit. Would you like me to do that?"
 
 OR if it's very obvious:
@@ -209,5 +209,5 @@ in the root CLAUDE.md file with a link to the new skill.
 ## Related Documentation
 
 - [Main CLAUDE.md](../../../CLAUDE.md) - The root documentation file
-- [Create Recidiviz Data GitHub Tasks](./../create_recidiviz_data_github_tasks/SKILL.md) -
+- [Create Recidiviz Data Issues](./../create_recidiviz_data_issues/SKILL.md) -
   Example of a well-structured skill
