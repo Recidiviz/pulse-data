@@ -27,6 +27,11 @@ from github.Repository import Repository as GitHubRepository
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.github.github_client import format_region_specific_ticket_title
+from recidiviz.issue_tracking.labels import (
+    TEAM_STATE_POD_LABEL,
+    VALIDATION_LABEL,
+    region_label,
+)
 from recidiviz.utils.environment import GCPEnvironment, get_admin_panel_base_url
 from recidiviz.utils.secrets import get_secret
 from recidiviz.validation.validation_alerting_config import (
@@ -38,7 +43,7 @@ from recidiviz.validation.validation_models import (
     ValidationResultStatus,
 )
 
-DEFAULT_GITHUB_LABELS = ["Validation", "Team: State Pod"]
+DEFAULT_GITHUB_LABELS = [VALIDATION_LABEL, TEAM_STATE_POD_LABEL]
 PASSING_VALIDATION_STATUSES = {
     ValidationResultStatus.FAIL_SOFT,
     ValidationResultStatus.SUCCESS,
@@ -196,7 +201,7 @@ def post_issues_to_slack(
 
 @lru_cache
 def github_labels_for_region(state_code: StateCode) -> list[str]:
-    return [*DEFAULT_GITHUB_LABELS, f"Region: {state_code.value}"]
+    return [*DEFAULT_GITHUB_LABELS, region_label(state_code)]
 
 
 def _get_default_github_assignees_for_state(state_code: StateCode) -> list[str] | None:

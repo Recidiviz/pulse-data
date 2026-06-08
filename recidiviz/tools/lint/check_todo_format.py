@@ -38,7 +38,10 @@ EXCLUDED_PATH_PATTERNS: list[re.Pattern[str]] = [
     re.compile(p)
     for p in [
         r"find-(closed|linked)-todos\.yml",
+        r"reopen-closed-todo-issues\.yml",
         r"find_closing_issue_todos\.py",
+        r"reopen_closed_todo_issues\.py",
+        r"reopen_closed_todo_issues_test\.py",
         r"issue\.py",
         r"issue_test\.py",
         r"codebase_todos\.py",

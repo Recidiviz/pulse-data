@@ -32,10 +32,15 @@ from recidiviz.airflow.dags.monitoring.stale_raw_data_alerting_incident import (
     StaleRawDataAlertingIncident,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.issue_tracking.labels import (
+    STALE_RAW_DATA_LABEL,
+    TEAM_STATE_POD_LABEL,
+    region_label,
+)
 from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.string import StrictStringFormatter
 
-STALE_RAW_DATA_LABELS: list[str] = ["Stale Raw Data", "Team: State Pod"]
+STALE_RAW_DATA_LABELS: list[str] = [STALE_RAW_DATA_LABEL, TEAM_STATE_POD_LABEL]
 DEFAULT_ISSUE_SEARCH_LOOKBACK_WINDOW_DAYS = 45
 
 
@@ -58,7 +63,7 @@ class StaleRawDataGitHubService(
         cls, *, project_id: str, state_code: StateCode
     ) -> "StaleRawDataGitHubService":
         label_for_environment = get_environment_for_project(project_id).value.title()
-        label_for_state_code = f"Region: {state_code.value}"
+        label_for_state_code = region_label(state_code)
         return StaleRawDataGitHubService(
             name=f"Stale Raw Data {state_code.value} Github Service",
             state_code=state_code,

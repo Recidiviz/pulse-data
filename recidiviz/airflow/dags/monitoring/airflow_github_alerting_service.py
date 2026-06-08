@@ -35,13 +35,19 @@ from recidiviz.github.github_client import (
     GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
     format_region_specific_ticket_title,
 )
+from recidiviz.issue_tracking.labels import (
+    DATAFLOW_PIPELINE_FAILURE_LABEL,
+    RAW_DATA_IMPORT_FAILURE_LABEL,
+    TEAM_STATE_POD_LABEL,
+    region_label,
+)
 from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.string_formatting import truncate_string_if_necessary
 from recidiviz.utils.types import assert_type
 
-RAW_DATA_DEFAULT_LABELS = ["Raw Data Import Failure", "Team: State Pod"]
-DATAFLOW_DEFAULT_LABELS = ["Dataflow Pipeline Failure", "Team: State Pod"]
+RAW_DATA_DEFAULT_LABELS = [RAW_DATA_IMPORT_FAILURE_LABEL, TEAM_STATE_POD_LABEL]
+DATAFLOW_DEFAULT_LABELS = [DATAFLOW_PIPELINE_FAILURE_LABEL, TEAM_STATE_POD_LABEL]
 
 
 @attr.define
@@ -64,7 +70,7 @@ class AirflowGitHubService(
         cls, *, project_id: str, state_code: StateCode
     ) -> "AirflowGitHubService":
         label_for_environment = get_environment_for_project(project_id).value.title()
-        label_for_state_code = f"Region: {state_code.value}"
+        label_for_state_code = region_label(state_code)
         return AirflowGitHubService(
             name=f"Raw Data {state_code.value} Github Service",
             state_code=state_code,
@@ -81,7 +87,7 @@ class AirflowGitHubService(
         cls, *, project_id: str, state_code: StateCode
     ) -> "AirflowGitHubService":
         label_for_environment = get_environment_for_project(project_id).value.title()
-        label_for_state_code = f"Region: {state_code.value}"
+        label_for_state_code = region_label(state_code)
         return AirflowGitHubService(
             name=f"Dataflow {state_code.value} Github Service",
             state_code=state_code,

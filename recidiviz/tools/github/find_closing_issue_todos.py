@@ -55,6 +55,7 @@ from recidiviz.issue_tracking.codebase_todos import (
 from recidiviz.issue_tracking.issue import Issue
 from recidiviz.issue_tracking.linear.linear_client import LinearClient
 from recidiviz.issue_tracking.linear.linear_issue import LinearIssue
+from recidiviz.issue_tracking.two_way_sync import resolve_cross_references
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -96,18 +97,7 @@ def _get_closing_issues(
     directly_closing_issues.update(get_closing_github_issues(pr, github_client))
     directly_closing_issues.update(linear_client.get_closing_issues(pr.url))
 
-    all_closing_issues: set[GithubIssue | LinearIssue] = set(directly_closing_issues)
-    for issue in directly_closing_issues:
-        linked_issue: GithubIssue | LinearIssue | None
-        if isinstance(issue, GithubIssue):
-            linked_issue = linear_client.resolve_github_to_linear(issue)
-        elif isinstance(issue, LinearIssue):
-            linked_issue = linear_client.resolve_linear_to_github(issue)
-        else:
-            raise ValueError(f"Unexpected issue type {issue}")
-        if linked_issue:
-            all_closing_issues.add(linked_issue)
-    return all_closing_issues
+    return resolve_cross_references(directly_closing_issues, linear_client)
 
 
 def main(

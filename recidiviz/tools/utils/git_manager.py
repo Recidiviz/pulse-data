@@ -182,13 +182,17 @@ class GitManager:
             )
             self._create_branch(new_branch_name, base_branch_name)
 
-        head_commit = self._run_git_command("git rev-parse HEAD")
+        head_commit = self.get_head_sha()
 
         logging.info(
             "Successfully checked out branch [%s] at hash [%s].",
             new_branch_name,
             head_commit,
         )
+
+    def get_head_sha(self) -> str:
+        """Return the full SHA of the current HEAD commit."""
+        return self._run_git_command("git rev-parse HEAD")
 
     def has_uncommitted_changes(self) -> bool:
         """Check if there are any uncommitted changes in the local repo."""
