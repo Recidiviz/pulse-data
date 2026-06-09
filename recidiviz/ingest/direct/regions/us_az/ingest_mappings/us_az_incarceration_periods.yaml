@@ -172,6 +172,7 @@ output:
                   - WK F 41-160411C
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - Community Supervision End Date
+                  - Court Ordered Termination
                   - End of Supervision
                   - SHOCK Incarceration End
                   - Shock Incarceration Release
