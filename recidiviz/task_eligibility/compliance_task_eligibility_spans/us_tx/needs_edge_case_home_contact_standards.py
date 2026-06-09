@@ -28,7 +28,7 @@ from recidiviz.calculator.query.state.views.tasks.compliance_type import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    prioritized_supervision_population_not_in_custody_or_warrant_with_officer,
+    prioritized_supervision_population_not_in_custody_warrant_or_unsupervised_with_officer,
 )
 from recidiviz.task_eligibility.compliance_task_eligibility_spans_big_query_view_builder import (
     ComplianceTaskEligibilitySpansBigQueryViewBuilder,
@@ -78,7 +78,7 @@ US_TX_NEEDS_EDGE_CASE_HOME_CONTACT_CRITERIA_GROUP = (
 VIEW_BUILDER = ComplianceTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TX,
     task_name="needs_edge_case_home_contact_standards",
-    candidate_population_view_builder=prioritized_supervision_population_not_in_custody_or_warrant_with_officer.VIEW_BUILDER,
+    candidate_population_view_builder=prioritized_supervision_population_not_in_custody_warrant_or_unsupervised_with_officer.VIEW_BUILDER,
     criteria_spans_view_builders=[
         US_TX_NEEDS_EDGE_CASE_HOME_CONTACT_CRITERIA_GROUP,
     ],

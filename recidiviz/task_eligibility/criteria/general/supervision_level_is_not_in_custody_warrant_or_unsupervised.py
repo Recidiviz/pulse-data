@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Criteria view builder for spans of time when a person is NOT in IN_CUSTODY
-or WARRANT supervision status.
+"""Criteria view builder for spans of time when a person is NOT in IN_CUSTODY,
+WARRANT, or UNSUPERVISED supervision status.
 
 This criteria is useful for filtering tasks that should only apply to people
-actively supervised in the community.
+actively supervised in the community. UNSUPERVISED is excluded because
+non-reporting clients (e.g. US_TX Early Release from Supervision) have no active
+supervision requirements.
 """
 from google.cloud import bigquery
 
@@ -32,7 +34,7 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_IN_CUSTODY_OR_WARRANT"
+_CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_IN_CUSTODY_WARRANT_OR_UNSUPERVISED"
 
 _REASONS_COLUMNS = (
     "supervision_level AS supervision_level, "
@@ -42,7 +44,7 @@ _REASONS_COLUMNS = (
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = custody_or_supervision_level_criteria_builder(
     criteria_name=_CRITERIA_NAME,
     description=__doc__,
-    levels_lst=["IN_CUSTODY", "WARRANT"],
+    levels_lst=["IN_CUSTODY", "WARRANT", "UNSUPERVISED"],
     reasons_columns=_REASONS_COLUMNS,
     reasons_fields=[
         ReasonsField(

@@ -18,7 +18,7 @@
 
 This population is the intersection of:
 1. Prioritized supervision population (people on supervision with an assigned officer)
-2. NOT in IN_CUSTODY or WARRANT supervision status (community supervision only)
+2. NOT in IN_CUSTODY, WARRANT, or UNSUPERVISED supervision status (community supervision only)
 
 This can be used by states to ensure tasks (e.g., home contacts) are only
 considered for people actively supervised in the community.
@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     prioritized_supervision_population_with_officer,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    supervision_level_is_not_in_custody_or_warrant,
+    supervision_level_is_not_in_custody_warrant_or_unsupervised,
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -40,9 +40,7 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = (
-    "PRIORITIZED_SUPERVISION_POPULATION_NOT_IN_CUSTODY_OR_WARRANT_WITH_OFFICER"
-)
+_POPULATION_NAME = "PRIORITIZED_SUPERVISION_POPULATION_NOT_IN_CUSTODY_WARRANT_OR_UNSUPERVISED_WITH_OFFICER"
 
 # Use state-agnostic criteria group to combine both criteria using AND logic
 _CRITERIA_GROUP = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
@@ -52,7 +50,7 @@ _CRITERIA_GROUP = StateAgnosticTaskCriteriaGroupBigQueryViewBuilder(
         prioritized_supervision_population_with_officer.VIEW_BUILDER.as_criteria(
             criteria_name="IN_PRIORITIZED_SUPERVISION_POPULATION_WITH_OFFICER",
         ),
-        supervision_level_is_not_in_custody_or_warrant.VIEW_BUILDER,
+        supervision_level_is_not_in_custody_warrant_or_unsupervised.VIEW_BUILDER,
     ],
 )
 
