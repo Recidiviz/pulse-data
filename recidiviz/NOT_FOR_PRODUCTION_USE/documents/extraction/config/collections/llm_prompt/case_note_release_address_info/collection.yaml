@@ -1,0 +1,115 @@
+# Extractor Collection: CASE_NOTE_RELEASE_ADDRESS_INFO
+#
+# Extractors in this collection identify proposed release locations
+# and their investigation status from facilities case notes.
+
+name: CASE_NOTE_RELEASE_ADDRESS_INFO
+confidence_threshold: 0.8
+
+description: >
+  Extract information about proposed release locations for reentry, including
+  the type of location, a physical address if available, and the current
+  investigation or approval status. Supports three location types: a
+  rented/owned private residence, a named facility (shelter, halfway house,
+  transitional housing, etc.), or a dependent relationship (living with a
+  family member, friend, or partner). At least one of proposed_release_address,
+  proposed_release_location_name, or proposed_dependent_housing_relationship_type
+  should be non-null when is_relevant is true.
+
+output_schema:
+  full_batch_description: >
+    An array of objects with release location information from a case note.
+    Each element in the array corresponds to a single case note.
+
+  result_level_description: >
+    Comprehensive extraction of proposed release location and investigation
+    status from a case note. Captures the location type, physical address,
+    named facility, or dependent relationship, along with investigation status.
+
+  inferred_fields:
+    - name: release_location_type
+      type: ENUM
+      description: >
+        The type of proposed release location. Use 'rented_or_owned_residence'
+        when the person plans to live in a private residence they rent or own
+        (with or without a specific address). Use 'named_facility' when the
+        note refers to a specific shelter, halfway house, transitional housing
+        program, treatment center, or other named organization. Use 'dependent'
+        when the person plans to live with a family member, friend, or partner.
+      values: [rented_or_owned_residence, named_facility, dependent]
+      required: true
+
+    - name: proposed_release_address
+      type: STRING
+      description: >
+        The full proposed physical address where the person plans to reside
+        after release from incarceration. Populate this field when the note
+        contains a specific street address (e.g., "946 Colorado Ave Apt-9,
+        Grand Junction, CO 81501"). Standardize formatting when possible:
+        title case for street names, consistent abbreviations (St, Ave, Blvd,
+        Dr, etc.), include city, state, and zip code if available. May be
+        non-null for any release_location_type — the address describes wherever
+        the person will be living, whether that is their own residence, a named
+        facility's address, or a dependent's address.
+      required: false
+
+    - name: proposed_release_location_name
+      type: STRING
+      description: >
+        The proper name of a temporary housing placement, shelter, halfway
+        house, transitional housing program, or other named facility proposed
+        as the person's release location (e.g., "Fort Collins Rescue Mission",
+        "Oxford House", "Denver Rescue Mission", "Community Corrections
+        Center"). Only populate when release_location_type is 'named_facility'.
+        Do not populate with generic descriptions like "shelter" or "halfway
+        house" — only use a proper name.
+      required: false
+      allowed_if_value:
+        release_location_type: named_facility
+
+    - name: proposed_dependent_housing_relationship_type
+      type: ENUM
+      description: >
+        The relationship of the person to the individual(s) they plan to live
+        with upon release. Only populate when release_location_type is
+        'dependent'. Always use the most specific value available.
+        Specificity hierarchy: prefer 'father'/'mother' over
+        'parent_unspecified'; prefer 'sister'/'brother' over
+        'sibling_unspecified'; prefer 'cousin' or any other named relationship
+        over 'relatives_other'. Use 'relatives_other' when the note refers to
+        an unspecified family member or multiple household members (e.g.,
+        "plans to live with family", "approved to live with mother and
+        siblings", "will stay with a family member"). Use 'other' when the host
+        is described in a way that does not fit any other value.
+      values:
+        [
+          father,
+          mother,
+          parent_unspecified,
+          sister,
+          brother,
+          sibling_unspecified,
+          cousin,
+          relatives_other,
+          friend,
+          partner,
+          other,
+        ]
+      required: false
+      allowed_if_value:
+        release_location_type: dependent
+
+    - name: investigation_status
+      type: ENUM
+      description: >
+        The current investigation or approval status of the proposed release
+        location. Applies to all release_location_type values.
+      values:
+        [
+          pending_investigation,
+          investigation_in_progress,
+          approved,
+          denied,
+          conditionally_approved,
+        ]
+      required: true

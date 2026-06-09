@@ -1,0 +1,34 @@
+# US_CO-specific Release Address Extractor
+#
+# Tuned for Colorado's EOMIS facilities case note format.
+
+collection_name: CASE_NOTE_RELEASE_ADDRESS_INFO
+
+description: >
+  Release address information extractor tuned for US_CO facilities case notes.
+  Handles Colorado EOMIS-specific terminology and document structure.
+
+input_document_collection_name: US_CO_FACILITIES_CASE_MANAGEMENT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Colorado Department of Corrections"
+  state_specific_context: |
+    Release address information most commonly appears in housing search and
+    Pre-Parole Investigation (PPI) notes written by RESTORE Reentry Case
+    Managers (RCMs). These notes frequently contain a proposed address or named
+    facility along with investigation status. Common patterns:
+      - "Oxford House application submitted awaiting response"
+      - "PPI HOUSING ~ I completed the Pre-Parole Investigation Plan...The plan
+        is for Fort Collins Rescue Mission..."
+      - "I SPOKE TODAY TO PEREZ FOR PPI INFO...I WILL SUBMIT THIS PLAN FOR
+        INVESTIGATION."
+      - "Spoke with offender's mother...she confirmed that she will reside with
+        her at 946 Colorado Avenue Apt-9 in Grand Junction..."
+    Monthly case manager contacts and family phone call notes also sometimes
+    contain confirmed release addresses. Investigation status language includes
+    "submitted for investigation," "plan approved," "plan denied," "PPI
+    submitted," "awaiting response," and "community placement approved/denied."
+  state_specific_fields_example: '(e.g., "Parole Plan: Fort Collins Rescue Mission, 456 Oak Ave, Fort Collins, CO 80521 - Pending")'

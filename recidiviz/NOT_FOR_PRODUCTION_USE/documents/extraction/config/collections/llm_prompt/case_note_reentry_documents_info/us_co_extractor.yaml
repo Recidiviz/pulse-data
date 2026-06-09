@@ -1,0 +1,28 @@
+# US_CO-specific Reentry Documents Extractor
+#
+# Tuned for Colorado's EOMIS facilities case note format.
+
+collection_name: CASE_NOTE_REENTRY_DOCUMENTS_INFO
+
+description: >
+  Reentry document information extractor tuned for US_CO facilities case notes.
+  Handles Colorado EOMIS-specific terminology and document structure.
+
+input_document_collection_name: US_CO_FACILITIES_CASE_MANAGEMENT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Colorado Department of Corrections"
+  state_specific_context: |
+    Notes in this collection are case manager narratives focused on reentry
+    planning. Document/ID information most commonly appears in type DL notes
+    (explicit document procurement entries) and type 06 monthly CM contacts.
+    Colorado-specific document workflow: state IDs are obtained via the DMV2GO
+    program (notes may say "Seen DMV2GO, renewed expired Colorado State ID").
+    Birth certificate and Social Security card procurement is coordinated
+    through case managers prior to release. Skip notes that mention documents
+    only in passing (e.g., "discussed reentry needs including identification")
+    without naming a specific document and its status.
+  state_specific_fields_example: '(e.g., "Documents: SSN card on file, birth certificate requested")'

@@ -1,0 +1,121 @@
+You are an expert analyst extracting facility job and program assignment
+information from {state_agency_name} facilities case notes.
+
+{state_specific_context}
+
+CRITICAL INSTRUCTION: Your primary task is to extract information about
+in-facility job assignments and program assignments. First, you must determine
+whether this case note is relevant to facility assignments. A note is relevant
+if it contains any mention of a person's job, work assignment, program
+assignment, or vocational placement within the facility — including references
+to the person's current role, new assignments, removals from assignments,
+transfers between assignments, referrals to programs, or completion of
+assignments. If the note is not relevant to facility assignments, set
+is_relevant to false and use null_reason='no_info_found' for all other fields.
+
+CRITICAL INSTRUCTION: Consider each note independently.
+
+Target Schema Summary:
+{output_format_instructions}
+
+Hierarchy of Evidence (Apply in this order):
+1. Prose/Narrative First: Prioritize info explicitly stated in the main
+   narrative text. 'Current' means as of the contact date.
+2. Structured Data Second: If prose is ambiguous, check clearly labeled
+   structured fields {state_specific_fields_example}.
+
+Field Definitions:
+* current_assignment: The person's current in-facility job or program
+  assignment as verified or referenced in the note. This field captures what
+  the person IS doing at the time of the note, not what they are being
+  assigned to or removed from (those go in assignment_events).
+  - Extract this when the note confirms, references, or implies a current
+    role. For example:
+    - "Offender did not report to his Food Service Sanitation shift" implies
+      current_assignment is "Food Service Sanitation".
+    - "Continues to work in the kitchen" implies current_assignment is
+      "Kitchen Worker".
+    - "Currently assigned to Maintenance" implies current_assignment is
+      "Maintenance".
+  - Normalize to a concise descriptive title. Strip supervisor/worker
+    suffixes only if they add no meaningful distinction. Keep role-level
+    detail when it distinguishes positions (e.g., "Food Service Sanitation
+    Supervisor" vs "Food Service Worker").
+  - If the note only describes an assignment event (e.g., a new referral or
+    removal) without confirming what the person's current role is, use
+    null_reason='no_info_found'.
+
+* assignment_events (array): Each entry captures a discrete assignment event.
+  Sub-fields:
+  - assignment: The facility job or program this event pertains to. Normalize
+    to a concise title (e.g., "Food Service", "Vocational Welding", "GED
+    Program", "Laundry", "Library Aide").
+  - event_type: Determine ONE value from: 'referred', 'approved',
+    'assigned', 'unassigned', 'transferred', 'completed'.
+    - 'referred': The person has been referred or recommended for an
+      assignment but has not yet started (e.g., "referred to vocational
+      program," "submitted referral for kitchen assignment").
+    - 'approved': The person's assignment or program placement has been
+      approved but they have not yet started (e.g., "approved for
+      vocational welding program," "work assignment approved by
+      classification," "cleared to begin kitchen duty").
+    - 'assigned': The person has been newly placed into an assignment
+      (e.g., "assigned to Maintenance crew," "started work in laundry,"
+      "given a new job assignment in the library").
+    - 'unassigned': The person has been removed from an assignment
+      (e.g., "removed from kitchen duty," "terminated from work
+      assignment," "lost job assignment due to disciplinary action,"
+      "refused to report to assignment").
+    - 'transferred': The person has been moved from one assignment to
+      another within the same general program area (e.g., "transferred
+      from morning kitchen shift to evening shift," "moved from
+      Maintenance A to Maintenance B crew").
+    - 'completed': The person has finished or graduated from a time-limited
+      assignment or program (e.g., "completed vocational welding program,"
+      "graduated from GED class," "finished apprenticeship").
+  - event_date: The date of the assignment event, only if the note explicitly
+    mentions a specific date for this event (e.g., "assigned to Kitchen on
+    2025-03-01," "removed from Maintenance effective 1/15/2025"). Use free
+    text matching the note's format (e.g., "2025-03-01", "January 15, 2025").
+    Omit (null_reason='no_info_found') if no explicit date is mentioned — the
+    event is assumed to have occurred on the case note date.
+
+Clarifications:
+1. A note that merely mentions a person's existing assignment in passing
+   (e.g., as context for a disciplinary event) is still relevant — extract
+   the current_assignment even if the main topic of the note is something
+   else.
+2. A single note may contain both a current_assignment and assignment_events.
+   For example, "Offender currently works in Food Service but has been
+   referred to the Vocational Welding program" yields current_assignment =
+   "Food Service" and one assignment_event (referred to Vocational Welding).
+3. Do not extract general programming or classes (e.g., anger management,
+   substance abuse treatment) unless they are described as a work assignment
+   or vocational program placement. Educational programs (GED, college
+   courses) and vocational programs (welding, carpentry) that involve
+   structured assignments should be extracted.
+4. If a person is described as being on a waitlist for an assignment, this is
+   not yet a referral. Use null_reason='no_info_found' for that assignment
+   unless there is also an explicit referral action.
+5. If the same assignment appears in both current_assignment and
+   assignment_events, that is acceptable when the note both confirms the
+   current role and describes an event for it (e.g., "Works in kitchen;
+   being transferred to a different kitchen shift" — current_assignment is
+   "Kitchen Worker" and there is a 'transferred' event for "Kitchen").
+
+Consistency Rules:
+Extract what is described in this note as of the contact date.
+- If a note says "was removed from Kitchen last week and assigned to
+  Laundry," extract two assignment_events: 'unassigned' from Kitchen and
+  'assigned' to Laundry. If the note also confirms Laundry as the current
+  role, set current_assignment to "Laundry".
+- Fields must be logically consistent: if current_assignment is populated,
+  it should not contradict assignment_events. For example, if there is an
+  'unassigned' event for "Kitchen" and no subsequent 'assigned' event,
+  current_assignment should not be "Kitchen Worker".
+- Each distinct assignment event should appear only once in the
+  assignment_events array. Do not create duplicate entries for the same
+  event.
+
+The case note document is provided as a separate file attachment. Analyze it
+and extract the requested information.

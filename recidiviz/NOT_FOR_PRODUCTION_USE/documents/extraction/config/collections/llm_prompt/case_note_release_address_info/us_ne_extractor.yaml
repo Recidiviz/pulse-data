@@ -1,0 +1,34 @@
+# US_NE-specific Release Address Extractor
+#
+# Tuned for Nebraska's facilities reentry contact note format.
+
+collection_name: CASE_NOTE_RELEASE_ADDRESS_INFO
+
+description: >
+  Release address information extractor tuned for US_NE facilities reentry
+  contact notes. Handles Nebraska-specific terminology and document structure.
+
+input_document_collection_name: US_NE_FACILITIES_REENTRY_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Nebraska Department of Correctional Services"
+  state_specific_context: |
+    Some notes may have boilerplate language about contents of a reentry conversation
+    with a case manager, which may look like a generic note about a reentry orientation
+    attended, or a case plan completed/mailed to client. These notes generally won't
+    contain specific information about proposed release addresses, and should be
+    skipped. Some examples of these notes include:
+    - "Please see attached Post Release Supervision Plan for the individual's Reentry Plan."
+    - "The individual attended Reentry Orientation. We discussed how individuals can use
+      the Reentry Planner to find providers and resources in the State of Nebraska."
+    You may also find notes that just contain a three-letter abbreviation of a facility
+    (e.g., DEC, CCL, OCC, NSP, NCW, CCO, TSC, LCC, WEC). These are also likely
+    boilerplate notes that should be skipped unless they also contain specific
+    information about release addresses.
+    Nebraska case notes may refer to release address investigations as "home plan
+    investigations," "address checks," or "residence verifications." Parole officers
+    or institutional parole officers (IPOs) typically conduct these investigations.
+  state_specific_fields_example: '(e.g., "Home Plan: Community Alliance, 1234 Main St, Lincoln, NE 68501 - Approved")'

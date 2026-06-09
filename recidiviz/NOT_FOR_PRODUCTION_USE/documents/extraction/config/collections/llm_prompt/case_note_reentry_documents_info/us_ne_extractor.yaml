@@ -1,0 +1,28 @@
+# US_NE-specific Reentry Documents Extractor
+#
+# Tuned for Nebraska's facilities reentry contact note format.
+
+collection_name: CASE_NOTE_REENTRY_DOCUMENTS_INFO
+
+description: >
+  Reentry document information extractor tuned for US_NE facilities reentry
+  contact notes. Handles Nebraska-specific terminology and document structure.
+
+input_document_collection_name: US_NE_FACILITIES_ID_DOCS_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Nebraska Department of Correctional Services"
+  state_specific_context: |
+    Initial parole prep meeting notes (the most common type in this collection) often
+    contain a boilerplate sentence listing reentry domains: "we discussed mental health
+    assistance, substance use prevention, medical care, employment assistance, education
+    assistance, a support system, pro social leisure activities, transportation and
+    identification documents." This phrase alone is not specific document status — skip
+    these notes unless they also name a specific document and its status (e.g., "has his
+    birth certificate", "SS card ordered", "submitted birth certificate application").
+  state_specific_fields_example:
+    '(e.g., "The individual has a social security card on file but is missing
+    their birth certificate.")'

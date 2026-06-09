@@ -1,0 +1,88 @@
+# Configuration for US_CO facilities program/assignment notes document collection
+#
+# Covers system-generated assignment logs and RESTORE reentry program
+# attendance/enrollment records. Feeds job assignment and program enrollment
+# extractors.
+#
+# Included types:
+#   28 (C,G) - Job/program assignment auto-logs (1.08M): system-generated records of
+#              classification committee decisions, job assignments, program referrals
+#   22 (C,G) - Case Management Plan goal/objective updates (130K): structured CMP
+#              entries, some with embedded CM-authored free text
+#   YB (Y,Z) - RESTORE in-reach attendance (15K): employer/housing provider
+#              presentations attended or missed
+#   YE (Y,Z) - RESTORE orientation attendance (11K): orientation session records
+#   YC (Y,Z) - Medicaid Worksheet A enrollment (5.7K): completion/submission of
+#              Worksheet A prior to release
+#   YH (Y,Z) - RESTORE release pocket guide completion (5.7K): final release
+#              preparation milestone
+#   Y5 (Y,Z) - CRES/CPO coordination meeting attendance (5K)
+#   Y3 (Y,Z) - RESTORE appointment attendance/no-shows (4.7K)
+#   YL (Y,Z) - Transitional Release Plan (TRP) completion (3.8K)
+#   YM (Y,Z) - WAGEES employment referrals to community providers (3K)
+#   YJ (Y,Z) - TCCM paperwork completion (small)
+#   YA (Y,Z) - DMV/state ID procurement via DMV2GO (small)
+#   Y6 (Y,Z) - Employment referral follow-up (small)
+
+collection_description: >
+  Program assignment and enrollment notes for US_CO incarcerated individuals.
+  Covers system-generated job and program assignment logs (EOMIS type 28),
+  Case Management Plan updates (type 22), and RESTORE reentry program
+  attendance and enrollment records (Y-category types). Feeds job/program
+  assignment and program enrollment extractors.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: case_note_taken_date
+    type: STRING
+    description: The date the case note was taken
+  - name: case_note_taken_time
+    type: STRING
+    description: The time the case note was taken
+  - name: case_note_type
+    type: STRING
+    description: The type of the case note
+  - name: case_note_facility
+    type: STRING
+    description: The facility where the case note was taken
+
+additional_metadata_columns:
+  - name: case_note_category
+    type: STRING
+    description: The category of the case note
+  - name: case_note_reason
+    type: STRING
+    description: The reason for the case note (G=system-generated, Z=staff-entered)
+
+document_generation_query: |
+  SELECT
+    OFFENDERID AS person_external_id,
+    'US_CO_OFFENDERID' AS person_external_id_type,
+    CAST(CASENOTETAKENDATE AS STRING) AS case_note_taken_date,
+    CASENOTETAKENTIME AS case_note_taken_time,
+    CASENOTETYPE AS case_note_type,
+    CASENOTEFACILITY AS case_note_facility,
+    CASENOTECATEGORY AS case_note_category,
+    CASENOTEREASON AS case_note_reason,
+    CONCAT('[NOTE_TYPE: ', CASENOTETYPE, ']\n\n', COALESCE(CASENOTECOMMENTS, '')) AS document_text,
+    CAST(CASENOTETAKENDATE AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_co_raw_data_up_to_date_views.eomis_inmatecasenotes_latest`
+  WHERE CASENOTECOMMENTS IS NOT NULL
+    AND TRIM(CASENOTECOMMENTS) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CAST(CASENOTETAKENDATE AS STRING), 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND CASENOTETYPE IN (
+      '28',   -- job/program assignment auto-logs
+      '22',   -- CMP goal/objective updates
+      'YB',   -- RESTORE in-reach attendance
+      'YE',   -- RESTORE orientation attendance
+      'YC',   -- Medicaid Worksheet A enrollment
+      'YH',   -- RESTORE release pocket guide completion
+      'Y5',   -- CRES/CPO coordination meeting attendance
+      'Y3',   -- RESTORE appointment attendance
+      'YL',   -- TRP completion
+      'YM',   -- WAGEES employment referrals
+      'YJ',   -- TCCM paperwork
+      'YA',   -- DMV/state ID procurement
+      'Y6'    -- employment referral follow-up
+    )

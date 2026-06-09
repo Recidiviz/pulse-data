@@ -1,0 +1,49 @@
+# US_CO-specific Facility Assignment Extractor
+#
+# Tuned for Colorado's EOMIS facilities case note format.
+
+collection_name: CASE_NOTE_FACILITY_JOB_OR_PROGRAM_ASSIGNMENT_INFO
+
+description: >
+  Facility assignment information extractor tuned for US_CO facilities case
+  notes. Handles Colorado EOMIS-specific terminology and document structure.
+
+input_document_collection_name: US_CO_FACILITIES_PROGRAM_ASSIGNMENT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Colorado Department of Corrections"
+  state_specific_context: |
+    Colorado EOMIS case notes may reference facility job assignments using terms
+    like "work assignment," "job assignment," "facility job," or "institutional
+    employment." Case notes may include structured fields like CASENOTECATEGORY
+    or CASENOTEREASON that categorize notes related to work assignments or
+    programming. Colorado facilities offer various work assignments including
+    food service, maintenance, laundry, janitorial, grounds keeping, and
+    vocational programs such as welding, carpentry, and auto mechanics.
+
+    IMPORTANT — Colorado structured assignment format:
+    Many CO notes follow a structured format for assignment changes:
+      "Assignment to: {ASSIGNMENT NAME}; {AUXILIARY INFO} was updated. It was {STATUS CHANGE} for reason: {REASON}."
+    Use the {ASSIGNMENT NAME} as the assignment and map {STATUS CHANGE} to event_type:
+      - "Unassigned" → event_type 'unassigned'
+      - "Transferred within Pgm." → event_type 'transferred'
+      - "Completed" → event_type 'completed'
+      - Other status changes should be mapped to the closest matching event_type.
+
+    When a note says an assignment "was added", this means a new assignment:
+      - "Assignment to: Food Service; Section #: 092; Position #: 027 was added."
+        → assignment_event with assignment "Food Service" and event_type 'assigned'.
+        This also indicates current_assignment is "Food Service".
+      - "Reassignment to: Housekeeping; Section #: 033; Position #: 008 was added."
+        → assignment_event with assignment "Housekeeping" and event_type 'assigned'.
+
+    When a note says a referral "was added", this is a referral:
+      - "Referral to: Janitorial was added."
+        → assignment_event with assignment "Janitorial" and event_type 'referred'.
+
+    Strip auxiliary info (Section #, Position #, etc.) from the assignment name —
+    only extract the program/job name itself.
+  state_specific_fields_example: '(e.g., "Assignment to: Food Service; Section #: 092; Position #: 027 was added.")'

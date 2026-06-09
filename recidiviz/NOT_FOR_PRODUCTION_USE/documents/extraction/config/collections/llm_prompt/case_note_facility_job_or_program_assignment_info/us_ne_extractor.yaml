@@ -1,0 +1,30 @@
+# US_NE-specific Facility Assignment Extractor
+#
+# Tuned for Nebraska's facilities reentry contact note format.
+
+collection_name: CASE_NOTE_FACILITY_JOB_OR_PROGRAM_ASSIGNMENT_INFO
+
+description: >
+  Facility assignment information extractor tuned for US_NE facilities reentry
+  contact notes. Handles Nebraska-specific terminology and document structure.
+
+input_document_collection_name: US_NE_FACILITIES_REENTRY_CONTACT_NOTES
+
+llm_provider: vertex_ai
+model: gemini-2.5-flash
+
+prompt_vars:
+  state_agency_name: "Nebraska Department of Correctional Services"
+  state_specific_context: |
+    Nebraska facilities case notes may reference institutional job assignments
+    using terms like "work assignment," "detail," "job detail," or "institutional
+    job." Common Nebraska facility assignments include food service, maintenance,
+    janitorial, laundry, library, and various vocational programs. Notes may also
+    reference programming assignments such as vocational training or educational
+    programs offered within NDCS facilities.
+    Some notes may have boilerplate language about reentry orientation or case
+    plans that do not contain specific assignment information and should be
+    skipped. Notes that just contain a three-letter facility abbreviation
+    (e.g., DEC, CCL, OCC, NSP, NCW, CCO, TSC, LCC, WEC) are also likely
+    boilerplate and should be skipped.
+  state_specific_fields_example: '(e.g., "Work Assignment: Food Service - AM Shift")'

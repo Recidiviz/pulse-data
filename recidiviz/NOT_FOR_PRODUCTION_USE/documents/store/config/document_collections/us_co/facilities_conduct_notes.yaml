@@ -1,0 +1,75 @@
+# Configuration for US_CO facilities conduct notes document collection
+#
+# Covers behavioral observation and incident records from line staff and
+# security. Feeds incidents/misconduct and behavioral conduct extractors.
+#
+# Included types:
+#   19 (I,Z) - Incident/negative behavior narrative (124K): rule violations,
+#              altercations, contraband, non-compliance, staff confrontations
+#   18 (I,Z) - Positive behavior / program completion (106K): volunteering,
+#              work performance, program milestones, prosocial behavior
+#   75 (I,Z) - Dynamic security / informal inmate contact (648K): wide range
+#              from substantive behavioral observations to brief greetings;
+#              carries safety concerns, housing adjustments, reentry conversations
+#   23 (F,Z) - Incident/conduct flags (24.6K): brief conduct event records,
+#              removal from population, disciplinary actions
+#   37 (K,Z) - Negative work performance narrative (12K): failure to report,
+#              insubordination, rule violations at work assignment
+#   36 (K,Z) - Positive work performance / earned time awards (6.2K): good
+#              work performance recognition, formal ET award entries
+#   24 (C,Z) - Earned time forfeiture tied to negative chron (2.5K): connects
+#              conduct events to case management consequence
+
+collection_description: >
+  Behavioral and incident notes for US_CO incarcerated individuals. Covers
+  incident and negative behavior records (types 19, 23), positive behavior
+  and program completion (type 18), dynamic security informal contacts
+  (type 75), work performance narratives (types 37, 36), and earned time
+  forfeiture records (type 24). Feeds incidents/misconduct and conduct
+  extractors.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: case_note_taken_date
+    type: STRING
+    description: The date the case note was taken
+  - name: case_note_taken_time
+    type: STRING
+    description: The time the case note was taken
+  - name: case_note_type
+    type: STRING
+    description: The type of the case note
+  - name: case_note_facility
+    type: STRING
+    description: The facility where the case note was taken
+
+additional_metadata_columns:
+  - name: case_note_category
+    type: STRING
+    description: The category of the case note (I=informal/incident, F=conduct flag, K=work)
+
+document_generation_query: |
+  SELECT
+    OFFENDERID AS person_external_id,
+    'US_CO_OFFENDERID' AS person_external_id_type,
+    CAST(CASENOTETAKENDATE AS STRING) AS case_note_taken_date,
+    CASENOTETAKENTIME AS case_note_taken_time,
+    CASENOTETYPE AS case_note_type,
+    CASENOTEFACILITY AS case_note_facility,
+    CASENOTECATEGORY AS case_note_category,
+    CONCAT('[NOTE_TYPE: ', CASENOTETYPE, ']\n\n', COALESCE(CASENOTECOMMENTS, '')) AS document_text,
+    CAST(CASENOTETAKENDATE AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_co_raw_data_up_to_date_views.eomis_inmatecasenotes_latest`
+  WHERE CASENOTECOMMENTS IS NOT NULL
+    AND TRIM(CASENOTECOMMENTS) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CAST(CASENOTETAKENDATE AS STRING), 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND CASENOTETYPE IN (
+      '19',   -- incident/negative behavior narrative
+      '18',   -- positive behavior / program completion
+      '75',   -- dynamic security / informal inmate contact
+      '23',   -- incident/conduct flags
+      '37',   -- negative work performance narrative
+      '36',   -- positive work performance / earned time
+      '24'    -- earned time forfeiture tied to negative chron
+    )

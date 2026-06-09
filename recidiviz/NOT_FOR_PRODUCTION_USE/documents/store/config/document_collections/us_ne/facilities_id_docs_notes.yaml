@@ -1,0 +1,66 @@
+# Configuration for US_NE ID and documents reentry contact notes collection
+#
+# This collection stores contact notes with actionable ID/documents content.
+# Filtered to contact types where specific document status (has/missing/applied)
+# is most likely to appear:
+#   915813 - misc individual contacts, dedicated to birth certificate applications
+#            (42% actionable rate; highest signal of any type)
+#   915800 - initial parole prep meeting (12% actionable; covers all reentry domains
+#            including document status in a single narrative)
+#   915801 - initial discharge meeting (11% actionable; sometimes notes doc status)
+#   915812 - final discharge meeting (14% actionable)
+#
+# Excluded types:
+#   915805 - individual housing follow-up (4% actionable for ID/docs; mostly housing)
+#   915803 - reentry orientation (fully templated group sessions; boilerplate domain list)
+#   915808 - staff coordination / admin (bc app tracking noise; not useful as narrative)
+#
+# Note: the vast majority of 915800/915801 hits on "identification documents" are
+# the boilerplate phrase "we discussed identification documents" in the standard
+# initial meeting template. The extractor should return is_relevant=false for
+# those. 915813 is the highest-yield type for specific document status.
+
+collection_description: >
+  ID and documents-focused reentry contact notes from US_NE staff. Covers
+  birth certificate application contacts, initial parole prep meetings, and
+  discharge meetings where specific document status (has/missing/applied for)
+  is documented. Primary document vocabulary: birth certificate, social security
+  card, driver's license, state ID.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: reentry_contact_id
+    type: STRING
+    description: The unique identifier for the reentry contact record (pkReentryContactId)
+
+additional_metadata_columns:
+  - name: contact_type_code
+    type: STRING
+    description: Code indicating type of contact
+  - name: attended_status_code
+    type: STRING
+    description: Attendance status code
+  - name: group_individual_code
+    type: STRING
+    description: Indicates if meeting was group or individual
+
+document_generation_query: |
+  SELECT
+    inmateNumber AS person_external_id,
+    'US_NE_ID_NBR' AS person_external_id_type,
+    CAST(pkReentryContactId AS STRING) AS reentry_contact_id,
+    contactTypeCode AS contact_type_code,
+    attendedStatusCode AS attended_status_code,
+    groupIndividualCode AS group_individual_code,
+    COALESCE(notes, '') AS document_text,
+    CAST(contactDate AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_ne_raw_data_up_to_date_views.ReentryContact_latest`
+  WHERE notes IS NOT NULL
+    AND TRIM(notes) != ''
+    AND contactTypeCode IN (
+      '915813',  -- misc individual contacts / birth certificate applications
+      '915800',  -- initial parole prep meeting
+      '915801',  -- initial discharge meeting
+      '915812'   -- final discharge meeting
+    )

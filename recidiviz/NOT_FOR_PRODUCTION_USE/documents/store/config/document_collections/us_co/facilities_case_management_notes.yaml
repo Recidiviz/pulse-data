@@ -1,0 +1,100 @@
+# Configuration for US_CO facilities case management notes document collection
+#
+# Covers substantive case manager narrative notes including release planning,
+# housing coordination, parole board outcomes, assessments, and family/community
+# contacts. Primary source for release logistics extraction (proposed release
+# address, ID/documents).
+#
+# Included types:
+#   06 (C,Z) - Monthly meaningful CM contact (379K): richest type; covers parole
+#              readiness, program enrollment, release planning, community corrections
+#   62 (C,Z) - Classification / initial assessment notes (51K): DCC classification
+#              summaries, PREA screening, program eligibility discussions
+#   10 (C,Z) - General case management catch-all (233K): kite responses, intake
+#              interviews, parole plan logistics, medical referrals
+#   Y9 (Y,Z) - Housing search / Pre-Parole Investigation (PPI) plans (13.5K):
+#              primary type for proposed release address and housing investigation
+#              status; CO equivalent of NE's 915805 type
+#   YD (Y,Z) - One-on-one RESTORE transition planning sessions (6.9K): TRP
+#              narrative covering barriers, strengths, release preparation
+#   YN (Y,Z) - Risk/Housing Assessment (RHA) scores and outcomes (3.1K)
+#   YF (Y,Z) - Release logistics / family contact confirmation at release (small):
+#              confirmed release addresses from family contacts
+#   YI (Y,Z) - Release coordination / transport logistics (small)
+#   Y2 (Y,Z) - Medicare/benefits paperwork (small)
+#   60 (C,Z) - PREA / SAB / SVR assessments (8.6K): substantive contact
+#              documentation for new arrivals and re-assessments
+#   72 (C,Z) - Phone calls to family/community (5K): outreach to sponsors,
+#              family, community contacts re: release plans
+#   61 (C,Z) - Parole board outcomes (3K): hearing results, deferrals, release dates
+#   31 (C,Z) - CTAP/NCIC warrant checks (4.5K): assessment-linked warrant checks,
+#              community placement application notes
+#   DL (C,Z) - Document/ID procurement (1K): birth certificate, state ID logistics
+#   46 (C,Z) - Treatment program interviews (small)
+
+collection_description: >
+  Case management narrative notes for US_CO incarcerated individuals. Covers
+  monthly CM contacts (type 06), classification and assessment notes (type 62),
+  general CM entries (type 10), RESTORE housing search and transition planning
+  (Y9, YD, YN, YF, YI), PREA assessments (type 60), family/community phone
+  contacts (type 72), parole board outcomes (type 61), and document/ID
+  coordination (DL). Primary source for release address and ID/documents
+  extraction.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: case_note_taken_date
+    type: STRING
+    description: The date the case note was taken
+  - name: case_note_taken_time
+    type: STRING
+    description: The time the case note was taken
+  - name: case_note_type
+    type: STRING
+    description: The type of the case note
+  - name: case_note_facility
+    type: STRING
+    description: The facility where the case note was taken
+
+additional_metadata_columns:
+  - name: case_note_category
+    type: STRING
+    description: The category of the case note
+  - name: case_note_reason
+    type: STRING
+    description: The reason for the case note
+
+document_generation_query: |
+  SELECT
+    OFFENDERID AS person_external_id,
+    'US_CO_OFFENDERID' AS person_external_id_type,
+    CAST(CASENOTETAKENDATE AS STRING) AS case_note_taken_date,
+    CASENOTETAKENTIME AS case_note_taken_time,
+    CASENOTETYPE AS case_note_type,
+    CASENOTEFACILITY AS case_note_facility,
+    CASENOTECATEGORY AS case_note_category,
+    CASENOTEREASON AS case_note_reason,
+    CONCAT('[NOTE_TYPE: ', CASENOTETYPE, ']\n\n', COALESCE(CASENOTECOMMENTS, '')) AS document_text,
+    CAST(CASENOTETAKENDATE AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_co_raw_data_up_to_date_views.eomis_inmatecasenotes_latest`
+  WHERE CASENOTECOMMENTS IS NOT NULL
+    AND TRIM(CASENOTECOMMENTS) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CAST(CASENOTETAKENDATE AS STRING), 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)
+    AND CASENOTETYPE IN (
+      '06',   -- monthly meaningful CM contact
+      '62',   -- classification / initial assessment
+      '10',   -- general CM catch-all
+      'Y9',   -- housing search / PPI plans (primary release address source)
+      'YD',   -- one-on-one RESTORE transition planning sessions
+      'YN',   -- risk/housing assessment (RHA) outcomes
+      'YF',   -- release logistics / family contact confirmation
+      'YI',   -- release coordination / transport
+      'Y2',   -- Medicare/benefits paperwork
+      '60',   -- PREA / SAB / SVR assessments
+      '72',   -- phone calls to family/community
+      '61',   -- parole board outcomes
+      '31',   -- CTAP/NCIC warrant checks
+      'DL',   -- document/ID procurement
+      '46'    -- treatment program interviews
+    )

@@ -1,0 +1,64 @@
+# Extractor Collection: CASE_NOTE_FACILITY_JOB_OR_PROGRAM_ASSIGNMENT_INFO
+#
+# Extractors in this collection identify in-facility job/program assignments
+# and assignment events from facilities case notes.
+
+name: CASE_NOTE_FACILITY_JOB_OR_PROGRAM_ASSIGNMENT_INFO
+confidence_threshold: 0.8
+
+description: >
+  Extract information about in-facility job and program assignments from case
+  notes, including the person's current assignment and any assignment events
+  such as referrals, new assignments, transfers, or completions.
+
+output_schema:
+  full_batch_description: >
+    Facility assignment information extracted from a case note, including the
+    person's current assignment and any assignment-related events.
+
+  result_level_description: >
+    Comprehensive extraction of facility assignment information from a single
+    case note.
+
+  inferred_fields:
+    - name: current_assignment
+      type: STRING
+      description: >
+        The person's current in-facility job or program assignment as verified
+        or mentioned in this note. This is the role or position the person
+        holds at the time of the note, not a new assignment being made.
+        Examples: "Food Service Sanitation", "Kitchen Worker", "Library Aide",
+        "Laundry", "Maintenance", "Janitorial". Normalize to a concise
+        descriptive title. Omit if the note does not verify or reference a
+        current assignment.
+
+    - name: assignment_events
+      type: ARRAY_OF_STRUCT
+      description: >
+        List of assignment-related events mentioned in this note. Each event
+        represents a change or action related to a facility job or program
+        assignment. Empty array if no assignment events are mentioned.
+      fields:
+        - name: assignment
+          type: STRING
+          description: >
+            The facility job or program assignment this event pertains to.
+            Examples: "Food Service", "Kitchen Worker", "Vocational Welding",
+            "GED Program", "Maintenance Crew". Normalize to a concise
+            descriptive title.
+          required: true
+
+        - name: event_type
+          type: ENUM
+          description: >
+            The type of assignment event.
+          values:
+            [referred, approved, assigned, unassigned, transferred, completed]
+          required: true
+
+        - name: event_date
+          type: STRING
+          description: >
+            Date of the assignment event, only if the note explicitly mentions
+            a specific date for this event. Omit if no date is mentioned; the
+            event is assumed to have occurred on the case note date.

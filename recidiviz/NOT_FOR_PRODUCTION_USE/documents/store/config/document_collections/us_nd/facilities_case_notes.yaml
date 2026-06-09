@@ -1,0 +1,38 @@
+# Configuration for US_ND facilities case notes document collection
+#
+# This collection stores case manager notes for incarcerated individuals.
+# Note: This is separate from contact_notes.yaml which covers supervision contacts.
+
+collection_description: >
+  Case manager notes for US_ND incarcerated individuals in facilities. These
+  notes document case management activities, assessments, and other interactions
+  during incarceration.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: case_note_id
+    type: STRING
+    description: The unique identifier for the case note (CASE_NOTE_ID)
+
+additional_metadata_columns:
+  - name: case_note_type
+    type: STRING
+    description: The type of case note
+  - name: case_note_sub_type
+    type: STRING
+    description: The subtype of case note
+
+document_generation_query: |
+  SELECT
+    OFFENDER_BOOK_ID AS person_external_id,
+    'US_ND_ELITE_BOOKING' AS person_external_id_type,
+    CAST(CASE_NOTE_ID AS STRING) AS case_note_id,
+    CASE_NOTE_TYPE AS case_note_type,
+    CASE_NOTE_SUB_TYPE AS case_note_sub_type,
+    COALESCE(CASE_NOTE_TEXT, '') AS document_text,
+    CAST(CONTACT_DATE AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_nd_raw_data_up_to_date_views.elite_OffenderCaseNotes_latest`
+  WHERE CASE_NOTE_TEXT IS NOT NULL
+    AND TRIM(CASE_NOTE_TEXT) != ''
+    AND SAFE.PARSE_DATE('%Y-%m-%d', SUBSTR(CONTACT_DATE, 1, 10)) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR)

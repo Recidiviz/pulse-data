@@ -1,0 +1,58 @@
+# Configuration for US_NE reentry contact notes document collection
+#
+# This collection stores housing-focused contact notes from reentry staff.
+# Filtered to contact types with actionable housing content:
+#   915805 - individual follow-up / housing coordination (highest volume, ~95% housing signal)
+#   915801 - initial discharge meeting (73% address rate)
+#   915812 - final discharge meeting (83% address rate)
+#
+# Excluded types:
+#   915800 - initial parole prep (boilerplate domain list; low housing signal)
+#   915803 - reentry orientation (fully templated group sessions)
+#   915807 - PRSP filing (single boilerplate sentence)
+#   915808 - staff coordination / admin (noise)
+#   915815 - two-week follow-up / case plan mailing (boilerplate)
+#   Single-char location codes (DEC, OCC, NSP, etc.) - no narrative content
+
+collection_description: >
+  Housing-focused reentry contact notes from US_NE staff. Covers individual
+  follow-up contacts, initial discharge meetings, and final discharge meetings
+  where proposed release addresses and housing plan investigation status are
+  documented.
+
+root_entity_type: PERSON_EXTERNAL_ID
+
+primary_key_columns:
+  - name: reentry_contact_id
+    type: STRING
+    description: The unique identifier for the reentry contact record (pkReentryContactId)
+
+additional_metadata_columns:
+  - name: contact_type_code
+    type: STRING
+    description: Code indicating type of contact
+  - name: attended_status_code
+    type: STRING
+    description: Attendance status code
+  - name: group_individual_code
+    type: STRING
+    description: Indicates if meeting was group or individual
+
+document_generation_query: |
+  SELECT
+    inmateNumber AS person_external_id,
+    'US_NE_ID_NBR' AS person_external_id_type,
+    CAST(pkReentryContactId AS STRING) AS reentry_contact_id,
+    contactTypeCode AS contact_type_code,
+    attendedStatusCode AS attended_status_code,
+    groupIndividualCode AS group_individual_code,
+    COALESCE(notes, '') AS document_text,
+    CAST(contactDate AS TIMESTAMP) AS document_update_datetime
+  FROM `{project_id}.us_ne_raw_data_up_to_date_views.ReentryContact_latest`
+  WHERE notes IS NOT NULL
+    AND TRIM(notes) != ''
+    AND contactTypeCode IN (
+      '915805',  -- individual follow-up / housing coordination
+      '915801',  -- initial discharge meeting
+      '915812'   -- final discharge meeting
+    )
